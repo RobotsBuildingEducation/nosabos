@@ -123,7 +123,8 @@ export default function VoiceChat() {
 
       // First, send the conversation (audio input) to a chat model.
       const chatResp = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview",
+        // Use a generally available model so the request succeeds for most users.
+        model: "gemini-1.5-flash",
         contents,
       });
 
@@ -133,9 +134,9 @@ export default function VoiceChat() {
 
       let audioB64 = null;
       if (textReply) {
-        // Convert the model's text reply to speech using the TTS model.
+        // Convert the model's text reply to speech using the same model.
         const ttsResp = await ai.models.generateContent({
-          model: "gemini-2.5-flash-preview-tts",
+          model: "gemini-1.5-flash",
           contents: [
             {
               role: "user",
