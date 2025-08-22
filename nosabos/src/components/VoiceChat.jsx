@@ -121,31 +121,50 @@ export default function VoiceChat() {
         },
       ];
 
-      const resp = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
+      // First, send the conversation (audio input) to a chat model.
+      const chatResp = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview",
         contents,
-        config: {
-          responseModalities: ["AUDIO", "TEXT"],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: "Puck" },
-            },
-          },
-        },
       });
 
-      const parts = resp?.candidates?.[0]?.content?.parts || [];
-      const textReply = parts.find((p) => p.text)?.text || "";
-      const audioB64 = parts.find((p) => p.inlineData)?.inlineData?.data;
+      const textReply =
+        chatResp?.candidates?.[0]?.content?.parts.find((p) => p.text)?.text ||
+        "";
 
-      if (audioB64) {
-        const pcm = b64ToUint8(audioB64);
-        const wav = pcm16ToWav(pcm, 24000, 1);
-        const url = URL.createObjectURL(wav);
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = () => URL.revokeObjectURL(url);
-        await audio.play();
+      let audioB64 = null;
+      if (textReply) {
+        // Convert the model's text reply to speech using the TTS model.
+        const ttsResp = await ai.models.generateContent({
+          model: "gemini-2.5-flash-preview-tts",
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: textReply }],
+            },
+          ],
+          config: {
+            responseModalities: ["AUDIO"],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: { voiceName: "Puck" },
+              },
+            },
+          },
+        });
+
+        audioB64 =
+          ttsResp?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)
+            ?.inlineData?.data || null;
+
+        if (audioB64) {
+          const pcm = b64ToUint8(audioB64);
+          const wav = pcm16ToWav(pcm, 24000, 1);
+          const url = URL.createObjectURL(wav);
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = () => URL.revokeObjectURL(url);
+          await audio.play();
+        }
       }
 
       setHistory((prev) => [
