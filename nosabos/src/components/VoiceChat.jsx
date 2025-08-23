@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+/* eslint-disable no-empty */
+import React, { useRef, useState, useEffect } from "react";
 import {
   Badge,
   Box,
@@ -12,7 +13,6 @@ import {
   DrawerBody,
   HStack,
   IconButton,
-  Input,
   Progress,
   Select,
   Slider,
@@ -31,7 +31,6 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { SettingsIcon } from "@chakra-ui/icons";
-import { GoogleGenAI } from "@google/genai";
 
 /* ===========================
    Utilities
@@ -88,6 +87,16 @@ function safeParseJson(text) {
     } catch {}
   }
   return null;
+}
+
+async function serverGenerate(payload) {
+  const res = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Server error");
+  return await res.json();
 }
 
 /* ===========================
@@ -535,15 +544,6 @@ export default function VoiceChat() {
   const settings = useDisclosure();
   const coachSheet = useDisclosure();
 
-  // API
-  const [apiKeyInput, setApiKeyInput] = useState(
-    import.meta?.env?.VITE_GEMINI_API_KEY || ""
-  );
-  const ai = useMemo(
-    () => (apiKeyInput ? new GoogleGenAI({ apiKey: apiKeyInput }) : null),
-    [apiKeyInput]
-  );
-
   // Core states
   const [uiState, setUiState] = useState("idle"); // idle | listening | thinking | speaking
   const [mood, setMood] = useState("neutral"); // happy | encourage | neutral
@@ -596,10 +596,6 @@ export default function VoiceChat() {
   /* ---------- Recording ---------- */
   async function startRecording() {
     try {
-      if (!ai) {
-        toast({ title: "Add your API key first", status: "warning" });
-        return;
-      }
       if (!navigator.mediaDevices?.getUserMedia) {
         toast({
           title: "Mic not available",
@@ -809,7 +805,7 @@ Constraints:
         },
       ];
 
-      const chatResp = await ai.models.generateContent({
+      const chatResp = await serverGenerate({
         model: "gemini-2.5-flash-lite",
         contents,
         generationConfig: { maxOutputTokens: 200, temperature: 0.6 },
@@ -841,7 +837,7 @@ Constraints:
       // TTS (fast)
       if (assistant_es) {
         try {
-          const ttsResp = await ai.models.generateContent({
+          const ttsResp = await serverGenerate({
             model: "gemini-2.5-flash-preview-tts",
             contents: [{ role: "user", parts: [{ text: assistant_es }] }],
             config: {
@@ -939,9 +935,8 @@ Constraints:
     if (!redo_es) return;
     redoRef.current = redo_es;
     (async () => {
-      if (!ai) return;
       try {
-        const ttsResp = await ai.models.generateContent({
+        const ttsResp = await serverGenerate({
           model: "gemini-2.5-flash-preview-tts",
           contents: [{ role: "user", parts: [{ text: redo_es }] }],
           config: {
@@ -1165,13 +1160,6 @@ Constraints:
           <DrawerHeader pb={2}>Settings</DrawerHeader>
           <DrawerBody pb={6}>
             <VStack align="stretch" spacing={3}>
-              <Input
-                type="password"
-                placeholder="GEMINI API Key"
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                bg="gray.800"
-              />
               <HStack>
                 <Select
                   value={level}
