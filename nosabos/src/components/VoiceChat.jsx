@@ -1,18 +1,18 @@
-import React, { useMemo, useRef, useState, useEffect } from "react";
+// VoiceChat.jsx — Trilingual + Audio Cache + Robust Mobile Audio + Live Firestore Turns
+import React, { useRef, useState, useEffect } from "react";
 import {
   Badge,
   Box,
   Button,
   Center,
-  Collapse,
   Drawer,
   DrawerOverlay,
   DrawerContent,
   DrawerHeader,
   DrawerBody,
   HStack,
+  Stack,
   IconButton,
-  Input,
   Progress,
   Select,
   Slider,
@@ -20,22 +20,60 @@ import {
   SliderThumb,
   SliderTrack,
   Stat,
-  StatHelpText,
   StatLabel,
   StatNumber,
   Switch,
   Tag,
   Text,
   VStack,
+  Wrap,
+  WrapItem,
   useDisclosure,
   useToast,
+  Input,
+  InputGroup,
+  InputRightElement,
 } from "@chakra-ui/react";
 import { SettingsIcon } from "@chakra-ui/icons";
-import { GoogleGenAI } from "@google/genai";
+import { CiRepeat, CiUser } from "react-icons/ci";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  getDocFromCache,
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  limit,
+  serverTimestamp,
+  enableIndexedDbPersistence,
+} from "firebase/firestore";
+import { database } from "../firebaseResources/firebaseResources";
+import RobotBuddyPro from "./RobotBuddyPro";
 
-/* ===========================
-   Utilities
-=========================== */
+/* Endpoints */
+// const TALKTURN_URL =
+//   (import.meta?.env?.VITE_TALKTURN_URL || "").trim() || "/talkTurn";
+// const TTS_URL = (import.meta?.env?.VITE_TTS_URL || "").trim() || "/tts";
+const isProdLike =
+  typeof location !== "undefined" &&
+  location.hostname !== "localhost" &&
+  !/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname);
+
+const DIRECT_TALK = import.meta.env.VITE_TALKTURN_URL || "";
+const DIRECT_TTS = import.meta.env.VITE_TTS_URL || "";
+
+// In prod-like pages, FORCE same-origin. In dev: use env if provided, else same-origin.
+export const TALKTURN_URL = isProdLike
+  ? "/talkTurn"
+  : DIRECT_TALK || "/talkTurn";
+export const TTS_URL = isProdLike ? "/tts" : DIRECT_TTS || "/tts";
+
+/* ---------------------------
+   Utils: base64/PCM/WAV
+--------------------------- */
 function b64ToUint8(b64) {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
@@ -56,7 +94,7 @@ function pcm16ToWav(pcmUint8, sampleRate = 24000, channels = 1) {
   writeStr(8, "WAVE");
   writeStr(12, "fmt ");
   view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
+  view.setUint16(20, 1, true); // PCM
   view.setUint16(22, channels, true);
   view.setUint32(24, sampleRate, true);
   view.setUint32(28, byteRate, true);
@@ -75,24 +113,164 @@ function blobToBase64(blob) {
     r.readAsDataURL(blob);
   });
 }
-function safeParseJson(text) {
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {}
-  const s = text.indexOf("{"),
-    e = text.lastIndexOf("}");
-  if (s !== -1 && e !== -1 && e > s) {
-    try {
-      return JSON.parse(text.slice(s, e + 1));
-    } catch {}
+
+/* ---------------------------
+   Transcoding: robust on mobile
+--------------------------- */
+// Try to transcode any input blob to WAV (24 kHz mono). If decode fails, caller should fall back.
+async function blobToWavBase64Universal(blob, targetRate = 24000) {
+  const arrayBuf = await blob.arrayBuffer();
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AC();
+  // decodeAudioData (Promise style)
+  const decoded = await new Promise((resolve, reject) => {
+    // Safari likes a copied buffer
+    ctx.decodeAudioData(arrayBuf.slice(0), resolve, reject);
+  });
+  // Resample via OfflineAudioContext
+  const channels = 1;
+  const frames = Math.ceil(decoded.duration * targetRate);
+  const offline = new OfflineAudioContext(channels, frames, targetRate);
+
+  // average to mono
+  const monoSrc = offline.createBuffer(1, decoded.length, decoded.sampleRate);
+  const out = monoSrc.getChannelData(0);
+  for (let c = 0; c < decoded.numberOfChannels; c++) {
+    const ch = decoded.getChannelData(c);
+    for (let i = 0; i < out.length; i++)
+      out[i] += ch[i] / decoded.numberOfChannels;
   }
-  return null;
+  const src = offline.createBufferSource();
+  src.buffer = monoSrc;
+  src.connect(offline.destination);
+  src.start(0);
+  const rendered = await offline.startRendering();
+
+  // Float32 -> PCM16
+  const f32 = rendered.getChannelData(0);
+  const pcm16 = new Int16Array(f32.length);
+  for (let i = 0; i < f32.length; i++) {
+    const s = Math.max(-1, Math.min(1, f32[i]));
+    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  const u8 = new Uint8Array(pcm16.buffer);
+  const wavBlob = pcm16ToWav(u8, rendered.sampleRate, 1);
+
+  try {
+    await ctx.close();
+  } catch {}
+  const b64 = await blobToBase64(wavBlob);
+  return { b64, mime: "audio/wav", wavBlob };
 }
 
-/* ===========================
-   Phrase-aligned highlighting (tap-friendly)
-=========================== */
+// Use WAV if possible; otherwise send original blob/mime
+async function safeTranscodeToWavOrPassThrough(blob) {
+  try {
+    return await blobToWavBase64Universal(blob);
+  } catch {
+    const b64 = await blobToBase64(blob);
+    const mime = (blob.type || "application/octet-stream").split(";")[0];
+    return { b64, mime, wavBlob: null };
+  }
+}
+
+// Pick a MediaRecorder MIME that the browser supports
+function pickRecorderMime() {
+  const m = window.MediaRecorder;
+  if (!m) return "";
+  const candidates = [
+    "audio/webm;codecs=opus",
+    "audio/webm",
+    "audio/ogg;codecs=opus",
+    "audio/mp4;codecs=mp4a.40.2",
+    "audio/mp4",
+    "audio/3gpp",
+  ];
+  for (const t of candidates) {
+    try {
+      if (m.isTypeSupported?.(t)) return t;
+    } catch {}
+  }
+  return "";
+}
+
+/* ---------------------------
+   Audio cache (IndexedDB)
+--------------------------- */
+const CLIP_DB = "NoSaboAudioDB";
+const CLIP_STORE = "clips";
+const memClips = new Map();
+
+function openClipDB() {
+  return new Promise((resolve) => {
+    if (!("indexedDB" in window)) return resolve(null);
+    const req = indexedDB.open(CLIP_DB, 1);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(CLIP_STORE))
+        db.createObjectStore(CLIP_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(null);
+  });
+}
+async function saveClipBlob(key, blob) {
+  if (!key || !blob) return;
+  const db = await openClipDB();
+  if (!db) {
+    memClips.set(key, blob);
+    return;
+  }
+  await new Promise((resolve) => {
+    const tx = db.transaction(CLIP_STORE, "readwrite");
+    tx.objectStore(CLIP_STORE).put(blob, key);
+    tx.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    tx.onerror = () => {
+      db.close();
+      memClips.set(key, blob);
+      resolve();
+    };
+  });
+}
+async function loadClipBlob(key) {
+  if (!key) return null;
+  const db = await openClipDB();
+  if (!db) return memClips.get(key) || null;
+  return await new Promise((resolve) => {
+    const tx = db.transaction(CLIP_STORE, "readonly");
+    const req = tx.objectStore(CLIP_STORE).get(key);
+    req.onsuccess = () => {
+      const blob = req.result || null;
+      db.close();
+      resolve(blob);
+    };
+    req.onerror = () => {
+      db.close();
+      resolve(memClips.get(key) || null);
+    };
+  });
+}
+async function sha256Hex(str) {
+  try {
+    if (crypto?.subtle) {
+      const buf = new TextEncoder().encode(str || "");
+      const digest = await crypto.subtle.digest("SHA-256", buf);
+      return Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    }
+  } catch {}
+  let h = 5381;
+  for (let i = 0; i < (str || "").length; i++) h = (h * 33) ^ str.charCodeAt(i);
+  return (h >>> 0).toString(16).padStart(8, "0");
+}
+
+/* ---------------------------
+   Phrase-aligned highlighting
+--------------------------- */
 const COLORS = [
   "#91E0FF",
   "#A0EBAF",
@@ -102,10 +280,9 @@ const COLORS = [
   "#B0F0FF",
 ];
 const colorFor = (i) => COLORS[i % COLORS.length];
-
 function wrapFirst(text, phrase, tokenId) {
   if (!text || !phrase) return [text];
-  const idx = text.toLowerCase().indexOf(phrase.toLowerCase());
+  const idx = text.toLowerCase().indexOf(String(phrase).toLowerCase());
   if (idx < 0) return [text];
   const before = text.slice(0, idx);
   const mid = text.slice(idx, idx + phrase.length);
@@ -115,21 +292,26 @@ function wrapFirst(text, phrase, tokenId) {
     <span
       key={`${tokenId}-${idx}`}
       data-token={tokenId}
-      style={{ borderBottom: "2px solid transparent" }}
+      style={{
+        borderBottom: "2px solid transparent",
+        wordBreak: "break-word",
+        overflowWrap: "anywhere",
+        whiteSpace: "pre-wrap",
+      }}
     >
       {mid}
     </span>,
     ...wrapFirst(after, phrase, tokenId + "_cont"),
   ];
 }
-function buildAlignedNodes(text, pairs, side /* 'es' | 'en' */) {
+function buildAlignedNodes(text, pairs, side /* 'lhs' | 'rhs' */) {
   if (!pairs?.length || !text) return [text];
   const sorted = [...pairs].sort(
-    (a, b) => (b[side]?.length || 0) - (a[side]?.length || 0)
+    (a, b) => (b?.[side]?.length || 0) - (a?.[side]?.length || 0)
   );
   let nodes = [text];
   sorted.forEach((pair, i) => {
-    const phrase = pair[side];
+    const phrase = pair?.[side];
     if (!phrase) return;
     const tokenId = `tok_${i}`;
     const next = [];
@@ -142,9 +324,17 @@ function buildAlignedNodes(text, pairs, side /* 'es' | 'en' */) {
   });
   return nodes;
 }
-function AlignedBubble({ esText, enText, alignPairs, showTranslations }) {
+function AlignedBubble({
+  primaryLabel,
+  secondaryLabel,
+  primaryText,
+  secondaryText,
+  pairs,
+  showSecondary,
+  onReplay,
+  canReplay,
+}) {
   const [activeId, setActiveId] = useState(null);
-
   function decorate(nodes) {
     return React.Children.map(nodes, (node) => {
       if (typeof node === "string" || !node?.props?.["data-token"]) return node;
@@ -159,285 +349,113 @@ function AlignedBubble({ esText, enText, alignPairs, showTranslations }) {
       return React.cloneElement(node, {
         onMouseEnter: () => setActiveId(rootId),
         onMouseLeave: () => setActiveId(null),
-        onClick: () => setActiveId(isActive ? null : rootId), // tap toggles on mobile
+        onClick: () => setActiveId(isActive ? null : rootId),
         style: { ...(node.props.style || {}), ...style },
       });
     });
   }
-
-  const esNodes = decorate(buildAlignedNodes(esText, alignPairs, "es"));
-  const enNodes = decorate(buildAlignedNodes(enText, alignPairs, "en"));
+  const primaryNodes = decorate(buildAlignedNodes(primaryText, pairs, "lhs"));
+  const secondaryNodes = decorate(
+    buildAlignedNodes(secondaryText, pairs, "rhs")
+  );
 
   return (
-    <Box bg="gray.800" p={3} borderRadius="lg">
-      <Text fontSize="md" lineHeight="1.45">
-        {esNodes}
+    <Box bg="gray.800" p={3} borderRadius="lg" maxW="100%" overflowX="hidden">
+      <HStack spacing={2} mb={1} justify="space-between">
+        <HStack spacing={2}>
+          <Badge colorScheme="purple">{primaryLabel}</Badge>
+          {showSecondary && secondaryText && (
+            <Badge variant="subtle">{secondaryLabel}</Badge>
+          )}
+        </HStack>
+        <Button
+          size="xs"
+          variant="ghost"
+          onClick={onReplay}
+          isDisabled={!canReplay}
+          color="white"
+        >
+          <CiRepeat />
+          &nbsp;Repeat
+        </Button>
+      </HStack>
+
+      <Text
+        fontSize="md"
+        lineHeight="1.45"
+        whiteSpace="pre-wrap"
+        wordBreak="break-word"
+        overflowWrap="anywhere"
+      >
+        {primaryNodes}
       </Text>
-      {showTranslations && enText && (
-        <Text opacity={0.85} fontSize="sm" mt={1} lineHeight="1.4">
-          {enNodes}
+      {showSecondary && secondaryText && (
+        <Text
+          opacity={0.85}
+          fontSize="sm"
+          mt={1}
+          lineHeight="1.4"
+          whiteSpace="pre-wrap"
+          wordBreak="break-word"
+          overflowWrap="anywhere"
+        >
+          {secondaryNodes}
         </Text>
       )}
-      {!!alignPairs?.length && showTranslations && (
-        <HStack spacing={2} mt={2} wrap="wrap">
-          {alignPairs.slice(0, COLORS.length).map((p, i) => (
-            <Tag
-              key={i}
-              size="sm"
-              style={{
-                borderColor: colorFor(i),
-                borderWidth: 2,
-                background: "transparent",
-                color: "white",
-              }}
-            >
-              {p.es} ⇄ {p.en}
-            </Tag>
+      {!!pairs?.length && showSecondary && (
+        <Wrap spacing={2} mt={2}>
+          {pairs.slice(0, COLORS.length).map((p, i) => (
+            <WrapItem key={i}>
+              <Tag
+                size="sm"
+                style={{
+                  borderColor: colorFor(i),
+                  borderWidth: 2,
+                  background: "transparent",
+                  color: "white",
+                }}
+              >
+                {p.lhs} ⇄ {p.rhs}
+              </Tag>
+            </WrapItem>
           ))}
-        </HStack>
+        </Wrap>
       )}
     </Box>
   );
 }
 
-/* ===========================
-   Robot Buddy Avatar (mobile-first)
-   - screen eyes that track touch/hover
-   - antenna blink
-   - breathing chassis
-   - LED equalizer mouth (listening reacts to loudness, speaking animates)
-   - mood ring glow
-=========================== */
-function RobotBuddy({ state = "idle", loudness = 0, mood = "neutral" }) {
-  const [gaze, setGaze] = useState({ x: 0, y: 0 });
-  useEffect(() => {
-    const onMove = (e) => {
-      const { clientX, clientY } = e.touches?.[0] || e;
-      // normalized -1..1
-      const w = window.innerWidth,
-        h = window.innerHeight;
-      const nx = (clientX / w) * 2 - 1;
-      const ny = (clientY / h) * 2 - 1;
-      setGaze({
-        x: Math.max(-1, Math.min(1, nx)),
-        y: Math.max(-1, Math.min(1, ny)),
-      });
-    };
-    window.addEventListener("pointermove", onMove, { passive: true });
-    window.addEventListener("touchstart", onMove, { passive: true });
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("touchstart", onMove);
-    };
-  }, []);
-
-  const ring =
-    state === "listening"
-      ? "rgba(0,210,255,0.6)"
-      : state === "speaking"
-      ? "rgba(0,255,140,0.6)"
-      : state === "thinking"
-      ? "rgba(255,220,0,0.55)"
-      : "rgba(255,255,255,0.25)";
-
-  const eyeOffsetX = gaze.x * 6;
-  const eyeOffsetY = gaze.y * 3;
-
-  const bars = Array.from({ length: 7 }, (_, i) => {
-    const amp =
-      state === "speaking"
-        ? 6 + 8 * (0.5 + Math.sin(Date.now() / 100 + i) * 0.5)
-        : 4 + Math.min(12, loudness * 40) * (0.7 + (i % 2 ? 0.2 : 0));
-    return Math.max(3, Math.min(20, amp));
-  });
-
-  const moodAccent =
-    mood === "happy"
-      ? "#74f7c5"
-      : mood === "encourage"
-      ? "#ffd27d"
-      : mood === "neutral"
-      ? "#a0b3ff"
-      : "#a0b3ff";
-
-  return (
-    <Box
-      w="100%"
-      maxW="360px"
-      mx="auto"
-      mt={2}
-      px={2}
-      position="relative"
-      userSelect="none"
-    >
-      {/* glow ring */}
-      <Box
-        position="absolute"
-        inset="-8px"
-        borderRadius="24px"
-        filter="blur(14px)"
-        _before={{
-          content: '""',
-          position: "absolute",
-          inset: 0,
-          borderRadius: "24px",
-          boxShadow: `0 0 42px 8px ${ring}`,
-          animation:
-            state === "speaking" ? "pulse 1.2s ease-in-out infinite" : "none",
-        }}
-      />
-      <style>{`
-        @keyframes pulse { 0%{transform:scale(0.98)}50%{transform:scale(1.03)}100%{transform:scale(0.98)} }
-      `}</style>
-
-      <Box
-        bg="gray.800"
-        border="1px solid rgba(255,255,255,0.08)"
-        rounded="2xl"
-        p={3}
-        boxShadow="0 8px 24px rgba(0,0,0,0.4)"
-      >
-        <svg viewBox="0 0 340 220" width="100%" height="100%">
-          {/* body breathing */}
-          <rect x="10" y="60" width="320" height="150" rx="22" fill="#1f2937">
-            <animate
-              attributeName="y"
-              dur="3s"
-              values="60;62;60"
-              repeatCount="indefinite"
-            />
-          </rect>
-
-          {/* antenna */}
-          <line
-            x1="170"
-            y1="22"
-            x2="170"
-            y2="48"
-            stroke={moodAccent}
-            strokeWidth="4"
-          />
-          <circle cx="170" cy="18" r="8" fill={moodAccent}>
-            <animate
-              attributeName="r"
-              dur="2s"
-              values="8;11;8"
-              repeatCount="indefinite"
-            />
-          </circle>
-
-          {/* head */}
-          <rect
-            x="50"
-            y="32"
-            width="240"
-            height="120"
-            rx="18"
-            fill="#111827"
-            stroke="#2d3748"
-            strokeWidth="2"
-          />
-
-          {/* eyes screen */}
-          <rect x="64" y="48" width="212" height="64" rx="12" fill="#0b1220" />
-          {/* eyes */}
-          <g transform={`translate(${eyeOffsetX}, ${eyeOffsetY})`}>
-            <circle cx="120" cy="80" r="10" fill="#7dd3fc" />
-            <circle cx="220" cy="80" r="10" fill="#7dd3fc" />
-          </g>
-
-          {/* “thinking” dots */}
-          {state === "thinking" && (
-            <g>
-              <circle cx="120" cy="112" r="4" fill="#fff">
-                <animate
-                  attributeName="opacity"
-                  dur="1s"
-                  values="0;1;0"
-                  repeatCount="indefinite"
-                />
-              </circle>
-              <circle cx="170" cy="112" r="4" fill="#fff">
-                <animate
-                  attributeName="opacity"
-                  dur="1s"
-                  values="0;0.4;1;0.4;0"
-                  repeatCount="indefinite"
-                />
-              </circle>
-              <circle cx="220" cy="112" r="4" fill="#fff">
-                <animate
-                  attributeName="opacity"
-                  dur="1s"
-                  values="0;1;0"
-                  begin="0.2s"
-                  repeatCount="indefinite"
-                />
-              </circle>
-            </g>
-          )}
-
-          {/* LED mouth equalizer */}
-          <g transform="translate(85, 140)">
-            {bars.map((h, i) => (
-              <rect
-                key={i}
-                x={i * 22}
-                y={-h}
-                width="14"
-                height={h}
-                rx="3"
-                fill={moodAccent}
-              />
-            ))}
-          </g>
-        </svg>
-
-        <HStack justify="center" mt={2} spacing={2}>
-          <Badge
-            colorScheme={
-              state === "listening"
-                ? "cyan"
-                : state === "speaking"
-                ? "green"
-                : state === "thinking"
-                ? "yellow"
-                : "purple"
-            }
-          >
-            {state === "listening"
-              ? "Listening"
-              : state === "speaking"
-              ? "Speaking"
-              : state === "thinking"
-              ? "Thinking"
-              : "Idle"}
-          </Badge>
-          {mood !== "neutral" && (
-            <Badge variant="subtle" colorScheme="teal">
-              {mood}
-            </Badge>
-          )}
-        </HStack>
-      </Box>
-    </Box>
-  );
-}
-
-/* ===========================
-   Coach Card (English-first) — bottom sheet
-=========================== */
-function CoachPanel({ isOpen, onClose, coach, onRedo, onAcceptNext }) {
+/* ---------------------------
+   Coach Panel (target-lang aware)
+--------------------------- */
+function CoachPanel({
+  isOpen,
+  onClose,
+  coach,
+  onRedo,
+  onAcceptNext,
+  targetLang = "es",
+}) {
+  if (!coach) coach = {};
   const {
     correction_en,
     tip_en,
-    redo_es,
-    vocab_es = [],
+    correction_es,
+    tip_es,
+    translation_en,
+    translation_es,
     scores = {},
     cefr,
     next_goal,
     goal_completed,
-  } = coach || {};
+  } = coach;
+  const vocab =
+    coach?.[`vocab_${targetLang}`] ||
+    (targetLang === "es" ? coach?.vocab_es : []) ||
+    [];
+  const redo_text =
+    coach?.[`redo_${targetLang}`] ||
+    (targetLang === "es" ? coach?.redo_es : null);
   const pct =
     (((scores?.pronunciation ?? 0) +
       (scores?.grammar ?? 0) +
@@ -445,13 +463,14 @@ function CoachPanel({ isOpen, onClose, coach, onRedo, onAcceptNext }) {
       (scores?.fluency ?? 0)) /
       12) *
     100;
+  const targetName = targetLang === "nah" ? "Náhuatl" : "Spanish";
 
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-      <DrawerOverlay />
-      <DrawerContent bg="gray.900" borderTopRadius="24px">
+      <DrawerOverlay bg="blackAlpha.600" />
+      <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
         <DrawerHeader pb={2}>
-          <HStack justify="space-between">
+          <HStack justify="space-between" align="start">
             <Text fontWeight="bold">Coach</Text>
             <HStack>
               {goal_completed ? (
@@ -464,34 +483,60 @@ function CoachPanel({ isOpen, onClose, coach, onRedo, onAcceptNext }) {
           </HStack>
         </DrawerHeader>
         <DrawerBody pb={6}>
-          {correction_en && (
-            <Box mb={2}>
-              <Text fontSize="sm" opacity={0.8}>
-                Correction
-              </Text>
-              <Text>{correction_en}</Text>
-            </Box>
-          )}
-          {tip_en && (
+          {(translation_en || correction_en || tip_en) && (
             <Box mb={3}>
               <Text fontSize="sm" opacity={0.8}>
-                Tip
+                English
               </Text>
-              <Text>{tip_en}</Text>
+              {translation_en && (
+                <Text whiteSpace="pre-wrap">{translation_en}</Text>
+              )}
+              {correction_en && (
+                <Text mt={1} fontSize="sm">
+                  <b>Correction:</b> {correction_en}
+                </Text>
+              )}
+              {tip_en && (
+                <Text mt={1} fontSize="sm" opacity={0.9}>
+                  💡 {tip_en}
+                </Text>
+              )}
             </Box>
           )}
-          {!!vocab_es?.length && (
+          {(translation_es || correction_es || tip_es) && (
             <Box mb={3}>
               <Text fontSize="sm" opacity={0.8}>
-                Useful Spanish
+                Español
               </Text>
-              <HStack wrap="wrap" spacing={2}>
-                {vocab_es.slice(0, 8).map((w, i) => (
-                  <Tag key={i} colorScheme="teal" variant="subtle">
-                    {w}
-                  </Tag>
+              {translation_es && (
+                <Text whiteSpace="pre-wrap">{translation_es}</Text>
+              )}
+              {correction_es && (
+                <Text mt={1} fontSize="sm">
+                  <b>Corrección:</b> {correction_es}
+                </Text>
+              )}
+              {tip_es && (
+                <Text mt={1} fontSize="sm" opacity={0.9}>
+                  💡 {tip_es}
+                </Text>
+              )}
+            </Box>
+          )}
+          {!!vocab?.length && (
+            <Box mb={3}>
+              <Text fontSize="sm" opacity={0.8}>
+                Useful {targetName}
+              </Text>
+              <Wrap spacing={2}>
+                {vocab.slice(0, 8).map((w, i) => (
+                  <WrapItem key={i}>
+                    <Tag colorScheme="teal" variant="subtle" maxW="100%">
+                      {w}
+                    </Tag>
+                  </WrapItem>
                 ))}
-              </HStack>
+              </Wrap>
             </Box>
           )}
           <Box mb={4}>
@@ -500,14 +545,14 @@ function CoachPanel({ isOpen, onClose, coach, onRedo, onAcceptNext }) {
             </Text>
             <Progress value={pct} size="sm" colorScheme="teal" rounded="sm" />
           </Box>
-          <HStack>
+          <Stack direction={["column", "row"]} spacing={2}>
             <Button
               size="md"
-              onClick={() => onRedo?.(redo_es)}
-              isDisabled={!redo_es}
+              onClick={() => onRedo?.(redo_text)}
+              isDisabled={!redo_text}
               flex="1"
             >
-              Try again (ES)
+              Try again ({targetName})
             </Button>
             <Button
               size="md"
@@ -518,88 +563,324 @@ function CoachPanel({ isOpen, onClose, coach, onRedo, onAcceptNext }) {
             >
               Next goal
             </Button>
-          </HStack>
+          </Stack>
         </DrawerBody>
       </DrawerContent>
     </Drawer>
   );
 }
 
-/* ===========================
-   Main (MOBILE-FIRST)
-=========================== */
-export default function VoiceChat() {
-  const toast = useToast();
+/* ---------------------------
+   Legacy↔New turn mapping for model context
+--------------------------- */
+function newToLegacyTurn(m) {
+  if (!m) return null;
+  if (m.lang === "es") {
+    return {
+      es: m.text || "",
+      en: m.trans_en || "",
+      align: Array.isArray(m.pairs)
+        ? m.pairs.map((p) => ({ es: p?.lhs || "", en: p?.rhs || "" }))
+        : [],
+    };
+  }
+  const esText = m.trans_es || "";
+  const enText = m.trans_en || "";
+  if (!esText && !enText) return null;
+  return { es: esText || "", en: enText || "", align: [] };
+}
+function buildLegacyFromNew(arr) {
+  const out = [];
+  (arr || []).forEach((m) => {
+    const leg = newToLegacyTurn(m);
+    if (leg) out.push(leg);
+  });
+  return out;
+}
+const isoNow = () => {
+  try {
+    return new Date().toISOString();
+  } catch {
+    return String(Date.now());
+  }
+};
 
-  // Bottom sheets
+/* ---------------------------
+   Main
+--------------------------- */
+export default function VoiceChat({
+  auth,
+  onSwitchedAccount,
+  activeNpub = "",
+  activeNsec = "",
+}) {
+  const toast = useToast();
   const settings = useDisclosure();
   const coachSheet = useDisclosure();
+  const account = useDisclosure();
 
-  // API
-  const [apiKeyInput, setApiKeyInput] = useState(
-    import.meta?.env?.VITE_GEMINI_API_KEY || ""
-  );
-  const ai = useMemo(
-    () => (apiKeyInput ? new GoogleGenAI({ apiKey: apiKeyInput }) : null),
-    [apiKeyInput]
-  );
+  const DEFAULT_CHALLENGE = {
+    es: "Pide algo con cortesía.",
+    en: "Make a polite request.",
+  };
+  const DEFAULT_PERSONA = "Like a rude, sarcastic, mean-spirited toxica.";
 
-  // Core states
-  const [uiState, setUiState] = useState("idle"); // idle | listening | thinking | speaking
-  const [mood, setMood] = useState("neutral"); // happy | encourage | neutral
+  // UI & learning state
+  const [uiState, setUiState] = useState("idle");
+  const [mood, setMood] = useState("neutral");
   const [volume, setVolume] = useState(0);
-  const [pauseMs, setPauseMs] = useState(700);
-  const [level, setLevel] = useState("beginner"); // beginner | intermediate | advanced
-  const [supportLang, setSupportLang] = useState("en"); // en | bilingual | es
-  const [voice, setVoice] = useState("Puck");
-  const [history, setHistory] = useState([]); // [{ es, en, align }]
+  const [pauseMs, setPauseMs] = useState(2000);
+
+  const [level, setLevel] = useState("beginner");
+  const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
+  const [voice, setVoice] = useState("Leda");
+  const [voicePersona, setVoicePersona] = useState(DEFAULT_PERSONA);
+  const [targetLang, setTargetLang] = useState("nah"); // 'nah' | 'es'
+
+  const [history, setHistory] = useState([]); // live from snapshot
   const [coach, setCoach] = useState(null);
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
-  const [challenge, setChallenge] = useState({
-    es: "Pide algo con cortesía.",
-    en: "Make a polite request.",
-  });
+  const [challenge, setChallenge] = useState(DEFAULT_CHALLENGE);
   const [showTranslations, setShowTranslations] = useState(true);
 
-  // Media refs
+  // Account UI state
+  const [currentId, setCurrentId] = useState(activeNpub || "");
+  const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
+  const [switchNsec, setSwitchNsec] = useState("");
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  // Audio refs
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
   const audioRef = useRef(null);
-
-  // VAD
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const rafRef = useRef(null);
   const silenceStartRef = useRef(null);
-
-  // Redo prompt
   const redoRef = useRef("");
 
+  /* Sync creds from parent */
+  useEffect(() => {
+    setCurrentId(activeNpub || "");
+  }, [activeNpub]);
+  useEffect(() => {
+    setCurrentSecret(activeNsec || "");
+  }, [activeNsec]);
+
+  /* Firestore persistence (ignore errors in Private mode) */
+  useEffect(() => {
+    enableIndexedDbPersistence(database).catch(() => {});
+  }, []);
+
+  /* Live conversation subscription */
+  useEffect(() => {
+    const npub = (currentId || "").trim();
+    if (!npub) return;
+    const colRef = collection(database, "users", npub, "turns");
+    const q = query(colRef, orderBy("createdAtClient", "asc"), limit(50));
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const turns = snap.docs.map((d) => {
+          const v = d.data() || {};
+          return {
+            id: d.id,
+            lang: v.lang || "es",
+            text: v.text || "",
+            trans_en: v.trans_en || "",
+            trans_es: v.trans_es || "",
+            pairs: Array.isArray(v.pairs) ? v.pairs : [],
+            audioKey: v.audioKey || null,
+            createdAtClient: v.createdAtClient || 0,
+          };
+        });
+        setHistory(turns);
+      },
+      (err) => {
+        console.error("turns snapshot error:", err?.message || err);
+        // Optional: toast once if desired
+        // toast({ title: "Offline mode", description: "Showing cached conversation.", status: "info" });
+      }
+    );
+    return () => unsub();
+  }, [currentId]);
+
+  /* Load profile/progress with cache fallback */
+  useEffect(() => {
+    const npub = (currentId || "").trim();
+    if (!npub) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const ref = doc(database, "users", npub);
+        let snap = await getDoc(ref);
+        if (!snap.exists()) {
+          try {
+            snap = await getDocFromCache(ref);
+          } catch {}
+        }
+        const data = snap.exists() ? snap.data() : null;
+        const p = data?.progress || {};
+        if (cancelled) return;
+
+        setLevel(p.level || "beginner");
+        setSupportLang(
+          p.supportLang === "bilingual" || p.supportLang === "es"
+            ? p.supportLang
+            : "en"
+        );
+        setVoice(p.voice || "Leda");
+        setVoicePersona(p.voicePersona || DEFAULT_PERSONA);
+        setTargetLang(p.targetLang === "nah" ? "nah" : "es");
+        setXp(
+          Number.isFinite(data?.xp) ? data.xp : Number.isFinite(p.xp) ? p.xp : 0
+        );
+        setStreak(
+          Number.isFinite(data?.streak)
+            ? data.streak
+            : Number.isFinite(p.streak)
+            ? p.streak
+            : 0
+        );
+        setChallenge(
+          p.challenge?.es && p.challenge?.en
+            ? p.challenge
+            : { ...DEFAULT_CHALLENGE }
+        );
+        setShowTranslations(
+          typeof p.showTranslations === "boolean" ? p.showTranslations : true
+        );
+      } catch (e) {
+        console.error("load profile failed:", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentId]);
+
+  /* Save profile (settings/xp/streak/challenge) */
+  async function saveProfile(partial = {}) {
+    const npub =
+      (currentId || "").trim() ||
+      (typeof window !== "undefined" ? localStorage.getItem("local_npub") : "");
+    if (!npub) return;
+    try {
+      await setDoc(
+        doc(database, "users", npub),
+        {
+          local_npub: npub,
+          updatedAt: isoNow(),
+          xp: partial.xp ?? xp,
+          streak: partial.streak ?? streak,
+          lastGoal: (partial.challenge ?? challenge)?.en || null,
+          progress: {
+            level: partial.level ?? level,
+            supportLang: partial.supportLang ?? supportLang,
+            voice: partial.voice ?? voice,
+            voicePersona: partial.voicePersona ?? voicePersona,
+            targetLang: partial.targetLang ?? targetLang,
+            xp: partial.xp ?? xp,
+            streak: partial.streak ?? streak,
+            challenge: partial.challenge ?? challenge,
+            showTranslations: partial.showTranslations ?? showTranslations,
+          },
+        },
+        { merge: true }
+      );
+    } catch (e) {
+      console.error("save profile failed:", e);
+    }
+  }
+  useEffect(() => {
+    saveProfile({});
+  }, [level, supportLang, voice, voicePersona, showTranslations, targetLang]); // eslint-disable-line
+
+  /* Cleanup on unmount */
   useEffect(() => {
     return () => {
       try {
         if (rafRef.current) clearTimeout(rafRef.current);
-        audioCtxRef.current?.close();
+        if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+          audioCtxRef.current.close().catch(() => {});
+        }
+        audioCtxRef.current = null;
         audioRef.current?.pause?.();
         stopTracks();
       } catch {}
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
   function stopTracks() {
     const stream = mediaRecorderRef.current?.stream;
     if (stream) stream.getTracks().forEach((t) => t.stop());
   }
 
-  /* ---------- Recording ---------- */
+  /* Account helpers */
+  async function copy(text, label = "Copied") {
+    try {
+      await navigator.clipboard.writeText(text || "");
+      toast({ title: label, status: "success", duration: 1400 });
+    } catch (e) {
+      toast({
+        title: "Copy failed",
+        description: String(e?.message || e),
+        status: "error",
+      });
+    }
+  }
+  async function switchAccount() {
+    const nsec = (switchNsec || "").trim();
+    if (!nsec) {
+      toast({ title: "Paste your nsec first", status: "warning" });
+      return;
+    }
+    if (!nsec.startsWith("nsec")) {
+      toast({
+        title: "Invalid key",
+        description: "Must start with nsec…",
+        status: "error",
+      });
+      return;
+    }
+    setIsSwitching(true);
+    try {
+      if (typeof auth !== "function")
+        throw new Error("auth(nsec) is not available.");
+      const res = await auth(nsec);
+      const npub = res?.user?.npub || localStorage.getItem("local_npub");
+      if (!npub?.startsWith("npub"))
+        throw new Error("Could not derive npub from the secret key.");
+      await setDoc(
+        doc(database, "users", npub),
+        { local_npub: npub, createdAt: isoNow() },
+        { merge: true }
+      );
+      localStorage.setItem("local_npub", npub);
+      localStorage.setItem("local_nsec", nsec);
+      setCurrentId(npub);
+      setCurrentSecret(nsec);
+      setSwitchNsec("");
+      account.onClose?.();
+      toast({ title: "Switched account", status: "success" });
+      if (typeof onSwitchedAccount === "function")
+        await Promise.resolve(onSwitchedAccount(npub));
+    } catch (e) {
+      console.error("switchAccount error:", e);
+      toast({
+        title: "Switch failed",
+        description: e?.message || String(e),
+        status: "error",
+      });
+    } finally {
+      setIsSwitching(false);
+    }
+  }
+
+  /* Recording */
   async function startRecording() {
     try {
-      if (!ai) {
-        toast({ title: "Add your API key first", status: "warning" });
-        return;
-      }
       if (!navigator.mediaDevices?.getUserMedia) {
         toast({
           title: "Mic not available",
@@ -612,21 +893,26 @@ export default function VoiceChat() {
         audioRef.current?.pause?.();
         audioRef.current = null;
       } catch {}
-
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mimeType = MediaRecorder.isTypeSupported?.("audio/webm;codecs=opus")
-        ? "audio/webm;codecs=opus"
-        : "audio/webm";
-      const recorder = new MediaRecorder(stream, { mimeType });
+
+      const picked = pickRecorderMime();
+      if (!picked) {
+        toast({
+          title: "Recording not supported",
+          description: "No compatible audio format.",
+          status: "error",
+        });
+        return;
+      }
+      const recorder = new MediaRecorder(stream, { mimeType: picked });
       chunksRef.current = [];
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunksRef.current.push(e.data);
-      };
+      recorder.ondataavailable = (e) =>
+        e.data && e.data.size > 0 && chunksRef.current.push(e.data);
       recorder.onstop = handleStop;
       recorder.start();
       mediaRecorderRef.current = recorder;
 
-      // VAD loop
+      // Meter / auto-stop on silence
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       const source = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
@@ -652,9 +938,8 @@ export default function VoiceChat() {
         setVolume(rms);
         const now = performance.now();
         if (rms < THRESHOLD) {
-          if (silenceStartRef.current == null) {
-            silenceStartRef.current = now;
-          } else if (now - silenceStartRef.current >= pauseMs) {
+          if (silenceStartRef.current == null) silenceStartRef.current = now;
+          else if (now - silenceStartRef.current >= pauseMs) {
             try {
               mediaRecorderRef.current?.stop();
             } catch {}
@@ -681,7 +966,6 @@ export default function VoiceChat() {
     } catch {}
   }
 
-  /* ---------- Goal fallback generator ---------- */
   function nextGoalFallback(prevGoal, scores) {
     const sum =
       (scores?.pronunciation ?? 0) +
@@ -715,7 +999,7 @@ export default function VoiceChat() {
     return ladder[Math.floor(Math.random() * ladder.length)];
   }
 
-  /* ---------- Turn handling ---------- */
+  /* Handle a turn */
   async function handleStop() {
     try {
       setUiState("thinking");
@@ -725,7 +1009,10 @@ export default function VoiceChat() {
           clearTimeout(rafRef.current);
           rafRef.current = null;
         }
-        audioCtxRef.current?.close();
+        if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
+          await audioCtxRef.current.close().catch(() => {});
+        }
+        audioCtxRef.current = null;
       } catch {}
       stopTracks();
 
@@ -741,169 +1028,142 @@ export default function VoiceChat() {
         return;
       }
 
-      const b64 = await blobToBase64(blob);
-      const mime = (blob.type || "audio/webm").split(";")[0];
+      // Normalize to WAV if possible, else pass-through
+      const { b64, mime } = await safeTranscodeToWavOrPassThrough(blob);
 
-      const system = `
-You are a Spanish practice partner with an English-first coach UI.
-Return ONLY one JSON object (no code fences):
-{
- "assistant_es": "<Spanish reply, ≤ 24 words, friendly, natural, continue the thread>",
- "coach": {
-   "correction_en": "<one English correction with a Spanish quote if helpful>",
-   "tip_en": "<one English micro-tip (≤14 words)>",
-   "redo_es": "<short Spanish redo prompt>",
-   "vocab_es": ["word1","word2","..."],
-   "translation_en": "<English translation of assistant_es>",
-   "alignment": [{"es":"<spanish phrase>","en":"<english phrase>"}],
-   "scores": {"pronunciation":0-3,"grammar":0-3,"vocab":0-3,"fluency":0-3},
-   "cefr": "A1|A2|B1|B2|C1",
-   "goal_completed": true|false,
-   "next_goal": {"es":"...", "en":"..."}
- }
-}
-Constraints:
-- assistant_es MUST be Spanish.
-- Coach/tips/explanations are English-first (except redo_es/vocab_es).
-- Ensure next_goal is coherent with the conversation and current goal.
-- If the goal wasn't completed, next_goal should be a refined, actionable micro-goal.`.trim();
+      // Supply last few turns in legacy shape for the model
+      const legacyForModel = buildLegacyFromNew(history).slice(-3);
 
-      const levelHint =
-        level === "beginner"
-          ? "Learner level: beginner. Simpler Spanish; supportive English coaching."
-          : level === "intermediate"
-          ? "Learner level: intermediate. Natural Spanish; concise English coaching."
-          : "Learner level: advanced. Native Spanish; terse English coaching.";
-
-      const supportHint =
-        supportLang === "en"
-          ? "Support language: English only."
-          : supportLang === "bilingual"
-          ? "Support language: bilingual (English with Spanish phrases)."
-          : "Support language: Spanish for support (coach in Spanish).";
-
-      const challengeHint = `Current goal: ES="${challenge.es}" | EN="${challenge.en}".`;
-      const redoHint = redoRef.current
-        ? `User wants to retry: "${redoRef.current}".`
-        : "";
-
-      const contextTurns = history.slice(-3).map((m) => ({
-        role: "model",
-        parts: [{ text: m.es || "" }],
-      }));
-
-      const contents = [
-        { role: "user", parts: [{ text: system }] },
-        {
-          role: "user",
-          parts: [
-            {
-              text: `${levelHint} ${supportHint} ${challengeHint} ${redoHint}`,
-            },
-          ],
-        },
-        ...contextTurns,
-        {
-          role: "user",
-          parts: [{ inlineData: { data: b64, mimeType: mime } }],
-        },
-      ];
-
-      const chatResp = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
-        contents,
-        generationConfig: { maxOutputTokens: 200, temperature: 0.6 },
+      console.log("talkturn", TALKTURN_URL);
+      const resp = await fetch(TALKTURN_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          audioBase64: b64,
+          mime,
+          history: legacyForModel,
+          level,
+          supportLang,
+          challenge,
+          redo: redoRef.current,
+          voice,
+          voicePersona,
+          targetLang,
+        }),
       });
+      if (!resp.ok) {
+        let details = "";
+        try {
+          details = JSON.stringify(await resp.json());
+        } catch {}
+        throw new Error(`HTTP ${resp.status}${details ? " " + details : ""}`);
+      }
+      const data = await resp.json();
 
-      const raw =
-        chatResp?.text?.trim() ||
-        chatResp?.candidates?.[0]?.content?.parts
-          ?.map((p) => p.text)
-          .filter(Boolean)
-          .join("\n") ||
-        "";
+      // Extract assistant + coach
+      const assistantText = data?.assistant?.text ?? data?.assistant_es ?? "";
+      const assistantLang =
+        data?.assistant?.lang ?? (data?.assistant_es ? "es" : targetLang);
+      const coachObj = data?.coach || {};
+      const translation_en = coachObj?.translation_en || "";
+      const translation_es = coachObj?.translation_es || "";
 
-      const parsed = safeParseJson(raw);
-      const assistant_es = parsed?.assistant_es || "";
-      const coachObj = parsed?.coach || null;
-
-      if (assistant_es) {
-        setHistory((prev) => [
-          ...prev,
-          {
-            es: assistant_es,
-            en: coachObj?.translation_en || "",
-            align: coachObj?.alignment || [],
-          },
-        ]);
+      // Alignment normalization
+      let pairs = [];
+      if (assistantLang === "nah") {
+        if (supportLang === "es") {
+          const nah_es = coachObj?.alignment?.nah_es || [];
+          pairs = nah_es.map((p) => ({ lhs: p?.t || "", rhs: p?.es || "" }));
+        } else {
+          const nah_en = coachObj?.alignment?.nah_en || [];
+          pairs = nah_en.map((p) => ({ lhs: p?.t || "", rhs: p?.en || "" }));
+        }
+      } else {
+        if (Array.isArray(coachObj?.alignment)) {
+          pairs = coachObj.alignment.map((p) => ({
+            lhs: p?.es || "",
+            rhs: p?.en || "",
+          }));
+        } else {
+          const es_en = coachObj?.alignment?.es_en || [];
+          pairs = es_en.map((p) => ({ lhs: p?.es || "", rhs: p?.en || "" }));
+        }
       }
 
-      // TTS (fast)
-      if (assistant_es) {
-        try {
-          const ttsResp = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-tts",
-            contents: [{ role: "user", parts: [{ text: assistant_es }] }],
-            config: {
-              responseModalities: ["AUDIO"],
-              speechConfig: {
-                voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
-              },
-            },
-          });
-          const audioB64 =
-            ttsResp?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)
-              ?.inlineData?.data || null;
+      // Play TTS audio + cache it
+      const audioB64 = data?.audioBase64 || null;
+      let audioKeyForTurn = null;
+      if (audioB64) {
+        const pcm = b64ToUint8(audioB64);
+        const wavOut = pcm16ToWav(pcm, 24000, 1);
+        audioKeyForTurn = await sha256Hex(
+          `${assistantText}||${voice}||${assistantLang}`
+        );
+        await saveClipBlob(audioKeyForTurn, wavOut);
 
-          if (audioB64) {
-            const pcm = b64ToUint8(audioB64);
-            const wav = pcm16ToWav(pcm, 24000, 1);
-            const url = URL.createObjectURL(wav);
-            try {
-              audioRef.current?.pause?.();
-            } catch {}
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            setUiState("speaking");
-            setMood("happy");
-            audio.onended = () => {
-              URL.revokeObjectURL(url);
-              audioRef.current = null;
-              setUiState("idle");
-              setMood("neutral");
-            };
-            await audio.play().catch(() => {
-              const unlock = () => {
-                audio.play().catch(() => {});
-                window.removeEventListener("pointerdown", unlock);
-              };
-              window.addEventListener("pointerdown", unlock);
-            });
-          } else {
-            setUiState("idle");
-            setMood("neutral");
-          }
-        } catch {
+        const url = URL.createObjectURL(wavOut);
+        try {
+          audioRef.current?.pause?.();
+        } catch {}
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        setUiState("speaking");
+        setMood("happy");
+        audio.onended = () => {
+          URL.revokeObjectURL(url);
+          audioRef.current = null;
           setUiState("idle");
           setMood("neutral");
-        }
+        };
+        await audio.play().catch(() => {
+          const unlock = () => {
+            audio.play().catch(() => {});
+            window.removeEventListener("pointerdown", unlock);
+          };
+          window.addEventListener("pointerdown", unlock);
+        });
       } else {
         setUiState("idle");
         setMood("neutral");
       }
 
-      // Coach & goals
-      if (coachObj) {
+      // Persist this TURN as its own document
+      if (assistantText) {
+        const npub =
+          (currentId || "").trim() || localStorage.getItem("local_npub") || "";
+        if (npub) {
+          const colRef = collection(database, "users", npub, "turns");
+          await addDoc(colRef, {
+            lang: assistantLang,
+            text: assistantText,
+            trans_en: translation_en,
+            trans_es: translation_es,
+            pairs,
+            audioKey: audioKeyForTurn || null,
+            createdAt: serverTimestamp(),
+            createdAtClient: Date.now(),
+          });
+          // UI updates via onSnapshot
+        }
+      }
+
+      // Coach, XP, goals
+      let nextChallenge = challenge;
+      if (coachObj && Object.keys(coachObj).length) {
         setCoach(coachObj);
         let next = coachObj.next_goal;
         if (!next?.es || !next?.en)
           next = nextGoalFallback(challenge, coachObj.scores);
-        if (coachObj.goal_completed) setChallenge(next);
-        else if (coachObj.redo_es)
-          setChallenge({
-            es: coachObj.redo_es,
-            en: "Try that again in Spanish.",
-          });
+        nextChallenge = coachObj.goal_completed
+          ? next
+          : {
+              es:
+                coachObj[`redo_${targetLang}`] && targetLang === "nah"
+                  ? "Inténtalo otra vez, siguiendo la pista de la coach."
+                  : coachObj.redo_es || "Inténtalo otra vez en español.",
+              en: coachObj.goal_completed ? next.en : "Try that again.",
+            };
+        setChallenge(nextChallenge);
 
         const sum =
           (coachObj.scores?.pronunciation ?? 0) +
@@ -911,11 +1171,20 @@ Constraints:
           (coachObj.scores?.vocab ?? 0) +
           (coachObj.scores?.fluency ?? 0);
         const gained = 10 + sum + (coachObj.goal_completed ? 5 : 0);
-        setXp((x) => x + gained);
-        setStreak((s) => s + 1);
+        const nextXp = (xp ?? 0) + gained;
+        const nextStreak = (streak ?? 0) + 1;
+        setXp(nextXp);
+        setStreak(nextStreak);
+        await saveProfile({
+          xp: nextXp,
+          streak: nextStreak,
+          challenge: nextChallenge,
+        });
       } else {
         setCoach(null);
-        setChallenge(nextGoalFallback(challenge, null));
+        nextChallenge = nextGoalFallback(challenge, null);
+        setChallenge(nextChallenge);
+        await saveProfile({ challenge: nextChallenge });
       }
 
       redoRef.current = "";
@@ -934,61 +1203,61 @@ Constraints:
     }
   }
 
-  /* ---------- Redo ---------- */
-  function handleRedo(redo_es) {
-    if (!redo_es) return;
-    redoRef.current = redo_es;
-    (async () => {
-      if (!ai) return;
+  /* Redo */
+  async function handleRedo(redo_text) {
+    if (!redo_text) return;
+    redoRef.current = redo_text;
+    try {
+      const resp = await fetch(TTS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: redo_text, voice }),
+      });
+      if (!resp.ok) {
+        let details = "";
+        try {
+          details = JSON.stringify(await resp.json());
+        } catch {}
+        throw new Error(`HTTP ${resp.status}${details ? " " + details : ""}`);
+      }
+      const { audioBase64 } = await resp.json();
+      if (!audioBase64) return;
+      const pcm = b64ToUint8(audioBase64);
+      const wav = pcm16ToWav(pcm, 24000, 1);
+      const url = URL.createObjectURL(wav);
       try {
-        const ttsResp = await ai.models.generateContent({
-          model: "gemini-2.5-flash-preview-tts",
-          contents: [{ role: "user", parts: [{ text: redo_es }] }],
-          config: {
-            responseModalities: ["AUDIO"],
-            speechConfig: {
-              voiceConfig: { prebuiltVoiceConfig: { voiceName: voice } },
-            },
-          },
-        });
-        const audioB64 =
-          ttsResp?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)
-            ?.inlineData?.data || null;
-        if (audioB64) {
-          const pcm = b64ToUint8(audioB64);
-          const wav = pcm16ToWav(pcm, 24000, 1);
-          const url = URL.createObjectURL(wav);
-          try {
-            audioRef.current?.pause?.();
-          } catch {}
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          setUiState("speaking");
-          setMood("encourage");
-          audio.onended = () => {
-            URL.revokeObjectURL(url);
-            audioRef.current = null;
-            setUiState("idle");
-            setMood("neutral");
-          };
-          await audio.play().catch(() => {
-            const unlock = () => {
-              audio.play().catch(() => {});
-              window.removeEventListener("pointerdown", unlock);
-            };
-            window.addEventListener("pointerdown", unlock);
-          });
-        }
+        audioRef.current?.pause?.();
       } catch {}
-    })();
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      setUiState("speaking");
+      setMood("encourage");
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        audioRef.current = null;
+        setUiState("idle");
+        setMood("neutral");
+      };
+      await audio.play().catch(() => {
+        const unlock = () => {
+          audio.play().catch(() => {});
+          window.removeEventListener("pointerdown", unlock);
+        };
+        window.addEventListener("pointerdown", unlock);
+      });
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Redo failed", description: String(e), status: "error" });
+    }
   }
   function acceptNextGoal(next_goal) {
     if (!next_goal?.es || !next_goal?.en) return;
     setChallenge(next_goal);
+    saveProfile({ challenge: next_goal });
     coachSheet.onClose();
   }
 
-  /* ---------- Render (mobile-first) ---------- */
+  /* Render */
   const progressPct = Math.min(100, xp % 100);
   const levelLabel =
     level === "beginner"
@@ -1002,6 +1271,11 @@ Constraints:
       : level === "intermediate"
       ? "orange"
       : "purple";
+  const appTitle =
+    targetLang === "nah"
+      ? "No Sabo — Náhuatl Learning Coach"
+      : "No Sabo — Spanish Learning Coach";
+  const secondaryPref = supportLang === "es" ? "es" : "en";
 
   return (
     <Box
@@ -1009,100 +1283,227 @@ Constraints:
       bg="gray.900"
       color="gray.100"
       position="relative"
-      pb="120px" /* space for FAB + safe area */
+      pb="120px"
+      maxW="100%"
+      style={{ overflowX: "hidden" }}
     >
-      {/* App bar (compact, thumb-friendly) */}
-      <HStack px={4} pt={4} pb={2} justify="space-between" align="center">
+      {/* App bar */}
+      <Stack
+        direction={["column", "row"]}
+        px={4}
+        pt={4}
+        pb={2}
+        spacing={[2, 4]}
+        align={["stretch", "center"]}
+        justify="space-between"
+      >
         <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            No Sabo — Coach
+          <Text fontSize="lg" fontWeight="bold" noOfLines={1}>
+            {appTitle}
           </Text>
-          <HStack spacing={2}>
-            <Badge colorScheme={levelColor} variant="subtle">
-              {levelLabel}
-            </Badge>
-            <Badge colorScheme="teal" variant="subtle">
-              XP {xp}
-            </Badge>
-            <Badge colorScheme="pink" variant="subtle">
-              {streak}🔥
-            </Badge>
-          </HStack>
+          <Wrap spacing={2} mt={1}>
+            <WrapItem>
+              <Badge colorScheme={levelColor} variant="subtle">
+                {levelLabel}
+              </Badge>
+            </WrapItem>
+            <WrapItem>
+              <Badge colorScheme="teal" variant="subtle">
+                XP {xp}
+              </Badge>
+            </WrapItem>
+            <WrapItem>
+              <Badge colorScheme="pink" variant="subtle">
+                {streak}🔥
+              </Badge>
+            </WrapItem>
+          </Wrap>
         </Box>
-        <IconButton
-          aria-label="Settings"
-          icon={<SettingsIcon />}
-          size="md"
-          onClick={settings.onOpen}
-        />
-      </HStack>
+        <HStack>
+          <IconButton
+            aria-label="Account"
+            icon={<CiUser size={20} />}
+            size="md"
+            onClick={account.onOpen}
+            mr={2}
+          />
+          <IconButton
+            aria-label="Settings"
+            icon={<SettingsIcon />}
+            size="md"
+            onClick={settings.onOpen}
+          />
+        </HStack>
+      </Stack>
 
-      {/* Robot + goal chip (top) */}
+      {/* Robot + goal */}
       <VStack align="stretch" spacing={3} px={4}>
-        <RobotBuddy
+        <RobotBuddyPro
           state={uiState}
           loudness={uiState === "listening" ? volume : 0}
           mood={mood}
+          variant="abstract"
         />
         <Box
           bg="gray.800"
           p={3}
           rounded="lg"
           border="1px solid rgba(255,255,255,0.06)"
+          maxW="100%"
         >
-          <HStack justify="space-between" align="start">
-            <Text fontWeight="semibold" fontSize="md">
+          <Stack
+            direction={["column", "row"]}
+            justify="space-between"
+            align={["stretch", "start"]}
+          >
+            <Text
+              fontWeight="semibold"
+              fontSize="md"
+              whiteSpace="pre-wrap"
+              wordBreak="break-word"
+              overflowWrap="anywhere"
+            >
               🎯 {challenge.en}
             </Text>
-            <Badge colorScheme="teal" whiteSpace="nowrap">
+            <Badge
+              colorScheme="teal"
+              whiteSpace="nowrap"
+              alignSelf={["flex-start", "center"]}
+            >
               ES: {challenge.es}
             </Badge>
-          </HStack>
-          <HStack mt={2} spacing={2} overflowX="auto">
-            <Button size="sm" variant="outline" onClick={coachSheet.onOpen}>
-              Coach
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowTranslations((v) => !v)}
-            >
-              {showTranslations ? "Hide English" : "Show English"}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() =>
-                setChallenge(nextGoalFallback(challenge, coach?.scores))
-              }
-            >
-              New goal
-            </Button>
-            {coach?.redo_es && (
-              <Button size="sm" onClick={() => handleRedo(coach.redo_es)}>
-                Redo tip
+          </Stack>
+
+          <Wrap mt={2} spacing={2}>
+            <WrapItem>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={coachSheet.onOpen}
+                colorScheme="whiteAlpha.600"
+              >
+                Coach
               </Button>
-            )}
-          </HStack>
+            </WrapItem>
+            <WrapItem>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowTranslations((v) => !v)}
+                colorScheme="whiteAlpha.600"
+              >
+                {showTranslations
+                  ? secondaryPref === "es"
+                    ? "Hide Spanish"
+                    : "Hide English"
+                  : secondaryPref === "es"
+                  ? "Show Spanish"
+                  : "Show English"}
+              </Button>
+            </WrapItem>
+            <WrapItem>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const nx = nextGoalFallback(challenge, coach?.scores);
+                  setChallenge(nx);
+                  saveProfile({ challenge: nx });
+                }}
+              >
+                New goal
+              </Button>
+            </WrapItem>
+            {(() => {
+              const redo_text =
+                coach?.[`redo_${targetLang}`] || coach?.redo_es || null;
+              return (
+                redo_text && (
+                  <WrapItem>
+                    <Button size="sm" onClick={() => handleRedo(redo_text)}>
+                      Redo tip
+                    </Button>
+                  </WrapItem>
+                )
+              );
+            })()}
+          </Wrap>
         </Box>
       </VStack>
 
-      {/* Transcript list */}
+      {/* Transcript list (live) */}
       <VStack align="stretch" spacing={3} px={4} mt={3}>
-        {history.map((m, idx) => (
-          <AlignedBubble
-            key={idx}
-            esText={m.es}
-            enText={m.en}
-            alignPairs={m.align}
-            showTranslations={showTranslations}
-          />
-        ))}
+        {history.map((m) => {
+          const primaryText = m.text || "";
+          const lang = m.lang || "es";
+          const primaryLabel = lang === "nah" ? "Náhuatl" : "Spanish";
+          const secondaryText =
+            (secondaryPref === "es" ? m.trans_es : m.trans_en) || "";
+          const secondaryLabel = secondaryPref === "es" ? "Español" : "English";
+          const pairs = Array.isArray(m.pairs) ? m.pairs : [];
+          const canReplay = !!m.audioKey;
+
+          return (
+            <AlignedBubble
+              key={m.id}
+              primaryLabel={primaryLabel}
+              secondaryLabel={secondaryLabel}
+              primaryText={primaryText}
+              secondaryText={secondaryText}
+              pairs={pairs}
+              showSecondary={showTranslations}
+              canReplay={canReplay}
+              onReplay={async () => {
+                if (!m.audioKey) {
+                  toast({
+                    title: "No audio cached",
+                    description: "This turn doesn’t have saved audio.",
+                    status: "info",
+                    duration: 2000,
+                  });
+                  return;
+                }
+                const clip = await loadClipBlob(m.audioKey);
+                if (!clip) {
+                  toast({
+                    title: "Audio not found",
+                    description: "Say something again to re-cache this line.",
+                    status: "info",
+                    duration: 2000,
+                  });
+                  return;
+                }
+                try {
+                  audioRef.current?.pause?.();
+                } catch {}
+                const url = URL.createObjectURL(clip);
+                const audio = new Audio(url);
+                audioRef.current = audio;
+                setUiState("speaking");
+                setMood("happy");
+                audio.onended = () => {
+                  URL.revokeObjectURL(url);
+                  audioRef.current = null;
+                  setUiState("idle");
+                  setMood("neutral");
+                };
+                await audio.play().catch(() => {});
+              }}
+            />
+          );
+        })}
       </VStack>
 
-      {/* Bottom dock: big FAB mic (sticky) */}
-      <Center position="fixed" bottom="22px" left="0" right="0" zIndex={30}>
-        <HStack spacing={3}>
+      {/* Bottom dock */}
+      <Center
+        position="fixed"
+        bottom="22px"
+        left="0"
+        right="0"
+        zIndex={30}
+        px={4}
+      >
+        <HStack spacing={3} w="100%" maxW="560px" justify="center">
           <Box
             bg="gray.800"
             px={3}
@@ -1125,7 +1526,6 @@ Constraints:
               />
             </Stat>
           </Box>
-
           {uiState !== "listening" ? (
             <Button
               onClick={startRecording}
@@ -1154,60 +1554,73 @@ Constraints:
         </HStack>
       </Center>
 
-      {/* Settings bottom sheet */}
+      {/* Settings Drawer */}
       <Drawer
         isOpen={settings.isOpen}
         placement="bottom"
         onClose={settings.onClose}
       >
-        <DrawerOverlay />
-        <DrawerContent bg="gray.900" borderTopRadius="24px">
+        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
           <DrawerHeader pb={2}>Settings</DrawerHeader>
           <DrawerBody pb={6}>
             <VStack align="stretch" spacing={3}>
-              <Input
-                type="password"
-                placeholder="GEMINI API Key"
-                value={apiKeyInput}
-                onChange={(e) => setApiKeyInput(e.target.value)}
-                bg="gray.800"
-              />
-              <HStack>
-                <Select
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </Select>
-                <Select
-                  value={supportLang}
-                  onChange={(e) => setSupportLang(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="en">Support: English</option>
-                  <option value="bilingual">Support: Bilingual</option>
-                  <option value="es">Support: Spanish</option>
-                </Select>
-                <Select
-                  value={voice}
-                  onChange={(e) => setVoice(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="Puck">Puck</option>
-                  <option value="Kore">Kore</option>
-                  <option value="Breeze">Breeze</option>
-                  <option value="Solemn">Solemn</option>
-                </Select>
-              </HStack>
+              <Wrap spacing={2}>
+                <WrapItem>
+                  <Select
+                    value={level}
+                    onChange={(e) => setLevel(e.target.value)}
+                    bg="gray.800"
+                    size="md"
+                    w="auto"
+                  >
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </Select>
+                </WrapItem>
+                <WrapItem>
+                  <Select
+                    value={supportLang}
+                    onChange={(e) => setSupportLang(e.target.value)}
+                    bg="gray.800"
+                    size="md"
+                    w="auto"
+                  >
+                    <option value="en">Support: English</option>
+                    <option value="bilingual">Support: Bilingual</option>
+                    <option value="es">Support: Spanish</option>
+                  </Select>
+                </WrapItem>
+                <WrapItem>
+                  <Select
+                    value={voice}
+                    onChange={(e) => setVoice(e.target.value)}
+                    bg="gray.800"
+                    size="md"
+                    w="auto"
+                  >
+                    <option value="Leda">Leda</option>
+                    <option value="Puck">Puck</option>
+                    <option value="Kore">Kore</option>
+                    <option value="Breeze">Breeze</option>
+                    <option value="Solemn">Solemn</option>
+                  </Select>
+                </WrapItem>
+                <WrapItem>
+                  <Select
+                    value={targetLang}
+                    onChange={(e) => setTargetLang(e.target.value)}
+                    bg="gray.800"
+                    size="md"
+                    w="auto"
+                    title="Practice language"
+                  >
+                    <option value="nah">Practice: Náhuatl</option>
+                    <option value="es">Practice: Spanish</option>
+                  </Select>
+                </WrapItem>
+              </Wrap>
 
               <Box bg="gray.800" p={3} rounded="md">
                 <HStack justify="space-between" mb={2}>
@@ -1231,9 +1644,25 @@ Constraints:
                 </Slider>
               </Box>
 
-              <HStack bg="gray.800" p={3} rounded="md">
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={2}>
+                  Voice personality
+                </Text>
+                <Input
+                  value={voicePersona}
+                  onChange={(e) => setVoicePersona(e.target.value)}
+                  bg="gray.700"
+                  placeholder={`e.g., ${DEFAULT_PERSONA}`}
+                />
+                <Text fontSize="xs" opacity={0.7} mt={1}>
+                  Styles the assistant reply (light sarcasm OK; no bullying).
+                </Text>
+              </Box>
+
+              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
                 <Text fontSize="sm" mr={2}>
-                  Show English translation
+                  Show {secondaryPref === "es" ? "Spanish" : "English"}{" "}
+                  translation
                 </Text>
                 <Switch
                   isChecked={showTranslations}
@@ -1245,13 +1674,108 @@ Constraints:
         </DrawerContent>
       </Drawer>
 
-      {/* Coach bottom sheet */}
+      {/* Account Drawer */}
+      <Drawer
+        isOpen={account.isOpen}
+        placement="bottom"
+        onClose={account.onClose}
+      >
+        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
+          <DrawerHeader pb={2}>Account</DrawerHeader>
+          <DrawerBody pb={6}>
+            <VStack align="stretch" spacing={3}>
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={1}>
+                  Your ID (npub)
+                </Text>
+                <InputGroup>
+                  <Input
+                    value={currentId || ""}
+                    readOnly
+                    bg="gray.700"
+                    placeholder="Not set"
+                  />
+                  <InputRightElement width="4.5rem">
+                    <Button
+                      h="1.75rem"
+                      size="sm"
+                      onClick={() => copy(currentId, "ID copied")}
+                      isDisabled={!currentId}
+                    >
+                      Copy
+                    </Button>
+                  </InputRightElement>
+                </InputGroup>
+              </Box>
+
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={1}>
+                  Secret key (nsec)
+                </Text>
+                <InputGroup>
+                  <Input
+                    type="password"
+                    value={currentSecret ? "••••••••••••••••••••••••••••" : ""}
+                    readOnly
+                    bg="gray.700"
+                    placeholder="Not stored"
+                  />
+                  <InputRightElement width="6rem">
+                    <Button
+                      h="1.75rem"
+                      size="sm"
+                      colorScheme="orange"
+                      onClick={() => copy(currentSecret, "Secret copied")}
+                      isDisabled={!currentSecret}
+                    >
+                      Copy
+                    </Button>
+                  </InputRightElement>
+                </InputGroup>
+                <Text fontSize="xs" opacity={0.75} mt={1}>
+                  We never display your secret—only copy from local storage.
+                </Text>
+              </Box>
+
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={2}>
+                  Switch account (paste nsec)
+                </Text>
+                <Input
+                  value={switchNsec}
+                  onChange={(e) => setSwitchNsec(e.target.value)}
+                  bg="gray.700"
+                  placeholder="nsec1..."
+                />
+                <HStack mt={2} justify="flex-end">
+                  <Button
+                    isLoading={isSwitching}
+                    loadingText="Switching"
+                    onClick={switchAccount}
+                    colorScheme="teal"
+                  >
+                    Switch
+                  </Button>
+                </HStack>
+                <Text fontSize="xs" opacity={0.75} mt={1}>
+                  If the account doesn’t exist, we’ll create it in your users
+                  collection.
+                </Text>
+              </Box>
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
+      {/* Coach */}
       <CoachPanel
         isOpen={coachSheet.isOpen}
         onClose={coachSheet.onClose}
         coach={coach}
         onRedo={handleRedo}
         onAcceptNext={acceptNextGoal}
+        targetLang={targetLang}
       />
     </Box>
   );
