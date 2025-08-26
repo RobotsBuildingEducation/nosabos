@@ -66,11 +66,9 @@ const DIRECT_TALK = import.meta.env.VITE_TALKTURN_URL || "";
 const DIRECT_TTS = import.meta.env.VITE_TTS_URL || "";
 
 // In prod-like pages, FORCE same-origin. In dev: use env if provided, else same-origin.
-export const TALKTURN_URL = isProdLike
-  ? "/talkTurn"
-  : DIRECT_TALK || "/talkTurn";
-export const TTS_URL = isProdLike ? "/tts" : DIRECT_TTS || "/tts";
+export const TALKTURN_URL = "https://talkturn-hftgya63qa-uc.a.run.app";
 
+export const TTS_URL = "https://tts-hftgya63qa-uc.a.run.app";
 /* ---------------------------
    Utils: base64/PCM/WAV
 --------------------------- */
@@ -670,7 +668,7 @@ export default function VoiceChat({
 
   /* Firestore persistence (ignore errors in Private mode) */
   useEffect(() => {
-    enableIndexedDbPersistence(database).catch(() => {});
+    // enableIndexedDbPersistence(database).catch(() => {});
   }, []);
 
   /* Live conversation subscription */
