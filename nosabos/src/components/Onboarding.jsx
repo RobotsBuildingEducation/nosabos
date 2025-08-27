@@ -1,5 +1,5 @@
 // Onboarding.jsx — first-run setup (one view, mirrors Settings UI)
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Badge,
   Box,
@@ -39,20 +39,6 @@ export default function Onboarding({ npub = "", onComplete }) {
 
   const secondaryPref = supportLang === "es" ? "es" : "en";
 
-  // The payload EXACTLY matches what App.jsx expects to write to Firestore
-  const payload = useMemo(
-    () => ({
-      level,
-      supportLang,
-      voice,
-      voicePersona,
-      targetLang,
-      showTranslations,
-      challenge: { ...DEFAULT_CHALLENGE },
-    }),
-    [level, supportLang, voice, voicePersona, targetLang, showTranslations]
-  );
-
   async function handleStart() {
     if (typeof onComplete !== "function") {
       console.error("Onboarding.onComplete is not provided.");
@@ -60,6 +46,15 @@ export default function Onboarding({ npub = "", onComplete }) {
     }
     setIsSaving(true);
     try {
+      const payload = {
+        level,
+        supportLang,
+        voice,
+        voicePersona,
+        targetLang,
+        showTranslations,
+        challenge: { ...DEFAULT_CHALLENGE },
+      };
       await Promise.resolve(onComplete(payload)); // App.jsx will persist and flip onboarding.completed
     } finally {
       setIsSaving(false);
