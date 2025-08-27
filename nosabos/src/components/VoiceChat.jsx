@@ -266,12 +266,12 @@ const MOBILE_TEXT_SX = {
     Phrase-aligned highlighting
   --------------------------- */
 const COLORS = [
-  "#91E0FF",
-  "#A0EBAF",
-  "#FFD48A",
-  "#C6B7FF",
-  "#FF9FB1",
-  "#B0F0FF",
+  "#D2B48C",
+  "#E6B89C",
+  "#FFDAB9",
+  "#CDB4DB",
+  "#FFB6C1",
+  "#F3E5AB",
 ];
 const colorFor = (i) => COLORS[i % COLORS.length];
 
@@ -1276,7 +1276,7 @@ export default function VoiceChat({
                 <Wrap spacing={2}>
                   {vocab.slice(0, 8).map((w, i) => (
                     <WrapItem key={i}>
-                      <Tag colorScheme="teal" variant="subtle" maxW="100%">
+                      <Tag colorScheme="orange" variant="subtle" maxW="100%">
                         {w}
                       </Tag>
                     </WrapItem>
@@ -1289,7 +1289,7 @@ export default function VoiceChat({
               <Text fontSize="xs" opacity={0.8}>
                 Pronunciation / Grammar / Vocab / Fluency
               </Text>
-              <Progress value={pct} size="sm" colorScheme="teal" rounded="sm" />
+              <Progress value={pct} size="sm" colorScheme="orange" rounded="sm" />
             </Box>
 
             <Stack direction={["column", "row"]} spacing={2}>
@@ -1350,7 +1350,7 @@ export default function VoiceChat({
               </Badge>
             </WrapItem>
             <WrapItem>
-              <Badge colorScheme="teal" variant="subtle">
+              <Badge colorScheme="orange" variant="subtle">
                 XP {xp}
               </Badge>
             </WrapItem>
@@ -1408,7 +1408,7 @@ export default function VoiceChat({
               </Text>
             </Box>
             <Badge
-              colorScheme="teal"
+              colorScheme="orange"
               whiteSpace="normal" // allow wrapping inside the badge on mobile
               alignSelf={["flex-start", "flex-start", "flex-start", "center"]}
               maxW="100%"
@@ -1564,7 +1564,7 @@ export default function VoiceChat({
                 mt={1}
                 value={progressPct}
                 size="xs"
-                colorScheme="teal"
+                colorScheme="orange"
                 rounded="sm"
               />
             </Stat>
@@ -1576,7 +1576,7 @@ export default function VoiceChat({
               height="64px"
               px="8"
               rounded="full"
-              colorScheme="teal"
+              colorScheme="orange"
               boxShadow="0 10px 30px rgba(0,0,0,0.35)"
             >
               🎤 Talk
@@ -1796,7 +1796,7 @@ export default function VoiceChat({
                     isLoading={isSwitching}
                     loadingText="Switching"
                     onClick={switchAccount}
-                    colorScheme="teal"
+                    colorScheme="orange"
                   >
                     Switch
                   </Button>
