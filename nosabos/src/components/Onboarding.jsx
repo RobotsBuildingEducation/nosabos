@@ -32,7 +32,7 @@ export default function Onboarding({ npub = "", onComplete }) {
   const [level, setLevel] = useState("beginner"); // 'beginner' | 'intermediate' | 'advanced'
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
   const [voice, setVoice] = useState("Leda"); // 'Leda' | 'Puck' | 'Kore' | 'Breeze' | 'Solemn'
-  const [targetLang, setTargetLang] = useState("nah"); // 'nah' | 'es'
+  const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es'
   const [voicePersona, setVoicePersona] = useState(DEFAULT_PERSONA);
   const [showTranslations, setShowTranslations] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -79,13 +79,13 @@ export default function Onboarding({ npub = "", onComplete }) {
               <Text opacity={0.85} fontSize="sm">
                 Let’s set up your AI experience before you start.
               </Text>
-              {!!npub && (
+              {/* {!!npub && (
                 <HStack pt={1}>
                   <Badge colorScheme="purple" variant="subtle" maxW="100%">
                     ID: {npub}
                   </Badge>
                 </HStack>
-              )}
+              )} */}
             </VStack>
           </DrawerHeader>
 
