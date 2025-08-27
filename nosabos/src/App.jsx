@@ -152,8 +152,10 @@ export default function App() {
           : "en",
         voice: safe(payload.voice, "Leda"),
         voicePersona: safe(payload.voicePersona, DEFAULT_PERSONA),
-        // Default to Náhuatl unless Spanish explicitly selected
-        targetLang: payload.targetLang === "es" ? "es" : "nah",
+        // Preserve user selection; default to Spanish if unset
+        targetLang: ["nah", "es"].includes(payload.targetLang)
+          ? payload.targetLang
+          : "es",
         showTranslations:
           typeof payload.showTranslations === "boolean"
             ? payload.showTranslations

@@ -529,7 +529,7 @@ export default function VoiceChat({
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
   const [voice, setVoice] = useState("Leda");
   const [voicePersona, setVoicePersona] = useState(DEFAULT_PERSONA);
-  const [targetLang, setTargetLang] = useState("nah"); // 'nah' | 'es'
+  const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es'
 
   const [history, setHistory] = useState([]); // live from snapshot
   const [coach, setCoach] = useState(null);
@@ -642,8 +642,13 @@ export default function VoiceChat({
         );
         setVoice(p.voice || "Leda");
         setVoicePersona(p.voicePersona || DEFAULT_PERSONA);
-        // Respect saved setting; default to Náhuatl unless Spanish is stored
-        setTargetLang(p.targetLang === "es" ? "es" : "nah");
+        // Respect saved setting; default to Spanish if unset
+        setTargetLang([
+          "nah",
+          "es",
+        ].includes(p.targetLang)
+          ? p.targetLang
+          : "es");
         setXp(
           Number.isFinite(data?.xp) ? data.xp : Number.isFinite(p.xp) ? p.xp : 0
         );
