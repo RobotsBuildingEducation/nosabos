@@ -1,6 +1,7 @@
 // App.jsx
 import { useEffect, useRef, useState, useMemo } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { Box, Skeleton, SkeletonText } from "@chakra-ui/react";
 
 import "./App.css";
 import VoiceChat from "./components/VoiceChat";
@@ -206,7 +207,24 @@ export default function App() {
 
   // Loading state while we fetch/create the user doc
   if (isLoadingApp || !user) {
-    return <div style={{ padding: 16, color: "#e2e8f0" }}>Loading…</div>;
+    return (
+      <Box p={4} maxW="480px" mx="auto">
+        <Skeleton
+          height="40px"
+          mb={4}
+          startColor="#d7ccc8"
+          endColor="#f5e0d3"
+          borderRadius="md"
+        />
+        <SkeletonText
+          noOfLines={4}
+          spacing={4}
+          skeletonHeight={3}
+          startColor="#e0c9b9"
+          endColor="#f7ede2"
+        />
+      </Box>
+    );
   }
 
   // First-run: show Onboarding (saves progress + flips flag)

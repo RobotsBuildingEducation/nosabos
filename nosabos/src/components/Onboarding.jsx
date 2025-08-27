@@ -204,7 +204,7 @@ export default function Onboarding({ npub = "", onComplete }) {
               {/* Submit */}
               <Button
                 size="lg"
-                colorScheme="teal"
+                colorScheme="orange"
                 onClick={handleStart}
                 isLoading={isSaving}
                 loadingText="Saving"

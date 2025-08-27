@@ -73,7 +73,7 @@ export default function RobotBuddyPro({
   loudness = 0,
   speakLoudness,
   variant = "abstract",
-  palette = "ocean",
+  palette = "sunset",
   showBadges = true,
   compact = false,
   maxW = 420,
@@ -160,7 +160,7 @@ export default function RobotBuddyPro({
             <Badge
               colorScheme={
                 state === "listening"
-                  ? "cyan"
+                  ? "orange"
                   : state === "speaking"
                   ? "green"
                   : state === "thinking"
@@ -175,7 +175,7 @@ export default function RobotBuddyPro({
             {mood !== "neutral" && (
               <Badge
                 variant="subtle"
-                colorScheme="teal"
+                colorScheme="orange"
                 fontSize={compact ? "xs" : "sm"}
               >
                 {mood}
@@ -700,7 +700,7 @@ function CharacterAvatar({ amp, state, mood, colors, reduced }) {
           stroke={colors.stroke}
           strokeWidth="2"
         />
-        <rect x="66" y="50" width="228" height="48" rx="12" fill="#0b1220" />
+        <rect x="66" y="50" width="228" height="48" rx="12" fill="#2a1a14" />
 
         <g stroke={accent} strokeWidth="3" strokeLinecap="round" opacity="0.8">
           {mood === "encourage" ? (
