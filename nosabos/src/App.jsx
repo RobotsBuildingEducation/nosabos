@@ -8,6 +8,7 @@ import Onboarding from "./components/Onboarding";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
 import { database } from "./firebaseResources/firebaseResources";
 import useUserStore from "./hooks/useUserStore";
+import RobotBuddyPro from "./components/RobotBuddyPro";
 
 /* ---------------------------
    Constants & helpers
@@ -206,7 +207,11 @@ export default function App() {
 
   // Loading state while we fetch/create the user doc
   if (isLoadingApp || !user) {
-    return <div style={{ padding: 16, color: "#e2e8f0" }}>Loading…</div>;
+    return (
+      <div style={{ padding: 16, color: "#e2e8f0" }}>
+        <RobotBuddyPro state="Loading" />
+      </div>
+    );
   }
 
   // First-run: show Onboarding (saves progress + flips flag)

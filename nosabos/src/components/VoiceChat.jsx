@@ -50,6 +50,7 @@ import { IoIosMore } from "react-icons/io";
 
 import { LuBadgeCheck } from "react-icons/lu";
 import { GoDownload } from "react-icons/go";
+import { FaStop } from "react-icons/fa";
 
 import {
   doc,
@@ -67,6 +68,7 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import RobotBuddyPro from "./RobotBuddyPro";
+import { PiMicrophoneStageDuotone } from "react-icons/pi";
 
 /* Endpoints */
 export const TALKTURN_URL = "https://talkturn-hftgya63qa-uc.a.run.app";
@@ -1341,9 +1343,10 @@ export default function VoiceChat({
       color="gray.100"
       position="relative"
       pb="120px"
-      maxW="100%"
-      w="100%"
+      // maxW="3000px"
+      // w="100%"
       style={{ overflowX: "hidden" }}
+      borderRadius="32px"
     >
       <HStack px={4} pt={4}>
         <IconButton
@@ -1589,7 +1592,7 @@ export default function VoiceChat({
                 mt={1}
                 value={progressPct}
                 size="xs"
-                colorScheme="teal"
+                colorScheme="cyan"
                 rounded="sm"
               />
             </Stat>
@@ -1601,10 +1604,12 @@ export default function VoiceChat({
               height="64px"
               px="8"
               rounded="full"
-              colorScheme="teal"
+              colorScheme="cyan"
+              color="white"
+              textShadow="0px 0px 20px black"
               boxShadow="0 10px 30px rgba(0,0,0,0.35)"
             >
-              🎤 Talk
+              <PiMicrophoneStageDuotone /> &nbsp;Talk
             </Button>
           ) : (
             <Button
@@ -1616,7 +1621,8 @@ export default function VoiceChat({
               colorScheme="red"
               boxShadow="0 10px 30px rgba(0,0,0,0.35)"
             >
-              ⏹️ Stop
+              <FaStop />
+              &nbsp; Stop
             </Button>
           )}
         </HStack>
