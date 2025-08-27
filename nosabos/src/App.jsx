@@ -211,7 +211,10 @@ const App = () => {
 
   if (needsOnboarding) {
     return (
-      <Onboarding user={user} onComplete={() => handleOnboardingComplete()} />
+      <Onboarding
+        npub={user?.id || ""}
+        onComplete={handleOnboardingComplete}
+      />
     );
   }
 
