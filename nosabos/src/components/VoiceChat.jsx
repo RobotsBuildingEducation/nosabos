@@ -642,7 +642,8 @@ export default function VoiceChat({
         );
         setVoice(p.voice || "Leda");
         setVoicePersona(p.voicePersona || DEFAULT_PERSONA);
-        setTargetLang(p.targetLang === "nah" ? "nah" : "es");
+        // Respect saved setting; default to Náhuatl unless Spanish is stored
+        setTargetLang(p.targetLang === "es" ? "es" : "nah");
         setXp(
           Number.isFinite(data?.xp) ? data.xp : Number.isFinite(p.xp) ? p.xp : 0
         );
