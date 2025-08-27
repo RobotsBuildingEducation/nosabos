@@ -33,9 +33,24 @@ import {
   Input,
   InputGroup,
   InputRightElement,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+  Divider,
+  Flex,
 } from "@chakra-ui/react";
 import { SettingsIcon } from "@chakra-ui/icons";
-import { CiRepeat, CiUser } from "react-icons/ci";
+import { CiRepeat, CiUser, CiSquarePlus } from "react-icons/ci";
+import { MdOutlineFileUpload } from "react-icons/md";
+import { IoIosMore } from "react-icons/io";
+
+import { LuBadgeCheck } from "react-icons/lu";
+import { GoDownload } from "react-icons/go";
+
 import {
   doc,
   setDoc,
@@ -492,6 +507,7 @@ export default function VoiceChat({
   const settings = useDisclosure();
   const coachSheet = useDisclosure();
   const account = useDisclosure();
+  const install = useDisclosure();
 
   const DEFAULT_CHALLENGE = {
     es: "Pide algo con cortesía.",
@@ -1329,6 +1345,30 @@ export default function VoiceChat({
       w="100%"
       style={{ overflowX: "hidden" }}
     >
+      <HStack px={4} pt={4}>
+        <IconButton
+          aria-label="Install App"
+          icon={<GoDownload size={20} />}
+          size="md"
+          onClick={install.onOpen}
+          colorScheme="blue.800"
+        />
+        <IconButton
+          aria-label="Account"
+          icon={<CiUser size={20} />}
+          size="md"
+          onClick={account.onOpen}
+          colorScheme="blue.800"
+        />
+        <IconButton
+          aria-label="Settings"
+          icon={<SettingsIcon />}
+          size="md"
+          onClick={settings.onOpen}
+          mr={2}
+          colorScheme="blue.800"
+        />
+      </HStack>
       {/* App bar */}
       <Stack
         direction={["column", "row"]}
@@ -1361,21 +1401,6 @@ export default function VoiceChat({
             </WrapItem>
           </Wrap>
         </Box>
-        <HStack>
-          <IconButton
-            aria-label="Account"
-            icon={<CiUser size={20} />}
-            size="md"
-            onClick={account.onOpen}
-            mr={2}
-          />
-          <IconButton
-            aria-label="Settings"
-            icon={<SettingsIcon />}
-            size="md"
-            onClick={settings.onOpen}
-          />
-        </HStack>
       </Stack>
 
       {/* Robot + goal */}
@@ -1820,6 +1845,56 @@ export default function VoiceChat({
         onAcceptNext={acceptNextGoal}
         targetLang={targetLang}
       />
+
+      <Modal isOpen={install.isOpen} onClose={install.onClose} isCentered>
+        <ModalOverlay />
+        <ModalContent bg="gray.900" color="gray.100">
+          <ModalHeader>Install App</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Flex direction="column" pb={0}>
+              <IoIosMore size={32} />
+              <Text mt={2}>
+                1. Open this page in your browser with the More Options button
+              </Text>
+            </Flex>
+            <Divider my={6} />
+
+            <Flex direction="column" pb={0}>
+              <MdOutlineFileUpload size={32} />
+              <Text mt={2}>2. Press the Share button</Text>
+            </Flex>
+            <Divider my={6} />
+
+            <Flex direction="column" pb={0}>
+              <CiSquarePlus size={32} />
+              <Text mt={2}>3. Press the Add To Homescreen button</Text>
+            </Flex>
+            <Divider my={6} />
+
+            <Flex direction="column" pb={0}>
+              <LuBadgeCheck size={32} />
+              <Text mt={2}>
+                4. That’s it! You don’t need to download the app through an app
+                store because we’re using open-source standards called
+                Progressive Web Apps.
+              </Text>
+            </Flex>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              onMouseDown={install.onClose}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") install.onClose();
+              }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
