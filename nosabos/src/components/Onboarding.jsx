@@ -20,22 +20,26 @@ import {
 } from "@chakra-ui/react";
 
 const DEFAULT_CHALLENGE = {
-  es: "Pide algo con cortesía.",
   en: "Make a polite request.",
+  es: "Pide algo con cortesía.",
 };
-const DEFAULT_PERSONA = "Like a rude, sarcastic, mean-spirited toxica.";
+
+// Keep this aligned with App.jsx & VoiceChat.jsx defaults
+const DEFAULT_PERSONA = "Like a sarcastic, semi-friendly toxica.";
 
 export default function Onboarding({ npub = "", onComplete }) {
-  const [level, setLevel] = useState("beginner");
-  const [supportLang, setSupportLang] = useState("en");
-  const [voice, setVoice] = useState("Leda");
-  const [targetLang, setTargetLang] = useState("nah");
+  // UI state mirrors the progress shape saved in Firestore
+  const [level, setLevel] = useState("beginner"); // 'beginner' | 'intermediate' | 'advanced'
+  const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
+  const [voice, setVoice] = useState("Leda"); // 'Leda' | 'Puck' | 'Kore' | 'Breeze' | 'Solemn'
+  const [targetLang, setTargetLang] = useState("nah"); // 'nah' | 'es'
   const [voicePersona, setVoicePersona] = useState(DEFAULT_PERSONA);
   const [showTranslations, setShowTranslations] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   const secondaryPref = supportLang === "es" ? "es" : "en";
 
+  // The payload EXACTLY matches what App.jsx expects to write to Firestore
   const payload = useMemo(
     () => ({
       level,
@@ -50,10 +54,13 @@ export default function Onboarding({ npub = "", onComplete }) {
   );
 
   async function handleStart() {
-    if (!onComplete) return;
+    if (typeof onComplete !== "function") {
+      console.error("Onboarding.onComplete is not provided.");
+      return;
+    }
     setIsSaving(true);
     try {
-      await Promise.resolve(onComplete(payload));
+      await Promise.resolve(onComplete(payload)); // App.jsx will persist and flip onboarding.completed
     } finally {
       setIsSaving(false);
     }
@@ -81,8 +88,10 @@ export default function Onboarding({ npub = "", onComplete }) {
               )}
             </VStack>
           </DrawerHeader>
+
           <DrawerBody pb={6}>
             <VStack align="stretch" spacing={4}>
+              {/* Difficulty & Language */}
               <Box bg="gray.800" p={3} rounded="md">
                 <Text fontSize="sm" mb={2} opacity={0.85}>
                   Difficulty & Language Support
@@ -101,6 +110,7 @@ export default function Onboarding({ npub = "", onComplete }) {
                       <option value="advanced">Advanced</option>
                     </Select>
                   </WrapItem>
+
                   <WrapItem>
                     <Select
                       value={supportLang}
@@ -114,6 +124,7 @@ export default function Onboarding({ npub = "", onComplete }) {
                       <option value="es">Support: Spanish</option>
                     </Select>
                   </WrapItem>
+
                   <WrapItem>
                     <Select
                       value={targetLang}
@@ -130,10 +141,12 @@ export default function Onboarding({ npub = "", onComplete }) {
                 </Wrap>
               </Box>
 
+              {/* Voice & Persona */}
               <Box bg="gray.800" p={3} rounded="md">
                 <Text fontSize="sm" mb={2} opacity={0.85}>
                   Voice & Personality
                 </Text>
+
                 <Wrap spacing={2} mb={2}>
                   <WrapItem>
                     <Select
@@ -151,6 +164,7 @@ export default function Onboarding({ npub = "", onComplete }) {
                     </Select>
                   </WrapItem>
                 </Wrap>
+
                 <Input
                   value={voicePersona}
                   onChange={(e) => setVoicePersona(e.target.value)}
@@ -162,6 +176,7 @@ export default function Onboarding({ npub = "", onComplete }) {
                 </Text>
               </Box>
 
+              {/* Translations toggle */}
               <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
                 <Text fontSize="sm" mr={2}>
                   Show {secondaryPref === "es" ? "Spanish" : "English"}{" "}
@@ -173,6 +188,7 @@ export default function Onboarding({ npub = "", onComplete }) {
                 />
               </HStack>
 
+              {/* First goal preview */}
               <Box bg="gray.800" p={3} rounded="md">
                 <Text fontSize="sm" opacity={0.8}>
                   First goal
@@ -185,6 +201,7 @@ export default function Onboarding({ npub = "", onComplete }) {
                 </Text>
               </Box>
 
+              {/* Submit */}
               <Button
                 size="lg"
                 colorScheme="teal"

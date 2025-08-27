@@ -48,30 +48,18 @@ import {
   orderBy,
   limit,
   serverTimestamp,
-  enableIndexedDbPersistence,
+  // enableIndexedDbPersistence,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import RobotBuddyPro from "./RobotBuddyPro";
 
 /* Endpoints */
-// const TALKTURN_URL =
-//   (import.meta?.env?.VITE_TALKTURN_URL || "").trim() || "/talkTurn";
-// const TTS_URL = (import.meta?.env?.VITE_TTS_URL || "").trim() || "/tts";
-const isProdLike =
-  typeof location !== "undefined" &&
-  location.hostname !== "localhost" &&
-  !/^\d+\.\d+\.\d+\.\d+$/.test(location.hostname);
-
-const DIRECT_TALK = import.meta.env.VITE_TALKTURN_URL || "";
-const DIRECT_TTS = import.meta.env.VITE_TTS_URL || "";
-
-// In prod-like pages, FORCE same-origin. In dev: use env if provided, else same-origin.
 export const TALKTURN_URL = "https://talkturn-hftgya63qa-uc.a.run.app";
-
 export const TTS_URL = "https://tts-hftgya63qa-uc.a.run.app";
+
 /* ---------------------------
-   Utils: base64/PCM/WAV
---------------------------- */
+    Utils: base64/PCM/WAV
+  --------------------------- */
 function b64ToUint8(b64) {
   const bin = atob(b64);
   const out = new Uint8Array(bin.length);
@@ -113,19 +101,16 @@ function blobToBase64(blob) {
 }
 
 /* ---------------------------
-   Transcoding: robust on mobile
---------------------------- */
-// Try to transcode any input blob to WAV (24 kHz mono). If decode fails, caller should fall back.
+    Transcoding: robust on mobile
+  --------------------------- */
 async function blobToWavBase64Universal(blob, targetRate = 24000) {
   const arrayBuf = await blob.arrayBuffer();
   const AC = window.AudioContext || window.webkitAudioContext;
   const ctx = new AC();
-  // decodeAudioData (Promise style)
   const decoded = await new Promise((resolve, reject) => {
-    // Safari likes a copied buffer
     ctx.decodeAudioData(arrayBuf.slice(0), resolve, reject);
   });
-  // Resample via OfflineAudioContext
+
   const channels = 1;
   const frames = Math.ceil(decoded.duration * targetRate);
   const offline = new OfflineAudioContext(channels, frames, targetRate);
@@ -193,8 +178,8 @@ function pickRecorderMime() {
 }
 
 /* ---------------------------
-   Audio cache (IndexedDB)
---------------------------- */
+    Audio cache (IndexedDB)
+  --------------------------- */
 const CLIP_DB = "NoSaboAudioDB";
 const CLIP_STORE = "clips";
 const memClips = new Map();
@@ -267,8 +252,19 @@ async function sha256Hex(str) {
 }
 
 /* ---------------------------
-   Phrase-aligned highlighting
---------------------------- */
+    Shared mobile-safe text style
+  --------------------------- */
+const MOBILE_TEXT_SX = {
+  whiteSpace: "pre-wrap",
+  // prefer soft word breaks; avoid per-character "anywhere" breaks
+  wordBreak: "break-word",
+  overflowWrap: "break-word",
+  hyphens: "auto",
+};
+
+/* ---------------------------
+    Phrase-aligned highlighting
+  --------------------------- */
 const COLORS = [
   "#91E0FF",
   "#A0EBAF",
@@ -278,6 +274,7 @@ const COLORS = [
   "#B0F0FF",
 ];
 const colorFor = (i) => COLORS[i % COLORS.length];
+
 function wrapFirst(text, phrase, tokenId) {
   if (!text || !phrase) return [text];
   const idx = text.toLowerCase().indexOf(String(phrase).toLowerCase());
@@ -291,10 +288,10 @@ function wrapFirst(text, phrase, tokenId) {
       key={`${tokenId}-${idx}`}
       data-token={tokenId}
       style={{
-        borderBottom: "2px solid transparent",
-        wordBreak: "break-word",
-        overflowWrap: "anywhere",
-        whiteSpace: "pre-wrap",
+        display: "inline",
+        borderBottom: 0,
+        // visual underline without affecting line metrics
+        boxShadow: "inset 0 -2px transparent",
       }}
     >
       {mid}
@@ -333,6 +330,7 @@ function AlignedBubble({
   canReplay,
 }) {
   const [activeId, setActiveId] = useState(null);
+
   function decorate(nodes) {
     return React.Children.map(nodes, (node) => {
       if (typeof node === "string" || !node?.props?.["data-token"]) return node;
@@ -340,9 +338,9 @@ function AlignedBubble({
       const i = parseInt(rootId.replace("tok_", "")) || 0;
       const isActive = activeId === rootId;
       const style = {
-        borderBottom: `2px solid ${isActive ? colorFor(i) : "transparent"}`,
-        paddingBottom: 1,
-        transition: "border-color 120ms ease",
+        boxShadow: isActive
+          ? `inset 0 -2px ${colorFor(i)}`
+          : "inset 0 -2px transparent",
       };
       return React.cloneElement(node, {
         onMouseEnter: () => setActiveId(rootId),
@@ -352,70 +350,93 @@ function AlignedBubble({
       });
     });
   }
+
   const primaryNodes = decorate(buildAlignedNodes(primaryText, pairs, "lhs"));
   const secondaryNodes = decorate(
     buildAlignedNodes(secondaryText, pairs, "rhs")
   );
 
   return (
-    <Box bg="gray.800" p={3} borderRadius="lg" maxW="100%" overflowX="hidden">
-      <HStack spacing={2} mb={1} justify="space-between">
-        <HStack spacing={2}>
-          <Badge colorScheme="purple">{primaryLabel}</Badge>
-          {showSecondary && secondaryText && (
-            <Badge variant="subtle">{secondaryLabel}</Badge>
-          )}
-        </HStack>
+    <Box
+      bg="gray.800"
+      p={3}
+      borderRadius="lg"
+      maxW="100%"
+      w="100%"
+      minW={0}
+      overflow="hidden"
+    >
+      {/* Header stacks on small/medium; row on large+ */}
+      <Stack
+        direction={["column", "column", "row"]}
+        spacing={2}
+        mb={1}
+        justify="flex-end"
+        align={["flex-start", "flex-start", "center"]}
+        flexWrap="wrap"
+      >
+        {/* <HStack spacing={2} flex="1 1 auto" minW={0}>
+            <Badge colorScheme="purple" whiteSpace="nowrap">
+              {primaryLabel}
+            </Badge>
+            {showSecondary && secondaryText && (
+              <Badge variant="subtle" whiteSpace="nowrap">
+                {secondaryLabel}
+              </Badge>
+            )}
+          </HStack> */}
         <Button
           size="xs"
           variant="ghost"
           onClick={onReplay}
           isDisabled={!canReplay}
           color="white"
+          alignSelf={["flex-start", "flex-start", "auto"]}
         >
           <CiRepeat />
           &nbsp;Repeat
         </Button>
-      </HStack>
+      </Stack>
 
-      <Text
-        fontSize="md"
-        lineHeight="1.45"
-        whiteSpace="pre-wrap"
-        wordBreak="break-word"
-        overflowWrap="anywhere"
-      >
+      {/* Primary text */}
+      <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX}>
         {primaryNodes}
-      </Text>
+      </Box>
+
+      {/* Secondary text */}
       {showSecondary && secondaryText && (
-        <Text
-          opacity={0.85}
+        <Box
+          as="p"
+          opacity={0.9}
           fontSize="sm"
           mt={1}
-          lineHeight="1.4"
-          whiteSpace="pre-wrap"
-          wordBreak="break-word"
-          overflowWrap="anywhere"
+          lineHeight="1.55"
+          sx={MOBILE_TEXT_SX}
         >
           {secondaryNodes}
-        </Text>
+        </Box>
       )}
+
+      {/* Chips */}
       {!!pairs?.length && showSecondary && (
-        <Wrap spacing={2} mt={2}>
-          {pairs.slice(0, COLORS.length).map((p, i) => (
-            <WrapItem key={i}>
-              <Tag
-                size="sm"
-                style={{
-                  borderColor: colorFor(i),
-                  borderWidth: 2,
-                  background: "transparent",
-                  color: "white",
-                }}
-              >
+        <Wrap spacing={2} mt={2} shouldWrapChildren>
+          {pairs.slice(0, 6).map((p, i) => (
+            <Tag
+              key={i}
+              size="sm"
+              style={{
+                borderColor: colorFor(i),
+                borderWidth: 2,
+                background: "transparent",
+                color: "white",
+              }}
+              maxW="100%"
+              whiteSpace="normal"
+            >
+              <Text as="span" fontSize="xs" sx={MOBILE_TEXT_SX}>
                 {p.lhs} ⇄ {p.rhs}
-              </Tag>
-            </WrapItem>
+              </Text>
+            </Tag>
           ))}
         </Wrap>
       )}
@@ -424,153 +445,8 @@ function AlignedBubble({
 }
 
 /* ---------------------------
-   Coach Panel (target-lang aware)
---------------------------- */
-function CoachPanel({
-  isOpen,
-  onClose,
-  coach,
-  onRedo,
-  onAcceptNext,
-  targetLang = "es",
-}) {
-  if (!coach) coach = {};
-  const {
-    correction_en,
-    tip_en,
-    correction_es,
-    tip_es,
-    translation_en,
-    translation_es,
-    scores = {},
-    cefr,
-    next_goal,
-    goal_completed,
-  } = coach;
-  const vocab =
-    coach?.[`vocab_${targetLang}`] ||
-    (targetLang === "es" ? coach?.vocab_es : []) ||
-    [];
-  const redo_text =
-    coach?.[`redo_${targetLang}`] ||
-    (targetLang === "es" ? coach?.redo_es : null);
-  const pct =
-    (((scores?.pronunciation ?? 0) +
-      (scores?.grammar ?? 0) +
-      (scores?.vocab ?? 0) +
-      (scores?.fluency ?? 0)) /
-      12) *
-    100;
-  const targetName = targetLang === "nah" ? "Náhuatl" : "Spanish";
-
-  return (
-    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
-      <DrawerOverlay bg="blackAlpha.600" />
-      <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
-        <DrawerHeader pb={2}>
-          <HStack justify="space-between" align="start">
-            <Text fontWeight="bold">Coach</Text>
-            <HStack>
-              {goal_completed ? (
-                <Badge colorScheme="green">Goal completed</Badge>
-              ) : (
-                <Badge colorScheme="orange">Keep going</Badge>
-              )}
-              {cefr && <Badge colorScheme="purple">{cefr}</Badge>}
-            </HStack>
-          </HStack>
-        </DrawerHeader>
-        <DrawerBody pb={6}>
-          {(translation_en || correction_en || tip_en) && (
-            <Box mb={3}>
-              <Text fontSize="sm" opacity={0.8}>
-                English
-              </Text>
-              {translation_en && (
-                <Text whiteSpace="pre-wrap">{translation_en}</Text>
-              )}
-              {correction_en && (
-                <Text mt={1} fontSize="sm">
-                  <b>Correction:</b> {correction_en}
-                </Text>
-              )}
-              {tip_en && (
-                <Text mt={1} fontSize="sm" opacity={0.9}>
-                  💡 {tip_en}
-                </Text>
-              )}
-            </Box>
-          )}
-          {(translation_es || correction_es || tip_es) && (
-            <Box mb={3}>
-              <Text fontSize="sm" opacity={0.8}>
-                Español
-              </Text>
-              {translation_es && (
-                <Text whiteSpace="pre-wrap">{translation_es}</Text>
-              )}
-              {correction_es && (
-                <Text mt={1} fontSize="sm">
-                  <b>Corrección:</b> {correction_es}
-                </Text>
-              )}
-              {tip_es && (
-                <Text mt={1} fontSize="sm" opacity={0.9}>
-                  💡 {tip_es}
-                </Text>
-              )}
-            </Box>
-          )}
-          {!!vocab?.length && (
-            <Box mb={3}>
-              <Text fontSize="sm" opacity={0.8}>
-                Useful {targetName}
-              </Text>
-              <Wrap spacing={2}>
-                {vocab.slice(0, 8).map((w, i) => (
-                  <WrapItem key={i}>
-                    <Tag colorScheme="teal" variant="subtle" maxW="100%">
-                      {w}
-                    </Tag>
-                  </WrapItem>
-                ))}
-              </Wrap>
-            </Box>
-          )}
-          <Box mb={4}>
-            <Text fontSize="xs" opacity={0.8}>
-              Pronunciation / Grammar / Vocab / Fluency
-            </Text>
-            <Progress value={pct} size="sm" colorScheme="teal" rounded="sm" />
-          </Box>
-          <Stack direction={["column", "row"]} spacing={2}>
-            <Button
-              size="md"
-              onClick={() => onRedo?.(redo_text)}
-              isDisabled={!redo_text}
-              flex="1"
-            >
-              Try again ({targetName})
-            </Button>
-            <Button
-              size="md"
-              variant="outline"
-              onClick={() => onAcceptNext?.(next_goal)}
-              isDisabled={!next_goal}
-              flex="1"
-            >
-              Next goal
-            </Button>
-          </Stack>
-        </DrawerBody>
-      </DrawerContent>
-    </Drawer>
-  );
-}
-
-/* ---------------------------
-   Legacy↔New turn mapping for model context
---------------------------- */
+    Legacy↔New turn mapping for model context
+  --------------------------- */
 function newToLegacyTurn(m) {
   if (!m) return null;
   if (m.lang === "es") {
@@ -604,8 +480,8 @@ const isoNow = () => {
 };
 
 /* ---------------------------
-   Main
---------------------------- */
+    Main
+  --------------------------- */
 export default function VoiceChat({
   auth,
   onSwitchedAccount,
@@ -622,6 +498,8 @@ export default function VoiceChat({
     en: "Make a polite request.",
   };
   const DEFAULT_PERSONA = "Like a rude, sarcastic, mean-spirited toxica.";
+
+  const [profileHydrated, setProfileHydrated] = useState(false);
 
   // UI & learning state
   const [uiState, setUiState] = useState("idle");
@@ -697,17 +575,33 @@ export default function VoiceChat({
       },
       (err) => {
         console.error("turns snapshot error:", err?.message || err);
-        // Optional: toast once if desired
-        // toast({ title: "Offline mode", description: "Showing cached conversation.", status: "info" });
       }
     );
     return () => unsub();
   }, [currentId]);
 
+  /* Auto-save profile (only after Firestore load finishes) */
+  useEffect(() => {
+    if (!profileHydrated) return;
+    saveProfile({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    level,
+    supportLang,
+    voice,
+    voicePersona,
+    showTranslations,
+    targetLang,
+    profileHydrated,
+  ]);
+
   /* Load profile/progress with cache fallback */
   useEffect(() => {
     const npub = (currentId || "").trim();
     if (!npub) return;
+
+    setProfileHydrated(false); // block auto-saves until we finish loading
+
     let cancelled = false;
     (async () => {
       try {
@@ -751,12 +645,14 @@ export default function VoiceChat({
         );
       } catch (e) {
         console.error("load profile failed:", e);
+      } finally {
+        if (!cancelled) setProfileHydrated(true);
       }
     })();
+
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentId]);
 
   /* Save profile (settings/xp/streak/challenge) */
@@ -792,9 +688,6 @@ export default function VoiceChat({
       console.error("save profile failed:", e);
     }
   }
-  useEffect(() => {
-    saveProfile({});
-  }, [level, supportLang, voice, voicePersona, showTranslations, targetLang]); // eslint-disable-line
 
   /* Cleanup on unmount */
   useEffect(() => {
@@ -1032,7 +925,6 @@ export default function VoiceChat({
       // Supply last few turns in legacy shape for the model
       const legacyForModel = buildLegacyFromNew(history).slice(-3);
 
-      console.log("talkturn", TALKTURN_URL);
       const resp = await fetch(TALKTURN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1275,6 +1167,157 @@ export default function VoiceChat({
       : "No Sabo — Spanish Learning Coach";
   const secondaryPref = supportLang === "es" ? "es" : "en";
 
+  // --- CoachPanel.jsx (inline in VoiceChat.jsx is fine) ---
+  function CoachPanel({
+    isOpen,
+    onClose,
+    coach,
+    onRedo,
+    onAcceptNext,
+    targetLang = "es",
+  }) {
+    if (!coach) coach = {};
+    const {
+      correction_en,
+      tip_en,
+      correction_es,
+      tip_es,
+      translation_en,
+      translation_es,
+      scores = {},
+      cefr,
+      next_goal,
+      goal_completed,
+    } = coach;
+
+    const vocab =
+      coach?.[`vocab_${targetLang}`] ||
+      (targetLang === "es" ? coach?.vocab_es : []) ||
+      [];
+    const redo_text =
+      coach?.[`redo_${targetLang}`] ||
+      (targetLang === "es" ? coach?.redo_es : null);
+
+    const pct =
+      (((scores?.pronunciation ?? 0) +
+        (scores?.grammar ?? 0) +
+        (scores?.vocab ?? 0) +
+        (scores?.fluency ?? 0)) /
+        12) *
+      100;
+
+    const targetName = targetLang === "nah" ? "Náhuatl" : "Spanish";
+
+    return (
+      <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
+          <DrawerHeader pb={2}>
+            <HStack justify="space-between" align="start">
+              <Text fontWeight="bold">Coach</Text>
+              <HStack>
+                {goal_completed ? (
+                  <Badge colorScheme="green">Goal completed</Badge>
+                ) : (
+                  <Badge colorScheme="orange">Keep going</Badge>
+                )}
+                {cefr && <Badge colorScheme="purple">{cefr}</Badge>}
+              </HStack>
+            </HStack>
+          </DrawerHeader>
+          <DrawerBody pb={6}>
+            {(translation_en || correction_en || tip_en) && (
+              <Box mb={3}>
+                <Text fontSize="sm" opacity={0.8}>
+                  English
+                </Text>
+                {translation_en && (
+                  <Text whiteSpace="pre-wrap">{translation_en}</Text>
+                )}
+                {correction_en && (
+                  <Text mt={1} fontSize="sm">
+                    <b>Correction:</b> {correction_en}
+                  </Text>
+                )}
+                {tip_en && (
+                  <Text mt={1} fontSize="sm" opacity={0.9}>
+                    💡 {tip_en}
+                  </Text>
+                )}
+              </Box>
+            )}
+
+            {(translation_es || correction_es || tip_es) && (
+              <Box mb={3}>
+                <Text fontSize="sm" opacity={0.8}>
+                  Español
+                </Text>
+                {translation_es && (
+                  <Text whiteSpace="pre-wrap">{translation_es}</Text>
+                )}
+                {correction_es && (
+                  <Text mt={1} fontSize="sm">
+                    <b>Corrección:</b> {correction_es}
+                  </Text>
+                )}
+                {tip_es && (
+                  <Text mt={1} fontSize="sm" opacity={0.9}>
+                    💡 {tip_es}
+                  </Text>
+                )}
+              </Box>
+            )}
+
+            {!!vocab?.length && (
+              <Box mb={3}>
+                <Text fontSize="sm" opacity={0.8}>
+                  Useful {targetName}
+                </Text>
+                <Wrap spacing={2}>
+                  {vocab.slice(0, 8).map((w, i) => (
+                    <WrapItem key={i}>
+                      <Tag colorScheme="teal" variant="subtle" maxW="100%">
+                        {w}
+                      </Tag>
+                    </WrapItem>
+                  ))}
+                </Wrap>
+              </Box>
+            )}
+
+            <Box mb={4}>
+              <Text fontSize="xs" opacity={0.8}>
+                Pronunciation / Grammar / Vocab / Fluency
+              </Text>
+              <Progress value={pct} size="sm" colorScheme="teal" rounded="sm" />
+            </Box>
+
+            <Stack direction={["column", "row"]} spacing={2}>
+              <Button
+                size="md"
+                onClick={() => onRedo?.(redo_text)}
+                isDisabled={!redo_text}
+                flex="1"
+              >
+                Try again ({targetName})
+              </Button>
+              <Button
+                size="md"
+                variant="outline"
+                onClick={() => onAcceptNext?.(next_goal)}
+                isDisabled={!next_goal}
+                flex="1"
+                color="white"
+              >
+                Next goal
+              </Button>
+            </Stack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+    );
+  }
+
   return (
     <Box
       minH="100vh"
@@ -1283,6 +1326,7 @@ export default function VoiceChat({
       position="relative"
       pb="120px"
       maxW="100%"
+      w="100%"
       style={{ overflowX: "hidden" }}
     >
       {/* App bar */}
@@ -1295,7 +1339,7 @@ export default function VoiceChat({
         align={["stretch", "center"]}
         justify="space-between"
       >
-        <Box>
+        <Box minW={0}>
           <Text fontSize="lg" fontWeight="bold" noOfLines={1}>
             {appTitle}
           </Text>
@@ -1348,25 +1392,26 @@ export default function VoiceChat({
           rounded="lg"
           border="1px solid rgba(255,255,255,0.06)"
           maxW="100%"
+          w="100%"
         >
+          {/* Stack in column until lg to prevent squeezing at md widths */}
           <Stack
-            direction={["column", "row"]}
-            justify="space-between"
-            align={["stretch", "start"]}
+            direction={["column", "column", "column", "row"]}
+            spacing={2}
+            justify="flex-start"
+            align={["stretch", "stretch", "stretch", "center"]}
+            flexWrap="wrap"
           >
-            <Text
-              fontWeight="semibold"
-              fontSize="md"
-              whiteSpace="pre-wrap"
-              wordBreak="break-word"
-              overflowWrap="anywhere"
-            >
-              🎯 {challenge.en}
-            </Text>
+            <Box flex="1 1 auto" minW={0}>
+              <Text fontWeight="semibold" fontSize="md" sx={MOBILE_TEXT_SX}>
+                🎯 {challenge.en}
+              </Text>
+            </Box>
             <Badge
               colorScheme="teal"
-              whiteSpace="nowrap"
-              alignSelf={["flex-start", "center"]}
+              whiteSpace="normal" // allow wrapping inside the badge on mobile
+              alignSelf={["flex-start", "flex-start", "flex-start", "center"]}
+              maxW="100%"
             >
               ES: {challenge.es}
             </Badge>

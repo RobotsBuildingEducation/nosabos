@@ -4,19 +4,70 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 import "./App.css";
 import VoiceChat from "./components/VoiceChat";
-import Onboarding from "./components/Onboarding"; // ensure this resolves to your component
+import Onboarding from "./components/Onboarding";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
 import { database } from "./firebaseResources/firebaseResources";
 import useUserStore from "./hooks/useUserStore";
 
-// Normalize weird stored values to a real boolean
+/* ---------------------------
+   Constants & helpers
+--------------------------- */
+const DEFAULT_CHALLENGE = {
+  en: "Make a polite request.",
+  es: "Pide algo con cortesía.",
+};
+const DEFAULT_PERSONA = "Like a sarcastic, semi-friendly toxica.";
+
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
-const App = () => {
+/* ---------------------------
+   Firestore helpers
+--------------------------- */
+async function ensureOnboardingField(database, id, data) {
+  const hasNested = data?.onboarding && typeof data.onboarding === "object";
+  const hasCompleted =
+    hasNested &&
+    Object.prototype.hasOwnProperty.call(data.onboarding, "completed");
+  const hasLegacyTopLevel = Object.prototype.hasOwnProperty.call(
+    data || {},
+    "onboardingCompleted"
+  );
+
+  if (!hasCompleted && !hasLegacyTopLevel) {
+    await setDoc(
+      doc(database, "users", id),
+      { onboarding: { completed: false } },
+      { merge: true }
+    );
+    const snap = await getDoc(doc(database, "users", id));
+    return snap.exists() ? { id: snap.id, ...snap.data() } : data;
+  }
+  return data;
+}
+
+async function loadUserObjectFromDB(database, id) {
+  if (!id) return null;
+  try {
+    const ref = doc(database, "users", id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return null;
+    let userData = { id: snap.id, ...snap.data() };
+    userData = await ensureOnboardingField(database, id, userData);
+    return userData;
+  } catch (e) {
+    console.error("loadUserObjectFromDB failed:", e);
+    return null;
+  }
+}
+
+/* ---------------------------
+   App
+--------------------------- */
+export default function App() {
   const [isLoadingApp, setIsLoadingApp] = useState(false);
   const initRef = useRef(false); // guard StrictMode double-run in dev
 
-  // Local mirrors of active creds to keep children in sync
+  // Reflect local creds so children re-render when keys change
   const [activeNpub, setActiveNpub] = useState(
     typeof window !== "undefined"
       ? localStorage.getItem("local_npub") || ""
@@ -28,66 +79,17 @@ const App = () => {
       : ""
   );
 
+  // Global user store
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
 
+  // DID / auth
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     localStorage.getItem("local_npub") ?? "",
     localStorage.getItem("local_nsec") ?? ""
   );
 
-  /** Ensure an existing user doc has onboarding flag; backfill if missing. */
-  const ensureOnboardingField = async (id, data) => {
-    const hasNested = data?.onboarding && typeof data.onboarding === "object";
-    const hasCompleted =
-      hasNested &&
-      Object.prototype.hasOwnProperty.call(data.onboarding, "completed");
-    const hasLegacyTopLevel = Object.prototype.hasOwnProperty.call(
-      data || {},
-      "onboardingCompleted"
-    );
-
-    if (!hasCompleted && !hasLegacyTopLevel) {
-      // Backfill once for legacy docs
-      await setDoc(
-        doc(database, "users", id),
-        { onboarding: { completed: false } },
-        { merge: true }
-      );
-      // Re-read fresh data
-      const snap = await getDoc(doc(database, "users", id));
-      return snap.exists() ? { id: snap.id, ...snap.data() } : data;
-    }
-    return data;
-  };
-
-  /** Helper: read user doc */
-  const loadUserObjectFromDB = async (id) => {
-    if (!id) return null;
-    try {
-      const userDocRef = doc(database, "users", id);
-      const snap = await getDoc(userDocRef);
-      if (!snap.exists()) return null;
-      let userData = { id: snap.id, ...snap.data() };
-
-      // Backfill onboarding if missing (legacy docs)
-      userData = await ensureOnboardingField(id, userData);
-
-      setUser?.(userData);
-      return userData;
-    } catch (error) {
-      console.error("loadUserObjectFromDB failed:", error);
-      return null;
-    }
-  };
-
-  /**
-   * Connect DID and ensure a stable user doc:
-   * - If local_npub exists:
-   *   - If doc exists -> use it (and backfill onboarding if missing)
-   *   - If doc missing -> create it with onboarding.completed=false
-   * - If no local_npub -> generate keys once and create the doc with onboarding
-   */
+  /** Establish or sync identity and ensure a user doc exists with onboarding flag */
   const connectDID = async () => {
     setIsLoadingApp(true);
     try {
@@ -95,20 +97,20 @@ const App = () => {
       let userDoc = null;
 
       if (id) {
-        userDoc = await loadUserObjectFromDB(id);
+        userDoc = await loadUserObjectFromDB(database, id);
         if (!userDoc) {
-          // Create a doc for the existing local id (first time syncing)
+          // first time syncing a locally-present id → create minimal doc
           const base = {
             local_npub: id,
             createdAt: new Date().toISOString(),
             onboarding: { completed: false },
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
-          userDoc = await loadUserObjectFromDB(id);
+          userDoc = await loadUserObjectFromDB(database, id);
         }
       } else {
-        // No local id -> generate keys once
-        const did = await generateNostrKeys(); // writes npub + nsec to localStorage
+        // No local id → generate keys, write user doc
+        const did = await generateNostrKeys(); // side-effect: writes npub/nsec to localStorage
         id = did.npub;
         const base = {
           local_npub: id,
@@ -116,13 +118,14 @@ const App = () => {
           onboarding: { completed: false },
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
-        userDoc = await loadUserObjectFromDB(id);
+        userDoc = await loadUserObjectFromDB(database, id);
       }
 
-      // reflect latest creds so children update immediately
+      // Reflect creds
       setActiveNpub(id);
       setActiveNsec(localStorage.getItem("local_nsec") || "");
 
+      // Hydrate store
       if (userDoc) setUser?.(userDoc);
     } catch (e) {
       console.error("connectDID error:", e);
@@ -131,64 +134,60 @@ const App = () => {
     }
   };
 
-  /** Mark onboarding as complete and refresh user */
+  /** Save onboarding payload → progress, flip completed → reload user */
   const handleOnboardingComplete = async (payload = {}) => {
     try {
-      const id = localStorage.getItem("local_npub");
+      const id = (localStorage.getItem("local_npub") || "").trim();
       if (!id) return;
 
-      // Normalize payload -> progress shape VoiceChat expects
       const safe = (v, fallback) =>
         v === undefined || v === null ? fallback : v;
-      const challenge =
-        payload?.challenge?.en && payload?.challenge?.es
-          ? payload.challenge
-          : { en: "Make a polite request.", es: "Pide algo con cortesía." };
 
-      const progress = {
+      // Normalize / validate incoming payload
+      const normalized = {
         level: safe(payload.level, "beginner"),
         supportLang: ["en", "es", "bilingual"].includes(payload.supportLang)
           ? payload.supportLang
           : "en",
         voice: safe(payload.voice, "Leda"),
-        voicePersona: safe(
-          payload.voicePersona,
-          "Like a rude, sarcastic, mean-spirited toxica."
-        ),
+        voicePersona: safe(payload.voicePersona, DEFAULT_PERSONA),
         targetLang: payload.targetLang === "nah" ? "nah" : "es",
         showTranslations:
           typeof payload.showTranslations === "boolean"
             ? payload.showTranslations
             : true,
-        challenge,
+        challenge:
+          payload?.challenge?.en && payload?.challenge?.es
+            ? payload.challenge
+            : { ...DEFAULT_CHALLENGE },
         xp: 0,
         streak: 0,
       };
 
       const now = new Date().toISOString();
-
       await setDoc(
         doc(database, "users", id),
         {
           local_npub: id,
           updatedAt: now,
           onboarding: { completed: true, completedAt: now },
-          lastGoal: progress.challenge.en,
+          lastGoal: normalized.challenge.en,
           xp: 0,
           streak: 0,
-          progress,
+          progress: { ...normalized },
         },
         { merge: true }
       );
 
-      // Refresh the in-memory user so App gates to VoiceChat and Settings see the new values
-      const fresh = await loadUserObjectFromDB(id);
+      // Refresh user in store so gating flips and VoiceChat loads with the new progress
+      const fresh = await loadUserObjectFromDB(database, id);
       if (fresh) setUser?.(fresh);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
   };
 
+  // Boot once
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
@@ -196,25 +195,28 @@ const App = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // SINGLE SOURCE OF TRUTH: need onboarding unless we explicitly see "true"
+  // Gate: only show VoiceChat when we *explicitly* see onboarding completed
   const onboardingDone = useMemo(() => {
-    const a = user?.onboarding?.completed;
-    const b = user?.onboardingCompleted; // legacy flat shape, if you ever used it
-    return isTrue(a) || isTrue(b);
+    const nested = user?.onboarding?.completed;
+    const legacy = user?.onboardingCompleted; // if older shape ever existed
+    return isTrue(nested) || isTrue(legacy);
   }, [user]);
 
   const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
 
+  // Loading state while we fetch/create the user doc
   if (isLoadingApp || !user) {
-    return <div style={{ padding: 16 }}>Loading…</div>;
+    return <div style={{ padding: 16, color: "#e2e8f0" }}>Loading…</div>;
   }
 
+  // First-run: show Onboarding (saves progress + flips flag)
   if (needsOnboarding) {
     return (
-      <Onboarding user={user} onComplete={() => handleOnboardingComplete()} />
+      <Onboarding npub={activeNpub} onComplete={handleOnboardingComplete} />
     );
   }
 
+  // Main app
   return (
     <VoiceChat
       auth={auth}
@@ -222,11 +224,10 @@ const App = () => {
       activeNsec={activeNsec}
       onSwitchedAccount={async () => {
         await connectDID();
+        // reflect latest local storage values
         setActiveNpub(localStorage.getItem("local_npub") || "");
         setActiveNsec(localStorage.getItem("local_nsec") || "");
       }}
     />
   );
-};
-
-export default App;
+}

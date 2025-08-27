@@ -94,10 +94,7 @@ async function synthesize(ai, text, voiceName) {
    /talkTurn  (Trilingual: Náhuatl + ES + EN)
 ------------------------- */
 exports.talkTurn = onRequest(
-  {
-    region: "us-central1",
-    cors: true, // handles OPTIONS automatically
-  },
+  { region: "us-central1", cors: true },
   async (req, res) => {
     try {
       if (req.method === "OPTIONS") return res.status(204).end();
@@ -106,9 +103,9 @@ exports.talkTurn = onRequest(
       const {
         audioBase64,
         mime = "audio/webm",
-        history = [], // [{ target?, es?, en? }]
-        level = "beginner", // beginner|intermediate|advanced
-        supportLang = "en", // 'en'|'es'|'bilingual'
+        history = [],
+        level = "beginner",
+        supportLang = "en", // 'en' | 'es' | 'bilingual'
         challenge = {
           es: "Pide algo con cortesía.",
           en: "Make a polite request.",
@@ -116,7 +113,7 @@ exports.talkTurn = onRequest(
         redo = "",
         voice = "Leda",
         voicePersona = "Like a sarcastic, semi-friendly toxica.",
-        targetLang = "nah", // 'nah' (Náhuatl) | 'es' (Spanish)
+        targetLang = "nah", // 'nah' | 'es'
       } = req.body || {};
 
       if (!audioBase64)
@@ -124,52 +121,47 @@ exports.talkTurn = onRequest(
 
       const ai = getAIOrThrow();
 
-      const LANG_NAMES = {
-        nah: "Náhuatl",
-        es: "Spanish",
-        en: "English",
-      };
+      const LANG_NAMES = { nah: "Náhuatl", es: "Spanish", en: "English" };
       const TARGET_NAME = LANG_NAMES[targetLang] || "Náhuatl";
 
-      // System + output contract for a tri-lingual coaching loop
-      const system =
-        `You are a ${TARGET_NAME} practice partner for a learner app with an English/Spanish coach UI.\n` +
-        `The user may speak in English or Spanish.\n` +
-        `Your reply must be ONLY in ${TARGET_NAME}. Keep it short (≤ 24 words) and natural. Persona: ${String(
-          voicePersona
-        ).slice(
-          0,
-          160
-        )} (playful, supportive; light sarcasm is fine; never cruel).\n\n` +
-        `Return ONLY one JSON object (no backticks, no code fences) with this shape:\n` +
-        `{\n` +
-        `  "assistant": { "lang": "${targetLang}", "text": "<${TARGET_NAME} reply, ≤24 words>" },\n` +
-        `  "coach": {\n` +
-        `    "correction_en": "<one concise correction in English, quote the learner when useful>",\n` +
-        `    "correction_es": "<one concise corrección en español>",\n` +
-        `    "tip_en": "<≤14-word micro-tip in English>",\n` +
-        `    "tip_es": "<≤14-word micro-consejo en español>",\n` +
-        `    "redo_${targetLang}": "<very short redo prompt in ${TARGET_NAME}>",\n` +
-        `    "vocab_${targetLang}": ["word1","word2","..."],\n` +
-        `    "translation_en": "<English translation of assistant.text>",\n` +
-        `    "translation_es": "<Spanish translation of assistant.text>",\n` +
-        `    "alignment": {\n` +
-        `      "${targetLang}_en": [{"t":"<${TARGET_NAME} phrase>","en":"<English phrase>"}],\n` +
-        `      "${targetLang}_es": [{"t":"<${TARGET_NAME} phrase>","es":"<Spanish phrase>"}]\n` +
-        `    },\n` +
-        `    "scores": {"pronunciation":0-3,"grammar":0-3,"vocab":0-3,"fluency":0-3},\n` +
-        `    "cefr": "A1|A2|B1|B2|C1",\n` +
-        `    "goal_completed": true|false,\n` +
-        `    "next_goal": { "${targetLang}":"...", "en":"...", "es":"..." }\n` +
-        `  }\n` +
-        `}\n\n` +
-        `Coaching visibility:\n` +
-        `- If supportLang='en', ensure English coaching fields are strong; Spanish ones may be terse.\n` +
-        `- If supportLang='es', ensure Spanish coaching fields are strong; English ones may be terse.\n` +
-        `- If supportLang='bilingual', keep both English and Spanish fields equally useful.\n` +
-        `Style constraints:\n` +
-        `- ${TARGET_NAME} must be contemporary and clear. For Náhuatl, prefer Central Mexican orthography and avoid extremely rare regional forms.`;
+      // === NEW: compute what we actually need ===
+      const needEN = supportLang === "en" || supportLang === "bilingual";
+      const needES = supportLang === "es" || supportLang === "bilingual";
 
+      // translations we want the model to emit (keep list short to save tokens)
+      const translationSpec = [
+        needEN
+          ? `"translation_en": "<English translation of assistant.text>"`
+          : null,
+        needES
+          ? `"translation_es": "<Spanish translation of assistant.text>"`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(",\n      ");
+
+      // alignment we want (only what UX will highlight)
+      let alignmentSpec = "";
+      if (targetLang === "nah") {
+        const blocks = [];
+        if (needEN)
+          blocks.push(
+            `"nah_en": [{"t":"<${TARGET_NAME} phrase>","en":"<English phrase>"}]`
+          );
+        if (needES)
+          blocks.push(
+            `"nah_es": [{"t":"<${TARGET_NAME} phrase>","es":"<Spanish phrase>"}]`
+          );
+        if (blocks.length)
+          alignmentSpec = `"alignment": { ${blocks.join(", ")} },`;
+      } else if (targetLang === "es") {
+        // In Spanish mode we only ever need Spanish→English for secondary,
+        // unless support is strictly 'es' (no secondary needed).
+        if (needEN)
+          alignmentSpec = `"alignment": { "es_en": [{"es":"<Spanish phrase>","en":"<English phrase>"}] },`;
+      }
+
+      // keep vocab & redo in target language (cheap & useful)
       const levelHint =
         level === "beginner"
           ? "Learner level: beginner. Simpler target language; clearer coaching."
@@ -187,7 +179,37 @@ exports.talkTurn = onRequest(
       const challengeHint = `Current goal: ES="${challenge.es}" | EN="${challenge.en}".`;
       const redoHint = redo ? `User wants to retry: "${redo}".` : "";
 
-      // Keep last few target-language turns for context if provided
+      // Only ask the model for the fields we actually need (saves tokens)
+      const system =
+        `You are a ${TARGET_NAME} practice partner. ` +
+        `The user may speak in English or Spanish. ` +
+        `Your reply must be ONLY in ${TARGET_NAME}, ≤24 words, natural. Persona: ${String(
+          voicePersona
+        ).slice(0, 160)} (playful, supportive; no cruelty).\n\n` +
+        `Return ONLY one JSON object (no code fences). Include ONLY the keys requested below; if a key is not listed, OMIT it entirely.\n` +
+        `{\n` +
+        `  "assistant": { "lang": "${targetLang}", "text": "<${TARGET_NAME} reply, ≤24 words>" },\n` +
+        `  "coach": {\n` +
+        `    "correction_en": "<one concise correction in English, quote the learner when useful>",\n` +
+        `    "correction_es": "<una corrección concisa en español>",\n` +
+        `    "tip_en": "<≤14-word micro-tip in English>",\n` +
+        `    "tip_es": "<≤14-word micro-consejo en español>",\n` +
+        `    "redo_${targetLang}": "<very short redo prompt in ${TARGET_NAME}>",\n` +
+        `    "vocab_${targetLang}": ["word1","word2","..."],\n` +
+        (translationSpec ? `    ${translationSpec},\n` : ``) +
+        (alignmentSpec ? `    ${alignmentSpec}\n` : ``) +
+        `    "scores": {"pronunciation":0-3,"grammar":0-3,"vocab":0-3,"fluency":0-3},\n` +
+        `    "cefr": "A1|A2|B1|B2|C1",\n` +
+        `    "goal_completed": true|false,\n` +
+        `    "next_goal": { "${targetLang}":"...", "en":"...", "es":"..." }\n` +
+        `  }\n` +
+        `}\n\n` +
+        `Notes:\n` +
+        `- If English support is NOT requested, DO NOT include "translation_en" nor any *_en alignment key.\n` +
+        `- If Spanish support is NOT requested, DO NOT include "translation_es" nor any *_es alignment key.\n` +
+        `- Keep outputs compact; avoid extra commentary.\n`;
+
+      // Context packing (unchanged)
       const contextTurns = (history || []).slice(-3).map((m) => ({
         role: "model",
         parts: [{ text: m?.target || m?.es || m?.en || "" }],
@@ -199,9 +221,7 @@ exports.talkTurn = onRequest(
           role: "user",
           parts: [
             {
-              text:
-                `Target language: ${TARGET_NAME} (${targetLang}). ` +
-                `${levelHint} ${supportHint} ${challengeHint} ${redoHint}`,
+              text: `Target language: ${TARGET_NAME} (${targetLang}). ${levelHint} ${supportHint} ${challengeHint} ${redoHint}`,
             },
           ],
         },
@@ -212,7 +232,7 @@ exports.talkTurn = onRequest(
         },
       ];
 
-      // Generate JSON response
+      // ---- rest of handler stays the same ----
       const chatResp = await ai.models.generateContent({
         model: "gemini-2.5-flash-lite",
         contents,
@@ -230,7 +250,6 @@ exports.talkTurn = onRequest(
       const parsed = safeParseJson(raw);
       if (!parsed) throw new Error("Model response was not valid JSON.");
 
-      // Normalize shape a bit and stay backward friendly where possible
       const assistant = parsed.assistant || {
         lang: targetLang,
         text:
@@ -241,17 +260,14 @@ exports.talkTurn = onRequest(
       };
       const coach = parsed.coach || null;
 
-      // TTS for the assistant text (same voices; will attempt to read Náhuatl too)
       const audioBase64Out = assistant?.text
         ? await synthesize(ai, assistant.text, voice)
         : null;
 
       return res.json({
-        assistant, // { lang, text }
-        coach, // includes translations/alignment
+        assistant,
+        coach,
         audioBase64: audioBase64Out,
-
-        // legacy fields (in case older clients still read them)
         assistant_es: targetLang === "es" ? assistant.text : undefined,
       });
     } catch (e) {
