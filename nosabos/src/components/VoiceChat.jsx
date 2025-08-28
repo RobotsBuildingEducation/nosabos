@@ -573,6 +573,26 @@ export default function VoiceChat({
     setCurrentSecret(activeNsec || "");
   }, [activeNsec]);
 
+  /* Local conversation cache */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const key = `history_${(currentId || "").trim()}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) setHistory(JSON.parse(saved));
+    } catch {}
+  }, [currentId]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const npub = (currentId || "").trim();
+    if (!npub) return;
+    try {
+      const key = `history_${npub}`;
+      localStorage.setItem(key, JSON.stringify(history));
+    } catch {}
+  }, [history, currentId]);
+
   /* Firestore persistence (ignore errors in Private mode) */
   useEffect(() => {
     // enableIndexedDbPersistence(database).catch(() => {});
