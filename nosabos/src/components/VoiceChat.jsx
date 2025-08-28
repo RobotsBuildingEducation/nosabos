@@ -69,6 +69,7 @@ import {
 import { database } from "../firebaseResources/firebaseResources";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
+import useUserStore from "../hooks/useUserStore";
 
 /* Endpoints */
 export const TALKTURN_URL = "https://talkturn-hftgya63qa-uc.a.run.app";
@@ -519,6 +520,8 @@ export default function VoiceChat({
 
   const [profileHydrated, setProfileHydrated] = useState(false);
 
+  const user = useUserStore((s) => s.user);
+
   // UI & learning state
   const [uiState, setUiState] = useState("idle");
   const [mood, setMood] = useState("neutral");
@@ -529,7 +532,9 @@ export default function VoiceChat({
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
   const [voice, setVoice] = useState("Leda");
   const [voicePersona, setVoicePersona] = useState(DEFAULT_PERSONA);
-  const [targetLang, setTargetLang] = useState("nah"); // 'nah' | 'es'
+  const [targetLang, setTargetLang] = useState(
+    user?.progress?.targetLang || "es"
+  ); // 'nah' | 'es'
 
   const [history, setHistory] = useState([]); // live from snapshot
   const [coach, setCoach] = useState(null);
@@ -558,6 +563,12 @@ export default function VoiceChat({
   useEffect(() => {
     setCurrentId(activeNpub || "");
   }, [activeNpub]);
+
+  useEffect(() => {
+    if (user?.progress?.targetLang) {
+      setTargetLang(user.progress.targetLang);
+    }
+  }, [user?.progress?.targetLang]);
   useEffect(() => {
     setCurrentSecret(activeNsec || "");
   }, [activeNsec]);
@@ -642,7 +653,10 @@ export default function VoiceChat({
         );
         setVoice(p.voice || "Leda");
         setVoicePersona(p.voicePersona || DEFAULT_PERSONA);
-        setTargetLang(p.targetLang === "nah" ? "nah" : "es");
+        // Respect saved setting; keep current selection if missing
+        if (["nah", "es"].includes(p.targetLang)) {
+          setTargetLang(p.targetLang);
+        }
         setXp(
           Number.isFinite(data?.xp) ? data.xp : Number.isFinite(p.xp) ? p.xp : 0
         );
