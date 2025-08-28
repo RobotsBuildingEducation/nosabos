@@ -69,6 +69,7 @@ import {
 import { database } from "../firebaseResources/firebaseResources";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
+import useUserStore from "../hooks/useUserStore";
 
 /* Endpoints */
 export const TALKTURN_URL = "https://talkturn-hftgya63qa-uc.a.run.app";
@@ -519,6 +520,9 @@ export default function VoiceChat({
 
   const [profileHydrated, setProfileHydrated] = useState(false);
 
+  const user = useUserStore((s) => s.user);
+  const userId = user?.id || "";
+
   // UI & learning state
   const [uiState, setUiState] = useState("idle");
   const [mood, setMood] = useState("neutral");
@@ -529,7 +533,9 @@ export default function VoiceChat({
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
   const [voice, setVoice] = useState("Leda");
   const [voicePersona, setVoicePersona] = useState(DEFAULT_PERSONA);
-  const [targetLang, setTargetLang] = useState("nah"); // 'nah' | 'es'
+  const [targetLang, setTargetLang] = useState(
+    user?.progress?.targetLang || "es"
+  ); // 'nah' | 'es'
 
   const [history, setHistory] = useState([]); // live from snapshot
   const [coach, setCoach] = useState(null);
@@ -539,7 +545,7 @@ export default function VoiceChat({
   const [showTranslations, setShowTranslations] = useState(true);
 
   // Account UI state
-  const [currentId, setCurrentId] = useState(activeNpub || "");
+  const [currentId, setCurrentId] = useState(userId || activeNpub || "");
   const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
   const [switchNsec, setSwitchNsec] = useState("");
   const [isSwitching, setIsSwitching] = useState(false);
@@ -554,10 +560,16 @@ export default function VoiceChat({
   const silenceStartRef = useRef(null);
   const redoRef = useRef("");
 
-  /* Sync creds from parent */
+  /* Sync creds from parent/store */
   useEffect(() => {
-    setCurrentId(activeNpub || "");
-  }, [activeNpub]);
+    setCurrentId(activeNpub || userId || "");
+  }, [activeNpub, userId]);
+
+  useEffect(() => {
+    if (user?.progress?.targetLang) {
+      setTargetLang(user.progress.targetLang);
+    }
+  }, [user?.progress?.targetLang]);
   useEffect(() => {
     setCurrentSecret(activeNsec || "");
   }, [activeNsec]);
@@ -569,7 +581,7 @@ export default function VoiceChat({
 
   /* Live conversation subscription */
   useEffect(() => {
-    const npub = (currentId || "").trim();
+    const npub = (currentId || userId || "").trim();
     if (!npub) return;
     const colRef = collection(database, "users", npub, "turns");
     const q = query(colRef, orderBy("createdAtClient", "asc"), limit(50));
@@ -596,7 +608,7 @@ export default function VoiceChat({
       }
     );
     return () => unsub();
-  }, [currentId]);
+  }, [currentId, userId]);
 
   /* Auto-save profile (only after Firestore load finishes) */
   useEffect(() => {
@@ -615,7 +627,7 @@ export default function VoiceChat({
 
   /* Load profile/progress with cache fallback */
   useEffect(() => {
-    const npub = (currentId || "").trim();
+    const npub = (currentId || userId || "").trim();
     if (!npub) return;
 
     setProfileHydrated(false); // block auto-saves until we finish loading
@@ -642,7 +654,10 @@ export default function VoiceChat({
         );
         setVoice(p.voice || "Leda");
         setVoicePersona(p.voicePersona || DEFAULT_PERSONA);
-        setTargetLang(p.targetLang === "nah" ? "nah" : "es");
+        // Respect saved setting; keep current selection if missing
+        if (["nah", "es"].includes(p.targetLang)) {
+          setTargetLang(p.targetLang);
+        }
         setXp(
           Number.isFinite(data?.xp) ? data.xp : Number.isFinite(p.xp) ? p.xp : 0
         );
@@ -671,12 +686,12 @@ export default function VoiceChat({
     return () => {
       cancelled = true;
     };
-  }, [currentId]);
+  }, [currentId, userId]);
 
   /* Save profile (settings/xp/streak/challenge) */
   async function saveProfile(partial = {}) {
     const npub =
-      (currentId || "").trim() ||
+      (currentId || userId || "").trim() ||
       (typeof window !== "undefined" ? localStorage.getItem("local_npub") : "");
     if (!npub) return;
     try {
@@ -1038,7 +1053,8 @@ export default function VoiceChat({
       // Persist this TURN as its own document
       if (assistantText) {
         const npub =
-          (currentId || "").trim() || localStorage.getItem("local_npub") || "";
+          (currentId || userId || "").trim() ||
+          localStorage.getItem("local_npub") || "";
         if (npub) {
           const colRef = collection(database, "users", npub, "turns");
           await addDoc(colRef, {
