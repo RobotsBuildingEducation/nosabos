@@ -537,6 +537,7 @@ export default function VoiceChat({
   ); // 'nah' | 'es'
 
   const [history, setHistory] = useState([]); // live from snapshot
+  const [historyHydrated, setHistoryHydrated] = useState(false);
   const [coach, setCoach] = useState(null);
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -602,6 +603,7 @@ export default function VoiceChat({
   useEffect(() => {
     const npub = (currentId || "").trim();
     if (!npub) return;
+    setHistoryHydrated(false);
     const colRef = collection(database, "users", npub, "turns");
     const q = query(colRef, orderBy("createdAtClient", "asc"), limit(50));
     const unsub = onSnapshot(
@@ -620,7 +622,8 @@ export default function VoiceChat({
             createdAtClient: v.createdAtClient || 0,
           };
         });
-        setHistory(turns);
+        if (turns.length) setHistory(turns);
+        setHistoryHydrated(true);
       },
       (err) => {
         console.error("turns snapshot error:", err?.message || err);
@@ -628,6 +631,31 @@ export default function VoiceChat({
     );
     return () => unsub();
   }, [currentId]);
+
+  /* Sync local-only turns to Firestore for cross-device access */
+  useEffect(() => {
+    const npub = (currentId || "").trim();
+    if (!npub || !historyHydrated) return;
+    const unsaved = history.filter((m) => !m.id);
+    if (!unsaved.length) return;
+    const colRef = collection(database, "users", npub, "turns");
+    unsaved.forEach(async (m) => {
+      try {
+        await addDoc(colRef, {
+          lang: m.lang || "es",
+          text: m.text || "",
+          trans_en: m.trans_en || "",
+          trans_es: m.trans_es || "",
+          pairs: Array.isArray(m.pairs) ? m.pairs : [],
+          audioKey: m.audioKey || null,
+          createdAt: serverTimestamp(),
+          createdAtClient: m.createdAtClient || Date.now(),
+        });
+      } catch (e) {
+        console.error("turn sync failed:", e);
+      }
+    });
+  }, [history, currentId, historyHydrated]);
 
   /* Auto-save profile (only after Firestore load finishes) */
   useEffect(() => {
