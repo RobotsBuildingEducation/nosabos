@@ -86,8 +86,8 @@ export default function App() {
 
   // DID / auth
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
-    localStorage.getItem("local_npub") ?? "",
-    localStorage.getItem("local_nsec") ?? ""
+    localStorage.getItem("local_npub"),
+    localStorage.getItem("local_nsec")
   );
 
   /** Establish or sync identity and ensure a user doc exists with onboarding flag */
@@ -112,6 +112,7 @@ export default function App() {
       } else {
         // No local id → generate keys, write user doc
         const did = await generateNostrKeys(); // side-effect: writes npub/nsec to localStorage
+        console.log("did", did);
         id = did.npub;
         const base = {
           local_npub: id,

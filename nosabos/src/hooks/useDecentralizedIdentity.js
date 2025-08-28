@@ -104,7 +104,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       //   encodedNsec
       // );
     }
-
+    console.log("encodednsec", encodedNsec);
     localStorage.setItem("local_nsec", encodedNsec);
     localStorage.setItem("local_npub", publicKey);
     localStorage.setItem("uniqueId", publicKey);
@@ -169,6 +169,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       setNostrPubKey(user.npub);
       setNostrPrivKey(nsec);
       localStorage.setItem("local_npub", user.npub);
+      console.log("local_nsec", nsec);
       localStorage.setItem("local_nsec", nsec);
       setErrorMessage(null);
 
@@ -183,6 +184,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   const postNostrContent = async (
     content,
     kind = NDKKind.Text,
+    npubRef = null,
     nsecRef = null
   ) => {
     try {
