@@ -536,8 +536,7 @@ export default function VoiceChat({
     user?.progress?.targetLang || "es"
   ); // 'nah' | 'es'
 
-  const [history, setHistory] = useState([]); // live from snapshot
-  const [historyHydrated, setHistoryHydrated] = useState(false);
+  const [history, setHistory] = useState([]); // live from Firestore
   const [coach, setCoach] = useState(null);
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -573,37 +572,10 @@ export default function VoiceChat({
   useEffect(() => {
     setCurrentSecret(activeNsec || "");
   }, [activeNsec]);
-
-  /* Local conversation cache */
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const key = `history_${(currentId || "").trim()}`;
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) setHistory(JSON.parse(saved));
-    } catch {}
-  }, [currentId]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const npub = (currentId || "").trim();
-    if (!npub) return;
-    try {
-      const key = `history_${npub}`;
-      localStorage.setItem(key, JSON.stringify(history));
-    } catch {}
-  }, [history, currentId]);
-
-  /* Firestore persistence (ignore errors in Private mode) */
-  useEffect(() => {
-    // enableIndexedDbPersistence(database).catch(() => {});
-  }, []);
-
   /* Live conversation subscription */
   useEffect(() => {
     const npub = (currentId || "").trim();
     if (!npub) return;
-    setHistoryHydrated(false);
     const colRef = collection(database, "users", npub, "turns");
     const q = query(colRef, orderBy("createdAtClient", "asc"), limit(50));
     const unsub = onSnapshot(
@@ -622,8 +594,7 @@ export default function VoiceChat({
             createdAtClient: v.createdAtClient || 0,
           };
         });
-        if (turns.length) setHistory(turns);
-        setHistoryHydrated(true);
+        setHistory(turns);
       },
       (err) => {
         console.error("turns snapshot error:", err?.message || err);
@@ -631,31 +602,6 @@ export default function VoiceChat({
     );
     return () => unsub();
   }, [currentId]);
-
-  /* Sync local-only turns to Firestore for cross-device access */
-  useEffect(() => {
-    const npub = (currentId || "").trim();
-    if (!npub || !historyHydrated) return;
-    const unsaved = history.filter((m) => !m.id);
-    if (!unsaved.length) return;
-    const colRef = collection(database, "users", npub, "turns");
-    unsaved.forEach(async (m) => {
-      try {
-        await addDoc(colRef, {
-          lang: m.lang || "es",
-          text: m.text || "",
-          trans_en: m.trans_en || "",
-          trans_es: m.trans_es || "",
-          pairs: Array.isArray(m.pairs) ? m.pairs : [],
-          audioKey: m.audioKey || null,
-          createdAt: serverTimestamp(),
-          createdAtClient: m.createdAtClient || Date.now(),
-        });
-      } catch (e) {
-        console.error("turn sync failed:", e);
-      }
-    });
-  }, [history, currentId, historyHydrated]);
 
   /* Auto-save profile (only after Firestore load finishes) */
   useEffect(() => {
