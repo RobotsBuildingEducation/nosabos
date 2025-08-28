@@ -653,13 +653,10 @@ export default function VoiceChat({
         );
         setVoice(p.voice || "Leda");
         setVoicePersona(p.voicePersona || DEFAULT_PERSONA);
-        // Respect saved setting; default to Spanish if unset
-        setTargetLang([
-          "nah",
-          "es",
-        ].includes(p.targetLang)
-          ? p.targetLang
-          : "es");
+        // Respect saved setting; keep current selection if missing
+        if (["nah", "es"].includes(p.targetLang)) {
+          setTargetLang(p.targetLang);
+        }
         setXp(
           Number.isFinite(data?.xp) ? data.xp : Number.isFinite(p.xp) ? p.xp : 0
         );
