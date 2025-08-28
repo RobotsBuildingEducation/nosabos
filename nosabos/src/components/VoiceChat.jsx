@@ -57,6 +57,7 @@ import {
   setDoc,
   getDoc,
   getDocFromCache,
+  getDocs,
   collection,
   addDoc,
   onSnapshot,
@@ -578,9 +579,11 @@ export default function VoiceChat({
     if (!npub) return;
     const colRef = collection(database, "users", npub, "turns");
     const q = query(colRef, orderBy("createdAtClient", "asc"), limit(50));
-    const unsub = onSnapshot(
-      q,
-      (snap) => {
+
+    let unsub = () => {};
+    (async () => {
+      try {
+        const snap = await getDocs(q);
         const turns = snap.docs.map((d) => {
           const v = d.data() || {};
           return {
@@ -595,11 +598,34 @@ export default function VoiceChat({
           };
         });
         setHistory(turns);
-      },
-      (err) => {
-        console.error("turns snapshot error:", err?.message || err);
+      } catch (e) {
+        console.error("load turns failed:", e);
       }
-    );
+
+      unsub = onSnapshot(
+        q,
+        (snap) => {
+          const turns = snap.docs.map((d) => {
+            const v = d.data() || {};
+            return {
+              id: d.id,
+              lang: v.lang || "es",
+              text: v.text || "",
+              trans_en: v.trans_en || "",
+              trans_es: v.trans_es || "",
+              pairs: Array.isArray(v.pairs) ? v.pairs : [],
+              audioKey: v.audioKey || null,
+              createdAtClient: v.createdAtClient || 0,
+            };
+          });
+          setHistory(turns);
+        },
+        (err) => {
+          console.error("turns snapshot error:", err?.message || err);
+        }
+      );
+    })();
+
     return () => unsub();
   }, [currentId]);
 
@@ -1808,7 +1834,12 @@ export default function VoiceChat({
                       h="1.75rem"
                       size="sm"
                       colorScheme="orange"
-                      onClick={() => copy(currentSecret, "Secret copied")}
+                      onClick={() =>
+                        copy(
+                          localStorage.getItem("local_nsec") || "",
+                          "Secret copied"
+                        )
+                      }
                       isDisabled={!currentSecret}
                     >
                       Copy
