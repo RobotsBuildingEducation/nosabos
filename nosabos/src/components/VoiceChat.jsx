@@ -580,7 +580,10 @@ export default function VoiceChat({
 
   /* Live conversation subscription */
   useEffect(() => {
-    const npub = (currentId || "").trim();
+    let npub = (currentId || "").trim();
+    if (!npub && typeof window !== "undefined") {
+      npub = (localStorage.getItem("local_npub") || "").trim();
+    }
     if (!npub) return;
     const colRef = collection(database, "users", npub, "turns");
     const q = query(colRef, orderBy("createdAtClient", "asc"), limit(50));
@@ -1814,8 +1817,19 @@ export default function VoiceChat({
                       h="1.75rem"
                       size="sm"
                       colorScheme="orange"
-                      onClick={() => copy(currentSecret, "Secret copied")}
-                      isDisabled={!currentSecret}
+                      onClick={() =>
+                        copy(
+                          localStorage.getItem("local_nsec") || "",
+                          "Secret copied"
+                        )
+                      }
+                      isDisabled={
+                        !(
+                          currentSecret ||
+                          (typeof window !== "undefined" &&
+                            localStorage.getItem("local_nsec"))
+                        )
+                      }
                     >
                       Copy
                     </Button>
