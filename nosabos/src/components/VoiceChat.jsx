@@ -545,8 +545,20 @@ export default function VoiceChat({
   const [showTranslations, setShowTranslations] = useState(true);
 
   // Account UI state
-  const [currentId, setCurrentId] = useState(activeNpub || "");
-  const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
+  const [currentId, setCurrentId] = useState(
+    () =>
+      activeNpub ||
+      localStorage.local_npub ||
+      localStorage.getItem("local_npub") ||
+      ""
+  );
+  const [currentSecret, setCurrentSecret] = useState(
+    () =>
+      activeNsec ||
+      localStorage.local_nsec ||
+      localStorage.getItem("local_nsec") ||
+      ""
+  );
   const [switchNsec, setSwitchNsec] = useState("");
   const [isSwitching, setIsSwitching] = useState(false);
 
@@ -562,7 +574,12 @@ export default function VoiceChat({
 
   /* Sync creds from parent */
   useEffect(() => {
-    setCurrentId(activeNpub || "");
+    setCurrentId(
+      activeNpub ||
+        localStorage.local_npub ||
+        localStorage.getItem("local_npub") ||
+        ""
+    );
   }, [activeNpub]);
 
   useEffect(() => {
@@ -571,7 +588,12 @@ export default function VoiceChat({
     }
   }, [user?.progress?.targetLang]);
   useEffect(() => {
-    setCurrentSecret(activeNsec || "");
+    setCurrentSecret(
+      activeNsec ||
+        localStorage.local_nsec ||
+        localStorage.getItem("local_nsec") ||
+        ""
+    );
   }, [activeNsec]);
   /* Live conversation subscription */
   useEffect(() => {
@@ -711,7 +733,9 @@ export default function VoiceChat({
   async function saveProfile(partial = {}) {
     const npub =
       (currentId || "").trim() ||
-      (typeof window !== "undefined" ? localStorage.getItem("local_npub") : "");
+      (typeof window !== "undefined"
+        ? localStorage.local_npub || localStorage.getItem("local_npub")
+        : "");
     if (!npub) return;
     try {
       await setDoc(
@@ -792,7 +816,10 @@ export default function VoiceChat({
       if (typeof auth !== "function")
         throw new Error("auth(nsec) is not available.");
       const res = await auth(nsec);
-      const npub = res?.user?.npub || localStorage.getItem("local_npub");
+      const npub =
+        res?.user?.npub ||
+        localStorage.local_npub ||
+        localStorage.getItem("local_npub");
       if (!npub?.startsWith("npub"))
         throw new Error("Could not derive npub from the secret key.");
       await setDoc(
@@ -1072,7 +1099,10 @@ export default function VoiceChat({
       // Persist this TURN as its own document
       if (assistantText) {
         const npub =
-          (currentId || "").trim() || localStorage.getItem("local_npub") || "";
+          (currentId || "").trim() ||
+          localStorage.local_npub ||
+          localStorage.getItem("local_npub") ||
+          "";
         if (npub) {
           const colRef = collection(database, "users", npub, "turns");
           await addDoc(colRef, {
@@ -1836,7 +1866,9 @@ export default function VoiceChat({
                       colorScheme="orange"
                       onClick={() =>
                         copy(
-                          localStorage.getItem("local_nsec") || "",
+                          localStorage.local_nsec ||
+                            localStorage.getItem("local_nsec") ||
+                            "",
                           "Secret copied"
                         )
                       }
