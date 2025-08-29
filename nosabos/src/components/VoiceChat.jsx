@@ -466,7 +466,7 @@ function AlignedBubble({
     Legacy↔New turn mapping for model context
   --------------------------- */
 function newToLegacyTurn(m) {
-  if (!m) return null;
+  if (!m || m.speaker !== "assistant") return null;
   if (m.lang === "es") {
     return {
       es: m.text || "",
@@ -591,6 +591,7 @@ export default function VoiceChat({
           const v = d.data() || {};
           return {
             id: d.id,
+            speaker: v.speaker || "assistant",
             lang: v.lang || "es",
             text: v.text || "",
             trans_en: v.trans_en || "",
@@ -982,10 +983,12 @@ export default function VoiceChat({
       }
       const data = await resp.json();
 
-      // Extract assistant + coach
+      // Extract assistant + coach + user
       const assistantText = data?.assistant?.text ?? data?.assistant_es ?? "";
       const assistantLang =
         data?.assistant?.lang ?? (data?.assistant_es ? "es" : targetLang);
+      const userText = data?.user?.text || "";
+      const userLang = data?.user?.lang || targetLang;
       const coachObj = data?.coach || {};
       const translation_en = coachObj?.translation_en || "";
       const translation_es = coachObj?.translation_es || "";
@@ -1049,13 +1052,23 @@ export default function VoiceChat({
         setMood("neutral");
       }
 
-      // Persist this TURN as its own document
-      if (assistantText) {
-        const npub =
-          (currentId || "").trim() || localStorage.getItem("local_npub") || "";
-        if (npub) {
-          const colRef = collection(database, "users", npub, "turns");
+      // Persist user/assistant turns as documents
+      const npub =
+        (currentId || "").trim() || localStorage.getItem("local_npub") || "";
+      if (npub) {
+        const colRef = collection(database, "users", npub, "turns");
+        if (userText) {
           await addDoc(colRef, {
+            speaker: "user",
+            lang: userLang,
+            text: userText,
+            createdAt: serverTimestamp(),
+            createdAtClient: Date.now(),
+          });
+        }
+        if (assistantText) {
+          await addDoc(colRef, {
+            speaker: "assistant",
             lang: assistantLang,
             text: assistantText,
             trans_en: translation_en,
@@ -1520,6 +1533,24 @@ export default function VoiceChat({
       <VStack align="stretch" spacing={3} px={4} mt={3}>
         {history
           .map((m) => {
+            if (m.speaker === "user") {
+              return (
+                <Box
+                  key={m.id}
+                  bg="gray.700"
+                  p={3}
+                  borderRadius="lg"
+                  maxW="100%"
+                  w="100%"
+                  minW={0}
+                  overflow="hidden"
+                >
+                  <Text fontSize="md" lineHeight="1.6">
+                    {m.text || ""}
+                  </Text>
+                </Box>
+              );
+            }
             const primaryText = m.text || "";
             const lang = m.lang || "es";
             const primaryLabel = lang === "nah" ? "Náhuatl" : "Spanish";
