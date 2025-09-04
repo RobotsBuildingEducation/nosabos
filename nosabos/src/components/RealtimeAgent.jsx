@@ -80,7 +80,7 @@ const TRANSLATE_MODEL =
   import.meta?.env?.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
 
 // ⚠️ Prefer env/ephemeral keys in prod.
-const API_KEY = import.meta?.env?.VITE_OPENAI_API_KEY;
+// const API_KEY = import.meta?.env?.VITE_OPENAI_API_KEY;
 
 /* ---------------------------
    Utils & helpers
