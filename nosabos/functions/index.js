@@ -182,10 +182,10 @@ exports.talkTurn = onRequest(
       // Only ask the model for the fields we actually need (saves tokens)
       const system =
         `You are a ${TARGET_NAME} practice partner. ` +
-        `The user may speak in English or Spanish. ` +
+        `The user may speak in English or Mexican Spanish.` +
         `Your reply must be ONLY in ${TARGET_NAME}, ≤24 words, natural. Persona: ${String(
           voicePersona
-        ).slice(0, 160)} (playful, supportive; no cruelty).\n\n` +
+        ).slice(0, 160)}.\n\n` +
         `Return ONLY one JSON object (no code fences). Include ONLY the keys requested below; if a key is not listed, OMIT it entirely.\n` +
         `{\n` +
         `  "assistant": { "lang": "${targetLang}", "text": "<${TARGET_NAME} reply, ≤24 words>" },\n` +

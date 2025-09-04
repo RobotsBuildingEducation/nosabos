@@ -491,7 +491,7 @@ function AbstractAvatar({ amp, state, mood, colors, reduced }) {
       </g>
 
       {/* orbiting dash ring */}
-      <g
+      {/* <g
         style={{
           transformOrigin: "180px 120px",
           animation:
@@ -513,10 +513,10 @@ function AbstractAvatar({ amp, state, mood, colors, reduced }) {
             animation: !reduced ? "rbproDash 4s linear infinite" : "none",
           }}
         />
-      </g>
+      </g> */}
 
       {/* INFINITE BOTTOM RIBBON (sound wave) */}
-      <path d={ribbonPath} fill="url(#ribbonGrad)" opacity="0.95" />
+      {/* <path d={ribbonPath} fill="url(#ribbonGrad)" opacity="0.95" />
       <path
         d={ribbonPath.replace(/Z$/, "")}
         fill="none"
@@ -525,7 +525,7 @@ function AbstractAvatar({ amp, state, mood, colors, reduced }) {
         strokeLinejoin="round"
         strokeLinecap="round"
         opacity="0.9"
-      />
+      /> */}
     </svg>
   );
 }

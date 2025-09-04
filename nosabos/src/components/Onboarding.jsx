@@ -1,7 +1,6 @@
-// Onboarding.jsx — first-run setup (one view, mirrors Settings UI)
-import React, { useState } from "react";
+// src/components/Onboarding.jsx — first-run setup (with inline language switch)
+import React, { useEffect, useState } from "react";
 import {
-  Badge,
   Box,
   Button,
   Drawer,
@@ -17,27 +16,51 @@ import {
   VStack,
   Wrap,
   WrapItem,
+  Spacer,
 } from "@chakra-ui/react";
+import { translations } from "../utils/translation";
 
-const DEFAULT_CHALLENGE = {
-  en: "Make a polite request.",
-  es: "Pide algo con cortesía.",
-};
+export default function Onboarding({
+  npub = "",
+  onComplete,
+  userLanguage = "en", // 'en' | 'es' initial UI language from App
+  onAppLanguageChange = () => {}, // parent callback that persists to Firestore + store
+}) {
+  // Local UI language for this panel (instant switch)
+  const [appLang, setAppLang] = useState(userLanguage === "es" ? "es" : "en");
+  const ui = translations[appLang];
 
-// Keep this aligned with App.jsx & VoiceChat.jsx defaults
-const DEFAULT_PERSONA = "Like a sarcastic, semi-friendly toxica.";
-
-export default function Onboarding({ npub = "", onComplete }) {
-  // UI state mirrors the progress shape saved in Firestore
+  // Form state mirrors progress shape for Firestore
   const [level, setLevel] = useState("beginner"); // 'beginner' | 'intermediate' | 'advanced'
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
-  const [voice, setVoice] = useState("Leda"); // 'Leda' | 'Puck' | 'Kore' | 'Breeze' | 'Solemn'
-  const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es'
-  const [voicePersona, setVoicePersona] = useState(DEFAULT_PERSONA);
+  const [voice, setVoice] = useState("alloy"); // GPT Realtime default voices
+  const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es' | 'en'
+  const [voicePersona, setVoicePersona] = useState(ui.DEFAULT_PERSONA);
   const [showTranslations, setShowTranslations] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
   const secondaryPref = supportLang === "es" ? "es" : "en";
+
+  // Challenge text from translations (keeps DB/UI aligned)
+  const CHALLENGE = {
+    en: translations.en.onboarding_challenge_default,
+    es: translations.es.onboarding_challenge_default,
+  };
+
+  useEffect(() => {
+    setVoicePersona(ui.DEFAULT_PERSONA);
+  }, [appLang]);
+  // Inline language switch → call parent persister + update local UI
+  const persistAppLanguage = (lang) => {
+    const norm = lang === "es" ? "es" : "en";
+    setAppLang(norm); // instant panel switch
+    try {
+      localStorage.setItem("appLanguage", norm); // helpful cache
+    } catch {}
+    try {
+      onAppLanguageChange(norm); // ✅ parent writes to Firestore + store
+    } catch {}
+  };
 
   async function handleStart() {
     if (typeof onComplete !== "function") {
@@ -49,17 +72,27 @@ export default function Onboarding({ npub = "", onComplete }) {
       const payload = {
         level,
         supportLang,
-        voice,
+        voice, // GPT Realtime voice id (alloy, ash, ballad, coral, echo, sage, shimmer, verse)
         voicePersona,
         targetLang,
         showTranslations,
-        challenge: { ...DEFAULT_CHALLENGE },
+        challenge: { ...CHALLENGE },
       };
-      await Promise.resolve(onComplete(payload)); // App.jsx will persist and flip onboarding.completed
+      await Promise.resolve(onComplete(payload)); // App.jsx persists & flips onboarding
     } finally {
       setIsSaving(false);
     }
   }
+
+  // UI text helpers
+  const personaPlaceholder = ui.onboarding_persona_input_placeholder.replace(
+    "{example}",
+    ui.onboarding_persona_default_example
+  );
+  const toggleLabel = ui.onboarding_translations_toggle.replace(
+    "{language}",
+    ui[`language_${secondaryPref}`]
+  );
 
   return (
     <Box minH="100vh" bg="gray.900" color="gray.100">
@@ -67,21 +100,42 @@ export default function Onboarding({ npub = "", onComplete }) {
         <DrawerOverlay bg="blackAlpha.700" />
         <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
           <DrawerHeader pb={0}>
-            <VStack align="stretch" spacing={1}>
-              <Text fontWeight="bold" fontSize="lg">
-                Welcome
-              </Text>
-              <Text opacity={0.85} fontSize="sm">
-                Let’s set up your AI experience before you start.
-              </Text>
-              {/* {!!npub && (
-                <HStack pt={1}>
-                  <Badge colorScheme="purple" variant="subtle" maxW="100%">
-                    ID: {npub}
-                  </Badge>
-                </HStack>
-              )} */}
-            </VStack>
+            <HStack align="center" w="100%">
+              <VStack align="stretch" spacing={1}>
+                <Text fontWeight="bold" fontSize="lg">
+                  {ui.onboarding_title}
+                </Text>
+                <Text opacity={0.85} fontSize="sm">
+                  {ui.onboarding_subtitle}
+                </Text>
+              </VStack>
+
+              <Spacer />
+
+              {/* Inline language switch for the onboarding panel */}
+
+              <HStack spacing={2} align="center">
+                <Text
+                  fontSize="sm"
+                  color={userLanguage === "en" ? "teal.300" : "gray.400"}
+                >
+                  EN
+                </Text>
+                <Switch
+                  colorScheme="teal"
+                  isChecked={userLanguage === "es"}
+                  onChange={() =>
+                    persistAppLanguage(userLanguage === "en" ? "es" : "en")
+                  }
+                />
+                <Text
+                  fontSize="sm"
+                  color={userLanguage === "es" ? "teal.300" : "gray.400"}
+                >
+                  ES
+                </Text>
+              </HStack>
+            </HStack>
           </DrawerHeader>
 
           <DrawerBody pb={6}>
@@ -89,7 +143,7 @@ export default function Onboarding({ npub = "", onComplete }) {
               {/* Difficulty & Language */}
               <Box bg="gray.800" p={3} rounded="md">
                 <Text fontSize="sm" mb={2} opacity={0.85}>
-                  Difficulty & Language Support
+                  {ui.onboarding_section_difficulty_support}
                 </Text>
                 <Wrap spacing={2}>
                   <WrapItem>
@@ -100,9 +154,15 @@ export default function Onboarding({ npub = "", onComplete }) {
                       size="md"
                       w="auto"
                     >
-                      <option value="beginner">Beginner</option>
-                      <option value="intermediate">Intermediate</option>
-                      <option value="advanced">Advanced</option>
+                      <option value="beginner">
+                        {ui.onboarding_level_beginner}
+                      </option>
+                      <option value="intermediate">
+                        {ui.onboarding_level_intermediate}
+                      </option>
+                      <option value="advanced">
+                        {ui.onboarding_level_advanced}
+                      </option>
                     </Select>
                   </WrapItem>
 
@@ -114,9 +174,11 @@ export default function Onboarding({ npub = "", onComplete }) {
                       size="md"
                       w="auto"
                     >
-                      <option value="en">Support: English</option>
-                      <option value="bilingual">Support: Bilingual</option>
-                      <option value="es">Support: Spanish</option>
+                      <option value="en">{ui.onboarding_support_en}</option>
+                      <option value="bilingual">
+                        {ui.onboarding_support_bilingual}
+                      </option>
+                      <option value="es">{ui.onboarding_support_es}</option>
                     </Select>
                   </WrapItem>
 
@@ -127,10 +189,11 @@ export default function Onboarding({ npub = "", onComplete }) {
                       bg="gray.800"
                       size="md"
                       w="auto"
-                      title="Practice language"
+                      title={ui.onboarding_practice_label_title}
                     >
-                      <option value="nah">Practice: Náhuatl</option>
-                      <option value="es">Practice: Spanish</option>
+                      <option value="nah">{ui.onboarding_practice_nah}</option>
+                      <option value="es">{ui.onboarding_practice_es}</option>
+                      <option value="en">{ui.onboarding_practice_en}</option>
                     </Select>
                   </WrapItem>
                 </Wrap>
@@ -139,7 +202,7 @@ export default function Onboarding({ npub = "", onComplete }) {
               {/* Voice & Persona */}
               <Box bg="gray.800" p={3} rounded="md">
                 <Text fontSize="sm" mb={2} opacity={0.85}>
-                  Voice & Personality
+                  {ui.onboarding_section_voice_persona}
                 </Text>
 
                 <Wrap spacing={2} mb={2}>
@@ -151,11 +214,18 @@ export default function Onboarding({ npub = "", onComplete }) {
                       size="md"
                       w="auto"
                     >
-                      <option value="Leda">Leda</option>
-                      <option value="Puck">Puck</option>
-                      <option value="Kore">Kore</option>
-                      <option value="Breeze">Breeze</option>
-                      <option value="Solemn">Solemn</option>
+                      <option value="alloy">{ui.onboarding_voice_alloy}</option>
+                      <option value="ash">{ui.onboarding_voice_ash}</option>
+                      <option value="ballad">
+                        {ui.onboarding_voice_ballad}
+                      </option>
+                      <option value="coral">{ui.onboarding_voice_coral}</option>
+                      <option value="echo">{ui.onboarding_voice_echo}</option>
+                      <option value="sage">{ui.onboarding_voice_sage}</option>
+                      <option value="shimmer">
+                        {ui.onboarding_voice_shimmer}
+                      </option>
+                      <option value="verse">{ui.onboarding_voice_verse}</option>
                     </Select>
                   </WrapItem>
                 </Wrap>
@@ -164,18 +234,17 @@ export default function Onboarding({ npub = "", onComplete }) {
                   value={voicePersona}
                   onChange={(e) => setVoicePersona(e.target.value)}
                   bg="gray.700"
-                  placeholder={`e.g., ${DEFAULT_PERSONA}`}
+                  placeholder={personaPlaceholder}
                 />
                 <Text fontSize="xs" opacity={0.7} mt={1}>
-                  This guides tone/style (keep it playful, not hurtful).
+                  {ui.onboarding_persona_help_text}
                 </Text>
               </Box>
 
               {/* Translations toggle */}
               <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
                 <Text fontSize="sm" mr={2}>
-                  Show {secondaryPref === "es" ? "Spanish" : "English"}{" "}
-                  translation
+                  {toggleLabel}
                 </Text>
                 <Switch
                   isChecked={showTranslations}
@@ -186,13 +255,14 @@ export default function Onboarding({ npub = "", onComplete }) {
               {/* First goal preview */}
               <Box bg="gray.800" p={3} rounded="md">
                 <Text fontSize="sm" opacity={0.8}>
-                  First goal
+                  {ui.onboarding_section_first_goal}
                 </Text>
                 <Text mt={1} whiteSpace="pre-wrap">
-                  🎯 {DEFAULT_CHALLENGE.en}
+                  🎯 {ui.onboarding_challenge_default}
                 </Text>
                 <Text mt={1} opacity={0.9}>
-                  ES: {DEFAULT_CHALLENGE.es}
+                  {ui.onboarding_challenge_label_es}{" "}
+                  {translations.es.onboarding_challenge_default}
                 </Text>
               </Box>
 
@@ -202,9 +272,9 @@ export default function Onboarding({ npub = "", onComplete }) {
                 colorScheme="teal"
                 onClick={handleStart}
                 isLoading={isSaving}
-                loadingText="Saving"
+                loadingText={ui.common_saving}
               >
-                Start my session
+                {ui.onboarding_cta_start}
               </Button>
             </VStack>
           </DrawerBody>

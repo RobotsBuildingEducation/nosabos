@@ -627,6 +627,7 @@ export default function VoiceChat({
   /* Load profile/progress with cache fallback */
   useEffect(() => {
     const npub = (currentId || "").trim();
+    window.alert("npub", npub);
     if (!npub) return;
 
     setProfileHydrated(false); // block auto-saves until we finish loading
@@ -1518,68 +1519,65 @@ export default function VoiceChat({
 
       {/* Transcript list (live) */}
       <VStack align="stretch" spacing={3} px={4} mt={3}>
-        {history
-          .map((m) => {
-            const primaryText = m.text || "";
-            const lang = m.lang || "es";
-            const primaryLabel = lang === "nah" ? "Náhuatl" : "Spanish";
-            const secondaryText =
-              (secondaryPref === "es" ? m.trans_es : m.trans_en) || "";
-            const secondaryLabel =
-              secondaryPref === "es" ? "Español" : "English";
-            const pairs = Array.isArray(m.pairs) ? m.pairs : [];
-            const canReplay = !!m.audioKey;
+        {history.map((m) => {
+          const primaryText = m.text || "";
+          const lang = m.lang || "es";
+          const primaryLabel = lang === "nah" ? "Náhuatl" : "Spanish";
+          const secondaryText =
+            (secondaryPref === "es" ? m.trans_es : m.trans_en) || "";
+          const secondaryLabel = secondaryPref === "es" ? "Español" : "English";
+          const pairs = Array.isArray(m.pairs) ? m.pairs : [];
+          const canReplay = !!m.audioKey;
 
-            return (
-              <AlignedBubble
-                key={m.id}
-                primaryLabel={primaryLabel}
-                secondaryLabel={secondaryLabel}
-                primaryText={primaryText}
-                secondaryText={secondaryText}
-                pairs={pairs}
-                showSecondary={showTranslations}
-                canReplay={canReplay}
-                onReplay={async () => {
-                  if (!m.audioKey) {
-                    toast({
-                      title: "No audio cached",
-                      description: "This turn doesn’t have saved audio.",
-                      status: "info",
-                      duration: 2000,
-                    });
-                    return;
-                  }
-                  const clip = await loadClipBlob(m.audioKey);
-                  if (!clip) {
-                    toast({
-                      title: "Audio not found",
-                      description: "Say something again to re-cache this line.",
-                      status: "info",
-                      duration: 2000,
-                    });
-                    return;
-                  }
-                  try {
-                    audioRef.current?.pause?.();
-                  } catch {}
-                  const url = URL.createObjectURL(clip);
-                  const audio = new Audio(url);
-                  audioRef.current = audio;
-                  setUiState("speaking");
-                  setMood("happy");
-                  audio.onended = () => {
-                    URL.revokeObjectURL(url);
-                    audioRef.current = null;
-                    setUiState("idle");
-                    setMood("neutral");
-                  };
-                  await audio.play().catch(() => {});
-                }}
-              />
-            );
-          })
-          .reverse()}
+          return (
+            <AlignedBubble
+              key={m.id}
+              primaryLabel={primaryLabel}
+              secondaryLabel={secondaryLabel}
+              primaryText={primaryText}
+              secondaryText={secondaryText}
+              pairs={pairs}
+              showSecondary={showTranslations}
+              canReplay={canReplay}
+              onReplay={async () => {
+                if (!m.audioKey) {
+                  toast({
+                    title: "No audio cached",
+                    description: "This turn doesn’t have saved audio.",
+                    status: "info",
+                    duration: 2000,
+                  });
+                  return;
+                }
+                const clip = await loadClipBlob(m.audioKey);
+                if (!clip) {
+                  toast({
+                    title: "Audio not found",
+                    description: "Say something again to re-cache this line.",
+                    status: "info",
+                    duration: 2000,
+                  });
+                  return;
+                }
+                try {
+                  audioRef.current?.pause?.();
+                } catch {}
+                const url = URL.createObjectURL(clip);
+                const audio = new Audio(url);
+                audioRef.current = audio;
+                setUiState("speaking");
+                setMood("happy");
+                audio.onended = () => {
+                  URL.revokeObjectURL(url);
+                  audioRef.current = null;
+                  setUiState("idle");
+                  setMood("neutral");
+                };
+                await audio.play().catch(() => {});
+              }}
+            />
+          );
+        })}
       </VStack>
 
       {/* Bottom dock */}
