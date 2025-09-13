@@ -51,6 +51,22 @@ Node version 20+ is required.
 
 ### Configure
 
+#### /src/firebaseResources/firebaseResources.js
+
+Paste your firebase configuration variable after creating your project
+
+```
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_PUBLIC_API_KEY,
+  authDomain: "",
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: "",
+  appId: "",
+  measurementId: "",
+};
+```
+
 #### /vite.config.js
 
 Change the `name`, `short_name`, and `src` urls to allow web app installs on devices
