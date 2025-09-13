@@ -1,4 +1,3 @@
-// src/App.jsx
 import { useEffect, useRef, useState, useMemo } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import {
@@ -41,12 +40,13 @@ import { GoDownload } from "react-icons/go";
 
 import "./App.css";
 import Onboarding from "./components/Onboarding";
-import RealtimeAgent from "./components/RealtimeAgent";
+
 import RobotBuddyPro from "./components/RobotBuddyPro";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
 import { database } from "./firebaseResources/firebaseResources";
 import useUserStore from "./hooks/useUserStore";
 import { translations } from "./utils/translation";
+import RealTimeTest from "./components/RealTimeTest";
 
 /* ---------------------------
    Helpers
@@ -147,6 +147,8 @@ export default function App() {
             onboarding: { completed: false },
             appLanguage:
               localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+            helpRequest: "", // mirror at top-level
+            practicePronunciation: false, // ✅ NEW default mirror
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
           userDoc = await loadUserObjectFromDB(database, id);
@@ -161,6 +163,8 @@ export default function App() {
           onboarding: { completed: false },
           appLanguage:
             localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+          helpRequest: "", // mirror at top-level
+          practicePronunciation: false, // ✅ NEW default mirror
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
@@ -239,6 +243,11 @@ export default function App() {
         supportLang: ["en", "es", "bilingual"].includes(payload.supportLang)
           ? payload.supportLang
           : "en",
+        // ✅ NEW boolean with default false
+        practicePronunciation:
+          typeof payload.practicePronunciation === "boolean"
+            ? payload.practicePronunciation
+            : false,
         voice: safe(payload.voice, "alloy"), // GPT Realtime voice ids
         voicePersona: safe(
           payload.voicePersona,
@@ -251,6 +260,8 @@ export default function App() {
           typeof payload.showTranslations === "boolean"
             ? payload.showTranslations
             : true,
+        // what the user wants help with (limit length for safety)
+        helpRequest: String(safe(payload.helpRequest, "")).slice(0, 600),
         challenge:
           payload?.challenge?.en && payload?.challenge?.es
             ? payload.challenge
@@ -277,6 +288,10 @@ export default function App() {
           lastGoal: normalized.challenge.en, // keep English for lastGoal label
           xp: 0,
           streak: 0,
+          // mirrors for quick reads
+          helpRequest: normalized.helpRequest,
+          practicePronunciation: normalized.practicePronunciation, // ✅ NEW mirror
+          // progress holds all learning prefs
           progress: { ...normalized },
         },
         { merge: true }
@@ -433,11 +448,6 @@ export default function App() {
           top={0}
           zIndex={100}
         >
-          {/* <Text fontWeight="semibold">RO.B.E</Text>
-          <Badge variant="subtle" colorScheme="purple">
-            {user?.id ? user.id.slice(0, 8) : "anon"}
-          </Badge> */}
-
           <Spacer />
           <HStack spacing={1}>
             <IconButton
@@ -654,7 +664,7 @@ export default function App() {
   return (
     <Box minH="100vh" bg="gray.900">
       <TopBar />
-      <RealtimeAgent
+      <RealTimeTest
         userLanguage={appLanguage}
         auth={auth}
         activeNpub={activeNpub}

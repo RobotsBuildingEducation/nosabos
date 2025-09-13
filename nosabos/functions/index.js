@@ -1,305 +1,246 @@
-// functions/index.js
-"use strict";
+/* functions/index.js */
 
-/**
- * Env file:
- *   functions/.env
- *   GEMINI_API_KEY=your_key_here
- *
- * Endpoints:
- *   POST /talkTurn  -> {
- *     audioBase64, mime, history,
- *     level, supportLang, challenge, redo,
- *     voice, voicePersona,
- *     targetLang                 // 'nah' | 'es'  (default 'nah')
- *   }
- *   POST /tts -> { text, voice }
- */
-
-const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, ".env") });
-
+// Firebase Functions v2 (Node 20, global fetch available)
+const functions = require("firebase-functions/v2");
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
-const { GoogleGenAI } = require("@google/genai");
 
-admin.initializeApp();
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-/* -------------------------
-   Helpers
-------------------------- */
-function safeParseJson(text) {
-  if (!text) return null;
-  try {
-    return JSON.parse(text);
-  } catch {}
-  const s = text.indexOf("{");
-  const e = text.lastIndexOf("}");
-  if (s !== -1 && e !== -1 && e > s) {
-    try {
-      return JSON.parse(text.slice(s, e + 1));
-    } catch {}
-  }
-  return null;
+// Initialize Admin SDK once
+try {
+  admin.app();
+} catch {
+  admin.initializeApp();
 }
 
-function getAIOrThrow() {
-  if (!GEMINI_API_KEY) {
-    throw new Error(
-      "GEMINI_API_KEY is missing. Set it in functions/.env (GEMINI_API_KEY=...)"
-    );
-  }
-  return new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+// ===== Runtime config =====
+//   firebase functions:config:set openai.key="sk-xxxxxxxx"
+//   firebase deploy --only functions
+const OPENAI_API_KEY =
+  process.env.OPENAI_API_KEY ||
+  (functions.params.projectId && functions.config().openai?.key) ||
+  "";
+
+if (!OPENAI_API_KEY) {
+  functions.logger.warn(
+    "OPENAI_API_KEY not set. Use 'firebase functions:config:set openai.key=\"...\"' or env var."
+  );
 }
 
-/** TTS with graceful voice fallback (tries requested voice, then Puck) */
-async function synthesize(ai, text, voiceName) {
-  const tryOnce = async (name) => {
-    const r = await ai.models.generateContent({
-      model: "gemini-2.5-flash-preview-tts",
-      contents: [{ role: "user", parts: [{ text }] }],
-      config: {
-        responseModalities: ["AUDIO"],
-        speechConfig: {
-          voiceConfig: { prebuiltVoiceConfig: { voiceName: name } },
-        },
-      },
-    });
-    return (
-      r?.candidates?.[0]?.content?.parts?.find((p) => p.inlineData)?.inlineData
-        ?.data || null
-    );
-  };
+// ==== Tunables ====
+const REGION = "us-central1";
+const CORS_ORIGINS = [
+  "http://localhost:5173",
+  "http://localhost:3000",
+  process.env.DEPLOYED_URL,
+];
 
-  try {
-    const data = await tryOnce(voiceName);
-    if (data) return data;
-  } catch (e) {
-    console.error("TTS failed for voice", voiceName, e?.message || e);
-  }
+// Only permit the models you actually use with /proxyResponses
+const ALLOWED_RESPONSE_MODELS = new Set(["gpt-4o-mini", "gpt-4o", "o4-mini"]);
 
-  if (voiceName !== "Puck") {
-    try {
-      const data = await tryOnce("Puck");
-      if (data) return data;
-    } catch (e) {
-      console.error("TTS fallback to Puck failed", e?.message || e);
-    }
+// Optionally require Firebase App Check (set true after client wiring)
+const REQUIRE_APPCHECK = false;
+
+// ===== Small CORS helper =====
+function applyCors(req, res) {
+  const origin = req.headers.origin;
+  if (origin && CORS_ORIGINS.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin");
   }
-  throw new Error("TTS synthesis failed for all voices tried.");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Firebase-AppCheck"
+  );
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return true;
+  }
+  return false;
 }
 
-/* -------------------------
-   /talkTurn  (Trilingual: Náhuatl + ES + EN)
-------------------------- */
-exports.talkTurn = onRequest(
-  { region: "us-central1", cors: true },
+// ===== App Check (optional but recommended) =====
+// async function verifyAppCheck(req) {
+//   if (!REQUIRE_APPCHECK) return;
+//   const token = req.header("X-Firebase-AppCheck");
+//   if (!token) {
+//     throw new functions.https.HttpsError(
+//       "unauthenticated",
+//       "Missing App Check token."
+//     );
+//   }
+//   try {
+//     await admin.appCheck().verifyToken(token);
+//   } catch (e) {
+//     throw new functions.https.HttpsError(
+//       "permission-denied",
+//       "Invalid App Check token."
+//     );
+//   }
+// }
+
+// ===== Helpers =====
+function badRequest(msg) {
+  throw new functions.https.HttpsError("invalid-argument", msg);
+}
+function authzHeader() {
+  return { Authorization: `Bearer ${OPENAI_API_KEY}` };
+}
+
+// ======================================================
+// 1) Realtime SDP Exchange Proxy
+//    Frontend posts SDP offer here instead of OpenAI.
+//    Returns the SDP answer (Content-Type: application/sdp)
+// ------------------------------------------------------
+exports.exchangeRealtimeSDP = onRequest(
+  {
+    region: REGION,
+    maxInstances: 10,
+    concurrency: 80,
+    cors: false, // manual CORS
+    timeoutSeconds: 60,
+    memory: "256MiB",
+  },
   async (req, res) => {
-    try {
-      if (req.method === "OPTIONS") return res.status(204).end();
-      if (req.method !== "POST") return res.status(405).send("POST only");
+    if (applyCors(req, res)) return;
+    if (req.method !== "POST")
+      return res.status(405).send("Method Not Allowed");
+    // await verifyAppCheck(req);
 
-      const {
-        audioBase64,
-        mime = "audio/webm",
-        history = [],
-        level = "beginner",
-        supportLang = "en", // 'en' | 'es' | 'bilingual'
-        challenge = {
-          es: "Pide algo con cortesía.",
-          en: "Make a polite request.",
-        },
-        redo = "",
-        voice = "Leda",
-        voicePersona = "Like a sarcastic, semi-friendly toxica.",
-        targetLang = "nah", // 'nah' | 'es'
-      } = req.body || {};
+    // Accept raw SDP (Content-Type: application/sdp) or JSON { sdp, model }
+    const contentType = (req.headers["content-type"] || "").toLowerCase();
 
-      if (!audioBase64)
-        return res.status(400).json({ error: "audioBase64 required" });
-
-      const ai = getAIOrThrow();
-
-      const LANG_NAMES = { nah: "Náhuatl", es: "Spanish", en: "English" };
-      const TARGET_NAME = LANG_NAMES[targetLang] || "Náhuatl";
-
-      // === NEW: compute what we actually need ===
-      const needEN = supportLang === "en" || supportLang === "bilingual";
-      const needES = supportLang === "es" || supportLang === "bilingual";
-
-      // translations we want the model to emit (keep list short to save tokens)
-      const translationSpec = [
-        needEN
-          ? `"translation_en": "<English translation of assistant.text>"`
-          : null,
-        needES
-          ? `"translation_es": "<Spanish translation of assistant.text>"`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(",\n      ");
-
-      // alignment we want (only what UX will highlight)
-      let alignmentSpec = "";
-      if (targetLang === "nah") {
-        const blocks = [];
-        if (needEN)
-          blocks.push(
-            `"nah_en": [{"t":"<${TARGET_NAME} phrase>","en":"<English phrase>"}]`
-          );
-        if (needES)
-          blocks.push(
-            `"nah_es": [{"t":"<${TARGET_NAME} phrase>","es":"<Spanish phrase>"}]`
-          );
-        if (blocks.length)
-          alignmentSpec = `"alignment": { ${blocks.join(", ")} },`;
-      } else if (targetLang === "es") {
-        // In Spanish mode we only ever need Spanish→English for secondary,
-        // unless support is strictly 'es' (no secondary needed).
-        if (needEN)
-          alignmentSpec = `"alignment": { "es_en": [{"es":"<Spanish phrase>","en":"<English phrase>"}] },`;
+    let offerSDP = "";
+    let model = "gpt-4o-realtime-preview"; // set your default realtime model
+    if (contentType.includes("application/sdp")) {
+      offerSDP = req.rawBody?.toString("utf8") || "";
+    } else {
+      const body = req.body || {};
+      offerSDP = (body.sdp || "").toString();
+      if (typeof body.model === "string" && body.model.trim()) {
+        model = body.model.trim();
       }
+    }
+    if (!offerSDP) badRequest("Missing SDP offer.");
 
-      // keep vocab & redo in target language (cheap & useful)
-      const levelHint =
-        level === "beginner"
-          ? "Learner level: beginner. Simpler target language; clearer coaching."
-          : level === "intermediate"
-          ? "Learner level: intermediate. Natural target language; concise coaching."
-          : "Learner level: advanced. Native-level target language; terse coaching.";
+    const url = `https://api.openai.com/v1/realtime?model=${encodeURIComponent(
+      model
+    )}`;
 
-      const supportHint =
-        supportLang === "en"
-          ? "Support language: English-only coaching emphasis."
-          : supportLang === "bilingual"
-          ? "Support language: bilingual coaching (English + Spanish)."
-          : "Support language: Spanish-only coaching emphasis.";
-
-      const challengeHint = `Current goal: ES="${challenge.es}" | EN="${challenge.en}".`;
-      const redoHint = redo ? `User wants to retry: "${redo}".` : "";
-
-      // Only ask the model for the fields we actually need (saves tokens)
-      const system =
-        `You are a ${TARGET_NAME} practice partner. ` +
-        `The user may speak in English or Mexican Spanish.` +
-        `Your reply must be ONLY in ${TARGET_NAME}, ≤24 words, natural. Persona: ${String(
-          voicePersona
-        ).slice(0, 160)}.\n\n` +
-        `Return ONLY one JSON object (no code fences). Include ONLY the keys requested below; if a key is not listed, OMIT it entirely.\n` +
-        `{\n` +
-        `  "assistant": { "lang": "${targetLang}", "text": "<${TARGET_NAME} reply, ≤24 words>" },\n` +
-        `  "coach": {\n` +
-        `    "correction_en": "<one concise correction in English, quote the learner when useful>",\n` +
-        `    "correction_es": "<una corrección concisa en español>",\n` +
-        `    "tip_en": "<≤14-word micro-tip in English>",\n` +
-        `    "tip_es": "<≤14-word micro-consejo en español>",\n` +
-        `    "redo_${targetLang}": "<very short redo prompt in ${TARGET_NAME}>",\n` +
-        `    "vocab_${targetLang}": ["word1","word2","..."],\n` +
-        (translationSpec ? `    ${translationSpec},\n` : ``) +
-        (alignmentSpec ? `    ${alignmentSpec}\n` : ``) +
-        `    "scores": {"pronunciation":0-3,"grammar":0-3,"vocab":0-3,"fluency":0-3},\n` +
-        `    "cefr": "A1|A2|B1|B2|C1",\n` +
-        `    "goal_completed": true|false,\n` +
-        `    "next_goal": { "${targetLang}":"...", "en":"...", "es":"..." }\n` +
-        `  }\n` +
-        `}\n\n` +
-        `Notes:\n` +
-        `- If English support is NOT requested, DO NOT include "translation_en" nor any *_en alignment key.\n` +
-        `- If Spanish support is NOT requested, DO NOT include "translation_es" nor any *_es alignment key.\n` +
-        `- Keep outputs compact; avoid extra commentary.\n`;
-
-      // Context packing (unchanged)
-      const contextTurns = (history || []).slice(-3).map((m) => ({
-        role: "model",
-        parts: [{ text: m?.target || m?.es || m?.en || "" }],
-      }));
-
-      const contents = [
-        { role: "user", parts: [{ text: system }] },
-        {
-          role: "user",
-          parts: [
-            {
-              text: `Target language: ${TARGET_NAME} (${targetLang}). ${levelHint} ${supportHint} ${challengeHint} ${redoHint}`,
-            },
-          ],
+    let upstream;
+    try {
+      upstream = await fetch(url, {
+        method: "POST",
+        headers: {
+          ...authzHeader(),
+          "Content-Type": "application/sdp",
         },
-        ...contextTurns,
-        {
-          role: "user",
-          parts: [{ inlineData: { data: audioBase64, mimeType: mime } }],
-        },
-      ];
-
-      // ---- rest of handler stays the same ----
-      const chatResp = await ai.models.generateContent({
-        model: "gemini-2.5-flash-lite",
-        contents,
-        generationConfig: { maxOutputTokens: 240, temperature: 0.6 },
-      });
-
-      const raw =
-        chatResp?.text?.trim() ||
-        (chatResp?.candidates?.[0]?.content?.parts || [])
-          .map((p) => p.text)
-          .filter(Boolean)
-          .join("\n") ||
-        "";
-
-      const parsed = safeParseJson(raw);
-      if (!parsed) throw new Error("Model response was not valid JSON.");
-
-      const assistant = parsed.assistant || {
-        lang: targetLang,
-        text:
-          parsed[`assistant_${targetLang}`] ||
-          parsed.assistant_text ||
-          parsed.assistant_es ||
-          "",
-      };
-      const coach = parsed.coach || null;
-
-      const audioBase64Out = assistant?.text
-        ? await synthesize(ai, assistant.text, voice)
-        : null;
-
-      return res.json({
-        assistant,
-        coach,
-        audioBase64: audioBase64Out,
-        assistant_es: targetLang === "es" ? assistant.text : undefined,
+        body: offerSDP,
       });
     } catch (e) {
-      console.error(e);
-      return res.status(500).json({ error: String(e?.message || e) });
+      functions.logger.error(
+        "Realtime upstream fetch failed:",
+        e?.message || e
+      );
+      throw new functions.https.HttpsError(
+        "internal",
+        "Realtime upstream error."
+      );
     }
+
+    const answerSDP = await upstream.text();
+    if (!upstream.ok) {
+      functions.logger.error(
+        "Realtime upstream non-OK:",
+        upstream.status,
+        answerSDP
+      );
+      return res.status(502).send(answerSDP || "Upstream error.");
+    }
+
+    res.setHeader("Content-Type", "application/sdp");
+    return res.status(200).send(answerSDP);
   }
 );
 
-/* -------------------------
-   /tts
-------------------------- */
-exports.tts = onRequest(
+// ======================================================
+// 2) Responses API Proxy
+//    For translate/judge/next-goal requests.
+// ------------------------------------------------------
+exports.proxyResponses = onRequest(
   {
-    region: "us-central1",
-    cors: true,
+    region: REGION,
+    maxInstances: 20,
+    concurrency: 80,
+    cors: false,
+    timeoutSeconds: 60,
+    memory: "256MiB",
   },
   async (req, res) => {
-    try {
-      if (req.method === "OPTIONS") return res.status(204).end();
-      if (req.method !== "POST") return res.status(405).send("POST only");
+    if (applyCors(req, res)) return;
+    if (req.method !== "POST")
+      return res.status(405).send("Method Not Allowed");
+    // await verifyAppCheck(req);
 
-      const { text, voice = "Leda" } = req.body || {};
-      if (!text) return res.status(400).json({ error: "text required" });
-
-      const ai = getAIOrThrow();
-      const audioBase64 = await synthesize(ai, text, voice);
-
-      return res.json({ audioBase64 });
-    } catch (e) {
-      console.error(e);
-      return res.status(500).json({ error: String(e?.message || e) });
+    const body = req.body || {};
+    const model = (body.model || "").toString();
+    if (!model) badRequest("Missing 'model' in request body.");
+    if (!ALLOWED_RESPONSE_MODELS.has(model)) {
+      badRequest(
+        `Model '${model}' not allowed. Allowed: ${Array.from(
+          ALLOWED_RESPONSE_MODELS
+        ).join(", ")}`
+      );
     }
+
+    // (Optional) Inject guardrails/metadata here:
+    // body.metadata = { origin: "rbe", ...(body.metadata || {}) };
+
+    let upstream;
+    try {
+      upstream = await fetch("https://api.openai.com/v1/responses", {
+        method: "POST",
+        headers: {
+          ...authzHeader(),
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (e) {
+      functions.logger.error(
+        "Responses upstream fetch failed:",
+        e?.message || e
+      );
+      throw new functions.https.HttpsError(
+        "internal",
+        "Responses upstream error."
+      );
+    }
+
+    const ct = upstream.headers.get("content-type") || "application/json";
+    const text = await upstream.text();
+    res.status(upstream.status);
+    res.setHeader("Content-Type", ct);
+    return res.send(text);
+  }
+);
+
+// ======================================================
+// 3) Health check (handy for debugging)
+// ------------------------------------------------------
+exports.health = onRequest(
+  { region: REGION, cors: false },
+  async (_req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.status(200).send(
+      JSON.stringify({
+        ok: true,
+        projectId: functions.params.projectId || admin.app().options.projectId,
+        appCheckRequired: REQUIRE_APPCHECK,
+        openaiConfigured: Boolean(OPENAI_API_KEY),
+        time: new Date().toISOString(),
+      })
+    );
   }
 );

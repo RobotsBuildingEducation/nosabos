@@ -76,7 +76,7 @@ export default function RobotBuddyPro({
   palette = "ocean",
   showBadges = true,
   compact = false,
-  maxW = 420,
+  maxW = 210,
 }) {
   const colors = PALETTES[palette] ?? PALETTES.ocean;
   const amp = useAmp({ state, loudness, speakLoudness });
@@ -155,7 +155,7 @@ export default function RobotBuddyPro({
           />
         )}
 
-        {showBadges && (
+        {/* {showBadges && (
           <HStack justify="center" mt={compact ? 1.5 : 2} spacing={2}>
             <Badge
               colorScheme={
@@ -182,7 +182,7 @@ export default function RobotBuddyPro({
               </Badge>
             )}
           </HStack>
-        )}
+        )} */}
       </Box>
     </Box>
   );

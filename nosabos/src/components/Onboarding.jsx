@@ -1,4 +1,4 @@
-// src/components/Onboarding.jsx — first-run setup (with inline language switch)
+// src/components/Onboarding.jsx
 import React, { useEffect, useState } from "react";
 import {
   Box,
@@ -17,6 +17,7 @@ import {
   Wrap,
   WrapItem,
   Spacer,
+  Textarea, // <-- NEW
 } from "@chakra-ui/react";
 import { translations } from "../utils/translation";
 
@@ -35,8 +36,10 @@ export default function Onboarding({
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
   const [voice, setVoice] = useState("alloy"); // GPT Realtime default voices
   const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es' | 'en'
-  const [voicePersona, setVoicePersona] = useState(ui.DEFAULT_PERSONA);
+  const [practicePronunciation, setPracticePronunciation] = useState(false); // <-- NEW
+  const [voicePersona, setVoicePersona] = useState(ui.DEFAULT_PERSONA || "");
   const [showTranslations, setShowTranslations] = useState(true);
+  const [helpRequest, setHelpRequest] = useState(""); // <-- NEW
   const [isSaving, setIsSaving] = useState(false);
 
   const secondaryPref = supportLang === "es" ? "es" : "en";
@@ -48,8 +51,9 @@ export default function Onboarding({
   };
 
   useEffect(() => {
-    setVoicePersona(ui.DEFAULT_PERSONA);
+    setVoicePersona(ui.DEFAULT_PERSONA || "");
   }, [appLang]);
+
   // Inline language switch → call parent persister + update local UI
   const persistAppLanguage = (lang) => {
     const norm = lang === "es" ? "es" : "en";
@@ -75,7 +79,9 @@ export default function Onboarding({
         voice, // GPT Realtime voice id (alloy, ash, ballad, coral, echo, sage, shimmer, verse)
         voicePersona,
         targetLang,
+        practicePronunciation, // <-- NEW
         showTranslations,
+        helpRequest, // <-- NEW
         challenge: { ...CHALLENGE },
       };
       await Promise.resolve(onComplete(payload)); // App.jsx persists & flips onboarding
@@ -84,15 +90,36 @@ export default function Onboarding({
     }
   }
 
-  // UI text helpers
-  const personaPlaceholder = ui.onboarding_persona_input_placeholder.replace(
+  // UI text helpers (with fallbacks so you’re not blocked by i18n)
+  const personaPlaceholder = (
+    ui.onboarding_persona_input_placeholder || 'e.g., "{example}"'
+  ).replace(
     "{example}",
-    ui.onboarding_persona_default_example
+    ui.onboarding_persona_default_example || "patient, encouraging, playful"
   );
-  const toggleLabel = ui.onboarding_translations_toggle.replace(
+
+  const toggleLabel = (
+    ui.onboarding_translations_toggle || "Show translations in {language}"
+  ).replace(
     "{language}",
-    ui[`language_${secondaryPref}`]
+    ui[`language_${secondaryPref}`] ||
+      (secondaryPref === "es" ? "Spanish" : "English")
   );
+
+  const HELP_TITLE =
+    ui.onboarding_help_title || "What would you like help with?";
+  const HELP_PLACEHOLDER =
+    ui.onboarding_help_placeholder ||
+    "e.g., conversational practice for job interviews; past tenses review; travel Spanish…";
+  const HELP_HINT =
+    ui.onboarding_help_hint ||
+    "Share topics, goals, or situations. This guides your AI coach.";
+
+  // NEW i18n fallbacks for pronunciation switch
+  const PRON_LABEL = ui.onboarding_pron_label || "Practice pronunciation";
+  const PRON_HINT =
+    ui.onboarding_pron_hint ||
+    "When enabled, your coach will prompt you to repeat lines and focus on sounds/intonation.";
 
   return (
     <Box minH="100vh" bg="gray.900" color="gray.100">
@@ -113,24 +140,23 @@ export default function Onboarding({
               <Spacer />
 
               {/* Inline language switch for the onboarding panel */}
-
               <HStack spacing={2} align="center">
                 <Text
                   fontSize="sm"
-                  color={userLanguage === "en" ? "teal.300" : "gray.400"}
+                  color={appLang === "en" ? "teal.300" : "gray.400"} // use local state to avoid flicker
                 >
                   EN
                 </Text>
                 <Switch
                   colorScheme="teal"
-                  isChecked={userLanguage === "es"}
+                  isChecked={appLang === "es"}
                   onChange={() =>
-                    persistAppLanguage(userLanguage === "en" ? "es" : "en")
+                    persistAppLanguage(appLang === "en" ? "es" : "en")
                   }
                 />
                 <Text
                   fontSize="sm"
-                  color={userLanguage === "es" ? "teal.300" : "gray.400"}
+                  color={appLang === "es" ? "teal.300" : "gray.400"}
                 >
                   ES
                 </Text>
@@ -199,6 +225,23 @@ export default function Onboarding({
                 </Wrap>
               </Box>
 
+              {/* NEW: Practice pronunciation (between Difficulty & Voice) */}
+              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
+                <Box>
+                  <Text fontSize="sm" mr={2}>
+                    {PRON_LABEL}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7}>
+                    {PRON_HINT}
+                  </Text>
+                </Box>
+                <Switch
+                  isChecked={practicePronunciation}
+                  onChange={(e) => setPracticePronunciation(e.target.checked)}
+                  colorScheme="teal"
+                />
+              </HStack>
+
               {/* Voice & Persona */}
               <Box bg="gray.800" p={3} rounded="md">
                 <Text fontSize="sm" mb={2} opacity={0.85}>
@@ -238,6 +281,23 @@ export default function Onboarding({
                 />
                 <Text fontSize="xs" opacity={0.7} mt={1}>
                   {ui.onboarding_persona_help_text}
+                </Text>
+
+                {/* NEW: Help request */}
+                <Text fontSize="sm" mt={4} opacity={0.85}>
+                  {HELP_TITLE}
+                </Text>
+                <Textarea
+                  value={helpRequest}
+                  onChange={(e) => setHelpRequest(e.target.value)}
+                  bg="gray.700"
+                  placeholder={HELP_PLACEHOLDER}
+                  resize="vertical"
+                  minH="80px"
+                  mt={1}
+                />
+                <Text fontSize="xs" opacity={0.7} mt={1}>
+                  {HELP_HINT}
                 </Text>
               </Box>
 

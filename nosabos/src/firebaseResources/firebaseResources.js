@@ -16,8 +16,6 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 
-console.log("app", app);
-
 const database = getFirestore(app);
 
 const vertexAI = getVertexAI(app);

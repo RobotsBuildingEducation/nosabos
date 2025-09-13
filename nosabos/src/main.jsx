@@ -11,20 +11,13 @@ import {
   useParams,
   useLocation,
 } from "react-router-dom";
-import RealtimeAgent from "./components/RealtimeAgent.jsx";
-
-localStorage.setItem("passcode", import.meta.env.VITE_PATREON_PASSCODE);
-localStorage.setItem(
-  "features_passcode",
-  import.meta.env.VITE_PATREON_PASSCODE
-);
 
 createRoot(document.getElementById("root")).render(
   <ChakraProvider>
     <Router>
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/experiments" element={<RealtimeAgent />} />
+        {/* <Route path="/experiments" element={<RealtimeAgent />} /> */}
       </Routes>
     </Router>
   </ChakraProvider>

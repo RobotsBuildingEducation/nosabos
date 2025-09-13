@@ -30,6 +30,7 @@ import {
   Flex,
   IconButton,
   Spinner,
+  Textarea,
 } from "@chakra-ui/react";
 import { SettingsIcon, DeleteIcon } from "@chakra-ui/icons";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
@@ -56,31 +57,30 @@ import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
+import { WaveBar } from "./WaveBar";
 
-/**
- * Visual smoothness:
- * - Don’t render an assistant bubble until the first token arrives (no empty bubble).
- * - Fade-in translation text and show a tiny spinner in the header while translating.
- * - Single merged timeline (history + ephemerals) to avoid “swap” flicker.
- * - Fast VAD + throttled stream flush.
- *
- * Replay system:
- * - Full AI-voice replay via MediaRecorder + IndexedDB.
- * - AudioContext graph capture + RMS tail detector to prevent cut-offs.
- * - Replay fallback (server re-say) is also recorded/cached for next time.
- */
+// console.log(
+//   "VITE_FIREBASE_PUBLIC_API_KEYXXX",
+//   import.meta.env.VITE_FIREBASE_PUBLIC_API_KEY
+// );
 
-const REALTIME_URL =
-  (import.meta?.env?.VITE_OPENAI_REALTIME_URL ||
-    "https://api.openai.com/v1/realtime?model=gpt-realtime") + "";
-const RESPONSES_URL =
-  (import.meta?.env?.VITE_OPENAI_RESPONSES_URL ||
-    "https://api.openai.com/v1/responses") + "";
+console.log(
+  "import.meta?.env?.VITE_RESPONSES_URL",
+  import.meta.env.VITE_RESPONSES_URL
+);
+
+const REALTIME_MODEL =
+  (import.meta.env.VITE_REALTIME_MODEL || "gpt-4o-realtime-preview") + "";
+
+const REALTIME_URL = `${
+  import.meta.env.VITE_REALTIME_URL
+}?model=gpt-4o-realtime-preview/exchangeRealtimeSDP?model=${encodeURIComponent(
+  REALTIME_MODEL
+)}`;
+
+const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
-  import.meta?.env?.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
-
-// ⚠️ Prefer env/ephemeral keys in prod.
-// const API_KEY = import.meta?.env?.VITE_OPENAI_API_KEY;
+  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
 
 /* ---------------------------
    Utils & helpers
@@ -124,6 +124,7 @@ async function ensureUserDoc(npub, defaults = {}) {
           onboarding: { completed: true },
           xp: 0,
           streak: 0,
+          helpRequest: "",
           progress: {
             level: "beginner",
             supportLang: "en",
@@ -131,6 +132,9 @@ async function ensureUserDoc(npub, defaults = {}) {
             voicePersona: translations.en.onboarding_persona_default_example,
             targetLang: "es",
             showTranslations: true,
+            helpRequest: "",
+            // ✅ default for new feature:
+            practicePronunciation: false,
           },
           ...defaults,
         },
@@ -253,8 +257,6 @@ function AlignedBubble({
       border="1px solid rgba(255,255,255,0.06)"
       maxW="100%"
       borderBottomLeftRadius="0px"
-
-      //   border="1px solid red"
     >
       <HStack justify="space-between" mb={1}>
         <Badge variant="subtle">{primaryLabel}</Badge>
@@ -296,8 +298,7 @@ function AlignedBubble({
                 borderColor: colorFor(i),
                 backgroundColor: colorFor(i),
                 borderWidth: 2,
-                // background: "transparent",
-                color: "black",
+                color: "#5C6064",
               }}
               whiteSpace="normal"
               maxW="100%"
@@ -402,7 +403,7 @@ async function idbGetClip(id) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function RealtimeAgent({
+export default function RealTimeTest({
   auth,
   activeNpub = "",
   activeNsec = "",
@@ -413,7 +414,7 @@ export default function RealtimeAgent({
 
   // User id
   const user = useUserStore((s) => s.user);
-  const currentNpub = strongNpub(activeNpub);
+  const currentNpub = activeNpub?.trim?.() || strongNpub(user);
 
   // Refs for realtime
   const audioRef = useRef(null); // remote stream sink (live AI voice)
@@ -422,21 +423,21 @@ export default function RealtimeAgent({
   const localRef = useRef(null);
   const dcRef = useRef(null);
 
-  // WebAudio capture graph (stable recording + RMS)
+  // WebAudio capture graph
   const audioCtxRef = useRef(null);
   const analyserRef = useRef(null);
   const floatBufRef = useRef(null);
-  const captureOutRef = useRef(null); // MediaStream from AudioContext destination
-  const audioGraphReadyRef = useRef(false); // built after first remote track
+  const captureOutRef = useRef(null);
+  const audioGraphReadyRef = useRef(false);
 
-  // Cached-clip index (mid's with audio blob in IDB)
+  // Cached-clip index
   const audioCacheIndexRef = useRef(new Set());
 
   // Replay capture maps
-  const recMapRef = useRef(new Map()); // rid -> MediaRecorder
-  const recChunksRef = useRef(new Map()); // rid -> BlobParts[]
-  const recTailRef = useRef(new Map()); // rid -> intervalId
-  const replayRidSetRef = useRef(new Set()); // rids spawned by replay fallback
+  const recMapRef = useRef(new Map());
+  const recChunksRef = useRef(new Map());
+  const recTailRef = useRef(new Map());
+  const replayRidSetRef = useRef(new Set());
 
   // Guardrails
   const guardrailItemIdsRef = useRef([]);
@@ -452,7 +453,7 @@ export default function RealtimeAgent({
   const [uiState, setUiState] = useState("idle");
   const [volume] = useState(0);
   const [mood, setMood] = useState("neutral");
-  const [pauseMs, setPauseMs] = useState(800); // fast default
+  const [pauseMs, setPauseMs] = useState(800);
 
   // Learning prefs
   const [level, setLevel] = useState("beginner");
@@ -463,6 +464,33 @@ export default function RealtimeAgent({
   );
   const [targetLang, setTargetLang] = useState("es"); // 'es' | 'nah' | 'en'
   const [showTranslations, setShowTranslations] = useState(true);
+
+  // ✅ New: practice pronunciation toggle (persisted)
+  const [practicePronunciation, setPracticePronunciation] = useState(
+    !!user?.progress?.practicePronunciation
+  );
+  const practicePronunciationRef = useRef(practicePronunciation);
+  useEffect(() => {
+    practicePronunciationRef.current = practicePronunciation;
+  }, [practicePronunciation]);
+
+  // ✅ Existing: helpRequest (kept)
+  const initialHelpRequest = (
+    user?.progress?.helpRequest ??
+    user?.helpRequest ??
+    ""
+  ).trim();
+  const [helpRequest, setHelpRequest] = useState(initialHelpRequest);
+  const helpRequestRef = useRef(helpRequest);
+  useEffect(() => {
+    helpRequestRef.current = helpRequest;
+  }, [helpRequest]);
+
+  // 🎯 Goal engine state
+  const [currentGoal, setCurrentGoal] = useState(null);
+  const goalRef = useRef(null);
+  const [goalFeedback, setGoalFeedback] = useState(""); // short, localized nudge
+  const goalBusyRef = useRef(false); // prevent double-advance
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
@@ -503,17 +531,40 @@ export default function RealtimeAgent({
   // Persisted history (newest-first)
   const [history, setHistory] = useState([]);
 
-  // UI strings
+  // Hydration gating for profile persistence
+  const [hydrated, setHydrated] = useState(false);
+
+  // UI strings (app UI)
   const uiLang =
     (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
       ? "es"
       : "en";
   const ui = translations[uiLang];
   const tRepeat = ui?.ra_btn_repeat || (uiLang === "es" ? "Repetir" : "Repeat");
-  const tReplayUnavailable =
-    ui?.ra_toast_replay_unavailable ||
-    (uiLang === "es" ? "Repetición no disponible" : "Replay unavailable");
 
+  // ✅ Goal-UI language routing (depends on practice target/support)
+  const goalUiLang = (() => {
+    const t = targetLangRef.current || targetLang;
+    if (t === "es") return "en"; // practicing Spanish → goal UI in English
+    if (t === "en") return "es"; // practicing English → goal UI in Spanish
+    // practicing Nahuatl → follow support setting (bilingual defaults to EN)
+    const s = supportLangRef.current || supportLang;
+    return s === "es" ? "es" : "en";
+  })();
+  const gtr = translations[goalUiLang] || translations.en;
+
+  const tGoalLabel =
+    translations[uiLang]?.ra_goal_label || (uiLang === "es" ? "Meta" : "Goal");
+  const tGoalCompletedToast =
+    gtr?.ra_goal_completed ||
+    (goalUiLang === "es" ? "¡Meta lograda!" : "Goal completed!");
+  const tGoalSkip =
+    gtr?.ra_goal_skip || (goalUiLang === "es" ? "Saltar" : "Skip");
+  const tGoalCriteria =
+    gtr?.ra_goal_criteria || (goalUiLang === "es" ? "Éxito:" : "Success:");
+  const tAttempts = goalUiLang === "es" ? "Intentos" : "Attempts";
+
+  // Other app UI strings
   const languageNameFor = (code) =>
     translations[uiLang][`language_${code === "nah" ? "nah" : code}`];
 
@@ -552,7 +603,7 @@ export default function RealtimeAgent({
   const lastUserSaveRef = useRef({ text: "", ts: 0 });
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
 
-  // Throttled streaming buffer (reduces re-render churn)
+  // Throttled streaming buffer
   const streamBuffersRef = useRef(new Map()); // mid -> string
   const streamFlushTimerRef = useRef(null);
   function scheduleStreamFlush() {
@@ -568,29 +619,38 @@ export default function RealtimeAgent({
       });
       streamBuffersRef.current = new Map();
       streamFlushTimerRef.current = null;
-    }, 50); // ~20fps UI updates
+    }, 50);
   }
 
   useEffect(() => {
-    console.log("Xp", xp);
-    console.log("user", user);
-    if (xp > 0 && !user?.hasSubmittedPasscode) {
+    // console.log("xpLevelNumber", xpLevelNumber);
+    if (
+      xpLevelNumber > 4 &&
+      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
+    ) {
       setShowPasscodeModal(true);
     }
   }, [xp]);
 
   useEffect(() => () => stop(), []);
 
+  // Keep local_npub cached
+  useEffect(() => {
+    if (currentNpub) localStorage.setItem("local_npub", currentNpub);
+  }, [currentNpub]);
+
   /* ---------------------------
-     Load profile + subscribe history
+     Load profile + subscribe history + seed goal
   --------------------------- */
   useEffect(() => {
     if (!currentNpub) return;
+    setHydrated(false); // reset hydration when switching accounts
     (async () => {
       try {
         const ok = await ensureUserDoc(currentNpub);
         if (!ok) return;
-        const snap = await getDoc(doc(database, "users", currentNpub));
+        const ref = doc(database, "users", currentNpub);
+        const snap = await getDoc(ref);
         if (snap.exists()) {
           const data = snap.data() || {};
           if (Number.isFinite(data?.xp)) setXp(data.xp);
@@ -606,9 +666,28 @@ export default function RealtimeAgent({
             setTargetLang(p.targetLang);
           if (typeof p.showTranslations === "boolean")
             setShowTranslations(p.showTranslations);
+
+          // ✅ new: seed practicePronunciation
+          if (typeof p.practicePronunciation === "boolean")
+            setPracticePronunciation(p.practicePronunciation);
+
+          // helpRequest
+          const hr = (p.helpRequest ?? data.helpRequest ?? "").trim();
+          if (hr && hr !== helpRequestRef.current) {
+            setHelpRequest(hr);
+          }
+
+          // 🎯 goal: load or seed
+          const goal = await ensureCurrentGoalSeed(currentNpub, data);
+          setCurrentGoal(goal);
+          goalRef.current = goal;
+          scheduleSessionUpdate();
         }
       } catch (e) {
         console.warn("Load profile failed:", e?.message || e);
+      } finally {
+        // ✅ Mark hydrated after load attempt to prevent default overwrite
+        setHydrated(true);
       }
     })();
 
@@ -629,7 +708,7 @@ export default function RealtimeAgent({
           done: true,
           persisted: true,
           ts: v.createdAtClient || 0,
-          hasAudio: false, // persisted history has no local cache (until recorded later)
+          hasAudio: false,
         };
       });
       setHistory(turns);
@@ -637,25 +716,51 @@ export default function RealtimeAgent({
     return () => unsub();
   }, [activeNpub]);
 
+  // ✅ keep helpRequest in sync if store changes elsewhere
+  useEffect(() => {
+    const fromStore = (
+      user?.progress?.helpRequest ??
+      user?.helpRequest ??
+      ""
+    ).trim();
+    if (fromStore && fromStore !== helpRequestRef.current) {
+      setHelpRequest(fromStore);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.progress?.helpRequest, user?.helpRequest]);
+
   /* ---------------------------
      Instant-apply settings
   --------------------------- */
   useEffect(() => {
     scheduleSessionUpdate();
+    if (!hydrated) return; // ✅ don't auto-save defaults before hydration
     scheduleProfileSave();
-  }, [voicePersona, supportLang, showTranslations, level, pauseMs]);
+  }, [
+    voicePersona,
+    supportLang,
+    showTranslations,
+    level,
+    pauseMs,
+    helpRequest,
+    practicePronunciation, // ✅ include
+    currentGoal?.title_en, // refresh instructions when goal changes
+    hydrated,
+  ]);
 
   useEffect(() => {
+    if (!hydrated) return; // ✅ guard until profile loaded
     scheduleProfileSave();
     if (dcRef.current?.readyState === "open") {
       applyVoiceNow({ speakProbe: true });
     }
-  }, [voice]);
+  }, [voice, hydrated]);
 
   useEffect(() => {
     applyLanguagePolicyNow();
+    if (!hydrated) return; // ✅ guard
     scheduleProfileSave();
-  }, [targetLang]);
+  }, [targetLang, hydrated]);
 
   function scheduleSessionUpdate() {
     clearTimeout(sessionUpdateTimer.current);
@@ -667,6 +772,7 @@ export default function RealtimeAgent({
   function scheduleProfileSave() {
     clearTimeout(profileSaveTimer.current);
     profileSaveTimer.current = setTimeout(() => {
+      if (!hydrated) return; // ✅ gate saves until after first load
       saveProfile({}).catch(() => {});
     }, 500);
   }
@@ -692,7 +798,7 @@ export default function RealtimeAgent({
     setStatus("connecting");
     setUiState("idle");
     try {
-      if (!API_KEY) throw new Error("Missing VITE_OPENAI_API_KEY");
+      //   if (!API_KEY) throw new Error("Missing VITE_OPENAI_API_KEY");
 
       const npub = strongNpub(user);
       if (npub) await ensureUserDoc(npub);
@@ -796,7 +902,7 @@ export default function RealtimeAgent({
       const resp = await fetch(REALTIME_URL, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${API_KEY}`,
+          // No Authorization header; the function holds the server key
           "Content-Type": "application/sdp",
         },
         body: offer.sdp,
@@ -906,12 +1012,439 @@ export default function RealtimeAgent({
   }
 
   /* ---------------------------
-     Language instructions
+     🎯 Goal helpers (seed, persist, evaluate, advance)
+  --------------------------- */
+  function goalTitlesSeed() {
+    return {
+      en:
+        translations.en.onboarding_challenge_default ||
+        "Make a polite request.",
+      es:
+        translations.es.onboarding_challenge_default ||
+        "Haz una petición cortés.",
+    };
+  }
+
+  async function ensureCurrentGoalSeed(npub, userData) {
+    const ref = doc(database, "users", npub);
+    const data = userData || (await getDoc(ref)).data() || {};
+    if (
+      data.currentGoal &&
+      data.currentGoal.title_en &&
+      data.currentGoal.title_es
+    ) {
+      return { ...data.currentGoal, attempts: data.currentGoal.attempts || 0 };
+    }
+    const seedTitles = goalTitlesSeed();
+    const seed = {
+      id: `goal_${Date.now()}`,
+      title_en: seedTitles.en,
+      title_es: seedTitles.es,
+      rubric_en: "A brief, polite request",
+      rubric_es: "Una petición breve y educada",
+      attempts: 0,
+      status: "active",
+      createdAt: isoNow(),
+      updatedAt: isoNow(),
+    };
+    await setDoc(
+      ref,
+      { currentGoal: seed, lastGoal: seed.title_en },
+      { merge: true }
+    );
+    return seed;
+  }
+
+  // ✅ Determine which language the *goal UI* should use, based on practice target/support
+  function goalUiLangCode() {
+    const t = targetLangRef.current || targetLang;
+    if (t === "es") return "en"; // practicing Spanish → goal UI in English
+    if (t === "en") return "es"; // practicing English → goal UI in Spanish
+    // practicing Nahuatl → follow support setting (bilingual defaults to EN)
+    const s = supportLangRef.current || supportLang;
+    return s === "es" ? "es" : "en";
+  }
+
+  function goalTitleForUI(goal) {
+    if (!goal) return "";
+    const gLang = goalUiLangCode();
+    return gLang === "es"
+      ? goal.title_es || goal.title_en || ""
+      : goal.title_en || goal.title_es || "";
+  }
+  function goalRubricForUI(goal) {
+    if (!goal) return "";
+    const gLang = goalUiLangCode();
+    return gLang === "es"
+      ? goal.rubric_es || goal.rubric_en || ""
+      : goal.rubric_en || goal.rubric_es || "";
+  }
+
+  function goalTitleForTarget(goal) {
+    if (!goal) return "";
+    if (targetLangRef.current === "es") return goal.title_es || goal.title_en;
+    if (targetLangRef.current === "nah") return goal.title_es || goal.title_en; // fallback
+    return goal.title_en || goal.title_es;
+  }
+  function goalRubricForTarget(goal) {
+    if (!goal) return "";
+    return targetLangRef.current === "en"
+      ? goal.rubric_es || ""
+      : goal.rubric_en || "";
+  }
+
+  async function persistCurrentGoal(next) {
+    const npub = strongNpub(user);
+    if (!npub) return;
+    await setDoc(
+      doc(database, "users", npub),
+      { currentGoal: { ...next, updatedAt: isoNow() } },
+      { merge: true }
+    );
+  }
+
+  async function recordGoalCompletion(prevGoal, confidence = 0) {
+    const npub = strongNpub(user);
+    if (!npub || !prevGoal) return;
+    const payload = {
+      ...prevGoal,
+      status: "completed",
+      completedAt: isoNow(),
+      confidence,
+    };
+    await addDoc(collection(database, "users", npub, "goals"), payload);
+    // XP is now awarded dynamically in evaluateAndMaybeAdvanceGoal()
+  }
+
+  async function skipCurrentGoal() {
+    const npub = strongNpub(user);
+    if (!npub || !currentGoal || goalBusyRef.current) return;
+    goalBusyRef.current = true;
+    try {
+      await addDoc(collection(database, "users", npub, "goals"), {
+        ...currentGoal,
+        status: "skipped",
+        skippedAt: isoNow(),
+      });
+      const nextGoal = await generateNextGoal(currentGoal);
+      setCurrentGoal(nextGoal);
+      goalRef.current = nextGoal;
+      await persistCurrentGoal(nextGoal);
+      const gLang = goalUiLangCode();
+      toast({
+        title: gLang === "es" ? "Nueva meta" : "New goal",
+        description: goalTitleForUI(nextGoal),
+        status: "info",
+      });
+      scheduleSessionUpdate();
+    } catch (e) {
+      console.warn("skipCurrentGoal failed:", e?.message || e);
+    } finally {
+      goalBusyRef.current = false;
+    }
+  }
+
+  async function generateNextGoal(prevGoal) {
+    const SNIPPET_MAX = 240;
+    function snippet(s, n = SNIPPET_MAX) {
+      return String(s || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, n);
+    }
+    function latestTurn(role) {
+      // Merge ephemerals + persisted, pick the newest turn for the role
+      const all = [...(messagesRef.current || []), ...(history || [])];
+      const items = all
+        .filter(
+          (x) =>
+            x.role === role &&
+            (String(x.textFinal || "").trim() ||
+              String(x.textStream || "").trim())
+        )
+        .sort((a, b) => (b.ts || 0) - (a.ts || 0));
+      if (!items.length) return null;
+      const t = items[0];
+      const text = ((t.textFinal || "") + " " + (t.textStream || "")).trim();
+      const lang =
+        t.lang || (role === "assistant" ? targetLangRef.current : "en");
+      return { text, lang };
+    }
+    // Profile & context
+    const profile = {
+      level: levelRef.current,
+      help: helpRequestRef.current || "",
+      targetLang: targetLangRef.current,
+    };
+
+    // Pull the most recent user/assistant turns
+    const lastUser = latestTurn("user");
+    const lastAI = latestTurn("assistant");
+
+    const userLine = lastUser
+      ? `Previous user request (${lastUser.lang}): """${snippet(
+          lastUser.text
+        )}"""`
+      : "Previous user request: (none)";
+    const aiLine = lastAI
+      ? `Previous AI reply (${lastAI.lang}): """${snippet(lastAI.text)}"""`
+      : "Previous AI reply: (none)";
+
+    const systemAsk = `
+You are a language micro-goal planner. Propose the next tiny **speaking** goal so it feels like a natural continuation of the **previous user–assistant exchange** and is progressive from the prior goal.
+
+Constraints:
+- Keep titles ≤ 7 words.
+- Keep it practical and conversational.
+- Fit the user's level: ${profile.level}.
+- Target language: ${profile.targetLang}.
+- User focus: ${profile.help || "(none)"}.
+Return ONLY JSON (no prose, no markdown):
+
+{
+  "title_en": "...",
+  "title_es": "...",
+  "rubric_en": "... one-sentence success criteria ...",
+  "rubric_es": "... una frase con criterios de éxito ..."
+}
+  `.trim();
+
+    const body = {
+      model: TRANSLATE_MODEL,
+      text: { format: { type: "text" } },
+      input: `${systemAsk}
+
+Previous goal (EN): ${prevGoal?.title_en || ""}
+Previous goal (ES): ${prevGoal?.title_es || ""}
+${userLine}
+${aiLine}
+`,
+    };
+
+    try {
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          // No Authorization; backend adds server key
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+
+      const ct = r.headers.get("content-type") || "";
+      const payload = ct.includes("application/json")
+        ? await r.json()
+        : await r.text();
+
+      const mergedText =
+        (typeof payload?.output_text === "string" && payload.output_text) ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join("")
+            )
+            .join(" ")
+            .trim()) ||
+        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
+        (Array.isArray(payload?.choices) &&
+          (payload.choices[0]?.message?.content || "")) ||
+        "";
+
+      const parsed = safeParseJson(mergedText) || {};
+      const title_en = (parsed.title_en || "").trim();
+      const title_es = (parsed.title_es || "").trim();
+      const rubric_en = (parsed.rubric_en || "").trim();
+      const rubric_es = (parsed.rubric_es || "").trim();
+
+      if (title_en || title_es) {
+        return {
+          id: `goal_${Date.now()}`,
+          title_en: title_en || "Ask a follow-up question.",
+          title_es: title_es || "Haz una pregunta de seguimiento.",
+          rubric_en:
+            rubric_en ||
+            "One short follow-up question that is on-topic and natural.",
+          rubric_es:
+            rubric_es ||
+            "Una pregunta breve de seguimiento, natural y relacionada.",
+          attempts: 0,
+          status: "active",
+          createdAt: isoNow(),
+          updatedAt: isoNow(),
+        };
+      }
+    } catch (e) {
+      console.warn("Next goal generation failed:", e?.message || e);
+    }
+
+    // Fallback
+    return {
+      id: `goal_${Date.now()}`,
+      title_en: "Ask a follow-up question.",
+      title_es: "Haz una pregunta de seguimiento.",
+      rubric_en: "One short follow-up question that is on-topic and natural.",
+      rubric_es: "Una pregunta breve de seguimiento, natural y relacionada.",
+      attempts: 0,
+      status: "active",
+      createdAt: isoNow(),
+      updatedAt: isoNow(),
+    };
+  }
+
+  // 🔢 XP helpers — dynamic awards using Responses API signals
+  function computeXpDelta({ met, conf, attempts, pron }) {
+    const BASE = 5; // small reward for practicing
+    const confScore = Math.round(conf * 20); // 0..20
+    const effortPenalty = Math.max(0, attempts - 1) * 2; // -2 per extra try
+    const metBonus = met ? 20 + Math.max(0, 10 - (attempts - 1) * 3) : 0; // 20.. (less if many attempts)
+    const pronBonus = pron ? 3 : 0;
+    let delta = BASE + confScore + metBonus + pronBonus - effortPenalty;
+    delta = Math.max(1, Math.min(60, delta)); // clamp
+    return delta;
+  }
+
+  async function awardXp(delta, { reason } = {}) {
+    const amt = Math.round(delta || 0);
+    if (!amt) return;
+    setXp((v) => v + amt);
+    try {
+      const npub = strongNpub(user);
+      if (npub) {
+        await setDoc(
+          doc(database, "users", npub),
+          { xp: increment(amt), updatedAt: isoNow() },
+          { merge: true }
+        );
+      }
+    } catch {}
+    // Friendly toast
+    try {
+      //   toast({
+      //     title: `+${amt} XP`,
+      //     description: reason || undefined,
+      //     status: "success",
+      //     duration: 1600,
+      //   });
+    } catch {}
+  }
+
+  async function evaluateAndMaybeAdvanceGoal(userUtterance) {
+    const goal = goalRef.current;
+    if (!goal || goalBusyRef.current) return;
+
+    // Nudge attempt count
+    const nextAttempts = (goal.attempts || 0) + 1;
+    const patched = { ...goal, attempts: nextAttempts, updatedAt: isoNow() };
+    setCurrentGoal(patched);
+    goalRef.current = patched;
+    await persistCurrentGoal(patched);
+
+    // Ask Responses API to judge the utterance vs goal
+    const rubricTL = goalRubricForTarget(goal);
+
+    const gLang = goalUiLangCode();
+    const uiLangName = gLang === "es" ? "Spanish" : "English";
+
+    const judgePrompt =
+      targetLangRef.current === "es"
+        ? `Evalúa si el siguiente enunciado cumple esta meta en español: "${
+            goal.title_es
+          }". Criterio: ${rubricTL}.
+Devuelve SOLO JSON:
+{"met":true|false,"confidence":0..1,"feedback_tl":"mensaje breve y amable en el idioma meta (≤12 palabras)","feedback_ui":"mensaje breve y amable en ${
+            gLang === "es" ? "español" : "inglés"
+          } (≤12 palabras)"}`
+        : `Evaluate whether the following utterance meets this goal in ${
+            targetLangRef.current === "en" ? "English" : "the target language"
+          }: "${goal.title_en}". Criterion: ${rubricTL}.
+Return ONLY JSON:
+{"met":true|false,"confidence":0..1,"feedback_tl":"short, kind message in the target language (≤12 words)","feedback_ui":"short, kind message in ${uiLangName} (≤12 words)"}`;
+
+    const body = {
+      model: TRANSLATE_MODEL,
+      text: { format: { type: "text" } },
+      input: `${judgePrompt}\n\nUtterance:\n${userUtterance}`,
+    };
+
+    try {
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          // No Authorization; backend adds server key
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      const ct = r.headers.get("content-type") || "";
+      const payload = ct.includes("application/json")
+        ? await r.json()
+        : await r.text();
+
+      const mergedText =
+        (typeof payload?.output_text === "string" && payload.output_text) ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join("")
+            )
+            .join(" ")
+            .trim()) ||
+        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
+        (Array.isArray(payload?.choices) &&
+          (payload.choices[0]?.message?.content || "")) ||
+        "";
+      const parsed = safeParseJson(mergedText) || {};
+      const met = !!parsed.met;
+      const conf = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
+      const fbTL = (parsed.feedback_tl || "").trim();
+      const fbUI = (parsed.feedback_ui || "").trim();
+      // Prefer goal-UI language for the little nudge shown in the UI
+      if (fbUI || fbTL) setGoalFeedback(fbUI || fbTL);
+
+      // 🟢 Dynamic XP award here based on met/confidence/attempts/pronunciation mode
+      if (met) {
+        const xpGain = computeXpDelta({
+          met: true,
+          conf,
+          attempts: nextAttempts,
+          pron: !!practicePronunciationRef.current,
+        });
+        await awardXp(xpGain, { reason: tGoalCompletedToast });
+      }
+
+      if (met) {
+        goalBusyRef.current = true;
+        // toast({
+        //   title: tGoalCompletedToast,
+        //   description: goalTitleForUI(goal),
+        //   status: "success",
+        // });
+        await recordGoalCompletion(goal, conf);
+        const nextGoal = await generateNextGoal(goal);
+        setCurrentGoal(nextGoal);
+        goalRef.current = nextGoal;
+        await persistCurrentGoal(nextGoal);
+        scheduleSessionUpdate();
+        goalBusyRef.current = false;
+      }
+    } catch (e) {
+      // Soft fail; do nothing
+      console.warn("Goal eval failed:", e?.message || e);
+    }
+  }
+
+  /* ---------------------------
+     Language instructions (now includes helpRequest + pronunciation mode + active goal)
   --------------------------- */
   function buildLanguageInstructionsFromRefs() {
     const persona = String(voicePersonaRef.current || "").slice(0, 240);
+    const focus = String(helpRequestRef.current || "").slice(0, 240);
     const tLang = targetLangRef.current;
     const lvl = levelRef.current;
+    const pronOn = !!practicePronunciationRef.current;
+    const activeGoal = goalTitleForTarget(goalRef.current);
 
     const strict =
       tLang === "nah"
@@ -927,13 +1460,29 @@ export default function RealtimeAgent({
         ? "Lenguaje natural y conciso."
         : "Lenguaje nativo; respuestas muy breves.";
 
+    const focusLine = focus ? `Focus area: ${focus}.` : "";
+
+    // ✅ Pronunciation coaching: tiny cue + one slowed repetition, keep in target language
+    const pronLine = pronOn
+      ? "Pronunciation mode: after answering, give a micro pronunciation cue (≤6 words), then repeat the corrected sentence once, slowly, and invite the user to repeat. Keep everything in the target language. Don't be too strict, just accept improvements."
+      : "";
+
+    const goalLine = activeGoal
+      ? `Active goal: ${activeGoal}. Nudge gently toward completing it.`
+      : "";
+
     return [
       "Actúa como compañero de práctica.",
       strict,
       "Mantén respuestas muy breves (≤25 palabras) y naturales.",
       `PERSONA: ${persona}. Mantén consistentemente ese tono/estilo.`,
       levelHint,
-    ].join(" ");
+      focusLine,
+      pronLine,
+      goalLine,
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 
   /* ---------------------------
@@ -1104,7 +1653,7 @@ export default function RealtimeAgent({
       for (let i = 0; i < tmp.length; i++) buf[i] = (tmp[i] - 128) / 128;
     }
     let sum = 0;
-    for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i]; // ✅ fix RMS
     return Math.sqrt(sum / buf.length); // 0..1
   }
 
@@ -1151,10 +1700,10 @@ export default function RealtimeAgent({
   function stopRecorderAfterTail(
     rid,
     opts = {
-      quietMs: 900, // longer tail to avoid trimming last syllables
-      maxMs: 20000, // absolute cap
-      armThresh: 0.006, // lower = more tolerant
-      minActiveMs: 900, // must have ≥ this much voiced audio after arming
+      quietMs: 900,
+      maxMs: 20000,
+      armThresh: 0.006,
+      minActiveMs: 900,
     }
   ) {
     if (recTailRef.current.has(rid)) return; // already scheduled
@@ -1264,14 +1813,6 @@ export default function RealtimeAgent({
 
     // If we’re here, we can’t replay
     setReplayingMid(null);
-    toast({
-      title: tReplayUnavailable,
-      description:
-        status === "connected"
-          ? "Could not play the audio. Try tapping again."
-          : "Connect first, or tap again after a reply so it gets cached.",
-      status: "info",
-    });
   }
 
   /* ---------------------------
@@ -1365,6 +1906,8 @@ export default function RealtimeAgent({
           ts: now,
         });
         await persistUserTurn(text, "en").catch(() => {});
+        // 🎯 Evaluate goal on each user utterance (also awards dynamic XP)
+        evaluateAndMaybeAdvanceGoal(text).catch(() => {});
       }
       return;
     }
@@ -1548,7 +2091,7 @@ export default function RealtimeAgent({
     const r = await fetch(RESPONSES_URL, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${API_KEY}`,
+        // No Authorization; backend adds server key
         "Content-Type": "application/json",
         Accept: "application/json",
       },
@@ -1646,9 +2189,7 @@ export default function RealtimeAgent({
       { merge: true }
     );
 
-    // Local XP bump (safe)
-    const bumpXP = 12;
-    setXp((v) => v + bumpXP);
+    // Streak bump kept; XP now awarded dynamically elsewhere
     setStreak((v) => v + 1);
     try {
       await setDoc(
@@ -1656,8 +2197,8 @@ export default function RealtimeAgent({
         {
           local_npub: npub,
           updatedAt: isoNow(),
-          xp: increment(bumpXP),
           streak: increment(1),
+          helpRequest: helpRequestRef.current || "",
           progress: {
             level: levelRef.current,
             supportLang: supportLangRef.current,
@@ -1665,12 +2206,14 @@ export default function RealtimeAgent({
             voicePersona: voicePersonaRef.current,
             targetLang: targetLangRef.current,
             showTranslations,
+            helpRequest: helpRequestRef.current || "",
+            practicePronunciation: !!practicePronunciationRef.current, // ✅ persist on each assistant turn too
           },
         },
         { merge: true }
       );
     } catch (e) {
-      console.warn("XP/Streak persist failed:", e?.message || e);
+      console.warn("Streak persist failed:", e?.message || e);
     }
   }
 
@@ -1706,9 +2249,10 @@ export default function RealtimeAgent({
   }
 
   /* ---------------------------
-     Save profile
+     Save profile (includes helpRequest + pronunciation)
   --------------------------- */
   async function saveProfile(partial = {}) {
+    if (!hydrated) return; // ✅ don't save until profile is loaded
     const npub = strongNpub(user);
     if (!npub) return;
 
@@ -1719,23 +2263,42 @@ export default function RealtimeAgent({
       voicePersona: partial.voicePersona ?? voicePersonaRef.current,
       targetLang: partial.targetLang ?? targetLangRef.current,
       showTranslations: partial.showTranslations ?? showTranslations,
+      helpRequest:
+        typeof partial.helpRequest === "string"
+          ? partial.helpRequest
+          : helpRequestRef.current || "",
+      practicePronunciation:
+        typeof partial.practicePronunciation === "boolean"
+          ? partial.practicePronunciation
+          : !!practicePronunciationRef.current,
     };
 
     await setDoc(
       doc(database, "users", npub),
-      { local_npub: npub, updatedAt: isoNow(), progress: nextProgress },
+      {
+        local_npub: npub,
+        updatedAt: isoNow(),
+        helpRequest: nextProgress.helpRequest || "",
+        progress: nextProgress,
+      },
       { merge: true }
     );
 
+    // ✅ keep the zustand store in sync without clobbering
     try {
       const st = useUserStore.getState?.();
-      if (st?.updateProgress) {
-        st.updateProgress(nextProgress);
+      const mergedProgress = { ...(st?.user?.progress || {}), ...nextProgress };
+      if (st?.patchUser) {
+        st.patchUser({
+          helpRequest: nextProgress.helpRequest || "",
+          progress: mergedProgress,
+        });
       } else if (st?.setUser) {
         const prev = st.user || {};
         st.setUser({
           ...prev,
-          progress: { ...(prev.progress || {}), ...nextProgress },
+          helpRequest: nextProgress.helpRequest || "",
+          progress: mergedProgress,
         });
       }
     } catch (e) {
@@ -1762,7 +2325,7 @@ export default function RealtimeAgent({
         await batch.commit();
       }
       setHistory([]);
-      toast({ title: ui.ra_toast_delete_success, status: "success" });
+      //   toast({ title: ui.ra_toast_delete_success, status: "success" });
     } catch (e) {
       console.error(e);
     }
@@ -1798,20 +2361,43 @@ export default function RealtimeAgent({
   }, [messages, history]);
 
   /* ---------------------------
-     UI
+     UI strings (more)
   --------------------------- */
-  const personaPlaceholder = ui.ra_persona_placeholder.replace(
-    "{example}",
-    translations[uiLang].onboarding_persona_default_example
-  );
-  const toggleLabel = translations[
-    uiLang
-  ].onboarding_translations_toggle.replace(
-    "{language}",
-    translations[uiLang][`language_${secondaryPref}`]
-  );
+  const toggleLabel =
+    translations[uiLang].onboarding_translations_toggle?.replace(
+      "{language}",
+      translations[uiLang][`language_${secondaryPref}`]
+    ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
 
-  console.log("showpasscodemodal", showPasscodeModal);
+  const tHelpLabel =
+    ui?.ra_help_label ||
+    (uiLang === "es"
+      ? "¿En qué te gustaría ayuda?"
+      : "What would you like help with?");
+  const tHelpHelp =
+    ui?.ra_help_help ||
+    (uiLang === "es"
+      ? "Describe tu meta o contexto (esto guía la experiencia)."
+      : "Describe your goal or context (this guides the experience).");
+  const tHelpPlaceholder =
+    ui?.ra_help_placeholder ||
+    (uiLang === "es"
+      ? "Ej.: practicar conversación para entrevistas de trabajo; repasar tiempos pasados; español para turismo…"
+      : "e.g., conversational practice for job interviews; past tenses review; travel Spanish…");
+
+  // ✅ Pronunciation strings (fallbacks)
+  const tPronLabel =
+    ui?.ra_pron_label ||
+    (uiLang === "es" ? "Practicar pronunciación" : "Practice pronunciation");
+  const tPronHelp =
+    ui?.ra_pron_help ||
+    (uiLang === "es"
+      ? "Añade una micro-pista y una repetición lenta en cada turno."
+      : "Adds a tiny cue and one slow repetition each turn.");
+
+  const xpLevelNumber = Math.floor(xp / 100) + 1; // Level increases every 100 XP
+  const xpRemainingToLevel = 100 - (xp % 100);
+
   if (showPasscodeModal) {
     return (
       <PasscodePage
@@ -1837,35 +2423,12 @@ export default function RealtimeAgent({
         flex="1"
         mr={2}
         px={4}
-        pt={4}
+        pt={1}
       >
-        {appTitle}
+        {appTitle} (BETA)
       </Text>
 
-      <Flex px={4} pt={2} align="center" justify="space-between" gap={2}>
-        {/* Desktop actions */}
-        {/* <HStack spacing={2} display={["none", "none", "flex"]}>
-          <Button
-            leftIcon={<SettingsIcon />}
-            size="sm"
-            variant="outline"
-            onClick={settings.onOpen}
-            color="white"
-          >
-            {ui.ra_btn_settings}
-          </Button>
-          <Button
-            size="sm"
-            colorScheme="red"
-            variant="outline"
-            onClick={deleteConversation}
-          >
-            {ui.ra_btn_delete_convo}
-          </Button>
-        </HStack> */}
-
-        {/* Mobile actions */}
-      </Flex>
+      <Flex px={4} pt={2} align="center" justify="space-between" gap={2}></Flex>
 
       {/* Status pills */}
       <Box px={4} mt={2}>
@@ -1879,7 +2442,7 @@ export default function RealtimeAgent({
             scrollbarWidth: "none",
           }}
         >
-          <Badge
+          {/* <Badge
             colorScheme={levelColor}
             variant="subtle"
             px={2}
@@ -1887,17 +2450,9 @@ export default function RealtimeAgent({
             fontSize="xs"
           >
             {levelLabel}
-          </Badge>
-          <Badge
-            colorScheme="teal"
-            variant="subtle"
-            px={2}
-            py={1}
-            fontSize="xs"
-          >
-            {ui.ra_label_xp} {xp}
-          </Badge>
-          <Badge
+          </Badge> */}
+
+          {/* <Badge
             colorScheme="pink"
             variant="subtle"
             px={2}
@@ -1905,12 +2460,12 @@ export default function RealtimeAgent({
             fontSize="xs"
           >
             {streak}🔥
-          </Badge>
+          </Badge> */}
         </HStack>
       </Box>
 
       {/* Robot */}
-      <VStack align="stretch" spacing={3} px={4} mt={2}>
+      <VStack align="stretch" spacing={3} px={4} mt={0}>
         <RobotBuddyPro
           state={uiState}
           loudness={uiState === "listening" ? volume : 0}
@@ -1928,8 +2483,8 @@ export default function RealtimeAgent({
           variant="outline"
           onClick={settings.onOpen}
           mr={3}
-          width="48px"
-          height="48px"
+          width="24px"
+          height="24px"
         />
         <IconButton
           aria-label={ui.ra_btn_delete_convo}
@@ -1938,10 +2493,78 @@ export default function RealtimeAgent({
           colorScheme="red"
           variant="outline"
           onClick={deleteConversation}
-          width="48px"
-          height="48px"
+          width="24px"
+          height="24px"
         />
       </HStack>
+
+      {/* 🎯 Active goal display */}
+      <Box px={4} mt={3} display="flex" justifyContent="center">
+        <Box
+          bg="gray.800"
+          p={3}
+          rounded="2xl"
+          border="1px solid rgba(255,255,255,0.06)"
+          width="100%"
+          maxWidth="400px"
+        >
+          <HStack justify="space-between" align="center" mb={1}>
+            <HStack>
+              <Badge colorScheme="yellow" variant="subtle" fontSize={"10px"}>
+                {tGoalLabel}
+              </Badge>
+              <Text fontSize="xs" opacity={0.9}>
+                {goalTitleForUI(currentGoal) || "—"}
+              </Text>
+            </HStack>
+            <HStack>
+              {/* <Badge variant="outline" colorScheme="cyan">
+                {tAttempts}: {currentGoal?.attempts ?? 0}
+              </Badge> */}
+              {/* <Button
+                size="xs"
+                variant="outline"
+                onClick={skipCurrentGoal}
+                isDisabled={!currentGoal}
+              >
+                {tGoalSkip}
+              </Button> */}
+            </HStack>
+          </HStack>
+          {!!currentGoal && (
+            <Text fontSize="xs" opacity={0.8}>
+              <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
+              {goalRubricForUI(currentGoal)}
+            </Text>
+          )}
+          {goalFeedback ? (
+            <Text fontSize="xs" mt={2} opacity={0.9}>
+              💡 {goalFeedback}
+            </Text>
+          ) : null}
+
+          {/* 🆕 Level progress bar under goal UI */}
+          <Box mt={4}>
+            <HStack justifyContent="space-between" mb={1}>
+              <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+                {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
+              </Badge>
+              <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                {ui.ra_label_xp} {xp}
+              </Badge>
+              {/* <Text fontSize="xs" opacity={0.8}>
+                {ui?.ra_progress_xp_to_level
+                  ? ui.ra_progress_xp_to_level.replace(
+                      "{remaining}",
+                      String(xpRemainingToLevel)
+                    )
+                  : `${xpRemainingToLevel} XP to level`}
+              </Text> */}
+            </HStack>
+            <WaveBar value={progressPct} />
+          </Box>
+        </Box>
+      </Box>
 
       {/* Timeline — newest first */}
       <VStack align="stretch" spacing={3} px={4} mt={3}>
@@ -1959,7 +2582,6 @@ export default function RealtimeAgent({
           const lang = m.lang || targetLang || "es";
           const primaryLabel = languageNameFor(lang);
 
-          // Translation text
           const secondaryText =
             m.source === "hist"
               ? (secondaryPref === "es" ? m.trans_es : m.trans_en) || ""
@@ -1991,31 +2613,27 @@ export default function RealtimeAgent({
                   showSecondary={showTranslations}
                   isTranslating={isTranslating}
                 />
-                {status === "listening" ? (
-                  <IconButton
-                    aria-label={tRepeat}
-                    title={tRepeat}
-                    icon={<CiRepeat />}
-                    size="xs"
-                    variant="outline"
-                    //   position="absolute"
-                    top="6px"
-                    color="white"
-                    right="6px"
-                    opacity={0.9}
-                    isDisabled={!canReplay}
-                    isLoading={replayingMid === m.id}
-                    onClick={() =>
-                      replayMessageAudio(
-                        m.id,
-                        (m.textFinal || "").trim() ||
-                          (m.textStream || "").trim()
-                      )
-                    }
-                    height="36px"
-                    width="36px"
-                  />
-                ) : null}
+                <IconButton
+                  aria-label={tRepeat}
+                  title={tRepeat}
+                  icon={<CiRepeat />}
+                  size="xs"
+                  variant="outline"
+                  top="6px"
+                  color="white"
+                  right="6px"
+                  opacity={0.9}
+                  isDisabled={!canReplay}
+                  isLoading={replayingMid === m.id}
+                  onClick={() =>
+                    replayMessageAudio(
+                      m.id,
+                      (m.textFinal || "").trim() || (m.textStream || "").trim()
+                    )
+                  }
+                  height="36px"
+                  width="36px"
+                />
               </Box>
             </RowLeft>
           );
@@ -2032,7 +2650,7 @@ export default function RealtimeAgent({
         px={4}
       >
         <HStack spacing={3} w="100%" maxW="560px" justify="center">
-          <Box
+          {/* <Box
             bg="gray.800"
             px={3}
             py={2}
@@ -2056,7 +2674,7 @@ export default function RealtimeAgent({
                 rounded="sm"
               />
             </Stat>
-          </Box>
+          </Box> */}
 
           {status !== "connected" ? (
             <Button
@@ -2159,7 +2777,9 @@ export default function RealtimeAgent({
                   value={voice}
                   onChange={(e) => {
                     stop();
+                    // Hot-swap voice without full disconnect; session.update will handle it
                     setVoice(e.target.value);
+                    applyVoiceNow({ speakProbe: true });
                   }}
                   bg="gray.800"
                   size="md"
@@ -2211,6 +2831,27 @@ export default function RealtimeAgent({
                 </Select>
               </Wrap>
 
+              {/* ✅ Pronunciation coaching toggle */}
+              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
+                <Box>
+                  <Text fontSize="sm" mb={0.5}>
+                    {tPronLabel}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7}>
+                    {tPronHelp}
+                  </Text>
+                </Box>
+                <Switch
+                  isChecked={practicePronunciation}
+                  onChange={(e) => {
+                    setPracticePronunciation(e.target.checked);
+                    scheduleSessionUpdate();
+                    scheduleProfileSave();
+                  }}
+                />
+              </HStack>
+
+              {/* Persona */}
               <Box bg="gray.800" p={3} rounded="md">
                 <Text fontSize="sm" mb={2}>
                   {ui.ra_persona_label}
@@ -2219,13 +2860,44 @@ export default function RealtimeAgent({
                   value={voicePersona}
                   onChange={(e) => setVoicePersona(e.target.value)}
                   bg="gray.700"
-                  placeholder={personaPlaceholder}
+                  placeholder={
+                    ui.ra_persona_placeholder?.replace(
+                      "{example}",
+                      translations[uiLang].onboarding_persona_default_example
+                    ) ||
+                    `e.g., ${translations[uiLang].onboarding_persona_default_example}`
+                  }
                 />
                 <Text fontSize="xs" opacity={0.7} mt={1}>
                   {ui.ra_persona_help}
                 </Text>
               </Box>
 
+              {/* Help Request field */}
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={2}>
+                  {tHelpLabel}
+                </Text>
+                <Textarea
+                  value={helpRequest}
+                  onChange={(e) => {
+                    const v = e.target.value.slice(0, 600);
+                    setHelpRequest(v);
+                  }}
+                  onBlur={() => {
+                    scheduleSessionUpdate();
+                    scheduleProfileSave();
+                  }}
+                  bg="gray.700"
+                  placeholder={tHelpPlaceholder}
+                  minH="100px"
+                />
+                <Text fontSize="xs" opacity={0.7} mt={1}>
+                  {tHelpHelp}
+                </Text>
+              </Box>
+
+              {/* Translations toggle */}
               <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
                 <Text fontSize="sm" mr={2}>
                   {toggleLabel}
@@ -2236,6 +2908,7 @@ export default function RealtimeAgent({
                 />
               </HStack>
 
+              {/* VAD slider */}
               <Box bg="gray.800" p={3} rounded="md">
                 <HStack justify="space-between" mb={2}>
                   <Text fontSize="sm">{ui.ra_vad_label}</Text>

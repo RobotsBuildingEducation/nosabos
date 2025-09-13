@@ -1,12 +1,35 @@
-# React + Vite
+### Check node version
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+`node -v`
 
-Currently, two official plugins are available:
+Node version 20+ is required.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### To run
 
-## Expanding the ESLint configuration
+1. `npm install`
+2. `npm run dev`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### To deploy
+
+1. `npm run build`
+2. `firebase deploy`
+
+### Environment variables
+
+##### /.env
+
+1. `VITE_FIREBASE_PUBLIC_API_KEY=your_public_project_key`
+2. `VITE_PATREON_PASSCODE=your_patreon_subscriber_passcode`
+3. `VITE_RESPONSES_URL=your_firebase_function_exchangeRealtimeSDP_url`
+4. `VITE_REALTIME_URL=your_firebase_function_proxyResponses_url`
+
+##### /functions/.env
+
+1. `OPENAI_API_KEY=your_openai_key`
+2. `DEPLOYED_URL=your_dns_website_url`
+
+### Backend services
+
+1. Firebase firestore
+2. Firebase Functions
+3. Firebae hosting

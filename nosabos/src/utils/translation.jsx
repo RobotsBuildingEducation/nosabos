@@ -13,6 +13,15 @@ export function t(lang = "en", key, vars = {}) {
 }
 export const translations = {
   en: {
+    ra_goal_label: "Goal",
+    onboarding_help_title: "What would you like help with?",
+    onboarding_help_placeholder:
+      "e.g., conversational practice for job interviews; past tenses review; travel Spanish…",
+    onboarding_help_hint:
+      "Share topics, goals, or situations. This guides your AI coach.",
+    onboarding_pron_label: "Practice pronunciation",
+    onboarding_pron_hint:
+      "When enabled, your coach will prompt you to repeat lines and focus on sounds/intonation.",
     // common
     // --- EN additions ---
     ra_title: "No Sabo — {language} Learning Coach",
@@ -148,6 +157,15 @@ export const translations = {
   },
 
   es: {
+    ra_goal_label: "Meta",
+    onboarding_help_title: "¿En qué te gustaría recibir ayuda?",
+    onboarding_help_placeholder:
+      "p. ej., práctica conversacional para entrevistas de trabajo; repaso de tiempos pasados; español para viajar…",
+    onboarding_help_hint:
+      "Comparte temas, metas o situaciones. Esto guía a tu coach de IA.",
+    onboarding_pron_label: "Practicar pronunciación",
+    onboarding_pron_hint:
+      "Al activarlo, tu coach te pedirá repetir frases y se enfocará en los sonidos y la entonación.",
     "passcode.instructions":
       "Ingresa tu código de acceso para continuar. Si eres patrocinador en Patreon, revisa tu mensaje de bienvenida para encontrar el código.",
     "passcode.label": "Código de acceso",

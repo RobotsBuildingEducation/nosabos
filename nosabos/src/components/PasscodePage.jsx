@@ -20,6 +20,7 @@ export const PasscodePage = ({
     "npub1m5kwfzjcn7k7uwadmvqwvkryfcy7rttnjfe3cl4cpm205eehe5fs2sx53h",
     "npub1xld6g6tsdddtkpmspawl30prf2py9wdqqwk43sxyy92updqvr62qxt53qk",
   ];
+
   const correctPasscode = import.meta.env.VITE_PATREON_PASSCODE;
 
   const checkPasscode = async () => {
@@ -68,6 +69,7 @@ export const PasscodePage = ({
   };
 
   useEffect(() => {
+    console.log("INPUT", input);
     localStorage.setItem("passcode", input);
     if (localStorage.getItem("passcode") === correctPasscode) {
       checkPasscode(); // Auto-check if passcode is already stored
@@ -87,6 +89,7 @@ export const PasscodePage = ({
         const hasSubscribed = userData?.hasSubmittedPasscode;
 
         if (hasSubscribed) {
+          console.log("HAS SUBSCRIBED", import.meta.env.VITE_PATREON_PASSCODE);
           localStorage.setItem(
             "passcode",
             import.meta.env.VITE_PATREON_PASSCODE
@@ -140,16 +143,61 @@ export const PasscodePage = ({
         <br />
         <Text maxWidth="600px">
           <div style={{ textAlign: "left" }}>
-            {translations[userLanguage]["passcode.instructions"]}
-
+            {/* {translations[userLanguage]["passcode.instructions"]} */}
+            Thanks for trying out the app! It's currently under development and
+            will improve daily.
             <br />
-
+            <br />
+            <b>
+              Subscribe to the Patreon to get full access to the app. You'll:{" "}
+            </b>
+            <ul>
+              <li style={{ marginBottom: 4, marginTop: 4 }}>
+                Access to 10 different education apps
+              </li>
+              <li style={{ marginBottom: 4, marginTop: 4 }}>
+                Get access to crash courses, stock market, entrepreneurship, and
+                startup development content
+              </li>
+              <li style={{ marginBottom: 4, marginTop: 4 }}>
+                Keep the coding education app free for everyone
+              </li>
+              <li>
+                Access more advanced software engineering content and projects
+              </li>
+              <li style={{ marginBottom: 4, marginTop: 4 }}>
+                Help our community create scholarships
+              </li>
+              <li style={{ marginBottom: 4, marginTop: 4 }}>
+                {" "}
+                Receive personal tutoring/entrepreneurial support (soon)
+              </li>
+            </ul>
+            <br />
+            <a
+              style={{ textDecoration: "underline" }}
+              href="https://patreon.com/notesandotherstuff"
+            >
+              Go To Patreon
+            </a>
+            <br />
+            <br />
+            <a
+              style={{ textDecoration: "underline" }}
+              href="https://www.patreon.com/posts/start-learning-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link"
+            >
+              Link To Subscriber Passcode
+            </a>
+            <br />
+            <br />
             <Text fontSize={"smaller"}>
               {" "}
-              {translations[userLanguage]["passcode.label"]}
+              {/* {translations[userLanguage]["passcode.label"]} */}
+              Subscriber Passcode
             </Text>
             <Input
-              type="password"
+              color="black"
+              //   type="password"
               backgroundColor="white"
               style={{
                 boxShadow: "0.5px 0.5px 1px 0px rgba(0,0,0,0.75)",
