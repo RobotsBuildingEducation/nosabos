@@ -9,8 +9,9 @@ https://www.patreon.com/posts/building-app-by-93082226?utm_medium=clipboard_copy
 Contact me on Patreon if you have any problems setting this up.
 
 ### Forking
-Fork the code to your repo and clone it in your editor with `git clone`
-Then, change branches with `git checkout nosabos-fork`
+The forkable version is a branch of the main repo called `nosabos-fork`
+1. Fork the code to your repo and clone it in your editor with `git clone`
+2. Then, change branches with `git checkout nosabos-fork`
 
 ### Check node version
 
