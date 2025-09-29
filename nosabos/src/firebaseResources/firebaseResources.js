@@ -1,4 +1,5 @@
 import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 
 import { getFirestore } from "firebase/firestore";
 import { getMessaging, isSupported } from "firebase/messaging";
@@ -6,18 +7,18 @@ import { getVertexAI, Schema } from "@firebase/vertexai";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_PUBLIC_API_KEY,
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
-  measurementId: "",
+  authDomain: "nosabo-30dcb.firebaseapp.com",
+  projectId: "nosabo-30dcb",
+  storageBucket: "nosabo-30dcb.firebasestorage.app",
+  messagingSenderId: "323662475274",
+  appId: "1:323662475274:web:570aa2eb1beaf87810aff3",
+  measurementId: "G-FX7CB1K22B",
 };
 
 export const app = initializeApp(firebaseConfig);
 
 const database = getFirestore(app);
-
+const analytics = getAnalytics(app);
 const vertexAI = getVertexAI(app);
 export const ai = getVertexAI(app);
 
@@ -36,4 +37,4 @@ initMessaging();
 
 // 3) Pass that into your model’s generationConfig:
 
-export { database, vertexAI, messaging, Schema };
+export { database, vertexAI, messaging, Schema, analytics };

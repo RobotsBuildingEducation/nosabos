@@ -17,7 +17,11 @@ import {
   Wrap,
   WrapItem,
   Spacer,
-  Textarea, // <-- NEW
+  Textarea,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
 } from "@chakra-ui/react";
 import { translations } from "../utils/translation";
 
@@ -36,10 +40,11 @@ export default function Onboarding({
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
   const [voice, setVoice] = useState("alloy"); // GPT Realtime default voices
   const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es' | 'en'
-  const [practicePronunciation, setPracticePronunciation] = useState(false); // <-- NEW
+  const [practicePronunciation, setPracticePronunciation] = useState(false);
   const [voicePersona, setVoicePersona] = useState(ui.DEFAULT_PERSONA || "");
   const [showTranslations, setShowTranslations] = useState(true);
-  const [helpRequest, setHelpRequest] = useState(""); // <-- NEW
+  const [helpRequest, setHelpRequest] = useState("");
+  const [pauseMs, setPauseMs] = useState(800); // NEW: pause/turn-taking
   const [isSaving, setIsSaving] = useState(false);
 
   const secondaryPref = supportLang === "es" ? "es" : "en";
@@ -52,17 +57,18 @@ export default function Onboarding({
 
   useEffect(() => {
     setVoicePersona(ui.DEFAULT_PERSONA || "");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appLang]);
 
   // Inline language switch → call parent persister + update local UI
   const persistAppLanguage = (lang) => {
     const norm = lang === "es" ? "es" : "en";
-    setAppLang(norm); // instant panel switch
+    setAppLang(norm);
     try {
-      localStorage.setItem("appLanguage", norm); // helpful cache
+      localStorage.setItem("appLanguage", norm);
     } catch {}
     try {
-      onAppLanguageChange(norm); // ✅ parent writes to Firestore + store
+      onAppLanguageChange(norm);
     } catch {}
   };
 
@@ -79,12 +85,13 @@ export default function Onboarding({
         voice, // GPT Realtime voice id (alloy, ash, ballad, coral, echo, sage, shimmer, verse)
         voicePersona,
         targetLang,
-        practicePronunciation, // <-- NEW
+        practicePronunciation,
         showTranslations,
-        helpRequest, // <-- NEW
+        helpRequest,
+        pauseMs, // NEW: included for App.jsx to persist into progress.pauseMs
         challenge: { ...CHALLENGE },
       };
-      await Promise.resolve(onComplete(payload)); // App.jsx persists & flips onboarding
+      await Promise.resolve(onComplete(payload));
     } finally {
       setIsSaving(false);
     }
@@ -115,11 +122,20 @@ export default function Onboarding({
     ui.onboarding_help_hint ||
     "Share topics, goals, or situations. This guides your AI coach.";
 
-  // NEW i18n fallbacks for pronunciation switch
   const PRON_LABEL = ui.onboarding_pron_label || "Practice pronunciation";
   const PRON_HINT =
     ui.onboarding_pron_hint ||
     "When enabled, your coach will prompt you to repeat lines and focus on sounds/intonation.";
+
+  // NEW: pause/turn-taking labels (fallbacks)
+  const VAD_LABEL =
+    ui.ra_vad_label ||
+    (appLang === "es" ? "Pausa entre turnos" : "Pause between replies");
+  const VAD_HINT =
+    ui.onboarding_vad_hint ||
+    (appLang === "es"
+      ? "Más corta = más sensible; más larga = te deja terminar de hablar."
+      : "Shorter = more responsive; longer = gives you time to finish speaking.");
 
   return (
     <Box minH="100vh" bg="gray.900" color="gray.100">
@@ -143,7 +159,7 @@ export default function Onboarding({
               <HStack spacing={2} align="center">
                 <Text
                   fontSize="sm"
-                  color={appLang === "en" ? "teal.300" : "gray.400"} // use local state to avoid flicker
+                  color={appLang === "en" ? "teal.300" : "gray.400"}
                 >
                   EN
                 </Text>
@@ -225,7 +241,7 @@ export default function Onboarding({
                 </Wrap>
               </Box>
 
-              {/* NEW: Practice pronunciation (between Difficulty & Voice) */}
+              {/* Practice pronunciation */}
               <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
                 <Box>
                   <Text fontSize="sm" mr={2}>
@@ -283,7 +299,7 @@ export default function Onboarding({
                   {ui.onboarding_persona_help_text}
                 </Text>
 
-                {/* NEW: Help request */}
+                {/* Help request */}
                 <Text fontSize="sm" mt={4} opacity={0.85}>
                   {HELP_TITLE}
                 </Text>
@@ -311,6 +327,32 @@ export default function Onboarding({
                   onChange={(e) => setShowTranslations(e.target.checked)}
                 />
               </HStack>
+
+              {/* NEW: Pause / Turn-taking slider */}
+              <Box bg="gray.800" p={3} rounded="md">
+                <HStack justify="space-between" mb={2}>
+                  <Text fontSize="sm">{VAD_LABEL}</Text>
+                  <Text fontSize="sm" opacity={0.8}>
+                    {pauseMs} ms
+                  </Text>
+                </HStack>
+                <Text fontSize="xs" opacity={0.7} mb={2}>
+                  {VAD_HINT}
+                </Text>
+                <Slider
+                  aria-label="onboarding-pause-slider"
+                  min={200}
+                  max={4000}
+                  step={100}
+                  value={pauseMs}
+                  onChange={(val) => setPauseMs(val)}
+                >
+                  <SliderTrack>
+                    <SliderFilledTrack />
+                  </SliderTrack>
+                  <SliderThumb />
+                </Slider>
+              </Box>
 
               {/* First goal preview */}
               <Box bg="gray.800" p={3} rounded="md">

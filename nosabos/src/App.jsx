@@ -1,15 +1,32 @@
-import { useEffect, useRef, useState, useMemo } from "react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+// App.jsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerHeader,
+  DrawerOverlay,
   HStack,
-  Button,
-  Text,
-  Spacer,
-  Badge,
-  useToast,
   IconButton,
-  useDisclosure,
+  Input,
+  Select,
+  Slider,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderTrack,
+  Spacer,
+  Switch,
+  Text,
+  Textarea,
+  useToast,
+  VStack,
+  Wrap,
+  Tabs,
+  TabPanels,
+  TabPanel,
+  InputGroup,
+  InputRightElement,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -17,46 +34,45 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Flex,
   Divider,
-  Drawer,
-  DrawerOverlay,
-  DrawerContent,
-  DrawerHeader,
-  DrawerBody,
-  VStack,
-  InputGroup,
-  Input,
-  InputRightElement,
-  Switch,
+  Flex,
+  Button,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItemOption,
+  MenuOptionGroup,
 } from "@chakra-ui/react";
-import { SettingsIcon, DeleteIcon } from "@chakra-ui/icons";
-import { CiRepeat, CiUser, CiSquarePlus } from "react-icons/ci";
-import { MdOutlineFileUpload } from "react-icons/md";
-import { IoIosMore } from "react-icons/io";
-
-import { LuBadgeCheck } from "react-icons/lu";
+import { SettingsIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { GoDownload } from "react-icons/go";
+import { CiUser, CiSquarePlus, CiEdit } from "react-icons/ci";
+import { IoIosMore } from "react-icons/io";
+import { MdOutlineFileUpload } from "react-icons/md";
+import { RiSpeakLine } from "react-icons/ri";
+import { LuBadgeCheck, LuBookOpen } from "react-icons/lu";
 
-import "./App.css";
-import Onboarding from "./components/Onboarding";
-
-import RobotBuddyPro from "./components/RobotBuddyPro";
-import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { database } from "./firebaseResources/firebaseResources";
+
 import useUserStore from "./hooks/useUserStore";
-import { translations } from "./utils/translation";
+import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
+
+import GrammarBook from "./components/GrammarBook";
+import Onboarding from "./components/Onboarding";
+import RobotBuddyPro from "./components/RobotBuddyPro";
 import RealTimeTest from "./components/RealTimeTest";
 
+import { translations } from "./utils/translation";
+import Vocabulary from "./components/Vocabulary";
+import StoryMode from "./components/Stories";
+import History from "./components/History";
+
 /* ---------------------------
-   Helpers
+   Small helpers
 --------------------------- */
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
-/* ---------------------------
-   Firestore helpers
---------------------------- */
-async function ensureOnboardingField(database, id, data) {
+async function ensureOnboardingField(db, id, data) {
   const hasNested = data?.onboarding && typeof data.onboarding === "object";
   const hasCompleted =
     hasNested &&
@@ -68,24 +84,24 @@ async function ensureOnboardingField(database, id, data) {
 
   if (!hasCompleted && !hasLegacyTopLevel) {
     await setDoc(
-      doc(database, "users", id),
+      doc(db, "users", id),
       { onboarding: { completed: false } },
       { merge: true }
     );
-    const snap = await getDoc(doc(database, "users", id));
+    const snap = await getDoc(doc(db, "users", id));
     return snap.exists() ? { id: snap.id, ...snap.data() } : data;
   }
   return data;
 }
 
-async function loadUserObjectFromDB(database, id) {
+async function loadUserObjectFromDB(db, id) {
   if (!id) return null;
   try {
-    const ref = doc(database, "users", id);
+    const ref = doc(db, "users", id);
     const snap = await getDoc(ref);
     if (!snap.exists()) return null;
     let userData = { id: snap.id, ...snap.data() };
-    userData = await ensureOnboardingField(database, id, userData);
+    userData = await ensureOnboardingField(db, id, userData);
     return userData;
   } catch (e) {
     console.error("loadUserObjectFromDB failed:", e);
@@ -93,44 +109,723 @@ async function loadUserObjectFromDB(database, id) {
   }
 }
 
-/* ---------------------------
-   App
---------------------------- */
-export default function App() {
-  const [isLoadingApp, setIsLoadingApp] = useState(false);
-  const initRef = useRef(false); // guard StrictMode double-run in dev
+/* -------------------------------------------------------------------------------------------------
+   Top Bar
+--------------------------------------------------------------------------------------------------*/
+function TopBar({
+  appLanguage,
+  user,
+  activeNpub,
+  activeNsec,
+  auth,
+  onToggleAppLanguage,
+  onPatchSettings,
+  onSwitchedAccount,
+  settingsOpen,
+  openSettings,
+  closeSettings,
+  accountOpen,
+  openAccount,
+  closeAccount,
+  installOpen,
+  openInstall,
+  closeInstall,
+}) {
   const toast = useToast();
+  const t = translations[appLanguage] || translations.en;
 
-  // Reflect local creds so children re-render when keys change
-  const [activeNpub, setActiveNpub] = useState(
-    typeof window !== "undefined"
-      ? localStorage.getItem("local_npub") || ""
-      : ""
+  const p = user?.progress || {};
+  const [level, setLevel] = useState(p.level || "beginner");
+  const [supportLang, setSupportLang] = useState(p.supportLang || "en");
+  const [voice, setVoice] = useState(p.voice || "alloy");
+  const [voicePersona, setVoicePersona] = useState(
+    p.voicePersona || translations.en.onboarding_persona_default_example
   );
-  const [activeNsec, setActiveNsec] = useState(
-    typeof window !== "undefined"
-      ? localStorage.getItem("local_nsec") || ""
-      : ""
+  const [targetLang, setTargetLang] = useState(p.targetLang || "es");
+  const [showTranslations, setShowTranslations] = useState(
+    typeof p.showTranslations === "boolean" ? p.showTranslations : true
+  );
+  const [pauseMs, setPauseMs] = useState(
+    Number.isFinite(p.pauseMs) ? p.pauseMs : 2000
+  );
+  const [helpRequest, setHelpRequest] = useState(
+    (p.helpRequest || user?.helpRequest || "").trim()
+  );
+  const [practicePronunciation, setPracticePronunciation] = useState(
+    !!p.practicePronunciation
   );
 
-  // UI/App language state (persisted to Firestore + localStorage)
-  const [appLanguage, setAppLanguage] = useState(
-    typeof window !== "undefined"
-      ? localStorage.getItem("appLanguage") || "en"
-      : "en"
-  );
+  useEffect(() => {
+    const q = user?.progress || {};
+    setLevel(q.level || "beginner");
+    setSupportLang(q.supportLang || "en");
+    setVoice(q.voice || "alloy");
+    setVoicePersona(
+      q.voicePersona || translations.en.onboarding_persona_default_example
+    );
+    setTargetLang(q.targetLang || "es");
+    setShowTranslations(
+      typeof q.showTranslations === "boolean" ? q.showTranslations : true
+    );
+    setPauseMs(Number.isFinite(q.pauseMs) ? q.pauseMs : 2000);
+    setHelpRequest((q.helpRequest || user?.helpRequest || "").trim());
+    setPracticePronunciation(!!q.practicePronunciation);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.progress, user?.helpRequest]);
 
-  // Global user store
+  const saveTimer = useRef(null);
+  const pushSave = (nextDraft) => {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      onPatchSettings?.(nextDraft);
+    }, 350);
+  };
+
+  const updateDraft = (partial) => {
+    const next = {
+      level,
+      supportLang,
+      voice,
+      voicePersona,
+      targetLang,
+      showTranslations,
+      pauseMs,
+      helpRequest,
+      practicePronunciation,
+      ...partial,
+    };
+    if (partial.hasOwnProperty("level")) setLevel(next.level);
+    if (partial.hasOwnProperty("supportLang")) setSupportLang(next.supportLang);
+    if (partial.hasOwnProperty("voice")) setVoice(next.voice);
+    if (partial.hasOwnProperty("voicePersona"))
+      setVoicePersona(next.voicePersona);
+    if (partial.hasOwnProperty("targetLang")) setTargetLang(next.targetLang);
+    if (partial.hasOwnProperty("showTranslations"))
+      setShowTranslations(next.showTranslations);
+    if (partial.hasOwnProperty("pauseMs")) setPauseMs(next.pauseMs);
+    if (partial.hasOwnProperty("helpRequest")) setHelpRequest(next.helpRequest);
+    if (partial.hasOwnProperty("practicePronunciation"))
+      setPracticePronunciation(next.practicePronunciation);
+
+    pushSave(next);
+  };
+
+  const [currentId, setCurrentId] = useState(activeNpub || "");
+  const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
+  const [switchNsec, setSwitchNsec] = useState("");
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
+  useEffect(() => setCurrentSecret(activeNsec || ""), [activeNsec]);
+
+  const languageName = (code) =>
+    translations[appLanguage][`language_${code === "nah" ? "nah" : code}`] ||
+    code;
+
+  const toggleLabel =
+    translations[appLanguage].onboarding_translations_toggle?.replace(
+      "{language}",
+      languageName(
+        targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en"
+      )
+    ) || (appLanguage === "es" ? "Mostrar traducción" : "Show translation");
+
+  const copy = async (text, msg = t.toast_copied || "Copied") => {
+    try {
+      await navigator.clipboard.writeText(text || "");
+      toast({ title: msg, status: "success", duration: 1400 });
+    } catch (e) {
+      toast({
+        title: t.toast_copy_failed || "Copy failed",
+        description: String(e?.message || e),
+        status: "error",
+      });
+    }
+  };
+
+  const switchAccountWithNsec = async () => {
+    const nsec = (switchNsec || "").trim();
+    if (!nsec) {
+      toast({
+        title: t.toast_paste_nsec || "Paste your nsec",
+        status: "warning",
+      });
+      return;
+    }
+    if (!nsec.startsWith("nsec")) {
+      toast({
+        title: t.toast_invalid_key || "Invalid key",
+        description: t.toast_must_start_nsec || "Key must start with 'nsec'.",
+        status: "error",
+      });
+      return;
+    }
+    setIsSwitching(true);
+    try {
+      if (typeof auth !== "function")
+        throw new Error("auth(nsec) is not available.");
+      const res = await auth(nsec);
+      const npub = res?.user?.npub || localStorage.getItem("local_npub");
+      if (!npub?.startsWith("npub"))
+        throw new Error("Could not derive npub from the secret key.");
+
+      localStorage.setItem("local_npub", npub);
+      localStorage.setItem("local_nsec", nsec);
+
+      setCurrentId(npub);
+      setCurrentSecret(nsec);
+      setSwitchNsec("");
+
+      toast({
+        title: t.toast_switched_account || "Switched account",
+        status: "success",
+      });
+      closeAccount?.();
+
+      await Promise.resolve(onSwitchedAccount?.(npub, nsec));
+    } catch (e) {
+      console.error("switchAccount error:", e);
+      toast({
+        title: t.toast_switch_failed || "Switch failed",
+        description: e?.message || String(e),
+        status: "error",
+      });
+    } finally {
+      setIsSwitching(false);
+    }
+  };
+
+  return (
+    <>
+      {/* ---- Header ---- */}
+      <HStack
+        as="header"
+        w="100%"
+        px={3}
+        py={2}
+        bg="gray.900"
+        color="gray.100"
+        borderBottom="1px solid"
+        borderColor="gray.700"
+        position="sticky"
+        top={0}
+        zIndex={100}
+      >
+        <Spacer />
+        <HStack spacing={1}>
+          <IconButton
+            aria-label={t.app_settings_aria || "Settings"}
+            icon={<SettingsIcon />}
+            size="md"
+            onClick={openSettings}
+            colorScheme="cyan"
+            color="white"
+            mr={2}
+          />
+          <IconButton
+            aria-label={t.app_install_aria || "Install"}
+            icon={<GoDownload size={20} />}
+            size="md"
+            onClick={openInstall}
+            color="white"
+            mr={2}
+          />
+          <IconButton
+            aria-label={t.app_account_aria || "Account"}
+            icon={<CiUser size={20} />}
+            size="md"
+            onClick={openAccount}
+            color="white"
+          />
+          {/* UI language toggle EN <-> ES */}
+          <HStack spacing={2} align="center" pl={2}>
+            <Text
+              fontSize="sm"
+              color={appLanguage === "en" ? "teal.300" : "gray.400"}
+            >
+              EN
+            </Text>
+            <Switch
+              colorScheme="teal"
+              isChecked={appLanguage === "es"}
+              onChange={onToggleAppLanguage}
+            />
+            <Text
+              fontSize="sm"
+              color={appLanguage === "es" ? "teal.300" : "gray.400"}
+            >
+              ES
+            </Text>
+          </HStack>
+        </HStack>
+      </HStack>
+
+      {/* ---- Settings Drawer ---- */}
+      <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
+        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
+          <DrawerHeader pb={2}>
+            {t.ra_settings_title || "Conversation settings"}
+          </DrawerHeader>
+          <DrawerBody pb={6}>
+            <VStack align="stretch" spacing={3}>
+              <Wrap spacing={2}>
+                <Select
+                  value={level}
+                  onChange={(e) => updateDraft({ level: e.target.value })}
+                  bg="gray.800"
+                  size="md"
+                  w="auto"
+                >
+                  <option value="beginner">
+                    {translations[appLanguage].onboarding_level_beginner}
+                  </option>
+                  <option value="intermediate">
+                    {translations[appLanguage].onboarding_level_intermediate}
+                  </option>
+                  <option value="advanced">
+                    {translations[appLanguage].onboarding_level_advanced}
+                  </option>
+                </Select>
+
+                <Select
+                  value={supportLang}
+                  onChange={(e) => updateDraft({ supportLang: e.target.value })}
+                  bg="gray.800"
+                  size="md"
+                  w="auto"
+                >
+                  <option value="en">
+                    {translations[appLanguage].onboarding_support_en}
+                  </option>
+                  <option value="bilingual">
+                    {translations[appLanguage].onboarding_support_bilingual}
+                  </option>
+                  <option value="es">
+                    {translations[appLanguage].onboarding_support_es}
+                  </option>
+                </Select>
+
+                <Select
+                  value={voice}
+                  onChange={(e) => updateDraft({ voice: e.target.value })}
+                  bg="gray.800"
+                  size="md"
+                  w="auto"
+                >
+                  <option value="alloy">
+                    {translations[appLanguage].onboarding_voice_alloy}
+                  </option>
+                  <option value="ash">
+                    {translations[appLanguage].onboarding_voice_ash}
+                  </option>
+                  <option value="ballad">
+                    {translations[appLanguage].onboarding_voice_ballad}
+                  </option>
+                  <option value="coral">
+                    {translations[appLanguage].onboarding_voice_coral}
+                  </option>
+                  <option value="echo">
+                    {translations[appLanguage].onboarding_voice_echo}
+                  </option>
+                  <option value="sage">
+                    {translations[appLanguage].onboarding_voice_sage}
+                  </option>
+                  <option value="shimmer">
+                    {translations[appLanguage].onboarding_voice_shimmer}
+                  </option>
+                  <option value="verse">
+                    {translations[appLanguage].onboarding_voice_verse}
+                  </option>
+                </Select>
+
+                <Select
+                  value={targetLang}
+                  onChange={(e) => updateDraft({ targetLang: e.target.value })}
+                  bg="gray.800"
+                  size="md"
+                  w="auto"
+                  title={
+                    translations[appLanguage].onboarding_practice_label_title
+                  }
+                >
+                  <option value="nah">
+                    {translations[appLanguage].onboarding_practice_nah}
+                  </option>
+                  <option value="es">
+                    {translations[appLanguage].onboarding_practice_es}
+                  </option>
+                  <option value="en">
+                    {translations[appLanguage].onboarding_practice_en}
+                  </option>
+                </Select>
+              </Wrap>
+
+              {/* Pronunciation coaching */}
+              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
+                <Box>
+                  <Text fontSize="sm" mb={0.5}>
+                    {t.ra_pron_label ||
+                      (appLanguage === "es"
+                        ? "Practicar pronunciación"
+                        : "Practice pronunciation")}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7}>
+                    {t.ra_pron_help ||
+                      (appLanguage === "es"
+                        ? "Añade una micro-pista y una repetición lenta en cada turno."
+                        : "Adds a tiny cue and one slow repetition each turn.")}
+                  </Text>
+                </Box>
+                <Switch
+                  isChecked={practicePronunciation}
+                  onChange={(e) =>
+                    updateDraft({ practicePronunciation: e.target.checked })
+                  }
+                />
+              </HStack>
+
+              {/* Persona */}
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={2}>
+                  {t.ra_persona_label || "Persona"}
+                </Text>
+                <Input
+                  value={voicePersona}
+                  onChange={(e) =>
+                    updateDraft({
+                      voicePersona: e.target.value.slice(0, 240),
+                    })
+                  }
+                  bg="gray.700"
+                  placeholder={
+                    t.ra_persona_placeholder?.replace(
+                      "{example}",
+                      translations[appLanguage]
+                        .onboarding_persona_default_example
+                    ) ||
+                    `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
+                  }
+                />
+                <Text fontSize="xs" opacity={0.7} mt={1}>
+                  {t.ra_persona_help ||
+                    "A short vibe/style hint for the AI voice."}
+                </Text>
+              </Box>
+
+              {/* Help Request */}
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={2}>
+                  {t.ra_help_label ||
+                    (appLanguage === "es"
+                      ? "¿En qué te gustaría ayuda?"
+                      : "What would you like help with?")}
+                </Text>
+                <Textarea
+                  value={helpRequest}
+                  onChange={(e) =>
+                    updateDraft({ helpRequest: e.target.value.slice(0, 600) })
+                  }
+                  bg="gray.700"
+                  minH="100px"
+                  placeholder={
+                    t.ra_help_placeholder ||
+                    (appLanguage === "es"
+                      ? "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…"
+                      : "e.g., conversational practice for job interviews; past tenses review; travel Spanish…")
+                  }
+                />
+                <Text fontSize="xs" opacity={0.7} mt={1}>
+                  {t.ra_help_help ||
+                    (appLanguage === "es"
+                      ? "Describe tu meta o contexto (esto guía la experiencia)."
+                      : "Describe your goal or context (this guides the experience).")}
+                </Text>
+              </Box>
+
+              {/* Translations toggle */}
+              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
+                <Text fontSize="sm" mr={2}>
+                  {toggleLabel}
+                </Text>
+                <Switch
+                  isChecked={showTranslations}
+                  onChange={(e) =>
+                    updateDraft({ showTranslations: e.target.checked })
+                  }
+                />
+              </HStack>
+
+              {/* VAD slider */}
+              <Box bg="gray.800" p={3} rounded="md">
+                <HStack justifyContent="space-between" mb={2}>
+                  <Text fontSize="sm">
+                    {t.ra_vad_label || "Voice activity pause (ms)"}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.8}>
+                    {pauseMs} ms
+                  </Text>
+                </HStack>
+                <Slider
+                  aria-label="pause-slider"
+                  min={200}
+                  max={4000}
+                  step={100}
+                  value={pauseMs}
+                  onChange={setPauseMs}
+                  onChangeEnd={(v) => updateDraft({ pauseMs: v })}
+                >
+                  <SliderTrack>
+                    <SliderFilledTrack />
+                  </SliderTrack>
+                  <SliderThumb />
+                </Slider>
+              </Box>
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
+      {/* ---- Account Drawer ---- */}
+      <Drawer isOpen={accountOpen} placement="bottom" onClose={closeAccount}>
+        <DrawerOverlay bg="blackAlpha.600" />
+        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
+          <DrawerHeader pb={2}>{t.app_account_title || "Account"}</DrawerHeader>
+          <DrawerBody pb={6}>
+            <VStack align="stretch" spacing={3}>
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={1}>
+                  {t.app_your_id || "Your ID"}
+                </Text>
+                <InputGroup>
+                  <Input
+                    value={currentId || ""}
+                    readOnly
+                    bg="gray.700"
+                    placeholder={t.app_id_placeholder || "npub..."}
+                  />
+                  <InputRightElement width="4.5rem">
+                    <Button
+                      h="1.75rem"
+                      size="sm"
+                      onClick={() =>
+                        copy(currentId, t.toast_id_copied || "ID copied")
+                      }
+                      isDisabled={!currentId}
+                    >
+                      {t.app_copy || "Copy"}
+                    </Button>
+                  </InputRightElement>
+                </InputGroup>
+              </Box>
+
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={1}>
+                  {t.app_secret_key || "Secret key"}
+                </Text>
+                <InputGroup>
+                  <Input
+                    type="password"
+                    value={currentSecret ? "••••••••••••••••••••••••••••" : ""}
+                    readOnly
+                    bg="gray.700"
+                    placeholder={t.app_secret_placeholder || "nsec..."}
+                  />
+                  <InputRightElement width="6rem">
+                    <Button
+                      h="1.75rem"
+                      size="sm"
+                      colorScheme="orange"
+                      mr={0}
+                      onClick={() =>
+                        copy(
+                          currentSecret,
+                          t.toast_secret_copied || "Secret copied"
+                        )
+                      }
+                      isDisabled={!currentSecret}
+                    >
+                      {t.app_copy || "Copy"}
+                    </Button>
+                  </InputRightElement>
+                </InputGroup>
+                <Text fontSize="xs" opacity={0.75} mt={1}>
+                  {t.app_secret_note ||
+                    "Keep your secret safe. Anyone with it can access your account."}
+                </Text>
+              </Box>
+
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={2}>
+                  {t.app_switch_account || "Switch account"}
+                </Text>
+                <Input
+                  value={switchNsec}
+                  onChange={(e) => setSwitchNsec(e.target.value)}
+                  bg="gray.700"
+                  placeholder={
+                    t.app_nsec_placeholder || "Paste an nsec key to switch"
+                  }
+                />
+                <HStack mt={2} justify="flex-end">
+                  <Button
+                    isLoading={isSwitching}
+                    loadingText={t.app_switching || "Switching…"}
+                    onClick={switchAccountWithNsec}
+                    colorScheme="teal"
+                  >
+                    {t.app_switch || "Switch"}
+                  </Button>
+                </HStack>
+                <Text fontSize="xs" opacity={0.75} mt={1}>
+                  {t.app_switch_note ||
+                    "We’ll derive your public key (npub) from the secret and switch safely."}
+                </Text>
+              </Box>
+            </VStack>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
+      {/* ---- Install Modal ---- */}
+      <Modal isOpen={installOpen} onClose={closeInstall} isCentered>
+        <ModalOverlay />
+        <ModalContent bg="gray.900" color="gray.100">
+          <ModalHeader>{t.app_install_title || "Install as app"}</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Flex direction="column" pb={0}>
+              <IoIosMore size={32} />
+              <Text mt={2}>
+                {t.app_install_step1 || "Open the browser menu."}
+              </Text>
+            </Flex>
+            <Divider my={6} />
+
+            <Flex direction="column" pb={0}>
+              <MdOutlineFileUpload size={32} />
+              <Text mt={2}>
+                {t.app_install_step2 || "Choose 'Share' or 'Install'."}
+              </Text>
+            </Flex>
+            <Divider my={6} />
+
+            <Flex direction="column" pb={0}>
+              <CiSquarePlus size={32} />
+              <Text mt={2}>{t.app_install_step3 || "Add to Home Screen."}</Text>
+            </Flex>
+            <Divider my={6} />
+
+            <Flex direction="column" pb={0}>
+              <LuBadgeCheck size={32} />
+              <Text mt={2}>
+                {t.app_install_step4 || "Launch from your Home Screen."}
+              </Text>
+            </Flex>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              variant="ghost"
+              onMouseDown={closeInstall}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") closeInstall();
+              }}
+            >
+              {t.app_close || "Close"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
+}
+
+/* -------------------------------------------------------------------------------------------------
+   App root
+--------------------------------------------------------------------------------------------------*/
+export default function App() {
+  const toast = useToast();
+  const initRef = useRef(false);
+
+  const [isLoadingApp, setIsLoadingApp] = useState(true);
+
+  // Zustand store
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
 
   // DID / auth
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
-    localStorage.getItem("local_npub"),
-    localStorage.getItem("local_nsec")
+    typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
+    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
   );
 
-  /** Establish or sync identity and ensure a user doc exists with onboarding flag */
+  // Active identity (npub/nsec)
+  const [activeNpub, setActiveNpub] = useState(
+    typeof window !== "undefined"
+      ? (localStorage.getItem("local_npub") || "").trim()
+      : ""
+  );
+  const [activeNsec, setActiveNsec] = useState(
+    typeof window !== "undefined"
+      ? (localStorage.getItem("local_nsec") || "").trim()
+      : ""
+  );
+
+  // UI language for the *app UI*
+  const [appLanguage, setAppLanguage] = useState(
+    typeof window !== "undefined"
+      ? localStorage.getItem("appLanguage") === "es"
+        ? "es"
+        : "en"
+      : "en"
+  );
+  const t = translations[appLanguage] || translations.en;
+
+  // Tabs (order: Chat, Stories, History, Grammar, Vocabulary)
+  const [currentTab, setCurrentTab] = useState(
+    typeof window !== "undefined"
+      ? localStorage.getItem("currentTab") || "realtime"
+      : "realtime"
+  );
+
+  // Helper mapping for keys/index
+  const TAB_KEYS = ["realtime", "stories", "history", "grammar", "vocabulary"];
+  const keyToIndex = (k) => Math.max(0, TAB_KEYS.indexOf(k));
+  const indexToKey = (i) => TAB_KEYS[i] ?? "realtime";
+  const tabIndex = keyToIndex(currentTab);
+
+  const TAB_LABELS = {
+    realtime: t?.tabs_realtime ?? "Chat",
+    stories: t?.tabs_stories ?? "Stories",
+    history: t?.tabs_history ?? "History",
+    grammar: t?.tabs_grammar ?? "Grammar",
+    vocabulary: t?.tabs_vocab ?? "Vocabulary",
+  };
+  const TAB_ICONS = {
+    realtime: <RiSpeakLine />,
+    stories: <RiSpeakLine />,
+    history: <LuBookOpen />,
+    grammar: <CiEdit />,
+    vocabulary: <CiEdit />,
+  };
+
+  // Default progress (mirrors onboarding)
+  const DEFAULT_PROGRESS = {
+    level: "beginner",
+    supportLang: "en",
+    voice: "alloy",
+    voicePersona: translations?.en?.onboarding_persona_default_example || "",
+    targetLang: "es",
+    showTranslations: true,
+    pauseMs: 2000,
+    helpRequest: "",
+    practicePronunciation: false,
+  };
+
+  /* -----------------------------------
+     Identity bootstrap + user doc ensure
+  ----------------------------------- */
   const connectDID = async () => {
     setIsLoadingApp(true);
     try {
@@ -140,41 +835,37 @@ export default function App() {
       if (id) {
         userDoc = await loadUserObjectFromDB(database, id);
         if (!userDoc) {
-          // first time syncing a locally-present id → create minimal doc
           const base = {
             local_npub: id,
             createdAt: new Date().toISOString(),
             onboarding: { completed: false },
             appLanguage:
               localStorage.getItem("appLanguage") === "es" ? "es" : "en",
-            helpRequest: "", // mirror at top-level
-            practicePronunciation: false, // ✅ NEW default mirror
+            helpRequest: "",
+            practicePronunciation: false,
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
           userDoc = await loadUserObjectFromDB(database, id);
         }
       } else {
-        // No local id → generate keys, write user doc
-        const did = await generateNostrKeys(); // writes npub/nsec to localStorage
-        id = did.npub;
+        const did = await generateNostrKeys();
+        id = did?.npub || (localStorage.getItem("local_npub") || "").trim();
         const base = {
           local_npub: id,
           createdAt: new Date().toISOString(),
           onboarding: { completed: false },
           appLanguage:
             localStorage.getItem("appLanguage") === "es" ? "es" : "en",
-          helpRequest: "", // mirror at top-level
-          practicePronunciation: false, // ✅ NEW default mirror
+          helpRequest: "",
+          practicePronunciation: false,
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
       }
 
-      // Reflect creds
       setActiveNpub(id);
       setActiveNsec(localStorage.getItem("local_nsec") || "");
 
-      // Hydrate store + UI language
       if (userDoc) {
         const uiLang =
           userDoc.appLanguage === "es"
@@ -184,7 +875,6 @@ export default function App() {
             : "en";
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
-
         setUser?.(userDoc);
       }
     } catch (e) {
@@ -194,9 +884,57 @@ export default function App() {
     }
   };
 
-  /** Persist app language to Firestore + localStorage + store */
+  useEffect(() => {
+    if (initRef.current) return;
+    initRef.current = true;
+    connectDID();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Keep appLanguage synced from store if changed elsewhere
+  useEffect(() => {
+    if (!user) return;
+    const fromStore =
+      user.appLanguage === "es"
+        ? "es"
+        : localStorage.getItem("appLanguage") === "es"
+        ? "es"
+        : "en";
+    setAppLanguage(fromStore);
+    localStorage.setItem("appLanguage", fromStore);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.appLanguage]);
+
+  const onboardingDone = useMemo(() => {
+    const nested = user?.onboarding?.completed;
+    const legacy = user?.onboardingCompleted;
+    return isTrue(nested) || isTrue(legacy);
+  }, [user]);
+
+  const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
+
+  /* -----------------------------------
+     Persistence helpers
+  ----------------------------------- */
+  const resolveNpub = () => {
+    const candidates = [
+      activeNpub,
+      user?.id,
+      user?.local_npub,
+      localStorage.getItem("local_npub"),
+    ];
+    const pick = candidates.find(
+      (v) =>
+        typeof v === "string" &&
+        v.trim() &&
+        v.trim() !== "null" &&
+        v.trim() !== "undefined"
+    );
+    return (pick || "").trim();
+  };
+
   const saveAppLanguage = async (lang = "en") => {
-    const id = (localStorage.getItem("local_npub") || "").trim();
+    const id = resolveNpub();
     const norm = lang === "es" ? "es" : "en";
     setAppLanguage(norm);
     try {
@@ -213,42 +951,114 @@ export default function App() {
       if (user) setUser?.({ ...user, appLanguage: norm, updatedAt: now });
     } catch (e) {
       console.error("Failed to save appLanguage:", e);
-      const failT = translations[norm];
       toast({
         status: "error",
-        title: failT.toast_save_lang_failed,
+        title: "Could not save language",
         description: String(e?.message || e),
       });
     }
+    window.dispatchEvent(
+      new CustomEvent("app:uiLanguageChanged", { detail: norm })
+    );
   };
 
-  /** Save onboarding payload → progress, flip completed → reload user */
+  // Persist settings (used by debounced autosave)
+  const saveGlobalSettings = async (partial = {}) => {
+    const npub = resolveNpub();
+    if (!npub) return;
+
+    const clampPause = (v) => {
+      const n = Number.isFinite(v) ? Math.round(v) : 800;
+      return Math.max(200, Math.min(4000, Math.round(n / 100) * 100));
+    };
+
+    const prev = user?.progress || DEFAULT_PROGRESS;
+    const next = {
+      level: partial.level ?? prev.level ?? "beginner",
+      supportLang: ["en", "es", "bilingual"].includes(
+        partial.supportLang ?? prev.supportLang
+      )
+        ? partial.supportLang ?? prev.supportLang
+        : "en",
+      voice: partial.voice ?? prev.voice ?? "alloy",
+      voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
+        .slice(0, 240)
+        .trim(),
+      targetLang: ["nah", "es", "en"].includes(
+        partial.targetLang ?? prev.targetLang
+      )
+        ? partial.targetLang ?? prev.targetLang
+        : "es",
+      showTranslations:
+        typeof (partial.showTranslations ?? prev.showTranslations) === "boolean"
+          ? partial.showTranslations ?? prev.showTranslations
+          : true,
+      pauseMs: clampPause(partial.pauseMs ?? prev.pauseMs),
+      helpRequest: String(partial.helpRequest ?? prev.helpRequest ?? "").slice(
+        0,
+        600
+      ),
+      practicePronunciation:
+        typeof (partial.practicePronunciation ?? prev.practicePronunciation) ===
+        "boolean"
+          ? partial.practicePronunciation ?? prev.practicePronunciation
+          : false,
+    };
+
+    const now = new Date().toISOString();
+    setUser?.({
+      ...(user || {}),
+      local_npub: npub,
+      updatedAt: now,
+      helpRequest: next.helpRequest || "",
+      progress: next,
+      practicePronunciation: next.practicePronunciation,
+    });
+
+    try {
+      localStorage.setItem("progress", JSON.stringify(next));
+    } catch {}
+
+    await setDoc(
+      doc(database, "users", npub),
+      {
+        local_npub: npub,
+        updatedAt: now,
+        helpRequest: next.helpRequest || "",
+        progress: next,
+        practicePronunciation: next.practicePronunciation,
+      },
+      { merge: true }
+    );
+
+    window.dispatchEvent(
+      new CustomEvent("app:globalSettingsUpdated", { detail: next })
+    );
+  };
+
   const handleOnboardingComplete = async (payload = {}) => {
     try {
-      const id = (localStorage.getItem("local_npub") || "").trim();
+      const id = resolveNpub();
       if (!id) return;
 
       const safe = (v, fallback) =>
         v === undefined || v === null ? fallback : v;
 
-      // Challenge strings from translation object (keep UI/DB consistent)
       const CHALLENGE = {
         en: translations.en.onboarding_challenge_default,
         es: translations.es.onboarding_challenge_default,
       };
 
-      // Normalize / validate incoming payload
       const normalized = {
         level: safe(payload.level, "beginner"),
         supportLang: ["en", "es", "bilingual"].includes(payload.supportLang)
           ? payload.supportLang
           : "en",
-        // ✅ NEW boolean with default false
         practicePronunciation:
           typeof payload.practicePronunciation === "boolean"
             ? payload.practicePronunciation
             : false,
-        voice: safe(payload.voice, "alloy"), // GPT Realtime voice ids
+        voice: safe(payload.voice, "alloy"),
         voicePersona: safe(
           payload.voicePersona,
           translations.en.onboarding_persona_default_example
@@ -260,8 +1070,8 @@ export default function App() {
           typeof payload.showTranslations === "boolean"
             ? payload.showTranslations
             : true,
-        // what the user wants help with (limit length for safety)
         helpRequest: String(safe(payload.helpRequest, "")).slice(0, 600),
+        pauseMs: typeof payload.pauseMs === "number" ? payload.pauseMs : 800,
         challenge:
           payload?.challenge?.en && payload?.challenge?.es
             ? payload.challenge
@@ -271,8 +1081,6 @@ export default function App() {
       };
 
       const now = new Date().toISOString();
-
-      // Best available UI language to persist
       const uiLangForPersist =
         (user?.appLanguage === "es" && "es") ||
         (localStorage.getItem("appLanguage") === "es" && "es") ||
@@ -283,21 +1091,18 @@ export default function App() {
         {
           local_npub: id,
           updatedAt: now,
-          appLanguage: uiLangForPersist, // ✅ persist selected UI language
+          appLanguage: uiLangForPersist,
           onboarding: { completed: true, completedAt: now },
-          lastGoal: normalized.challenge.en, // keep English for lastGoal label
+          lastGoal: normalized.challenge.en,
           xp: 0,
           streak: 0,
-          // mirrors for quick reads
           helpRequest: normalized.helpRequest,
-          practicePronunciation: normalized.practicePronunciation, // ✅ NEW mirror
-          // progress holds all learning prefs
+          practicePronunciation: normalized.practicePronunciation,
           progress: { ...normalized },
         },
         { merge: true }
       );
 
-      // Refresh user in store so gating flips and RA loads with the new progress/lang
       const fresh = await loadUserObjectFromDB(database, id);
       if (fresh) setUser?.(fresh);
     } catch (e) {
@@ -305,377 +1110,217 @@ export default function App() {
     }
   };
 
-  // Boot once
-  useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
-    connectDID();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  /* -----------------------------------
+     Top bar with Settings / Account / Install
+  ----------------------------------- */
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
 
-  // Sync appLanguage from store if it changes elsewhere (e.g. Settings)
-  useEffect(() => {
-    if (!user) return;
-    const fromStore =
-      user.appLanguage === "es"
-        ? "es"
-        : localStorage.getItem("appLanguage") === "es"
-        ? "es"
-        : "en";
-    setAppLanguage(fromStore);
-    localStorage.setItem("appLanguage", fromStore);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.appLanguage]);
-
-  // Gate: only show RealtimeAgent when we *explicitly* see onboarding completed
-  const onboardingDone = useMemo(() => {
-    const nested = user?.onboarding?.completed;
-    const legacy = user?.onboardingCompleted;
-    return isTrue(nested) || isTrue(legacy);
-  }, [user]);
-
-  const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
-
-  // Top bar language switch + account controls
-  const TopBar = () => {
-    const t = translations[appLanguage];
-    const [currentId, setCurrentId] = useState(activeNpub || "");
-    const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
-    const [switchNsec, setSwitchNsec] = useState("");
-    const [isSwitching, setIsSwitching] = useState(false);
-    const coachSheet = useDisclosure();
-    const account = useDisclosure();
-    const install = useDisclosure();
-    const toast = useToast();
-
-    async function copy(text, label = t.toast_copied) {
-      try {
-        await navigator.clipboard.writeText(text || "");
-        toast({ title: label, status: "success", duration: 1400 });
-      } catch (e) {
-        toast({
-          title: t.toast_copy_failed,
-          description: String(e?.message || e),
-          status: "error",
-        });
-      }
-    }
-    const isoNow = () => {
-      try {
-        return new Date().toISOString();
-      } catch {
-        return String(Date.now());
-      }
-    };
-
-    async function switchAccount() {
-      const nsec = (switchNsec || "").trim();
-      if (!nsec) {
-        toast({ title: t.toast_paste_nsec, status: "warning" });
-        return;
-      }
-      if (!nsec.startsWith("nsec")) {
-        toast({
-          title: t.toast_invalid_key,
-          description: t.toast_must_start_nsec,
-          status: "error",
-        });
-        return;
-      }
-      setIsSwitching(true);
-      try {
-        if (typeof auth !== "function")
-          throw new Error("auth(nsec) is not available.");
-        const res = await auth(nsec);
-        const npub = res?.user?.npub || localStorage.getItem("local_npub");
-        if (!npub?.startsWith("npub"))
-          throw new Error("Could not derive npub from the secret key.");
-
-        await setDoc(
-          doc(database, "users", npub),
-          { local_npub: npub, createdAt: isoNow() },
-          { merge: true }
-        );
-
-        // Reflect to localStorage (source of truth for connectDID)
-        localStorage.setItem("local_npub", npub);
-        localStorage.setItem("local_nsec", nsec);
-
-        // Instant UI reflect
-        setActiveNpub(npub);
-        setActiveNsec(nsec);
-        setCurrentId(npub);
-        setCurrentSecret(nsec);
-        setSwitchNsec("");
-
-        account.onClose?.();
-        toast({ title: t.toast_switched_account, status: "success" });
-
-        // 🔁 Reload user/progress for the new account
-        await connectDID();
-      } catch (e) {
-        console.error("switchAccount error:", e);
-        toast({
-          title: t.toast_switch_failed,
-          description: e?.message || String(e),
-          status: "error",
-        });
-      } finally {
-        setIsSwitching(false);
-      }
-    }
-
-    // Keep TopBar’s local copy in sync with parent state
-    useEffect(() => {
-      setCurrentId(activeNpub || "");
-    }, [activeNpub]);
-    useEffect(() => {
-      setCurrentSecret(activeNsec || "");
-    }, [activeNsec]);
-
-    return (
-      <>
-        <HStack
-          as="header"
-          w="100%"
-          px={3}
-          py={2}
-          bg="gray.900"
-          color="gray.100"
-          borderBottom="1px solid"
-          borderColor="gray.700"
-          position="sticky"
-          top={0}
-          zIndex={100}
-        >
-          <Spacer />
-          <HStack spacing={1}>
-            <IconButton
-              aria-label={t.app_install_aria}
-              icon={<GoDownload size={20} />}
-              size="md"
-              onClick={install.onOpen}
-              colorScheme="blue.800"
-              mr={1}
-            />
-            <IconButton
-              aria-label={t.app_account_aria}
-              icon={<CiUser size={20} />}
-              size="md"
-              onClick={account.onOpen}
-              colorScheme="blue.800"
-              mr={2}
-            />
-            <HStack spacing={2} align="center">
-              <Text
-                fontSize="sm"
-                color={appLanguage === "en" ? "teal.300" : "gray.400"}
-              >
-                EN
-              </Text>
-              <Switch
-                colorScheme="teal"
-                isChecked={appLanguage === "es"}
-                onChange={() =>
-                  saveAppLanguage(appLanguage === "en" ? "es" : "en")
-                }
-              />
-              <Text
-                fontSize="sm"
-                color={appLanguage === "es" ? "teal.300" : "gray.400"}
-              >
-                ES
-              </Text>
-            </HStack>
-          </HStack>
-        </HStack>
-
-        <Modal isOpen={install.isOpen} onClose={install.onClose} isCentered>
-          <ModalOverlay />
-          <ModalContent bg="gray.900" color="gray.100">
-            <ModalHeader>{t.app_install_title}</ModalHeader>
-            <ModalCloseButton />
-            <ModalBody>
-              <Flex direction="column" pb={0}>
-                <IoIosMore size={32} />
-                <Text mt={2}>{t.app_install_step1}</Text>
-              </Flex>
-              <Divider my={6} />
-
-              <Flex direction="column" pb={0}>
-                <MdOutlineFileUpload size={32} />
-                <Text mt={2}>{t.app_install_step2}</Text>
-              </Flex>
-              <Divider my={6} />
-
-              <Flex direction="column" pb={0}>
-                <CiSquarePlus size={32} />
-                <Text mt={2}>{t.app_install_step3}</Text>
-              </Flex>
-              <Divider my={6} />
-
-              <Flex direction="column" pb={0}>
-                <LuBadgeCheck size={32} />
-                <Text mt={2}>{t.app_install_step4}</Text>
-              </Flex>
-            </ModalBody>
-
-            <ModalFooter>
-              <Button
-                variant="ghost"
-                onMouseDown={install.onClose}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") install.onClose();
-                }}
-              >
-                {t.app_close}
-              </Button>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
-
-        <Drawer
-          isOpen={account.isOpen}
-          placement="bottom"
-          onClose={account.onClose}
-        >
-          <DrawerOverlay bg="blackAlpha.600" />
-          <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
-            <DrawerHeader pb={2}>{t.app_account_title}</DrawerHeader>
-            <DrawerBody pb={6}>
-              <VStack align="stretch" spacing={3}>
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={1}>
-                    {t.app_your_id}
-                  </Text>
-                  <InputGroup>
-                    <Input
-                      value={currentId || ""}
-                      readOnly
-                      bg="gray.700"
-                      placeholder={t.app_id_placeholder}
-                    />
-                    <InputRightElement width="4.5rem">
-                      <Button
-                        h="1.75rem"
-                        size="sm"
-                        onClick={() => copy(currentId, t.toast_id_copied)}
-                        isDisabled={!currentId}
-                      >
-                        {t.app_copy}
-                      </Button>
-                    </InputRightElement>
-                  </InputGroup>
-                </Box>
-
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={1}>
-                    {t.app_secret_key}
-                  </Text>
-                  <InputGroup>
-                    <Input
-                      type="password"
-                      value={
-                        currentSecret ? "••••••••••••••••••••••••••••" : ""
-                      }
-                      readOnly
-                      bg="gray.700"
-                      placeholder={t.app_secret_placeholder}
-                    />
-                    <InputRightElement width="6rem">
-                      <Button
-                        h="1.75rem"
-                        size="sm"
-                        colorScheme="orange"
-                        onClick={() =>
-                          copy(currentSecret, t.toast_secret_copied)
-                        }
-                        isDisabled={!currentSecret}
-                      >
-                        {t.app_copy}
-                      </Button>
-                    </InputRightElement>
-                  </InputGroup>
-                  <Text fontSize="xs" opacity={0.75} mt={1}>
-                    {t.app_secret_note}
-                  </Text>
-                </Box>
-
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={2}>
-                    {t.app_switch_account}
-                  </Text>
-                  <Input
-                    value={switchNsec}
-                    onChange={(e) => setSwitchNsec(e.target.value)}
-                    bg="gray.700"
-                    placeholder={t.app_nsec_placeholder}
-                  />
-                  <HStack mt={2} justify="flex-end">
-                    <Button
-                      isLoading={isSwitching}
-                      loadingText={t.app_switching}
-                      onClick={switchAccount}
-                      colorScheme="teal"
-                    >
-                      {t.app_switch}
-                    </Button>
-                  </HStack>
-                  <Text fontSize="xs" opacity={0.75} mt={1}>
-                    {t.app_switch_note}
-                  </Text>
-                </Box>
-              </VStack>
-            </DrawerBody>
-          </DrawerContent>
-        </Drawer>
-      </>
-    );
-  };
-
-  // Loading state
+  /* -----------------------------------
+     Loading / Onboarding gates
+  ----------------------------------- */
   if (isLoadingApp || !user) {
     return (
-      <Box minH="100vh" bg="gray.900">
-        {/* <TopBar /> */}
-        <Box p={6} color="gray.100">
-          <RobotBuddyPro state="Loading" />
-        </Box>
+      <Box minH="100vh" bg="gray.900" color="gray.100" p={6}>
+        <RobotBuddyPro state="Loading" />
       </Box>
     );
   }
 
-  // First-run: show Onboarding
   if (needsOnboarding) {
     return (
-      <Box minH="100vh" bg="gray.900">
-        {/* <TopBar /> */}
+      <Box minH="100vh" bg="gray.900" color="gray.100">
         <Onboarding
           userLanguage={appLanguage}
           npub={activeNpub}
           onComplete={handleOnboardingComplete}
-          onAppLanguageChange={saveAppLanguage} // ✅ persist language choice immediately
+          onAppLanguageChange={saveAppLanguage}
         />
       </Box>
     );
   }
 
-  // Main app
+  /* -----------------------------------
+     Main App (dropdown + panels)
+  ----------------------------------- */
   return (
-    <Box minH="100vh" bg="gray.900">
-      <TopBar />
-      <RealTimeTest
-        userLanguage={appLanguage}
-        auth={auth}
+    <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
+      <TopBar
+        appLanguage={appLanguage}
+        user={user}
         activeNpub={activeNpub}
         activeNsec={activeNsec}
-        onSwitchedAccount={async () => {
+        auth={auth}
+        onSwitchedAccount={async (id, sec) => {
+          if (id) localStorage.setItem("local_npub", id);
+          if (typeof sec === "string") localStorage.setItem("local_nsec", sec);
           await connectDID();
-          // reflect latest local storage values
           setActiveNpub(localStorage.getItem("local_npub") || "");
           setActiveNsec(localStorage.getItem("local_nsec") || "");
         }}
+        onPatchSettings={saveGlobalSettings}
+        onToggleAppLanguage={() =>
+          saveAppLanguage(appLanguage === "en" ? "es" : "en")
+        }
+        // controlled drawers
+        settingsOpen={settingsOpen}
+        openSettings={() => setSettingsOpen(true)}
+        closeSettings={() => setSettingsOpen(false)}
+        accountOpen={accountOpen}
+        openAccount={() => setAccountOpen(true)}
+        closeAccount={() => setAccountOpen(false)}
+        installOpen={installOpen}
+        openInstall={() => setInstallOpen(true)}
+        closeInstall={() => setInstallOpen(false)}
       />
+
+      <Box px={[2, 3, 4]} pt={[2, 3]} w="100%">
+        <Tabs
+          index={tabIndex}
+          onChange={(i) => {
+            const key = indexToKey(i);
+            setCurrentTab(key);
+            localStorage.setItem("currentTab", key);
+          }}
+          colorScheme="teal"
+          isLazy
+        >
+          {/* Top dropdown selector (replaces TabList) */}
+          <Box
+            // border="1px solid"
+            borderColor="gray.700"
+            rounded="xl"
+            p="6px"
+            mb={[2, 3]}
+            // w="50%"
+
+            width="100%"
+            display="flex"
+            justifyContent="center"
+          >
+            <Menu autoSelect={false} isLazy>
+              <MenuButton
+                as={Button}
+                rightIcon={<ChevronDownIcon />}
+                variant="outline"
+                size="sm"
+                borderColor="gray.700"
+                w="50%"
+                padding={6}
+              >
+                <HStack spacing={2}>
+                  {TAB_ICONS[currentTab]}
+                  <Text>{TAB_LABELS[currentTab]}</Text>
+                </HStack>
+              </MenuButton>
+
+              <MenuList borderColor="gray.700">
+                <MenuOptionGroup
+                  type="radio"
+                  value={currentTab}
+                  onChange={(value) => {
+                    const v = String(value);
+                    setCurrentTab(v);
+                    localStorage.setItem("currentTab", v);
+                  }}
+                >
+                  <MenuItemOption value="realtime">
+                    <HStack spacing={2}>
+                      {TAB_ICONS.realtime}
+                      <Text>{TAB_LABELS.realtime}</Text>
+                    </HStack>
+                  </MenuItemOption>
+                  <MenuItemOption value="stories">
+                    <HStack spacing={2}>
+                      {TAB_ICONS.stories}
+                      <Text>{TAB_LABELS.stories}</Text>
+                    </HStack>
+                  </MenuItemOption>
+                  <MenuItemOption value="history">
+                    <HStack spacing={2}>
+                      {TAB_ICONS.history}
+                      <Text>{TAB_LABELS.history}</Text>
+                    </HStack>
+                  </MenuItemOption>
+                  <MenuItemOption value="grammar">
+                    <HStack spacing={2}>
+                      {TAB_ICONS.grammar}
+                      <Text>{TAB_LABELS.grammar}</Text>
+                    </HStack>
+                  </MenuItemOption>
+                  <MenuItemOption value="vocabulary">
+                    <HStack spacing={2}>
+                      {TAB_ICONS.vocabulary}
+                      <Text>{TAB_LABELS.vocabulary}</Text>
+                    </HStack>
+                  </MenuItemOption>
+                </MenuOptionGroup>
+              </MenuList>
+            </Menu>
+          </Box>
+
+          <TabPanels mt={[2, 3]}>
+            {/* Chat */}
+            <TabPanel px={0}>
+              <RealTimeTest
+                auth={auth}
+                activeNpub={activeNpub}
+                activeNsec={activeNsec}
+                level={user?.progress?.level}
+                supportLang={user?.progress?.supportLang}
+                voice={user?.progress?.voice}
+                voicePersona={user?.progress?.voicePersona}
+                targetLang={user?.progress?.targetLang}
+                showTranslations={user?.progress?.showTranslations}
+                pauseMs={user?.progress?.pauseMs}
+                helpRequest={user?.progress?.helpRequest}
+                practicePronunciation={user?.progress?.practicePronunciation}
+                onSwitchedAccount={async (id, sec) => {
+                  if (id) localStorage.setItem("local_npub", id);
+                  if (typeof sec === "string")
+                    localStorage.setItem("local_nsec", sec);
+                  await connectDID();
+                  setActiveNpub(localStorage.getItem("local_npub") || "");
+                  setActiveNsec(localStorage.getItem("local_nsec") || "");
+                }}
+              />
+            </TabPanel>
+
+            {/* Stories */}
+            <TabPanel px={0}>
+              <StoryMode
+                userLanguage={appLanguage}
+                activeNpub={activeNpub}
+                activeNsec={activeNsec}
+              />
+            </TabPanel>
+
+            {/* History (reading) */}
+            <TabPanel px={0}>
+              <History userLanguage={appLanguage} />
+            </TabPanel>
+
+            {/* Grammar */}
+            <TabPanel px={0}>
+              <GrammarBook
+                userLanguage={appLanguage}
+                activeNpub={activeNpub}
+                activeNsec={activeNsec}
+              />
+            </TabPanel>
+
+            {/* Vocabulary */}
+            <TabPanel px={0}>
+              <Vocabulary
+                userLanguage={appLanguage}
+                activeNpub={activeNpub}
+                activeNsec={activeNsec}
+              />
+            </TabPanel>
+          </TabPanels>
+        </Tabs>
+      </Box>
     </Box>
   );
 }

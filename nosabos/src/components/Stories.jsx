@@ -1,0 +1,1940 @@
+// components/Stories.jsx
+import React, {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
+import {
+  Box,
+  Button,
+  Text,
+  VStack,
+  HStack,
+  Center,
+  useToast,
+  Badge,
+  Progress,
+  IconButton,
+  Spacer,
+  Divider,
+  Spinner,
+} from "@chakra-ui/react";
+import { motion } from "framer-motion";
+import { FaArrowLeft, FaVolumeUp, FaStop } from "react-icons/fa";
+import { FaWandMagicSparkles } from "react-icons/fa6";
+import { PiMicrophoneStageDuotone } from "react-icons/pi";
+import { useNavigate } from "react-router-dom";
+import {
+  doc,
+  setDoc,
+  increment,
+  addDoc,
+  collection,
+  serverTimestamp,
+  onSnapshot,
+} from "firebase/firestore";
+import { database } from "../firebaseResources/firebaseResources";
+import useUserStore from "../hooks/useUserStore";
+import { translations } from "../utils/translation";
+import { WaveBar } from "./WaveBar";
+import { PasscodePage } from "./PasscodePage";
+
+/* ================================
+   ENV / API
+=================================== */
+const RESPONSES_URL = import.meta.env.VITE_RESPONSES_URL;
+
+/* ================================
+   Helpers / Language utils
+=================================== */
+const isoNow = () => {
+  try {
+    return new Date().toISOString();
+  } catch {
+    return String(Date.now());
+  }
+};
+
+const strongNpub = (user) =>
+  (
+    user?.id ||
+    user?.local_npub ||
+    localStorage.getItem("local_npub") ||
+    ""
+  ).trim();
+
+const LLM_LANG_NAME = (code) =>
+  ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+
+const BCP47 = {
+  es: { stt: "es-ES", tts: "es-ES" },
+  en: { stt: "en-US", tts: "en-US" },
+  nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Nahuatl is unsupported by engines
+};
+
+const getAppUILang = () => {
+  const user = useUserStore.getState().user;
+  return (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
+    ? "es"
+    : "en";
+};
+
+/* ================================
+   Shared Progress (global XP + settings)
+=================================== */
+function useSharedProgress() {
+  const user = useUserStore((s) => s.user);
+  const npub = strongNpub(user);
+  const [xp, setXp] = useState(0);
+  const [progress, setProgress] = useState({
+    level: "beginner",
+    targetLang: "es",
+    supportLang: "en", // 'en' | 'es' | 'bilingual'
+    voice: "alloy",
+  });
+
+  useEffect(() => {
+    if (!npub) return;
+    const ref = doc(database, "users", npub);
+    const unsub = onSnapshot(ref, (snap) => {
+      const data = snap.exists() ? snap.data() : {};
+      setXp(Number.isFinite(data?.xp) ? data.xp : 0);
+      const p = data?.progress || {};
+      setProgress({
+        level: p.level || "beginner",
+        targetLang: ["nah", "es", "en"].includes(p.targetLang)
+          ? p.targetLang
+          : "es",
+        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
+          ? p.supportLang
+          : "en",
+        voice: p.voice || "alloy",
+      });
+    });
+    return () => unsub();
+  }, [npub]);
+
+  const levelNumber = Math.floor(xp / 100) + 1;
+  const progressPct = Math.min(100, xp % 100);
+  return { xp, levelNumber, progressPct, progress, npub };
+}
+
+/* ================================
+   Global XP helpers + logging
+=================================== */
+async function awardXp(npub, amount) {
+  if (!npub || !amount) return;
+  const ref = doc(database, "users", npub);
+  await setDoc(
+    ref,
+    { xp: increment(Math.round(amount)), updatedAt: isoNow() },
+    { merge: true }
+  );
+}
+
+async function saveStoryTurn(npub, payload) {
+  if (!npub) return;
+  const col = collection(database, "users", npub, "storyTurns");
+  await addDoc(col, {
+    ...payload,
+    createdAt: serverTimestamp(),
+    createdAtClient: Date.now(),
+    origin: "story",
+  });
+}
+
+/* ================================
+   UI text (driven by APP UI language only)
+=================================== */
+function useUIText(uiLang, level, translationsObj) {
+  return useMemo(() => {
+    const t = translationsObj[uiLang] || translationsObj.en;
+    return {
+      header: uiLang === "es" ? "Narrativos" : "Narratives",
+      generate: uiLang === "es" ? "Generar narrativo" : "Generate Story",
+      playing: uiLang === "es" ? "Reproduciendo..." : "Playing...",
+      playTarget: (name) =>
+        uiLang === "es" ? `Reproducir ${name}` : `Play ${name}`,
+      listen: uiLang === "es" ? "Escuchar" : "Listen",
+      stop: uiLang === "es" ? "Detener" : "Stop",
+      startPractice:
+        uiLang === "es"
+          ? "Empezar práctica por oración"
+          : "Start Sentence Practice",
+      practiceThis:
+        uiLang === "es" ? "Practica esta oración:" : "Practice this sentence:",
+      skip: uiLang === "es" ? "Saltar oración" : "Skip Sentence",
+      finish: uiLang === "es" ? "Terminar narrativo" : "Finish Story",
+      record: uiLang === "es" ? "Grabar oración" : "Record Sentence",
+      stopRecording: uiLang === "es" ? "Detener grabación" : "Stop Recording",
+      progress: uiLang === "es" ? "Progreso" : "Progress",
+      noStory:
+        uiLang === "es"
+          ? "Aún no hay narrativo. Genera una para comenzar."
+          : "No story yet. Click to generate one.",
+      generatingTitle:
+        uiLang === "es" ? "Generando tu narrativo" : "Generating your story…",
+      generatingSub:
+        uiLang === "es"
+          ? "Creando una narrativo personalizada"
+          : "Creating a personalized story for you",
+      almost:
+        uiLang === "es" ? "Casi — inténtalo otra vez" : "Almost — try again",
+      wellDone: uiLang === "es" ? "¡Bien hecho!" : "Well done!",
+      score: uiLang === "es" ? "Puntuación" : "Score",
+      xp: t?.ra_label_xp || "XP",
+      levelLabel: uiLang === "es" ? "Nivel" : "Level",
+      levelValue:
+        uiLang === "es"
+          ? {
+              beginner: translationsObj.es.onboarding_level_beginner,
+              intermediate: translationsObj.es.onboarding_level_intermediate,
+              advanced: translationsObj.es.onboarding_level_advanced,
+            }[level] || level
+          : {
+              beginner: translationsObj.en.onboarding_level_beginner,
+              intermediate: translationsObj.en.onboarding_level_intermediate,
+              advanced: translationsObj.en.onboarding_level_advanced,
+            }[level] || level,
+    };
+  }, [uiLang, level, translationsObj]);
+}
+
+/* ================================
+   Normalization / Scoring (multi-lang)
+=================================== */
+const STOPWORDS = {
+  es: new Set([
+    "el",
+    "la",
+    "los",
+    "las",
+    "un",
+    "una",
+    "unos",
+    "unas",
+    "de",
+    "del",
+    "al",
+    "y",
+    "o",
+    "u",
+    "que",
+    "como",
+    "cuando",
+    "donde",
+    "por",
+    "para",
+    "con",
+    "sin",
+    "en",
+    "a",
+    "es",
+    "era",
+    "soy",
+    "eres",
+    "somos",
+    "son",
+    "fue",
+    "fueron",
+    "ser",
+    "estar",
+    "estoy",
+    "está",
+    "están",
+    "muy",
+    "más",
+    "menos",
+    "también",
+    "pero",
+    "porque",
+    "si",
+    "no",
+    "ya",
+    "hay",
+    "me",
+    "te",
+    "se",
+    "le",
+    "lo",
+    "la",
+    "nos",
+    "les",
+    "mi",
+    "tu",
+    "su",
+    "sus",
+  ]),
+  en: new Set([
+    "the",
+    "a",
+    "an",
+    "and",
+    "or",
+    "but",
+    "so",
+    "to",
+    "of",
+    "in",
+    "on",
+    "for",
+    "with",
+    "is",
+    "are",
+    "was",
+    "were",
+    "be",
+    "been",
+    "being",
+    "that",
+    "which",
+    "who",
+    "whom",
+    "this",
+    "these",
+    "those",
+    "at",
+    "as",
+    "by",
+    "from",
+    "it",
+    "its",
+    "my",
+    "your",
+    "his",
+    "her",
+    "our",
+    "their",
+    "there",
+    "here",
+  ]),
+  nah: new Set(),
+};
+
+function removeDiacritics(s) {
+  return String(s || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "");
+}
+function normalizeGeneric(str, lang) {
+  const s = removeDiacritics(str || "").toLowerCase();
+  return s
+    .replace(/[^a-zñáéíóúüʼ' -]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+function tokenizeWords(str, lang) {
+  return normalizeGeneric(str, lang).split(" ").filter(Boolean);
+}
+function levenshteinDistance(a, b) {
+  const n = a.length,
+    m = b.length;
+  if (!n) return m;
+  if (!m) return n;
+  const dp = Array.from({ length: m + 1 }, (_, j) => j);
+  for (let i = 1; i <= n; i++) {
+    let prev = dp[0];
+    dp[0] = i;
+    for (let j = 1; j <= m; j++) {
+      const tmp = dp[j];
+      dp[j] =
+        a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+      prev = tmp;
+    }
+  }
+  return dp[m];
+}
+function charSimilarity01(a, b, lang) {
+  const A = normalizeGeneric(a, lang),
+    B = normalizeGeneric(b, lang);
+  const d = levenshteinDistance(A, B);
+  const m = Math.max(A.length, B.length) || 1;
+  return (m - d) / m;
+}
+function wordPRF(recWords, tgtWords, lang, { dropStopwords = true } = {}) {
+  const sw = STOPWORDS[lang] || STOPWORDS.en;
+  const rw = dropStopwords ? recWords.filter((w) => !sw.has(w)) : recWords;
+  const tw = dropStopwords ? tgtWords.filter((w) => !sw.has(w)) : tgtWords;
+  const rMap = new Map(),
+    tMap = new Map();
+  for (const w of rw) rMap.set(w, (rMap.get(w) || 0) + 1);
+  for (const w of tw) tMap.set(w, (tMap.get(w) || 0) + 1);
+  let hit = 0;
+  for (const [w, tc] of tMap) hit += Math.min(tc, rMap.get(w) || 0);
+  const prec = rw.length ? hit / rw.length : 0;
+  const rec = tw.length ? hit / tw.length : 0;
+  const f1 = prec + rec ? (2 * prec * rec) / (prec + rec) : 0;
+  return { prec, rec, f1 };
+}
+function languageLikelihood(recWords, lang) {
+  if (!recWords.length) return 0;
+  const sw = STOPWORDS[lang] || STOPWORDS.en;
+  let lettersOK = 0,
+    stopHits = 0;
+  for (const w of recWords) {
+    if (/^[a-zñáéíóúü]+$/i.test(w)) lettersOK++;
+    if (sw.has(w)) stopHits++;
+  }
+  const letterRatio = lettersOK / recWords.length;
+  const stopRatio = stopHits / Math.max(2, recWords.length);
+  return 0.8 * letterRatio + 0.2 * stopRatio;
+}
+
+/* Thresholds */
+const STRICT = {
+  default: {
+    MIN_SPEECH_SEC: 1.1,
+    MIN_RMS: 0.008,
+    MIN_ZCR_PSEC: 500,
+    MAX_ZCR_PSEC: 8000,
+    MIN_CONFIDENCE: 0.55,
+    MIN_CHAR_SIM: 0.7,
+    MIN_WORD_F1: 0.6,
+    MIN_LANG_LIKE: 0.55,
+    DURATION_PER_CHAR_SEC: 0.045,
+    DURATION_TOLERANCE: [0.5, 2.8],
+  },
+  es: {
+    MIN_SPEECH_SEC: 1.2,
+    MIN_RMS: 0.008,
+    MIN_ZCR_PSEC: 500,
+    MAX_ZCR_PSEC: 8000,
+    MIN_CONFIDENCE: 0.55,
+    MIN_CHAR_SIM: 0.74,
+    MIN_WORD_F1: 0.65,
+    MIN_LANG_LIKE: 0.55,
+    DURATION_PER_CHAR_SEC: 0.045,
+    DURATION_TOLERANCE: [0.5, 2.8],
+  },
+  en: {
+    MIN_SPEECH_SEC: 1.1,
+    MIN_RMS: 0.008,
+    MIN_ZCR_PSEC: 500,
+    MAX_ZCR_PSEC: 8000,
+    MIN_CONFIDENCE: 0.55,
+    MIN_CHAR_SIM: 0.72,
+    MIN_WORD_F1: 0.62,
+    MIN_LANG_LIKE: 0.55,
+    DURATION_PER_CHAR_SEC: 0.04,
+    DURATION_TOLERANCE: [0.5, 2.8],
+  },
+  nah: {
+    MIN_SPEECH_SEC: 1.0,
+    MIN_RMS: 0.008,
+    MIN_ZCR_PSEC: 400,
+    MAX_ZCR_PSEC: 9000,
+    MIN_CONFIDENCE: 0.5,
+    MIN_CHAR_SIM: 0.6,
+    MIN_WORD_F1: 0.5,
+    MIN_LANG_LIKE: 0.45,
+    DURATION_PER_CHAR_SEC: 0.045,
+    DURATION_TOLERANCE: [0.5, 3.0],
+  },
+};
+
+function passesSpeechQuality(
+  { duration, rms, zeroCrossings },
+  targetLenChars,
+  cfg
+) {
+  if (!Number.isFinite(duration) || duration < cfg.MIN_SPEECH_SEC) return false;
+  if (!Number.isFinite(rms) || rms < cfg.MIN_RMS) return false;
+  const zps = zeroCrossings && duration ? zeroCrossings / duration : 0;
+  if (zps < cfg.MIN_ZCR_PSEC || zps > cfg.MAX_ZCR_PSEC) return false;
+  const expected = Math.max(
+    cfg.MIN_SPEECH_SEC,
+    targetLenChars * cfg.DURATION_PER_CHAR_SEC
+  );
+  const ratio = duration / expected;
+  return (
+    ratio >= cfg.DURATION_TOLERANCE[0] && ratio <= cfg.DURATION_TOLERANCE[1]
+  );
+}
+
+function evaluateAttemptStrict({
+  recognizedText = "",
+  confidence = 0,
+  audioMetrics,
+  targetSentence = "",
+  lang = "es",
+}) {
+  const cfg = STRICT[lang] || STRICT.default;
+  const reasons = [];
+  const recWords = tokenizeWords(recognizedText, lang);
+  const tgtWords = tokenizeWords(targetSentence, lang);
+
+  if (audioMetrics) {
+    if (!passesSpeechQuality(audioMetrics, (targetSentence || "").length, cfg))
+      reasons.push("speech-quality");
+  }
+  const langLike = languageLikelihood(recWords, lang);
+  if (langLike < cfg.MIN_LANG_LIKE) reasons.push("not-target-lang");
+
+  const charSim = charSimilarity01(recognizedText, targetSentence, lang);
+  const { f1 } = wordPRF(recWords, tgtWords, lang, { dropStopwords: true });
+  if (charSim < cfg.MIN_CHAR_SIM) reasons.push("low-char-sim");
+  if (f1 < cfg.MIN_WORD_F1) reasons.push("low-word-f1");
+  if (confidence && confidence < cfg.MIN_CONFIDENCE)
+    reasons.push("low-confidence");
+
+  const pass = reasons.length === 0;
+  const score = Math.round(
+    Math.max(
+      0,
+      Math.min(
+        100,
+        charSim * 60 +
+          f1 * 35 +
+          langLike * 20 +
+          Math.max(confidence || 0.55, 0.55) * 15
+      )
+    )
+  );
+  return { pass, score, reasons, charSim, f1, langLike, confidence };
+}
+
+/* ================================
+   Main Component
+=================================== */
+export default function StoryMode() {
+  const navigate = useNavigate();
+  const toast = useToast();
+  const user = useUserStore((s) => s.user);
+
+  // Shared settings + XP
+  const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
+
+  // APP UI language (drives all UI copy)
+  const uiLang = getAppUILang();
+  const uiText = useUIText(uiLang, progress.level, translations);
+
+  // Content languages
+  const targetLang = progress.targetLang; // 'es' | 'en' | 'nah'
+  const supportLang =
+    progress.supportLang === "bilingual"
+      ? uiLang === "es"
+        ? "es"
+        : "en"
+      : progress.supportLang;
+
+  const targetName = LLM_LANG_NAME(targetLang);
+  const supportName = LLM_LANG_NAME(supportLang);
+
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+
+  useEffect(() => {
+    if (
+      levelNumber > 2 &&
+      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
+    ) {
+      setShowPasscodeModal(true);
+    }
+  }, [xp]);
+
+  // State
+  const [storyData, setStoryData] = useState(null);
+  const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [isPlayingTarget, setIsPlayingTarget] = useState(false);
+  const [isPlayingSupport, setIsPlayingSupport] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [sessionXp, setSessionXp] = useState(0);
+  const [showFullStory, setShowFullStory] = useState(true);
+
+  // Highlighting (target full story)
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [highlightedWordIndex, setHighlightedWordIndex] = useState(-1);
+  const [tokenizedText, setTokenizedText] = useState(null);
+  const [boundarySupported, setBoundarySupported] = useState(null);
+
+  // Refs
+  const mediaRecorderRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const audioRef = useRef(null);
+  const storyCacheRef = useRef(null);
+  const highlightIntervalRef = useRef(null);
+  const currentUtteranceRef = useRef(null);
+  const animationFrameRef = useRef(null);
+  const currentAudioRef = useRef(null);
+  const eventSourceRef = useRef(null);
+  const audioCacheRef = useRef(new Map());
+  const evalRef = useRef({
+    inProgress: false,
+    speechDone: false,
+    timeoutId: null,
+  });
+  const usageStatsRef = useRef({
+    ttsCalls: 0,
+    storyGenerations: 0,
+    lastResetDate: new Date().toDateString(),
+  });
+
+  /* ------------------------- Tokenization for highlighting ------------------------- */
+  const WORD_TOKEN_REGEX = /(\p{L}[\p{L}\p{M}'-]*|\s+|[^\s\p{L}\p{M}]+)/gu;
+
+  const createTokenMap = useCallback((text) => {
+    const tokens = [];
+    const charToWord = new Map();
+    let charIndex = 0;
+    let wordIndex = 0;
+
+    for (const match of text.matchAll(WORD_TOKEN_REGEX)) {
+      const token = match[0];
+      const isWord = /\p{L}/u.test(token);
+      const start = charIndex;
+      const end = start + token.length;
+
+      tokens.push({ text: token, isWord, startChar: start, endChar: end });
+
+      if (isWord) {
+        for (let i = 0; i < token.length; i++)
+          charToWord.set(start + i, wordIndex);
+        wordIndex++;
+      }
+      charIndex = end;
+    }
+
+    return {
+      tokens,
+      wordIndexByChar: (ci) => charToWord.get(ci) ?? -1,
+      totalWords: wordIndex,
+    };
+  }, []);
+
+  // pseudo alignment based on duration
+  function buildWordTimeline(tokens, totalDurationSec) {
+    const wordTokens = tokens.filter((t) => t.isWord);
+    if (
+      !wordTokens.length ||
+      !Number.isFinite(totalDurationSec) ||
+      totalDurationSec <= 0
+    )
+      return [];
+    const weights = wordTokens.map(
+      (t) => 0.22 + Math.max(1, Array.from(t.text).length) * 0.055
+    );
+    const sum = weights.reduce((a, b) => a + b, 0);
+    const scale = (totalDurationSec * 0.98) / sum;
+    const boundaries = [];
+    let acc = 0;
+    for (let i = 0; i < weights.length; i++) {
+      acc += weights[i] * scale;
+      boundaries.push(acc);
+    }
+    return boundaries;
+  }
+
+  function startAudioAlignedHighlight(audio, tokens, setIdx) {
+    const wordTokens = tokens.filter((t) => t.isWord);
+    if (!wordTokens.length) return () => {};
+    const timeline = buildWordTimeline(tokens, audio.duration || 0);
+    if (!timeline.length) return () => {};
+    let rafId = null,
+      lastIndex = -1;
+
+    const tick = () => {
+      const t = audio.currentTime;
+      let i = 0;
+      while (i < timeline.length && t > timeline[i]) i++;
+      const idx = Math.min(i, timeline.length - 1);
+      if (idx !== lastIndex) {
+        lastIndex = idx;
+        setIdx(idx);
+      }
+      if (!audio.paused && !audio.ended) rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    const stop = () => rafId && cancelAnimationFrame(rafId);
+    audio.addEventListener("pause", stop, { once: true });
+    audio.addEventListener("ended", stop, { once: true });
+    audio.addEventListener("error", stop, { once: true });
+    return stop;
+  }
+
+  /* --------------------------- Story data shaping --------------------------- */
+  // Normalize incoming story to { fullStory: { tgt, sup }, sentences: [{tgt,sup}, ...] }
+  function normalizeStory(raw, tgtCode, supCode) {
+    if (!raw) return null;
+    const pick = (obj, code, fallback) =>
+      obj?.[code] ??
+      (code === "es" ? obj?.es : code === "en" ? obj?.en : undefined) ??
+      obj?.[fallback];
+
+    const fullTgt = pick(raw.fullStory || {}, tgtCode, "es");
+    const fullSup = pick(raw.fullStory || {}, supCode, "en");
+    const sentences = (raw.sentences || []).map((s) => ({
+      tgt: s?.[tgtCode] ?? s?.es ?? s?.en ?? "",
+      sup: s?.[supCode] ?? s?.en ?? s?.es ?? "",
+    }));
+
+    if (!fullTgt || !sentences.length) return null;
+
+    return {
+      fullStory: { tgt: fullTgt, sup: fullSup || "" },
+      sentences,
+    };
+  }
+
+  const validateAndFixStorySentences = (
+    data,
+    tgtKey = "tgt",
+    supKey = "sup"
+  ) => {
+    if (!data || !data.fullStory || !data.sentences) return data;
+    const full = data.fullStory[tgtKey];
+    const parts = full
+      .split(/[.!?]+/)
+      .filter((s) => s.trim().length > 0)
+      .map((s) => (/[.!?]$/.test(s.trim()) ? s.trim() : s.trim() + "."));
+    const reconstructed = parts.join(" ");
+    if (
+      reconstructed === full.trim() &&
+      parts.length === data.sentences.length
+    ) {
+      const validated = parts.map((tgt, i) => ({
+        tgt,
+        sup: data.sentences[i]?.[supKey] || data.sentences[i]?.sup || "",
+      }));
+      return { ...data, sentences: validated };
+    }
+    return data;
+  };
+
+  const stopAllAudio = () => {
+    try {
+      if ("speechSynthesis" in window) speechSynthesis.cancel();
+    } catch {}
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current = null;
+    }
+    currentUtteranceRef.current = null;
+    if (highlightIntervalRef.current) {
+      clearTimeout(highlightIntervalRef.current);
+      highlightIntervalRef.current = null;
+    }
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    setIsPlayingTarget(false);
+    setIsPlayingSupport(false);
+    setIsAutoPlaying(false);
+    setHighlightedWordIndex(-1);
+  };
+
+  //   const setupBoundaryHighlighting = useCallback(
+  //     (text, onComplete) => {
+  //       const tokenMap = createTokenMap(text);
+  //       setTokenizedText(tokenMap.tokens);
+  //       setHighlightedWordIndex(-1);
+  //       setCurrentWordIndex(0);
+
+  //       if (highlightIntervalRef.current)
+  //         clearTimeout(highlightIntervalRef.current);
+  //       if (animationFrameRef.current)
+  //         cancelAnimationFrame(animationFrameRef.current);
+
+  //       const updateHighlight = (wordIndex) => {
+  //         if (animationFrameRef.current)
+  //           cancelAnimationFrame(animationFrameRef.current);
+  //         animationFrameRef.current = requestAnimationFrame(() => {
+  //           setHighlightedWordIndex(wordIndex);
+  //           setCurrentWordIndex(wordIndex);
+  //         });
+  //       };
+
+  //       const handleBoundary = (event) => {
+  //         if (event.name === "word" || event.name === "sentence") {
+  //           updateHighlight(currentWordIndex + 1);
+  //         }
+  //       };
+
+  //       const fallbackTiming = () => {
+  //         let i = 0;
+  //         const words = text.split(/\s+/);
+  //         const tick = () => {
+  //           if (i >= words.length) return onComplete?.();
+  //           updateHighlight(i);
+  //           const w = words[i];
+  //           const base = 200;
+  //           const ms = Math.max(150, Math.min(800, base + w.length * 50));
+  //           i++;
+  //           highlightIntervalRef.current = setTimeout(tick, ms);
+  //         };
+  //         tick();
+  //       };
+
+  //       return { handleBoundary, fallbackTiming, tokenMap };
+  //     },
+  //     [createTokenMap, currentWordIndex]
+  //   );
+
+  /* ----------------------------- Story generation ----------------------------- */
+  const generateStory = async () => {
+    setIsLoading(true);
+    stopAllAudio();
+    try {
+      usageStatsRef.current.storyGenerations++;
+      const storyUrl = "https://generatestory-hftgya63qa-uc.a.run.app";
+      const response = await fetch(storyUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          text: { format: { type: "text" } },
+          input: {
+            uiLanguage: uiLang, // UI language is app UI only
+            level: progress.level || "beginner",
+            targetLang, // content target language
+            supportLang, // effective support language (bilingual mirrors UI)
+          },
+        }),
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      const normalized = normalizeStory(
+        data.story || data,
+        targetLang,
+        supportLang
+      );
+      if (!normalized) throw new Error("Story payload missing expected fields");
+      const validated = validateAndFixStorySentences(normalized, "tgt", "sup");
+      setStoryData(validated);
+      storyCacheRef.current = validated;
+      setCurrentSentenceIndex(0);
+      setSessionXp(0);
+      setShowFullStory(true);
+      setHighlightedWordIndex(-1);
+    } catch (error) {
+      // Bilingual fallback (ES/EN) that respects target/support languages
+      const fallback = {
+        fullStory: {
+          tgt:
+            targetLang === "en"
+              ? "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
+              : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+          sup:
+            supportLang === "es"
+              ? "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
+              : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
+        },
+        sentences:
+          targetLang === "en"
+            ? [
+                {
+                  tgt: "Once upon a time, there was a small town called San Miguel.",
+                  sup:
+                    supportLang === "es"
+                      ? "Había una vez un pequeño pueblo llamado San Miguel."
+                      : "Once upon a time, there was a small town called San Miguel.",
+                },
+                {
+                  tgt: "The town had a lovely square where kids played every day.",
+                  sup:
+                    supportLang === "es"
+                      ? "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
+                      : "The town had a lovely square where kids played every day.",
+                },
+                {
+                  tgt: "In the square, an old fountain always had fresh water.",
+                  sup:
+                    supportLang === "es"
+                      ? "En la plaza, una fuente antigua siempre tenía agua fresca."
+                      : "In the square, an old fountain always had fresh water.",
+                },
+                {
+                  tgt: "Adults sat around it to talk and rest after work.",
+                  sup:
+                    supportLang === "es"
+                      ? "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
+                      : "Adults sat around it to talk and rest after work.",
+                },
+              ]
+            : [
+                {
+                  tgt: "Había una vez un pequeño pueblo en México llamado San Miguel.",
+                  sup:
+                    supportLang === "es"
+                      ? "Había una vez un pequeño pueblo en México llamado San Miguel."
+                      : "Once upon a time, there was a small town in Mexico called San Miguel.",
+                },
+                {
+                  tgt: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
+                  sup:
+                    supportLang === "es"
+                      ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
+                      : "The town had a very beautiful square where the children played every day.",
+                },
+                {
+                  tgt: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
+                  sup:
+                    supportLang === "es"
+                      ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
+                      : "In the square, there was an old fountain that always had fresh water.",
+                },
+                {
+                  tgt: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                  sup:
+                    supportLang === "es"
+                      ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
+                      : "The adults sat around the fountain to talk and rest after work.",
+                },
+              ],
+      };
+      setStoryData(fallback);
+      storyCacheRef.current = fallback;
+      toast({
+        title:
+          uiLang === "es" ? "Usando narrativo de demo" : "Using Demo Story",
+        description:
+          uiLang === "es"
+            ? "API no disponible. Usando narrativo de demo para pruebas."
+            : "API unavailable. Using demo story for testing.",
+        status: "info",
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /* ----------------------------- TTS / playback ----------------------------- */
+  const playWithOpenAITTS = async (
+    text,
+    langTag,
+    { alignToText = false, onStart = () => {}, onEnd = () => {} } = {}
+  ) => {
+    try {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      const voice = progress.voice || "alloy";
+      const cacheKey = `${text}-${voice}-${langTag}`;
+      let audioUrl = audioCacheRef.current.get(cacheKey);
+
+      if (!audioUrl) {
+        usageStatsRef.current.ttsCalls++;
+        const res = await fetch(
+          "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              input: text,
+              voice,
+              model: "tts-1",
+              response_format: "mp3",
+              language: langTag,
+            }),
+          }
+        );
+        if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
+        const blob = await res.blob();
+        audioUrl = URL.createObjectURL(blob);
+        audioCacheRef.current.set(cacheKey, audioUrl);
+      }
+
+      let tokenMap = null;
+      if (alignToText) {
+        tokenMap = createTokenMap(text);
+        setTokenizedText(tokenMap.tokens);
+        setHighlightedWordIndex(-1);
+      }
+
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
+
+      let stopHighlighter = null;
+      audio.onloadedmetadata = () => {
+        if (alignToText && tokenMap) {
+          stopHighlighter = startAudioAlignedHighlight(
+            audio,
+            tokenMap.tokens,
+            (idx) => setHighlightedWordIndex(idx)
+          );
+        }
+      };
+      audio.onplay = () => onStart?.();
+      audio.onended = () => {
+        stopHighlighter?.();
+        onEnd?.();
+        currentAudioRef.current = null;
+      };
+      audio.onerror = (e) => {
+        stopHighlighter?.();
+        console.error("Audio playback error", e);
+        onEnd?.();
+        currentAudioRef.current = null;
+      };
+
+      await audio.play();
+    } catch (e) {
+      onEnd?.();
+      throw e;
+    }
+  };
+
+  const playNarrationWithHighlighting = async (text) => {
+    stopAllAudio();
+    setIsAutoPlaying(true);
+    setIsPlayingTarget(true);
+    try {
+      const langTag = (BCP47[targetLang] || BCP47.es).tts;
+      if (text.length < 50) {
+        await playEnhancedWebSpeech(text, langTag);
+        return;
+      }
+      await playWithOpenAITTS(text, langTag, {
+        alignToText: true,
+        onStart: () => {},
+        onEnd: () => {
+          setIsPlayingTarget(false);
+          setIsAutoPlaying(false);
+        },
+      });
+    } catch (err) {
+      console.error("TTS failed; falling back:", err);
+      stopAllAudio();
+      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts);
+    }
+  };
+
+  const playTargetTTS = async (text) => {
+    if (!text) return;
+    stopAllAudio();
+    setIsPlayingTarget(true);
+    try {
+      await playWithOpenAITTS(text, (BCP47[targetLang] || BCP47.es).tts, {
+        alignToText: false,
+        onEnd: () => setIsPlayingTarget(false),
+      });
+    } catch {
+      stopAllAudio();
+      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts);
+    }
+  };
+
+  const playSupportTTS = async (text) => {
+    if (!text) return;
+    stopAllAudio();
+    setIsPlayingSupport(true);
+    try {
+      await playWithOpenAITTS(text, (BCP47[supportLang] || BCP47.en).tts, {
+        alignToText: false,
+        onEnd: () => setIsPlayingSupport(false),
+      });
+    } catch (e) {
+      console.error("Support TTS failed; falling back to Web Speech", e);
+      await playEnhancedWebSpeech(
+        text,
+        (BCP47[supportLang] || BCP47.en).tts,
+        () => setIsPlayingSupport(false)
+      );
+    }
+  };
+
+  const setupBoundaryHighlighting = useCallback(
+    (text, onComplete) => {
+      const tokenMap = createTokenMap(text);
+      setTokenizedText(tokenMap.tokens);
+      setHighlightedWordIndex(-1);
+      setCurrentWordIndex(0);
+
+      if (highlightIntervalRef.current)
+        clearTimeout(highlightIntervalRef.current);
+      if (animationFrameRef.current)
+        cancelAnimationFrame(animationFrameRef.current);
+
+      const updateHighlight = (wordIndex) => {
+        if (animationFrameRef.current)
+          cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = requestAnimationFrame(() => {
+          setHighlightedWordIndex(wordIndex);
+          setCurrentWordIndex(wordIndex);
+        });
+      };
+
+      const handleBoundary = () => updateHighlight(currentWordIndex + 1);
+
+      const fallbackTiming = () => {
+        let i = 0;
+        const words = text.split(/\s+/);
+        const tick = () => {
+          if (i >= words.length) return onComplete?.();
+          updateHighlight(i);
+          const w = words[i];
+          const base = 200;
+          const ms = Math.max(150, Math.min(800, base + w.length * 50));
+          i++;
+          highlightIntervalRef.current = setTimeout(tick, ms);
+        };
+        tick();
+      };
+
+      return { handleBoundary, fallbackTiming, tokenMap };
+    },
+    [createTokenMap, currentWordIndex]
+  );
+
+  const playEnhancedWebSpeech = async (text, langTag, onEndCb) => {
+    const { handleBoundary, fallbackTiming } = setupBoundaryHighlighting(
+      text,
+      () => {
+        setIsAutoPlaying(false);
+        setIsPlayingTarget(false);
+        onEndCb?.();
+      }
+    );
+    if (!("speechSynthesis" in window)) {
+      setIsPlayingTarget(false);
+      setIsAutoPlaying(false);
+      onEndCb?.();
+      return;
+    }
+
+    const ensureVoices = () =>
+      new Promise((res) => {
+        const v = speechSynthesis.getVoices();
+        if (v.length) return res(v);
+        speechSynthesis.addEventListener(
+          "voiceschanged",
+          () => res(speechSynthesis.getVoices()),
+          { once: true }
+        );
+      });
+
+    await ensureVoices();
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = langTag || "es-ES";
+    utter.rate = 0.85;
+    utter.pitch = 1.02;
+    utter.volume = 0.95;
+
+    utter.onstart = () => {
+      setIsPlayingTarget(true);
+      setBoundarySupported(!!utter.onboundary);
+      if (!utter.onboundary) fallbackTiming();
+    };
+    utter.onboundary = (evt) => handleBoundary(evt);
+    utter.onend = () => {
+      setIsPlayingTarget(false);
+      setIsAutoPlaying(false);
+      onEndCb?.();
+    };
+    utter.onerror = () => {
+      setIsPlayingTarget(false);
+      setIsAutoPlaying(false);
+      onEndCb?.();
+    };
+    speechSynthesis.speak(utter);
+  };
+
+  /* ----------------------------- Recording + strict scoring ----------------------------- */
+  const currentSentence = storyData?.sentences?.[currentSentenceIndex];
+
+  const startRecording = async () => {
+    if (evalRef.current.inProgress) return;
+    evalRef.current.inProgress = true;
+    evalRef.current.speechDone = false;
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      toast({
+        title:
+          uiLang === "es"
+            ? "Reconocimiento de voz no disponible"
+            : "Speech recognition unavailable",
+        description:
+          uiLang === "es"
+            ? "Para calificar, usa un navegador Chromium con acceso al micrófono."
+            : "For grading, please use a Chromium-based browser with microphone access.",
+        status: "warning",
+        duration: 3500,
+      });
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+
+      const chunks = [];
+      mr.ondataavailable = (e) => {
+        if (e.data?.size) chunks.push(e.data);
+      };
+      mr.onstop = async () => {
+        const blob = new Blob(chunks, { type: "audio/webm" });
+        if (!evalRef.current.speechDone) {
+          await evaluateWithAudioAnalysis(blob);
+        }
+        try {
+          stream.getTracks().forEach((t) => t.stop());
+        } catch {}
+        evalRef.current.inProgress = false;
+        clearTimeout(evalRef.current.timeoutId);
+        setIsRecording(false);
+      };
+
+      if (SR) {
+        const recog = new SR();
+        recognitionRef.current = recog;
+        recog.lang = (BCP47[targetLang] || BCP47.es).stt;
+        recog.continuous = false;
+        recog.interimResults = false;
+        recog.maxAlternatives = 5;
+
+        recog.onresult = (evt) => {
+          if (!evalRef.current.inProgress) return;
+          evalRef.current.speechDone = true;
+          clearTimeout(evalRef.current.timeoutId);
+
+          const result = evt.results[0];
+          const best = result[0];
+
+          handleEvaluationResult({
+            recognizedText: best?.transcript || "",
+            confidence:
+              typeof best?.confidence === "number" ? best.confidence : 0,
+            method: "live-speech-api",
+          });
+
+          try {
+            recog.stop();
+          } catch {}
+          try {
+            mr.stop();
+          } catch {}
+        };
+        recog.onerror = () => {
+          evalRef.current.speechDone = false;
+          try {
+            mr.stop();
+          } catch {}
+        };
+        recog.onend = () => {
+          if (evalRef.current.inProgress && !evalRef.current.speechDone) {
+            try {
+              mr.stop();
+            } catch {}
+          }
+        };
+        try {
+          recog.start();
+        } catch {}
+      }
+
+      mr.start();
+      setIsRecording(true);
+
+      // global timeout safety
+      evalRef.current.timeoutId = setTimeout(() => {
+        if (!evalRef.current.inProgress) return;
+        evalRef.current.speechDone = false;
+        try {
+          recognitionRef.current?.stop?.();
+        } catch {}
+        try {
+          mr.stop();
+        } catch {}
+      }, 15000);
+    } catch (err) {
+      evalRef.current.inProgress = false;
+      console.error("Mic error:", err);
+      toast({
+        title: uiLang === "es" ? "Error de micrófono" : "Microphone error",
+        description:
+          uiLang === "es"
+            ? "Revisa permisos e inténtalo de nuevo."
+            : "Check permissions and try again.",
+        status: "error",
+        duration: 3000,
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    try {
+      recognitionRef.current?.stop?.();
+    } catch {}
+    try {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state === "recording"
+      ) {
+        mediaRecorderRef.current.stop();
+      }
+    } catch {}
+  };
+
+  const evaluateWithAudioAnalysis = async (blob) => {
+    try {
+      const arrayBuf = await blob.arrayBuffer();
+      const AC = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AC();
+      const audio = await ctx.decodeAudioData(arrayBuf);
+      const ch0 = audio.getChannelData(0);
+      const duration = audio.duration;
+      let sum = 0;
+      for (let i = 0; i < ch0.length; i++) sum += ch0[i] * ch0[i];
+      const rms = Math.sqrt(sum / ch0.length);
+      let zc = 0;
+      for (let i = 1; i < ch0.length; i++)
+        if (ch0[i] >= 0 !== ch0[i - 1] >= 0) zc++;
+
+      handleEvaluationResult({
+        recognizedText: "",
+        confidence: 0,
+        audioMetrics: { duration, rms, zeroCrossings: zc },
+        method: "audio-fallback",
+      });
+    } catch (e) {
+      console.error("Audio analysis failed:", e);
+      toast({
+        title:
+          uiLang === "es"
+            ? "No se pudo evaluar el audio"
+            : "Could not evaluate audio",
+        description:
+          uiLang === "es"
+            ? "Vuelve a intentarlo hablando claramente."
+            : "Please try again, speak clearly in the target language.",
+        status: "error",
+        duration: 2500,
+      });
+      setIsRecording(false);
+    }
+  };
+
+  // STRICT gate handler — only advances on pass; awards global XP; logs every attempt
+  const handleEvaluationResult = async ({
+    recognizedText = "",
+    confidence = 0,
+    audioMetrics,
+    method,
+  }) => {
+    const target = currentSentence?.tgt || "";
+    const evalOut = evaluateAttemptStrict({
+      recognizedText,
+      confidence,
+      audioMetrics,
+      targetSentence: target,
+      lang: targetLang,
+    });
+    const npubLive = strongNpub(useUserStore.getState().user);
+
+    if (!evalOut.pass) {
+      const tips = [];
+      if (evalOut.reasons.includes("speech-quality"))
+        tips.push(
+          uiLang === "es"
+            ? "Habla un poco más fuerte y por más tiempo."
+            : "Speak a bit louder and for longer."
+        );
+      if (evalOut.reasons.includes("not-target-lang"))
+        tips.push(
+          uiLang === "es"
+            ? `Intenta hablar en ${LLM_LANG_NAME(targetLang)}.`
+            : `Try speaking in ${LLM_LANG_NAME(targetLang)}.`
+        );
+      if (evalOut.reasons.includes("low-char-sim"))
+        tips.push(
+          uiLang === "es"
+            ? "Acércate más al texto."
+            : "Match the sentence more closely."
+        );
+      if (evalOut.reasons.includes("low-word-f1"))
+        tips.push(
+          uiLang === "es"
+            ? "Incluye palabras clave del contenido."
+            : "Include the key content words."
+        );
+      if (evalOut.reasons.includes("low-confidence"))
+        tips.push(
+          uiLang === "es"
+            ? "Pronuncia con claridad; reduce el ruido."
+            : "Speak clearly; reduce background noise."
+        );
+
+      toast({
+        title: uiText.almost,
+        description: tips.join(" "),
+        status: "warning",
+        duration: 3800,
+      });
+
+      // log failed attempt (0 XP)
+      saveStoryTurn(npubLive, {
+        ok: false,
+        mode: "sentence",
+        lang: targetLang,
+        supportLang,
+        sentenceIndex: currentSentenceIndex,
+        target,
+        recognizedText,
+        confidence,
+        audioMetrics: audioMetrics || null,
+        eval: evalOut,
+        xpAwarded: 0,
+      }).catch(() => {});
+      setIsRecording(false);
+      return;
+    }
+
+    // Passed — award XP and advance
+    const delta = 15; // XP per sentence
+    setSessionXp((p) => p + delta);
+    saveStoryTurn(npubLive, {
+      ok: true,
+      mode: "sentence",
+      lang: targetLang,
+      supportLang,
+      sentenceIndex: currentSentenceIndex,
+      target,
+      recognizedText,
+      confidence,
+      audioMetrics: audioMetrics || null,
+      eval: evalOut,
+      xpAwarded: delta,
+    }).catch(() => {});
+    awardXp(npubLive, delta).catch(() => {});
+
+    toast({
+      title: uiText.wellDone,
+      description: `${uiText.score}: ${evalOut.score}%`,
+      status: "success",
+      duration: 2200,
+    });
+
+    setTimeout(() => {
+      if (currentSentenceIndex < (storyData?.sentences?.length || 0) - 1) {
+        setCurrentSentenceIndex((p) => p + 1);
+      } else {
+        toast({
+          title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
+          description:
+            uiLang === "es"
+              ? `¡Completaste el narrativo! Ganaste ${sessionXp + delta} ${
+                  uiText.xp
+                } en esta sesión.`
+              : `Story completed! You earned ${sessionXp + delta} ${
+                  uiText.xp
+                } this session.`,
+          status: "success",
+          duration: 3000,
+        });
+        setShowFullStory(true);
+        setCurrentSentenceIndex(0);
+      }
+      setIsRecording(false);
+    }, 800);
+  };
+
+  /* ----------------------------- Mount / Cleanup ----------------------------- */
+  useEffect(() => {
+    if (storyCacheRef.current) setStoryData(storyCacheRef.current);
+  }, []);
+
+  useEffect(() => {
+    const cleanup = () => {
+      stopAllAudio();
+      try {
+        recognitionRef.current?.stop?.();
+      } catch {}
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+      if (audioRef.current) clearInterval(audioRef.current);
+      try {
+        if (
+          mediaRecorderRef.current &&
+          mediaRecorderRef.current.state === "recording"
+        )
+          mediaRecorderRef.current.stop();
+      } catch {}
+      setIsRecording(false);
+      audioCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
+      audioCacheRef.current.clear();
+    };
+    window.addEventListener("beforeunload", cleanup);
+    return () => {
+      cleanup();
+      window.removeEventListener("beforeunload", cleanup);
+    };
+  }, []);
+
+  /* ----------------------------- Derived ----------------------------- */
+  const progressPercentage = storyData
+    ? ((currentSentenceIndex + 1) / storyData.sentences.length) * 100
+    : 0;
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (showPasscodeModal) {
+    return (
+      <PasscodePage
+        userLanguage={user.appLanguage}
+        setShowPasscodeModal={setShowPasscodeModal}
+      />
+    );
+  }
+
+  /* ----------------------------- Loading / Empty ----------------------------- */
+  if (isLoading) {
+    return (
+      <Box
+        minH="100vh"
+        bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+      >
+        <Center h="100vh">
+          <VStack spacing={6}>
+            <Text color="white" fontSize="xl" fontWeight="600">
+              {uiText.generatingTitle}
+            </Text>
+            <Text color="#94a3b8" fontSize="sm">
+              {uiText.generatingSub}
+            </Text>
+            <Spinner color="teal.300" />
+          </VStack>
+        </Center>
+      </Box>
+    );
+  }
+
+  if (!storyData) {
+    return (
+      <Box
+        minH="100vh"
+        bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+        borderRadius="24px"
+      >
+        <Center h="100vh">
+          <VStack spacing={5}>
+            <Text color="white" fontSize="xl" fontWeight="700">
+              {uiText.header}
+            </Text>
+            <Text color="#94a3b8">{uiText.noStory}</Text>
+            <Button
+              onClick={generateStory}
+              size="lg"
+              px={6}
+              leftIcon={<FaWandMagicSparkles />}
+              color="white"
+            >
+              {uiText.generate}
+            </Button>
+          </VStack>
+        </Center>
+      </Box>
+    );
+  }
+
+  /* ----------------------------- Main UI ----------------------------- */
+  return (
+    <Box
+      minH="100vh"
+      bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+    >
+      {/* Header */}
+      <motion.div
+        initial={prefersReducedMotion ? {} : { y: -100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={
+          prefersReducedMotion ? {} : { duration: 0.6, ease: "easeOut" }
+        }
+      >
+        <HStack
+          as="header"
+          w="100%"
+          px={4}
+          py={3}
+          bg="rgba(15, 15, 35, 0.8)"
+          backdropFilter="blur(20px)"
+          color="white"
+          borderBottom="1px solid"
+          borderColor="rgba(255, 255, 255, 0.1)"
+          position="sticky"
+          top={0}
+          zIndex={100}
+        >
+          {/* <IconButton
+            aria-label={
+              uiLang === "es" ? "Volver a practicar" : "Back to practice"
+            }
+            icon={<FaArrowLeft />}
+            size="md"
+            onClick={() => navigate("/")}
+            bg="rgba(255, 255, 255, 0.05)"
+            border="1px solid rgba(255, 255, 255, 0.1)"
+            color="white"
+            _hover={{
+              bg: "rgba(20, 184, 166, 0.1)",
+              borderColor: "rgba(20, 184, 166, 0.3)",
+            }}
+          /> */}
+          {/* <Text
+            fontSize="lg"
+            fontWeight="700"
+            color="#8b5cf6"
+            letterSpacing="0.5px"
+          >
+            {uiText.header}
+          </Text> */}
+          <Spacer />
+          <HStack spacing={3}>
+            {/* Global XP from Firestore */}
+            {/* <Badge colorScheme="purple" variant="subtle" fontSize="sm">
+              {xp} {uiText.xp}
+            </Badge> */}
+            {/* Optional: session XP indicator */}
+            {sessionXp > 0 && (
+              <Badge colorScheme="teal" variant="subtle" fontSize="sm">
+                +{sessionXp}
+              </Badge>
+            )}
+            <Button
+              size="sm"
+              onClick={generateStory}
+              leftIcon={<FaWandMagicSparkles />}
+              color="white"
+              border="1px solid rgba(20, 184, 166, 0.35)"
+            >
+              {uiText.generate}
+            </Button>
+          </HStack>
+        </HStack>
+      </motion.div>
+
+      {/* Shared Level/XP card */}
+      <Box px={4} pt={4}>
+        <Box
+          bg="gray.800"
+          p={3}
+          rounded="2xl"
+          border="1px solid rgba(255,255,255,0.06)"
+        >
+          <HStack justify="space-between" mb={1}>
+            <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+              {uiText.levelLabel} {levelNumber} · {uiText.levelLabel}:{" "}
+              {uiText.levelValue}
+            </Badge>
+            <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+              {uiText.xp} {xp}
+            </Badge>
+          </HStack>
+          <WaveBar value={progressPct} />
+        </Box>
+      </Box>
+
+      {/* Progress */}
+      <Box px={4} py={3}>
+        <VStack spacing={2}>
+          <HStack w="100%" justify="space-between">
+            <Text fontSize="sm" color="#94a3b8">
+              {uiText.progress}
+            </Text>
+            <Text fontSize="sm" color="#94a3b8">
+              {showFullStory
+                ? uiLang === "es"
+                  ? "Narrativa"
+                  : "Narrative"
+                : `${currentSentenceIndex + 1} / ${
+                    storyData?.sentences?.length || 0
+                  }`}
+            </Text>
+          </HStack>
+          <Progress
+            value={progressPercentage}
+            w="100%"
+            h="8px"
+            borderRadius="full"
+            bg="rgba(255, 255, 255, 0.1)"
+            sx={{
+              "& > div": {
+                bg: "linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%)",
+              },
+            }}
+          />
+        </VStack>
+      </Box>
+
+      {/* Content */}
+      <Box px={4} py={6}>
+        <motion.div
+          key={
+            showFullStory ? "full-story" : `sentence-${currentSentenceIndex}`
+          }
+          initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={prefersReducedMotion ? {} : { duration: 0.5 }}
+        >
+          <VStack spacing={6} align="stretch">
+            <Box
+              bg="rgba(255, 255, 255, 0.05)"
+              p={6}
+              rounded="20px"
+              border="1px solid rgba(255, 255, 255, 0.1)"
+              backdropFilter="blur(20px)"
+            >
+              {showFullStory ? (
+                <VStack spacing={4} align="stretch">
+                  {/* Full story with highlighting (target language) */}
+                  <Box>
+                    <Text
+                      fontSize="lg"
+                      fontWeight="500"
+                      color="#f8fafc"
+                      mb={3}
+                      lineHeight="1.8"
+                    >
+                      {tokenizedText
+                        ? tokenizedText.map((token, idx) =>
+                            token.isWord ? (
+                              <Text
+                                key={idx}
+                                as="span"
+                                bg={
+                                  highlightedWordIndex ===
+                                  tokenizedText
+                                    .slice(0, idx)
+                                    .filter((t) => t.isWord).length
+                                    ? "rgba(139, 92, 246, 0.3)"
+                                    : "transparent"
+                                }
+                                px={1}
+                                borderRadius="4px"
+                                transition="background-color 0.1s ease"
+                              >
+                                {token.text}
+                              </Text>
+                            ) : (
+                              <Text key={idx} as="span">
+                                {token.text}
+                              </Text>
+                            )
+                          )
+                        : (storyData.fullStory?.tgt || "")
+                            .split(" ")
+                            .map((w, i) => (
+                              <Text
+                                key={i}
+                                as="span"
+                                bg={
+                                  highlightedWordIndex === i
+                                    ? "rgba(139, 92, 246, 0.3)"
+                                    : "transparent"
+                                }
+                                px={1}
+                                borderRadius="4px"
+                                transition="background-color 0.3s ease"
+                              >
+                                {w}{" "}
+                              </Text>
+                            ))}
+                    </Text>
+                    {!!storyData.fullStory?.sup && (
+                      <Text fontSize="md" color="#94a3b8" lineHeight="1.6">
+                        {storyData.fullStory.sup}
+                      </Text>
+                    )}
+                  </Box>
+
+                  {/* Audio controls */}
+                  <HStack spacing={3} justify="center">
+                    <Button
+                      onClick={() =>
+                        playNarrationWithHighlighting(storyData.fullStory?.tgt)
+                      }
+                      isLoading={isPlayingTarget || isAutoPlaying}
+                      loadingText={uiText.playing}
+                      leftIcon={<FaVolumeUp />}
+                      color="white"
+                    >
+                      {isAutoPlaying
+                        ? uiText.playing
+                        : uiText.playTarget(targetName)}
+                    </Button>
+                    {!!storyData.fullStory?.sup && (
+                      <Button
+                        onClick={() => playSupportTTS(storyData.fullStory?.sup)}
+                        isLoading={isPlayingSupport}
+                        loadingText={uiText.playing}
+                        leftIcon={<FaVolumeUp />}
+                        variant="outline"
+                        borderColor="rgba(255, 255, 255, 0.3)"
+                        color="white"
+                      >
+                        {supportName}
+                      </Button>
+                    )}
+                    {(isPlayingTarget || isPlayingSupport || isAutoPlaying) && (
+                      <Button
+                        onClick={stopAllAudio}
+                        leftIcon={<FaStop />}
+                        variant="outline"
+                        borderColor="rgba(239, 68, 68, 0.5)"
+                        color="#ef4444"
+                      >
+                        {uiText.stop}
+                      </Button>
+                    )}
+                  </HStack>
+
+                  <Center>
+                    <Button
+                      onClick={() => {
+                        stopAllAudio();
+                        setShowFullStory(false);
+                        setCurrentSentenceIndex(0);
+                        setSessionXp(0);
+                        setHighlightedWordIndex(-1);
+                        setIsRecording(false);
+                      }}
+                      size="lg"
+                      px={8}
+                      rounded="full"
+                      bg="linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
+                      color="white"
+                      fontWeight="600"
+                      _active={{ transform: "translateY(0)" }}
+                      transition="all 0.2s ease"
+                    >
+                      {uiText.startPractice}
+                    </Button>
+                  </Center>
+                </VStack>
+              ) : (
+                /* Sentence practice */
+                <VStack spacing={4} align="stretch">
+                  <Box>
+                    <Text fontSize="lg" fontWeight="500" color="#f8fafc" mb={3}>
+                      {uiText.practiceThis}
+                    </Text>
+                    <Text
+                      fontSize="xl"
+                      fontWeight="600"
+                      color="white"
+                      lineHeight="1.6"
+                      mb={2}
+                      textAlign="center"
+                    >
+                      {currentSentence?.tgt}
+                    </Text>
+                    {!!currentSentence?.sup && (
+                      <Text
+                        fontSize="md"
+                        color="#94a3b8"
+                        lineHeight="1.5"
+                        textAlign="center"
+                      >
+                        {currentSentence?.sup}
+                      </Text>
+                    )}
+                    <Text
+                      fontSize="sm"
+                      color="#64748b"
+                      textAlign="center"
+                      mt={2}
+                    >
+                      {uiLang === "es" ? "Oración" : "Sentence"}{" "}
+                      {currentSentenceIndex + 1} {uiLang === "es" ? "de" : "of"}{" "}
+                      {storyData.sentences.length}
+                    </Text>
+                  </Box>
+
+                  <VStack spacing={4}>
+                    <Center>
+                      <Button
+                        onClick={() => {
+                          if (isRecording) return stopRecording();
+                          return startRecording();
+                        }}
+                        size="lg"
+                        height="60px"
+                        px={8}
+                        rounded="full"
+                        bg={
+                          isRecording
+                            ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                            : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
+                        }
+                        color="white"
+                        fontWeight="600"
+                        fontSize="lg"
+                        leftIcon={<PiMicrophoneStageDuotone />}
+                        _hover={{
+                          bg: isRecording
+                            ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+                            : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
+                          transform: "translateY(-2px)",
+                        }}
+                        _active={{ transform: "translateY(0)" }}
+                        transition="all 0.2s ease"
+                      >
+                        {isRecording ? uiText.stopRecording : uiText.record}
+                      </Button>
+                    </Center>
+                    <HStack spacing={3} justify="center">
+                      <Button
+                        onClick={() => playTargetTTS(currentSentence?.tgt)}
+                        leftIcon={<FaVolumeUp />}
+                        variant="outline"
+                        borderColor="rgba(255, 255, 255, 0.3)"
+                        color="white"
+                        _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
+                        size="sm"
+                      >
+                        {uiText.listen}
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          if (
+                            currentSentenceIndex <
+                            storyData.sentences.length - 1
+                          ) {
+                            setCurrentSentenceIndex((p) => p + 1);
+                          } else {
+                            toast({
+                              title:
+                                uiLang === "es" ? "¡Felicidades!" : "Congrats!",
+                              description:
+                                uiLang === "es"
+                                  ? `¡Completaste el narrativo! Ganaste ${sessionXp} ${uiText.xp} en esta sesión.`
+                                  : `Story completed! You earned ${sessionXp} ${uiText.xp} this session.`,
+                              status: "success",
+                              duration: 3000,
+                            });
+                            setShowFullStory(true);
+                            setCurrentSentenceIndex(0);
+                          }
+                        }}
+                        variant="outline"
+                        borderColor="rgba(255, 255, 255, 0.3)"
+                        color="white"
+                        _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
+                        size="sm"
+                      >
+                        {currentSentenceIndex < storyData.sentences.length - 1
+                          ? uiText.skip
+                          : uiText.finish}
+                      </Button>
+                    </HStack>
+                  </VStack>
+                </VStack>
+              )}
+            </Box>
+          </VStack>
+        </motion.div>
+      </Box>
+    </Box>
+  );
+}

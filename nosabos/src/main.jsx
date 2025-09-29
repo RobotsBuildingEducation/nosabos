@@ -11,9 +11,10 @@ import {
   useParams,
   useLocation,
 } from "react-router-dom";
+import { theme } from "./theme";
 
 createRoot(document.getElementById("root")).render(
-  <ChakraProvider>
+  <ChakraProvider theme={theme}>
     <Router>
       <Routes>
         <Route path="/" element={<App />} />

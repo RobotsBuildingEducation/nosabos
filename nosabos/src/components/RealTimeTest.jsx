@@ -5,37 +5,18 @@ import {
   Box,
   Button,
   Center,
-  Drawer,
-  DrawerBody,
-  DrawerContent,
-  DrawerHeader,
-  DrawerOverlay,
   HStack,
-  Progress,
-  Select,
-  Slider,
-  SliderFilledTrack,
-  SliderThumb,
-  SliderTrack,
-  Stat,
-  StatLabel,
-  StatNumber,
-  Switch,
   Text,
   VStack,
   Wrap,
-  useDisclosure,
   useToast,
-  Input,
   Flex,
   IconButton,
   Spinner,
-  Textarea,
 } from "@chakra-ui/react";
-import { SettingsIcon, DeleteIcon } from "@chakra-ui/icons";
+import { DeleteIcon } from "@chakra-ui/icons";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
-import { CiRepeat } from "react-icons/ci";
 
 import {
   doc,
@@ -52,29 +33,21 @@ import {
   writeBatch,
   increment,
 } from "firebase/firestore";
-import { database } from "../firebaseResources/firebaseResources";
+import { database, analytics } from "../firebaseResources/firebaseResources";
+import { logEvent } from "firebase/analytics";
+
 import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { WaveBar } from "./WaveBar";
 
-// console.log(
-//   "VITE_FIREBASE_PUBLIC_API_KEYXXX",
-//   import.meta.env.VITE_FIREBASE_PUBLIC_API_KEY
-// );
-
-console.log(
-  "import.meta?.env?.VITE_RESPONSES_URL",
-  import.meta.env.VITE_RESPONSES_URL
-);
-
 const REALTIME_MODEL =
-  (import.meta.env.VITE_REALTIME_MODEL || "gpt-4o-realtime-preview") + "";
+  (import.meta.env.VITE_REALTIME_MODEL || "gpt-4o-mini-realtime-preview") + "";
 
 const REALTIME_URL = `${
   import.meta.env.VITE_REALTIME_URL
-}?model=gpt-4o-realtime-preview/exchangeRealtimeSDP?model=${encodeURIComponent(
+}?model=gpt-4o-mini-realtime-preview/exchangeRealtimeSDP?model=${encodeURIComponent(
   REALTIME_MODEL
 )}`;
 
@@ -133,7 +106,7 @@ async function ensureUserDoc(npub, defaults = {}) {
             targetLang: "es",
             showTranslations: true,
             helpRequest: "",
-            // ✅ default for new feature:
+            pauseMs: 2000,
             practicePronunciation: false,
           },
           ...defaults,
@@ -417,7 +390,7 @@ export default function RealTimeTest({
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
 
   // Refs for realtime
-  const audioRef = useRef(null); // remote stream sink (live AI voice)
+  const audioRef = useRef(null); // remote stream sink
   const playbackRef = useRef(null); // local playback for cached clips
   const pcRef = useRef(null);
   const localRef = useRef(null);
@@ -453,55 +426,31 @@ export default function RealTimeTest({
   const [uiState, setUiState] = useState("idle");
   const [volume] = useState(0);
   const [mood, setMood] = useState("neutral");
-  const [pauseMs, setPauseMs] = useState(800);
+  const [pauseMs, setPauseMs] = useState(2000);
 
-  // Learning prefs
+  // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
   const [supportLang, setSupportLang] = useState("en");
   const [voice, setVoice] = useState("alloy");
   const [voicePersona, setVoicePersona] = useState(
     translations.en.onboarding_persona_default_example
   );
-  const [targetLang, setTargetLang] = useState("es"); // 'es' | 'nah' | 'en'
+  const [targetLang, setTargetLang] = useState("es");
   const [showTranslations, setShowTranslations] = useState(true);
-
-  // ✅ New: practice pronunciation toggle (persisted)
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!user?.progress?.practicePronunciation
   );
-  const practicePronunciationRef = useRef(practicePronunciation);
-  useEffect(() => {
-    practicePronunciationRef.current = practicePronunciation;
-  }, [practicePronunciation]);
 
-  // ✅ Existing: helpRequest (kept)
-  const initialHelpRequest = (
-    user?.progress?.helpRequest ??
-    user?.helpRequest ??
-    ""
-  ).trim();
-  const [helpRequest, setHelpRequest] = useState(initialHelpRequest);
-  const helpRequestRef = useRef(helpRequest);
-  useEffect(() => {
-    helpRequestRef.current = helpRequest;
-  }, [helpRequest]);
-
-  // 🎯 Goal engine state
-  const [currentGoal, setCurrentGoal] = useState(null);
-  const goalRef = useRef(null);
-  const [goalFeedback, setGoalFeedback] = useState(""); // short, localized nudge
-  const goalBusyRef = useRef(false); // prevent double-advance
-
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  // Live refs
+  // live refs
   const voiceRef = useRef(voice);
   const voicePersonaRef = useRef(voicePersona);
   const levelRef = useRef(level);
   const supportLangRef = useRef(supportLang);
   const targetLangRef = useRef(targetLang);
   const pauseMsRef = useRef(pauseMs);
+  const practicePronunciationRef = useRef(practicePronunciation);
 
+  // hydrate refs on changes
   useEffect(() => {
     voiceRef.current = voice;
   }, [voice]);
@@ -520,6 +469,29 @@ export default function RealTimeTest({
   useEffect(() => {
     pauseMsRef.current = pauseMs;
   }, [pauseMs]);
+  useEffect(() => {
+    practicePronunciationRef.current = practicePronunciation;
+  }, [practicePronunciation]);
+
+  // ✅ helpRequest (global)
+  const initialHelpRequest = (
+    user?.progress?.helpRequest ??
+    user?.helpRequest ??
+    ""
+  ).trim();
+  const [helpRequest, setHelpRequest] = useState(initialHelpRequest);
+  const helpRequestRef = useRef(helpRequest);
+  useEffect(() => {
+    helpRequestRef.current = helpRequest;
+  }, [helpRequest]);
+
+  // 🎯 Goal engine state
+  const [currentGoal, setCurrentGoal] = useState(null);
+  const goalRef = useRef(null);
+  const [goalFeedback, setGoalFeedback] = useState("");
+  const goalBusyRef = useRef(false);
+
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
   // Tiny UI state to avoid double-taps
   const [replayingMid, setReplayingMid] = useState(null);
@@ -540,31 +512,16 @@ export default function RealTimeTest({
       ? "es"
       : "en";
   const ui = translations[uiLang];
-  const tRepeat = ui?.ra_btn_repeat || (uiLang === "es" ? "Repetir" : "Repeat");
 
-  // ✅ Goal-UI language routing (depends on practice target/support)
-  const goalUiLang = (() => {
-    const t = targetLangRef.current || targetLang;
-    if (t === "es") return "en"; // practicing Spanish → goal UI in English
-    if (t === "en") return "es"; // practicing English → goal UI in Spanish
-    // practicing Nahuatl → follow support setting (bilingual defaults to EN)
-    const s = supportLangRef.current || supportLang;
-    return s === "es" ? "es" : "en";
-  })();
-  const gtr = translations[goalUiLang] || translations.en;
+  // ✅ Which language to show in secondary lane
+  const secondaryPref =
+    targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+  const toggleLabel =
+    translations[uiLang].onboarding_translations_toggle?.replace(
+      "{language}",
+      translations[uiLang][`language_${secondaryPref}`]
+    ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
 
-  const tGoalLabel =
-    translations[uiLang]?.ra_goal_label || (uiLang === "es" ? "Meta" : "Goal");
-  const tGoalCompletedToast =
-    gtr?.ra_goal_completed ||
-    (goalUiLang === "es" ? "¡Meta lograda!" : "Goal completed!");
-  const tGoalSkip =
-    gtr?.ra_goal_skip || (goalUiLang === "es" ? "Saltar" : "Skip");
-  const tGoalCriteria =
-    gtr?.ra_goal_criteria || (goalUiLang === "es" ? "Éxito:" : "Success:");
-  const tAttempts = goalUiLang === "es" ? "Intentos" : "Attempts";
-
-  // Other app UI strings
   const languageNameFor = (code) =>
     translations[uiLang][`language_${code === "nah" ? "nah" : code}`];
 
@@ -580,52 +537,32 @@ export default function RealTimeTest({
     "{language}",
     languageNameFor(targetLang)
   );
+  const tRepeat = ui?.ra_btn_repeat || (uiLang === "es" ? "Repetir" : "Repeat");
 
-  // Secondary language
-  const secondaryPref =
-    targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+  // Goal-UI language routing
+  const goalUiLang = (() => {
+    const t = targetLangRef.current || targetLang;
+    if (t === "es") return "en";
+    if (t === "en") return "es";
+    const s = supportLangRef.current || supportLang;
+    return s === "es" ? "es" : "en";
+  })();
+  const gtr = translations[goalUiLang] || translations.en;
+  const tGoalLabel =
+    translations[uiLang]?.ra_goal_label || (uiLang === "es" ? "Meta" : "Goal");
+  const tGoalCompletedToast =
+    gtr?.ra_goal_completed ||
+    (goalUiLang === "es" ? "¡Meta lograda!" : "Goal completed!");
+  const tGoalSkip =
+    gtr?.ra_goal_skip || (goalUiLang === "es" ? "Saltar" : "Skip");
+  const tGoalCriteria =
+    gtr?.ra_goal_criteria || (goalUiLang === "es" ? "Éxito:" : "Success:");
 
-  const settings = useDisclosure();
-
-  // Ephemeral chat (user + assistant)
-  const [messages, setMessages] = useState([]);
-  const messagesRef = useRef(messages);
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
-
-  // Maps and debouncers
-  const respToMsg = useRef(new Map()); // rid -> mid
-  const translateTimers = useRef(new Map());
-  const sessionUpdateTimer = useRef(null);
-  const profileSaveTimer = useRef(null);
-  const DEBOUNCE_MS = 350;
-  const lastUserSaveRef = useRef({ text: "", ts: 0 });
-  const lastTranscriptRef = useRef({ text: "", ts: 0 });
-
-  // Throttled streaming buffer
-  const streamBuffersRef = useRef(new Map()); // mid -> string
-  const streamFlushTimerRef = useRef(null);
-  function scheduleStreamFlush() {
-    if (streamFlushTimerRef.current) return;
-    streamFlushTimerRef.current = setTimeout(() => {
-      const buffers = streamBuffersRef.current;
-      buffers.forEach((buf, mid) => {
-        if (!buf) return;
-        updateMessage(mid, (m) => ({
-          ...m,
-          textStream: (m.textStream || "") + buf,
-        }));
-      });
-      streamBuffersRef.current = new Map();
-      streamFlushTimerRef.current = null;
-    }, 50);
-  }
+  const xpLevelNumber = Math.floor(xp / 100) + 1;
 
   useEffect(() => {
-    // console.log("xpLevelNumber", xpLevelNumber);
     if (
-      xpLevelNumber > 4 &&
+      xpLevelNumber > 2 &&
       localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
     ) {
       setShowPasscodeModal(true);
@@ -644,7 +581,7 @@ export default function RealTimeTest({
   --------------------------- */
   useEffect(() => {
     if (!currentNpub) return;
-    setHydrated(false); // reset hydration when switching accounts
+    setHydrated(false);
     (async () => {
       try {
         const ok = await ensureUserDoc(currentNpub);
@@ -656,28 +593,13 @@ export default function RealTimeTest({
           if (Number.isFinite(data?.xp)) setXp(data.xp);
           if (Number.isFinite(data?.streak)) setStreak(data.streak);
           const p = data?.progress || {};
-          if (p.level) setLevel(p.level);
-          if (["en", "bilingual", "es"].includes(p.supportLang))
-            setSupportLang(p.supportLang);
-          if (p.voice) setVoice(p.voice);
-          if (typeof p.voicePersona === "string")
-            setVoicePersona(p.voicePersona);
-          if (["nah", "es", "en"].includes(p.targetLang))
-            setTargetLang(p.targetLang);
-          if (typeof p.showTranslations === "boolean")
-            setShowTranslations(p.showTranslations);
-
-          // ✅ new: seed practicePronunciation
-          if (typeof p.practicePronunciation === "boolean")
-            setPracticePronunciation(p.practicePronunciation);
-
+          // Prime all local states from saved progress
+          primeRefsFromPrefs(p);
           // helpRequest
           const hr = (p.helpRequest ?? data.helpRequest ?? "").trim();
-          if (hr && hr !== helpRequestRef.current) {
-            setHelpRequest(hr);
-          }
+          if (hr && hr !== helpRequestRef.current) setHelpRequest(hr);
 
-          // 🎯 goal: load or seed
+          // 🎯 goal
           const goal = await ensureCurrentGoalSeed(currentNpub, data);
           setCurrentGoal(goal);
           goalRef.current = goal;
@@ -686,7 +608,6 @@ export default function RealTimeTest({
       } catch (e) {
         console.warn("Load profile failed:", e?.message || e);
       } finally {
-        // ✅ Mark hydrated after load attempt to prevent default overwrite
         setHydrated(true);
       }
     })();
@@ -716,25 +637,34 @@ export default function RealTimeTest({
     return () => unsub();
   }, [activeNpub]);
 
-  // ✅ keep helpRequest in sync if store changes elsewhere
+  // ✅ react to store changes (global settings changed elsewhere)
   useEffect(() => {
-    const fromStore = (
-      user?.progress?.helpRequest ??
-      user?.helpRequest ??
-      ""
-    ).trim();
-    if (fromStore && fromStore !== helpRequestRef.current) {
-      setHelpRequest(fromStore);
-    }
+    const p = user?.progress;
+    if (!p) return;
+    primeRefsFromPrefs(p);
+    scheduleSessionUpdate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.progress?.helpRequest, user?.helpRequest]);
+  }, [user?.progress]);
+
+  // ✅ react to top-bar broadcast immediately
+  useEffect(() => {
+    function onGlobal(e) {
+      const next = e?.detail || {};
+      primeRefsFromPrefs(next);
+      scheduleSessionUpdate();
+    }
+    window.addEventListener("app:globalSettingsUpdated", onGlobal);
+    return () =>
+      window.removeEventListener("app:globalSettingsUpdated", onGlobal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ---------------------------
-     Instant-apply settings
+     Instant-apply settings when our local mirrors change
   --------------------------- */
   useEffect(() => {
     scheduleSessionUpdate();
-    if (!hydrated) return; // ✅ don't auto-save defaults before hydration
+    if (!hydrated) return;
     scheduleProfileSave();
   }, [
     voicePersona,
@@ -743,13 +673,13 @@ export default function RealTimeTest({
     level,
     pauseMs,
     helpRequest,
-    practicePronunciation, // ✅ include
-    currentGoal?.title_en, // refresh instructions when goal changes
+    practicePronunciation,
+    currentGoal?.title_en,
     hydrated,
   ]);
 
   useEffect(() => {
-    if (!hydrated) return; // ✅ guard until profile loaded
+    if (!hydrated) return;
     scheduleProfileSave();
     if (dcRef.current?.readyState === "open") {
       applyVoiceNow({ speakProbe: true });
@@ -758,28 +688,91 @@ export default function RealTimeTest({
 
   useEffect(() => {
     applyLanguagePolicyNow();
-    if (!hydrated) return; // ✅ guard
+    if (!hydrated) return;
     scheduleProfileSave();
   }, [targetLang, hydrated]);
 
-  function scheduleSessionUpdate() {
-    clearTimeout(sessionUpdateTimer.current);
-    sessionUpdateTimer.current = setTimeout(
-      () => sendSessionUpdate(),
-      DEBOUNCE_MS
-    );
+  const DEBOUNCE_MS = 350;
+  const respToMsg = useRef(new Map());
+  const translateTimers = useRef(new Map());
+  const sessionUpdateTimer = useRef(null);
+  const profileSaveTimer = useRef(null);
+  const lastUserSaveRef = useRef({ text: "", ts: 0 });
+  const lastTranscriptRef = useRef({ text: "", ts: 0 });
+
+  const streamBuffersRef = useRef(new Map());
+  const streamFlushTimerRef = useRef(null);
+  function scheduleStreamFlush() {
+    if (streamFlushTimerRef.current) return;
+    streamFlushTimerRef.current = setTimeout(() => {
+      const buffers = streamBuffersRef.current;
+      buffers.forEach((buf, mid) => {
+        if (!buf) return;
+        updateMessage(mid, (m) => ({
+          ...m,
+          textStream: (m.textStream || "") + buf,
+        }));
+      });
+      streamBuffersRef.current = new Map();
+      streamFlushTimerRef.current = null;
+    }, 50);
   }
-  function scheduleProfileSave() {
-    clearTimeout(profileSaveTimer.current);
-    profileSaveTimer.current = setTimeout(() => {
-      if (!hydrated) return; // ✅ gate saves until after first load
-      saveProfile({}).catch(() => {});
-    }, 500);
+
+  /* ---------------------------
+     Helpers for priming prefs
+  --------------------------- */
+  function normalizeSupport(code) {
+    return ["en", "es", "bilingual"].includes(code) ? code : "en";
+  }
+  function primeRefsFromPrefs(p = {}) {
+    if (p.level) {
+      levelRef.current = p.level;
+      setLevel(p.level);
+    }
+    if (p.supportLang) {
+      const v = normalizeSupport(p.supportLang);
+      supportLangRef.current = v;
+      setSupportLang(v);
+    }
+    if (p.voice) {
+      voiceRef.current = p.voice;
+      setVoice(p.voice);
+    }
+    if (typeof p.voicePersona === "string") {
+      voicePersonaRef.current = p.voicePersona;
+      setVoicePersona(p.voicePersona);
+    }
+    if (["nah", "es", "en"].includes(p.targetLang)) {
+      targetLangRef.current = p.targetLang;
+      setTargetLang(p.targetLang);
+    }
+    if (typeof p.showTranslations === "boolean") {
+      setShowTranslations(p.showTranslations);
+    }
+    if (typeof p.practicePronunciation === "boolean") {
+      practicePronunciationRef.current = p.practicePronunciation;
+      setPracticePronunciation(p.practicePronunciation);
+    }
+    if (typeof p.helpRequest === "string") {
+      helpRequestRef.current = p.helpRequest;
+      setHelpRequest(p.helpRequest);
+    }
+    if (Number.isFinite(p.pauseMs)) {
+      pauseMsRef.current = p.pauseMs;
+      setPauseMs(p.pauseMs);
+    }
   }
 
   /* ---------------------------
      Connect / Disconnect
   --------------------------- */
+  function waitUntilIdle(timeoutMs = 2000) {
+    if (isIdleRef.current) return Promise.resolve();
+    return new Promise((resolve) => {
+      idleWaitersRef.current.push(resolve);
+      setTimeout(resolve, timeoutMs);
+    });
+  }
   function safeCancelActiveResponse() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     if (isIdleRef.current) return;
@@ -787,7 +780,6 @@ export default function RealTimeTest({
       dcRef.current.send(JSON.stringify({ type: "response.cancel" }));
     } catch {}
   }
-
   async function start() {
     setErr("");
     setMessages([]);
@@ -798,8 +790,6 @@ export default function RealTimeTest({
     setStatus("connecting");
     setUiState("idle");
     try {
-      //   if (!API_KEY) throw new Error("Missing VITE_OPENAI_API_KEY");
-
       const npub = strongNpub(user);
       if (npub) await ensureUserDoc(npub);
 
@@ -812,10 +802,8 @@ export default function RealTimeTest({
         audioRef.current.autoplay = true;
         audioRef.current.playsInline = true;
       }
-      // Add remote tracks and lazily build the AudioContext graph
       pc.ontrack = (e) => {
         e.streams[0].getTracks().forEach((t) => remote.addTrack(t));
-
         if (!audioGraphReadyRef.current) {
           try {
             const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -824,16 +812,13 @@ export default function RealTimeTest({
             const analyser = ctx.createAnalyser();
             analyser.fftSize = 2048;
             analyser.smoothingTimeConstant = 0.15;
-
             const dest = ctx.createMediaStreamDestination();
             srcNode.connect(analyser);
             srcNode.connect(dest);
-
             audioCtxRef.current = ctx;
             analyserRef.current = analyser;
             floatBufRef.current = new Float32Array(analyser.fftSize);
             captureOutRef.current = dest.stream;
-
             audioGraphReadyRef.current = true;
           } catch (e) {
             console.warn(
@@ -858,10 +843,25 @@ export default function RealTimeTest({
       const dc = pc.createDataChannel("oai-events");
       dcRef.current = dc;
 
-      dc.onopen = () => {
-        const voiceName = voiceRef.current || "alloy";
-        const instructions = buildLanguageInstructionsFromRefs();
-        const vadMs = pauseMsRef.current || 800;
+      // 🛡️ Set session when DC opens
+      dc.onopen = async () => {
+        let savedPrefs = null;
+        try {
+          const npub = strongNpub(user);
+          if (npub) {
+            const snap = await getDoc(doc(database, "users", npub));
+            savedPrefs = snap.exists() ? snap.data()?.progress || null : null;
+          }
+        } catch {}
+        if (savedPrefs) primeRefsFromPrefs(savedPrefs);
+
+        const voiceName =
+          (savedPrefs?.voice || voiceRef.current || "alloy") + "";
+        const instructions = buildLanguageInstructions(savedPrefs || undefined);
+        const vadMs = pauseMsRef.current || 2000;
+        const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
+        const sttLang =
+          tLang === "es" ? "es" : tLang === "en" ? "en" : undefined;
 
         dc.send(
           JSON.stringify({
@@ -876,7 +876,9 @@ export default function RealTimeTest({
                 threshold: 0.35,
                 prefix_padding_ms: 120,
               },
-              input_audio_transcription: { model: "whisper-1" },
+              input_audio_transcription: sttLang
+                ? { model: "whisper-1", language: sttLang }
+                : { model: "whisper-1" },
               output_audio_format: "pcm16",
             },
           })
@@ -893,6 +895,8 @@ export default function RealTimeTest({
             },
           })
         );
+
+        setTimeout(() => applyLanguagePolicyNow(), 60);
       };
 
       dc.onmessage = handleRealtimeEvent;
@@ -901,10 +905,7 @@ export default function RealTimeTest({
       await pc.setLocalDescription(offer);
       const resp = await fetch(REALTIME_URL, {
         method: "POST",
-        headers: {
-          // No Authorization header; the function holds the server key
-          "Content-Type": "application/sdp",
-        },
+        headers: { "Content-Type": "application/sdp" },
         body: offer.sdp,
       });
       const answer = await resp.text();
@@ -937,7 +938,6 @@ export default function RealTimeTest({
         );
       }
     } catch {}
-
     try {
       const a = audioRef.current;
       if (a) {
@@ -1012,7 +1012,7 @@ export default function RealTimeTest({
   }
 
   /* ---------------------------
-     🎯 Goal helpers (seed, persist, evaluate, advance)
+     🎯 Goal helpers
   --------------------------- */
   function goalTitlesSeed() {
     return {
@@ -1024,7 +1024,6 @@ export default function RealTimeTest({
         "Haz una petición cortés.",
     };
   }
-
   async function ensureCurrentGoalSeed(npub, userData) {
     const ref = doc(database, "users", npub);
     const data = userData || (await getDoc(ref)).data() || {};
@@ -1055,16 +1054,13 @@ export default function RealTimeTest({
     return seed;
   }
 
-  // ✅ Determine which language the *goal UI* should use, based on practice target/support
   function goalUiLangCode() {
     const t = targetLangRef.current || targetLang;
-    if (t === "es") return "en"; // practicing Spanish → goal UI in English
-    if (t === "en") return "es"; // practicing English → goal UI in Spanish
-    // practicing Nahuatl → follow support setting (bilingual defaults to EN)
+    if (t === "es") return "en";
+    if (t === "en") return "es";
     const s = supportLangRef.current || supportLang;
     return s === "es" ? "es" : "en";
   }
-
   function goalTitleForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
@@ -1079,12 +1075,12 @@ export default function RealTimeTest({
       ? goal.rubric_es || goal.rubric_en || ""
       : goal.rubric_en || goal.rubric_es || "";
   }
-
   function goalTitleForTarget(goal) {
     if (!goal) return "";
-    if (targetLangRef.current === "es") return goal.title_es || goal.title_en;
-    if (targetLangRef.current === "nah") return goal.title_es || goal.title_en; // fallback
-    return goal.title_en || goal.title_es;
+    const t = targetLangRef.current;
+    if (t === "es") return goal.title_es || goal.title_en;
+    if (t === "en") return goal.title_en || goal.title_es;
+    return "";
   }
   function goalRubricForTarget(goal) {
     if (!goal) return "";
@@ -1102,7 +1098,6 @@ export default function RealTimeTest({
       { merge: true }
     );
   }
-
   async function recordGoalCompletion(prevGoal, confidence = 0) {
     const npub = strongNpub(user);
     if (!npub || !prevGoal) return;
@@ -1113,198 +1108,19 @@ export default function RealTimeTest({
       confidence,
     };
     await addDoc(collection(database, "users", npub, "goals"), payload);
-    // XP is now awarded dynamically in evaluateAndMaybeAdvanceGoal()
   }
 
-  async function skipCurrentGoal() {
-    const npub = strongNpub(user);
-    if (!npub || !currentGoal || goalBusyRef.current) return;
-    goalBusyRef.current = true;
-    try {
-      await addDoc(collection(database, "users", npub, "goals"), {
-        ...currentGoal,
-        status: "skipped",
-        skippedAt: isoNow(),
-      });
-      const nextGoal = await generateNextGoal(currentGoal);
-      setCurrentGoal(nextGoal);
-      goalRef.current = nextGoal;
-      await persistCurrentGoal(nextGoal);
-      const gLang = goalUiLangCode();
-      toast({
-        title: gLang === "es" ? "Nueva meta" : "New goal",
-        description: goalTitleForUI(nextGoal),
-        status: "info",
-      });
-      scheduleSessionUpdate();
-    } catch (e) {
-      console.warn("skipCurrentGoal failed:", e?.message || e);
-    } finally {
-      goalBusyRef.current = false;
-    }
-  }
-
-  async function generateNextGoal(prevGoal) {
-    const SNIPPET_MAX = 240;
-    function snippet(s, n = SNIPPET_MAX) {
-      return String(s || "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, n);
-    }
-    function latestTurn(role) {
-      // Merge ephemerals + persisted, pick the newest turn for the role
-      const all = [...(messagesRef.current || []), ...(history || [])];
-      const items = all
-        .filter(
-          (x) =>
-            x.role === role &&
-            (String(x.textFinal || "").trim() ||
-              String(x.textStream || "").trim())
-        )
-        .sort((a, b) => (b.ts || 0) - (a.ts || 0));
-      if (!items.length) return null;
-      const t = items[0];
-      const text = ((t.textFinal || "") + " " + (t.textStream || "")).trim();
-      const lang =
-        t.lang || (role === "assistant" ? targetLangRef.current : "en");
-      return { text, lang };
-    }
-    // Profile & context
-    const profile = {
-      level: levelRef.current,
-      help: helpRequestRef.current || "",
-      targetLang: targetLangRef.current,
-    };
-
-    // Pull the most recent user/assistant turns
-    const lastUser = latestTurn("user");
-    const lastAI = latestTurn("assistant");
-
-    const userLine = lastUser
-      ? `Previous user request (${lastUser.lang}): """${snippet(
-          lastUser.text
-        )}"""`
-      : "Previous user request: (none)";
-    const aiLine = lastAI
-      ? `Previous AI reply (${lastAI.lang}): """${snippet(lastAI.text)}"""`
-      : "Previous AI reply: (none)";
-
-    const systemAsk = `
-You are a language micro-goal planner. Propose the next tiny **speaking** goal so it feels like a natural continuation of the **previous user–assistant exchange** and is progressive from the prior goal.
-
-Constraints:
-- Keep titles ≤ 7 words.
-- Keep it practical and conversational.
-- Fit the user's level: ${profile.level}.
-- Target language: ${profile.targetLang}.
-- User focus: ${profile.help || "(none)"}.
-Return ONLY JSON (no prose, no markdown):
-
-{
-  "title_en": "...",
-  "title_es": "...",
-  "rubric_en": "... one-sentence success criteria ...",
-  "rubric_es": "... una frase con criterios de éxito ..."
-}
-  `.trim();
-
-    const body = {
-      model: TRANSLATE_MODEL,
-      text: { format: { type: "text" } },
-      input: `${systemAsk}
-
-Previous goal (EN): ${prevGoal?.title_en || ""}
-Previous goal (ES): ${prevGoal?.title_es || ""}
-${userLine}
-${aiLine}
-`,
-    };
-
-    try {
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: {
-          // No Authorization; backend adds server key
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      const ct = r.headers.get("content-type") || "";
-      const payload = ct.includes("application/json")
-        ? await r.json()
-        : await r.text();
-
-      const mergedText =
-        (typeof payload?.output_text === "string" && payload.output_text) ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-        (Array.isArray(payload?.choices) &&
-          (payload.choices[0]?.message?.content || "")) ||
-        "";
-
-      const parsed = safeParseJson(mergedText) || {};
-      const title_en = (parsed.title_en || "").trim();
-      const title_es = (parsed.title_es || "").trim();
-      const rubric_en = (parsed.rubric_en || "").trim();
-      const rubric_es = (parsed.rubric_es || "").trim();
-
-      if (title_en || title_es) {
-        return {
-          id: `goal_${Date.now()}`,
-          title_en: title_en || "Ask a follow-up question.",
-          title_es: title_es || "Haz una pregunta de seguimiento.",
-          rubric_en:
-            rubric_en ||
-            "One short follow-up question that is on-topic and natural.",
-          rubric_es:
-            rubric_es ||
-            "Una pregunta breve de seguimiento, natural y relacionada.",
-          attempts: 0,
-          status: "active",
-          createdAt: isoNow(),
-          updatedAt: isoNow(),
-        };
-      }
-    } catch (e) {
-      console.warn("Next goal generation failed:", e?.message || e);
-    }
-
-    // Fallback
-    return {
-      id: `goal_${Date.now()}`,
-      title_en: "Ask a follow-up question.",
-      title_es: "Haz una pregunta de seguimiento.",
-      rubric_en: "One short follow-up question that is on-topic and natural.",
-      rubric_es: "Una pregunta breve de seguimiento, natural y relacionada.",
-      attempts: 0,
-      status: "active",
-      createdAt: isoNow(),
-      updatedAt: isoNow(),
-    };
-  }
-
-  // 🔢 XP helpers — dynamic awards using Responses API signals
+  // XP helpers
   function computeXpDelta({ met, conf, attempts, pron }) {
-    const BASE = 5; // small reward for practicing
-    const confScore = Math.round(conf * 20); // 0..20
-    const effortPenalty = Math.max(0, attempts - 1) * 2; // -2 per extra try
-    const metBonus = met ? 20 + Math.max(0, 10 - (attempts - 1) * 3) : 0; // 20.. (less if many attempts)
+    const BASE = 5;
+    const confScore = Math.round(conf * 20);
+    const effortPenalty = Math.max(0, attempts - 1) * 2;
+    const metBonus = met ? 20 + Math.max(0, 10 - (attempts - 1) * 3) : 0;
     const pronBonus = pron ? 3 : 0;
     let delta = BASE + confScore + metBonus + pronBonus - effortPenalty;
-    delta = Math.max(1, Math.min(60, delta)); // clamp
-    return delta;
+    return Math.max(1, Math.min(60, delta));
   }
-
-  async function awardXp(delta, { reason } = {}) {
+  async function awardXp(delta) {
     const amt = Math.round(delta || 0);
     if (!amt) return;
     setXp((v) => v + amt);
@@ -1318,31 +1134,19 @@ ${aiLine}
         );
       }
     } catch {}
-    // Friendly toast
-    try {
-      //   toast({
-      //     title: `+${amt} XP`,
-      //     description: reason || undefined,
-      //     status: "success",
-      //     duration: 1600,
-      //   });
-    } catch {}
   }
 
   async function evaluateAndMaybeAdvanceGoal(userUtterance) {
     const goal = goalRef.current;
     if (!goal || goalBusyRef.current) return;
 
-    // Nudge attempt count
     const nextAttempts = (goal.attempts || 0) + 1;
     const patched = { ...goal, attempts: nextAttempts, updatedAt: isoNow() };
     setCurrentGoal(patched);
     goalRef.current = patched;
     await persistCurrentGoal(patched);
 
-    // Ask Responses API to judge the utterance vs goal
     const rubricTL = goalRubricForTarget(goal);
-
     const gLang = goalUiLangCode();
     const uiLangName = gLang === "es" ? "Spanish" : "English";
 
@@ -1371,7 +1175,6 @@ Return ONLY JSON:
       const r = await fetch(RESPONSES_URL, {
         method: "POST",
         headers: {
-          // No Authorization; backend adds server key
           "Content-Type": "application/json",
           Accept: "application/json",
         },
@@ -1400,10 +1203,8 @@ Return ONLY JSON:
       const conf = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
       const fbTL = (parsed.feedback_tl || "").trim();
       const fbUI = (parsed.feedback_ui || "").trim();
-      // Prefer goal-UI language for the little nudge shown in the UI
       if (fbUI || fbTL) setGoalFeedback(fbUI || fbTL);
 
-      // 🟢 Dynamic XP award here based on met/confidence/attempts/pronunciation mode
       if (met) {
         const xpGain = computeXpDelta({
           met: true,
@@ -1411,16 +1212,11 @@ Return ONLY JSON:
           attempts: nextAttempts,
           pron: !!practicePronunciationRef.current,
         });
-        await awardXp(xpGain, { reason: tGoalCompletedToast });
+        await awardXp(xpGain);
       }
 
       if (met) {
         goalBusyRef.current = true;
-        // toast({
-        //   title: tGoalCompletedToast,
-        //   description: goalTitleForUI(goal),
-        //   status: "success",
-        // });
         await recordGoalCompletion(goal, conf);
         const nextGoal = await generateNextGoal(goal);
         setCurrentGoal(nextGoal);
@@ -1430,52 +1226,52 @@ Return ONLY JSON:
         goalBusyRef.current = false;
       }
     } catch (e) {
-      // Soft fail; do nothing
       console.warn("Goal eval failed:", e?.message || e);
     }
   }
 
   /* ---------------------------
-     Language instructions (now includes helpRequest + pronunciation mode + active goal)
+     Language instructions
   --------------------------- */
-  function buildLanguageInstructionsFromRefs() {
-    const persona = String(voicePersonaRef.current || "").slice(0, 240);
-    const focus = String(helpRequestRef.current || "").slice(0, 240);
-    const tLang = targetLangRef.current;
-    const lvl = levelRef.current;
-    const pronOn = !!practicePronunciationRef.current;
+  function buildLanguageInstructions(prefs) {
+    const persona = String(
+      (prefs?.voicePersona ?? voicePersonaRef.current ?? "").slice(0, 240)
+    );
+    const focus = String(
+      (prefs?.helpRequest ?? helpRequestRef.current ?? "").slice(0, 240)
+    );
+    const tLang = prefs?.targetLang ?? targetLangRef.current;
+    const lvl = prefs?.level ?? levelRef.current;
+    const pronOn = !!(
+      prefs?.practicePronunciation ?? practicePronunciationRef.current
+    );
     const activeGoal = goalTitleForTarget(goalRef.current);
 
-    const strict =
+    let strict =
       tLang === "nah"
-        ? "Respond ONLY in Nahuatl. Do not use Spanish or English under any circumstance."
+        ? "Respond ONLY in Nahuatl (Náhuatl). Do not use Spanish or English."
         : tLang === "es"
-        ? "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl bajo ninguna circunstancia."
-        : "Respond ONLY in English. Do not use Spanish or Náhuatl under any circumstance.";
+        ? "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl."
+        : "Respond ONLY in English. Do not use Spanish or Nahuatl.";
 
     const levelHint =
       lvl === "beginner"
-        ? "Lenguaje sencillo y claro; tono amable."
+        ? "Simple, clear language; friendly tone."
         : lvl === "intermediate"
-        ? "Lenguaje natural y conciso."
-        : "Lenguaje nativo; respuestas muy breves.";
+        ? "Natural and concise language."
+        : "Native-like language; very brief replies.";
 
     const focusLine = focus ? `Focus area: ${focus}.` : "";
-
-    // ✅ Pronunciation coaching: tiny cue + one slowed repetition, keep in target language
     const pronLine = pronOn
-      ? "Pronunciation mode: after answering, give a micro pronunciation cue (≤6 words), then repeat the corrected sentence once, slowly, and invite the user to repeat. Keep everything in the target language. Don't be too strict, just accept improvements."
+      ? "Pronunciation mode: after answering, give a micro pronunciation cue (≤6 words), then repeat the corrected sentence once, slowly, and invite the user to repeat."
       : "";
-
-    const goalLine = activeGoal
-      ? `Active goal: ${activeGoal}. Nudge gently toward completing it.`
-      : "";
+    const goalLine = activeGoal ? `Active goal: ${activeGoal}.` : "";
 
     return [
-      "Actúa como compañero de práctica.",
+      "Act as a language practice partner.",
       strict,
-      "Mantén respuestas muy breves (≤25 palabras) y naturales.",
-      `PERSONA: ${persona}. Mantén consistentemente ese tono/estilo.`,
+      "Keep replies very brief (≤25 words) and natural.",
+      `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       levelHint,
       focusLine,
       pronLine,
@@ -1484,21 +1280,31 @@ Return ONLY JSON:
       .filter(Boolean)
       .join(" ");
   }
-
-  /* ---------------------------
-     Idle gating
-  --------------------------- */
-  function waitUntilIdle(timeoutMs = 800) {
-    if (isIdleRef.current) return Promise.resolve();
-    return new Promise((resolve) => {
-      idleWaitersRef.current.push(resolve);
-      setTimeout(resolve, timeoutMs);
-    });
+  function buildLanguageInstructionsFromRefs() {
+    return buildLanguageInstructions(undefined);
   }
 
-  /* ---------------------------
-     Session updates
-  --------------------------- */
+  function scheduleSessionUpdate() {
+    clearTimeout(sessionUpdateTimer.current);
+    sessionUpdateTimer.current = setTimeout(
+      () => sendSessionUpdate(),
+      DEBOUNCE_MS
+    );
+  }
+  function scheduleProfileSave() {
+    clearTimeout(profileSaveTimer.current);
+    profileSaveTimer.current = setTimeout(() => {
+      if (!hydrated) return;
+      saveProfile({}).catch(() => {});
+    }, 500);
+  }
+  function clearAllDebouncers() {
+    for (const t of translateTimers.current.values()) clearTimeout(t);
+    translateTimers.current.clear();
+    clearTimeout(sessionUpdateTimer.current);
+    clearTimeout(profileSaveTimer.current);
+  }
+
   function applyLanguagePolicyNow() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     safeCancelActiveResponse();
@@ -1515,7 +1321,7 @@ Return ONLY JSON:
 
     const voiceName = voiceRef.current || "alloy";
     const instructions = buildLanguageInstructionsFromRefs();
-    const vadMs = pauseMsRef.current || 800;
+    const vadMs = pauseMsRef.current || 2000;
 
     try {
       dcRef.current.send(
@@ -1567,7 +1373,7 @@ Return ONLY JSON:
             modalities: ["audio", "text"],
             turn_detection: {
               type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 800,
+              silence_duration_ms: pauseMsRef.current || 2000,
               threshold: 0.35,
               prefix_padding_ms: 120,
             },
@@ -1613,7 +1419,7 @@ Return ONLY JSON:
             voice: voiceName,
             turn_detection: {
               type: "server_vad",
-              silence_duration_ms: pauseMsRef.current || 800,
+              silence_duration_ms: pauseMsRef.current || 2000,
               threshold: 0.35,
               prefix_padding_ms: 120,
             },
@@ -1640,7 +1446,6 @@ Return ONLY JSON:
       if (window.MediaRecorder?.isTypeSupported(mt)) return mt;
     return undefined;
   }
-
   function getRMS() {
     const analyser = analyserRef.current;
     const buf = floatBufRef.current;
@@ -1653,16 +1458,14 @@ Return ONLY JSON:
       for (let i = 0; i < tmp.length; i++) buf[i] = (tmp[i] - 128) / 128;
     }
     let sum = 0;
-    for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i]; // ✅ fix RMS
-    return Math.sqrt(sum / buf.length); // 0..1
+    for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    return Math.sqrt(sum / buf.length);
   }
-
   function startRecordingForRid(rid, mid) {
     try {
       const stream = captureOutRef.current || audioRef.current?.srcObject;
       const mimeType = chooseMime();
       if (!stream || !mimeType) return;
-
       const rec = new MediaRecorder(stream, { mimeType });
       const chunks = [];
       rec.ondataavailable = (ev) => {
@@ -1676,10 +1479,7 @@ Return ONLY JSON:
             voice: voiceRef.current || "alloy",
             mimeType,
           });
-
-          // Mark in-memory that this message now has a cached clip
           audioCacheIndexRef.current.add(mid);
-
           updateMessage(mid, (m) => ({ ...m, hasAudio: true }));
         } catch (e) {
           console.warn("IDB save failed:", e?.message || e);
@@ -1688,7 +1488,6 @@ Return ONLY JSON:
           recMapRef.current.delete(rid);
         }
       };
-      // timeslice ensures data flushes reliably across browsers
       rec.start(250);
       recMapRef.current.set(rid, rec);
       recChunksRef.current.set(rid, chunks);
@@ -1696,28 +1495,19 @@ Return ONLY JSON:
       console.warn("Recorder start failed:", e?.message || e);
     }
   }
-
   function stopRecorderAfterTail(
     rid,
-    opts = {
-      quietMs: 900,
-      maxMs: 20000,
-      armThresh: 0.006,
-      minActiveMs: 900,
-    }
+    opts = { quietMs: 900, maxMs: 20000, armThresh: 0.006, minActiveMs: 900 }
   ) {
-    if (recTailRef.current.has(rid)) return; // already scheduled
-
+    if (recTailRef.current.has(rid)) return;
     const { quietMs, maxMs, armThresh, minActiveMs } = opts;
     const startedAt = Date.now();
     let armed = false;
     let firstVoiceAt = 0;
     let lastLoudAt = Date.now();
-
     const id = setInterval(() => {
       const now = Date.now();
       const rms = getRMS();
-
       if (rms >= armThresh) {
         if (!armed) {
           armed = true;
@@ -1725,11 +1515,9 @@ Return ONLY JSON:
         }
         lastLoudAt = now;
       }
-
       const longEnoughSinceVoice = armed && now - firstVoiceAt >= minActiveMs;
       const quietLongEnough = armed && now - lastLoudAt >= quietMs;
       const timedOut = now - startedAt >= maxMs;
-
       if ((longEnoughSinceVoice && quietLongEnough) || timedOut) {
         clearInterval(id);
         recTailRef.current.delete(rid);
@@ -1737,20 +1525,15 @@ Return ONLY JSON:
         if (rec?.state === "recording") rec.stop();
       }
     }, 100);
-
     recTailRef.current.set(rid, id);
   }
 
   async function replayMessageAudio(mid, textFallback) {
     if (replayingMid) return;
     setReplayingMid(mid);
-
-    // Some browsers (iOS Safari) require the AudioContext to be "running" after a user gesture
     try {
       await audioCtxRef.current?.resume?.();
     } catch {}
-
-    // Try local cache first
     try {
       const row = await idbGetClip(mid);
       if (row?.blob) {
@@ -1765,13 +1548,11 @@ Return ONLY JSON:
           a.playsInline = true;
           a.onended = () => URL.revokeObjectURL(url);
           a.onpause = () => URL.revokeObjectURL(url);
-
           try {
             await a.play();
             setReplayingMid(null);
             return;
           } catch (e) {
-            // If element refused to play (autoplay policy), fall through to server fallback
             console.warn(
               "Local clip play() failed, falling back:",
               e?.message || e
@@ -1780,11 +1561,8 @@ Return ONLY JSON:
         }
       }
     } catch (e) {
-      // ignore and try fallback
       console.warn("IDB read failed, using fallback:", e?.message || e);
     }
-
-    // Fallback: ask the realtime server to re-say exactly (no new bubble). We record this too.
     if (dcRef.current?.readyState === "open" && textFallback) {
       try {
         dcRef.current.send(
@@ -1803,21 +1581,24 @@ Return ONLY JSON:
             },
           })
         );
-        // live audio will come via audioRef (remote stream)
         setReplayingMid(null);
         return;
       } catch (e) {
         console.warn("Replay request failed:", e?.message || e);
       }
     }
-
-    // If we’re here, we can’t replay
     setReplayingMid(null);
   }
 
   /* ---------------------------
      Event handling
   --------------------------- */
+  const messagesRef = useRef([]);
+  const [messages, setMessages] = useState([]);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
+
   function extractTextFromItem(item) {
     const parts = Array.isArray(item?.content) ? item.content : [];
     return parts
@@ -1853,27 +1634,21 @@ Return ONLY JSON:
       return;
     }
 
-    // Response lifecycle
     if (t === "response.created") {
       isIdleRef.current = false;
-
-      // Detect replay responses (no new bubble)
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
         replayRidSetRef.current.add(rid);
         const mid = data?.response?.metadata?.mid;
-        if (mid) startRecordingForRid(rid, mid); // record fallback replay too
+        if (mid) startRecordingForRid(rid, mid);
         setUiState("speaking");
         setMood("happy");
         return;
       }
-
       const mid = uid();
       respToMsg.current.set(rid, mid);
       setUiState("speaking");
       setMood("happy");
-
-      // Start recording AI voice for this response (cache for replay)
       startRecordingForRid(rid, mid);
       return;
     }
@@ -1890,10 +1665,9 @@ Return ONLY JSON:
           text === lastTranscriptRef.current.text &&
           now - lastTranscriptRef.current.ts < 2000
         ) {
-          return; // duplicate STT → ignore
+          return;
         }
         lastTranscriptRef.current = { text, ts: now };
-
         pushMessage({
           id: uid(),
           role: "user",
@@ -1906,20 +1680,18 @@ Return ONLY JSON:
           ts: now,
         });
         await persistUserTurn(text, "en").catch(() => {});
-        // 🎯 Evaluate goal on each user utterance (also awards dynamic XP)
         evaluateAndMaybeAdvanceGoal(text).catch(() => {});
       }
       return;
     }
 
-    // Ignore bubble updates for replay-triggered responses
     if (rid && replayRidSetRef.current.has(rid)) {
       if (
         t === "response.completed" ||
         t === "response.done" ||
         t === "response.canceled"
       ) {
-        stopRecorderAfterTail(rid); // stop recording with tail for replay
+        stopRecorderAfterTail(rid);
         replayRidSetRef.current.delete(rid);
       }
       return;
@@ -1931,8 +1703,7 @@ Return ONLY JSON:
         t === "response.text.delta") &&
       typeof data?.delta === "string"
     ) {
-      const mid = ensureMessageForResponse(rid); // creates the bubble on first token
-      // Buffer → flush every 50ms
+      const mid = ensureMessageForResponse(rid);
       const prev = streamBuffersRef.current.get(mid) || "";
       streamBuffersRef.current.set(mid, prev + data.delta);
       scheduleStreamFlush();
@@ -1946,7 +1717,6 @@ Return ONLY JSON:
       typeof data?.text === "string"
     ) {
       const mid = ensureMessageForResponse(rid);
-      // Flush any buffered stream first
       const buf = streamBuffersRef.current.get(mid) || "";
       if (buf) {
         streamBuffersRef.current.set(mid, "");
@@ -1960,7 +1730,7 @@ Return ONLY JSON:
         textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
         textStream: "",
       }));
-      scheduleDebouncedTranslate(mid, "final-chunk");
+      scheduleDebouncedTranslate(mid);
       return;
     }
 
@@ -1969,16 +1739,13 @@ Return ONLY JSON:
       t === "response.done" ||
       t === "response.canceled"
     ) {
-      // IMPORTANT: don't stop recorder immediately; stop after silence tail
       stopRecorderAfterTail(rid);
-
       isIdleRef.current = true;
       idleWaitersRef.current.splice(0).forEach((fn) => {
         try {
           fn();
         } catch {}
       });
-
       const mid = rid && respToMsg.current.get(rid);
       if (mid) {
         const buf = streamBuffersRef.current.get(mid) || "";
@@ -1993,6 +1760,7 @@ Return ONLY JSON:
         updateMessage(mid, (m) => ({ ...m, done: true }));
         try {
           await translateMessage(mid, "completed");
+          logEvent(analytics, "handleTurn", { action: "turn_completed" });
         } catch {}
         respToMsg.current.delete(rid);
       }
@@ -2003,14 +1771,12 @@ Return ONLY JSON:
 
     if (t === "error" && data?.error?.message) {
       const msg = data.error.message || "";
-      if (/Cancellation failed/i.test(msg) || /no active response/i.test(msg)) {
-        return; // benign cancel noise
-      }
+      if (/Cancellation failed/i.test(msg) || /no active response/i.test(msg))
+        return;
       setErr((p) => p || msg);
     }
   }
 
-  // Create assistant bubble lazily on first token/done
   function ensureMessageForResponse(rid) {
     let mid = respToMsg.current.get(rid);
     if (!mid) {
@@ -2045,12 +1811,6 @@ Return ONLY JSON:
   /* ---------------------------
      Translation + PERSIST
   --------------------------- */
-  function clearAllDebouncers() {
-    for (const t of translateTimers.current.values()) clearTimeout(t);
-    translateTimers.current.clear();
-    clearTimeout(sessionUpdateTimer.current);
-    clearTimeout(profileSaveTimer.current);
-  }
   function scheduleDebouncedTranslate(id) {
     const prev = translateTimers.current.get(id);
     if (prev) clearTimeout(prev);
@@ -2079,8 +1839,10 @@ Return ONLY JSON:
 
     const prompt =
       target === "es"
-        ? `Traduce lo siguiente al español claro y natural. Devuelve SOLO JSON:\n{"translation":"...","pairs":[{"lhs":"<frase original>","rhs":"<frase traducida>"}]}`
-        : `Translate the following into natural US English. Return ONLY JSON:\n{"translation":"...","pairs":[{"lhs":"<source phrase>","rhs":"<translated phrase>"}]}`;
+        ? `Traduce lo siguiente al español claro y natural. Devuelve SOLO JSON:
+{"translation":"...","pairs":[{"lhs":"<frase original>","rhs":"<frase traducida>"}]}`
+        : `Translate the following into natural US English. Return ONLY JSON:
+{"translation":"...","pairs":[{"lhs":"<source phrase>","rhs":"<translated phrase>"}]}`;
 
     const body = {
       model: TRANSLATE_MODEL,
@@ -2091,7 +1853,6 @@ Return ONLY JSON:
     const r = await fetch(RESPONSES_URL, {
       method: "POST",
       headers: {
-        // No Authorization; backend adds server key
         "Content-Type": "application/json",
         Accept: "application/json",
       },
@@ -2161,7 +1922,6 @@ Return ONLY JSON:
         : effectiveSecondary !== "es"
         ? translation || ""
         : "";
-
     const trans_es =
       lang !== "es" && effectiveSecondary === "es"
         ? translation || ""
@@ -2170,8 +1930,6 @@ Return ONLY JSON:
         : "";
 
     const ref = doc(database, "users", npub, "turns", mid);
-    const firstTime = true; // id equals mid (we control it)
-
     await setDoc(
       ref,
       {
@@ -2182,14 +1940,12 @@ Return ONLY JSON:
         trans_es,
         pairs: Array.isArray(pairs) ? pairs : [],
         origin: "realtime",
-        ...(firstTime
-          ? { createdAt: serverTimestamp(), createdAtClient: Date.now() }
-          : {}),
+        createdAt: serverTimestamp(),
+        createdAtClient: Date.now(),
       },
       { merge: true }
     );
 
-    // Streak bump kept; XP now awarded dynamically elsewhere
     setStreak((v) => v + 1);
     try {
       await setDoc(
@@ -2207,7 +1963,8 @@ Return ONLY JSON:
             targetLang: targetLangRef.current,
             showTranslations,
             helpRequest: helpRequestRef.current || "",
-            practicePronunciation: !!practicePronunciationRef.current, // ✅ persist on each assistant turn too
+            practicePronunciation: !!practicePronunciationRef.current,
+            pauseMs: pauseMsRef.current,
           },
         },
         { merge: true }
@@ -2217,13 +1974,9 @@ Return ONLY JSON:
     }
   }
 
-  /* ---------------------------
-     Persist user turn
-  --------------------------- */
   async function persistUserTurn(text, lang = "en") {
     const npub = strongNpub(user);
     if (!npub) return;
-
     const now = Date.now();
     if (
       lastUserSaveRef.current.text === text &&
@@ -2248,11 +2001,8 @@ Return ONLY JSON:
     lastUserSaveRef.current = { text, ts: now };
   }
 
-  /* ---------------------------
-     Save profile (includes helpRequest + pronunciation)
-  --------------------------- */
   async function saveProfile(partial = {}) {
-    if (!hydrated) return; // ✅ don't save until profile is loaded
+    if (!hydrated) return;
     const npub = strongNpub(user);
     if (!npub) return;
 
@@ -2263,6 +2013,9 @@ Return ONLY JSON:
       voicePersona: partial.voicePersona ?? voicePersonaRef.current,
       targetLang: partial.targetLang ?? targetLangRef.current,
       showTranslations: partial.showTranslations ?? showTranslations,
+      pauseMs: Number.isFinite(partial.pauseMs)
+        ? partial.pauseMs
+        : pauseMsRef.current,
       helpRequest:
         typeof partial.helpRequest === "string"
           ? partial.helpRequest
@@ -2284,7 +2037,6 @@ Return ONLY JSON:
       { merge: true }
     );
 
-    // ✅ keep the zustand store in sync without clobbering
     try {
       const st = useUserStore.getState?.();
       const mergedProgress = { ...(st?.user?.progress || {}), ...nextProgress };
@@ -2325,7 +2077,6 @@ Return ONLY JSON:
         await batch.commit();
       }
       setHistory([]);
-      //   toast({ title: ui.ra_toast_delete_success, status: "success" });
     } catch (e) {
       console.error(e);
     }
@@ -2347,56 +2098,15 @@ Return ONLY JSON:
     );
   }
 
-  // Single merged timeline (ephemerals win for same id)
   const timeline = useMemo(() => {
     const map = new Map();
-    // seed with persisted
     for (const h of history) map.set(h.id, { ...h, source: "hist" });
-    // overlay ephemerals (skip dup user messages)
     for (const m of messages) {
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
     return Array.from(map.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   }, [messages, history]);
-
-  /* ---------------------------
-     UI strings (more)
-  --------------------------- */
-  const toggleLabel =
-    translations[uiLang].onboarding_translations_toggle?.replace(
-      "{language}",
-      translations[uiLang][`language_${secondaryPref}`]
-    ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
-
-  const tHelpLabel =
-    ui?.ra_help_label ||
-    (uiLang === "es"
-      ? "¿En qué te gustaría ayuda?"
-      : "What would you like help with?");
-  const tHelpHelp =
-    ui?.ra_help_help ||
-    (uiLang === "es"
-      ? "Describe tu meta o contexto (esto guía la experiencia)."
-      : "Describe your goal or context (this guides the experience).");
-  const tHelpPlaceholder =
-    ui?.ra_help_placeholder ||
-    (uiLang === "es"
-      ? "Ej.: practicar conversación para entrevistas de trabajo; repasar tiempos pasados; español para turismo…"
-      : "e.g., conversational practice for job interviews; past tenses review; travel Spanish…");
-
-  // ✅ Pronunciation strings (fallbacks)
-  const tPronLabel =
-    ui?.ra_pron_label ||
-    (uiLang === "es" ? "Practicar pronunciación" : "Practice pronunciation");
-  const tPronHelp =
-    ui?.ra_pron_help ||
-    (uiLang === "es"
-      ? "Añade una micro-pista y una repetición lenta en cada turno."
-      : "Adds a tiny cue and one slow repetition each turn.");
-
-  const xpLevelNumber = Math.floor(xp / 100) + 1; // Level increases every 100 XP
-  const xpRemainingToLevel = 100 - (xp % 100);
 
   if (showPasscodeModal) {
     return (
@@ -2413,79 +2123,18 @@ Return ONLY JSON:
       color="gray.100"
       position="relative"
       pb="120px"
-      borderRadius="32px"
+      borderRadius="24px"
+      paddingTop={2}
     >
-      {/* Header */}
-      <Text
-        fontSize={["md", "lg"]}
-        fontWeight="bold"
-        noOfLines={1}
-        flex="1"
-        mr={2}
-        px={4}
-        pt={1}
+      <HStack
+        spacing={2}
+        display="flex"
+        justifyContent={"center"}
+        mt={6}
+        position={"absolute"}
+        right={5}
+        top={"-2"}
       >
-        {appTitle} (BETA)
-      </Text>
-
-      <Flex px={4} pt={2} align="center" justify="space-between" gap={2}></Flex>
-
-      {/* Status pills */}
-      <Box px={4} mt={2}>
-        <HStack
-          spacing={2}
-          overflowX="auto"
-          pb={1}
-          sx={{
-            "::-webkit-scrollbar": { display: "none" },
-            msOverflowStyle: "none",
-            scrollbarWidth: "none",
-          }}
-        >
-          {/* <Badge
-            colorScheme={levelColor}
-            variant="subtle"
-            px={2}
-            py={1}
-            fontSize="xs"
-          >
-            {levelLabel}
-          </Badge> */}
-
-          {/* <Badge
-            colorScheme="pink"
-            variant="subtle"
-            px={2}
-            py={1}
-            fontSize="xs"
-          >
-            {streak}🔥
-          </Badge> */}
-        </HStack>
-      </Box>
-
-      {/* Robot */}
-      <VStack align="stretch" spacing={3} px={4} mt={0}>
-        <RobotBuddyPro
-          state={uiState}
-          loudness={uiState === "listening" ? volume : 0}
-          mood={mood}
-          variant="abstract"
-        />
-      </VStack>
-
-      <HStack spacing={2} display="flex" justifyContent={"center"} mt={6}>
-        <IconButton
-          aria-label={ui.ra_btn_settings}
-          color="white"
-          icon={<SettingsIcon />}
-          size="sm"
-          variant="outline"
-          onClick={settings.onOpen}
-          mr={3}
-          width="24px"
-          height="24px"
-        />
         <IconButton
           aria-label={ui.ra_btn_delete_convo}
           icon={<DeleteIcon />}
@@ -2497,6 +2146,32 @@ Return ONLY JSON:
           height="24px"
         />
       </HStack>
+      {/* Header */}
+      {/* <Text
+        fontSize={["md", "lg"]}
+        fontWeight="bold"
+        noOfLines={1}
+        flex="1"
+        mr={2}
+        px={4}
+        pt={1}
+      >
+        {appTitle} (BETA)
+      </Text> */}
+
+      <Flex px={4} pt={2} align="center" justify="space-between" gap={2}></Flex>
+
+      {/* Robot */}
+      <VStack align="stretch" spacing={3} px={4} mt={0}>
+        <RobotBuddyPro
+          state={uiState}
+          loudness={uiState === "listening" ? volume : 0}
+          mood={mood}
+          variant="abstract"
+        />
+      </VStack>
+
+      {/* Only Delete (settings moved to top bar) */}
 
       {/* 🎯 Active goal display */}
       <Box px={4} mt={3} display="flex" justifyContent="center">
@@ -2517,19 +2192,7 @@ Return ONLY JSON:
                 {goalTitleForUI(currentGoal) || "—"}
               </Text>
             </HStack>
-            <HStack>
-              {/* <Badge variant="outline" colorScheme="cyan">
-                {tAttempts}: {currentGoal?.attempts ?? 0}
-              </Badge> */}
-              {/* <Button
-                size="xs"
-                variant="outline"
-                onClick={skipCurrentGoal}
-                isDisabled={!currentGoal}
-              >
-                {tGoalSkip}
-              </Button> */}
-            </HStack>
+            <HStack></HStack>
           </HStack>
           {!!currentGoal && (
             <Text fontSize="xs" opacity={0.8}>
@@ -2543,7 +2206,7 @@ Return ONLY JSON:
             </Text>
           ) : null}
 
-          {/* 🆕 Level progress bar under goal UI */}
+          {/* Level progress bar under goal UI */}
           <Box mt={4}>
             <HStack justifyContent="space-between" mb={1}>
               <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
@@ -2552,14 +2215,6 @@ Return ONLY JSON:
               <Badge colorScheme="teal" variant="subtle" fontSize="10px">
                 {ui.ra_label_xp} {xp}
               </Badge>
-              {/* <Text fontSize="xs" opacity={0.8}>
-                {ui?.ra_progress_xp_to_level
-                  ? ui.ra_progress_xp_to_level.replace(
-                      "{remaining}",
-                      String(xpRemainingToLevel)
-                    )
-                  : `${xpRemainingToLevel} XP to level`}
-              </Text> */}
             </HStack>
             <WaveBar value={progressPct} />
           </Box>
@@ -2616,7 +2271,7 @@ Return ONLY JSON:
                 <IconButton
                   aria-label={tRepeat}
                   title={tRepeat}
-                  icon={<CiRepeat />}
+                  icon={<PiMicrophoneStageDuotone />} // keep the mic glyph for replay button? (optional)
                   size="xs"
                   variant="outline"
                   top="6px"
@@ -2650,32 +2305,6 @@ Return ONLY JSON:
         px={4}
       >
         <HStack spacing={3} w="100%" maxW="560px" justify="center">
-          {/* <Box
-            bg="gray.800"
-            px={3}
-            py={2}
-            rounded="lg"
-            border="1px solid rgba(255,255,255,0.06)"
-            display={["none", "flex"]}
-          >
-            <Stat minW="120px">
-              <StatLabel fontSize="xs">{ui.ra_progress_header}</StatLabel>
-              <StatNumber fontSize="md">
-                {ui.ra_progress_xp_to_level.replace(
-                  "{remaining}",
-                  String(100 - progressPct)
-                )}
-              </StatNumber>
-              <Progress
-                mt={1}
-                value={progressPct}
-                size="xs"
-                colorScheme="cyan"
-                rounded="sm"
-              />
-            </Stat>
-          </Box> */}
-
           {status !== "connected" ? (
             <Button
               onClick={start}
@@ -2686,7 +2315,6 @@ Return ONLY JSON:
               colorScheme="cyan"
               color="white"
               textShadow="0px 0px 20px black"
-              boxShadow="0 10px 30px rgba(0,0,0,0.35)"
             >
               <PiMicrophoneStageDuotone /> &nbsp;{" "}
               {status === "connecting"
@@ -2701,7 +2329,6 @@ Return ONLY JSON:
               px="8"
               rounded="full"
               colorScheme="red"
-              boxShadow="0 10px 30px rgba(0,0,0,0.35)"
             >
               <FaStop /> &nbsp; {ui.ra_btn_disconnect}
             </Button>
@@ -2724,219 +2351,6 @@ Return ONLY JSON:
           </Box>
         </Box>
       )}
-
-      {/* Settings */}
-      <Drawer
-        isOpen={settings.isOpen}
-        placement="bottom"
-        onClose={settings.onClose}
-      >
-        <DrawerOverlay bg="blackAlpha.600" />
-        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
-          <DrawerHeader pb={2}>{ui.ra_settings_title}</DrawerHeader>
-          <DrawerBody pb={6}>
-            <VStack align="stretch" spacing={3}>
-              <Wrap spacing={2}>
-                <Select
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="beginner">
-                    {translations[uiLang].onboarding_level_beginner}
-                  </option>
-                  <option value="intermediate">
-                    {translations[uiLang].onboarding_level_intermediate}
-                  </option>
-                  <option value="advanced">
-                    {translations[uiLang].onboarding_level_advanced}
-                  </option>
-                </Select>
-
-                <Select
-                  value={supportLang}
-                  onChange={(e) => setSupportLang(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="en">
-                    {translations[uiLang].onboarding_support_en}
-                  </option>
-                  <option value="bilingual">
-                    {translations[uiLang].onboarding_support_bilingual}
-                  </option>
-                  <option value="es">
-                    {translations[uiLang].onboarding_support_es}
-                  </option>
-                </Select>
-
-                <Select
-                  value={voice}
-                  onChange={(e) => {
-                    stop();
-                    // Hot-swap voice without full disconnect; session.update will handle it
-                    setVoice(e.target.value);
-                    applyVoiceNow({ speakProbe: true });
-                  }}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="alloy">
-                    {translations[uiLang].onboarding_voice_alloy}
-                  </option>
-                  <option value="ash">
-                    {translations[uiLang].onboarding_voice_ash}
-                  </option>
-                  <option value="ballad">
-                    {translations[uiLang].onboarding_voice_ballad}
-                  </option>
-                  <option value="coral">
-                    {translations[uiLang].onboarding_voice_coral}
-                  </option>
-                  <option value="echo">
-                    {translations[uiLang].onboarding_voice_echo}
-                  </option>
-                  <option value="sage">
-                    {translations[uiLang].onboarding_voice_sage}
-                  </option>
-                  <option value="shimmer">
-                    {translations[uiLang].onboarding_voice_shimmer}
-                  </option>
-                  <option value="verse">
-                    {translations[uiLang].onboarding_voice_verse}
-                  </option>
-                </Select>
-
-                <Select
-                  value={targetLang}
-                  onChange={(e) => setTargetLang(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                  title={translations[uiLang].onboarding_practice_label_title}
-                >
-                  <option value="nah">
-                    {translations[uiLang].onboarding_practice_nah}
-                  </option>
-                  <option value="es">
-                    {translations[uiLang].onboarding_practice_es}
-                  </option>
-                  <option value="en">
-                    {translations[uiLang].onboarding_practice_en}
-                  </option>
-                </Select>
-              </Wrap>
-
-              {/* ✅ Pronunciation coaching toggle */}
-              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
-                <Box>
-                  <Text fontSize="sm" mb={0.5}>
-                    {tPronLabel}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.7}>
-                    {tPronHelp}
-                  </Text>
-                </Box>
-                <Switch
-                  isChecked={practicePronunciation}
-                  onChange={(e) => {
-                    setPracticePronunciation(e.target.checked);
-                    scheduleSessionUpdate();
-                    scheduleProfileSave();
-                  }}
-                />
-              </HStack>
-
-              {/* Persona */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={2}>
-                  {ui.ra_persona_label}
-                </Text>
-                <Input
-                  value={voicePersona}
-                  onChange={(e) => setVoicePersona(e.target.value)}
-                  bg="gray.700"
-                  placeholder={
-                    ui.ra_persona_placeholder?.replace(
-                      "{example}",
-                      translations[uiLang].onboarding_persona_default_example
-                    ) ||
-                    `e.g., ${translations[uiLang].onboarding_persona_default_example}`
-                  }
-                />
-                <Text fontSize="xs" opacity={0.7} mt={1}>
-                  {ui.ra_persona_help}
-                </Text>
-              </Box>
-
-              {/* Help Request field */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={2}>
-                  {tHelpLabel}
-                </Text>
-                <Textarea
-                  value={helpRequest}
-                  onChange={(e) => {
-                    const v = e.target.value.slice(0, 600);
-                    setHelpRequest(v);
-                  }}
-                  onBlur={() => {
-                    scheduleSessionUpdate();
-                    scheduleProfileSave();
-                  }}
-                  bg="gray.700"
-                  placeholder={tHelpPlaceholder}
-                  minH="100px"
-                />
-                <Text fontSize="xs" opacity={0.7} mt={1}>
-                  {tHelpHelp}
-                </Text>
-              </Box>
-
-              {/* Translations toggle */}
-              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
-                <Text fontSize="sm" mr={2}>
-                  {toggleLabel}
-                </Text>
-                <Switch
-                  isChecked={showTranslations}
-                  onChange={(e) => setShowTranslations(e.target.checked)}
-                />
-              </HStack>
-
-              {/* VAD slider */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <HStack justify="space-between" mb={2}>
-                  <Text fontSize="sm">{ui.ra_vad_label}</Text>
-                  <Text fontSize="sm" opacity={0.8}>
-                    {pauseMs} ms
-                  </Text>
-                </HStack>
-                <Slider
-                  aria-label="pause-slider"
-                  min={200}
-                  max={2000}
-                  step={100}
-                  value={pauseMs}
-                  onChange={(val) => {
-                    setPauseMs(val);
-                    sendSessionUpdate();
-                  }}
-                >
-                  <SliderTrack>
-                    <SliderFilledTrack />
-                  </SliderTrack>
-                  <SliderThumb />
-                </Slider>
-              </Box>
-            </VStack>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
 
       {/* remote live audio sink */}
       <audio ref={audioRef} />
