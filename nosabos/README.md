@@ -8,6 +8,10 @@ https://www.patreon.com/posts/building-app-by-93082226?utm_medium=clipboard_copy
 
 Contact me on Patreon if you have any problems setting this up.
 
+### Forking
+Fork the code to your repo and clone it in your editor with `git clone`
+Then, change branches with `git checkout nosabos-fork`
+
 ### Check node version
 
 `node -v`
