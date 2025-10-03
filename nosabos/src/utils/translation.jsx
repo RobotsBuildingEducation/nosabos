@@ -13,6 +13,9 @@ export function t(lang = "en", key, vars = {}) {
 }
 export const translations = {
   en: {
+    copied_to_clipboard_all: "Question has been copied.",
+    copy_all: "Copy question",
+    grammar_next: "Next",
     quiz_correct: "Correct",
     quiz_try_again: "Try again",
     quiz_checked: "Checked",
@@ -322,6 +325,10 @@ export const translations = {
   },
 
   es: {
+    copied_to_clipboard_all: "La pregunta ha sido copiada.",
+    copy_all: "Copiar pregunta",
+
+    grammar_next: "Siguiente",
     generic_loading: "Cargando...",
 
     intro:

@@ -7,6 +7,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  DrawerFooter,
   HStack,
   IconButton,
   Input,
@@ -43,7 +44,11 @@ import {
   MenuItemOption,
   MenuOptionGroup,
 } from "@chakra-ui/react";
-import { SettingsIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import {
+  SettingsIcon,
+  ChevronDownIcon,
+  CheckCircleIcon,
+} from "@chakra-ui/icons";
 import { GoDownload } from "react-icons/go";
 import { CiUser, CiSquarePlus, CiEdit } from "react-icons/ci";
 import { IoIosMore } from "react-icons/io";
@@ -51,7 +56,7 @@ import { MdOutlineFileUpload } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
 import { LuBadgeCheck, LuBookOpen } from "react-icons/lu";
 
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { database } from "./firebaseResources/firebaseResources";
 
 import useUserStore from "./hooks/useUserStore";
@@ -66,6 +71,9 @@ import { translations } from "./utils/translation";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
+import HelpChatFab from "./components/HelpChatFab";
+import { WaveBar } from "./components/WaveBar";
+import DailyGoalModal from "./components/DailyGoalModal";
 
 /* ---------------------------
    Small helpers
@@ -134,6 +142,7 @@ function TopBar({
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
 
+  // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
   const [level, setLevel] = useState(p.level || "beginner");
   const [supportLang, setSupportLang] = useState(p.supportLang || "en");
@@ -155,6 +164,7 @@ function TopBar({
     !!p.practicePronunciation
   );
 
+  // Refill draft when store changes
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(q.level || "beginner");
@@ -172,43 +182,6 @@ function TopBar({
     setPracticePronunciation(!!q.practicePronunciation);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.progress, user?.helpRequest]);
-
-  const saveTimer = useRef(null);
-  const pushSave = (nextDraft) => {
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      onPatchSettings?.(nextDraft);
-    }, 350);
-  };
-
-  const updateDraft = (partial) => {
-    const next = {
-      level,
-      supportLang,
-      voice,
-      voicePersona,
-      targetLang,
-      showTranslations,
-      pauseMs,
-      helpRequest,
-      practicePronunciation,
-      ...partial,
-    };
-    if (partial.hasOwnProperty("level")) setLevel(next.level);
-    if (partial.hasOwnProperty("supportLang")) setSupportLang(next.supportLang);
-    if (partial.hasOwnProperty("voice")) setVoice(next.voice);
-    if (partial.hasOwnProperty("voicePersona"))
-      setVoicePersona(next.voicePersona);
-    if (partial.hasOwnProperty("targetLang")) setTargetLang(next.targetLang);
-    if (partial.hasOwnProperty("showTranslations"))
-      setShowTranslations(next.showTranslations);
-    if (partial.hasOwnProperty("pauseMs")) setPauseMs(next.pauseMs);
-    if (partial.hasOwnProperty("helpRequest")) setHelpRequest(next.helpRequest);
-    if (partial.hasOwnProperty("practicePronunciation"))
-      setPracticePronunciation(next.practicePronunciation);
-
-    pushSave(next);
-  };
 
   const [currentId, setCurrentId] = useState(activeNpub || "");
   const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
@@ -295,13 +268,98 @@ function TopBar({
     }
   };
 
+  /* ---------------------------
+     Daily goal HUD (left side)
+  --------------------------- */
+  const MS_24H = 24 * 60 * 60 * 1000;
+  const [dailyGoalXp, setDailyGoalXp] = useState(0);
+  const [dailyXp, setDailyXp] = useState(0);
+  const [dailyResetAt, setDailyResetAt] = useState(null);
+
+  // Keep a local draft for settings input
+  const [goalDraft, setGoalDraft] = useState(0);
+
+  useEffect(() => {
+    if (!activeNpub) return;
+    const ref = doc(database, "users", activeNpub);
+    const unsub = onSnapshot(ref, async (snap) => {
+      const data = snap.exists() ? snap.data() : {};
+      const goal = Number(data?.dailyGoalXp || 0);
+      let dxp = Number(data?.dailyXp || 0);
+      let resetISO = data?.dailyResetAt || null;
+
+      const now = Date.now();
+      const expired = !resetISO || now >= new Date(resetISO).getTime();
+      if (expired && goal > 0) {
+        const next = new Date(now + MS_24H).toISOString();
+        await setDoc(
+          ref,
+          { dailyXp: 0, dailyHasCelebrated: false, dailyResetAt: next },
+          { merge: true }
+        );
+        dxp = 0;
+        resetISO = next;
+      }
+
+      setDailyGoalXp(goal);
+      setGoalDraft(goal);
+      setDailyXp(dxp);
+      setDailyResetAt(resetISO);
+    });
+    return () => unsub();
+  }, [activeNpub]);
+
+  const dailyPct =
+    dailyGoalXp > 0
+      ? Math.min(100, Math.round((dailyXp / dailyGoalXp) * 100))
+      : 0;
+  const dailyDone = dailyGoalXp > 0 && dailyXp >= dailyGoalXp;
+
+  // Save all settings at once (including dailyGoalXp) — no resets
+  const handleSaveSettings = async () => {
+    try {
+      const nextDraft = {
+        level,
+        supportLang,
+        voice,
+        voicePersona,
+        targetLang,
+        showTranslations,
+        pauseMs,
+        helpRequest,
+        practicePronunciation,
+      };
+      await Promise.resolve(onPatchSettings?.(nextDraft));
+      if (activeNpub != null) {
+        const val = Math.max(0, Math.floor(Number(goalDraft) || 0));
+        await setDoc(
+          doc(database, "users", activeNpub),
+          { dailyGoalXp: val }, // only the goal changes
+          { merge: true }
+        );
+      }
+      toast({
+        status: "success",
+        title:
+          appLanguage === "es" ? "Configuración guardada" : "Settings saved",
+      });
+      closeSettings?.();
+    } catch (e) {
+      toast({
+        status: "error",
+        title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+        description: String(e?.message || e),
+      });
+    }
+  };
+
   return (
     <>
-      {/* ---- Header ---- */}
+      {/* ---- Header (responsive) ---- */}
       <HStack
         as="header"
         w="100%"
-        px={3}
+        px={{ base: 2, md: 3 }}
         py={2}
         bg="gray.900"
         color="gray.100"
@@ -310,36 +368,67 @@ function TopBar({
         position="sticky"
         top={0}
         zIndex={100}
+        wrap="wrap"
+        spacing={{ base: 2, md: 3 }}
       >
-        <Spacer />
-        <HStack spacing={1}>
+        {/* LEFT: Daily WaveBar + % */}
+        <HStack
+          spacing={{ base: 2, md: 3 }}
+          minW={0}
+          flex="1 1 auto"
+          align="center"
+        >
+          <Box w={{ base: "120px", sm: "150px", md: "180px" }}>
+            <WaveBar value={dailyPct} />
+          </Box>
+          <HStack spacing={1} flexShrink={0}>
+            <Text fontSize="sm" opacity={0.9} noOfLines={1}>
+              {dailyGoalXp > 0 ? `${dailyPct}%` : "—"}
+            </Text>
+            {dailyDone && (
+              <CheckCircleIcon
+                boxSize={{ base: "16px", md: "18px" }}
+                color="green.400"
+              />
+            )}
+          </HStack>
+        </HStack>
+
+        <Spacer display={{ base: "none", md: "block" }} />
+
+        {/* RIGHT: controls */}
+        <HStack
+          spacing={{ base: 1, md: 2 }}
+          flexShrink={0}
+          ml="auto"
+          align="center"
+        >
           <IconButton
             aria-label={t.app_settings_aria || "Settings"}
-            icon={<SettingsIcon />}
-            size="md"
+            icon={<SettingsIcon size={20} />}
+            size={{ base: "sm", md: "md" }}
             onClick={openSettings}
             colorScheme="cyan"
             color="white"
-            mr={2}
           />
           <IconButton
             aria-label={t.app_install_aria || "Install"}
             icon={<GoDownload size={20} />}
-            size="md"
+            size={{ base: "sm", md: "md" }}
             onClick={openInstall}
             color="white"
-            mr={2}
           />
           <IconButton
             aria-label={t.app_account_aria || "Account"}
             icon={<CiUser size={20} />}
-            size="md"
+            size={{ base: "sm", md: "md" }}
             onClick={openAccount}
             color="white"
           />
           {/* UI language toggle EN <-> ES */}
-          <HStack spacing={2} align="center" pl={2}>
+          <HStack spacing={1} align="center" pl={{ base: 1, md: 2 }}>
             <Text
+              display={{ base: "inline", sm: "inline" }}
               fontSize="sm"
               color={appLanguage === "en" ? "teal.300" : "gray.400"}
             >
@@ -347,10 +436,12 @@ function TopBar({
             </Text>
             <Switch
               colorScheme="teal"
+              size={{ base: "sm", md: "md" }}
               isChecked={appLanguage === "es"}
               onChange={onToggleAppLanguage}
             />
             <Text
+              display={{ base: "inline", sm: "inline" }}
               fontSize="sm"
               color={appLanguage === "es" ? "teal.300" : "gray.400"}
             >
@@ -367,12 +458,12 @@ function TopBar({
           <DrawerHeader pb={2}>
             {t.ra_settings_title || "Conversation settings"}
           </DrawerHeader>
-          <DrawerBody pb={6}>
+          <DrawerBody pb={2}>
             <VStack align="stretch" spacing={3}>
               <Wrap spacing={2}>
                 <Select
                   value={level}
-                  onChange={(e) => updateDraft({ level: e.target.value })}
+                  onChange={(e) => setLevel(e.target.value)}
                   bg="gray.800"
                   size="md"
                   w="auto"
@@ -390,7 +481,7 @@ function TopBar({
 
                 <Select
                   value={supportLang}
-                  onChange={(e) => updateDraft({ supportLang: e.target.value })}
+                  onChange={(e) => setSupportLang(e.target.value)}
                   bg="gray.800"
                   size="md"
                   w="auto"
@@ -408,7 +499,7 @@ function TopBar({
 
                 <Select
                   value={voice}
-                  onChange={(e) => updateDraft({ voice: e.target.value })}
+                  onChange={(e) => setVoice(e.target.value)}
                   bg="gray.800"
                   size="md"
                   w="auto"
@@ -441,7 +532,7 @@ function TopBar({
 
                 <Select
                   value={targetLang}
-                  onChange={(e) => updateDraft({ targetLang: e.target.value })}
+                  onChange={(e) => setTargetLang(e.target.value)}
                   bg="gray.800"
                   size="md"
                   w="auto"
@@ -479,9 +570,7 @@ function TopBar({
                 </Box>
                 <Switch
                   isChecked={practicePronunciation}
-                  onChange={(e) =>
-                    updateDraft({ practicePronunciation: e.target.checked })
-                  }
+                  onChange={(e) => setPracticePronunciation(e.target.checked)}
                 />
               </HStack>
 
@@ -493,9 +582,7 @@ function TopBar({
                 <Input
                   value={voicePersona}
                   onChange={(e) =>
-                    updateDraft({
-                      voicePersona: e.target.value.slice(0, 240),
-                    })
+                    setVoicePersona(e.target.value.slice(0, 240))
                   }
                   bg="gray.700"
                   placeholder={
@@ -523,9 +610,7 @@ function TopBar({
                 </Text>
                 <Textarea
                   value={helpRequest}
-                  onChange={(e) =>
-                    updateDraft({ helpRequest: e.target.value.slice(0, 600) })
-                  }
+                  onChange={(e) => setHelpRequest(e.target.value.slice(0, 600))}
                   bg="gray.700"
                   minH="100px"
                   placeholder={
@@ -550,9 +635,7 @@ function TopBar({
                 </Text>
                 <Switch
                   isChecked={showTranslations}
-                  onChange={(e) =>
-                    updateDraft({ showTranslations: e.target.checked })
-                  }
+                  onChange={(e) => setShowTranslations(e.target.checked)}
                 />
               </HStack>
 
@@ -573,7 +656,6 @@ function TopBar({
                   step={100}
                   value={pauseMs}
                   onChange={setPauseMs}
-                  onChangeEnd={(v) => updateDraft({ pauseMs: v })}
                 >
                   <SliderTrack>
                     <SliderFilledTrack />
@@ -581,8 +663,41 @@ function TopBar({
                   <SliderThumb />
                 </Slider>
               </Box>
+
+              {/* Daily XP Goal (part of single Save) */}
+              <Box bg="gray.800" p={3} rounded="md">
+                <Text fontSize="sm" mb={1}>
+                  {appLanguage === "es" ? "Meta diaria de XP" : "Daily XP goal"}
+                </Text>
+                <Input
+                  type="number"
+                  min={0}
+                  value={goalDraft}
+                  onChange={(e) => setGoalDraft(e.target.value)}
+                  bg="gray.700"
+                  w="160px"
+                  placeholder={
+                    appLanguage === "es" ? "XP por día" : "XP per day"
+                  }
+                />
+                <Text fontSize="xs" opacity={0.7} mt={1}>
+                  {appLanguage === "es"
+                    ? "Cada nivel equivale a 100 XP. Cambiar este valor no reinicia tu progreso de hoy."
+                    : "Each level is 100 XP. Changing this won’t reset today’s progress or timer."}
+                </Text>
+              </Box>
             </VStack>
           </DrawerBody>
+          <DrawerFooter borderTop="1px solid" borderColor="gray.800">
+            <HStack w="100%" justify="flex-end" spacing={3}>
+              <Button variant="ghost" onClick={closeSettings}>
+                {t.app_close || "Close"}
+              </Button>
+              <Button colorScheme="teal" onClick={handleSaveSettings}>
+                {appLanguage === "es" ? "Guardar" : "Save"}
+              </Button>
+            </HStack>
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
 
@@ -914,6 +1029,20 @@ export default function App() {
   const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
 
   /* -----------------------------------
+     Daily goal modals (open logic)
+     - Only open DailyGoalModal right after onboarding completes
+  ----------------------------------- */
+  const [dailyGoalOpen, setDailyGoalOpen] = useState(false);
+  const [celebrateOpen, setCelebrateOpen] = useState(false);
+
+  // Celebration listener (fired by awardXp when goal is reached)
+  useEffect(() => {
+    const onHit = () => setCelebrateOpen(true);
+    window.addEventListener("daily:goalAchieved", onHit);
+    return () => window.removeEventListener("daily:goalAchieved", onHit);
+  }, []);
+
+  /* -----------------------------------
      Persistence helpers
   ----------------------------------- */
   const resolveNpub = () => {
@@ -950,7 +1079,7 @@ export default function App() {
       );
       if (user) setUser?.({ ...user, appLanguage: norm, updatedAt: now });
     } catch (e) {
-      console.error("Failed to save appLanguage:", e);
+      console.error("Failed to save language:", e);
       toast({
         status: "error",
         title: "Could not save language",
@@ -962,7 +1091,7 @@ export default function App() {
     );
   };
 
-  // Persist settings (used by debounced autosave)
+  // Persist settings (used by TopBar Save button)
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
     if (!npub) return;
@@ -972,7 +1101,18 @@ export default function App() {
       return Math.max(200, Math.min(4000, Math.round(n / 100) * 100));
     };
 
-    const prev = user?.progress || DEFAULT_PROGRESS;
+    const prev = user?.progress || {
+      level: "beginner",
+      supportLang: "en",
+      voice: "alloy",
+      voicePersona: translations?.en?.onboarding_persona_default_example || "",
+      targetLang: "es",
+      showTranslations: true,
+      pauseMs: 2000,
+      helpRequest: "",
+      practicePronunciation: false,
+    };
+
     const next = {
       level: partial.level ?? prev.level ?? "beginner",
       supportLang: ["en", "es", "bilingual"].includes(
@@ -1105,6 +1245,9 @@ export default function App() {
 
       const fresh = await loadUserObjectFromDB(database, id);
       if (fresh) setUser?.(fresh);
+
+      // Prompt for daily goal right after onboarding
+      setDailyGoalOpen(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -1135,7 +1278,9 @@ export default function App() {
           userLanguage={appLanguage}
           npub={activeNpub}
           onComplete={handleOnboardingComplete}
-          onAppLanguageChange={saveAppLanguage}
+          onAppLanguageChange={async (lang) => {
+            await saveAppLanguage(lang);
+          }}
         />
       </Box>
     );
@@ -1143,7 +1288,8 @@ export default function App() {
 
   /* -----------------------------------
      Main App (dropdown + panels)
-  ----------------------------------- */
+*/
+
   return (
     <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
       <TopBar
@@ -1188,13 +1334,10 @@ export default function App() {
         >
           {/* Top dropdown selector (replaces TabList) */}
           <Box
-            // border="1px solid"
             borderColor="gray.700"
             rounded="xl"
             p="6px"
             mb={[2, 3]}
-            // w="50%"
-
             width="100%"
             display="flex"
             justifyContent="center"
@@ -1206,10 +1349,10 @@ export default function App() {
                 variant="outline"
                 size="sm"
                 borderColor="gray.700"
-                w="50%"
+                w={{ base: "100%", sm: "70%", md: "50%" }}
                 padding={6}
               >
-                <HStack spacing={2}>
+                <HStack spacing={2} justify="center">
                   {TAB_ICONS[currentTab]}
                   <Text>{TAB_LABELS[currentTab]}</Text>
                 </HStack>
@@ -1321,6 +1464,53 @@ export default function App() {
           </TabPanels>
         </Tabs>
       </Box>
+
+      <HelpChatFab progress={user?.progress} appLanguage={appLanguage} />
+
+      {/* Daily Goal Setup — only opened right after onboarding completes */}
+      <DailyGoalModal
+        isOpen={dailyGoalOpen}
+        onClose={() => setDailyGoalOpen(false)}
+        npub={activeNpub}
+        ui={{
+          title: appLanguage === "es" ? "Meta diaria de XP" : "Daily XP goal",
+          subtitle:
+            appLanguage === "es"
+              ? "Cada nivel = 100 XP. ¿Cuántos XP quieres ganar al día?"
+              : "Each level = 100 XP. How many XP do you want to earn per day?",
+          inputLabel: appLanguage === "es" ? "XP por día" : "XP per day",
+          save: appLanguage === "es" ? "Guardar" : "Save",
+          cancel: appLanguage === "es" ? "Cancelar" : "Cancel",
+        }}
+      />
+
+      {/* Daily celebration (once per day) */}
+      <Modal
+        isOpen={celebrateOpen}
+        onClose={() => setCelebrateOpen(false)}
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent bg="gray.900" color="gray.100">
+          <ModalHeader>
+            {appLanguage === "es"
+              ? "¡Meta diaria lograda!"
+              : "Daily goal reached!"}
+          </ModalHeader>
+          <ModalBody>
+            <Text>
+              {appLanguage === "es"
+                ? "¡Buen trabajo! Has alcanzado tu objetivo de XP de hoy."
+                : "Great job! You reached today’s XP target."}
+            </Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="teal" onClick={() => setCelebrateOpen(false)}>
+              {appLanguage === "es" ? "Seguir" : "Keep going"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }

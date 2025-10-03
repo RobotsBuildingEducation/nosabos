@@ -15,6 +15,9 @@ import {
   Checkbox,
   CheckboxGroup,
   SimpleGrid,
+  Tooltip,
+  IconButton,
+  useToast,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -31,6 +34,38 @@ import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
+import { FiCopy } from "react-icons/fi";
+import { awardXp } from "../utils/utils";
+import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
+
+/* ---------------------------
+   Tiny helpers for Gemini streaming
+--------------------------- */
+function textFromChunk(chunk) {
+  try {
+    if (!chunk) return "";
+    if (typeof chunk.text === "function") return chunk.text() || "";
+    if (typeof chunk.text === "string") return chunk.text;
+    const cand = chunk.candidates?.[0];
+    if (cand?.content?.parts?.length) {
+      return cand.content.parts.map((p) => p.text || "").join("");
+    }
+  } catch {}
+  return "";
+}
+
+// Consume an NDJSON line safely and hand parsed object to cb(obj)
+function tryConsumeLine(line, cb) {
+  const s = line.indexOf("{");
+  const e = line.lastIndexOf("}");
+  if (s === -1 || e === -1 || e <= s) return;
+  try {
+    const obj = JSON.parse(line.slice(s, e + 1));
+    cb?.(obj);
+  } catch {
+    // ignore
+  }
+}
 
 /* ---------------------------
    Minimal i18n helper
@@ -49,7 +84,7 @@ function useT(uiLang = "en") {
 }
 
 /* ---------------------------
-   LLM plumbing
+   LLM plumbing (backend fallback)
 --------------------------- */
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
@@ -143,15 +178,15 @@ function useSharedProgress() {
   return { xp, levelNumber, progressPct, progress, npub };
 }
 
-async function awardXp(npub, amount) {
-  if (!npub || !amount) return;
-  const ref = doc(database, "users", npub);
-  await setDoc(
-    ref,
-    { xp: increment(Math.round(amount)), updatedAt: new Date().toISOString() },
-    { merge: true }
-  );
-}
+// async function awardXp(npub, amount) {
+//   if (!npub || !amount) return;
+//   const ref = doc(database, "users", npub);
+//   await setDoc(
+//     ref,
+//     { xp: increment(Math.round(amount)), updatedAt: new Date().toISOString() },
+//     { merge: true }
+//   );
+// }
 
 async function saveAttempt(npub, payload) {
   if (!npub) return;
@@ -191,7 +226,7 @@ function difficultyHint(level, xp) {
 }
 
 /* ---------------------------
-   Prompts
+   Prompts (stream-first variants)
 --------------------------- */
 const resolveSupportLang = (supportLang, appUILang) =>
   supportLang === "bilingual"
@@ -202,7 +237,12 @@ const resolveSupportLang = (supportLang, appUILang) =>
     ? "es"
     : "en";
 
-function buildFillPrompt({
+/* FILL — stream phases:
+   1) {"type":"fill","phase":"q","question":"..."}
+   2) {"type":"fill","phase":"meta","hint":"...","translation":"..."}
+   3) {"type":"done"}
+*/
+function buildFillStreamPrompt({
   level,
   targetLang,
   supportLang,
@@ -219,28 +259,25 @@ function buildFillPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = difficultyHint(level, xp);
 
-  return `
-Write ONE short ${TARGET} grammar question with a single blank "___".
-- No meta like "(to go)" in the question.
-- ≤ 120 chars. Difficulty: ${diff}
-- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}
-Provide also:
-- a short hint in ${SUPPORT} (≤ 8 words)
-${
-  wantTranslation ? `- a ${SUPPORT} translation` : `- an empty translation ("")`
-}
-Return EXACTLY: <question> ||| <hint> ||| <translation or "">
-`.trim();
+  return [
+    `Create ONE short ${TARGET} grammar fill-in-the-blank with a single blank "___". Difficulty: ${diff}`,
+    `- No meta like "(to go)" in the stem; ≤120 chars.`,
+    `- Consider learner recent corrects: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}`,
+    `- Hint in ${SUPPORT} (≤8 words).`,
+    wantTranslation
+      ? `- Provide a ${SUPPORT} translation.`
+      : `- Provide empty translation "".`,
+    "",
+    "Stream as NDJSON in phases:",
+    `{"type":"fill","phase":"q","question":"<stem in ${TARGET}>"}  // emit ASAP`,
+    `{"type":"fill","phase":"meta","hint":"<${SUPPORT} hint>","translation":"<${SUPPORT} translation or empty string>"}  // then`,
+    `{"type":"done"}`,
+  ].join("\n");
 }
 
-/* Missing in original: judge prompt for fill */
-function buildFillJudgePrompt({
-  level,
-  targetLang,
-  question,
-  userAnswer,
-  hint,
-}) {
+function buildFillJudgePrompt({ targetLang, question, userAnswer, hint }) {
   return `
 Judge a GRAMMAR fill-in-the-blank in ${LANG_NAME(targetLang)}.
 
@@ -263,6 +300,136 @@ YES or NO
 `.trim();
 }
 
+/* MATCH — stream:
+   1) {"type":"match","stem":"...","left":[...],"right":[...],"hint":"..."}
+   2) {"type":"done"}
+   (coherent single grammar family; 3–6 rows)
+*/
+function buildMatchStreamPrompt({
+  level,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang,
+  xp,
+  recentGood,
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
+  const SUPPORT = LANG_NAME(SUPPORT_CODE);
+  const diff = difficultyHint(level, xp);
+
+  return [
+    `Create ONE ${TARGET} GRAMMAR matching exercise using exactly ONE grammar family (coherent set). Difficulty: ${diff}.`,
+    `Stay related to recent correct topics: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}`,
+    "",
+    "Allowed families (pick ONE for all rows):",
+    "1) Subject pronoun → correct present form of ONE high-frequency verb",
+    "2) Verb (infinitive) → past participle (or simple past)",
+    "3) Noun (singular) → plural form",
+    "4) Adjective (base) → comparative form",
+    "5) Personal pronoun → object/indirect/possessive form (pick one)",
+    `6) Time signal → appropriate tense/aspect label (within ${TARGET})`,
+    "",
+    `- All items in ${TARGET}; hint in ${SUPPORT} (≤ 8 words).`,
+    "- 3–6 rows; left/right unique; clear 1:1 mapping.",
+    "- One concise instruction as the stem; no meta like “(to go)” inside items.",
+    "",
+    "Emit exactly TWO NDJSON lines:",
+    `{"type":"match","stem":"<${TARGET} stem>","left":["..."],"right":["..."],"hint":"<${SUPPORT} hint>"}`,
+    `{"type":"done"}`,
+  ].join("\n");
+}
+
+/* MC — stream phases:
+   1) {"type":"mc","phase":"q","question":"..."}       // ASAP
+   2) {"type":"mc","phase":"choices","choices":[...]}  // then
+   3) {"type":"mc","phase":"meta","hint":"...","answer":"...","translation":"..."}
+   4) {"type":"done"}
+*/
+function buildMCStreamPrompt({
+  level,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang,
+  xp,
+  recentGood,
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
+  const SUPPORT = LANG_NAME(SUPPORT_CODE);
+  const wantTranslation =
+    showTranslations &&
+    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
+  const diff = difficultyHint(level, xp);
+
+  return [
+    `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${diff}`,
+    `- Stem short (≤120 chars), may include "___".`,
+    `- 4 distinct choices in ${TARGET}.`,
+    `- Hint in ${SUPPORT} (≤8 words).`,
+    wantTranslation
+      ? `- ${SUPPORT} translation of stem.`
+      : `- Empty translation "".`,
+    `- Consider learner recent corrects: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}`,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
+    `{"type":"mc","phase":"choices","choices":["A","B","C","D"]} // second`,
+    `{"type":"mc","phase":"meta","hint":"<${SUPPORT} hint>","answer":"<exact correct choice text>","translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"done"}`,
+  ].join("\n");
+}
+
+/* MA — stream phases:
+   1) {"type":"ma","phase":"q","question":"..."}
+   2) {"type":"ma","phase":"choices","choices":[...]}  // 5–6 choices
+   3) {"type":"ma","phase":"meta","hint":"...","answers":["...","..."],"translation":"..."} // EXACTLY 2 or 3 answers
+   4) {"type":"done"}
+*/
+function buildMAStreamPrompt({
+  level,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang,
+  xp,
+  recentGood,
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
+  const SUPPORT = LANG_NAME(SUPPORT_CODE);
+  const wantTranslation =
+    showTranslations &&
+    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
+  const diff = difficultyHint(level, xp);
+
+  return [
+    `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
+    `- Stem short (≤120 chars), may include "___".`,
+    `- 5–6 distinct choices in ${TARGET}.`,
+    `- Hint in ${SUPPORT} (≤8 words).`,
+    wantTranslation
+      ? `- ${SUPPORT} translation of stem.`
+      : `- Empty translation "".`,
+    `- Consider learner recent corrects: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}`,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"ma","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
+    `{"type":"ma","phase":"choices","choices":["..."]}           // second`,
+    `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"done"}`,
+  ].join("\n");
+}
+
+/* Non-stream fallbacks used by judge/legacy prompts */
 function safeParseJsonLoose(txt = "") {
   if (!txt) return null;
   try {
@@ -278,152 +445,7 @@ function safeParseJsonLoose(txt = "") {
   return null;
 }
 
-/* Matching: generator + judge */
-function buildMatchGenPrompt() {
-  return `
-Create ONE simple English GRAMMAR matching exercise.
-
-Return ONLY JSON like:
-{"stem":"Match the items","left":["I","She","They"],"right":["am","is","are"],"hint":"Subject–verb agreement"}
-
-Rules:
-- Keep it very short (<= 10 words per item).
-- Make left/right unique (no duplicates after lowercasing/diacritics removal).
-- Ensure a clear 1:1 mapping with no ambiguity.
-- Do NOT include meta like "(to be)" inside items; if needed, put that in "hint".
-`.trim();
-}
-
-function buildMatchJudgePrompt({ stem, left, right, userPairs, hint }) {
-  const L = left.map((t, i) => `${i + 1}. ${t}`).join("\n");
-  const R = right.map((t, i) => `${i + 1}. ${t}`).join("\n");
-  const U =
-    userPairs
-      .map(
-        ([li, ri]) =>
-          `L${li + 1} -> R${ri + 1}  (${left[li]} -> ${right[ri] || "(none)"})`
-      )
-      .join("\n") || "(none)";
-
-  return `
-Judge a MATCHING grammar task with leniency.
-
-Stem:
-${stem}
-
-Left column:
-${L}
-
-Right column:
-${R}
-
-Hint (optional):
-${hint || ""}
-
-User mapping (order irrelevant; 1:1 intended):
-${U}
-
-Rules:
-- Reply YES if each left item is matched to a right item that is grammatically and contextually appropriate.
-- Allow minor surface differences, synonyms, and natural variants if meaning/grammar fit is correct.
-- If any mapping is clearly wrong or missing, reply NO.
-
-Reply with ONE WORD ONLY:
-YES or NO
-`.trim();
-}
-
-function buildMCQuestionPrompt({
-  level,
-  targetLang,
-  supportLang,
-  showTranslations,
-  appUILang,
-  xp,
-  recentGood,
-}) {
-  const TARGET = LANG_NAME(targetLang);
-  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
-  const SUPPORT = LANG_NAME(SUPPORT_CODE);
-  const wantTranslation =
-    showTranslations &&
-    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = difficultyHint(level, xp);
-
-  return `
-Create ONE multiple-choice ${TARGET} grammar question.
-- Stem short (≤120 chars); may include "___".
-- 4 distinct choices in ${TARGET}. EXACTLY ONE is correct, unambiguous.
-- Hint in ${SUPPORT} (≤8 words).
-${
-  wantTranslation
-    ? `- ${SUPPORT} translation of the stem.`
-    : `- Empty translation "".`
-}
-- Difficulty: ${diff}
-- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}
-
-Return JSON ONLY:
-{
-  "question": "<stem in ${TARGET}>",
-  "hint": "<hint in ${SUPPORT}>",
-  "choices": ["A","B","C","D"],
-  "answer": "<exact text of the correct choice>",
-  "translation": "<${SUPPORT} translation or empty string>"
-}
-`.trim();
-}
-
-function buildMAQuestionPrompt({
-  level,
-  targetLang,
-  supportLang,
-  showTranslations,
-  appUILang,
-  xp,
-  recentGood,
-}) {
-  const TARGET = LANG_NAME(targetLang);
-  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
-  const SUPPORT = LANG_NAME(SUPPORT_CODE);
-  const wantTranslation =
-    showTranslations &&
-    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = difficultyHint(level, xp);
-
-  return `
-Create ONE multiple-answer ${TARGET} grammar question.
-- Stem short (≤120 chars); may include "___".
-- 5–6 distinct choices in ${TARGET}.
-- EXACTLY 2 or 3 choices are correct; others clearly wrong.
-- Hint in ${SUPPORT} (≤8 words).
-${
-  wantTranslation
-    ? `- ${SUPPORT} translation of the stem.`
-    : `- Empty translation "".`
-}
-- Difficulty: ${diff}
-- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}
-
-Return JSON ONLY:
-{
-  "question": "<stem in ${TARGET}>",
-  "hint": "<hint in ${SUPPORT}>",
-  "choices": ["..."],
-  "answers": ["<correct option>", "<correct option>"],
-  "translation": "<${SUPPORT} translation or empty string>"
-}
-`.trim();
-}
-
-function buildMCJudgePrompt({
-  level,
-  targetLang,
-  stem,
-  choices,
-  userChoice,
-  hint,
-}) {
+function buildMCJudgePrompt({ targetLang, stem, choices, userChoice, hint }) {
   const listed = choices.map((c, i) => `${i + 1}. ${c}`).join("\n");
   return `
 Judge a MULTIPLE-CHOICE grammar question in ${LANG_NAME(targetLang)}.
@@ -453,7 +475,6 @@ YES or NO
 }
 
 function buildMAJudgePrompt({
-  level,
   targetLang,
   stem,
   choices,
@@ -521,6 +542,7 @@ function safeParseJSON(text) {
 --------------------------- */
 export default function GrammarBook({ userLanguage = "en" }) {
   const t = useT(userLanguage);
+  const toast = useToast();
   const user = useUserStore((s) => s.user);
   const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
 
@@ -561,12 +583,73 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }
   }, [xp]);
 
+  // verdict + next control
+  const [lastOk, setLastOk] = useState(null); // null | true | false
+  const [recentXp, setRecentXp] = useState(0);
+  const [nextAction, setNextAction] = useState(null);
+
+  function showCopyToast() {
+    toast({
+      title:
+        t("copied_to_clipboard_all") ||
+        (userLanguage === "es"
+          ? "Copiado (pregunta + pista + traducción)"
+          : "Copied (question + hint + translation)"),
+      duration: 1200,
+      isClosable: true,
+      position: "top",
+    });
+  }
+
+  function makeBundle(q, h, tr) {
+    const lines = [];
+    if (q?.trim()) lines.push(q.trim());
+    if (h?.trim())
+      lines.push((userLanguage === "es" ? "Pista: " : "Hint: ") + h.trim());
+    if (tr?.trim())
+      lines.push(
+        (userLanguage === "es" ? "Traducción: " : "Translation: ") + tr.trim()
+      );
+    return lines.join("\n");
+  }
+
+  async function copyAll(q, h, tr) {
+    const text = makeBundle(q, h, tr);
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      showCopyToast();
+    } catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showCopyToast();
+      } catch {}
+    }
+  }
+
+  function handleNext() {
+    if (typeof nextAction === "function") {
+      setLastOk(null);
+      setRecentXp(0);
+      const fn = nextAction;
+      setNextAction(null);
+      fn();
+    }
+  }
+
   // ---- FILL ----
   const [question, setQuestion] = useState("");
   const [hint, setHint] = useState("");
   const [translation, setTranslation] = useState("");
   const [input, setInput] = useState("");
-  const [result, setResult] = useState("");
   const [loadingQ, setLoadingQ] = useState(false);
   const [loadingG, setLoadingG] = useState(false);
 
@@ -577,7 +660,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [mcAnswer, setMcAnswer] = useState("");
   const [mcTranslation, setMcTranslation] = useState("");
   const [mcPick, setMcPick] = useState("");
-  const [mcResult, setMcResult] = useState("");
+  const [mcResult, setMcResult] = useState(""); // kept for firestore text; not shown
   const [loadingMCQ, setLoadingMCQ] = useState(false);
   const [loadingMCG, setLoadingMCG] = useState(false);
 
@@ -588,7 +671,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [maAnswers, setMaAnswers] = useState([]); // correct strings
   const [maTranslation, setMaTranslation] = useState("");
   const [maPicks, setMaPicks] = useState([]); // selected strings
-  const [maResult, setMaResult] = useState("");
+  const [maResult, setMaResult] = useState(""); // kept for firestore text; not shown
   const [loadingMAQ, setLoadingMAQ] = useState(false);
   const [loadingMAG, setLoadingMAG] = useState(false);
 
@@ -599,110 +682,323 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [mRight, setMRight] = useState([]); // strings
   const [mSlots, setMSlots] = useState([]); // per-left slot: rightIndex | null
   const [mBank, setMBank] = useState([]); // right indices not yet used
-  const [mResult, setMResult] = useState("");
+  const [mResult, setMResult] = useState(""); // kept for firestore text; not shown
   const [loadingMG, setLoadingMG] = useState(false);
   const [loadingMJ, setLoadingMJ] = useState(false);
 
-  /* ---------- Generate: Fill ---------- */
+  /* ---------- STREAM Generate: Fill ---------- */
   async function generateFill() {
     setMode("fill");
     setLoadingQ(true);
-    setResult("");
     setInput("");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
 
-    const text = await callResponses({
-      model: MODEL,
-      input: buildFillPrompt({
-        level,
-        targetLang,
-        supportLang,
-        showTranslations,
-        appUILang: userLanguage,
-        xp,
-        recentGood: recentCorrectRef.current,
-      }),
+    setQuestion("");
+    setHint("");
+    setTranslation("");
+
+    const prompt = buildFillStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
     });
 
-    const [q, h, tr] = text.split("|||").map((s) => (s || "").trim());
-    if (q) {
-      setQuestion(q);
-      setHint(h || "");
-      setTranslation(tr || "");
-    } else {
-      // minimal content fallback (not localized on purpose)
-      if (targetLang === "es") {
-        setQuestion("Completa: Ella ___ al trabajo cada día.");
-        setHint("Tiempo presente de ir");
-        setTranslation(
-          showTranslations && supportCode === "en"
-            ? "She ___ to work every day."
-            : ""
-        );
-      } else {
-        setQuestion("Fill in the blank: She ___ to work every day.");
-        setHint('Use present of "go"');
-        setTranslation(
-          showTranslations && supportCode === "es"
-            ? "Ella ___ al trabajo cada día."
-            : ""
-        );
+    let gotSomething = false;
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "fill" && obj.phase === "q" && obj.question) {
+              setQuestion(String(obj.question));
+              gotSomething = true;
+            } else if (obj?.type === "fill" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") setHint(obj.hint);
+              if (typeof obj.translation === "string")
+                setTranslation(obj.translation);
+              gotSomething = true;
+            }
+          });
+        }
       }
+
+      // Flush any trailing text after stream ends
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (obj?.type === "fill" && obj.phase === "q" && obj.question) {
+                setQuestion(String(obj.question));
+                gotSomething = true;
+              } else if (obj?.type === "fill" && obj.phase === "meta") {
+                if (typeof obj.hint === "string") setHint(obj.hint);
+                if (typeof obj.translation === "string")
+                  setTranslation(obj.translation);
+                gotSomething = true;
+              }
+            })
+          );
+      }
+
+      if (!gotSomething) throw new Error("no-fill");
+    } catch {
+      // Fallback
+      const fallbackPrompt = `
+Write ONE short ${LANG_NAME(
+        targetLang
+      )} grammar question with a single blank "___".
+- No meta like "(to go)" in the question.
+- ≤ 120 chars.
+Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
+        resolveSupportLang(supportLang, userLanguage)
+      )} (≤ 8 words)> ||| <${
+        showTranslations
+          ? LANG_NAME(resolveSupportLang(supportLang, userLanguage))
+          : ""
+      } translation or "">
+`.trim();
+
+      const text = await callResponses({ model: MODEL, input: fallbackPrompt });
+      const [q, h, tr] = text.split("|||").map((s) => (s || "").trim());
+      if (q) {
+        setQuestion(q);
+        setHint(h || "");
+        setTranslation(tr || "");
+      } else {
+        if (targetLang === "es") {
+          setQuestion("Completa: Ella ___ al trabajo cada día.");
+          setHint("Tiempo presente de ir");
+          setTranslation(
+            showTranslations && supportCode === "en"
+              ? "She ___ to work every day."
+              : ""
+          );
+        } else {
+          setQuestion("Fill in the blank: She ___ to work every day.");
+          setHint('Use present of "go"');
+          setTranslation(
+            showTranslations && supportCode === "es"
+              ? "Ella ___ al trabajo cada día."
+              : ""
+          );
+        }
+      }
+    } finally {
+      setLoadingQ(false);
     }
-    setLoadingQ(false);
   }
 
-  /* ---------- Generate: MC ---------- */
+  /* ---------- STREAM Generate: MC ---------- */
   async function generateMC() {
     setMode("mc");
     setLoadingMCQ(true);
     setMcResult("");
     setMcPick("");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
 
-    const text = await callResponses({
-      model: MODEL,
-      input: buildMCQuestionPrompt({
-        level,
-        targetLang,
-        supportLang,
-        showTranslations,
-        appUILang: userLanguage,
-        xp,
-        recentGood: recentCorrectRef.current,
-      }),
+    setMcQ("");
+    setMcHint("");
+    setMcChoices([]);
+    setMcAnswer("");
+    setMcTranslation("");
+
+    const prompt = buildMCStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
     });
 
-    const parsed = safeParseJSON(text);
-    if (
-      parsed &&
-      parsed.question &&
-      Array.isArray(parsed.choices) &&
-      parsed.choices.length >= 3
-    ) {
-      const choices = parsed.choices.slice(0, 4).map((c) => String(c));
-      const ans =
-        choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
-      setMcQ(String(parsed.question));
-      setMcHint(String(parsed.hint || ""));
-      setMcChoices(choices);
-      setMcAnswer(ans);
-      setMcTranslation(String(parsed.translation || ""));
-    } else {
-      setMcQ("Choose the correct past form of 'go'.");
-      setMcHint("Simple past");
-      const choices = ["go", "went", "gone", "going"];
-      setMcChoices(choices);
-      setMcAnswer("went");
-      setMcTranslation(
-        showTranslations && supportCode === "es"
-          ? "Elige la forma correcta del pasado de 'go'."
-          : ""
-      );
-    }
+    let got = false;
+    let pendingAnswer = "";
 
-    setLoadingMCQ(false);
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "mc" && obj.phase === "q" && obj.question) {
+              setMcQ(String(obj.question));
+              got = true;
+            } else if (
+              obj?.type === "mc" &&
+              obj.phase === "choices" &&
+              Array.isArray(obj.choices)
+            ) {
+              const choices = obj.choices.slice(0, 4).map(String);
+              setMcChoices(choices);
+              // If answer already known, align it
+              if (pendingAnswer) {
+                const ans =
+                  choices.find((c) => norm(c) === norm(pendingAnswer)) ||
+                  choices[0];
+                setMcAnswer(ans);
+              }
+              got = true;
+            } else if (obj?.type === "mc" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") setMcHint(obj.hint);
+              if (typeof obj.translation === "string")
+                setMcTranslation(obj.translation);
+              if (typeof obj.answer === "string") {
+                pendingAnswer = obj.answer;
+                if (Array.isArray(mcChoices) && mcChoices.length) {
+                  const ans =
+                    mcChoices.find((c) => norm(c) === norm(pendingAnswer)) ||
+                    mcChoices[0];
+                  setMcAnswer(ans);
+                }
+              }
+              got = true;
+            }
+          });
+        }
+      }
+
+      // Flush tail
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (obj?.type === "mc" && obj.phase === "q" && obj.question) {
+                setMcQ(String(obj.question));
+                got = true;
+              } else if (
+                obj?.type === "mc" &&
+                obj.phase === "choices" &&
+                Array.isArray(obj.choices)
+              ) {
+                const choices = obj.choices.slice(0, 4).map(String);
+                setMcChoices(choices);
+                if (pendingAnswer) {
+                  const ans =
+                    choices.find((c) => norm(c) === norm(pendingAnswer)) ||
+                    choices[0];
+                  setMcAnswer(ans);
+                }
+                got = true;
+              } else if (obj?.type === "mc" && obj.phase === "meta") {
+                if (typeof obj.hint === "string") setMcHint(obj.hint);
+                if (typeof obj.translation === "string")
+                  setMcTranslation(obj.translation);
+                if (typeof obj.answer === "string") {
+                  pendingAnswer = obj.answer;
+                  if (Array.isArray(mcChoices) && mcChoices.length) {
+                    const ans =
+                      mcChoices.find((c) => norm(c) === norm(pendingAnswer)) ||
+                      mcChoices[0];
+                    setMcAnswer(ans);
+                  }
+                }
+                got = true;
+              }
+            })
+          );
+      }
+
+      if (!got) throw new Error("no-mc");
+    } catch {
+      // Fallback (non-stream)
+      const fallback = `
+Create ONE multiple-choice ${LANG_NAME(
+        targetLang
+      )} grammar question. Return JSON ONLY:
+{
+  "question": "<stem>",
+  "hint": "<hint in ${LANG_NAME(
+    resolveSupportLang(supportLang, userLanguage)
+  )}>",
+  "choices": ["A","B","C","D"],
+  "answer": "<exact correct choice>",
+  "translation": "${showTranslations ? "<translation>" : ""}"
+}
+`.trim();
+
+      const text = await callResponses({ model: MODEL, input: fallback });
+      const parsed = safeParseJSON(text);
+      if (
+        parsed &&
+        parsed.question &&
+        Array.isArray(parsed.choices) &&
+        parsed.choices.length >= 3
+      ) {
+        const choices = parsed.choices.slice(0, 4).map((c) => String(c));
+        const ans =
+          choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
+        setMcQ(String(parsed.question));
+        setMcHint(String(parsed.hint || ""));
+        setMcChoices(choices);
+        setMcAnswer(ans);
+        setMcTranslation(String(parsed.translation || ""));
+      } else {
+        setMcQ("Choose the correct past form of 'go'.");
+        setMcHint("Simple past");
+        const choices = ["go", "went", "gone", "going"];
+        setMcChoices(choices);
+        setMcAnswer("went");
+        setMcTranslation(
+          showTranslations && supportCode === "es"
+            ? "Elige la forma correcta del pasado de 'go'."
+            : ""
+        );
+      }
+    } finally {
+      setLoadingMCQ(false);
+    }
   }
 
-  /* ---------- Generate: MA ---------- */
+  /* ---------- STREAM Generate: MA ---------- */
   function sanitizeMA(parsed) {
     if (
       !parsed ||
@@ -747,97 +1043,357 @@ export default function GrammarBook({ userLanguage = "en" }) {
     setLoadingMAQ(true);
     setMaResult("");
     setMaPicks([]);
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
 
-    const text = await callResponses({
-      model: MODEL,
-      input: buildMAQuestionPrompt({
-        level,
-        targetLang,
-        supportLang,
-        showTranslations,
-        appUILang: userLanguage,
-        xp,
-        recentGood: recentCorrectRef.current,
-      }),
+    setMaQ("");
+    setMaHint("");
+    setMaChoices([]);
+    setMaAnswers([]);
+    setMaTranslation("");
+
+    const prompt = buildMAStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
     });
 
-    const parsed = sanitizeMA(safeParseJSON(text));
-    if (parsed) {
-      setMaQ(parsed.question);
-      setMaHint(parsed.hint);
-      setMaChoices(parsed.choices);
-      setMaAnswers(parsed.answers);
-      setMaTranslation(parsed.translation);
-    } else {
-      // minimal content fallback
-      setMaQ("Select all sentences that are in present perfect.");
-      setMaHint("have/has + past participle");
-      const choices = [
-        "She has eaten.",
-        "They eat now.",
-        "We have finished.",
-        "He is finishing.",
-        "I have seen it.",
-      ];
-      setMaChoices(choices);
-      setMaAnswers(["She has eaten.", "We have finished.", "I have seen it."]);
-      setMaTranslation(
-        showTranslations && supportCode === "es"
-          ? "Selecciona todas las oraciones en presente perfecto."
-          : ""
-      );
-    }
+    let got = false;
+    let pendingAnswers = [];
 
-    setLoadingMAQ(false);
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "ma" && obj.phase === "q" && obj.question) {
+              setMaQ(String(obj.question));
+              got = true;
+            } else if (
+              obj?.type === "ma" &&
+              obj.phase === "choices" &&
+              Array.isArray(obj.choices)
+            ) {
+              const choices = obj.choices.slice(0, 6).map(String);
+              setMaChoices(choices);
+              // If we already have pending answers, align them
+              if (pendingAnswers?.length) {
+                const aligned = pendingAnswers.filter((a) =>
+                  choices.some((c) => norm(c) === norm(a))
+                );
+                if (aligned.length >= 2) setMaAnswers(aligned);
+              }
+              got = true;
+            } else if (obj?.type === "ma" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") setMaHint(obj.hint);
+              if (typeof obj.translation === "string")
+                setMaTranslation(obj.translation);
+              if (Array.isArray(obj.answers)) {
+                pendingAnswers = obj.answers.map(String);
+                if (Array.isArray(maChoices) && maChoices.length) {
+                  const aligned = pendingAnswers.filter((a) =>
+                    maChoices.some((c) => norm(c) === norm(a))
+                  );
+                  if (aligned.length >= 2) setMaAnswers(aligned);
+                }
+              }
+              got = true;
+            }
+          });
+        }
+      }
+
+      // Flush tail
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (obj?.type === "ma" && obj.phase === "q" && obj.question) {
+                setMaQ(String(obj.question));
+                got = true;
+              } else if (
+                obj?.type === "ma" &&
+                obj.phase === "choices" &&
+                Array.isArray(obj.choices)
+              ) {
+                const choices = obj.choices.slice(0, 6).map(String);
+                setMaChoices(choices);
+                if (pendingAnswers?.length) {
+                  const aligned = pendingAnswers.filter((a) =>
+                    choices.some((c) => norm(c) === norm(a))
+                  );
+                  if (aligned.length >= 2) setMaAnswers(aligned);
+                }
+                got = true;
+              } else if (obj?.type === "ma" && obj.phase === "meta") {
+                if (typeof obj.hint === "string") setMaHint(obj.hint);
+                if (typeof obj.translation === "string")
+                  setMaTranslation(obj.translation);
+                if (Array.isArray(obj.answers)) {
+                  pendingAnswers = obj.answers.map(String);
+                  if (Array.isArray(maChoices) && maChoices.length) {
+                    const aligned = pendingAnswers.filter((a) =>
+                      maChoices.some((c) => norm(c) === norm(a))
+                    );
+                    if (aligned.length >= 2) setMaAnswers(aligned);
+                  }
+                }
+                got = true;
+              }
+            })
+          );
+      }
+
+      if (!got) throw new Error("no-ma");
+    } catch {
+      // Fallback (non-stream)
+      const fallback = `
+Create ONE multiple-answer ${LANG_NAME(
+        targetLang
+      )} grammar question. Return JSON ONLY:
+{
+  "question":"<stem>",
+  "hint":"<hint in ${LANG_NAME(
+    resolveSupportLang(supportLang, userLanguage)
+  )}>",
+  "choices":["...","...","...","...","..."],
+  "answers":["<correct>","<correct>"],
+  "translation":"${showTranslations ? "<translation>" : ""}"
+}
+`.trim();
+
+      const text = await callResponses({ model: MODEL, input: fallback });
+      const parsed = sanitizeMA(safeParseJSON(text));
+      if (parsed) {
+        setMaQ(parsed.question);
+        setMaHint(parsed.hint);
+        setMaChoices(parsed.choices);
+        setMaAnswers(parsed.answers);
+        setMaTranslation(parsed.translation);
+      } else {
+        setMaQ("Select all sentences that are in present perfect.");
+        setMaHint("have/has + past participle");
+        const choices = [
+          "She has eaten.",
+          "They eat now.",
+          "We have finished.",
+          "He is finishing.",
+          "I have seen it.",
+        ];
+        setMaChoices(choices);
+        setMaAnswers([
+          "She has eaten.",
+          "We have finished.",
+          "I have seen it.",
+        ]);
+        setMaTranslation(
+          showTranslations && supportCode === "es"
+            ? "Selecciona todas las oraciones en presente perfecto."
+            : ""
+        );
+      }
+    } finally {
+      setLoadingMAQ(false);
+    }
   }
 
-  /* ---------- Generate: MATCH (DnD) ---------- */
+  /* ---------- STREAM Generate: MATCH (Gemini with fallback) ---------- */
   async function generateMatch() {
     setMode("match");
     setLoadingMG(true);
     setMResult("");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
 
-    const raw = await callResponses({
-      model: MODEL,
-      input: buildMatchGenPrompt(),
+    // Reset state
+    setMStem("");
+    setMHint("");
+    setMLeft([]);
+    setMRight([]);
+    setMSlots([]);
+    setMBank([]);
+
+    const prompt = buildMatchStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
     });
-    const parsed = safeParseJsonLoose(raw);
 
-    let stem = "",
-      left = [],
-      right = [],
-      hint = "";
+    let okPayload = false;
 
-    if (
-      parsed &&
-      Array.isArray(parsed.left) &&
-      Array.isArray(parsed.right) &&
-      parsed.left.length >= 2 &&
-      parsed.left.length === parsed.right.length
-    ) {
-      stem = String(parsed.stem || "Match the items.");
-      left = parsed.left.slice(0, 6).map(String);
-      right = parsed.right.slice(0, 6).map(String);
-      hint = String(parsed.hint || "");
-    } else {
-      stem = "Match subjects with the correct 'to be' form.";
-      left = ["I", "She", "They"];
-      right = ["am", "is", "are"];
-      hint = "Subject–verb agreement";
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (
+              obj?.type === "match" &&
+              typeof obj.stem === "string" &&
+              Array.isArray(obj.left) &&
+              Array.isArray(obj.right) &&
+              obj.left.length >= 3 &&
+              obj.left.length <= 6 &&
+              obj.left.length === obj.right.length
+            ) {
+              const stem = String(obj.stem).trim() || "Empareja los elementos.";
+              const left = obj.left.slice(0, 6).map(String);
+              const right = obj.right.slice(0, 6).map(String);
+              const hint = String(obj.hint || "");
+              setMStem(stem);
+              setMHint(hint);
+              setMLeft(left);
+              setMRight(right);
+              setMSlots(Array(left.length).fill(null));
+              setMBank([...Array(right.length)].map((_, i) => i));
+              okPayload = true;
+            }
+          });
+        }
+      }
+
+      // Flush tail
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (
+                obj?.type === "match" &&
+                typeof obj.stem === "string" &&
+                Array.isArray(obj.left) &&
+                Array.isArray(obj.right) &&
+                obj.left.length >= 3 &&
+                obj.left.length <= 6 &&
+                obj.left.length === obj.right.length
+              ) {
+                const stem =
+                  String(obj.stem).trim() || "Empareja los elementos.";
+                const left = obj.left.slice(0, 6).map(String);
+                const right = obj.right.slice(0, 6).map(String);
+                const hint = String(obj.hint || "");
+                setMStem(stem);
+                setMHint(hint);
+                setMLeft(left);
+                setMRight(right);
+                setMSlots(Array(left.length).fill(null));
+                setMBank([...Array(right.length)].map((_, i) => i));
+                okPayload = true;
+              }
+            })
+          );
+      }
+
+      if (!okPayload) throw new Error("no-match");
+    } catch {
+      // Backend fallback with the same coherence guarantees
+      const raw = await callResponses({
+        model: MODEL,
+        input: `
+Create ONE ${LANG_NAME(
+          targetLang
+        )} GRAMMAR matching exercise (single grammar family, 3–6 rows).
+Return JSON ONLY:
+{"stem":"<stem>","left":["..."],"right":["..."],"hint":"<hint in ${LANG_NAME(
+          resolveSupportLang(supportLang, userLanguage)
+        )}>"}
+`.trim(),
+      });
+      const parsed = safeParseJsonLoose(raw);
+
+      let stem = "",
+        left = [],
+        right = [],
+        hint = "";
+
+      if (
+        parsed &&
+        Array.isArray(parsed.left) &&
+        Array.isArray(parsed.right) &&
+        parsed.left.length >= 3 &&
+        parsed.left.length <= 6 &&
+        parsed.left.length === parsed.right.length
+      ) {
+        stem = String(parsed.stem || "Empareja los elementos.");
+        left = parsed.left.slice(0, 6).map(String);
+        right = parsed.right.slice(0, 6).map(String);
+        hint = String(parsed.hint || "");
+      } else {
+        // Safe default set (family: subject → 'to be' present)
+        if (targetLang === "es") {
+          stem =
+            "Relaciona el sujeto con la forma correcta del verbo 'ser' (presente).";
+          left = ["yo", "él", "nosotros"];
+          right = ["soy", "es", "somos"];
+          hint = "Concordancia sujeto–verbo";
+        } else {
+          stem = "Match subjects with the correct present form of 'to be'.";
+          left = ["I", "she", "they"];
+          right = ["am", "is", "are"];
+          hint = "Subject–verb agreement";
+        }
+      }
+
+      setMStem(stem);
+      setMHint(hint);
+      setMLeft(left);
+      setMRight(right);
+      setMSlots(Array(left.length).fill(null));
+      setMBank([...Array(right.length)].map((_, i) => i));
+    } finally {
+      setLoadingMG(false);
     }
-
-    setMStem(stem);
-    setMHint(hint);
-    setMLeft(left);
-    setMRight(right);
-    setMSlots(Array(left.length).fill(null)); // empty slots
-    setMBank([...Array(right.length)].map((_, i) => i)); // right indices in bank
-
-    setLoadingMG(false);
   }
 
   /* ---------------------------
-     Submits
+     Submits (backend judging)
   --------------------------- */
   async function submitFill() {
     if (!question || !input.trim()) return;
@@ -846,7 +1402,6 @@ export default function GrammarBook({ userLanguage = "en" }) {
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildFillJudgePrompt({
-        level,
         targetLang,
         question,
         userAnswer: input,
@@ -867,11 +1422,8 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }).catch(() => {});
     await awardXp(npub, delta).catch(() => {});
 
-    setResult(
-      ok
-        ? t("grammar_result_good", { xp: delta })
-        : t("grammar_result_not_fit", { xp: delta })
-    );
+    setLastOk(ok);
+    setRecentXp(delta);
 
     if (ok) {
       setInput("");
@@ -879,7 +1431,9 @@ export default function GrammarBook({ userLanguage = "en" }) {
         ...recentCorrectRef.current,
         { mode: "fill", question },
       ].slice(-5);
-      generateFill();
+      setNextAction(() => generateFill); // wait for Next
+    } else {
+      setNextAction(null);
     }
 
     setLoadingG(false);
@@ -892,7 +1446,6 @@ export default function GrammarBook({ userLanguage = "en" }) {
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildMCJudgePrompt({
-        level,
         targetLang,
         stem: mcQ,
         choices: mcChoices,
@@ -917,20 +1470,10 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }).catch(() => {});
     await awardXp(npub, delta).catch(() => {});
 
-    setMcResult(
-      ok
-        ? t("grammar_result_correct", { xp: delta })
-        : t("grammar_result_try_again", { xp: delta })
-    );
-
-    if (ok) {
-      setMcPick("");
-      recentCorrectRef.current = [
-        ...recentCorrectRef.current,
-        { mode: "mc", question: mcQ },
-      ].slice(-5);
-      generateMC();
-    }
+    setMcResult(ok ? "correct" : "try_again"); // for logs only
+    setLastOk(ok);
+    setRecentXp(delta);
+    setNextAction(ok ? () => generateMC : null);
 
     setLoadingMCG(false);
   }
@@ -942,7 +1485,6 @@ export default function GrammarBook({ userLanguage = "en" }) {
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildMAJudgePrompt({
-        level,
         targetLang,
         stem: maQ,
         choices: maChoices,
@@ -967,20 +1509,10 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }).catch(() => {});
     await awardXp(npub, delta).catch(() => {});
 
-    setMaResult(
-      ok
-        ? t("grammar_result_correct", { xp: delta })
-        : t("grammar_result_try_again", { xp: delta })
-    );
-
-    if (ok) {
-      setMaPicks([]);
-      recentCorrectRef.current = [
-        ...recentCorrectRef.current,
-        { mode: "ma", question: maQ },
-      ].slice(-5);
-      generateMA();
-    }
+    setMaResult(ok ? "correct" : "try_again"); // for logs only
+    setLastOk(ok);
+    setRecentXp(delta);
+    setNextAction(ok ? () => generateMA : null);
 
     setLoadingMAG(false);
   }
@@ -997,22 +1529,30 @@ export default function GrammarBook({ userLanguage = "en" }) {
 
     const verdictRaw = await callResponses({
       model: MODEL,
-      input: buildMatchJudgePrompt({
-        stem: mStem,
-        left: mLeft,
-        right: mRight,
-        userPairs,
-        hint: mHint,
-      }),
-    });
+      input: `
+${buildMatchStreamPrompt({
+  level,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang: userLanguage,
+  xp,
+  recentGood: recentCorrectRef.current,
+})}
 
+// JUDGE (reply YES/NO only) for mapping:
+${userPairs
+  .map(
+    ([li, ri]) =>
+      `L${li + 1} -> R${ri + 1} (${mLeft[li]} -> ${mRight[ri] || "(none)"})`
+  )
+  .join("\n")}
+`.trim(),
+    });
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 12 : 4;
-    setMResult(
-      ok
-        ? t("grammar_result_correct", { xp: delta })
-        : t("grammar_result_try_again", { xp: delta })
-    );
+
+    setMResult(ok ? "correct" : "try_again"); // for logs only
 
     await saveAttempt(npub, {
       ok,
@@ -1026,9 +1566,9 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }).catch(() => {});
     await awardXp(npub, delta).catch(() => {});
 
-    if (ok) {
-      await generateMatch();
-    }
+    setLastOk(ok);
+    setRecentXp(delta);
+    setNextAction(ok ? () => generateMatch : null);
 
     setLoadingMJ(false);
   }
@@ -1099,11 +1639,52 @@ export default function GrammarBook({ userLanguage = "en" }) {
   if (showPasscodeModal) {
     return (
       <PasscodePage
-        userLanguage={user.appLanguage}
+        userLanguage={user?.appLanguage}
         setShowPasscodeModal={setShowPasscodeModal}
       />
     );
   }
+
+  // Single copy button (left of question)
+  const CopyAllBtn = ({ q, h, tr }) => {
+    const has = (q && q.trim()) || (h && h.trim()) || (tr && tr.trim());
+    if (!has) return null;
+    return (
+      <Tooltip
+        label={
+          t("copy_all") || (userLanguage === "es" ? "Copiar todo" : "Copy all")
+        }
+      >
+        <IconButton
+          aria-label="Copy all"
+          icon={<FiCopy />}
+          size="xs"
+          variant="ghost"
+          onClick={() => copyAll(q, h, tr)}
+          mr={1}
+        />
+      </Tooltip>
+    );
+  };
+
+  // Result badge (only feedback shown)
+  const ResultBadge = ({ ok, xp }) => {
+    if (ok === null) return null;
+    const label = ok
+      ? t("correct") || "Correct!"
+      : t("try_again") || "Try again";
+    return (
+      <Badge
+        colorScheme={ok ? "green" : "red"}
+        variant="solid"
+        borderRadius="full"
+        px={3}
+        py={1}
+      >
+        {ok ? "✓" : "✖"} {label} · +{xp} XP {ok ? "🎉" : ""}
+      </Badge>
+    );
+  };
 
   return (
     <Box p={4}>
@@ -1176,14 +1757,23 @@ export default function GrammarBook({ userLanguage = "en" }) {
         </SimpleGrid>
 
         {/* ---- Fill UI ---- */}
-        {mode === "fill" && question ? (
+        {mode === "fill" && (question || loadingQ) ? (
           <>
-            <Text fontWeight="semibold">{question}</Text>
-            {showTRFill && (
+            <HStack align="start">
+              <CopyAllBtn
+                q={question}
+                h={hint}
+                tr={showTRFill ? translation : ""}
+              />
+              <Text fontWeight="semibold" flex="1">
+                {question || (loadingQ ? "…" : "")}
+              </Text>
+            </HStack>
+            {showTRFill && translation ? (
               <Text fontSize="sm" opacity={0.8}>
                 {translation}
               </Text>
-            )}
+            ) : null}
             {hint ? (
               <Text fontSize="sm" opacity={0.85}>
                 💡 {hint}
@@ -1199,24 +1789,41 @@ export default function GrammarBook({ userLanguage = "en" }) {
               />
               <Button
                 onClick={submitFill}
-                isDisabled={loadingG || !input.trim()}
+                isDisabled={loadingG || !input.trim() || !question}
               >
                 {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {t("grammar_next") || "Next"}
+                </Button>
+              ) : null}
             </HStack>
-            {result ? <Text>{result}</Text> : null}
+
+            <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
+            </HStack>
           </>
         ) : null}
 
         {/* ---- MC UI ---- */}
-        {mode === "mc" && mcQ ? (
+        {mode === "mc" && (mcQ || loadingMCQ) ? (
           <>
-            <Text fontWeight="semibold">{mcQ}</Text>
-            {showTRMC && (
+            <HStack align="start">
+              <CopyAllBtn
+                q={mcQ}
+                h={mcHint}
+                tr={showTRMC ? mcTranslation : ""}
+              />
+              <Text fontWeight="semibold" flex="1">
+                {mcQ || (loadingMCQ ? "…" : "")}
+              </Text>
+            </HStack>
+            {showTRMC && mcTranslation ? (
               <Text fontSize="sm" opacity={0.8}>
                 {mcTranslation}
               </Text>
-            )}
+            ) : null}
             {mcHint ? (
               <Text fontSize="sm" opacity={0.85}>
                 💡 {mcHint}
@@ -1225,8 +1832,13 @@ export default function GrammarBook({ userLanguage = "en" }) {
 
             <RadioGroup value={mcPick} onChange={setMcPick}>
               <Stack spacing={2}>
-                {mcChoices.map((c, i) => (
-                  <Radio value={c} key={i}>
+                {(mcChoices.length
+                  ? mcChoices
+                  : loadingMCQ
+                  ? ["…", "…", "…", "…"]
+                  : []
+                ).map((c, i) => (
+                  <Radio value={c} key={i} isDisabled={!mcChoices.length}>
                     {c}
                   </Radio>
                 ))}
@@ -1234,23 +1846,43 @@ export default function GrammarBook({ userLanguage = "en" }) {
             </RadioGroup>
 
             <HStack>
-              <Button onClick={submitMC} isDisabled={loadingMCG || !mcPick}>
+              <Button
+                onClick={submitMC}
+                isDisabled={loadingMCG || !mcPick || !mcChoices.length}
+              >
                 {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {t("grammar_next") || "Next"}
+                </Button>
+              ) : null}
             </HStack>
-            {mcResult ? <Text>{mcResult}</Text> : null}
+
+            <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
+            </HStack>
           </>
         ) : null}
 
         {/* ---- MA UI ---- */}
-        {mode === "ma" && maQ ? (
+        {mode === "ma" && (maQ || loadingMAQ) ? (
           <>
-            <Text fontWeight="semibold">{maQ}</Text>
-            {showTRMA && (
+            <HStack align="start">
+              <CopyAllBtn
+                q={maQ}
+                h={maHint}
+                tr={showTRMA ? maTranslation : ""}
+              />
+              <Text fontWeight="semibold" flex="1">
+                {maQ || (loadingMAQ ? "…" : "")}
+              </Text>
+            </HStack>
+            {showTRMA && maTranslation ? (
               <Text fontSize="sm" opacity={0.8}>
                 {maTranslation}
               </Text>
-            )}
+            ) : null}
             {maHint ? (
               <Text fontSize="sm" opacity={0.85}>
                 💡 {maHint}
@@ -1262,8 +1894,13 @@ export default function GrammarBook({ userLanguage = "en" }) {
 
             <CheckboxGroup value={maPicks} onChange={setMaPicks}>
               <Stack spacing={2}>
-                {maChoices.map((c, i) => (
-                  <Checkbox value={c} key={i}>
+                {(maChoices.length
+                  ? maChoices
+                  : loadingMAQ
+                  ? ["…", "…", "…", "…", "…"]
+                  : []
+                ).map((c, i) => (
+                  <Checkbox value={c} key={i} isDisabled={!maChoices.length}>
                     {c}
                   </Checkbox>
                 ))}
@@ -1273,19 +1910,32 @@ export default function GrammarBook({ userLanguage = "en" }) {
             <HStack>
               <Button
                 onClick={submitMA}
-                isDisabled={loadingMAG || !maPicks.length}
+                isDisabled={loadingMAG || !maPicks.length || !maChoices.length}
               >
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {t("grammar_next") || "Next"}
+                </Button>
+              ) : null}
             </HStack>
-            {maResult ? <Text>{maResult}</Text> : null}
+
+            <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
+            </HStack>
           </>
         ) : null}
 
         {/* ---- MATCH UI (Drag & Drop) ---- */}
-        {mode === "match" && mLeft.length > 0 ? (
+        {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <Text fontWeight="semibold">{mStem}</Text>
+            <HStack align="start">
+              <CopyAllBtn q={mStem} h={mHint} tr="" />
+              <Text fontWeight="semibold" flex="1">
+                {mStem || (loadingMG ? "…" : "")}
+              </Text>
+            </HStack>
             {!!mHint && (
               <Text fontSize="sm" opacity={0.85}>
                 💡 {mHint}
@@ -1293,49 +1943,57 @@ export default function GrammarBook({ userLanguage = "en" }) {
             )}
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
-                {mLeft.map((lhs, i) => (
-                  <HStack key={i} align="stretch" spacing={3}>
-                    <Box minW="180px">
-                      <Text>{lhs}</Text>
-                    </Box>
-                    <Droppable droppableId={`slot-${i}`} direction="horizontal">
-                      {(provided) => (
-                        <HStack
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          minH="42px"
-                          px={2}
-                          border="1px dashed rgba(255,255,255,0.22)"
-                          rounded="md"
-                          w="100%"
-                        >
-                          {mSlots[i] !== null ? (
-                            <Draggable draggableId={`r-${mSlots[i]}`} index={0}>
-                              {(dragProvided) => (
-                                <Box
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  px={3}
-                                  py={1.5}
-                                  rounded="md"
-                                  border="1px solid rgba(255,255,255,0.24)"
-                                >
-                                  {mRight[mSlots[i]]}
-                                </Box>
-                              )}
-                            </Draggable>
-                          ) : (
-                            <Text opacity={0.6} fontSize="sm">
-                              {t("grammar_dnd_drop_here")}
-                            </Text>
-                          )}
-                          {provided.placeholder}
-                        </HStack>
-                      )}
-                    </Droppable>
-                  </HStack>
-                ))}
+                {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
+                  (lhs, i) => (
+                    <HStack key={i} align="stretch" spacing={3}>
+                      <Box minW="180px">
+                        <Text>{lhs}</Text>
+                      </Box>
+                      <Droppable
+                        droppableId={`slot-${i}`}
+                        direction="horizontal"
+                      >
+                        {(provided) => (
+                          <HStack
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            minH="42px"
+                            px={2}
+                            border="1px dashed rgba(255,255,255,0.22)"
+                            rounded="md"
+                            w="100%"
+                          >
+                            {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
+                              <Draggable
+                                draggableId={`r-${mSlots[i]}`}
+                                index={0}
+                              >
+                                {(dragProvided) => (
+                                  <Box
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    px={3}
+                                    py={1.5}
+                                    rounded="md"
+                                    border="1px solid rgba(255,255,255,0.24)"
+                                  >
+                                    {mRight[mSlots[i]]}
+                                  </Box>
+                                )}
+                              </Draggable>
+                            ) : (
+                              <Text opacity={0.6} fontSize="sm">
+                                {t("grammar_dnd_drop_here")}
+                              </Text>
+                            )}
+                            {provided.placeholder}
+                          </HStack>
+                        )}
+                      </Droppable>
+                    </HStack>
+                  )
+                )}
               </VStack>
 
               {/* Bank */}
@@ -1355,27 +2013,41 @@ export default function GrammarBook({ userLanguage = "en" }) {
                       border="1px dashed rgba(255,255,255,0.22)"
                       rounded="md"
                     >
-                      {mBank.map((ri, index) => (
-                        <Draggable
-                          key={`r-${ri}`}
-                          draggableId={`r-${ri}`}
-                          index={index}
-                        >
-                          {(dragProvided) => (
+                      {(mBank.length ? mBank : loadingMG ? [0, 1, 2] : []).map(
+                        (ri, index) =>
+                          mRight[ri] != null ? (
+                            <Draggable
+                              key={`r-${ri}`}
+                              draggableId={`r-${ri}`}
+                              index={index}
+                            >
+                              {(dragProvided) => (
+                                <Box
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  px={3}
+                                  py={1.5}
+                                  rounded="md"
+                                  border="1px solid rgba(255,255,255,0.24)"
+                                >
+                                  {mRight[ri]}
+                                </Box>
+                              )}
+                            </Draggable>
+                          ) : (
                             <Box
-                              ref={dragProvided.innerRef}
-                              {...dragProvided.draggableProps}
-                              {...dragProvided.dragHandleProps}
+                              key={`placeholder-${index}`}
                               px={3}
                               py={1.5}
                               rounded="md"
                               border="1px solid rgba(255,255,255,0.24)"
+                              opacity={0.5}
                             >
-                              {mRight[ri]}
+                              …
                             </Box>
-                          )}
-                        </Draggable>
-                      ))}
+                          )
+                      )}
                       {provided.placeholder}
                     </HStack>
                   )}
@@ -1386,11 +2058,19 @@ export default function GrammarBook({ userLanguage = "en" }) {
             <HStack>
               <Button
                 onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ}
+                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
-              {mResult ? <Text>{mResult}</Text> : null}
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {t("grammar_next") || "Next"}
+                </Button>
+              ) : null}
+            </HStack>
+
+            <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
             </HStack>
           </>
         ) : null}

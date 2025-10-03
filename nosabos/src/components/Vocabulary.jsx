@@ -15,6 +15,9 @@ import {
   Checkbox,
   CheckboxGroup,
   SimpleGrid,
+  Tooltip,
+  IconButton,
+  useToast,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -26,11 +29,42 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { database } from "../firebaseResources/firebaseResources";
+import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ add simplemodel for streaming
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
+import { FiCopy } from "react-icons/fi";
+import { awardXp } from "../utils/utils";
+
+/* ---------------------------
+   Streaming helpers (Gemini)
+--------------------------- */
+function textFromChunk(chunk) {
+  try {
+    if (!chunk) return "";
+    if (typeof chunk.text === "function") return chunk.text() || "";
+    if (typeof chunk.text === "string") return chunk.text;
+    const cand = chunk.candidates?.[0];
+    if (cand?.content?.parts?.length) {
+      return cand.content.parts.map((p) => p.text || "").join("");
+    }
+  } catch {}
+  return "";
+}
+
+// Safely consume a line with potential JSON content (NDJSON style)
+function tryConsumeLine(line, cb) {
+  const s = line.indexOf("{");
+  const e = line.lastIndexOf("}");
+  if (s === -1 || e === -1 || e <= s) return;
+  try {
+    const obj = JSON.parse(line.slice(s, e + 1));
+    cb?.(obj);
+  } catch {
+    // ignore parse noise
+  }
+}
 
 /* ---------------------------
    Minimal i18n helper
@@ -49,7 +83,7 @@ function useT(uiLang = "en") {
 }
 
 /* ---------------------------
-   LLM plumbing
+   LLM plumbing (backend fallback)
 --------------------------- */
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
@@ -143,15 +177,15 @@ function useSharedProgress() {
   return { xp, levelNumber, progressPct, progress, npub };
 }
 
-async function awardXp(npub, amount) {
-  if (!npub || !amount) return;
-  const ref = doc(database, "users", npub);
-  await setDoc(
-    ref,
-    { xp: increment(Math.round(amount)), updatedAt: new Date().toISOString() },
-    { merge: true }
-  );
-}
+// async function awardXp(npub, amount) {
+//   if (!npub || !amount) return;
+//   const ref = doc(database, "users", npub);
+//   await setDoc(
+//     ref,
+//     { xp: increment(Math.round(amount)), updatedAt: new Date().toISOString() },
+//     { merge: true }
+//   );
+// }
 
 async function saveAttempt(npub, payload) {
   if (!npub) return;
@@ -203,9 +237,14 @@ const resolveSupportLang = (supportLang, appUILang) =>
     : "en";
 
 /* ---------------------------
-   Prompts — GENERATE
+   Prompts — STREAM-FIRST (NDJSON phases)
 --------------------------- */
-function buildFillVocabPrompt({
+/* FILL phases:
+   1) {"type":"vocab_fill","phase":"q","question":"..."}
+   2) {"type":"vocab_fill","phase":"meta","hint":"...","translation":"..."}
+   3) {"type":"done"}
+*/
+function buildFillVocabStreamPrompt({
   level,
   targetLang,
   supportLang,
@@ -222,25 +261,31 @@ function buildFillVocabPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
 
-  return `
-Create ONE short ${TARGET} VOCABULARY sentence with a single blank "___" that targets a word choice (not grammar).
-- ≤ 120 chars. Difficulty: ${diff}
-- Use natural context that clearly cues the target word.
-- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}
-Also provide:
-- a short hint in ${SUPPORT} (≤ 8 words) giving definition/synonym/topic
-${
-  wantTR
-    ? `- ${SUPPORT} translation of the full sentence`
-    : `- empty translation ""`
+  return [
+    `Create ONE short ${TARGET} VOCABULARY sentence with a single blank "___" that targets word choice (not grammar). Difficulty: ${diff}`,
+    `- ≤ 120 chars; natural context that cues the target word.`,
+    `- Consider learner recent corrects: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}`,
+    `- Hint in ${SUPPORT} (≤ 8 words), covering meaning/synonym/topic.`,
+    wantTR
+      ? `- ${SUPPORT} translation of the full sentence.`
+      : `- Empty translation "".`,
+    "",
+    "Stream as NDJSON in phases:",
+    `{"type":"vocab_fill","phase":"q","question":"<sentence with ___ in ${TARGET}>"}  // emit ASAP`,
+    `{"type":"vocab_fill","phase":"meta","hint":"<${SUPPORT} hint>","translation":"<${SUPPORT} translation or empty>"}  // then`,
+    `{"type":"done"}`,
+  ].join("\n");
 }
 
-Return EXACTLY:
-<sentence with ___> ||| <hint in ${SUPPORT}> ||| <${SUPPORT} translation or "">
-`.trim();
-}
-
-function buildMCVocabQuestionPrompt({
+/* MC phases:
+   1) {"type":"vocab_mc","phase":"q","question":"..."}
+   2) {"type":"vocab_mc","phase":"choices","choices":["A","B","C","D"]}
+   3) {"type":"vocab_mc","phase":"meta","hint":"...","answer":"...","translation":"..."}
+   4) {"type":"done"}
+*/
+function buildMCVocabStreamPrompt({
   level,
   targetLang,
   supportLang,
@@ -257,27 +302,31 @@ function buildMCVocabQuestionPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
 
-  return `
-Create ONE ${TARGET} vocabulary multiple-choice question.
-- Stem (≤120 chars) with a blank "___" or definition asking for a word.
-- 4 distinct word choices in ${TARGET}; EXACTLY ONE is the best answer.
-- Provide a short hint in ${SUPPORT} (≤8 words).
-${wantTR ? `- ${SUPPORT} translation of the stem.` : `- Empty translation "".`}
-- Difficulty: ${diff}
-- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}
-
-Return JSON ONLY:
-{
-  "question": "<stem in ${TARGET}>",
-  "hint": "<hint in ${SUPPORT}>",
-  "choices": ["A","B","C","D"],
-  "answer": "<exact correct choice text>",
-  "translation": "<${SUPPORT} translation or empty string>"
-}
-`.trim();
+  return [
+    `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${diff}`,
+    `- Stem ≤120 chars with a blank "___" OR a short definition asking for a word.`,
+    `- 4 distinct word choices in ${TARGET}.`,
+    `- Hint in ${SUPPORT} (≤8 words).`,
+    wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
+    `- Consider learner recent corrects: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}`,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"vocab_mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
+    `{"type":"vocab_mc","phase":"choices","choices":["A","B","C","D"]}  // second`,
+    `{"type":"vocab_mc","phase":"meta","hint":"<${SUPPORT} hint>","answer":"<exact correct choice text>","translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"done"}`,
+  ].join("\n");
 }
 
-function buildMAVocabQuestionPrompt({
+/* MA phases:
+   1) {"type":"vocab_ma","phase":"q","question":"..."}
+   2) {"type":"vocab_ma","phase":"choices","choices":["..."]} // 5–6
+   3) {"type":"vocab_ma","phase":"meta","hint":"...","answers":["...","..."],"translation":"..."} // EXACTLY 2 or 3
+   4) {"type":"done"}
+*/
+function buildMAVocabStreamPrompt({
   level,
   targetLang,
   supportLang,
@@ -294,55 +343,56 @@ function buildMAVocabQuestionPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
 
-  return `
-Create ONE ${TARGET} vocabulary multiple-answer question.
-- Stem (≤120 chars) with context or instruction "Select all synonyms for ___" or "Which words fit the sentence?"
-- 5–6 distinct choices; EXACTLY 2 or 3 are correct.
-- Hint in ${SUPPORT} (≤8 words).
-${wantTR ? `- ${SUPPORT} translation of the stem.` : `- Empty translation "".`}
-- Difficulty: ${diff}
-- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}
-
-Return JSON ONLY:
-{
-  "question": "<stem in ${TARGET}>",
-  "hint": "<hint in ${SUPPORT}>",
-  "choices": ["..."],
-  "answers": ["<correct>","<correct>"],
-  "translation": "<${SUPPORT} translation or empty string>"
-}
-`.trim();
+  return [
+    `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
+    `- Stem ≤120 chars with context (e.g., “Which words fit the sentence?” or “Select all synonyms for ___”).`,
+    `- 5–6 distinct choices in ${TARGET}.`,
+    `- Hint in ${SUPPORT} (≤8 words).`,
+    wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
+    `- Consider learner recent corrects: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}`,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"vocab_ma","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
+    `{"type":"vocab_ma","phase":"choices","choices":["..."]}           // second`,
+    `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"done"}`,
+  ].join("\n");
 }
 
-function buildMatchVocabGenPrompt({
+/* MATCH phases:
+   1) {"type":"vocab_match","stem":"...","left":["w1",...],"right":["def1",...],"hint":"..."}
+   2) {"type":"done"}
+   Left in TARGET (words), Right in SUPPORT (short defs), 3–6 rows
+*/
+function buildMatchVocabStreamPrompt({
   targetLang,
   supportLang,
   appUILang,
   level,
   xp,
+  recentGood,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
   const diff = vocabDifficulty(level, xp);
 
-  return `
-Create ONE ${TARGET} vocabulary matching exercise.
-
-Return JSON ONLY like:
-{
-  "stem":"Match words to their ${SUPPORT} definitions",
-  "left":["<word1>","<word2>","<word3>"],
-  "right":["<short definition>","<short definition>","<short definition>"],
-  "hint":"topic or small cue"
-}
-
-Rules:
-- Keep items short (≤ 4 words each).
-- Make left items (words) unique; right items (definitions) unique.
-- Clear 1:1 mapping; no ambiguity.
-- Difficulty: ${diff}
-`.trim();
+  return [
+    `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${diff}`,
+    `- Left column: ${TARGET} words (3–6 items, unique).`,
+    `- Right column: ${SUPPORT} short definitions (unique).`,
+    `- Clear 1:1 mapping; ≤ 4 words per item.`,
+    `- Hint in ${SUPPORT} (≤8 words).`,
+    `- Consider learner recent corrects: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}`,
+    "",
+    "Emit exactly TWO NDJSON lines:",
+    `{"type":"vocab_match","stem":"<${TARGET} stem>","left":["<word>", "..."],"right":["<short ${SUPPORT} definition>", "..."],"hint":"<${SUPPORT} hint>"}`,
+    `{"type":"done"}`,
+  ].join("\n");
 }
 
 /* ---------------------------
@@ -530,6 +580,7 @@ function norm(s) {
 --------------------------- */
 export default function Vocabulary({ userLanguage = "en" }) {
   const t = useT(userLanguage);
+  const toast = useToast();
   const user = useUserStore((s) => s.user);
 
   const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
@@ -556,7 +607,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
-  const levelLabel = t(`onboarding_level_${level}`) || level; // fallback to raw if not found
+  const levelLabel = t(`onboarding_level_${level}`) || level;
 
   const recentCorrectRef = useRef([]);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
@@ -572,12 +623,74 @@ export default function Vocabulary({ userLanguage = "en" }) {
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "match"
 
+  // verdict + next control
+  const [lastOk, setLastOk] = useState(null); // null | true | false
+  const [recentXp, setRecentXp] = useState(0);
+  const [nextAction, setNextAction] = useState(null);
+
+  function showCopyToast() {
+    toast({
+      title:
+        t("copied_to_clipboard_all") ||
+        (userLanguage === "es"
+          ? "Copiado (pregunta + pista + traducción)"
+          : "Copied (question + hint + translation)"),
+      duration: 1200,
+      isClosable: true,
+      position: "top",
+    });
+  }
+
+  function makeBundle(q, h, tr) {
+    const lines = [];
+    if (q?.trim()) lines.push(q.trim());
+    if (h?.trim())
+      lines.push((userLanguage === "es" ? "Pista: " : "Hint: ") + h.trim());
+    if (tr?.trim())
+      lines.push(
+        (userLanguage === "es" ? "Traducción: " : "Translation: ") + tr.trim()
+      );
+    return lines.join("\n");
+  }
+
+  async function copyAll(q, h, tr) {
+    const text = makeBundle(q, h, tr);
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      showCopyToast();
+    } catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showCopyToast();
+      } catch {}
+    }
+  }
+
+  function handleNext() {
+    if (typeof nextAction === "function") {
+      setLastOk(null);
+      setRecentXp(0);
+      const fn = nextAction;
+      setNextAction(null);
+      fn();
+    }
+  }
+
   // ---- FILL (vocab) ----
   const [qFill, setQFill] = useState("");
   const [hFill, setHFill] = useState("");
   const [trFill, setTrFill] = useState("");
   const [ansFill, setAnsFill] = useState("");
-  const [resFill, setResFill] = useState("");
+  const [resFill, setResFill] = useState(""); // log only
   const [loadingQFill, setLoadingQFill] = useState(false);
   const [loadingGFill, setLoadingGFill] = useState(false);
 
@@ -588,7 +701,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [answerMC, setAnswerMC] = useState("");
   const [trMC, setTrMC] = useState("");
   const [pickMC, setPickMC] = useState("");
-  const [resMC, setResMC] = useState("");
+  const [resMC, setResMC] = useState(""); // log only
   const [loadingQMC, setLoadingQMC] = useState(false);
   const [loadingGMC, setLoadingGMC] = useState(false);
 
@@ -596,11 +709,10 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [qMA, setQMA] = useState("");
   const [hMA, setHMA] = useState("");
   const [choicesMA, setChoicesMA] = useState([]);
-
   const [answersMA, setAnswersMA] = useState([]);
   const [trMA, setTrMA] = useState("");
   const [picksMA, setPicksMA] = useState([]);
-  const [resMA, setResMA] = useState("");
+  const [resMA, setResMA] = useState(""); // log only
   const [loadingQMA, setLoadingQMA] = useState(false);
   const [loadingGMA, setLoadingGMA] = useState(false);
 
@@ -611,48 +723,137 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [mRight, setMRight] = useState([]); // definitions (SUPPORT)
   const [mSlots, setMSlots] = useState([]); // per-left: rightIndex|null
   const [mBank, setMBank] = useState([]); // right indices not used
-  const [mResult, setMResult] = useState("");
+  const [mResult, setMResult] = useState(""); // log only
   const [loadingMG, setLoadingMG] = useState(false);
   const [loadingMJ, setLoadingMJ] = useState(false);
 
   /* ---------------------------
-     Generate — FILL
+     STREAM Generate — FILL
   --------------------------- */
   async function generateFill() {
     setMode("fill");
     setLoadingQFill(true);
     setResFill("");
     setAnsFill("");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
 
-    const text = await callResponses({
-      model: MODEL,
-      input: buildFillVocabPrompt({
-        level,
-        targetLang,
-        supportLang,
-        showTranslations,
-        appUILang: userLanguage,
-        xp,
-        recentGood: recentCorrectRef.current,
-      }),
+    // reset view to allow placeholders while streaming
+    setQFill("");
+    setHFill("");
+    setTrFill("");
+
+    const prompt = buildFillVocabStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
     });
 
-    const [q, h, tr] = text.split("|||").map((s) => (s || "").trim());
-    if (q) {
-      setQFill(q);
-      setHFill(h || "");
-      setTrFill(tr || "");
-    } else {
-      // tiny fallback (content only)
-      setQFill("Complete: She felt deep ___ after her mistake.");
-      setHFill("regret/guilt (noun)");
-      setTrFill(
-        showTranslations && supportCode === "es"
-          ? "Completa: Sintió un profundo ___ tras su error."
-          : ""
-      );
+    let gotSomething = false;
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (
+              obj?.type === "vocab_fill" &&
+              obj.phase === "q" &&
+              obj.question
+            ) {
+              setQFill(String(obj.question));
+              gotSomething = true;
+            } else if (obj?.type === "vocab_fill" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") setHFill(obj.hint);
+              if (typeof obj.translation === "string")
+                setTrFill(obj.translation);
+              gotSomething = true;
+            }
+          });
+        }
+      }
+
+      // Flush any trailing aggregates
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (
+                obj?.type === "vocab_fill" &&
+                obj.phase === "q" &&
+                obj.question
+              ) {
+                setQFill(String(obj.question));
+                gotSomething = true;
+              } else if (obj?.type === "vocab_fill" && obj.phase === "meta") {
+                if (typeof obj.hint === "string") setHFill(obj.hint);
+                if (typeof obj.translation === "string")
+                  setTrFill(obj.translation);
+                gotSomething = true;
+              }
+            })
+          );
+      }
+
+      if (!gotSomething) throw new Error("no-fill");
+    } catch {
+      // Fallback (non-stream)
+      const text = await callResponses({
+        model: MODEL,
+        input: `
+Create ONE short ${LANG_NAME(
+          targetLang
+        )} VOCAB sentence with a single blank "___" (not grammar), ≤120 chars.
+Return EXACTLY:
+<sentence> ||| <hint in ${LANG_NAME(
+          resolveSupportLang(supportLang, userLanguage)
+        )}> ||| <${showTranslations ? "translation" : '""'}>
+`.trim(),
+      });
+
+      const [q, h, tr] = text.split("|||").map((s) => (s || "").trim());
+      if (q) {
+        setQFill(q);
+        setHFill(h || "");
+        setTrFill(tr || "");
+      } else {
+        setQFill("Complete: She felt deep ___ after her mistake.");
+        setHFill("regret/guilt (noun)");
+        setTrFill(
+          showTranslations && supportCode === "es"
+            ? "Completa: Sintió un profundo ___ tras su error."
+            : ""
+        );
+      }
+    } finally {
+      setLoadingQFill(false);
     }
-    setLoadingQFill(false);
   }
 
   async function submitFill() {
@@ -684,11 +885,10 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }).catch(() => {});
     await awardXp(npub, delta).catch(() => {});
 
-    setResFill(
-      ok
-        ? t("vocab_result_nice", { xp: delta })
-        : t("vocab_result_not_quite", { xp: delta })
-    );
+    setResFill(ok ? "correct" : "try_again"); // log only
+    setLastOk(ok);
+    setRecentXp(delta);
+    setNextAction(ok ? () => generateFill : null);
 
     if (ok) {
       setAnsFill("");
@@ -696,64 +896,199 @@ export default function Vocabulary({ userLanguage = "en" }) {
         ...recentCorrectRef.current,
         { mode: "fill", question: qFill },
       ].slice(-5);
-      generateFill();
     }
 
     setLoadingGFill(false);
   }
 
   /* ---------------------------
-     Generate — MC
+     STREAM Generate — MC
   --------------------------- */
   async function generateMC() {
     setMode("mc");
     setLoadingQMC(true);
     setResMC("");
     setPickMC("");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
 
-    const text = await callResponses({
-      model: MODEL,
-      input: buildMCVocabQuestionPrompt({
-        level,
-        targetLang,
-        supportLang,
-        showTranslations,
-        appUILang: userLanguage,
-        xp,
-        recentGood: recentCorrectRef.current,
-      }),
+    // reset for streaming placeholders
+    setQMC("");
+    setHMC("");
+    setChoicesMC([]);
+    setAnswerMC("");
+    setTrMC("");
+
+    const prompt = buildMCVocabStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
     });
 
-    const parsed = safeParseJSON(text);
-    if (
-      parsed &&
-      parsed.question &&
-      Array.isArray(parsed.choices) &&
-      parsed.choices.length >= 3
-    ) {
-      const choices = parsed.choices.slice(0, 4).map(String);
-      const ans =
-        choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
-      setQMC(String(parsed.question));
-      setHMC(String(parsed.hint || ""));
-      setChoicesMC(choices);
-      setAnswerMC(ans);
-      setTrMC(String(parsed.translation || ""));
-    } else {
-      // fallback (content only)
-      setQMC("Choose the best synonym for “quick”.");
-      setHMC("synonym");
-      const choices = ["rapid", "slow", "late", "sleepy"];
-      setChoicesMC(choices);
-      setAnswerMC("rapid");
-      setTrMC(
-        showTranslations && supportCode === "es"
-          ? "Elige el mejor sinónimo de “quick”."
-          : ""
-      );
-    }
+    let got = false;
+    let pendingAnswer = "";
 
-    setLoadingQMC(false);
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "vocab_mc" && obj.phase === "q" && obj.question) {
+              setQMC(String(obj.question));
+              got = true;
+            } else if (
+              obj?.type === "vocab_mc" &&
+              obj.phase === "choices" &&
+              Array.isArray(obj.choices)
+            ) {
+              const choices = obj.choices.slice(0, 4).map(String);
+              setChoicesMC(choices);
+              // if answer already known from meta, align it
+              if (pendingAnswer) {
+                const ans =
+                  choices.find((c) => norm(c) === norm(pendingAnswer)) ||
+                  choices[0];
+                setAnswerMC(ans);
+              }
+              got = true;
+            } else if (obj?.type === "vocab_mc" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") setHMC(obj.hint);
+              if (typeof obj.translation === "string") setTrMC(obj.translation);
+              if (typeof obj.answer === "string") {
+                pendingAnswer = obj.answer;
+                if (Array.isArray(choicesMC) && choicesMC.length) {
+                  const ans =
+                    choicesMC.find((c) => norm(c) === norm(pendingAnswer)) ||
+                    choicesMC[0];
+                  setAnswerMC(ans);
+                }
+              }
+              got = true;
+            }
+          });
+        }
+      }
+
+      // flush tail
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (
+                obj?.type === "vocab_mc" &&
+                obj.phase === "q" &&
+                obj.question
+              ) {
+                setQMC(String(obj.question));
+                got = true;
+              } else if (
+                obj?.type === "vocab_mc" &&
+                obj.phase === "choices" &&
+                Array.isArray(obj.choices)
+              ) {
+                const choices = obj.choices.slice(0, 4).map(String);
+                setChoicesMC(choices);
+                if (pendingAnswer) {
+                  const ans =
+                    choices.find((c) => norm(c) === norm(pendingAnswer)) ||
+                    choices[0];
+                  setAnswerMC(ans);
+                }
+                got = true;
+              } else if (obj?.type === "vocab_mc" && obj.phase === "meta") {
+                if (typeof obj.hint === "string") setHMC(obj.hint);
+                if (typeof obj.translation === "string")
+                  setTrMC(obj.translation);
+                if (typeof obj.answer === "string") {
+                  pendingAnswer = obj.answer;
+                  if (Array.isArray(choicesMC) && choicesMC.length) {
+                    const ans =
+                      choicesMC.find((c) => norm(c) === norm(pendingAnswer)) ||
+                      choicesMC[0];
+                    setAnswerMC(ans);
+                  }
+                }
+                got = true;
+              }
+            })
+          );
+      }
+
+      if (!got) throw new Error("no-mc");
+    } catch {
+      // Fallback (non-stream)
+      const text = await callResponses({
+        model: MODEL,
+        input: `
+Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
+{
+  "question":"<stem>",
+  "hint":"<hint in ${LANG_NAME(
+    resolveSupportLang(supportLang, userLanguage)
+  )}>",
+  "choices":["A","B","C","D"],
+  "answer":"<exact correct choice>",
+  "translation":"${showTranslations ? "<translation>" : ""}"
+}
+`.trim(),
+      });
+
+      const parsed = safeParseJSON(text);
+      if (
+        parsed &&
+        parsed.question &&
+        Array.isArray(parsed.choices) &&
+        parsed.choices.length >= 3
+      ) {
+        const choices = parsed.choices.slice(0, 4).map(String);
+        const ans =
+          choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
+        setQMC(String(parsed.question));
+        setHMC(String(parsed.hint || ""));
+        setChoicesMC(choices);
+        setAnswerMC(ans);
+        setTrMC(String(parsed.translation || ""));
+      } else {
+        setQMC("Choose the best synonym for “quick”.");
+        setHMC("synonym");
+        const choices = ["rapid", "slow", "late", "sleepy"];
+        setChoicesMC(choices);
+        setAnswerMC("rapid");
+        setTrMC(
+          showTranslations && supportCode === "es"
+            ? "Elige el mejor sinónimo de “quick”."
+            : ""
+        );
+      }
+    } finally {
+      setLoadingQMC(false);
+    }
   }
 
   async function submitMC() {
@@ -787,26 +1122,23 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }).catch(() => {});
     await awardXp(npub, delta).catch(() => {});
 
-    setResMC(
-      ok
-        ? t("vocab_result_correct", { xp: delta })
-        : t("vocab_result_try_again", { xp: delta })
-    );
+    setResMC(ok ? "correct" : "try_again"); // log only
+    setLastOk(ok);
+    setRecentXp(delta);
+    setNextAction(ok ? () => generateMC : null);
 
     if (ok) {
-      setPickMC("");
       recentCorrectRef.current = [
         ...recentCorrectRef.current,
         { mode: "mc", question: qMC },
       ].slice(-5);
-      generateMC();
     }
 
     setLoadingGMC(false);
   }
 
   /* ---------------------------
-     Generate — MA
+     STREAM Generate — MA
   --------------------------- */
   function sanitizeMA(parsed) {
     if (
@@ -852,42 +1184,176 @@ export default function Vocabulary({ userLanguage = "en" }) {
     setLoadingQMA(true);
     setResMA("");
     setPicksMA([]);
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
 
-    const text = await callResponses({
-      model: MODEL,
-      input: buildMAVocabQuestionPrompt({
-        level,
-        targetLang,
-        supportLang,
-        showTranslations,
-        appUILang: userLanguage,
-        xp,
-        recentGood: recentCorrectRef.current,
-      }),
+    setQMA("");
+    setHMA("");
+    setChoicesMA([]);
+    setAnswersMA([]);
+    setTrMA("");
+
+    const prompt = buildMAVocabStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
     });
 
-    const parsed = sanitizeMA(safeParseJSON(text));
-    if (parsed) {
-      setQMA(parsed.question);
-      setHMA(parsed.hint);
-      setChoicesMA(parsed.choices);
-      setAnswersMA(parsed.answers);
-      setTrMA(parsed.translation);
-    } else {
-      // fallback (content only)
-      setQMA("Select all synonyms of “angry”.");
-      setHMA("synonyms");
-      const choices = ["furious", "irate", "calm", "content", "mad"];
-      setChoicesMA(choices);
-      setAnswersMA(["furious", "irate", "mad"]);
-      setTrMA(
-        showTranslations && supportCode === "es"
-          ? "Selecciona todos los sinónimos de “angry”."
-          : ""
-      );
-    }
+    let got = false;
+    let pendingAnswers = [];
 
-    setLoadingQMA(false);
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "vocab_ma" && obj.phase === "q" && obj.question) {
+              setQMA(String(obj.question));
+              got = true;
+            } else if (
+              obj?.type === "vocab_ma" &&
+              obj.phase === "choices" &&
+              Array.isArray(obj.choices)
+            ) {
+              const choices = obj.choices.slice(0, 6).map(String);
+              setChoicesMA(choices);
+              if (pendingAnswers?.length) {
+                const aligned = pendingAnswers.filter((a) =>
+                  choices.some((c) => norm(c) === norm(a))
+                );
+                if (aligned.length >= 2) setAnswersMA(aligned);
+              }
+              got = true;
+            } else if (obj?.type === "vocab_ma" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") setHMA(obj.hint);
+              if (typeof obj.translation === "string") setTrMA(obj.translation);
+              if (Array.isArray(obj.answers)) {
+                pendingAnswers = obj.answers.map(String);
+                if (Array.isArray(choicesMA) && choicesMA.length) {
+                  const aligned = pendingAnswers.filter((a) =>
+                    choicesMA.some((c) => norm(c) === norm(a))
+                  );
+                  if (aligned.length >= 2) setAnswersMA(aligned);
+                }
+              }
+              got = true;
+            }
+          });
+        }
+      }
+
+      // flush tail
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (
+                obj?.type === "vocab_ma" &&
+                obj.phase === "q" &&
+                obj.question
+              ) {
+                setQMA(String(obj.question));
+                got = true;
+              } else if (
+                obj?.type === "vocab_ma" &&
+                obj.phase === "choices" &&
+                Array.isArray(obj.choices)
+              ) {
+                const choices = obj.choices.slice(0, 6).map(String);
+                setChoicesMA(choices);
+                if (pendingAnswers?.length) {
+                  const aligned = pendingAnswers.filter((a) =>
+                    choices.some((c) => norm(c) === norm(a))
+                  );
+                  if (aligned.length >= 2) setAnswersMA(aligned);
+                }
+                got = true;
+              } else if (obj?.type === "vocab_ma" && obj.phase === "meta") {
+                if (typeof obj.hint === "string") setHMA(obj.hint);
+                if (typeof obj.translation === "string")
+                  setTrMA(obj.translation);
+                if (Array.isArray(obj.answers)) {
+                  pendingAnswers = obj.answers.map(String);
+                  if (Array.isArray(choicesMA) && choicesMA.length) {
+                    const aligned = pendingAnswers.filter((a) =>
+                      choicesMA.some((c) => norm(c) === norm(a))
+                    );
+                    if (aligned.length >= 2) setAnswersMA(aligned);
+                  }
+                }
+                got = true;
+              }
+            })
+          );
+      }
+
+      if (!got) throw new Error("no-ma");
+    } catch {
+      // Fallback (non-stream)
+      const text = await callResponses({
+        model: MODEL,
+        input: `
+Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
+{
+  "question":"<stem>",
+  "hint":"<hint in ${LANG_NAME(
+    resolveSupportLang(supportLang, userLanguage)
+  )}>",
+  "choices":["...","...","...","...","..."],
+  "answers":["<correct>","<correct>"],
+  "translation":"${showTranslations ? "<translation>" : ""}"
+}
+`.trim(),
+      });
+
+      const parsed = sanitizeMA(safeParseJSON(text));
+      if (parsed) {
+        setQMA(parsed.question);
+        setHMA(parsed.hint);
+        setChoicesMA(parsed.choices);
+        setAnswersMA(parsed.answers);
+        setTrMA(parsed.translation);
+      } else {
+        setQMA("Select all synonyms of “angry”.");
+        setHMA("synonyms");
+        const choices = ["furious", "irate", "calm", "content", "mad"];
+        setChoicesMA(choices);
+        setAnswersMA(["furious", "irate", "mad"]);
+        setTrMA(
+          showTranslations && supportCode === "es"
+            ? "Selecciona todos los sinónimos de “angry”."
+            : ""
+        );
+      }
+    } finally {
+      setLoadingQMA(false);
+    }
   }
 
   async function submitMA() {
@@ -921,11 +1387,10 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }).catch(() => {});
     await awardXp(npub, delta).catch(() => {});
 
-    setResMA(
-      ok
-        ? t("vocab_result_correct", { xp: delta })
-        : t("vocab_result_try_again", { xp: delta })
-    );
+    setResMA(ok ? "correct" : "try_again"); // log only
+    setLastOk(ok);
+    setRecentXp(delta);
+    setNextAction(ok ? () => generateMA : null);
 
     if (ok) {
       setPicksMA([]);
@@ -933,64 +1398,175 @@ export default function Vocabulary({ userLanguage = "en" }) {
         ...recentCorrectRef.current,
         { mode: "ma", question: qMA },
       ].slice(-5);
-      generateMA();
     }
 
     setLoadingGMA(false);
   }
 
   /* ---------------------------
-     Generate — MATCH (DnD)
+     STREAM Generate — MATCH (DnD)
   --------------------------- */
   async function generateMatch() {
     setMode("match");
     setLoadingMG(true);
     setMResult("");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
 
-    const raw = await callResponses({
-      model: MODEL,
-      input: buildMatchVocabGenPrompt({
-        targetLang,
-        supportLang,
-        appUILang: userLanguage,
-        level,
-        xp,
-      }),
+    // reset state to show placeholders
+    setMStem("");
+    setMHint("");
+    setMLeft([]);
+    setMRight([]);
+    setMSlots([]);
+    setMBank([]);
+
+    const prompt = buildMatchVocabStreamPrompt({
+      targetLang,
+      supportLang,
+      appUILang: userLanguage,
+      level,
+      xp,
+      recentGood: recentCorrectRef.current,
     });
-    const parsed = safeParseJsonLoose(raw);
 
-    let stem = "",
-      left = [],
-      right = [],
-      hint = "";
+    let okPayload = false;
 
-    if (
-      parsed &&
-      Array.isArray(parsed.left) &&
-      Array.isArray(parsed.right) &&
-      parsed.left.length >= 2 &&
-      parsed.left.length === parsed.right.length
-    ) {
-      stem = String(parsed.stem || "Match the words to their definitions.");
-      left = parsed.left.slice(0, 6).map(String);
-      right = parsed.right.slice(0, 6).map(String);
-      hint = String(parsed.hint || "");
-    } else {
-      stem = "Match words to their definitions.";
-      left = ["rapid", "generous", "fragile"];
-      right = ["quick", "kind in giving", "easily broken"];
-      hint = "synonym match";
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (
+              obj?.type === "vocab_match" &&
+              typeof obj.stem === "string" &&
+              Array.isArray(obj.left) &&
+              Array.isArray(obj.right) &&
+              obj.left.length >= 3 &&
+              obj.left.length <= 6 &&
+              obj.left.length === obj.right.length
+            ) {
+              const stem =
+                String(obj.stem).trim() ||
+                "Match the words to their definitions.";
+              const left = obj.left.slice(0, 6).map(String);
+              const right = obj.right.slice(0, 6).map(String);
+              const hint = String(obj.hint || "");
+              setMStem(stem);
+              setMHint(hint);
+              setMLeft(left);
+              setMRight(right);
+              setMSlots(Array(left.length).fill(null));
+              setMBank([...Array(right.length)].map((_, i) => i));
+              okPayload = true;
+            }
+          });
+        }
+      }
+
+      // flush tail
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (
+                obj?.type === "vocab_match" &&
+                typeof obj.stem === "string" &&
+                Array.isArray(obj.left) &&
+                Array.isArray(obj.right) &&
+                obj.left.length >= 3 &&
+                obj.left.length <= 6 &&
+                obj.left.length === obj.right.length
+              ) {
+                const stem =
+                  String(obj.stem).trim() ||
+                  "Match the words to their definitions.";
+                const left = obj.left.slice(0, 6).map(String);
+                const right = obj.right.slice(0, 6).map(String);
+                const hint = String(obj.hint || "");
+                setMStem(stem);
+                setMHint(hint);
+                setMLeft(left);
+                setMRight(right);
+                setMSlots(Array(left.length).fill(null));
+                setMBank([...Array(right.length)].map((_, i) => i));
+                okPayload = true;
+              }
+            })
+          );
+      }
+
+      if (!okPayload) throw new Error("no-match");
+    } catch {
+      // Backend fallback (non-stream)
+      const raw = await callResponses({
+        model: MODEL,
+        input: `
+Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
+{"stem":"<stem>","left":["<word>","..."],"right":["<short ${LANG_NAME(
+          resolveSupportLang(supportLang, userLanguage)
+        )} definition>","..."],"hint":"<${LANG_NAME(
+          resolveSupportLang(supportLang, userLanguage)
+        )} hint>"}
+`.trim(),
+      });
+      const parsed = safeParseJsonLoose(raw);
+
+      let stem = "",
+        left = [],
+        right = [],
+        hint = "";
+
+      if (
+        parsed &&
+        Array.isArray(parsed.left) &&
+        Array.isArray(parsed.right) &&
+        parsed.left.length >= 3 &&
+        parsed.left.length <= 6 &&
+        parsed.left.length === parsed.right.length
+      ) {
+        stem = String(parsed.stem || "Match the words to their definitions.");
+        left = parsed.left.slice(0, 6).map(String);
+        right = parsed.right.slice(0, 6).map(String);
+        hint = String(parsed.hint || "");
+      } else {
+        stem = "Match words to their definitions.";
+        left = ["rapid", "generous", "fragile"];
+        right = ["quick", "kind in giving", "easily broken"];
+        hint = "synonym match";
+      }
+
+      setMStem(stem);
+      setMHint(hint);
+      setMLeft(left);
+      setMRight(right);
+      setMSlots(Array(left.length).fill(null));
+      setMBank([...Array(right.length)].map((_, i) => i));
+    } finally {
+      setLoadingMG(false);
     }
-
-    // init slots + bank
-    setMStem(stem);
-    setMHint(hint);
-    setMLeft(left);
-    setMRight(right);
-    setMSlots(Array(left.length).fill(null));
-    setMBank([...Array(right.length)].map((_, i) => i));
-
-    setLoadingMG(false);
   }
 
   function canSubmitMatch() {
@@ -1029,15 +1605,10 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }).catch(() => {});
     await awardXp(npub, delta).catch(() => {});
 
-    setMResult(
-      ok
-        ? t("vocab_result_correct", { xp: delta })
-        : t("vocab_result_try_again", { xp: delta })
-    );
-
-    if (ok) {
-      await generateMatch();
-    }
+    setMResult(ok ? "correct" : "try_again"); // log only
+    setLastOk(ok);
+    setRecentXp(delta);
+    setNextAction(ok ? () => generateMatch : null);
 
     setLoadingMJ(false);
   }
@@ -1108,11 +1679,54 @@ export default function Vocabulary({ userLanguage = "en" }) {
   if (showPasscodeModal) {
     return (
       <PasscodePage
-        userLanguage={user.appLanguage}
+        userLanguage={user?.appLanguage}
         setShowPasscodeModal={setShowPasscodeModal}
       />
     );
   }
+
+  // Single copy button (left of question)
+  const CopyAllBtn = ({ q, h, tr }) => {
+    const has = (q && q.trim()) || (h && h.trim()) || (tr && tr.trim());
+    if (!has) return null;
+    return (
+      <Tooltip
+        label={
+          t("copy_all") || (userLanguage === "es" ? "Copiar todo" : "Copy all")
+        }
+      >
+        <IconButton
+          aria-label="Copy all"
+          icon={<FiCopy />}
+          size="xs"
+          variant="ghost"
+          onClick={() => copyAll(q, h, tr)}
+          mr={1}
+        />
+      </Tooltip>
+    );
+  };
+
+  // Result badge (only feedback shown)
+  const ResultBadge = ({ ok, xp }) => {
+    if (ok === null) return null;
+    const label = ok
+      ? t("correct") || "Correct!"
+      : t("try_again") || "Try again";
+    return (
+      <Badge
+        colorScheme={ok ? "green" : "red"}
+        variant="solid"
+        borderRadius="full"
+        px={3}
+        py={1}
+      >
+        {ok ? "✓" : "✖"} {label} · +{xp} XP {ok ? "🎉" : ""}
+      </Badge>
+    );
+  };
+
+  const nextLabel = t("grammar_next") || t("grammar_next") || "Next";
 
   return (
     <Box p={4}>
@@ -1185,14 +1799,19 @@ export default function Vocabulary({ userLanguage = "en" }) {
         </SimpleGrid>
 
         {/* ---- FILL UI ---- */}
-        {mode === "fill" && qFill ? (
+        {mode === "fill" && (qFill || loadingQFill) ? (
           <>
-            <Text fontWeight="semibold">{qFill}</Text>
-            {showTRFill && (
+            <HStack align="start">
+              <CopyAllBtn q={qFill} h={hFill} tr={showTRFill ? trFill : ""} />
+              <Text fontWeight="semibold" flex="1">
+                {qFill || (loadingQFill ? "…" : "")}
+              </Text>
+            </HStack>
+            {showTRFill && trFill ? (
               <Text fontSize="sm" opacity={0.8}>
                 {trFill}
               </Text>
-            )}
+            ) : null}
             {hFill ? (
               <Text fontSize="sm" opacity={0.85}>
                 💡 {hFill}
@@ -1208,24 +1827,37 @@ export default function Vocabulary({ userLanguage = "en" }) {
               />
               <Button
                 onClick={submitFill}
-                isDisabled={loadingGFill || !ansFill.trim()}
+                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
               >
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {nextLabel}
+                </Button>
+              ) : null}
             </HStack>
-            {resFill ? <Text>{resFill}</Text> : null}
+
+            <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
+            </HStack>
           </>
         ) : null}
 
         {/* ---- MC UI ---- */}
-        {mode === "mc" && qMC ? (
+        {mode === "mc" && (qMC || loadingQMC) ? (
           <>
-            <Text fontWeight="semibold">{qMC}</Text>
-            {showTRMC && (
+            <HStack align="start">
+              <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+              <Text fontWeight="semibold" flex="1">
+                {qMC || (loadingQMC ? "…" : "")}
+              </Text>
+            </HStack>
+            {showTRMC && trMC ? (
               <Text fontSize="sm" opacity={0.8}>
                 {trMC}
               </Text>
-            )}
+            ) : null}
             {hMC ? (
               <Text fontSize="sm" opacity={0.85}>
                 💡 {hMC}
@@ -1234,8 +1866,13 @@ export default function Vocabulary({ userLanguage = "en" }) {
 
             <RadioGroup value={pickMC} onChange={setPickMC}>
               <Stack spacing={2}>
-                {choicesMC.map((c, i) => (
-                  <Radio value={c} key={i}>
+                {(choicesMC.length
+                  ? choicesMC
+                  : loadingQMC
+                  ? ["…", "…", "…", "…"]
+                  : []
+                ).map((c, i) => (
+                  <Radio value={c} key={i} isDisabled={!choicesMC.length}>
                     {c}
                   </Radio>
                 ))}
@@ -1243,23 +1880,39 @@ export default function Vocabulary({ userLanguage = "en" }) {
             </RadioGroup>
 
             <HStack>
-              <Button onClick={submitMC} isDisabled={loadingGMC || !pickMC}>
+              <Button
+                onClick={submitMC}
+                isDisabled={loadingGMC || !pickMC || !choicesMC.length}
+              >
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {nextLabel}
+                </Button>
+              ) : null}
             </HStack>
-            {resMC ? <Text>{resMC}</Text> : null}
+
+            <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
+            </HStack>
           </>
         ) : null}
 
         {/* ---- MA UI ---- */}
-        {mode === "ma" && qMA ? (
+        {mode === "ma" && (qMA || loadingQMA) ? (
           <>
-            <Text fontWeight="semibold">{qMA}</Text>
-            {showTRMA && (
+            <HStack align="start">
+              <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+              <Text fontWeight="semibold" flex="1">
+                {qMA || (loadingQMA ? "…" : "")}
+              </Text>
+            </HStack>
+            {showTRMA && trMA ? (
               <Text fontSize="sm" opacity={0.8}>
                 {trMA}
               </Text>
-            )}
+            ) : null}
             {hMA ? (
               <Text fontSize="sm" opacity={0.85}>
                 💡 {hMA}
@@ -1271,8 +1924,13 @@ export default function Vocabulary({ userLanguage = "en" }) {
 
             <CheckboxGroup value={picksMA} onChange={setPicksMA}>
               <Stack spacing={2}>
-                {choicesMA.map((c, i) => (
-                  <Checkbox value={c} key={i}>
+                {(choicesMA.length
+                  ? choicesMA
+                  : loadingQMA
+                  ? ["…", "…", "…", "…", "…"]
+                  : []
+                ).map((c, i) => (
+                  <Checkbox value={c} key={i} isDisabled={!choicesMA.length}>
                     {c}
                   </Checkbox>
                 ))}
@@ -1282,19 +1940,32 @@ export default function Vocabulary({ userLanguage = "en" }) {
             <HStack>
               <Button
                 onClick={submitMA}
-                isDisabled={loadingGMA || !picksMA.length}
+                isDisabled={loadingGMA || !picksMA.length || !choicesMA.length}
               >
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {nextLabel}
+                </Button>
+              ) : null}
             </HStack>
-            {resMA ? <Text>{resMA}</Text> : null}
+
+            <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
+            </HStack>
           </>
         ) : null}
 
         {/* ---- MATCH UI (Drag & Drop) ---- */}
-        {mode === "match" && mLeft.length > 0 ? (
+        {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <Text fontWeight="semibold">{mStem}</Text>
+            <HStack align="start">
+              <CopyAllBtn q={mStem} h={mHint} tr="" />
+              <Text fontWeight="semibold" flex="1">
+                {mStem || (loadingMG ? "…" : "")}
+              </Text>
+            </HStack>
             {!!mHint && (
               <Text fontSize="sm" opacity={0.85}>
                 💡 {mHint}
@@ -1302,49 +1973,57 @@ export default function Vocabulary({ userLanguage = "en" }) {
             )}
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
-                {mLeft.map((lhs, i) => (
-                  <HStack key={i} align="stretch" spacing={3}>
-                    <Box minW="180px">
-                      <Text>{lhs}</Text>
-                    </Box>
-                    <Droppable droppableId={`slot-${i}`} direction="horizontal">
-                      {(provided) => (
-                        <HStack
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          minH="42px"
-                          px={2}
-                          border="1px dashed rgba(255,255,255,0.22)"
-                          rounded="md"
-                          w="100%"
-                        >
-                          {mSlots[i] !== null ? (
-                            <Draggable draggableId={`r-${mSlots[i]}`} index={0}>
-                              {(dragProvided) => (
-                                <Box
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  px={3}
-                                  py={1.5}
-                                  rounded="md"
-                                  border="1px solid rgba(255,255,255,0.24)"
-                                >
-                                  {mRight[mSlots[i]]}
-                                </Box>
-                              )}
-                            </Draggable>
-                          ) : (
-                            <Text opacity={0.6} fontSize="sm">
-                              {t("vocab_dnd_drop_here")}
-                            </Text>
-                          )}
-                          {provided.placeholder}
-                        </HStack>
-                      )}
-                    </Droppable>
-                  </HStack>
-                ))}
+                {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
+                  (lhs, i) => (
+                    <HStack key={i} align="stretch" spacing={3}>
+                      <Box minW="180px">
+                        <Text>{lhs}</Text>
+                      </Box>
+                      <Droppable
+                        droppableId={`slot-${i}`}
+                        direction="horizontal"
+                      >
+                        {(provided) => (
+                          <HStack
+                            ref={provided.innerRef}
+                            {...provided.droppableProps}
+                            minH="42px"
+                            px={2}
+                            border="1px dashed rgba(255,255,255,0.22)"
+                            rounded="md"
+                            w="100%"
+                          >
+                            {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
+                              <Draggable
+                                draggableId={`r-${mSlots[i]}`}
+                                index={0}
+                              >
+                                {(dragProvided) => (
+                                  <Box
+                                    ref={dragProvided.innerRef}
+                                    {...dragProvided.draggableProps}
+                                    {...dragProvided.dragHandleProps}
+                                    px={3}
+                                    py={1.5}
+                                    rounded="md"
+                                    border="1px solid rgba(255,255,255,0.24)"
+                                  >
+                                    {mRight[mSlots[i]]}
+                                  </Box>
+                                )}
+                              </Draggable>
+                            ) : (
+                              <Text opacity={0.6} fontSize="sm">
+                                {t("vocab_dnd_drop_here")}
+                              </Text>
+                            )}
+                            {provided.placeholder}
+                          </HStack>
+                        )}
+                      </Droppable>
+                    </HStack>
+                  )
+                )}
               </VStack>
 
               {/* Bank */}
@@ -1364,27 +2043,41 @@ export default function Vocabulary({ userLanguage = "en" }) {
                       border="1px dashed rgba(255,255,255,0.22)"
                       rounded="md"
                     >
-                      {mBank.map((ri, index) => (
-                        <Draggable
-                          key={`r-${ri}`}
-                          draggableId={`r-${ri}`}
-                          index={index}
-                        >
-                          {(dragProvided) => (
+                      {(mBank.length ? mBank : loadingMG ? [0, 1, 2] : []).map(
+                        (ri, index) =>
+                          mRight[ri] != null ? (
+                            <Draggable
+                              key={`r-${ri}`}
+                              draggableId={`r-${ri}`}
+                              index={index}
+                            >
+                              {(dragProvided) => (
+                                <Box
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  px={3}
+                                  py={1.5}
+                                  rounded="md"
+                                  border="1px solid rgba(255,255,255,0.24)"
+                                >
+                                  {mRight[ri]}
+                                </Box>
+                              )}
+                            </Draggable>
+                          ) : (
                             <Box
-                              ref={dragProvided.innerRef}
-                              {...dragProvided.draggableProps}
-                              {...dragProvided.dragHandleProps}
+                              key={`placeholder-${index}`}
                               px={3}
                               py={1.5}
                               rounded="md"
                               border="1px solid rgba(255,255,255,0.24)"
+                              opacity={0.5}
                             >
-                              {mRight[ri]}
+                              …
                             </Box>
-                          )}
-                        </Draggable>
-                      ))}
+                          )
+                      )}
                       {provided.placeholder}
                     </HStack>
                   )}
@@ -1395,11 +2088,19 @@ export default function Vocabulary({ userLanguage = "en" }) {
             <HStack>
               <Button
                 onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ}
+                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {mResult ? <Text>{mResult}</Text> : null}
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {nextLabel}
+                </Button>
+              ) : null}
+            </HStack>
+
+            <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
             </HStack>
           </>
         ) : null}

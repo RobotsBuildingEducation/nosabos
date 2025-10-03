@@ -40,6 +40,8 @@ import useUserStore from "../hooks/useUserStore";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
+import { awardXp } from "../utils/utils";
+import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 
 /* ================================
    ENV / API
@@ -80,6 +82,20 @@ const getAppUILang = () => {
     ? "es"
     : "en";
 };
+
+// Extract text from a Gemini streaming chunk (tolerant to shapes)
+function textFromChunk(chunk) {
+  try {
+    if (!chunk) return "";
+    if (typeof chunk.text === "function") return chunk.text() || "";
+    if (typeof chunk.text === "string") return chunk.text;
+    const cand = chunk.candidates?.[0];
+    if (cand?.content?.parts?.length) {
+      return cand.content.parts.map((p) => p.text || "").join("");
+    }
+  } catch {}
+  return "";
+}
 
 /* ================================
    Shared Progress (global XP + settings)
@@ -124,15 +140,15 @@ function useSharedProgress() {
 /* ================================
    Global XP helpers + logging
 =================================== */
-async function awardXp(npub, amount) {
-  if (!npub || !amount) return;
-  const ref = doc(database, "users", npub);
-  await setDoc(
-    ref,
-    { xp: increment(Math.round(amount)), updatedAt: isoNow() },
-    { merge: true }
-  );
-}
+// async function awardXp(npub, amount) {
+//   if (!npub || !amount) return;
+//   const ref = doc(database, "users", npub);
+//   await setDoc(
+//     ref,
+//     { xp: increment(Math.round(amount)), updatedAt: isoNow() },
+//     { merge: true }
+//   );
+// }
 
 async function saveStoryTurn(npub, payload) {
   if (!npub) return;
@@ -152,7 +168,7 @@ function useUIText(uiLang, level, translationsObj) {
   return useMemo(() => {
     const t = translationsObj[uiLang] || translationsObj.en;
     return {
-      header: uiLang === "es" ? "Narrativos" : "Narratives",
+      header: uiLang === "es" ? "Narrativos" : "Stories",
       generate: uiLang === "es" ? "Generar narrativo" : "Generate Story",
       playing: uiLang === "es" ? "Reproduciendo..." : "Playing...",
       playTarget: (name) =>
@@ -729,54 +745,7 @@ export default function StoryMode() {
     setHighlightedWordIndex(-1);
   };
 
-  //   const setupBoundaryHighlighting = useCallback(
-  //     (text, onComplete) => {
-  //       const tokenMap = createTokenMap(text);
-  //       setTokenizedText(tokenMap.tokens);
-  //       setHighlightedWordIndex(-1);
-  //       setCurrentWordIndex(0);
-
-  //       if (highlightIntervalRef.current)
-  //         clearTimeout(highlightIntervalRef.current);
-  //       if (animationFrameRef.current)
-  //         cancelAnimationFrame(animationFrameRef.current);
-
-  //       const updateHighlight = (wordIndex) => {
-  //         if (animationFrameRef.current)
-  //           cancelAnimationFrame(animationFrameRef.current);
-  //         animationFrameRef.current = requestAnimationFrame(() => {
-  //           setHighlightedWordIndex(wordIndex);
-  //           setCurrentWordIndex(wordIndex);
-  //         });
-  //       };
-
-  //       const handleBoundary = (event) => {
-  //         if (event.name === "word" || event.name === "sentence") {
-  //           updateHighlight(currentWordIndex + 1);
-  //         }
-  //       };
-
-  //       const fallbackTiming = () => {
-  //         let i = 0;
-  //         const words = text.split(/\s+/);
-  //         const tick = () => {
-  //           if (i >= words.length) return onComplete?.();
-  //           updateHighlight(i);
-  //           const w = words[i];
-  //           const base = 200;
-  //           const ms = Math.max(150, Math.min(800, base + w.length * 50));
-  //           i++;
-  //           highlightIntervalRef.current = setTimeout(tick, ms);
-  //         };
-  //         tick();
-  //       };
-
-  //       return { handleBoundary, fallbackTiming, tokenMap };
-  //     },
-  //     [createTokenMap, currentWordIndex]
-  //   );
-
-  /* ----------------------------- Story generation ----------------------------- */
+  /* ----------------------------- Story generation (backend, fallback) ----------------------------- */
   const generateStory = async () => {
     setIsLoading(true);
     stopAllAudio();
@@ -902,6 +871,197 @@ export default function StoryMode() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  /* ----------------------------- Story generation (Gemini streaming) ----------------------------- */
+  /**
+   * Stream story generation from Gemini (frontend) for speed.
+   * Protocol: NDJSON lines emitted by the model, e.g.:
+   * {"type":"sentence","tgt":"...", "sup":"..."}
+   * ...
+   * {"type":"done"}
+   */
+  const generateStoryGeminiStream = async () => {
+    setIsLoading(true);
+    stopAllAudio();
+    try {
+      usageStatsRef.current.storyGenerations++;
+      const lvl = progress.level || "beginner";
+      const tLang = targetLang; // 'es' | 'en' | 'nah'
+      const sLang = supportLang; // 'en' | 'es'
+      const tName = LLM_LANG_NAME(tLang);
+      const sName = LLM_LANG_NAME(sLang);
+
+      // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
+      const prompt = [
+        "You are a language tutor. Generate a short, engaging story",
+        `for a ${lvl} learner. Target language: ${tName} (${tLang}).`,
+        `Also provide a brief support translation in ${sName} (${sLang}).`,
+        "",
+        "Constraints:",
+        "- 4 to 6 sentences total.",
+        "- Simple, culturally-relevant, 8–15 words per sentence.",
+        "- NO headings, NO commentary, NO code fences.",
+        "",
+        "Output protocol (NDJSON, one compact JSON object per line):",
+        `1) For each sentence, output: {"type":"sentence","tgt":"<${tName} sentence>","sup":"<${sName} translation>"}`,
+        '2) After the final sentence, output: {"type":"done"}',
+        "",
+        "Begin now and follow the protocol exactly.",
+      ].join(" ");
+
+      // Stream from Gemini
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      let sentences = [];
+      let revealed = false;
+
+      // Safely parse and apply a line of potential JSON
+      const tryConsumeLine = (line) => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith("```")) return;
+        if (!(trimmed.startsWith("{") && trimmed.endsWith("}"))) return;
+        let obj;
+        try {
+          obj = JSON.parse(trimmed);
+        } catch {
+          return;
+        }
+        if (obj?.type === "sentence" && (obj.tgt || obj.sup)) {
+          const item = {
+            tgt: String(obj.tgt || "").trim(),
+            sup: String(obj.sup || "").trim(),
+          };
+          sentences.push(item);
+
+          // Reveal UI as soon as we have the first sentence
+          if (!revealed) {
+            setStoryData({
+              fullStory: { tgt: item.tgt, sup: item.sup || "" },
+              sentences: [item],
+            });
+            setIsLoading(false);
+            revealed = true;
+          } else {
+            // incrementally append
+            setStoryData((prev) => {
+              const nextSentences = [...(prev?.sentences || []), item];
+              return {
+                fullStory: {
+                  tgt:
+                    (prev?.fullStory?.tgt ? prev.fullStory.tgt + " " : "") +
+                    item.tgt,
+                  sup:
+                    (prev?.fullStory?.sup ? prev.fullStory.sup + " " : "") +
+                    (item.sup || ""),
+                },
+                sentences: nextSentences,
+              };
+            });
+          }
+          return;
+        }
+        if (obj?.type === "done") {
+          // no-op; we finalize after stream end as well
+          return;
+        }
+      };
+
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+
+        // Consume complete lines
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line);
+        }
+      }
+
+      // Consume any leftover buffer + the final aggregated text
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (buffer) buffer += "\n";
+      if (finalText) buffer += finalText;
+      buffer
+        .split("\n")
+        .map((l) => l.trim())
+        .filter(Boolean)
+        .forEach((line) => tryConsumeLine(line));
+
+      // If model ignored protocol, fallback to best-effort parse
+      if (sentences.length === 0 && finalText) {
+        const rough = finalText
+          .replace(/```[\s\S]*?```/g, "")
+          .replace(/\n+/g, " ")
+          .split(/[.!?]+/)
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .slice(0, 6);
+        sentences = rough.map((s) => ({
+          tgt: s.endsWith(".") ? s : s + ".",
+          sup: "",
+        }));
+        if (sentences.length) {
+          setIsLoading(false);
+          setStoryData({
+            fullStory: { tgt: sentences.map((s) => s.tgt).join(" "), sup: "" },
+            sentences,
+          });
+          revealed = true;
+        }
+      }
+
+      if (!revealed) throw new Error("No story produced.");
+
+      // Final tidy/validation (keeps your existing UX expectations)
+      setStoryData((prev) => {
+        const normalized = normalizeStory(
+          {
+            fullStory: {
+              [tLang]: prev.fullStory.tgt,
+              [sLang]: prev.fullStory.sup,
+            },
+            sentences: prev.sentences.map((s) => ({
+              [tLang]: s.tgt,
+              [sLang]: s.sup,
+            })),
+          },
+          tLang,
+          sLang
+        );
+        const validated = validateAndFixStorySentences(
+          normalized,
+          "tgt",
+          "sup"
+        );
+        storyCacheRef.current = validated;
+        setCurrentSentenceIndex(0);
+        setSessionXp(0);
+        setShowFullStory(true);
+        setHighlightedWordIndex(-1);
+        return validated;
+      });
+    } catch (error) {
+      console.error(
+        "Gemini streaming failed; falling back to backend/demo.",
+        error
+      );
+      try {
+        await generateStory(); // fallback path
+      } catch {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -1524,7 +1684,7 @@ export default function StoryMode() {
             </Text>
             <Text color="#94a3b8">{uiText.noStory}</Text>
             <Button
-              onClick={generateStory}
+              onClick={generateStoryGeminiStream}
               size="lg"
               px={6}
               leftIcon={<FaWandMagicSparkles />}
@@ -1542,7 +1702,7 @@ export default function StoryMode() {
   return (
     <Box
       minH="100vh"
-      bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+      bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
     >
       {/* Header */}
       <motion.div
@@ -1566,36 +1726,8 @@ export default function StoryMode() {
           top={0}
           zIndex={100}
         >
-          {/* <IconButton
-            aria-label={
-              uiLang === "es" ? "Volver a practicar" : "Back to practice"
-            }
-            icon={<FaArrowLeft />}
-            size="md"
-            onClick={() => navigate("/")}
-            bg="rgba(255, 255, 255, 0.05)"
-            border="1px solid rgba(255, 255, 255, 0.1)"
-            color="white"
-            _hover={{
-              bg: "rgba(20, 184, 166, 0.1)",
-              borderColor: "rgba(20, 184, 166, 0.3)",
-            }}
-          /> */}
-          {/* <Text
-            fontSize="lg"
-            fontWeight="700"
-            color="#8b5cf6"
-            letterSpacing="0.5px"
-          >
-            {uiText.header}
-          </Text> */}
           <Spacer />
           <HStack spacing={3}>
-            {/* Global XP from Firestore */}
-            {/* <Badge colorScheme="purple" variant="subtle" fontSize="sm">
-              {xp} {uiText.xp}
-            </Badge> */}
-            {/* Optional: session XP indicator */}
             {sessionXp > 0 && (
               <Badge colorScheme="teal" variant="subtle" fontSize="sm">
                 +{sessionXp}
@@ -1603,7 +1735,7 @@ export default function StoryMode() {
             )}
             <Button
               size="sm"
-              onClick={generateStory}
+              onClick={generateStoryGeminiStream}
               leftIcon={<FaWandMagicSparkles />}
               color="white"
               border="1px solid rgba(20, 184, 166, 0.35)"

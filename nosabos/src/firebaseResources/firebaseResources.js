@@ -3,7 +3,7 @@ import { getAnalytics } from "firebase/analytics";
 
 import { getFirestore } from "firebase/firestore";
 import { getMessaging, isSupported } from "firebase/messaging";
-import { getVertexAI, Schema } from "@firebase/vertexai";
+import { getGenerativeModel, getVertexAI, Schema } from "@firebase/vertexai";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_PUBLIC_API_KEY,
@@ -36,5 +36,10 @@ async function initMessaging() {
 initMessaging();
 
 // 3) Pass that into your model’s generationConfig:
+const simplemodel = getGenerativeModel(vertexAI, {
+  // model: "gemini-1.5-flash",
+  // model: "gemini-2.0-flash-001",
+  model: "gemini-2.0-flash",
+});
 
-export { database, vertexAI, messaging, Schema, analytics };
+export { database, vertexAI, messaging, Schema, analytics, simplemodel };
