@@ -22,21 +22,18 @@ import {
 import {
   doc,
   onSnapshot,
-  setDoc,
-  increment,
   addDoc,
   collection,
   serverTimestamp,
 } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { database } from "../firebaseResources/firebaseResources";
+import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
 import { awardXp } from "../utils/utils";
-import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -150,9 +147,14 @@ function useSharedProgress() {
     supportLang: "en",
     showTranslations: true,
   });
+  // ✅ ready flag so first generated question uses the user's settings
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!npub) return;
+    if (!npub) {
+      setReady(true); // no user doc -> use defaults immediately
+      return;
+    }
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
@@ -169,34 +171,14 @@ function useSharedProgress() {
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
       });
+      setReady(true); // ✅ we've loaded user settings at least once
     });
     return () => unsub();
   }, [npub]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
-  return { xp, levelNumber, progressPct, progress, npub };
-}
-
-// async function awardXp(npub, amount) {
-//   if (!npub || !amount) return;
-//   const ref = doc(database, "users", npub);
-//   await setDoc(
-//     ref,
-//     { xp: increment(Math.round(amount)), updatedAt: new Date().toISOString() },
-//     { merge: true }
-//   );
-// }
-
-async function saveAttempt(npub, payload) {
-  if (!npub) return;
-  const col = collection(database, "users", npub, "grammarTurns");
-  await addDoc(col, {
-    ...payload,
-    createdAt: serverTimestamp(),
-    createdAtClient: Date.now(),
-    origin: "grammar",
-  });
+  return { xp, levelNumber, progressPct, progress, npub, ready };
 }
 
 /* ---------------------------
@@ -237,11 +219,7 @@ const resolveSupportLang = (supportLang, appUILang) =>
     ? "es"
     : "en";
 
-/* FILL — stream phases:
-   1) {"type":"fill","phase":"q","question":"..."}
-   2) {"type":"fill","phase":"meta","hint":"...","translation":"..."}
-   3) {"type":"done"}
-*/
+/* FILL — stream phases */
 function buildFillStreamPrompt({
   level,
   targetLang,
@@ -300,11 +278,7 @@ YES or NO
 `.trim();
 }
 
-/* MATCH — stream:
-   1) {"type":"match","stem":"...","left":[...],"right":[...],"hint":"..."}
-   2) {"type":"done"}
-   (coherent single grammar family; 3–6 rows)
-*/
+/* MATCH — stream with explicit answer map */
 function buildMatchStreamPrompt({
   level,
   targetLang,
@@ -338,17 +312,26 @@ function buildMatchStreamPrompt({
     "- One concise instruction as the stem; no meta like “(to go)” inside items.",
     "",
     "Emit exactly TWO NDJSON lines:",
-    `{"type":"match","stem":"<${TARGET} stem>","left":["..."],"right":["..."],"hint":"<${SUPPORT} hint>"}`,
+    `{"type":"match","stem":"<${TARGET} stem>","left":["..."],"right":["..."],"map":[0,2,1], "hint":"<${SUPPORT} hint>"}`,
     `{"type":"done"}`,
   ].join("\n");
 }
 
-/* MC — stream phases:
-   1) {"type":"mc","phase":"q","question":"..."}       // ASAP
-   2) {"type":"mc","phase":"choices","choices":[...]}  // then
-   3) {"type":"mc","phase":"meta","hint":"...","answer":"...","translation":"..."}
-   4) {"type":"done"}
-*/
+function safeParseJsonLoose(txt = "") {
+  if (!txt) return null;
+  try {
+    return JSON.parse(txt);
+  } catch {}
+  const s = txt.indexOf("{");
+  const e = txt.lastIndexOf("}");
+  if (s !== -1 && e !== -1 && e > s) {
+    try {
+      return JSON.parse(txt.slice(s, e + 1));
+    } catch {}
+  }
+  return null;
+}
+
 function buildMCStreamPrompt({
   level,
   targetLang,
@@ -386,12 +369,35 @@ function buildMCStreamPrompt({
   ].join("\n");
 }
 
-/* MA — stream phases:
-   1) {"type":"ma","phase":"q","question":"..."}
-   2) {"type":"ma","phase":"choices","choices":[...]}  // 5–6 choices
-   3) {"type":"ma","phase":"meta","hint":"...","answers":["...","..."],"translation":"..."} // EXACTLY 2 or 3 answers
-   4) {"type":"done"}
-*/
+function buildMCJudgePrompt({ targetLang, stem, choices, userChoice, hint }) {
+  const listed = choices.map((c, i) => `${i + 1}. ${c}`).join("\n");
+  return `
+Judge a MULTIPLE-CHOICE grammar question in ${LANG_NAME(targetLang)}.
+
+Stem:
+${stem}
+
+Choices:
+${listed}
+
+User selected:
+${userChoice}
+
+Hint (optional):
+${hint || ""}
+
+Instructions:
+- Say YES if the selected choice is a grammatically correct, context-appropriate answer to the stem.
+- Use the hint and any time/aspect cues in the stem (e.g., "usually", "yesterday", "for/since").
+- Allow contractions, minor punctuation/casing differences, and natural variation.
+- If more than one choice could be acceptable, accept the user's if it fits well.
+- Otherwise say NO.
+
+Reply with ONE WORD ONLY:
+YES or NO
+`.trim();
+}
+
 function buildMAStreamPrompt({
   level,
   targetLang,
@@ -427,51 +433,6 @@ function buildMAStreamPrompt({
     `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
-}
-
-/* Non-stream fallbacks used by judge/legacy prompts */
-function safeParseJsonLoose(txt = "") {
-  if (!txt) return null;
-  try {
-    return JSON.parse(txt);
-  } catch {}
-  const s = txt.indexOf("{");
-  const e = txt.lastIndexOf("}");
-  if (s !== -1 && e !== -1 && e > s) {
-    try {
-      return JSON.parse(txt.slice(s, e + 1));
-    } catch {}
-  }
-  return null;
-}
-
-function buildMCJudgePrompt({ targetLang, stem, choices, userChoice, hint }) {
-  const listed = choices.map((c, i) => `${i + 1}. ${c}`).join("\n");
-  return `
-Judge a MULTIPLE-CHOICE grammar question in ${LANG_NAME(targetLang)}.
-
-Stem:
-${stem}
-
-Choices:
-${listed}
-
-User selected:
-${userChoice}
-
-Hint (optional):
-${hint || ""}
-
-Instructions:
-- Say YES if the selected choice is a grammatically correct, context-appropriate answer to the stem.
-- Use the hint and any time/aspect cues in the stem (e.g., "usually", "yesterday", "for/since").
-- Allow contractions, minor punctuation/casing differences, and natural variation.
-- If more than one choice could be acceptable, accept the user's if it fits well.
-- Otherwise say NO.
-
-Reply with ONE WORD ONLY:
-YES or NO
-`.trim();
 }
 
 function buildMAJudgePrompt({
@@ -537,6 +498,17 @@ function safeParseJSON(text) {
   }
 }
 
+/* Normalize 0-based or 1-based 'map' arrays coming from model */
+function normalizeMap(map, len) {
+  const arr = Array.isArray(map) ? map.map((n) => parseInt(n, 10)) : [];
+  if (!arr.length || arr.some((n) => Number.isNaN(n))) return [];
+  const min = Math.min(...arr);
+  const max = Math.max(...arr);
+  if (min === 0 && max === len - 1) return arr; // already 0-based
+  if (min === 1 && max === len) return arr.map((n) => n - 1); // 1-based
+  return [];
+}
+
 /* ---------------------------
    Component
 --------------------------- */
@@ -544,7 +516,8 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
-  const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
+  const { xp, levelNumber, progressPct, progress, npub, ready } =
+    useSharedProgress();
 
   const level = progress.level || "beginner";
   const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
@@ -582,6 +555,10 @@ export default function GrammarBook({ userLanguage = "en" }) {
       setShowPasscodeModal(true);
     }
   }, [xp]);
+
+  // random-by-default vs user-locked mode
+  const [modeLocked, setModeLocked] = useState(false);
+  const autoInitRef = useRef(false);
 
   // verdict + next control
   const [lastOk, setLastOk] = useState(null); // null | true | false
@@ -685,6 +662,25 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [mResult, setMResult] = useState(""); // kept for firestore text; not shown
   const [loadingMG, setLoadingMG] = useState(false);
   const [loadingMJ, setLoadingMJ] = useState(false);
+  const [mAnswerMap, setMAnswerMap] = useState([]); // ✅ right index for each left (deterministic)
+
+  /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
+  function generateRandom() {
+    const fns = [generateFill, generateMC, generateMA, generateMatch];
+    const pick = Math.floor(Math.random() * fns.length);
+    fns[pick]();
+  }
+
+  /* ---------- AUTO-GENERATE on first render (respect language settings) ---------- */
+  // ✅ Wait until 'ready' so the very first prompt uses the user's target/support language.
+  useEffect(() => {
+    if (autoInitRef.current) return;
+    if (showPasscodeModal) return;
+    if (!ready) return;
+    autoInitRef.current = true;
+    generateRandom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, showPasscodeModal]);
 
   /* ---------- STREAM Generate: Fill ---------- */
   async function generateFill() {
@@ -769,7 +765,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
 
       if (!gotSomething) throw new Error("no-fill");
     } catch {
-      // Fallback
+      // Fallback (unchanged)
       const fallbackPrompt = `
 Write ONE short ${LANG_NAME(
         targetLang
@@ -1222,7 +1218,7 @@ Create ONE multiple-answer ${LANG_NAME(
     }
   }
 
-  /* ---------- STREAM Generate: MATCH (Gemini with fallback) ---------- */
+  /* ---------- STREAM Generate: MATCH (Gemini with deterministic map) ---------- */
   async function generateMatch() {
     setMode("match");
     setLoadingMG(true);
@@ -1238,6 +1234,7 @@ Create ONE multiple-answer ${LANG_NAME(
     setMRight([]);
     setMSlots([]);
     setMBank([]);
+    setMAnswerMap([]);
 
     const prompt = buildMatchStreamPrompt({
       level,
@@ -1280,12 +1277,16 @@ Create ONE multiple-answer ${LANG_NAME(
               const left = obj.left.slice(0, 6).map(String);
               const right = obj.right.slice(0, 6).map(String);
               const hint = String(obj.hint || "");
+              const map = normalizeMap(obj.map, right.length);
               setMStem(stem);
               setMHint(hint);
               setMLeft(left);
               setMRight(right);
               setMSlots(Array(left.length).fill(null));
               setMBank([...Array(right.length)].map((_, i) => i));
+              setMAnswerMap(
+                map.length === left.length ? map : [...left.keys()]
+              );
               okPayload = true;
             }
           });
@@ -1319,12 +1320,16 @@ Create ONE multiple-answer ${LANG_NAME(
                 const left = obj.left.slice(0, 6).map(String);
                 const right = obj.right.slice(0, 6).map(String);
                 const hint = String(obj.hint || "");
+                const map = normalizeMap(obj.map, right.length);
                 setMStem(stem);
                 setMHint(hint);
                 setMLeft(left);
                 setMRight(right);
                 setMSlots(Array(left.length).fill(null));
                 setMBank([...Array(right.length)].map((_, i) => i));
+                setMAnswerMap(
+                  map.length === left.length ? map : [...left.keys()]
+                );
                 okPayload = true;
               }
             })
@@ -1341,7 +1346,7 @@ Create ONE ${LANG_NAME(
           targetLang
         )} GRAMMAR matching exercise (single grammar family, 3–6 rows).
 Return JSON ONLY:
-{"stem":"<stem>","left":["..."],"right":["..."],"hint":"<hint in ${LANG_NAME(
+{"stem":"<stem>","left":["..."],"right":["..."],"map":[0,2,1],"hint":"<hint in ${LANG_NAME(
           resolveSupportLang(supportLang, userLanguage)
         )}>"}
 `.trim(),
@@ -1351,7 +1356,8 @@ Return JSON ONLY:
       let stem = "",
         left = [],
         right = [],
-        hint = "";
+        hint = "",
+        map = [];
 
       if (
         parsed &&
@@ -1365,6 +1371,7 @@ Return JSON ONLY:
         left = parsed.left.slice(0, 6).map(String);
         right = parsed.right.slice(0, 6).map(String);
         hint = String(parsed.hint || "");
+        map = normalizeMap(parsed.map, right.length);
       } else {
         // Safe default set (family: subject → 'to be' present)
         if (targetLang === "es") {
@@ -1373,11 +1380,13 @@ Return JSON ONLY:
           left = ["yo", "él", "nosotros"];
           right = ["soy", "es", "somos"];
           hint = "Concordancia sujeto–verbo";
+          map = [0, 1, 2];
         } else {
           stem = "Match subjects with the correct present form of 'to be'.";
           left = ["I", "she", "they"];
           right = ["am", "is", "are"];
           hint = "Subject–verb agreement";
+          map = [0, 1, 2];
         }
       }
 
@@ -1387,13 +1396,14 @@ Return JSON ONLY:
       setMRight(right);
       setMSlots(Array(left.length).fill(null));
       setMBank([...Array(right.length)].map((_, i) => i));
+      setMAnswerMap(map.length === left.length ? map : [...left.keys()]);
     } finally {
       setLoadingMG(false);
     }
   }
 
   /* ---------------------------
-     Submits (backend judging)
+     Submits (backend judging for fill/mc/ma; deterministic for match)
   --------------------------- */
   async function submitFill() {
     if (!question || !input.trim()) return;
@@ -1409,7 +1419,7 @@ Return JSON ONLY:
       }),
     });
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 12 : 3;
+    const delta = ok ? 12 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
       ok,
@@ -1420,7 +1430,7 @@ Return JSON ONLY:
       user_input: input,
       award_xp: delta,
     }).catch(() => {});
-    await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
     setLastOk(ok);
     setRecentXp(delta);
@@ -1431,7 +1441,7 @@ Return JSON ONLY:
         ...recentCorrectRef.current,
         { mode: "fill", question },
       ].slice(-5);
-      setNextAction(() => generateFill); // wait for Next
+      setNextAction(() => (modeLocked ? generateFill : generateRandom)); // ✅ random unless user locked a type
     } else {
       setNextAction(null);
     }
@@ -1455,7 +1465,7 @@ Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 8 : 2;
+    const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
       ok,
@@ -1468,12 +1478,14 @@ Return JSON ONLY:
       user_choice: mcPick,
       award_xp: delta,
     }).catch(() => {});
-    await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
     setMcResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(ok ? () => generateMC : null);
+    setNextAction(
+      ok ? (modeLocked ? () => generateMC : () => generateRandom) : null
+    );
 
     setLoadingMCG(false);
   }
@@ -1494,7 +1506,7 @@ Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 10 : 3;
+    const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
       ok,
@@ -1507,12 +1519,14 @@ Return JSON ONLY:
       user_choices: maPicks,
       award_xp: delta,
     }).catch(() => {});
-    await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
     setMaResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(ok ? () => generateMA : null);
+    setNextAction(
+      ok ? (modeLocked ? () => generateMA : () => generateRandom) : null
+    );
 
     setLoadingMAG(false);
   }
@@ -1521,36 +1535,21 @@ Return JSON ONLY:
     return mLeft.length > 0 && mSlots.every((ri) => ri !== null);
   }
 
+  // ✅ Deterministic judge for Match using the returned map
   async function submitMatch() {
     if (!canSubmitMatch()) return;
     setLoadingMJ(true);
 
     const userPairs = mSlots.map((ri, li) => [li, ri]);
 
-    const verdictRaw = await callResponses({
-      model: MODEL,
-      input: `
-${buildMatchStreamPrompt({
-  level,
-  targetLang,
-  supportLang,
-  showTranslations,
-  appUILang: userLanguage,
-  xp,
-  recentGood: recentCorrectRef.current,
-})}
+    let ok = false;
+    if (mAnswerMap.length === mSlots.length) {
+      ok = mSlots.every((ri, li) => ri === mAnswerMap[li]);
+    } else {
+      ok = false;
+    }
 
-// JUDGE (reply YES/NO only) for mapping:
-${userPairs
-  .map(
-    ([li, ri]) =>
-      `L${li + 1} -> R${ri + 1} (${mLeft[li]} -> ${mRight[ri] || "(none)"})`
-  )
-  .join("\n")}
-`.trim(),
-    });
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 12 : 4;
+    const delta = ok ? 12 : 0; // ✅ no XP for wrong answers
 
     setMResult(ok ? "correct" : "try_again"); // for logs only
 
@@ -1562,13 +1561,16 @@ ${userPairs
       left: mLeft,
       right: mRight,
       user_pairs: userPairs,
+      answer_map: mAnswerMap,
       award_xp: delta,
     }).catch(() => {});
-    await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(ok ? () => generateMatch : null);
+    setNextAction(
+      ok ? (modeLocked ? () => generateMatch : () => generateRandom) : null
+    );
 
     setLoadingMJ(false);
   }
@@ -1681,7 +1683,8 @@ ${userPairs
         px={3}
         py={1}
       >
-        {ok ? "✓" : "✖"} {label} · +{xp} XP {ok ? "🎉" : ""}
+        {ok ? "✓" : "✖"} {label}
+        {xp > 0 ? ` · +${xp} XP 🎉` : ""}
       </Badge>
     );
   };
@@ -1716,14 +1719,34 @@ ${userPairs
           {[
             {
               key: "grammar_btn_fill",
-              onClick: generateFill,
+              onClick: () => {
+                setModeLocked(true); // ✅ user locks type
+                generateFill();
+              },
               loading: loadingQ,
             },
-            { key: "grammar_btn_mc", onClick: generateMC, loading: loadingMCQ },
-            { key: "grammar_btn_ma", onClick: generateMA, loading: loadingMAQ },
+            {
+              key: "grammar_btn_mc",
+              onClick: () => {
+                setModeLocked(true);
+                generateMC();
+              },
+              loading: loadingMCQ,
+            },
+            {
+              key: "grammar_btn_ma",
+              onClick: () => {
+                setModeLocked(true);
+                generateMA();
+              },
+              loading: loadingMAQ,
+            },
             {
               key: "grammar_btn_match",
-              onClick: generateMatch,
+              onClick: () => {
+                setModeLocked(true);
+                generateMatch();
+              },
               loading: loadingMG,
             },
           ].map((b) => (
@@ -2077,4 +2100,18 @@ ${userPairs
       </VStack>
     </Box>
   );
+}
+
+/* ---------------------------
+   Firestore logging helper
+--------------------------- */
+async function saveAttempt(npub, payload) {
+  if (!npub) return;
+  const col = collection(database, "users", npub, "grammarTurns");
+  await addDoc(col, {
+    ...payload,
+    createdAt: serverTimestamp(),
+    createdAtClient: Date.now(),
+    origin: "grammar",
+  });
 }

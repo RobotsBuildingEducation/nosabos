@@ -142,7 +142,15 @@ export default function DailyGoalModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      isCentered
+      size="lg"
+      closeOnOverlayClick={false}
+      closeOnEsc={false}
+      motionPreset="slideInBottom"
+    >
       <ModalOverlay bg="blackAlpha.700" />
       <ModalContent
         bg="gray.900"

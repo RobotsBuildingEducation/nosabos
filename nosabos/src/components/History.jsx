@@ -22,7 +22,6 @@ import {
   addDoc,
   collection,
   serverTimestamp,
-  increment,
   query,
   orderBy,
 } from "firebase/firestore";
@@ -323,6 +322,9 @@ async function computeAdaptiveXp({
   currentXp,
   hoursSinceLastLecture,
 }) {
+  const MIN = 20;
+  const MAX = 35;
+
   try {
     const prompt = buildXpPrompt({
       title,
@@ -335,30 +337,37 @@ async function computeAdaptiveXp({
     });
     const raw = await callResponses({ model: MODEL, input: prompt });
     const parsed = safeParseJSON(raw);
-    const xp = Math.max(20, Math.min(70, Math.round(Number(parsed?.xp))));
+
+    const xpRaw = Math.round(Number(parsed?.xp));
+    const xp = Number.isFinite(xpRaw)
+      ? Math.max(MIN, Math.min(MAX, xpRaw))
+      : null;
+
     const reason =
       typeof parsed?.reason === "string" && parsed.reason.trim()
         ? parsed.reason.trim()
         : "Auto-scored by rubric.";
-    if (Number.isFinite(xp)) return { xp, reason };
+
+    if (xp !== null) return { xp, reason };
   } catch {}
-  // Heuristic fallback
-  const base = target.length > 220 ? 55 : target.length > 160 ? 50 : 45;
-  const noveltyBoost = previousTitles?.some((t) =>
+
+  // Heuristic fallback (kept inside 20–35)
+  let score = 28; // center
+  // Nudge by density
+  score += target.length > 230 ? 3 : target.length < 170 ? -2 : 0;
+  // Novelty vs previous titles
+  const looksRepeated = previousTitles?.some((t) =>
     String(t || "")
       .toLowerCase()
       .includes(String(title || "").toLowerCase())
-  )
-    ? -5
-    : 5;
-  const streakBoost =
-    hoursSinceLastLecture != null && hoursSinceLastLecture <= 48 ? 5 : 0;
-  const levelTweak =
-    level === "beginner" ? 0 : level === "intermediate" ? 3 : 6;
-  const xp = Math.max(
-    20,
-    Math.min(70, base + noveltyBoost + streakBoost + levelTweak)
   );
+  score += looksRepeated ? -2 : 2;
+  // Streak bonus
+  score += hoursSinceLastLecture != null && hoursSinceLastLecture <= 48 ? 2 : 0;
+  // Level tweak
+  score += level === "advanced" ? 3 : level === "intermediate" ? 1 : 0;
+
+  const xp = Math.max(MIN, Math.min(MAX, score));
   return { xp, reason: "Heuristic fallback scoring." };
 }
 
@@ -447,9 +456,6 @@ export default function History({ userLanguage = "en" }) {
       : progress.supportLang || "en";
   const showTranslations = progress.showTranslations !== false;
 
-  const targetName = LANG_NAME(targetLang);
-  const supportName = LANG_NAME(supportLang);
-
   const localizedLangName = (code) =>
     ({
       en: t("language_en"),
@@ -469,7 +475,7 @@ export default function History({ userLanguage = "en" }) {
     ) {
       setShowPasscodeModal(true);
     }
-  }, [xp]);
+  }, [xp, levelNumber]);
 
   // List
   const [lectures, setLectures] = useState([]);
@@ -482,14 +488,15 @@ export default function History({ userLanguage = "en" }) {
   // Reading state
   const [isReadingTarget, setIsReadingTarget] = useState(false);
   const [isReadingSupport, setIsReadingSupport] = useState(false);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   // Refs for audio
   const currentAudioRef = useRef(null);
 
-  // NEW: streaming draft lecture (local only while generating)
+  // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
 
-  // NEW: refs for auto-scroll (mobile + desktop lists)
+  // refs for auto-scroll (mobile + desktop lists)
   const mobileEndRef = useRef(null);
   const desktopEndRef = useRef(null);
 
@@ -626,11 +633,11 @@ export default function History({ userLanguage = "en" }) {
       xpReason,
       createdAt: serverTimestamp(),
       createdAtClient: Date.now(),
+      awarded: false, // ← XP not yet claimed
     };
 
     const col = collection(database, "users", npub, "historyLectures");
     const ref = await addDoc(col, payload);
-    await awardXp(npub, xpAward).catch(() => {});
     setActiveId(ref.id);
   }
 
@@ -773,7 +780,7 @@ export default function History({ userLanguage = "en" }) {
         hoursSinceLastLecture,
       });
 
-      // Save to Firestore
+      // Save to Firestore (do not award yet)
       const payload = {
         title:
           title ||
@@ -785,10 +792,10 @@ export default function History({ userLanguage = "en" }) {
         xpReason,
         createdAt: serverTimestamp(),
         createdAtClient: Date.now(),
+        awarded: false, // ← wait until user finishes reading
       };
       const colRef = collection(database, "users", npub, "historyLectures");
       const ref = await addDoc(colRef, payload);
-      await awardXp(npub, xpAward).catch(() => {});
       setActiveId(ref.id);
       setDraftLecture(null);
       if (!listDisclosure.isOpen) listDisclosure.onOpen();
@@ -902,6 +909,38 @@ export default function History({ userLanguage = "en" }) {
       ? ` — ${activeLecture.xpReason}`
       : "";
 
+  // Award XP for current lecture and generate a new one
+  async function finishReadingAndNext() {
+    if (!npub || !activeLecture || isGenerating || isFinishing) return;
+    setIsFinishing(true);
+    try {
+      const docRef = doc(
+        database,
+        "users",
+        npub,
+        "historyLectures",
+        activeLecture.id
+      );
+      if (!activeLecture.awarded) {
+        await setDoc(
+          docRef,
+          { awarded: true, awardedAt: serverTimestamp() },
+          { merge: true }
+        );
+        const amt = Number(activeLecture?.xpAward || 0);
+        if (amt > 0) {
+          await awardXp(npub, amt).catch(() => {});
+        }
+      }
+      // Immediately move to the next lecture
+      await generateNextLectureGeminiStream();
+    } catch (e) {
+      console.error("finishReadingAndNext error", e);
+    } finally {
+      setIsFinishing(false);
+    }
+  }
+
   if (showPasscodeModal) {
     return (
       <PasscodePage
@@ -915,16 +954,18 @@ export default function History({ userLanguage = "en" }) {
     <Box p={[3, 4, 6]}>
       <VStack spacing={5} align="stretch" maxW="1100px" mx="auto">
         {/* Header: Level / XP */}
-        <Box>
-          <HStack justify="space-between" mb={2}>
-            <Badge variant="subtle" px={2} py={1} rounded="md">
-              {t("history_badge_level", { level: levelNumber })}
-            </Badge>
-            <Badge variant="subtle" px={2} py={1} rounded="md">
-              {t("history_badge_xp", { xp })}
-            </Badge>
-          </HStack>
-          <WaveBar value={progressPct} />
+        <Box justifyContent={"center"} display="flex">
+          <Box width="50%">
+            <HStack justify="space-between" mb={2}>
+              <Badge variant="subtle" px={2} py={1} rounded="md">
+                {t("history_badge_level", { level: levelNumber })}
+              </Badge>
+              <Badge variant="subtle" px={2} py={1} rounded="md">
+                {t("history_badge_xp", { xp })}
+              </Badge>
+            </HStack>
+            <WaveBar value={progressPct} />
+          </Box>
         </Box>
 
         {/* Controls */}
@@ -1143,8 +1184,23 @@ export default function History({ userLanguage = "en" }) {
                         variant="outline"
                       />
                     )}
+                    {/* New: Finish & award */}
                   </HStack>
                 </HStack>
+
+                {!draftLecture && activeLecture ? (
+                  <Button
+                    colorScheme="teal"
+                    onClick={finishReadingAndNext}
+                    isLoading={isFinishing}
+                    isDisabled={isGenerating}
+                    p={4}
+                  >
+                    {activeLecture.awarded
+                      ? t("history_btn_next") || "Next lecture"
+                      : t("history_btn_finish") || "Finished reading"}
+                  </Button>
+                ) : null}
 
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
                   {viewLecture.target || ""}
@@ -1186,12 +1242,21 @@ export default function History({ userLanguage = "en" }) {
                 {!draftLecture && Number.isFinite(activeLecture?.xpAward) ? (
                   <>
                     <Divider opacity={0.2} />
-                    <Text fontSize="sm" opacity={0.9}>
-                      {t("history_xp_awarded_line", {
-                        xp: activeLecture.xpAward,
-                        reason: xpReasonText,
-                      })}
-                    </Text>
+                    {activeLecture.awarded ? (
+                      <Text fontSize="sm" opacity={0.9}>
+                        {t("history_xp_awarded_line", {
+                          xp: activeLecture.xpAward,
+                          reason: xpReasonText,
+                        })}
+                      </Text>
+                    ) : (
+                      <Text fontSize="sm" opacity={0.9}>
+                        {t("history_xp_pending_line", {
+                          xp: activeLecture.xpAward,
+                        }) ||
+                          `Pending +${activeLecture.xpAward} XP — tap “Finished reading” to claim`}
+                      </Text>
+                    )}
                   </>
                 ) : null}
               </VStack>

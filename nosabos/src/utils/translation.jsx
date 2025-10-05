@@ -13,6 +13,13 @@ export function t(lang = "en", key, vars = {}) {
 }
 export const translations = {
   en: {
+    tabs_random: "Random",
+    random_toast_title: "Nice job!",
+    random_toast_desc: "You earned +{xp} XP.",
+    random_shuffle: "Shuffle",
+    history_btn_next: "Complete lecture",
+    history_btn_finish: "Complete lecture",
+    history_generating: "Creating lecture...",
     copied_to_clipboard_all: "Question has been copied.",
     copy_all: "Copy question",
     grammar_next: "Next",
@@ -325,6 +332,16 @@ export const translations = {
   },
 
   es: {
+    tabs_random: "Aleatorio",
+
+    random_toast_title: "¡Buen trabajo!",
+    random_toast_desc: "Ganaste +{xp} XP.",
+    random_shuffle: "Mezclar",
+
+    history_btn_next: "Completar lección",
+    history_btn_finish: "Completar lección",
+
+    history_generating: "Creando la lección...",
     copied_to_clipboard_all: "La pregunta ha sido copiada.",
     copy_all: "Copiar pregunta",
 

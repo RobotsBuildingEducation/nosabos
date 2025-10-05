@@ -118,7 +118,7 @@ exports.exchangeRealtimeSDP = onRequest(
     const contentType = (req.headers["content-type"] || "").toLowerCase();
 
     let offerSDP = "";
-    let model = "gpt-4o-realtime-preview"; // set your default realtime model
+    let model = "gpt-4o-mini-realtime-preview"; // set your default realtime model
     if (contentType.includes("application/sdp")) {
       offerSDP = req.rawBody?.toString("utf8") || "";
     } else {

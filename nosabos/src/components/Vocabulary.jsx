@@ -29,7 +29,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ add simplemodel for streaming
+import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
@@ -149,9 +149,14 @@ function useSharedProgress() {
     supportLang: "en",
     showTranslations: true,
   });
+  // ✅ ready flag so we know when user settings have been loaded once
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!npub) return;
+    if (!npub) {
+      setReady(true); // no user -> use defaults immediately
+      return;
+    }
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
@@ -168,24 +173,15 @@ function useSharedProgress() {
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
       });
+      setReady(true); // ✅ we’ve received user settings
     });
     return () => unsub();
   }, [npub]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
-  return { xp, levelNumber, progressPct, progress, npub };
+  return { xp, levelNumber, progressPct, progress, npub, ready };
 }
-
-// async function awardXp(npub, amount) {
-//   if (!npub || !amount) return;
-//   const ref = doc(database, "users", npub);
-//   await setDoc(
-//     ref,
-//     { xp: increment(Math.round(amount)), updatedAt: new Date().toISOString() },
-//     { merge: true }
-//   );
-// }
 
 async function saveAttempt(npub, payload) {
   if (!npub) return;
@@ -583,7 +579,8 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
-  const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
+  const { xp, levelNumber, progressPct, progress, npub, ready } =
+    useSharedProgress();
 
   const level = progress.level || "beginner";
   const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
@@ -622,6 +619,8 @@ export default function Vocabulary({ userLanguage = "en" }) {
   }, [xp]);
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "match"
+  // ✅ whether user has selected a specific type; if null => keep randomizing
+  const [lockedType, setLockedType] = useState(null);
 
   // verdict + next control
   const [lastOk, setLastOk] = useState(null); // null | true | false
@@ -726,6 +725,32 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [mResult, setMResult] = useState(""); // log only
   const [loadingMG, setLoadingMG] = useState(false);
   const [loadingMJ, setLoadingMJ] = useState(false);
+
+  /* ---------------------------
+     GENERATOR DISPATCH
+  --------------------------- */
+  const types = ["fill", "mc", "ma", "match"];
+  function generatorFor(type) {
+    switch (type) {
+      case "fill":
+        return generateFill;
+      case "mc":
+        return generateMC;
+      case "ma":
+        return generateMA;
+      case "match":
+        return generateMatch;
+      default:
+        return generateFill;
+    }
+  }
+  function generateRandom() {
+    const pool = types;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    // do NOT lock when randomizing
+    setMode(pick);
+    return generatorFor(pick)();
+  }
 
   /* ---------------------------
      STREAM Generate — FILL
@@ -872,7 +897,7 @@ Return EXACTLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 10 : 3;
+    const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
       ok,
@@ -883,12 +908,20 @@ Return EXACTLY:
       user_input: ansFill,
       award_xp: delta,
     }).catch(() => {});
-    await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
     setResFill(ok ? "correct" : "try_again"); // log only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(ok ? () => generateFill : null);
+
+    // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
+    setNextAction(
+      ok
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandom()
+        : null
+    );
 
     if (ok) {
       setAnsFill("");
@@ -1107,7 +1140,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 8 : 2;
+    const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
       ok,
@@ -1120,12 +1153,19 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       user_choice: pickMC,
       award_xp: delta,
     }).catch(() => {});
-    await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
     setResMC(ok ? "correct" : "try_again"); // log only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(ok ? () => generateMC : null);
+
+    setNextAction(
+      ok
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandom()
+        : null
+    );
 
     if (ok) {
       recentCorrectRef.current = [
@@ -1372,7 +1412,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 10 : 3;
+    const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
       ok,
@@ -1385,12 +1425,18 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
       user_choices: picksMA,
       award_xp: delta,
     }).catch(() => {});
-    await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
     setResMA(ok ? "correct" : "try_again"); // log only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(ok ? () => generateMA : null);
+    setNextAction(
+      ok
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandom()
+        : null
+    );
 
     if (ok) {
       setPicksMA([]);
@@ -1591,7 +1637,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 12 : 4;
+    const delta = ok ? 12 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
       ok,
@@ -1603,12 +1649,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       user_pairs: userPairs,
       award_xp: delta,
     }).catch(() => {});
-    await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
     setMResult(ok ? "correct" : "try_again"); // log only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(ok ? () => generateMatch : null);
+    setNextAction(
+      ok
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandom()
+        : null
+    );
 
     setLoadingMJ(false);
   }
@@ -1728,6 +1780,21 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   const nextLabel = t("grammar_next") || t("grammar_next") || "Next";
 
+  /* ---------------------------
+     AUTO-GENERATE on first render (respecting user settings)
+     - Wait until 'ready' so target/support languages are applied.
+     - Randomize by default; only lock when user picks a type explicitly.
+  --------------------------- */
+  const autoInitRef = useRef(false);
+  useEffect(() => {
+    if (autoInitRef.current) return;
+    if (showPasscodeModal) return;
+    if (!ready) return; // ✅ wait for user progress to load
+    autoInitRef.current = true;
+    generateRandom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, showPasscodeModal]);
+
   return (
     <Box p={4}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
@@ -1755,47 +1822,97 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           spacing={{ base: 2, md: 3 }}
           w="100%"
         >
-          {[
-            {
-              key: "vocab_btn_fill",
-              onClick: generateFill,
-              loading: loadingQFill,
-            },
-            { key: "vocab_btn_mc", onClick: generateMC, loading: loadingQMC },
-            { key: "vocab_btn_ma", onClick: generateMA, loading: loadingQMA },
-            {
-              key: "vocab_btn_match",
-              onClick: generateMatch,
-              loading: loadingMG,
-            },
-          ].map((b) => (
-            <Button
-              key={b.key}
-              onClick={b.onClick}
-              isDisabled={b.loading}
-              rightIcon={b.loading ? <Spinner size="xs" /> : null}
-              w="100%"
-              size="sm"
-              px={2}
-              py={2}
-              minH={{ base: "44px", md: "52px" }}
-              rounded="lg"
-              whiteSpace="normal"
-              textAlign="center"
-              lineHeight="1.2"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
+          <Button
+            onClick={() => {
+              setLockedType("fill");
+              generateFill();
+            }}
+            isDisabled={loadingQFill}
+            rightIcon={loadingQFill ? <Spinner size="xs" /> : null}
+            w="100%"
+            size="sm"
+            px={2}
+            py={2}
+            minH={{ base: "44px", md: "52px" }}
+            rounded="lg"
+          >
+            <Text
+              noOfLines={2}
+              fontWeight="700"
+              fontSize={{ base: "xs", md: "sm" }}
             >
-              <Text
-                noOfLines={2}
-                fontWeight="700"
-                fontSize={{ base: "xs", md: "sm" }}
-              >
-                {t(b.key)}
-              </Text>
-            </Button>
-          ))}
+              {t("vocab_btn_fill")}
+            </Text>
+          </Button>
+
+          <Button
+            onClick={() => {
+              setLockedType("mc");
+              generateMC();
+            }}
+            isDisabled={loadingQMC}
+            rightIcon={loadingQMC ? <Spinner size="xs" /> : null}
+            w="100%"
+            size="sm"
+            px={2}
+            py={2}
+            minH={{ base: "44px", md: "52px" }}
+            rounded="lg"
+          >
+            <Text
+              noOfLines={2}
+              fontWeight="700"
+              fontSize={{ base: "xs", md: "sm" }}
+            >
+              {t("vocab_btn_mc")}
+            </Text>
+          </Button>
+
+          <Button
+            onClick={() => {
+              setLockedType("ma");
+              generateMA();
+            }}
+            isDisabled={loadingQMA}
+            rightIcon={loadingQMA ? <Spinner size="xs" /> : null}
+            w="100%"
+            size="sm"
+            px={2}
+            py={2}
+            minH={{ base: "44px", md: "52px" }}
+            rounded="lg"
+          >
+            <Text
+              noOfLines={2}
+              fontWeight="700"
+              fontSize={{ base: "xs", md: "sm" }}
+            >
+              {t("vocab_btn_ma")}
+            </Text>
+          </Button>
+
+          <Button
+            onClick={() => {
+              setLockedType("match");
+              generateMatch();
+            }}
+            isDisabled={loadingMG}
+            rightIcon={loadingMG ? <Spinner size="xs" /> : null}
+            w="100%"
+            size="sm"
+            px={2}
+            py={2}
+            minH={{ base: "44px", md: "52px" }}
+            rounded="lg"
+          >
+            <Text
+              noOfLines={2}
+              fontWeight="700"
+              fontSize={{ base: "xs", md: "sm" }}
+            >
+              {t("vocab_btn_match")}
+            </Text>
+          </Button>
         </SimpleGrid>
 
         {/* ---- FILL UI ---- */}

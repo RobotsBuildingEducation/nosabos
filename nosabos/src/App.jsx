@@ -43,6 +43,7 @@ import {
   MenuList,
   MenuItemOption,
   MenuOptionGroup,
+  Badge,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -54,7 +55,7 @@ import { CiUser, CiSquarePlus, CiEdit } from "react-icons/ci";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
-import { LuBadgeCheck, LuBookOpen } from "react-icons/lu";
+import { LuBadgeCheck, LuBookOpen, LuShuffle } from "react-icons/lu";
 
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { database } from "./firebaseResources/firebaseResources";
@@ -897,7 +898,7 @@ export default function App() {
   );
   const t = translations[appLanguage] || translations.en;
 
-  // Tabs (order: Chat, Stories, History, Grammar, Vocabulary)
+  // Tabs (order: Chat, Stories, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
     typeof window !== "undefined"
       ? localStorage.getItem("currentTab") || "realtime"
@@ -905,7 +906,14 @@ export default function App() {
   );
 
   // Helper mapping for keys/index
-  const TAB_KEYS = ["realtime", "stories", "history", "grammar", "vocabulary"];
+  const TAB_KEYS = [
+    "realtime",
+    "stories",
+    "history",
+    "grammar",
+    "vocabulary",
+    "random",
+  ];
   const keyToIndex = (k) => Math.max(0, TAB_KEYS.indexOf(k));
   const indexToKey = (i) => TAB_KEYS[i] ?? "realtime";
   const tabIndex = keyToIndex(currentTab);
@@ -916,6 +924,7 @@ export default function App() {
     history: t?.tabs_history ?? "History",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
+    random: t?.tabs_random ?? "Random",
   };
   const TAB_ICONS = {
     realtime: <RiSpeakLine />,
@@ -923,6 +932,7 @@ export default function App() {
     history: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <CiEdit />,
+    random: <LuShuffle />,
   };
 
   // Default progress (mirrors onboarding)
@@ -1254,6 +1264,162 @@ export default function App() {
   };
 
   /* -----------------------------------
+     RANDOMIZE tab mechanics (no routing)
+  ----------------------------------- */
+  const RANDOM_POOL = useMemo(
+    () => ["realtime", "stories", "grammar", "vocabulary", "history"],
+    []
+  );
+  const [randomPick, setRandomPick] = useState(null);
+  const prevXpRef = useRef(null);
+
+  const pickRandomFeature = () => {
+    const pool = RANDOM_POOL;
+    if (!pool.length) return null;
+    const choice = pool[Math.floor(Math.random() * pool.length)];
+    setRandomPick(choice);
+    return choice;
+  };
+
+  // When switching into Random tab, pick a feature
+  useEffect(() => {
+    if (currentTab === "random") {
+      const first = pickRandomFeature();
+      if (!first) setRandomPick("realtime");
+    }
+  }, [currentTab]); // eslint-disable-line
+
+  // ✅ Listen to XP changes only while on Random; on gain -> toast + auto-pick next
+  useEffect(() => {
+    if (!activeNpub) return;
+    const ref = doc(database, "users", activeNpub);
+    const unsub = onSnapshot(ref, (snap) => {
+      const data = snap.exists() ? snap.data() : {};
+      const newXp = Number(data?.xp || 0);
+
+      if (prevXpRef.current == null) {
+        prevXpRef.current = newXp;
+        return;
+      }
+
+      const diff = newXp - prevXpRef.current;
+      prevXpRef.current = newXp;
+
+      if (currentTab === "random" && diff > 0) {
+        // localized toast
+        const title =
+          t?.random_toast_title ??
+          (appLanguage === "es" ? "¡Buen trabajo!" : "Nice job!");
+        const descTpl =
+          t?.random_toast_desc ??
+          (appLanguage === "es" ? "Ganaste +{xp} XP." : "You earned +{xp} XP.");
+        const description = descTpl.replace("{xp}", String(diff));
+
+        toast({
+          title,
+          description,
+          status: "success",
+          duration: 1800,
+          isClosable: true,
+          position: "top",
+        });
+
+        // Immediately pick the next randomized activity
+        pickRandomFeature();
+      }
+    });
+    return () => unsub();
+  }, [activeNpub, currentTab, t, toast, appLanguage]);
+
+  const RandomHeader = (
+    <HStack justify="flex-end" rounded="xl" mb={2}>
+      <Button
+        size="sm"
+        leftIcon={<LuShuffle />}
+        variant="outline"
+        borderColor="gray.700"
+        onClick={pickRandomFeature}
+      >
+        {t?.random_shuffle ?? "Shuffle"}
+      </Button>
+    </HStack>
+  );
+
+  const renderRandomPanel = () => {
+    switch (randomPick) {
+      case "realtime":
+        return (
+          <>
+            {RandomHeader}
+            <RealTimeTest
+              auth={auth}
+              activeNpub={activeNpub}
+              activeNsec={activeNsec}
+              level={user?.progress?.level}
+              supportLang={user?.progress?.supportLang}
+              voice={user?.progress?.voice}
+              voicePersona={user?.progress?.voicePersona}
+              targetLang={user?.progress?.targetLang}
+              showTranslations={user?.progress?.showTranslations}
+              pauseMs={user?.progress?.pauseMs}
+              helpRequest={user?.progress?.helpRequest}
+              practicePronunciation={user?.progress?.practicePronunciation}
+              onSwitchedAccount={async (id, sec) => {
+                if (id) localStorage.setItem("local_npub", id);
+                if (typeof sec === "string")
+                  localStorage.setItem("local_nsec", sec);
+                await connectDID();
+                setActiveNpub(localStorage.getItem("local_npub") || "");
+                setActiveNsec(localStorage.getItem("local_nsec") || "");
+              }}
+            />
+          </>
+        );
+      case "stories":
+        return (
+          <>
+            {RandomHeader}
+            <StoryMode
+              userLanguage={appLanguage}
+              activeNpub={activeNpub}
+              activeNsec={activeNsec}
+            />
+          </>
+        );
+      case "history":
+        return (
+          <>
+            {RandomHeader}
+            <History userLanguage={appLanguage} />
+          </>
+        );
+      case "grammar":
+        return (
+          <>
+            {RandomHeader}
+            <GrammarBook
+              userLanguage={appLanguage}
+              activeNpub={activeNpub}
+              activeNsec={activeNsec}
+            />
+          </>
+        );
+      case "vocabulary":
+      default:
+        return (
+          <>
+            {RandomHeader}
+            <Vocabulary
+              userLanguage={appLanguage}
+              activeNpub={activeNpub}
+              activeNsec={activeNsec}
+            />
+          </>
+        );
+    }
+  };
+
+  /* -----------------------------------
      Top bar with Settings / Account / Install
   ----------------------------------- */
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -1288,7 +1454,7 @@ export default function App() {
 
   /* -----------------------------------
      Main App (dropdown + panels)
-*/
+  ----------------------------------- */
 
   return (
     <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
@@ -1398,6 +1564,12 @@ export default function App() {
                       <Text>{TAB_LABELS.vocabulary}</Text>
                     </HStack>
                   </MenuItemOption>
+                  <MenuItemOption value="random">
+                    <HStack spacing={2}>
+                      {TAB_ICONS.random}
+                      <Text>{TAB_LABELS.random}</Text>
+                    </HStack>
+                  </MenuItemOption>
                 </MenuOptionGroup>
               </MenuList>
             </Menu>
@@ -1461,6 +1633,9 @@ export default function App() {
                 activeNsec={activeNsec}
               />
             </TabPanel>
+
+            {/* Randomize (not route-based) */}
+            <TabPanel px={0}>{renderRandomPanel()}</TabPanel>
           </TabPanels>
         </Tabs>
       </Box>

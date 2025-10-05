@@ -557,7 +557,11 @@ export default function StoryMode() {
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+
+  // accumulate this session, but award only at end
   const [sessionXp, setSessionXp] = useState(0);
+  const [passedCount, setPassedCount] = useState(0);
+
   const [showFullStory, setShowFullStory] = useState(true);
 
   // Highlighting (target full story)
@@ -779,6 +783,7 @@ export default function StoryMode() {
       storyCacheRef.current = validated;
       setCurrentSentenceIndex(0);
       setSessionXp(0);
+      setPassedCount(0);
       setShowFullStory(true);
       setHighlightedWordIndex(-1);
     } catch (error) {
@@ -1048,6 +1053,7 @@ export default function StoryMode() {
         storyCacheRef.current = validated;
         setCurrentSentenceIndex(0);
         setSessionXp(0);
+        setPassedCount(0);
         setShowFullStory(true);
         setHighlightedWordIndex(-1);
         return validated;
@@ -1473,7 +1479,28 @@ export default function StoryMode() {
     }
   };
 
-  // STRICT gate handler — only advances on pass; awards global XP; logs every attempt
+  /* ----------------------------- Award once at session end ----------------------------- */
+  const finalizePracticeSession = async (awardedXp) => {
+    const npubLive = strongNpub(useUserStore.getState().user);
+    if (!npubLive) return;
+
+    if (awardedXp > 0) {
+      await awardXp(npubLive, Math.round(awardedXp)).catch(() => {});
+    }
+    try {
+      await saveStoryTurn(npubLive, {
+        ok: true,
+        mode: "story-session-complete",
+        lang: targetLang,
+        supportLang,
+        totalSentences: storyData?.sentences?.length || 0,
+        passedSentences: passedCount,
+        xpAwarded: Math.round(awardedXp || 0),
+      });
+    } catch {}
+  };
+
+  // STRICT gate handler — only advances on pass; accumulate XP; log attempts
   const handleEvaluationResult = async ({
     recognizedText = "",
     confidence = 0,
@@ -1548,9 +1575,12 @@ export default function StoryMode() {
       return;
     }
 
-    // Passed — award XP and advance
-    const delta = 15; // XP per sentence
+    // Passed — accumulate XP and advance (no award yet)
+    const delta = 15; // XP per passed sentence
     setSessionXp((p) => p + delta);
+    setPassedCount((c) => c + 1);
+
+    // log passing attempt with 0 awarded now (we award at session end)
     saveStoryTurn(npubLive, {
       ok: true,
       mode: "sentence",
@@ -1562,9 +1592,8 @@ export default function StoryMode() {
       confidence,
       audioMetrics: audioMetrics || null,
       eval: evalOut,
-      xpAwarded: delta,
+      xpAwarded: 0,
     }).catch(() => {});
-    awardXp(npubLive, delta).catch(() => {});
 
     toast({
       title: uiText.wellDone,
@@ -1574,24 +1603,26 @@ export default function StoryMode() {
     });
 
     setTimeout(() => {
-      if (currentSentenceIndex < (storyData?.sentences?.length || 0) - 1) {
+      const isLast =
+        currentSentenceIndex >= (storyData?.sentences?.length || 0) - 1;
+
+      if (!isLast) {
         setCurrentSentenceIndex((p) => p + 1);
       } else {
-        toast({
-          title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
-          description:
-            uiLang === "es"
-              ? `¡Completaste el narrativo! Ganaste ${sessionXp + delta} ${
-                  uiText.xp
-                } en esta sesión.`
-              : `Story completed! You earned ${sessionXp + delta} ${
-                  uiText.xp
-                } this session.`,
-          status: "success",
-          duration: 3000,
+        const totalSessionXp = sessionXp + delta;
+        finalizePracticeSession(totalSessionXp).finally(() => {
+          toast({
+            title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
+            description:
+              uiLang === "es"
+                ? `¡Completaste el narrativo! Ganaste ${totalSessionXp} ${uiText.xp} en esta sesión.`
+                : `Story completed! You earned ${totalSessionXp} ${uiText.xp} this session.`,
+            status: "success",
+            duration: 3000,
+          });
+          setShowFullStory(true);
+          setCurrentSentenceIndex(0);
         });
-        setShowFullStory(true);
-        setCurrentSentenceIndex(0);
       }
       setIsRecording(false);
     }, 800);
@@ -1748,22 +1779,22 @@ export default function StoryMode() {
 
       {/* Shared Level/XP card */}
       <Box px={4} pt={4}>
-        <Box
-          bg="gray.800"
-          p={3}
-          rounded="2xl"
-          border="1px solid rgba(255,255,255,0.06)"
-        >
-          <HStack justify="space-between" mb={1}>
-            <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-              {uiText.levelLabel} {levelNumber} · {uiText.levelLabel}:{" "}
-              {uiText.levelValue}
-            </Badge>
-            <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-              {uiText.xp} {xp}
-            </Badge>
-          </HStack>
-          <WaveBar value={progressPct} />
+        <Box p={3} rounded="2xl">
+          <Box display="flex" justifyContent={"center"}>
+            <HStack justify="space-between" mb={1} width="50%">
+              <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+                {uiText.levelLabel} {levelNumber}
+              </Badge>
+              <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                {uiText.xp} {xp}
+              </Badge>
+            </HStack>
+          </Box>
+          <Box display="flex" justifyContent={"center"}>
+            <Box width="50%">
+              <WaveBar value={progressPct} />
+            </Box>
+          </Box>
         </Box>
       </Box>
 
@@ -1928,6 +1959,7 @@ export default function StoryMode() {
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);
                         setSessionXp(0);
+                        setPassedCount(0);
                         setHighlightedWordIndex(-1);
                         setIsRecording(false);
                       }}
@@ -2035,18 +2067,23 @@ export default function StoryMode() {
                           ) {
                             setCurrentSentenceIndex((p) => p + 1);
                           } else {
-                            toast({
-                              title:
-                                uiLang === "es" ? "¡Felicidades!" : "Congrats!",
-                              description:
-                                uiLang === "es"
-                                  ? `¡Completaste el narrativo! Ganaste ${sessionXp} ${uiText.xp} en esta sesión.`
-                                  : `Story completed! You earned ${sessionXp} ${uiText.xp} this session.`,
-                              status: "success",
-                              duration: 3000,
+                            // Last sentence — finish session and award accumulated XP once
+                            finalizePracticeSession(sessionXp).finally(() => {
+                              toast({
+                                title:
+                                  uiLang === "es"
+                                    ? "¡Felicidades!"
+                                    : "Congrats!",
+                                description:
+                                  uiLang === "es"
+                                    ? `¡Completaste el narrativo! Ganaste ${sessionXp} ${uiText.xp} en esta sesión.`
+                                    : `Story completed! You earned ${sessionXp} ${uiText.xp} this session.`,
+                                status: "success",
+                                duration: 3000,
+                              });
+                              setShowFullStory(true);
+                              setCurrentSentenceIndex(0);
                             });
-                            setShowFullStory(true);
-                            setCurrentSentenceIndex(0);
                           }
                         }}
                         variant="outline"
