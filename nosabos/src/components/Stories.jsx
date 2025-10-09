@@ -1684,7 +1684,7 @@ export default function StoryMode() {
     return (
       <Box
         minH="100vh"
-        bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+        // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
       >
         <Center h="100vh">
           <VStack spacing={6}>
@@ -1705,7 +1705,7 @@ export default function StoryMode() {
     return (
       <Box
         minH="100vh"
-        bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+        // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
         borderRadius="24px"
       >
         <Center h="100vh">
@@ -1733,7 +1733,7 @@ export default function StoryMode() {
   return (
     <Box
       minH="100vh"
-      bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
+      // bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
     >
       {/* Header */}
       <motion.div
@@ -1748,12 +1748,12 @@ export default function StoryMode() {
           w="100%"
           px={4}
           py={3}
-          bg="rgba(15, 15, 35, 0.8)"
-          backdropFilter="blur(20px)"
+          // bg="rgba(15, 15, 35, 0.8)"
+          // backdropFilter="blur(20px)"
           color="white"
-          borderBottom="1px solid"
+          // borderBottom="1px solid"
           borderColor="rgba(255, 255, 255, 0.1)"
-          position="sticky"
+          // position="sticky"
           top={0}
           zIndex={100}
         >
@@ -1820,12 +1820,12 @@ export default function StoryMode() {
             w="100%"
             h="8px"
             borderRadius="full"
-            bg="rgba(255, 255, 255, 0.1)"
-            sx={{
-              "& > div": {
-                bg: "linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%)",
-              },
-            }}
+            // bg="rgba(255, 255, 255, 0.1)"
+            // sx={{
+            //   "& > div": {
+            //     bg: "linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%)",
+            //   },
+            // }}
           />
         </VStack>
       </Box>
@@ -1865,14 +1865,14 @@ export default function StoryMode() {
                               <Text
                                 key={idx}
                                 as="span"
-                                bg={
-                                  highlightedWordIndex ===
-                                  tokenizedText
-                                    .slice(0, idx)
-                                    .filter((t) => t.isWord).length
-                                    ? "rgba(139, 92, 246, 0.3)"
-                                    : "transparent"
-                                }
+                                // bg={
+                                //   highlightedWordIndex ===
+                                //   tokenizedText
+                                //     .slice(0, idx)
+                                //     .filter((t) => t.isWord).length
+                                //     ? "rgba(139, 92, 246, 0.3)"
+                                //     : "transparent"
+                                // }
                                 px={1}
                                 borderRadius="4px"
                                 transition="background-color 0.1s ease"
@@ -1891,11 +1891,11 @@ export default function StoryMode() {
                               <Text
                                 key={i}
                                 as="span"
-                                bg={
-                                  highlightedWordIndex === i
-                                    ? "rgba(139, 92, 246, 0.3)"
-                                    : "transparent"
-                                }
+                                // bg={
+                                //   highlightedWordIndex === i
+                                //     ? "rgba(139, 92, 246, 0.3)"
+                                //     : "transparent"
+                                // }
                                 px={1}
                                 borderRadius="4px"
                                 transition="background-color 0.3s ease"

@@ -44,11 +44,11 @@ import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 
 const REALTIME_MODEL =
-  (import.meta.env.VITE_REALTIME_MODEL || "gpt-4o-mini-realtime-preview") + "";
+  (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
 
 const REALTIME_URL = `${
   import.meta.env.VITE_REALTIME_URL
-}?model=gpt-4o-mini-realtime-preview/exchangeRealtimeSDP?model=${encodeURIComponent(
+}?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
   REALTIME_MODEL
 )}`;
 
@@ -2269,12 +2269,12 @@ Return ONLY JSON:
   return (
     <Box
       minH="100vh"
-      bg="gray.900"
+      // bg="gray.900"
       color="gray.100"
       position="relative"
       pb="120px"
       borderRadius="24px"
-      paddingTop={2}
+      mt="-8"
     >
       <HStack
         spacing={2}
@@ -2283,7 +2283,7 @@ Return ONLY JSON:
         mt={6}
         position={"absolute"}
         right={5}
-        top={"-2"}
+        top={"8"}
       >
         <IconButton
           aria-label={ui.ra_btn_delete_convo}

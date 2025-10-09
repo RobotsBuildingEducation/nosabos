@@ -112,7 +112,7 @@ export default function RobotBuddyPro({
           position: "absolute",
           inset: 0,
           borderRadius: "28px",
-          boxShadow: `0 0 46px 10px ${ring}`,
+          // boxShadow: `0 0 46px 10px ${ring}`,
           animation:
             !reduced && state === "speaking"
               ? "rbproPulse 1.2s ease-in-out infinite"
@@ -122,40 +122,40 @@ export default function RobotBuddyPro({
 
       <style>{CSS_BLOCK}</style>
 
-      <Box
+      {/* <Box
         bgGradient={colors.bg}
         border={`1px solid ${hexWithAlpha(colors.stroke, 0.55)}`}
         rounded="2xl"
         p={compact ? 2 : 3}
         boxShadow="0 8px 24px rgba(0,0,0,0.45)"
-      >
-        {variant === "character" ? (
-          <CharacterAvatar
-            amp={amp}
-            state={state}
-            mood={mood}
-            colors={colors}
-            reduced={reduced}
-          />
-        ) : variant === "sigil" ? (
-          <SigilAvatar
-            amp={amp}
-            state={state}
-            mood={mood}
-            colors={colors}
-            reduced={reduced}
-          />
-        ) : (
-          <AbstractAvatar
-            amp={amp}
-            state={state}
-            mood={mood}
-            colors={colors}
-            reduced={reduced}
-          />
-        )}
+      > */}
+      {variant === "character" ? (
+        <CharacterAvatar
+          amp={amp}
+          state={state}
+          mood={mood}
+          colors={colors}
+          reduced={reduced}
+        />
+      ) : variant === "sigil" ? (
+        <SigilAvatar
+          amp={amp}
+          state={state}
+          mood={mood}
+          colors={colors}
+          reduced={reduced}
+        />
+      ) : (
+        <AbstractAvatar
+          amp={amp}
+          state={state}
+          mood={mood}
+          colors={colors}
+          reduced={reduced}
+        />
+      )}
 
-        {/* {showBadges && (
+      {/* {showBadges && (
           <HStack justify="center" mt={compact ? 1.5 : 2} spacing={2}>
             <Badge
               colorScheme={
@@ -183,8 +183,8 @@ export default function RobotBuddyPro({
             )}
           </HStack>
         )} */}
-      </Box>
     </Box>
+    // </Box>
   );
 }
 

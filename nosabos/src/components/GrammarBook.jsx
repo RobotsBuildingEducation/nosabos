@@ -18,6 +18,7 @@ import {
   Tooltip,
   IconButton,
   useToast,
+  Center,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -1693,14 +1694,16 @@ Return JSON ONLY:
     <Box p={4}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
         {/* Shared progress header */}
-        <Box>
-          <HStack justify="space-between" mb={1}>
-            <Badge variant="subtle">
-              {t("grammar_badge_level", { level: levelNumber })}
-            </Badge>
-            <Badge variant="subtle">{t("grammar_badge_xp", { xp })}</Badge>
-          </HStack>
-          <WaveBar value={progressPct} />
+        <Box display={"flex"} justifyContent={"center"}>
+          <Box w="50%">
+            <HStack justify="space-between" mb={1}>
+              <Badge variant="subtle">
+                {t("grammar_badge_level", { level: levelNumber })}
+              </Badge>
+              <Badge variant="subtle">{t("grammar_badge_xp", { xp })}</Badge>
+            </HStack>
+            <WaveBar value={progressPct} />
+          </Box>
         </Box>
 
         {/* Context chips */}

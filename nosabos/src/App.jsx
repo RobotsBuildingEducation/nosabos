@@ -1,4 +1,4 @@
-// App.jsx
+// src/App.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
@@ -75,6 +75,7 @@ import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
+import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 
 /* ---------------------------
    Small helpers
@@ -362,7 +363,7 @@ function TopBar({
         w="100%"
         px={{ base: 2, md: 3 }}
         py={2}
-        bg="gray.900"
+        // bg="gray.900"
         color="gray.100"
         borderBottom="1px solid"
         borderColor="gray.700"
@@ -371,6 +372,7 @@ function TopBar({
         zIndex={100}
         wrap="wrap"
         spacing={{ base: 2, md: 3 }}
+        backdropFilter="blur(6px)"
       >
         {/* LEFT: Daily WaveBar + % */}
         <HStack
@@ -587,11 +589,12 @@ function TopBar({
                   }
                   bg="gray.700"
                   placeholder={
-                    t.ra_persona_placeholder?.replace(
-                      "{example}",
-                      translations[appLanguage]
-                        .onboarding_persona_default_example
-                    ) ||
+                    (t.ra_persona_placeholder &&
+                      t.ra_persona_placeholder.replace(
+                        "{example}",
+                        translations[appLanguage]
+                          .onboarding_persona_default_example
+                      )) ||
                     `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
                   }
                 />
@@ -898,7 +901,7 @@ export default function App() {
   );
   const t = translations[appLanguage] || translations.en;
 
-  // Tabs (order: Chat, Stories, History, Grammar, Vocabulary, Random)
+  // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
     typeof window !== "undefined"
       ? localStorage.getItem("currentTab") || "realtime"
@@ -909,6 +912,7 @@ export default function App() {
   const TAB_KEYS = [
     "realtime",
     "stories",
+    "jobscript", // ⬅️ NEW TAB KEY
     "history",
     "grammar",
     "vocabulary",
@@ -921,6 +925,7 @@ export default function App() {
   const TAB_LABELS = {
     realtime: t?.tabs_realtime ?? "Chat",
     stories: t?.tabs_stories ?? "Stories",
+    jobscript: t?.tabs_jobscript ?? "Job Script", // ⬅️ LABEL
     history: t?.tabs_history ?? "History",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
@@ -929,6 +934,7 @@ export default function App() {
   const TAB_ICONS = {
     realtime: <RiSpeakLine />,
     stories: <RiSpeakLine />,
+    jobscript: <RiSpeakLine />, // ⬅️ ICON
     history: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <CiEdit />,
@@ -1267,6 +1273,7 @@ export default function App() {
      RANDOMIZE tab mechanics (no routing)
   ----------------------------------- */
   const RANDOM_POOL = useMemo(
+    // ⬅️ keep JobScript out of this list
     () => ["realtime", "stories", "grammar", "vocabulary", "history"],
     []
   );
@@ -1306,7 +1313,6 @@ export default function App() {
       prevXpRef.current = newXp;
 
       if (currentTab === "random" && diff > 0) {
-        // localized toast
         const title =
           t?.random_toast_title ??
           (appLanguage === "es" ? "¡Buen trabajo!" : "Nice job!");
@@ -1540,30 +1546,43 @@ export default function App() {
                       <Text>{TAB_LABELS.realtime}</Text>
                     </HStack>
                   </MenuItemOption>
+
                   <MenuItemOption value="stories">
                     <HStack spacing={2}>
                       {TAB_ICONS.stories}
                       <Text>{TAB_LABELS.stories}</Text>
                     </HStack>
                   </MenuItemOption>
+
+                  {/* NEW: Job Script */}
+                  <MenuItemOption value="jobscript">
+                    <HStack spacing={2}>
+                      {TAB_ICONS.jobscript}
+                      <Text>{TAB_LABELS.jobscript}</Text>
+                    </HStack>
+                  </MenuItemOption>
+
                   <MenuItemOption value="history">
                     <HStack spacing={2}>
                       {TAB_ICONS.history}
                       <Text>{TAB_LABELS.history}</Text>
                     </HStack>
                   </MenuItemOption>
+
                   <MenuItemOption value="grammar">
                     <HStack spacing={2}>
                       {TAB_ICONS.grammar}
                       <Text>{TAB_LABELS.grammar}</Text>
                     </HStack>
                   </MenuItemOption>
+
                   <MenuItemOption value="vocabulary">
                     <HStack spacing={2}>
                       {TAB_ICONS.vocabulary}
                       <Text>{TAB_LABELS.vocabulary}</Text>
                     </HStack>
                   </MenuItemOption>
+
                   <MenuItemOption value="random">
                     <HStack spacing={2}>
                       {TAB_ICONS.random}
@@ -1605,6 +1624,15 @@ export default function App() {
             {/* Stories */}
             <TabPanel px={0}>
               <StoryMode
+                userLanguage={appLanguage}
+                activeNpub={activeNpub}
+                activeNsec={activeNsec}
+              />
+            </TabPanel>
+
+            {/* Job Script (existing component) */}
+            <TabPanel px={0}>
+              <JobScript
                 userLanguage={appLanguage}
                 activeNpub={activeNpub}
                 activeNsec={activeNsec}
