@@ -493,6 +493,85 @@ function norm(s) {
     .trim();
 }
 
+function collectAnswerKeys(answer) {
+  const keys = new Set();
+
+  const visit = (val) => {
+    if (val === undefined || val === null) return;
+    if (Array.isArray(val)) {
+      val.forEach(visit);
+      return;
+    }
+    if (typeof val === "object") {
+      Object.values(val).forEach(visit);
+      return;
+    }
+
+    const str = String(val);
+    if (!str) return;
+
+    const add = (segment) => {
+      const key = norm(segment);
+      if (key) keys.add(key);
+    };
+
+    add(str);
+
+    str
+      .split(/[\n\r]+/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .forEach(add);
+
+    str
+      .split(/[,;\\/\|]/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .forEach(add);
+  };
+
+  visit(answer);
+  return Array.from(keys);
+}
+
+function alignAnswerToChoices(answer, choices = []) {
+  const keys = collectAnswerKeys(answer);
+  if (!Array.isArray(choices) || !choices.length) {
+    return { match: "", keys };
+  }
+
+  const decorated = choices
+    .map((choice) => ({ choice, key: norm(choice) }))
+    .filter((item) => item.key);
+
+  const exact = decorated.find((item) =>
+    keys.some((key) => key === item.key)
+  );
+  if (exact) {
+    return { match: exact.choice, keys };
+  }
+
+  const partial = decorated.find((item) =>
+    keys.some(
+      (key) => key && (key.includes(item.key) || item.key.includes(key))
+    )
+  );
+  if (partial) {
+    return { match: partial.choice, keys };
+  }
+
+  return { match: "", keys };
+}
+
+function pickMatchesKeys(pick, keys = []) {
+  if (!Array.isArray(keys) || !keys.length) return false;
+  const pickKey = norm(pick);
+  if (!pickKey) return false;
+  return keys.some(
+    (key) => key && (key === pickKey || key.includes(pickKey) || pickKey.includes(key))
+  );
+}
+
 function safeParseJSON(text) {
   try {
     return JSON.parse(text);
@@ -647,6 +726,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [mcHint, setMcHint] = useState("");
   const [mcChoices, setMcChoices] = useState([]);
   const [mcAnswer, setMcAnswer] = useState("");
+  const [mcAnswerKeys, setMcAnswerKeys] = useState([]);
   const [mcTranslation, setMcTranslation] = useState("");
   const [mcPick, setMcPick] = useState("");
   const [mcResult, setMcResult] = useState(""); // kept for firestore text; not shown
@@ -837,6 +917,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
     setMcHint("");
     setMcChoices([]);
     setMcAnswer("");
+    setMcAnswerKeys([]);
     setMcTranslation("");
 
     const prompt = buildMCStreamPrompt({
@@ -850,7 +931,18 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
     });
 
     let got = false;
-    let pendingAnswer = "";
+    let pendingAnswer = null;
+    let latestChoices = [];
+
+    const applyAnswer = () => {
+      if (pendingAnswer === null || pendingAnswer === undefined) {
+        setMcAnswerKeys([]);
+        return;
+      }
+      const { match, keys } = alignAnswerToChoices(pendingAnswer, latestChoices);
+      setMcAnswerKeys(keys);
+      if (match) setMcAnswer(match);
+    };
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -878,27 +970,19 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               Array.isArray(obj.choices)
             ) {
               const choices = obj.choices.slice(0, 4).map(String);
+              latestChoices = choices;
               setMcChoices(choices);
-              // If answer already known, align it
-              if (pendingAnswer) {
-                const ans =
-                  choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                  choices[0];
-                setMcAnswer(ans);
+              if (pendingAnswer !== null && pendingAnswer !== undefined) {
+                applyAnswer();
               }
               got = true;
             } else if (obj?.type === "mc" && obj.phase === "meta") {
               if (typeof obj.hint === "string") setMcHint(obj.hint);
               if (typeof obj.translation === "string")
                 setMcTranslation(obj.translation);
-              if (typeof obj.answer === "string") {
+              if (obj.answer !== undefined) {
                 pendingAnswer = obj.answer;
-                if (Array.isArray(mcChoices) && mcChoices.length) {
-                  const ans =
-                    mcChoices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    mcChoices[0];
-                  setMcAnswer(ans);
-                }
+                applyAnswer();
               }
               got = true;
             }
@@ -928,26 +1012,19 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
                 Array.isArray(obj.choices)
               ) {
                 const choices = obj.choices.slice(0, 4).map(String);
+                latestChoices = choices;
                 setMcChoices(choices);
-                if (pendingAnswer) {
-                  const ans =
-                    choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    choices[0];
-                  setMcAnswer(ans);
+                if (pendingAnswer !== null && pendingAnswer !== undefined) {
+                  applyAnswer();
                 }
                 got = true;
               } else if (obj?.type === "mc" && obj.phase === "meta") {
                 if (typeof obj.hint === "string") setMcHint(obj.hint);
                 if (typeof obj.translation === "string")
                   setMcTranslation(obj.translation);
-                if (typeof obj.answer === "string") {
+                if (obj.answer !== undefined) {
                   pendingAnswer = obj.answer;
-                  if (Array.isArray(mcChoices) && mcChoices.length) {
-                    const ans =
-                      mcChoices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                      mcChoices[0];
-                    setMcAnswer(ans);
-                  }
+                  applyAnswer();
                 }
                 got = true;
               }
@@ -1467,7 +1544,9 @@ Return JSON ONLY:
 
     const pickNorm = norm(mcPick);
     const answerNorm = norm(mcAnswer);
-    const correctPick = mcAnswer && pickNorm && pickNorm === answerNorm;
+    const hasAnswerKey = pickMatchesKeys(mcPick, mcAnswerKeys);
+    const correctPick =
+      (mcAnswer && pickNorm && pickNorm === answerNorm) || hasAnswerKey;
 
     let verdictRaw = "";
     let ok = false;
@@ -1498,6 +1577,7 @@ Return JSON ONLY:
       translation: mcTranslation,
       choices: mcChoices,
       author_answer: mcAnswer || "",
+      author_answer_keys: mcAnswerKeys,
       user_choice: mcPick,
       award_xp: delta,
     }).catch(() => {});
