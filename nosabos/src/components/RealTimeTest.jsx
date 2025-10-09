@@ -42,6 +42,11 @@ import { translations } from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
+import {
+  isSupportedTargetLang,
+  languageKeyFor,
+  llmLanguageNameFor,
+} from "../constants/languages";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -436,7 +441,10 @@ export default function RealTimeTest({
   const [voicePersona, setVoicePersona] = useState(
     translations.en.onboarding_persona_default_example
   );
-  const [targetLang, setTargetLang] = useState("es");
+  const initialTargetLang = isSupportedTargetLang(user?.progress?.targetLang)
+    ? user.progress.targetLang
+    : "es";
+  const [targetLang, setTargetLang] = useState(initialTargetLang);
   const [showTranslations, setShowTranslations] = useState(true);
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!user?.progress?.practicePronunciation
@@ -520,11 +528,21 @@ export default function RealTimeTest({
   const toggleLabel =
     translations[uiLang].onboarding_translations_toggle?.replace(
       "{language}",
-      translations[uiLang][`language_${secondaryPref}`]
+      (() => {
+        const key = languageKeyFor(secondaryPref);
+        if (key && translations[uiLang][key]) return translations[uiLang][key];
+        return secondaryPref === "es"
+          ? "Spanish"
+          : secondaryPref === "en"
+          ? "English"
+          : secondaryPref;
+      })()
     ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
 
-  const languageNameFor = (code) =>
-    translations[uiLang][`language_${code === "nah" ? "nah" : code}`];
+  const languageNameFor = (code) => {
+    const key = languageKeyFor(code);
+    return (key && translations[uiLang][key]) || code;
+  };
 
   const levelLabel = translations[uiLang][`onboarding_level_${level}`] || level;
   const levelColor =
@@ -743,7 +761,7 @@ export default function RealTimeTest({
       voicePersonaRef.current = p.voicePersona;
       setVoicePersona(p.voicePersona);
     }
-    if (["nah", "es", "en"].includes(p.targetLang)) {
+    if (isSupportedTargetLang(p.targetLang)) {
       targetLangRef.current = p.targetLang;
       setTargetLang(p.targetLang);
     }
@@ -1397,12 +1415,25 @@ Return ONLY JSON:
     );
     const activeGoal = goalTitleForTarget(goalRef.current);
 
-    let strict =
-      tLang === "nah"
-        ? "Respond ONLY in Nahuatl (Náhuatl). Do not use Spanish or English."
-        : tLang === "es"
-        ? "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl."
-        : "Respond ONLY in English. Do not use Spanish or Nahuatl.";
+    const llmName = llmLanguageNameFor(tLang) || languageNameFor(tLang);
+    const altName = (() => {
+      const key = languageKeyFor(tLang);
+      if (!key) return "";
+      const label = translations.es?.[key];
+      if (label && llmName && label !== llmName) return ` (${label})`;
+      return "";
+    })();
+    let strict;
+    if (tLang === "es") {
+      strict =
+        "Responde ÚNICAMENTE en español. No uses otros idiomas en tus respuestas.";
+    } else if (tLang === "en") {
+      strict =
+        "Respond ONLY in English. Do not use other languages in your replies.";
+    } else {
+      const name = llmName || tLang || "the target language";
+      strict = `Respond ONLY in ${name}${altName}. Do not use Spanish or English.`;
+    }
 
     const levelHint =
       lvl === "beginner"
@@ -2394,8 +2425,8 @@ Return ONLY JSON:
 
           const secondaryLabel =
             lang === "es"
-              ? translations[uiLang].language_en
-              : translations[uiLang][`language_${secondaryPref}`];
+              ? languageNameFor("en")
+              : languageNameFor(secondaryPref);
 
           const isTranslating =
             !secondaryText && !!m.textStream && showTranslations;

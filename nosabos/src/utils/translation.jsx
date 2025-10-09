@@ -94,6 +94,11 @@ export const translations = {
     language_en: "English",
     language_es: "Spanish",
     language_nah: "Náhuatl",
+    language_maya: "Maya",
+    language_mix: "Mixtec",
+    language_zap: "Zapotec",
+    language_oto: "Otomí",
+    language_pur: "Purépecha",
     onboarding_voice_alloy: "Alloy",
     onboarding_voice_ash: "Ash",
     onboarding_voice_ballad: "Ballad",
@@ -122,6 +127,11 @@ export const translations = {
     onboarding_practice_nah: "Practice: Náhuatl",
     onboarding_practice_es: "Practice: Spanish",
     onboarding_practice_en: "Practice: English",
+    onboarding_practice_maya: "Practice: Maya",
+    onboarding_practice_mix: "Practice: Mixtec",
+    onboarding_practice_zap: "Practice: Zapotec",
+    onboarding_practice_oto: "Practice: Otomí",
+    onboarding_practice_pur: "Practice: Purépecha",
 
     onboarding_voice_Leda: "Leda",
     onboarding_voice_Puck: "Puck",
@@ -213,54 +223,6 @@ export const translations = {
     grammar_result_not_fit: "❌ Doesn’t fit · +{xp} XP",
     grammar_result_correct: "✅ Correct · +{xp} XP",
     grammar_result_try_again: "❌ Try again · +{xp} XP",
-    app_settings_aria: "Settings",
-    app_install_aria: "Install",
-    app_account_aria: "Account",
-
-    ra_settings_title: "Conversation settings",
-    ra_pron_label: "Practice pronunciation",
-    ra_pron_help: "Adds a tiny cue and one slow repetition each turn.",
-    ra_persona_label: "Persona",
-    ra_persona_placeholder: "e.g., {example}",
-    ra_persona_help: "A short vibe/style hint for the AI voice.",
-    ra_help_label: "What would you like help with?",
-    ra_help_placeholder:
-      "e.g., conversational practice for job interviews; past tenses review; travel Spanish…",
-    ra_help_help: "Describe your goal or context (this guides the experience).",
-    ra_vad_label: "Voice activity pause (ms)",
-
-    app_account_title: "Account",
-    app_your_id: "Your ID",
-    app_copy: "Copy",
-    app_secret_key: "Secret key",
-    app_secret_placeholder: "nsec...",
-    app_secret_note:
-      "Keep your secret safe. Anyone with it can access your account.",
-    app_id_placeholder: "npub...",
-    app_nsec_placeholder: "Paste an nsec key to switch",
-    app_switch_account: "Switch account",
-    app_switching: "Switching…",
-    app_switch: "Switch",
-    app_switch_note:
-      "We’ll derive your public key (npub) from the secret and switch safely.",
-
-    app_install_title: "Install as app",
-    app_install_step1: "Open the browser menu.",
-    app_install_step2: "Choose 'Share' or 'Install'.",
-    app_install_step3: "Add to Home Screen.",
-    app_install_step4: "Launch from your Home Screen.",
-    app_close: "Close",
-
-    toast_copied: "Copied",
-    toast_copy_failed: "Copy failed",
-    toast_paste_nsec: "Paste your nsec",
-    toast_invalid_key: "Invalid key",
-    toast_must_start_nsec: "Key must start with 'nsec'.",
-    toast_switched_account: "Switched account",
-    toast_switch_failed: "Switch failed",
-    toast_id_copied: "ID copied",
-    toast_secret_copied: "Secret copied",
-
     app_err_save_language_title: "Could not save language",
 
     tabs_realtime: "Chat",
@@ -269,10 +231,6 @@ export const translations = {
     tabs_grammar: "Grammar",
     tabs_vocab: "Vocabulary",
 
-    onboarding_translations_toggle: "Show translation to {language}",
-    language_en: "English",
-    language_es: "Spanish",
-    language_nah: "Nahuatl",
     story_header: "Story Mode",
     story_generate: "Generate Story",
     story_playing: "Playing…",
@@ -464,6 +422,11 @@ export const translations = {
     language_en: "Inglés",
     language_es: "Español",
     language_nah: "Náhuatl",
+    language_maya: "Maya",
+    language_mix: "Mixteco",
+    language_zap: "Zapoteco",
+    language_oto: "Otomí",
+    language_pur: "Purépecha",
     grammar_badge_level: "Nivel {level}",
     grammar_badge_xp: "XP {xp}",
     grammar_btn_fill: "Completar el espacio",
@@ -532,11 +495,6 @@ export const translations = {
     common_id_label: "ID:",
     common_saving: "Guardando",
 
-    // language names (for interpolation)
-    language_en: "Inglés",
-    language_es: "Español",
-    language_nah: "Náhuatl",
-
     onboarding_voice_alloy: "Alloy",
     onboarding_voice_ash: "Ash",
     onboarding_voice_ballad: "Ballad",
@@ -565,6 +523,11 @@ export const translations = {
     onboarding_practice_nah: "Práctica: Náhuatl",
     onboarding_practice_es: "Práctica: Español",
     onboarding_practice_en: "Práctica: Inglés",
+    onboarding_practice_maya: "Práctica: Maya",
+    onboarding_practice_mix: "Práctica: Mixteco",
+    onboarding_practice_zap: "Práctica: Zapoteco",
+    onboarding_practice_oto: "Práctica: Otomí",
+    onboarding_practice_pur: "Práctica: Purépecha",
 
     onboarding_voice_Leda: "Leda",
     onboarding_voice_Puck: "Puck",
@@ -577,8 +540,6 @@ export const translations = {
     onboarding_persona_input_placeholder: "p. ej., {example}",
     onboarding_persona_help_text:
       "Esto guía el tono/estilo (que sea juguetón, no hiriente).",
-
-    onboarding_translations_toggle: "Mostrar traducción en {language}",
 
     onboarding_challenge_default: "Pide algo con cortesía.",
     onboarding_challenge_label_en: "EN:",
@@ -596,66 +557,6 @@ export const translations = {
     ra_btn_connecting: "Conectando…",
     ra_btn_disconnect: "Desconectar",
 
-    ra_settings_title: "Ajustes",
-    ra_persona_label: "Personalidad de voz",
-    ra_persona_placeholder: 'p. ej., "{example}"',
-    ra_persona_help:
-      "Define el estilo de la respuesta (sarcasmo ligero OK; nada hiriente).",
-
-    ra_progress_header: "Progreso",
-    ra_progress_xp_to_level: "{remaining} XP para subir de nivel",
-
-    ra_vad_label: "Pausa entre turnos (1000 ms = 1 segundo)",
-
-    ra_translating: "Traduciendo…",
-
-    ra_delete_confirm:
-      "¿Borrar todos los turnos guardados de esta cuenta? Esta acción no se puede deshacer.",
-    ra_toast_no_account_title: "Sin cuenta",
-    ra_toast_no_account_desc: "No se encontró el ID de usuario.",
-    ra_toast_delete_success: "Conversación borrada",
-    ra_toast_delete_failed_title: "Error al borrar",
-    ra_toast_rt_failed_title: "Fallo de conexión en tiempo real",
-    ra_toast_rt_error_title: "Error de Realtime",
-
-    // app
-    app_install_aria: "Instalar App",
-    app_account_aria: "Cuenta",
-    app_lang_en: "EN",
-    app_lang_es: "ES",
-    app_install_title: "Instalar App",
-    app_install_step1:
-      "1. Abre esta página en tu navegador con el botón de Más Opciones",
-    app_install_step2: "2. Presiona el botón de Compartir",
-    app_install_step3:
-      "3. Presiona el botón de Agregar a la Pantalla de Inicio",
-    app_install_step4:
-      "4. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
-    app_close: "Cerrar",
-    app_account_title: "Cuenta",
-    app_your_id: "Tu ID (npub)",
-    app_copy: "Copiar",
-    app_secret_key: "Clave secreta (nsec)",
-    app_secret_note:
-      "Nunca mostramos tu secreto—solo copiamos desde el almacenamiento local.",
-    app_switch_account: "Cambiar cuenta (pega nsec)",
-    app_nsec_placeholder: "nsec1...",
-    app_switch: "Cambiar",
-    app_switching: "Cambiando",
-    app_switch_note:
-      "Si la cuenta no existe, la crearemos en tu colección de usuarios.",
-
-    // toasts
-    toast_copied: "Copiado",
-    toast_id_copied: "ID copiado",
-    toast_secret_copied: "Secreto copiado",
-    toast_copy_failed: "Fallo al copiar",
-    toast_paste_nsec: "Pega tu nsec primero",
-    toast_invalid_key: "Clave inválida",
-    toast_must_start_nsec: "Debe empezar con nsec…",
-    toast_switch_failed: "Fallo al cambiar",
-    toast_switched_account: "Cuenta cambiada",
-    toast_save_lang_failed: "Fallo al guardar idioma",
   },
 };
 

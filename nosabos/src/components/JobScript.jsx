@@ -39,6 +39,10 @@ import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
+import {
+  isSupportedTargetLang,
+  llmLanguageNameFor,
+} from "../constants/languages";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -72,13 +76,15 @@ const capName = (x) =>
     .replace(/\b\w/g, (m) => m.toUpperCase());
 
 const LLM_LANG_NAME = (codeOrName) => {
-  const m = String(codeOrName || "")
-    .trim()
-    .toLowerCase();
-  if (m === "en" || m === "english") return "English";
-  if (m === "es" || m === "spanish" || m === "español") return "Spanish";
-  if (m === "nah" || m === "nahuatl") return "Nahuatl";
-  return capName(m);
+  const raw = String(codeOrName || "").trim();
+  const lower = raw.toLowerCase();
+  if (lower === "en" || lower === "english") return "English";
+  if (lower === "es" || lower === "spanish" || lower === "español")
+    return "Spanish";
+  const llm = llmLanguageNameFor(lower) || llmLanguageNameFor(raw);
+  if (llm) return llm;
+  if (lower === "nahuatl") return llmLanguageNameFor("nah") || "Nahuatl";
+  return capName(raw);
 };
 
 const normalizeLangCode = (v) =>
@@ -92,7 +98,8 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (!m) return fallback;
   if (m === "en") return "en-US";
   if (m === "es") return "es-ES";
-  if (m === "nah") return "es-ES"; // fallback
+  if (["nah", "maya", "mix", "zap", "oto", "pur"].includes(m))
+    return "es-ES";
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
   return fallback;
@@ -128,7 +135,9 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: p.targetLang || "es",
+        targetLang: isSupportedTargetLang(p.targetLang)
+          ? p.targetLang
+          : "es",
         supportLang: p.supportLang || "en",
         voice: p.voice || "alloy",
       });

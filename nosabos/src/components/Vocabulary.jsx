@@ -33,6 +33,11 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources"; 
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
+import {
+  isSupportedTargetLang,
+  llmLanguageNameFor,
+  languageKeyFor,
+} from "../constants/languages";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
 import { awardXp } from "../utils/utils";
@@ -128,8 +133,12 @@ async function callResponses({ model, input }) {
 /* ---------------------------
    User/XP helpers
 --------------------------- */
-const LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+const LANG_NAME = (code) => {
+  if (code === "bilingual") return "Bilingual";
+  const name = llmLanguageNameFor(code);
+  if (name) return name;
+  return code;
+};
 
 const strongNpub = (user) =>
   (
@@ -164,7 +173,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "en"].includes(p.targetLang)
+        targetLang: isSupportedTargetLang(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
@@ -583,7 +592,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
     useSharedProgress();
 
   const level = progress.level || "beginner";
-  const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
+  const targetLang = isSupportedTargetLang(progress.targetLang)
     ? progress.targetLang
     : "en";
   const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
@@ -596,12 +605,14 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const supportCode = resolveSupportLang(supportLang, userLanguage);
 
   // UI language labels
-  const localizedLangName = (code) =>
-    ({
-      en: t("language_en"),
-      es: t("language_es"),
-      nah: t("language_nah"),
-    }[code] || code);
+  const localizedLangName = (code) => {
+    const key = languageKeyFor(code);
+    if (key) {
+      const label = t(key);
+      if (label && label !== key) return label;
+    }
+    return LANG_NAME(code);
+  };
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
