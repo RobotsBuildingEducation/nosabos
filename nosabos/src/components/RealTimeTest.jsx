@@ -1414,8 +1414,12 @@ Return ONLY JSON:
       prefs?.practicePronunciation ?? practicePronunciationRef.current
     );
     const activeGoal = goalTitleForTarget(goalRef.current);
+    const supportCode = prefs?.supportLang ?? supportLangRef.current ?? "en";
+    const supportName =
+      llmLanguageNameFor(supportCode) || languageNameFor(supportCode);
 
     const llmName = llmLanguageNameFor(tLang) || languageNameFor(tLang);
+    const displayName = llmName || tLang || "the target language";
     const altName = (() => {
       const key = languageKeyFor(tLang);
       if (!key) return "";
@@ -1423,17 +1427,38 @@ Return ONLY JSON:
       if (label && llmName && label !== llmName) return ` (${label})`;
       return "";
     })();
+
     let strict;
     if (tLang === "es") {
       strict =
-        "Responde ÚNICAMENTE en español. No uses otros idiomas en tus respuestas.";
+        "Responde principalmente en español. Puedes añadir una pista breve en inglés solo si ayuda, pero mantén la respuesta en español.";
     } else if (tLang === "en") {
       strict =
-        "Respond ONLY in English. Do not use other languages in your replies.";
+        "Respond primarily in English. You may add a short Spanish hint only if it helps, but keep the main reply in English.";
     } else {
-      const name = llmName || tLang || "the target language";
-      strict = `Respond ONLY in ${name}${altName}. Do not use Spanish or English.`;
+      const translationHint =
+        supportName && supportCode !== tLang
+          ? ` Optional ${supportName} hints in parentheses are fine if the learner is lost, but keep the main sentences in ${displayName}.`
+          : "";
+      strict = `Respond primarily in ${displayName}${altName}. Keep at least one natural sentence in ${displayName} per reply.${translationHint}`;
     }
+
+    const crossLangLine =
+      tLang === "en"
+        ? "If the learner writes in Spanish, respond in English while acknowledging their idea."
+        : tLang === "es"
+        ? "If the learner writes in English, responde en español y haz una breve pregunta de seguimiento."
+        : `If the learner writes in English or Spanish, interpret their intent and reply in ${displayName} with a helpful sentence and a short follow-up question in ${displayName}.`;
+
+    const guardLine =
+      tLang === "en" || tLang === "es"
+        ? "Avoid stock phrases; stay conversational."
+        : `Do NOT reply with phrases like "I don't understand" or "Please repeat" unless the learner explicitly says they are confused. Instead, restate their idea in ${displayName} and keep the conversation moving.`;
+
+    const followUpLine =
+      tLang === "en"
+        ? "End each reply with a gentle follow-up question in English."
+        : `End each reply with a friendly follow-up question in ${displayName}.`;
 
     const levelHint =
       lvl === "beginner"
@@ -1451,12 +1476,15 @@ Return ONLY JSON:
     return [
       "Act as a language practice partner.",
       strict,
+      crossLangLine,
+      guardLine,
       "Keep replies very brief (≤25 words) and natural.",
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       levelHint,
       focusLine,
       pronLine,
       goalLine,
+      followUpLine,
     ]
       .filter(Boolean)
       .join(" ");

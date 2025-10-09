@@ -1465,18 +1465,29 @@ Return JSON ONLY:
     if (!mcQ || !mcPick) return;
     setLoadingMCG(true);
 
-    const verdictRaw = await callResponses({
-      model: MODEL,
-      input: buildMCJudgePrompt({
-        targetLang,
-        stem: mcQ,
-        choices: mcChoices,
-        userChoice: mcPick,
-        hint: mcHint,
-      }),
-    });
+    const pickNorm = norm(mcPick);
+    const answerNorm = norm(mcAnswer);
+    const correctPick = mcAnswer && pickNorm && pickNorm === answerNorm;
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    let verdictRaw = "";
+    let ok = false;
+
+    if (correctPick) {
+      ok = true;
+    } else {
+      verdictRaw = await callResponses({
+        model: MODEL,
+        input: buildMCJudgePrompt({
+          targetLang,
+          stem: mcQ,
+          choices: mcChoices,
+          userChoice: mcPick,
+          hint: mcHint,
+        }),
+      });
+
+      ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    }
     const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
@@ -1506,18 +1517,42 @@ Return JSON ONLY:
     if (!maQ || !maPicks.length) return;
     setLoadingMAG(true);
 
-    const verdictRaw = await callResponses({
-      model: MODEL,
-      input: buildMAJudgePrompt({
-        targetLang,
-        stem: maQ,
-        choices: maChoices,
-        userSelections: maPicks,
-        hint: maHint,
-      }),
-    });
+    const normalizeSet = (arr) => {
+      const set = new Set();
+      arr.forEach((item) => {
+        const key = norm(item);
+        if (key) set.add(key);
+      });
+      return set;
+    };
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    const answerSet = normalizeSet(maAnswers || []);
+    const pickSet = normalizeSet(maPicks || []);
+    const hasAuthorAnswers = answerSet.size >= 2;
+    const directMatch =
+      hasAuthorAnswers &&
+      answerSet.size === pickSet.size &&
+      Array.from(answerSet).every((key) => pickSet.has(key));
+
+    let verdictRaw = "";
+    let ok = false;
+
+    if (directMatch) {
+      ok = true;
+    } else {
+      verdictRaw = await callResponses({
+        model: MODEL,
+        input: buildMAJudgePrompt({
+          targetLang,
+          stem: maQ,
+          choices: maChoices,
+          userSelections: maPicks,
+          hint: maHint,
+        }),
+      });
+
+      ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    }
     const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
