@@ -29,6 +29,11 @@ import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
+import {
+  isSupportedTargetLang,
+  llmLanguageNameFor,
+  languageKeyFor,
+} from "../constants/languages";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
@@ -109,8 +114,12 @@ function safeParseJSON(text) {
 /* ---------------------------
    User / XP / Settings
 --------------------------- */
-const LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+const LANG_NAME = (code) => {
+  if (code === "bilingual") return "Bilingual";
+  const name = llmLanguageNameFor(code);
+  if (name) return name;
+  return code;
+};
 
 const strongNpub = (user) =>
   (
@@ -141,7 +150,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "en"].includes(p.targetLang)
+        targetLang: isSupportedTargetLang(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
@@ -445,7 +454,7 @@ export default function History({ userLanguage = "en" }) {
 
   const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
 
-  const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
+  const targetLang = isSupportedTargetLang(progress.targetLang)
     ? progress.targetLang
     : "es";
   const supportLang =
@@ -456,12 +465,14 @@ export default function History({ userLanguage = "en" }) {
       : progress.supportLang || "en";
   const showTranslations = progress.showTranslations !== false;
 
-  const localizedLangName = (code) =>
-    ({
-      en: t("language_en"),
-      es: t("language_es"),
-      nah: t("language_nah"),
-    }[code] || code);
+  const localizedLangName = (code) => {
+    const key = languageKeyFor(code);
+    if (key) {
+      const label = t(key);
+      if (label && label !== key) return label;
+    }
+    return LANG_NAME(code);
+  };
 
   const targetDisplay = localizedLangName(targetLang);
   const supportDisplay = localizedLangName(supportLang);
