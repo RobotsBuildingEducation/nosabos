@@ -186,13 +186,6 @@ function difficultyHint(level, xp) {
   ][band];
 }
 
-const resolveSupportLang = (supportLang, appUILang) =>
-  supportLang === "bilingual"
-    ? appUILang === "es"
-      ? "es"
-      : "en"
-    : supportLang;
-
 // Seed: FIRST lecture must be Bering migration
 function buildSeedLecturePrompt({ targetLang, supportLang, level, xp }) {
   const TARGET = LANG_NAME(targetLang);
@@ -443,6 +436,9 @@ export default function History({ userLanguage = "en" }) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
+  // ---- Dedup & concurrency guards ----
+  const generatingRef = useRef(false); // synchronous mutex to stop double invokes
+
   const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
 
   const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
@@ -542,6 +538,19 @@ export default function History({ userLanguage = "en" }) {
     stopSpeech();
   }, [activeId, draftLecture]); // eslint-disable-line
 
+  // quick duplicate detector against the most recent saved lecture (same title+target within 15s)
+  const isDuplicateOfLast = (titleStr, targetStr) => {
+    const norm = (s) => (s || "").replace(/\s+/g, " ").trim().toLowerCase();
+    const last = lectures[lectures.length - 1];
+    if (!last) return false;
+    const within15s = Date.now() - (last.createdAtClient || 0) < 15000;
+    return (
+      within15s &&
+      norm(last.title) === norm(titleStr) &&
+      norm(last.target) === norm(targetStr)
+    );
+  };
+
   /* ---------------------------
      Backend (non-stream) fallback
   --------------------------- */
@@ -636,6 +645,13 @@ export default function History({ userLanguage = "en" }) {
       awarded: false, // ← XP not yet claimed
     };
 
+    // 🔒 Idempotency guard: if last lecture matches, don't write a new doc
+    if (isDuplicateOfLast(payload.title, payload.target)) {
+      const last = lectures[lectures.length - 1];
+      if (last) setActiveId(last.id);
+      return;
+    }
+
     const col = collection(database, "users", npub, "historyLectures");
     const ref = await addDoc(col, payload);
     setActiveId(ref.id);
@@ -645,7 +661,9 @@ export default function History({ userLanguage = "en" }) {
      Gemini streaming generator
   --------------------------- */
   async function generateNextLectureGeminiStream() {
-    if (!npub || isGenerating) return;
+    // 🔒 Hard guard against double-invoke (click races / multiple triggers)
+    if (!npub || generatingRef.current || isGenerating) return;
+    generatingRef.current = true;
     setIsGenerating(true);
     setDraftLecture(null);
 
@@ -676,12 +694,17 @@ export default function History({ userLanguage = "en" }) {
     const takeaways = [];
     let revealed = false;
 
+    // track seen lines to prevent duplicates (e.g., when a provider re-emits the whole output)
+    const seenLineKeys = new Set();
+
     const revealDraft = () => {
       if (!revealed) revealed = true;
       setDraftLecture({
         title:
           title ||
-          t("history_generating_title", { defaultValue: "Generating…" }),
+          t("history_generating_title") ||
+          t("history_generating") ||
+          "Generating…",
         target: targetParts.join(" ").replace(/\s+/g, " ").trim(),
         support: supportParts.join(" ").replace(/\s+/g, " ").trim(),
         takeaways: [...takeaways],
@@ -692,30 +715,44 @@ export default function History({ userLanguage = "en" }) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith("```")) return;
       if (!(trimmed.startsWith("{") && trimmed.endsWith("}"))) return;
+
       let obj;
       try {
         obj = JSON.parse(trimmed);
       } catch {
         return;
       }
-      if (obj?.type === "title" && typeof obj.text === "string" && !title) {
-        title = obj.text.trim();
+
+      const text = typeof obj?.text === "string" ? obj.text.trim() : "";
+      const type = obj?.type;
+      if (!type || !text) return;
+
+      const key = `${type}|${text}`;
+      if (seenLineKeys.has(key)) return; // <-- drop dupes
+      seenLineKeys.add(key);
+
+      if (type === "title" && !title) {
+        title = text;
         revealDraft();
         return;
       }
-      if (obj?.type === "target" && typeof obj.text === "string") {
-        targetParts.push(obj.text.trim().replace(/\s+/g, " "));
-        revealDraft();
+      if (type === "target") {
+        if (targetParts[targetParts.length - 1] !== text) {
+          targetParts.push(text);
+          revealDraft();
+        }
         return;
       }
-      if (obj?.type === "support" && typeof obj.text === "string") {
-        supportParts.push(obj.text.trim().replace(/\s+/g, " "));
-        revealDraft();
+      if (type === "support") {
+        if (supportParts[supportParts.length - 1] !== text) {
+          supportParts.push(text);
+          revealDraft();
+        }
         return;
       }
-      if (obj?.type === "takeaway" && typeof obj.text === "string") {
-        if (takeaways.length < 3) {
-          takeaways.push(obj.text.trim());
+      if (type === "takeaway") {
+        if (takeaways.length < 3 && !takeaways.includes(text)) {
+          takeaways.push(text);
           revealDraft();
         }
         return;
@@ -741,25 +778,16 @@ export default function History({ userLanguage = "en" }) {
         }
       }
 
-      // Flush remaining + final text
-      const finalAgg = await resp.response;
-      const finalText =
-        (typeof finalAgg?.text === "function"
-          ? finalAgg.text()
-          : finalAgg?.text) || "";
-      if (buffer) buffer += "\n";
-      if (finalText) buffer += finalText;
-      buffer
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .forEach((line) => tryConsumeLine(line));
+      // ✅ Only parse a leftover partial line, NOT the provider's final aggregate (which repeats everything)
+      const leftover = buffer.trim();
+      if (leftover) tryConsumeLine(leftover);
 
       // If nothing parsed, fallback to backend
       if (!title && targetParts.length === 0) {
         await generateNextLectureBackend();
         setDraftLecture(null);
         setIsGenerating(false);
+        generatingRef.current = false; // 🔓 release on fallback early-return
         if (!listDisclosure.isOpen) listDisclosure.onOpen();
         return;
       }
@@ -794,6 +822,15 @@ export default function History({ userLanguage = "en" }) {
         createdAtClient: Date.now(),
         awarded: false, // ← wait until user finishes reading
       };
+
+      // 🔒 Idempotency guard: avoid immediate duplicates
+      if (isDuplicateOfLast(payload.title, payload.target)) {
+        const last = lectures[lectures.length - 1];
+        if (last) setActiveId(last.id);
+        setDraftLecture(null);
+        return; // finally{} will release the lock
+      }
+
       const colRef = collection(database, "users", npub, "historyLectures");
       const ref = await addDoc(colRef, payload);
       setActiveId(ref.id);
@@ -809,6 +846,7 @@ export default function History({ userLanguage = "en" }) {
       setDraftLecture(null);
     } finally {
       setIsGenerating(false);
+      generatingRef.current = false; // 🔓 always release
     }
   }
 
@@ -1184,7 +1222,6 @@ export default function History({ userLanguage = "en" }) {
                         variant="outline"
                       />
                     )}
-                    {/* New: Finish & award */}
                   </HStack>
                 </HStack>
 

@@ -13,6 +13,7 @@ export function t(lang = "en", key, vars = {}) {
 }
 export const translations = {
   en: {
+    try_again: "Try again",
     tabs_random: "Random",
     random_toast_title: "Nice job!",
     random_toast_desc: "You earned +{xp} XP.",
@@ -332,6 +333,7 @@ export const translations = {
   },
 
   es: {
+    try_again: "Inténtalo de nuevo",
     tabs_random: "Aleatorio",
 
     random_toast_title: "¡Buen trabajo!",
