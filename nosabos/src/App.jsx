@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Drawer,
@@ -76,6 +76,7 @@ import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
+import LandingPage from "./components/LandingPage";
 
 /* ---------------------------
    Small helpers
@@ -865,9 +866,18 @@ function TopBar({
 --------------------------------------------------------------------------------------------------*/
 export default function App() {
   const toast = useToast();
-  const initRef = useRef(false);
 
-  const [isLoadingApp, setIsLoadingApp] = useState(true);
+  const computeHasStoredKeys = () => {
+    if (typeof window === "undefined") return false;
+    const npub = (localStorage.getItem("local_npub") || "").trim();
+    const nsec = (localStorage.getItem("local_nsec") || "").trim();
+    return Boolean(npub && nsec);
+  };
+
+  const [needsLogin, setNeedsLogin] = useState(() => !computeHasStoredKeys());
+  const [isLoadingApp, setIsLoadingApp] = useState(() => computeHasStoredKeys());
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
+  const [landingError, setLandingError] = useState("");
 
   // Zustand store
   const user = useUserStore((s) => s.user);
@@ -957,30 +967,18 @@ export default function App() {
   /* -----------------------------------
      Identity bootstrap + user doc ensure
   ----------------------------------- */
-  const connectDID = async () => {
+  const connectDID = useCallback(async () => {
     setIsLoadingApp(true);
     try {
-      let id = (localStorage.getItem("local_npub") || "").trim();
-      let userDoc = null;
+      const id = (localStorage.getItem("local_npub") || "").trim();
+      if (!id) {
+        setNeedsLogin(true);
+        setUser?.(null);
+        return;
+      }
 
-      if (id) {
-        userDoc = await loadUserObjectFromDB(database, id);
-        if (!userDoc) {
-          const base = {
-            local_npub: id,
-            createdAt: new Date().toISOString(),
-            onboarding: { completed: false },
-            appLanguage:
-              localStorage.getItem("appLanguage") === "es" ? "es" : "en",
-            helpRequest: "",
-            practicePronunciation: false,
-          };
-          await setDoc(doc(database, "users", id), base, { merge: true });
-          userDoc = await loadUserObjectFromDB(database, id);
-        }
-      } else {
-        const did = await generateNostrKeys();
-        id = did?.npub || (localStorage.getItem("local_npub") || "").trim();
+      let userDoc = await loadUserObjectFromDB(database, id);
+      if (!userDoc) {
         const base = {
           local_npub: id,
           createdAt: new Date().toISOString(),
@@ -1007,20 +1005,62 @@ export default function App() {
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
         setUser?.(userDoc);
+      } else {
+        setUser?.(null);
       }
     } catch (e) {
       console.error("connectDID error:", e);
+      setNeedsLogin(true);
+      setLandingError(
+        "We couldn't finish signing you in. Please try again in a moment."
+      );
+      setIsCreatingAccount(false);
     } finally {
       setIsLoadingApp(false);
     }
-  };
+  }, [
+    setActiveNpub,
+    setActiveNsec,
+    setAppLanguage,
+    setNeedsLogin,
+    setUser,
+    setLandingError,
+    setIsCreatingAccount,
+  ]);
 
   useEffect(() => {
-    if (initRef.current) return;
-    initRef.current = true;
+    if (needsLogin) {
+      setIsLoadingApp(false);
+      return;
+    }
     connectDID();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [needsLogin, connectDID]);
+
+  const handleLandingSubmit = async (submittedName) => {
+    const safeName = submittedName.trim();
+    if (!safeName) {
+      setLandingError("Please enter a username to continue.");
+      return;
+    }
+
+    setIsCreatingAccount(true);
+    setLandingError("");
+    try {
+      const did = await generateNostrKeys(safeName);
+      if (!did?.npub) {
+        throw new Error("Unable to generate keys. Please try again.");
+      }
+      setIsLoadingApp(true);
+      setNeedsLogin(false);
+    } catch (error) {
+      console.error("generateNostrKeys error:", error);
+      setLandingError(
+        error?.message || "We couldn't generate your keys. Please try again."
+      );
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
 
   // Keep appLanguage synced from store if changed elsewhere
   useEffect(() => {
@@ -1435,6 +1475,16 @@ export default function App() {
   /* -----------------------------------
      Loading / Onboarding gates
   ----------------------------------- */
+  if (needsLogin) {
+    return (
+      <LandingPage
+        onSubmit={handleLandingSubmit}
+        isSubmitting={isCreatingAccount}
+        errorMessage={landingError}
+      />
+    );
+  }
+
   if (isLoadingApp || !user) {
     return (
       <Box minH="100vh" bg="gray.900" color="gray.100" p={6}>
