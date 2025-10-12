@@ -33,6 +33,11 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources"; 
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
+import {
+  isSupportedTargetLang,
+  llmLanguageNameFor,
+  languageKeyFor,
+} from "../constants/languages";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
 import { awardXp } from "../utils/utils";
@@ -128,8 +133,12 @@ async function callResponses({ model, input }) {
 /* ---------------------------
    User/XP helpers
 --------------------------- */
-const LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+const LANG_NAME = (code) => {
+  if (code === "bilingual") return "Bilingual";
+  const name = llmLanguageNameFor(code);
+  if (name) return name;
+  return code;
+};
 
 const strongNpub = (user) =>
   (
@@ -164,7 +173,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "en"].includes(p.targetLang)
+        targetLang: isSupportedTargetLang(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
@@ -571,6 +580,85 @@ function norm(s) {
     .trim();
 }
 
+function collectAnswerKeys(answer) {
+  const keys = new Set();
+
+  const visit = (val) => {
+    if (val === undefined || val === null) return;
+    if (Array.isArray(val)) {
+      val.forEach(visit);
+      return;
+    }
+    if (typeof val === "object") {
+      Object.values(val).forEach(visit);
+      return;
+    }
+
+    const str = String(val);
+    if (!str) return;
+
+    const add = (segment) => {
+      const key = norm(segment);
+      if (key) keys.add(key);
+    };
+
+    add(str);
+
+    str
+      .split(/[\n\r]+/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .forEach(add);
+
+    str
+      .split(/[,;\\/\|]/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .forEach(add);
+  };
+
+  visit(answer);
+  return Array.from(keys);
+}
+
+function alignAnswerToChoices(answer, choices = []) {
+  const keys = collectAnswerKeys(answer);
+  if (!Array.isArray(choices) || !choices.length) {
+    return { match: "", keys };
+  }
+
+  const decorated = choices
+    .map((choice) => ({ choice, key: norm(choice) }))
+    .filter((item) => item.key);
+
+  const exact = decorated.find((item) =>
+    keys.some((key) => key === item.key)
+  );
+  if (exact) {
+    return { match: exact.choice, keys };
+  }
+
+  const partial = decorated.find((item) =>
+    keys.some(
+      (key) => key && (key.includes(item.key) || item.key.includes(key))
+    )
+  );
+  if (partial) {
+    return { match: partial.choice, keys };
+  }
+
+  return { match: "", keys };
+}
+
+function pickMatchesKeys(pick, keys = []) {
+  if (!Array.isArray(keys) || !keys.length) return false;
+  const pickKey = norm(pick);
+  if (!pickKey) return false;
+  return keys.some(
+    (key) => key && (key === pickKey || key.includes(pickKey) || pickKey.includes(key))
+  );
+}
+
 /* ---------------------------
    Component
 --------------------------- */
@@ -583,7 +671,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
     useSharedProgress();
 
   const level = progress.level || "beginner";
-  const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
+  const targetLang = isSupportedTargetLang(progress.targetLang)
     ? progress.targetLang
     : "en";
   const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
@@ -596,12 +684,14 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const supportCode = resolveSupportLang(supportLang, userLanguage);
 
   // UI language labels
-  const localizedLangName = (code) =>
-    ({
-      en: t("language_en"),
-      es: t("language_es"),
-      nah: t("language_nah"),
-    }[code] || code);
+  const localizedLangName = (code) => {
+    const key = languageKeyFor(code);
+    if (key) {
+      const label = t(key);
+      if (label && label !== key) return label;
+    }
+    return LANG_NAME(code);
+  };
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
@@ -698,6 +788,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [hMC, setHMC] = useState("");
   const [choicesMC, setChoicesMC] = useState([]);
   const [answerMC, setAnswerMC] = useState("");
+  const [answerKeysMC, setAnswerKeysMC] = useState([]);
   const [trMC, setTrMC] = useState("");
   const [pickMC, setPickMC] = useState("");
   const [resMC, setResMC] = useState(""); // log only
@@ -951,6 +1042,7 @@ Return EXACTLY:
     setHMC("");
     setChoicesMC([]);
     setAnswerMC("");
+    setAnswerKeysMC([]);
     setTrMC("");
 
     const prompt = buildMCVocabStreamPrompt({
@@ -964,7 +1056,18 @@ Return EXACTLY:
     });
 
     let got = false;
-    let pendingAnswer = "";
+    let pendingAnswer = null;
+    let latestChoices = [];
+
+    const applyAnswer = () => {
+      if (pendingAnswer === null || pendingAnswer === undefined) {
+        setAnswerKeysMC([]);
+        return;
+      }
+      const { match, keys } = alignAnswerToChoices(pendingAnswer, latestChoices);
+      setAnswerKeysMC(keys);
+      if (match) setAnswerMC(match);
+    };
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -993,26 +1096,18 @@ Return EXACTLY:
               Array.isArray(obj.choices)
             ) {
               const choices = obj.choices.slice(0, 4).map(String);
+              latestChoices = choices;
               setChoicesMC(choices);
-              // if answer already known from meta, align it
-              if (pendingAnswer) {
-                const ans =
-                  choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                  choices[0];
-                setAnswerMC(ans);
+              if (pendingAnswer !== null && pendingAnswer !== undefined) {
+                applyAnswer();
               }
               got = true;
             } else if (obj?.type === "vocab_mc" && obj.phase === "meta") {
               if (typeof obj.hint === "string") setHMC(obj.hint);
               if (typeof obj.translation === "string") setTrMC(obj.translation);
-              if (typeof obj.answer === "string") {
+              if (obj.answer !== undefined) {
                 pendingAnswer = obj.answer;
-                if (Array.isArray(choicesMC) && choicesMC.length) {
-                  const ans =
-                    choicesMC.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    choicesMC[0];
-                  setAnswerMC(ans);
-                }
+                applyAnswer();
               }
               got = true;
             }
@@ -1046,26 +1141,19 @@ Return EXACTLY:
                 Array.isArray(obj.choices)
               ) {
                 const choices = obj.choices.slice(0, 4).map(String);
+                latestChoices = choices;
                 setChoicesMC(choices);
-                if (pendingAnswer) {
-                  const ans =
-                    choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    choices[0];
-                  setAnswerMC(ans);
+                if (pendingAnswer !== null && pendingAnswer !== undefined) {
+                  applyAnswer();
                 }
                 got = true;
               } else if (obj?.type === "vocab_mc" && obj.phase === "meta") {
                 if (typeof obj.hint === "string") setHMC(obj.hint);
                 if (typeof obj.translation === "string")
                   setTrMC(obj.translation);
-                if (typeof obj.answer === "string") {
+                if (obj.answer !== undefined) {
                   pendingAnswer = obj.answer;
-                  if (Array.isArray(choicesMC) && choicesMC.length) {
-                    const ans =
-                      choicesMC.find((c) => norm(c) === norm(pendingAnswer)) ||
-                      choicesMC[0];
-                    setAnswerMC(ans);
-                  }
+                  applyAnswer();
                 }
                 got = true;
               }
@@ -1100,12 +1188,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
         parsed.choices.length >= 3
       ) {
         const choices = parsed.choices.slice(0, 4).map(String);
-        const ans =
-          choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
+        const { match, keys } = alignAnswerToChoices(parsed.answer, choices);
         setQMC(String(parsed.question));
         setHMC(String(parsed.hint || ""));
         setChoicesMC(choices);
-        setAnswerMC(ans);
+        setAnswerMC(match || "");
+        setAnswerKeysMC(keys);
         setTrMC(String(parsed.translation || ""));
       } else {
         setQMC("Choose the best synonym for “quick”.");
@@ -1113,6 +1201,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
         const choices = ["rapid", "slow", "late", "sleepy"];
         setChoicesMC(choices);
         setAnswerMC("rapid");
+        setAnswerKeysMC([norm("rapid")]);
         setTrMC(
           showTranslations && supportCode === "es"
             ? "Elige el mejor sinónimo de “quick”."
@@ -1128,18 +1217,31 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     if (!qMC || !pickMC) return;
     setLoadingGMC(true);
 
-    const verdictRaw = await callResponses({
-      model: MODEL,
-      input: buildMCVocabJudgePrompt({
-        targetLang,
-        stem: qMC,
-        choices: choicesMC,
-        userChoice: pickMC,
-        hint: hMC,
-      }),
-    });
+    const pickNorm = norm(pickMC);
+    const answerNorm = norm(answerMC);
+    const hasAnswerKey = pickMatchesKeys(pickMC, answerKeysMC);
+    const directMatch =
+      (answerMC && pickNorm && pickNorm === answerNorm) || hasAnswerKey;
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    let verdictRaw = "";
+    let ok = false;
+
+    if (directMatch) {
+      ok = true;
+    } else {
+      verdictRaw = await callResponses({
+        model: MODEL,
+        input: buildMCVocabJudgePrompt({
+          targetLang,
+          stem: qMC,
+          choices: choicesMC,
+          userChoice: pickMC,
+          hint: hMC,
+        }),
+      });
+
+      ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    }
     const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
@@ -1150,8 +1252,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       translation: trMC,
       choices: choicesMC,
       author_answer: answerMC,
+      author_answer_keys: answerKeysMC,
       user_choice: pickMC,
       award_xp: delta,
+      verdict_raw: verdictRaw,
     }).catch(() => {});
     if (delta > 0) await awardXp(npub, delta).catch(() => {});
 

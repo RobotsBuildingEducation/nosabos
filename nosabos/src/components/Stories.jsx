@@ -42,6 +42,10 @@ import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
+import {
+  isSupportedTargetLang,
+  llmLanguageNameFor,
+} from "../constants/languages";
 
 /* ================================
    ENV / API
@@ -67,13 +71,17 @@ const strongNpub = (user) =>
     ""
   ).trim();
 
-const LLM_LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+const LLM_LANG_NAME = (code) => llmLanguageNameFor(code) || code;
 
 const BCP47 = {
   es: { stt: "es-ES", tts: "es-ES" },
   en: { stt: "en-US", tts: "en-US" },
-  nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Nahuatl is unsupported by engines
+  nah: { stt: "es-ES", tts: "es-ES" },
+  maya: { stt: "es-ES", tts: "es-ES" },
+  mix: { stt: "es-ES", tts: "es-ES" },
+  zap: { stt: "es-ES", tts: "es-ES" },
+  oto: { stt: "es-ES", tts: "es-ES" },
+  pur: { stt: "es-ES", tts: "es-ES" },
 };
 
 const getAppUILang = () => {
@@ -120,7 +128,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "en"].includes(p.targetLang)
+        targetLang: isSupportedTargetLang(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)

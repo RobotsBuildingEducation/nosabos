@@ -24,6 +24,12 @@ import {
   SliderThumb,
 } from "@chakra-ui/react";
 import { translations } from "../utils/translation";
+import {
+  TARGET_LANGUAGE_CODES,
+  languageKeyFor,
+  practiceLabelKeyFor,
+  isSupportedTargetLang,
+} from "../constants/languages";
 
 export default function Onboarding({
   npub = "",
@@ -39,7 +45,7 @@ export default function Onboarding({
   const [level, setLevel] = useState("beginner"); // 'beginner' | 'intermediate' | 'advanced'
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
   const [voice, setVoice] = useState("alloy"); // GPT Realtime default voices
-  const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es' | 'en'
+  const [targetLang, setTargetLang] = useState("es");
   const [practicePronunciation, setPracticePronunciation] = useState(false);
   const [voicePersona, setVoicePersona] = useState(ui.DEFAULT_PERSONA || "");
   const [showTranslations, setShowTranslations] = useState(true);
@@ -79,12 +85,13 @@ export default function Onboarding({
     }
     setIsSaving(true);
     try {
+      const safeTarget = isSupportedTargetLang(targetLang) ? targetLang : "es";
       const payload = {
         level,
         supportLang,
         voice, // GPT Realtime voice id (alloy, ash, ballad, coral, echo, sage, shimmer, verse)
         voicePersona,
-        targetLang,
+        targetLang: safeTarget,
         practicePronunciation,
         showTranslations,
         helpRequest,
@@ -109,8 +116,11 @@ export default function Onboarding({
     ui.onboarding_translations_toggle || "Show translations in {language}"
   ).replace(
     "{language}",
-    ui[`language_${secondaryPref}`] ||
-      (secondaryPref === "es" ? "Spanish" : "English")
+    (() => {
+      const key = languageKeyFor(secondaryPref);
+      if (key && ui[key]) return ui[key];
+      return secondaryPref === "es" ? "Spanish" : "English";
+    })()
   );
 
   const HELP_TITLE =
@@ -227,15 +237,31 @@ export default function Onboarding({
                   <WrapItem>
                     <Select
                       value={targetLang}
-                      onChange={(e) => setTargetLang(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setTargetLang(
+                          isSupportedTargetLang(val) ? val : "es"
+                        );
+                      }}
                       bg="gray.800"
                       size="md"
                       w="auto"
                       title={ui.onboarding_practice_label_title}
                     >
-                      <option value="nah">{ui.onboarding_practice_nah}</option>
-                      <option value="es">{ui.onboarding_practice_es}</option>
-                      <option value="en">{ui.onboarding_practice_en}</option>
+                      {TARGET_LANGUAGE_CODES.map((code) => {
+                        const practiceKey = practiceLabelKeyFor(code);
+                        const label =
+                          (practiceKey && ui[practiceKey]) ||
+                          (() => {
+                            const key = languageKeyFor(code);
+                            return (key && ui[key]) || code;
+                          })();
+                        return (
+                          <option key={code} value={code}>
+                            {label}
+                          </option>
+                        );
+                      })}
                     </Select>
                   </WrapItem>
                 </Wrap>

@@ -76,6 +76,12 @@ import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
+import {
+  TARGET_LANGUAGE_CODES,
+  isSupportedTargetLang,
+  languageKeyFor,
+  practiceLabelKeyFor,
+} from "./constants/languages";
 
 /* ---------------------------
    Small helpers
@@ -152,7 +158,9 @@ function TopBar({
   const [voicePersona, setVoicePersona] = useState(
     p.voicePersona || translations.en.onboarding_persona_default_example
   );
-  const [targetLang, setTargetLang] = useState(p.targetLang || "es");
+  const [targetLang, setTargetLang] = useState(
+    isSupportedTargetLang(p.targetLang) ? p.targetLang : "es"
+  );
   const [showTranslations, setShowTranslations] = useState(
     typeof p.showTranslations === "boolean" ? p.showTranslations : true
   );
@@ -175,7 +183,7 @@ function TopBar({
     setVoicePersona(
       q.voicePersona || translations.en.onboarding_persona_default_example
     );
-    setTargetLang(q.targetLang || "es");
+    setTargetLang(isSupportedTargetLang(q.targetLang) ? q.targetLang : "es");
     setShowTranslations(
       typeof q.showTranslations === "boolean" ? q.showTranslations : true
     );
@@ -193,9 +201,10 @@ function TopBar({
   useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
   useEffect(() => setCurrentSecret(activeNsec || ""), [activeNsec]);
 
-  const languageName = (code) =>
-    translations[appLanguage][`language_${code === "nah" ? "nah" : code}`] ||
-    code;
+  const languageName = (code) => {
+    const key = languageKeyFor(code);
+    return (key && translations[appLanguage][key]) || code;
+  };
 
   const toggleLabel =
     translations[appLanguage].onboarding_translations_toggle?.replace(
@@ -543,15 +552,18 @@ function TopBar({
                     translations[appLanguage].onboarding_practice_label_title
                   }
                 >
-                  <option value="nah">
-                    {translations[appLanguage].onboarding_practice_nah}
-                  </option>
-                  <option value="es">
-                    {translations[appLanguage].onboarding_practice_es}
-                  </option>
-                  <option value="en">
-                    {translations[appLanguage].onboarding_practice_en}
-                  </option>
+                  {TARGET_LANGUAGE_CODES.map((code) => {
+                    const practiceKey = practiceLabelKeyFor(code);
+                    const label =
+                      (practiceKey &&
+                        translations[appLanguage][practiceKey]) ||
+                      languageName(code);
+                    return (
+                      <option key={code} value={code}>
+                        {label}
+                      </option>
+                    );
+                  })}
                 </Select>
               </Wrap>
 
@@ -1140,9 +1152,7 @@ export default function App() {
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
         .slice(0, 240)
         .trim(),
-      targetLang: ["nah", "es", "en"].includes(
-        partial.targetLang ?? prev.targetLang
-      )
+      targetLang: isSupportedTargetLang(partial.targetLang ?? prev.targetLang)
         ? partial.targetLang ?? prev.targetLang
         : "es",
       showTranslations:
@@ -1219,7 +1229,7 @@ export default function App() {
           payload.voicePersona,
           translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "en"].includes(payload.targetLang)
+        targetLang: isSupportedTargetLang(payload.targetLang)
           ? payload.targetLang
           : "es",
         showTranslations:
