@@ -894,7 +894,12 @@ function TopBar({
                   size="sm"
                   variant="outline"
                   colorScheme="purple"
-                  onClick={onRunCefrAnalysis}
+                  onClick={() =>
+                    onRunCefrAnalysis?.({
+                      dailyGoalXp,
+                      dailyXp,
+                    })
+                  }
                   isLoading={cefrLoading}
                   loadingText={t.app_cefr_loading || "Analyzing…"}
                   isDisabled={!activeNpub || cefrLoading}
@@ -1424,7 +1429,10 @@ export default function App() {
     }
   };
 
-  const runCefrAnalysis = useCallback(async () => {
+  const runCefrAnalysis = useCallback(async ({
+    dailyGoalXp: goal = 0,
+    dailyXp: earned = 0,
+  } = {}) => {
     if (!activeNpub) {
       const title =
         t.app_cefr_need_account_title ||
@@ -1452,8 +1460,8 @@ export default function App() {
         targetLang: progress.targetLang || "es",
         supportLang: progress.supportLang || "en",
         showTranslations: progress.showTranslations !== false,
-        dailyGoalXp,
-        dailyXp,
+        dailyGoalXp: goal,
+        dailyXp: earned,
         practicePronunciation: !!(
           progress.practicePronunciation ?? user?.practicePronunciation
         ),
@@ -1540,15 +1548,7 @@ export default function App() {
     } finally {
       setCefrLoading(false);
     }
-  }, [
-    activeNpub,
-    appLanguage,
-    dailyGoalXp,
-    dailyXp,
-    t,
-    toast,
-    user,
-  ]);
+  }, [activeNpub, appLanguage, t, toast, user]);
 
   /* -----------------------------------
      RANDOMIZE tab mechanics (no routing)
