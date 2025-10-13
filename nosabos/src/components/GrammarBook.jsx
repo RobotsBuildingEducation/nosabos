@@ -2119,7 +2119,7 @@ Return JSON ONLY:
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
-                  {t("grammar_next") || "Next"}
+                  {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
             </HStack>
@@ -2178,7 +2178,7 @@ Return JSON ONLY:
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
-                  {t("grammar_next") || "Next"}
+                  {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
             </HStack>
@@ -2240,7 +2240,7 @@ Return JSON ONLY:
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
-                  {t("grammar_next") || "Next"}
+                  {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
             </HStack>
@@ -2394,7 +2394,7 @@ Return JSON ONLY:
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
-                  {t("grammar_next") || "Next"}
+                  {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
             </HStack>
@@ -2542,7 +2542,7 @@ Return JSON ONLY:
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
-                  {t("grammar_next") || "Next"}
+                  {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
             </HStack>

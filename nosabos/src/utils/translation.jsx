@@ -24,6 +24,7 @@ export const translations = {
     copied_to_clipboard_all: "Question has been copied.",
     copy_all: "Copy question",
     grammar_next: "Next",
+    practice_next_question: "Next question",
     quiz_correct: "Correct",
     quiz_try_again: "Try again",
     quiz_checked: "Checked",
@@ -388,6 +389,7 @@ export const translations = {
     copy_all: "Copiar pregunta",
 
     grammar_next: "Siguiente",
+    practice_next_question: "Siguiente pregunta",
     generic_loading: "Cargando...",
 
     intro:

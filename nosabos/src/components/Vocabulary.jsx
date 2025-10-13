@@ -2148,6 +2148,21 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     }
   }, [sVariant, t, userLanguage]);
 
+  /* ---------------------------
+     AUTO-GENERATE on first render (respecting user settings)
+     - Wait until 'ready' so target/support languages are applied.
+     - Randomize by default; only lock when user picks a type explicitly.
+  --------------------------- */
+  const autoInitRef = useRef(false);
+  useEffect(() => {
+    if (autoInitRef.current) return;
+    if (showPasscodeModal) return;
+    if (!ready) return; // ✅ wait for user progress to load
+    autoInitRef.current = true;
+    generateRandom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, showPasscodeModal]);
+
   if (showPasscodeModal) {
     return (
       <PasscodePage
@@ -2198,22 +2213,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     );
   };
 
-  const nextLabel = t("grammar_next") || t("grammar_next") || "Next";
-
-  /* ---------------------------
-     AUTO-GENERATE on first render (respecting user settings)
-     - Wait until 'ready' so target/support languages are applied.
-     - Randomize by default; only lock when user picks a type explicitly.
-  --------------------------- */
-  const autoInitRef = useRef(false);
-  useEffect(() => {
-    if (autoInitRef.current) return;
-    if (showPasscodeModal) return;
-    if (!ready) return; // ✅ wait for user progress to load
-    autoInitRef.current = true;
-    generateRandom();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal]);
+  const nextLabel =
+    t("practice_next_question") ||
+    (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
 
   return (
     <Box p={4}>
