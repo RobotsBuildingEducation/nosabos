@@ -1,5 +1,5 @@
 // components/Vocabulary.jsx
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Badge,
@@ -343,21 +343,35 @@ function buildSpeakVocabStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
+  const allowTranslate =
+    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
 
   return [
-    `Select ONE ${TARGET} word or micro-phrase (≤4 words) that challenges pronunciation. Difficulty: ${diff}`,
-    `- Provide a short instruction sentence in ${TARGET} telling the learner to say it aloud (≤100 chars).`,
-    `- Include a hint in ${SUPPORT} (≤10 words) describing meaning or context.`,
+    `Create ONE ${TARGET} speaking drill (difficulty: ${diff}). Choose VARIANT:`,
+    `- repeat: show the ${TARGET} word/phrase (≤4 words) to repeat aloud.`,
+    allowTranslate
+      ? `- translate: show a ${SUPPORT} word/phrase (≤3 words) and have them speak the ${TARGET} translation aloud.`
+      : `- translate: SKIP when support language equals ${TARGET}.`,
+    `- complete: show a ${TARGET} sentence (≤120 chars) with ___ and have them speak the completed sentence aloud.`,
+    `- Rotate variants (avoid repeating the same variant more than twice in a row relative to recent successes: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}).`,
+    `- Provide a concise instruction sentence in ${TARGET} (≤120 chars).`,
+    `- Include a hint in ${SUPPORT} (≤10 words).`,
     wantTR
-      ? `- Provide a ${SUPPORT} translation of the target word/phrase.`
+      ? `- Provide a ${SUPPORT} translation of the stimulus or completed sentence.`
       : `- Use empty translation "".`,
-    `- Consider recent successes: ${JSON.stringify(recentGood.slice(-3))}.`,
     "",
     "Stream as NDJSON:",
-    `{"type":"vocab_speak","phase":"prompt","target":"<${TARGET} word or short phrase>","prompt":"<instruction in ${TARGET}>"}`,
+    `{"type":"vocab_speak","phase":"prompt","variant":"repeat|translate|complete","display":"<text shown to learner>","target":"<${TARGET} output to evaluate>","prompt":"<instruction in ${TARGET}>"}`,
     `{"type":"vocab_speak","phase":"meta","hint":"<${SUPPORT} hint>","translation":"<${SUPPORT} translation or empty>"}`,
     `{"type":"done"}`,
   ].join("\n");
+}
+
+function normalizeSpeakVariant(variant) {
+  const v = (variant || "").toString().toLowerCase();
+  return ["repeat", "translate", "complete"].includes(v) ? v : "repeat";
 }
 
 /* MATCH phases:
@@ -721,6 +735,8 @@ export default function Vocabulary({ userLanguage = "en" }) {
   // ---- SPEAK (vocab) ----
   const [sPrompt, setSPrompt] = useState("");
   const [sTarget, setSTarget] = useState("");
+  const [sStimulus, setSStimulus] = useState("");
+  const [sVariant, setSVariant] = useState("repeat");
   const [sHint, setSHint] = useState("");
   const [sTranslation, setSTranslation] = useState("");
   const [sRecognized, setSRecognized] = useState("");
@@ -1479,6 +1495,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setNextAction(null);
     setSPrompt("");
     setSTarget("");
+    setSStimulus("");
+    setSVariant("repeat");
     setSHint("");
     setSTranslation("");
     setSRecognized("");
@@ -1517,6 +1535,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
             if (obj?.type === "vocab_speak" && obj.phase === "prompt") {
               if (typeof obj.prompt === "string") setSPrompt(obj.prompt.trim());
               if (typeof obj.target === "string") setSTarget(obj.target.trim());
+              if (typeof obj.display === "string")
+                setSStimulus(obj.display.trim());
+              if (typeof obj.variant === "string")
+                setSVariant(normalizeSpeakVariant(obj.variant));
               got = true;
             } else if (obj?.type === "vocab_speak" && obj.phase === "meta") {
               if (typeof obj.hint === "string") setSHint(obj.hint);
@@ -1528,19 +1550,61 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
         }
       }
 
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (obj?.type === "vocab_speak" && obj.phase === "prompt") {
+                if (typeof obj.prompt === "string")
+                  setSPrompt(obj.prompt.trim());
+                if (typeof obj.target === "string")
+                  setSTarget(obj.target.trim());
+                if (typeof obj.display === "string")
+                  setSStimulus(obj.display.trim());
+                if (typeof obj.variant === "string")
+                  setSVariant(normalizeSpeakVariant(obj.variant));
+                got = true;
+              } else if (obj?.type === "vocab_speak" && obj.phase === "meta") {
+                if (typeof obj.hint === "string") setSHint(obj.hint);
+                if (typeof obj.translation === "string")
+                  setSTranslation(obj.translation);
+                got = true;
+              }
+            })
+          );
+      }
+
       if (!got) throw new Error("no-speak");
     } catch {
       const text = await callResponses({
         model: MODEL,
         input: `
-Create ONE ${LANG_NAME(targetLang)} pronunciation prompt. Return JSON ONLY:
+Create ONE ${LANG_NAME(targetLang)} speaking drill. Randomly choose VARIANT from:
+- repeat: show the ${LANG_NAME(targetLang)} word/phrase and have them repeat it aloud.
+- translate: show a ${LANG_NAME(resolveSupportLang(
+          supportLang,
+          userLanguage
+        ))} word and have them speak the ${LANG_NAME(targetLang)} translation aloud.
+- complete: show a ${LANG_NAME(targetLang)} sentence with ___ and have them speak the completed sentence aloud.
+
+Return JSON ONLY:
 {
-  "target":"<${LANG_NAME(targetLang)} word or short phrase>",
-  "prompt":"<${LANG_NAME(targetLang)} instruction telling the learner to say it aloud>",
+  "variant":"repeat"|"translate"|"complete",
+  "prompt":"<${LANG_NAME(targetLang)} instruction>",
+  "display":"<text to show the learner>",
+  "target":"<${LANG_NAME(targetLang)} text they must say>",
   "hint":"<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} hint>",
   "translation":"${
           showTranslations
-            ? `<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} translation>`
+            ? `<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} translation or context>`
             : ""
         }"
 }`.trim(),
@@ -1549,24 +1613,109 @@ Create ONE ${LANG_NAME(targetLang)} pronunciation prompt. Return JSON ONLY:
       const parsed = safeParseJSON(text);
       if (parsed && typeof parsed.target === "string") {
         setSTarget(parsed.target.trim());
+        setSStimulus(String(parsed.display || parsed.target || "").trim());
+        setSVariant(normalizeSpeakVariant(parsed.variant));
         setSPrompt(String(parsed.prompt || ""));
         setSHint(String(parsed.hint || ""));
         setSTranslation(String(parsed.translation || ""));
       } else {
-        setSTarget(
-          targetLang === "es" ? "sonrisa" : targetLang === "nah" ? "yolpaki" : "harmony"
-        );
-        setSPrompt(
-          targetLang === "es"
-            ? "Di la palabra claramente: sonrisa."
-            : targetLang === "nah"
-            ? "Pronuncia la palabra con calma: yolpaki."
-            : "Say this word out loud: harmony."
-        );
-        setSHint(
-          supportCode === "es" ? "significa felicidad" : "means happiness"
-        );
-        setSTranslation(supportCode === "es" ? "sonrisa" : "harmony");
+        const fallbackOptions = ["repeat", "complete"];
+        if (supportCode !== (targetLang === "en" ? "en" : targetLang)) {
+          fallbackOptions.splice(1, 0, "translate");
+        }
+        const fallbackVariant =
+          fallbackOptions[Math.floor(Math.random() * fallbackOptions.length)];
+        setSVariant(normalizeSpeakVariant(fallbackVariant));
+        if (fallbackVariant === "translate") {
+          const supportWord = supportCode === "es" ? "bosque" : "forest";
+          setSStimulus(supportWord);
+          setSTarget(
+            targetLang === "es"
+              ? "bosque"
+              : targetLang === "nah"
+              ? "kwawitl"
+              : "forest"
+          );
+          setSPrompt(
+            targetLang === "es"
+              ? `Traduce en voz alta: ${supportWord}.`
+              : targetLang === "nah"
+              ? `Kijtoa tlen nechicoliz: ${supportWord}.`
+              : `Translate aloud: ${supportWord}.`
+          );
+          setSHint(
+            supportCode === "es"
+              ? "Di la versión en español"
+              : "Say it in the target language"
+          );
+          setSTranslation(
+            showTranslations
+              ? supportCode === "es"
+                ? "bosque"
+                : "forest"
+              : ""
+          );
+        } else if (fallbackVariant === "complete") {
+          const cloze =
+            targetLang === "es"
+              ? "Completa: La niña ___ una canción."
+              : targetLang === "nah"
+              ? "Tlatzotzona: Pilli ___ tlahkuiloa."
+              : "Complete: The child ___ a song.";
+          const completed =
+            targetLang === "es"
+              ? "La niña canta una canción."
+              : targetLang === "nah"
+              ? "Pilli tlahkuiloa tlatzotzontli."
+              : "The child sings a song.";
+          setSStimulus(cloze);
+          setSTarget(completed);
+          setSPrompt(
+            targetLang === "es"
+              ? "Di la oración completa con la palabra que falta."
+              : targetLang === "nah"
+              ? "Kijtoa nochi tlahtolli tlen mokpano."
+              : "Say the full sentence with the missing word."
+          );
+          setSHint(
+            supportCode === "es"
+              ? "El verbo es 'cantar'"
+              : "The verb is 'to sing'"
+          );
+          setSTranslation(
+            showTranslations
+              ? supportCode === "es"
+                ? "La niña canta una canción."
+                : "The girl sings a song."
+              : ""
+          );
+        } else {
+          const repeatWord =
+            targetLang === "es"
+              ? "sonrisa"
+              : targetLang === "nah"
+              ? "yolpaki"
+              : "harmony";
+          setSStimulus(repeatWord);
+          setSTarget(repeatWord);
+          setSPrompt(
+            targetLang === "es"
+              ? "Di la palabra claramente: sonrisa."
+              : targetLang === "nah"
+              ? "Pronuncia la palabra con calma: yolpaki."
+              : "Say this word out loud: harmony."
+          );
+          setSHint(
+            supportCode === "es" ? "significa felicidad" : "means happiness"
+          );
+          setSTranslation(
+            showTranslations
+              ? supportCode === "es"
+                ? "sonrisa"
+                : "harmony"
+              : ""
+          );
+        }
       }
     } finally {
       setLoadingQSpeak(false);
@@ -1827,6 +1976,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         mode: "vocab_speak",
         question: sPrompt,
         target: sTarget,
+        stimulus: sStimulus,
+        variant: sVariant,
         hint: sHint,
         translation: sTranslation,
         recognized_text: recognizedText || "",
@@ -1860,7 +2011,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         toast({ title, description: desc, status: "success", duration: 2600 });
         recentCorrectRef.current = [
           ...recentCorrectRef.current,
-          { mode: "speak", question: sTarget },
+          { mode: "speak", question: sStimulus || sTarget, variant: sVariant },
         ].slice(-5);
       } else {
         const tips = speechReasonTips(evaluation.reasons, {
@@ -1883,8 +2034,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       npub,
       sHint,
       sPrompt,
+      sStimulus,
       sTarget,
       sTranslation,
+      sVariant,
       t,
       targetName,
       toast,
@@ -1969,6 +2122,31 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     showTranslations &&
     sTranslation &&
     supportCode !== (targetLang === "en" ? "en" : targetLang);
+
+  const speakVariantLabel = useMemo(() => {
+    switch (sVariant) {
+      case "translate":
+        return (
+          t("vocab_speak_variant_translate") ||
+          (userLanguage === "es" ? "Traduce la palabra" : "Translate the word")
+        );
+      case "complete":
+        return (
+          t("vocab_speak_variant_complete") ||
+          (userLanguage === "es"
+            ? "Completa la oración"
+            : "Complete the sentence")
+        );
+      case "repeat":
+      default:
+        return (
+          t("vocab_speak_variant_repeat") ||
+          (userLanguage === "es"
+            ? "Pronuncia la palabra"
+            : "Speak the word")
+        );
+    }
+  }, [sVariant, t, userLanguage]);
 
   if (showPasscodeModal) {
     return (
@@ -2362,7 +2540,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           <>
             <HStack align="flex-start" spacing={2} mb={2}>
               <CopyAllBtn
-                q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
+                q={`${sPrompt ? `${sPrompt}\n` : ""}${
+                  sStimulus || sTarget || ""
+                }`}
                 h={sHint}
                 tr={sTranslation}
               />
@@ -2386,8 +2566,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               textAlign="center"
               bg="rgba(255,255,255,0.04)"
             >
+              <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
+                {speakVariantLabel}
+              </Badge>
               <Text fontSize="3xl" fontWeight="700">
-                {loadingQSpeak ? "…" : sTarget || "…"}
+                {loadingQSpeak ? "…" : sStimulus || sTarget || "…"}
               </Text>
             </Box>
 
