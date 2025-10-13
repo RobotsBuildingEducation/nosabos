@@ -1,5 +1,5 @@
 // components/Vocabulary.jsx
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   Box,
   Badge,
@@ -31,11 +31,14 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
+import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
 import { awardXp } from "../utils/utils";
+import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
+import { speechReasonTips } from "../utils/speechEvaluation";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -85,45 +88,7 @@ function useT(uiLang = "en") {
 /* ---------------------------
    LLM plumbing (backend fallback)
 --------------------------- */
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
-
-async function callResponses({ model, input }) {
-  try {
-    const r = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        text: { format: { type: "text" } },
-        input,
-      }),
-    });
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    const text =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      (typeof payload === "string" ? payload : "");
-    return String(text || "");
-  } catch {
-    return "";
-  }
-}
+const MODEL = DEFAULT_RESPONSES_MODEL;
 
 /* ---------------------------
    User/XP helpers
@@ -353,6 +318,44 @@ function buildMAVocabStreamPrompt({
     `{"type":"vocab_ma","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
     `{"type":"vocab_ma","phase":"choices","choices":["..."]}           // second`,
     `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"done"}`,
+  ].join("\n");
+}
+
+/* SPEAK phases:
+   1) {"type":"vocab_speak","phase":"prompt","target":"<word>","prompt":"<instruction>"}
+   2) {"type":"vocab_speak","phase":"meta","hint":"...","translation":"..."}
+   3) {"type":"done"}
+*/
+function buildSpeakVocabStreamPrompt({
+  level,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang,
+  xp,
+  recentGood,
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
+  const SUPPORT = LANG_NAME(SUPPORT_CODE);
+  const wantTR =
+    showTranslations &&
+    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
+  const diff = vocabDifficulty(level, xp);
+
+  return [
+    `Select ONE ${TARGET} word or micro-phrase (≤4 words) that challenges pronunciation. Difficulty: ${diff}`,
+    `- Provide a short instruction sentence in ${TARGET} telling the learner to say it aloud (≤100 chars).`,
+    `- Include a hint in ${SUPPORT} (≤10 words) describing meaning or context.`,
+    wantTR
+      ? `- Provide a ${SUPPORT} translation of the target word/phrase.`
+      : `- Use empty translation "".`,
+    `- Consider recent successes: ${JSON.stringify(recentGood.slice(-3))}.`,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"vocab_speak","phase":"prompt","target":"<${TARGET} word or short phrase>","prompt":"<instruction in ${TARGET}>"}`,
+    `{"type":"vocab_speak","phase":"meta","hint":"<${SUPPORT} hint>","translation":"<${SUPPORT} translation or empty>"}`,
     `{"type":"done"}`,
   ].join("\n");
 }
@@ -618,7 +621,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }
   }, [xp]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "match"
+  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
   // ✅ whether user has selected a specific type; if null => keep randomizing
   const [lockedType, setLockedType] = useState(null);
 
@@ -715,6 +718,15 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [loadingQMA, setLoadingQMA] = useState(false);
   const [loadingGMA, setLoadingGMA] = useState(false);
 
+  // ---- SPEAK (vocab) ----
+  const [sPrompt, setSPrompt] = useState("");
+  const [sTarget, setSTarget] = useState("");
+  const [sHint, setSHint] = useState("");
+  const [sTranslation, setSTranslation] = useState("");
+  const [sRecognized, setSRecognized] = useState("");
+  const [sEval, setSEval] = useState(null);
+  const [loadingQSpeak, setLoadingQSpeak] = useState(false);
+
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
   const [mHint, setMHint] = useState("");
@@ -729,7 +741,8 @@ export default function Vocabulary({ userLanguage = "en" }) {
   /* ---------------------------
      GENERATOR DISPATCH
   --------------------------- */
-  const types = ["fill", "mc", "ma", "match"];
+  const types = ["fill", "mc", "ma", "speak", "match"];
+  const generateRandomRef = useRef(() => {});
   function generatorFor(type) {
     switch (type) {
       case "fill":
@@ -738,6 +751,8 @@ export default function Vocabulary({ userLanguage = "en" }) {
         return generateMC;
       case "ma":
         return generateMA;
+      case "speak":
+        return generateSpeak;
       case "match":
         return generateMatch;
       default:
@@ -751,6 +766,10 @@ export default function Vocabulary({ userLanguage = "en" }) {
     setMode(pick);
     return generatorFor(pick)();
   }
+
+  useEffect(() => {
+    generateRandomRef.current = generateRandom;
+  });
 
   /* ---------------------------
      STREAM Generate — FILL
@@ -916,11 +935,11 @@ Return EXACTLY:
 
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
     setNextAction(
-      ok
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandom()
-        : null
+        ok
+          ? lockedType
+            ? () => generatorFor(lockedType)()
+            : () => generateRandomRef.current()
+          : null
     );
 
     if (ok) {
@@ -1160,11 +1179,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     setRecentXp(delta);
 
     setNextAction(
-      ok
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandom()
-        : null
+        ok
+          ? lockedType
+            ? () => generatorFor(lockedType)()
+            : () => generateRandomRef.current()
+          : null
     );
 
     if (ok) {
@@ -1431,11 +1450,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
     setNextAction(
-      ok
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandom()
-        : null
+        ok
+          ? lockedType
+            ? () => generatorFor(lockedType)()
+            : () => generateRandomRef.current()
+          : null
     );
 
     if (ok) {
@@ -1447,6 +1466,111 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     }
 
     setLoadingGMA(false);
+  }
+
+  async function generateSpeak() {
+    try {
+      stopSpeakRecording();
+    } catch {}
+    setMode("speak");
+    setLoadingQSpeak(true);
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    setSPrompt("");
+    setSTarget("");
+    setSHint("");
+    setSTranslation("");
+    setSRecognized("");
+    setSEval(null);
+
+    const prompt = buildSpeakVocabStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
+    });
+
+    let got = false;
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "vocab_speak" && obj.phase === "prompt") {
+              if (typeof obj.prompt === "string") setSPrompt(obj.prompt.trim());
+              if (typeof obj.target === "string") setSTarget(obj.target.trim());
+              got = true;
+            } else if (obj?.type === "vocab_speak" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") setSHint(obj.hint);
+              if (typeof obj.translation === "string")
+                setSTranslation(obj.translation);
+              got = true;
+            }
+          });
+        }
+      }
+
+      if (!got) throw new Error("no-speak");
+    } catch {
+      const text = await callResponses({
+        model: MODEL,
+        input: `
+Create ONE ${LANG_NAME(targetLang)} pronunciation prompt. Return JSON ONLY:
+{
+  "target":"<${LANG_NAME(targetLang)} word or short phrase>",
+  "prompt":"<${LANG_NAME(targetLang)} instruction telling the learner to say it aloud>",
+  "hint":"<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} hint>",
+  "translation":"${
+          showTranslations
+            ? `<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} translation>`
+            : ""
+        }"
+}`.trim(),
+      });
+
+      const parsed = safeParseJSON(text);
+      if (parsed && typeof parsed.target === "string") {
+        setSTarget(parsed.target.trim());
+        setSPrompt(String(parsed.prompt || ""));
+        setSHint(String(parsed.hint || ""));
+        setSTranslation(String(parsed.translation || ""));
+      } else {
+        setSTarget(
+          targetLang === "es" ? "sonrisa" : targetLang === "nah" ? "yolpaki" : "harmony"
+        );
+        setSPrompt(
+          targetLang === "es"
+            ? "Di la palabra claramente: sonrisa."
+            : targetLang === "nah"
+            ? "Pronuncia la palabra con calma: yolpaki."
+            : "Say this word out loud: harmony."
+        );
+        setSHint(
+          supportCode === "es" ? "significa felicidad" : "means happiness"
+        );
+        setSTranslation(supportCode === "es" ? "sonrisa" : "harmony");
+      }
+    } finally {
+      setLoadingQSpeak(false);
+    }
   }
 
   /* ---------------------------
@@ -1665,6 +1789,120 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setLoadingMJ(false);
   }
 
+  const handleSpeakEvaluation = useCallback(
+    async ({
+      evaluation,
+      recognizedText = "",
+      confidence = 0,
+      audioMetrics = null,
+      method = "",
+      error = null,
+    }) => {
+      if (!sTarget) return;
+      if (error) {
+        toast({
+          title:
+            userLanguage === "es"
+              ? "No se pudo evaluar"
+              : "Could not evaluate",
+          description:
+            userLanguage === "es"
+              ? "Vuelve a intentarlo con una conexión estable."
+              : "Please try again with a stable connection.",
+          status: "error",
+          duration: 2500,
+        });
+        return;
+      }
+      if (!evaluation) return;
+
+      setSRecognized(recognizedText || "");
+      setSEval(evaluation);
+
+      const ok = evaluation.pass;
+      const delta = ok ? 14 : 0;
+
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_speak",
+        question: sPrompt,
+        target: sTarget,
+        hint: sHint,
+        translation: sTranslation,
+        recognized_text: recognizedText || "",
+        confidence,
+        audio_metrics: audioMetrics,
+        eval: evaluation,
+        method,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+
+      setLastOk(ok);
+      setRecentXp(delta);
+      setNextAction(
+        ok
+          ? lockedType
+            ? () => generatorFor(lockedType)()
+            : () => generateRandomRef.current()
+          : null
+      );
+
+      if (ok) {
+        const title =
+          t("vocab_speak_success_title") ||
+          (userLanguage === "es" ? "¡Gran pronunciación!" : "Great pronunciation!");
+        const desc =
+          t("vocab_speak_success_desc", { score: evaluation.score }) ||
+          (userLanguage === "es"
+            ? `Puntaje ${evaluation.score}%`
+            : `Score ${evaluation.score}%`);
+        toast({ title, description: desc, status: "success", duration: 2600 });
+        recentCorrectRef.current = [
+          ...recentCorrectRef.current,
+          { mode: "speak", question: sTarget },
+        ].slice(-5);
+      } else {
+        const tips = speechReasonTips(evaluation.reasons, {
+          uiLang: userLanguage,
+          targetLabel: targetName,
+        });
+        const title =
+          t("vocab_speak_retry_title") ||
+          (userLanguage === "es" ? "Intenta otra vez" : "Try again");
+        toast({
+          title,
+          description: tips.join(" "),
+          status: "warning",
+          duration: 3600,
+        });
+      }
+    },
+    [
+      lockedType,
+      npub,
+      sHint,
+      sPrompt,
+      sTarget,
+      sTranslation,
+      t,
+      targetName,
+      toast,
+      userLanguage,
+    ]
+  );
+
+  const {
+    startRecording: startSpeakRecording,
+    stopRecording: stopSpeakRecording,
+    isRecording: isSpeakRecording,
+    supportsSpeech: supportsSpeak,
+  } = useSpeechPractice({
+    targetText: sTarget,
+    targetLang,
+    onResult: handleSpeakEvaluation,
+  });
+
   /* ---------------------------
      Drag & Drop handlers (Match)
   --------------------------- */
@@ -1726,6 +1964,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   const showTRMA =
     showTranslations &&
     trMA &&
+    supportCode !== (targetLang === "en" ? "en" : targetLang);
+  const showTRSpeak =
+    showTranslations &&
+    sTranslation &&
     supportCode !== (targetLang === "en" ? "en" : targetLang);
 
   if (showPasscodeModal) {
@@ -1820,7 +2062,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
         {/* Generators */}
         <SimpleGrid
-          columns={{ base: 2, md: 4 }}
+          columns={{ base: 2, md: 5 }}
           spacing={{ base: 2, md: 3 }}
           w="100%"
         >
@@ -1890,6 +2132,45 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               fontSize={{ base: "xs", md: "sm" }}
             >
               {t("vocab_btn_ma")}
+            </Text>
+          </Button>
+
+          <Button
+            onClick={() => {
+              if (!supportsSpeak) {
+                toast({
+                  title:
+                    t("vocab_speak_unavailable") ||
+                    (userLanguage === "es"
+                      ? "Reconocimiento de voz no disponible"
+                      : "Speech recognition unavailable"),
+                  description:
+                    userLanguage === "es"
+                      ? "Usa un navegador Chromium con micrófono para practicar pronunciación."
+                      : "Use a Chromium-based browser with microphone access to practice speaking.",
+                  status: "info",
+                  duration: 3200,
+                });
+                return;
+              }
+              setLockedType("speak");
+              generateSpeak();
+            }}
+            isDisabled={loadingQSpeak}
+            rightIcon={loadingQSpeak ? <Spinner size="xs" /> : null}
+            w="100%"
+            size="sm"
+            px={2}
+            py={2}
+            minH={{ base: "44px", md: "52px" }}
+            rounded="lg"
+          >
+            <Text
+              noOfLines={2}
+              fontWeight="700"
+              fontSize={{ base: "xs", md: "sm" }}
+            >
+              {t("vocab_btn_speak")}
             </Text>
           </Button>
 
@@ -2071,6 +2352,160 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             </HStack>
 
             <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
+            </HStack>
+          </>
+        ) : null}
+
+        {/* ---- SPEAK UI ---- */}
+        {mode === "speak" && (sTarget || loadingQSpeak) ? (
+          <>
+            <HStack align="flex-start" spacing={2} mb={2}>
+              <CopyAllBtn
+                q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
+                h={sHint}
+                tr={sTranslation}
+              />
+              <VStack align="flex-start" spacing={1} flex="1">
+                <Text fontSize="sm" opacity={0.85}>
+                  {t("vocab_speak_instruction_label") ||
+                    (userLanguage === "es"
+                      ? "Sigue la indicación y di la frase en voz alta."
+                      : "Follow the prompt and say it aloud.")}
+                </Text>
+                <Text fontWeight="600" fontSize="md">
+                  {loadingQSpeak ? "…" : sPrompt || ""}
+                </Text>
+              </VStack>
+            </HStack>
+
+            <Box
+              border="1px solid rgba(255,255,255,0.18)"
+              rounded="xl"
+              p={6}
+              textAlign="center"
+              bg="rgba(255,255,255,0.04)"
+            >
+              <Text fontSize="3xl" fontWeight="700">
+                {loadingQSpeak ? "…" : sTarget || "…"}
+              </Text>
+            </Box>
+
+            {sHint ? (
+              <Text fontSize="sm" mt={3}>
+                <Text as="span" fontWeight="600">
+                  {t("vocab_speak_hint_label") ||
+                    (userLanguage === "es" ? "Pista" : "Hint")}
+                  :
+                </Text>{" "}
+                {sHint}
+              </Text>
+            ) : null}
+
+            {showTRSpeak ? (
+              <Text fontSize="sm" mt={1} opacity={0.85}>
+                <Text as="span" fontWeight="600">
+                  {t("vocab_speak_translation_label") ||
+                    (userLanguage === "es" ? "Traducción" : "Translation")}
+                  :
+                </Text>{" "}
+                {sTranslation}
+              </Text>
+            ) : null}
+
+            {sRecognized ? (
+              <Text fontSize="sm" mt={3} color="teal.200">
+                <Text as="span" fontWeight="600">
+                  {t("vocab_speak_last_heard") ||
+                    (userLanguage === "es" ? "Último intento" : "Last attempt")}
+                  :
+                </Text>{" "}
+                {sRecognized}
+              </Text>
+            ) : null}
+
+            {sEval ? (
+              <Badge mt={2} colorScheme={sEval.pass ? "green" : "yellow"}>
+                {t("vocab_speak_score", { score: sEval.score }) ||
+                  (userLanguage === "es"
+                    ? `Puntaje ${sEval.score}%`
+                    : `Score ${sEval.score}%`)}
+              </Badge>
+            ) : null}
+
+            <HStack spacing={3} mt={4} align="center">
+              <Button
+                colorScheme={isSpeakRecording ? "red" : "teal"}
+                onClick={async () => {
+                  if (isSpeakRecording) {
+                    stopSpeakRecording();
+                    return;
+                  }
+                  try {
+                    await startSpeakRecording();
+                  } catch (err) {
+                    const code = err?.code;
+                    if (code === "no-speech-recognition") {
+                      toast({
+                        title:
+                          t("vocab_speak_unavailable") ||
+                          (userLanguage === "es"
+                            ? "Reconocimiento de voz no disponible"
+                            : "Speech recognition unavailable"),
+                        description:
+                          userLanguage === "es"
+                            ? "Usa un navegador Chromium con acceso al micrófono."
+                            : "Use a Chromium-based browser with microphone access.",
+                        status: "warning",
+                        duration: 3200,
+                      });
+                    } else if (code === "mic-denied") {
+                      toast({
+                        title:
+                          userLanguage === "es"
+                            ? "Permiso de micrófono denegado"
+                            : "Microphone denied",
+                        description:
+                          userLanguage === "es"
+                            ? "Activa el micrófono en la configuración del navegador."
+                            : "Enable microphone access in your browser settings.",
+                        status: "error",
+                        duration: 3200,
+                      });
+                    } else {
+                      toast({
+                        title:
+                          userLanguage === "es"
+                            ? "No se pudo iniciar la grabación"
+                            : "Recording failed",
+                        description:
+                          userLanguage === "es"
+                            ? "Inténtalo nuevamente."
+                            : "Please try again.",
+                        status: "error",
+                        duration: 2500,
+                      });
+                    }
+                  }
+                }}
+                isDisabled={!supportsSpeak || loadingQSpeak || !sTarget}
+              >
+                {isSpeakRecording
+                  ? t("vocab_speak_stop") ||
+                    (userLanguage === "es" ? "Detener" : "Stop")
+                  : t("vocab_speak_record") ||
+                    (userLanguage === "es"
+                      ? "Grabar pronunciación"
+                      : "Record pronunciation")}
+              </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {nextLabel}
+                </Button>
+              ) : null}
+            </HStack>
+
+            <HStack spacing={3} mt={3}>
               <ResultBadge ok={lastOk} xp={recentXp} />
             </HStack>
           </>

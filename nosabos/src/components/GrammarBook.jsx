@@ -1,5 +1,5 @@
 // components/GrammarBook.jsx
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback } from "react";
 import {
   Box,
   Badge,
@@ -30,11 +30,14 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
 import useUserStore from "../hooks/useUserStore";
+import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
 import { awardXp } from "../utils/utils";
+import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
+import { speechReasonTips } from "../utils/speechEvaluation";
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -84,45 +87,7 @@ function useT(uiLang = "en") {
 /* ---------------------------
    LLM plumbing (backend fallback)
 --------------------------- */
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
-
-async function callResponses({ model, input }) {
-  try {
-    const r = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        text: { format: { type: "text" } },
-        input,
-      }),
-    });
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    const text =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      (typeof payload === "string" ? payload : "");
-    return String(text || "");
-  } catch {
-    return "";
-  }
-}
+const MODEL = DEFAULT_RESPONSES_MODEL;
 
 /* ---------------------------
    User/XP helpers
@@ -436,6 +401,39 @@ function buildMAStreamPrompt({
   ].join("\n");
 }
 
+function buildSpeakGrammarStreamPrompt({
+  level,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang,
+  xp,
+  recentGood,
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
+  const SUPPORT = LANG_NAME(SUPPORT_CODE);
+  const wantTranslation =
+    showTranslations &&
+    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
+  const diff = difficultyHint(level, xp);
+
+  return [
+    `Craft ONE short ${TARGET} sentence (≤8 words) that showcases a grammar feature. Difficulty: ${diff}`,
+    `- Provide an instruction line in ${TARGET} telling the learner to say it aloud (≤100 chars).`,
+    `- Hint in ${SUPPORT} describing the grammar point (e.g., tense, agreement, mood).`,
+    wantTranslation
+      ? `- Include a ${SUPPORT} translation of the sentence.`
+      : `- Use empty translation "".`,
+    `- Consider recent grammar successes: ${JSON.stringify(recentGood.slice(-3))}.`,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"grammar_speak","phase":"prompt","target":"<${TARGET} sentence>","prompt":"<instruction in ${TARGET}>"}`,
+    `{"type":"grammar_speak","phase":"meta","hint":"<${SUPPORT} hint>","translation":"<${SUPPORT} translation or empty>"}`,
+    `{"type":"done"}`,
+  ].join("\n");
+}
+
 function buildMAJudgePrompt({
   targetLang,
   stem,
@@ -546,7 +544,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
 
   const recentCorrectRef = useRef([]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "match"
+  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   useEffect(() => {
     if (
@@ -653,6 +651,15 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [loadingMAQ, setLoadingMAQ] = useState(false);
   const [loadingMAG, setLoadingMAG] = useState(false);
 
+  // ---- SPEAK ----
+  const [sPrompt, setSPrompt] = useState("");
+  const [sTarget, setSTarget] = useState("");
+  const [sHint, setSHint] = useState("");
+  const [sTranslation, setSTranslation] = useState("");
+  const [sRecognized, setSRecognized] = useState("");
+  const [sEval, setSEval] = useState(null);
+  const [loadingSpeakQ, setLoadingSpeakQ] = useState(false);
+
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
   const [mHint, setMHint] = useState("");
@@ -665,12 +672,18 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [loadingMJ, setLoadingMJ] = useState(false);
   const [mAnswerMap, setMAnswerMap] = useState([]); // ✅ right index for each left (deterministic)
 
+  const generateRandomRef = useRef(() => {});
+
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function generateRandom() {
-    const fns = [generateFill, generateMC, generateMA, generateMatch];
+    const fns = [generateFill, generateMC, generateMA, generateSpeak, generateMatch];
     const pick = Math.floor(Math.random() * fns.length);
     fns[pick]();
   }
+
+  useEffect(() => {
+    generateRandomRef.current = generateRandom;
+  });
 
   /* ---------- AUTO-GENERATE on first render (respect language settings) ---------- */
   // ✅ Wait until 'ready' so the very first prompt uses the user's target/support language.
@@ -1219,6 +1232,132 @@ Create ONE multiple-answer ${LANG_NAME(
     }
   }
 
+  async function generateSpeak() {
+    try {
+      stopSpeakRecording();
+    } catch {}
+    setMode("speak");
+    setLoadingSpeakQ(true);
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    setSPrompt("");
+    setSTarget("");
+    setSHint("");
+    setSTranslation("");
+    setSRecognized("");
+    setSEval(null);
+
+    const prompt = buildSpeakGrammarStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
+    });
+
+    let got = false;
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "grammar_speak" && obj.phase === "prompt") {
+              if (typeof obj.prompt === "string") setSPrompt(obj.prompt.trim());
+              if (typeof obj.target === "string") setSTarget(obj.target.trim());
+              got = true;
+            } else if (
+              obj?.type === "grammar_speak" &&
+              obj.phase === "meta"
+            ) {
+              if (typeof obj.hint === "string") setSHint(obj.hint);
+              if (typeof obj.translation === "string")
+                setSTranslation(obj.translation);
+              got = true;
+            }
+          });
+        }
+      }
+
+      if (!got) throw new Error("no-speak");
+    } catch {
+      const text = await callResponses({
+        model: MODEL,
+        input: `
+Create ONE ${LANG_NAME(targetLang)} sentence for pronunciation practice. Return JSON ONLY:
+{
+  "target":"<${LANG_NAME(targetLang)} sentence with a grammar focus>",
+  "prompt":"<${LANG_NAME(targetLang)} instruction telling the learner to say it aloud>",
+  "hint":"<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} grammar hint>",
+  "translation":"${
+          showTranslations
+            ? `<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} translation>`
+            : ""
+        }"
+}`.trim(),
+      });
+
+      const parsed = safeParseJsonLoose(text);
+      if (parsed && typeof parsed.target === "string") {
+        setSTarget(parsed.target.trim());
+        setSPrompt(String(parsed.prompt || ""));
+        setSHint(String(parsed.hint || ""));
+        setSTranslation(String(parsed.translation || ""));
+      } else {
+        if (targetLang === "es") {
+          setSTarget("Si hubiera estudiado más, habría aprobado.");
+          setSPrompt("Pronuncia la oración completa.");
+          setSHint("condicional compuesto");
+          setSTranslation(
+            supportCode === "en"
+              ? "If I had studied more, I would have passed."
+              : "Si hubiera estudiado más, habría aprobado."
+          );
+        } else if (targetLang === "nah") {
+          setSTarget("Tlakatl kuali tlahtoa nechca teopan.");
+          setSPrompt("Di la frase con claridad.");
+          setSHint("orden verbo + adverbio");
+          setSTranslation(
+            supportCode === "en"
+              ? "The person speaks well near the temple."
+              : "La persona habla bien cerca del templo."
+          );
+        } else {
+          setSTarget("Were she to ask, I would help.");
+          setSPrompt("Say the conditional sentence out loud.");
+          setSHint(
+            supportCode === "es"
+              ? "condicional invertido"
+              : "inverted conditional"
+          );
+          setSTranslation(
+            supportCode === "es"
+              ? "Si ella lo pidiera, ayudaría."
+              : "Were she to ask, I would help."
+          );
+        }
+      }
+    } finally {
+      setLoadingSpeakQ(false);
+    }
+  }
+
   /* ---------- STREAM Generate: MATCH (Gemini with deterministic map) ---------- */
   async function generateMatch() {
     setMode("match");
@@ -1442,7 +1581,11 @@ Return JSON ONLY:
         ...recentCorrectRef.current,
         { mode: "fill", question },
       ].slice(-5);
-      setNextAction(() => (modeLocked ? generateFill : generateRandom)); // ✅ random unless user locked a type
+      setNextAction(
+        modeLocked
+          ? () => generateFill()
+          : () => generateRandomRef.current()
+      ); // ✅ random unless user locked a type
     } else {
       setNextAction(null);
     }
@@ -1485,7 +1628,11 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
     setNextAction(
-      ok ? (modeLocked ? () => generateMC : () => generateRandom) : null
+      ok
+        ? modeLocked
+          ? () => generateMC()
+          : () => generateRandomRef.current()
+        : null
     );
 
     setLoadingMCG(false);
@@ -1526,7 +1673,11 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
     setNextAction(
-      ok ? (modeLocked ? () => generateMA : () => generateRandom) : null
+      ok
+        ? modeLocked
+          ? () => generateMA()
+          : () => generateRandomRef.current()
+        : null
     );
 
     setLoadingMAG(false);
@@ -1570,11 +1721,129 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
     setNextAction(
-      ok ? (modeLocked ? () => generateMatch : () => generateRandom) : null
+      ok
+        ? modeLocked
+          ? () => generateMatch()
+          : () => generateRandomRef.current()
+        : null
     );
 
     setLoadingMJ(false);
   }
+
+  const handleSpeakEvaluation = useCallback(
+    async ({
+      evaluation,
+      recognizedText = "",
+      confidence = 0,
+      audioMetrics = null,
+      method = "",
+      error = null,
+    }) => {
+      if (!sTarget) return;
+      if (error) {
+        toast({
+          title:
+            userLanguage === "es"
+              ? "No se pudo evaluar"
+              : "Could not evaluate",
+          description:
+            userLanguage === "es"
+              ? "Revisa permisos de micrófono e inténtalo otra vez."
+              : "Check microphone permissions and try again.",
+          status: "error",
+          duration: 2600,
+        });
+        return;
+      }
+      if (!evaluation) return;
+
+      setSRecognized(recognizedText || "");
+      setSEval(evaluation);
+
+      const ok = evaluation.pass;
+      const delta = ok ? 14 : 0;
+
+      await saveAttempt(npub, {
+        ok,
+        mode: "grammar_speak",
+        question: sPrompt,
+        target: sTarget,
+        hint: sHint,
+        translation: sTranslation,
+        recognized_text: recognizedText || "",
+        confidence,
+        audio_metrics: audioMetrics,
+        eval: evaluation,
+        method,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+
+      setLastOk(ok);
+      setRecentXp(delta);
+      setNextAction(
+        ok
+          ? modeLocked
+            ? () => generateSpeak()
+            : () => generateRandomRef.current()
+          : null
+      );
+
+      if (ok) {
+        const title =
+          t("grammar_speak_success_title") ||
+          (userLanguage === "es" ? "¡Pronunciación aprobada!" : "Pronunciation approved!");
+        const desc =
+          t("grammar_speak_success_desc", { score: evaluation.score }) ||
+          (userLanguage === "es"
+            ? `Puntaje ${evaluation.score}%`
+            : `Score ${evaluation.score}%`);
+        toast({ title, description: desc, status: "success", duration: 2600 });
+        recentCorrectRef.current = [
+          ...recentCorrectRef.current,
+          { mode: "speak", question: sTarget },
+        ].slice(-5);
+      } else {
+        const tips = speechReasonTips(evaluation.reasons, {
+          uiLang: userLanguage,
+          targetLabel: targetName,
+        });
+        const title =
+          t("grammar_speak_retry_title") ||
+          (userLanguage === "es" ? "Intenta de nuevo" : "Try again");
+        toast({
+          title,
+          description: tips.join(" "),
+          status: "warning",
+          duration: 3600,
+        });
+      }
+    },
+    [
+      modeLocked,
+      npub,
+      sHint,
+      sPrompt,
+      sTarget,
+      sTranslation,
+      t,
+      targetName,
+      toast,
+      userLanguage,
+    ]
+  );
+
+  const {
+    startRecording: startSpeakRecording,
+    stopRecording: stopSpeakRecording,
+    isRecording: isSpeakRecording,
+    supportsSpeech: supportsSpeak,
+  } = useSpeechPractice({
+    targetText: sTarget,
+    targetLang,
+    onResult: handleSpeakEvaluation,
+  });
 
   /* ---------------------------
      Drag & Drop handlers (Match)
@@ -1637,6 +1906,10 @@ Return JSON ONLY:
   const showTRMA =
     showTranslations &&
     maTranslation &&
+    supportCode !== (targetLang === "en" ? "en" : targetLang);
+  const showTRSpeak =
+    showTranslations &&
+    sTranslation &&
     supportCode !== (targetLang === "en" ? "en" : targetLang);
 
   if (showPasscodeModal) {
@@ -1715,7 +1988,7 @@ Return JSON ONLY:
 
         {/* Generators */}
         <SimpleGrid
-          columns={{ base: 2, md: 4 }}
+          columns={{ base: 2, md: 5 }}
           spacing={{ base: 2, md: 3 }}
           w="100%"
         >
@@ -1745,6 +2018,31 @@ Return JSON ONLY:
               loading: loadingMAQ,
             },
             {
+              key: "grammar_btn_speak",
+              onClick: () => {
+                if (!supportsSpeak) {
+                  toast({
+                    title:
+                      t("grammar_speak_unavailable") ||
+                      (userLanguage === "es"
+                        ? "Reconocimiento de voz no disponible"
+                        : "Speech recognition unavailable"),
+                    description:
+                      userLanguage === "es"
+                        ? "Usa un navegador Chromium con micrófono para practicar gramática."
+                        : "Use a Chromium-based browser with microphone access to practice speaking.",
+                    status: "info",
+                    duration: 3200,
+                  });
+                  return;
+                }
+                setModeLocked(true);
+                generateSpeak();
+              },
+              loading: loadingSpeakQ,
+              disabled: !supportsSpeak,
+            },
+            {
               key: "grammar_btn_match",
               onClick: () => {
                 setModeLocked(true);
@@ -1756,7 +2054,7 @@ Return JSON ONLY:
             <Button
               key={b.key}
               onClick={b.onClick}
-              isDisabled={b.loading}
+              isDisabled={b.loading || b.disabled}
               rightIcon={b.loading ? <Spinner size="xs" /> : null}
               w="100%"
               size="sm"
@@ -1948,6 +2246,160 @@ Return JSON ONLY:
             </HStack>
 
             <HStack spacing={3} mt={1}>
+              <ResultBadge ok={lastOk} xp={recentXp} />
+            </HStack>
+          </>
+        ) : null}
+
+        {/* ---- SPEAK UI ---- */}
+        {mode === "speak" && (sTarget || loadingSpeakQ) ? (
+          <>
+            <HStack align="flex-start" spacing={2} mb={2}>
+              <CopyAllBtn
+                q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
+                h={sHint}
+                tr={sTranslation}
+              />
+              <VStack align="flex-start" spacing={1} flex="1">
+                <Text fontSize="sm" opacity={0.85}>
+                  {t("grammar_speak_instruction_label") ||
+                    (userLanguage === "es"
+                      ? "Pronuncia la oración para practicar la gramática."
+                      : "Say the sentence aloud to practice the grammar point.")}
+                </Text>
+                <Text fontWeight="600" fontSize="md">
+                  {loadingSpeakQ ? "…" : sPrompt || ""}
+                </Text>
+              </VStack>
+            </HStack>
+
+            <Box
+              border="1px solid rgba(255,255,255,0.18)"
+              rounded="xl"
+              p={6}
+              textAlign="center"
+              bg="rgba(255,255,255,0.04)"
+            >
+              <Text fontSize="3xl" fontWeight="700">
+                {loadingSpeakQ ? "…" : sTarget || "…"}
+              </Text>
+            </Box>
+
+            {sHint ? (
+              <Text fontSize="sm" mt={3}>
+                <Text as="span" fontWeight="600">
+                  {t("grammar_speak_hint_label") ||
+                    (userLanguage === "es" ? "Pista gramatical" : "Grammar hint")}
+                  :
+                </Text>{" "}
+                {sHint}
+              </Text>
+            ) : null}
+
+            {showTRSpeak ? (
+              <Text fontSize="sm" mt={1} opacity={0.85}>
+                <Text as="span" fontWeight="600">
+                  {t("grammar_speak_translation_label") ||
+                    (userLanguage === "es" ? "Traducción" : "Translation")}
+                  :
+                </Text>{" "}
+                {sTranslation}
+              </Text>
+            ) : null}
+
+            {sRecognized ? (
+              <Text fontSize="sm" mt={3} color="teal.200">
+                <Text as="span" fontWeight="600">
+                  {t("grammar_speak_last_heard") ||
+                    (userLanguage === "es" ? "Último intento" : "Last attempt")}
+                  :
+                </Text>{" "}
+                {sRecognized}
+              </Text>
+            ) : null}
+
+            {sEval ? (
+              <Badge mt={2} colorScheme={sEval.pass ? "green" : "yellow"}>
+                {t("grammar_speak_score", { score: sEval.score }) ||
+                  (userLanguage === "es"
+                    ? `Puntaje ${sEval.score}%`
+                    : `Score ${sEval.score}%`)}
+              </Badge>
+            ) : null}
+
+            <HStack spacing={3} mt={4} align="center">
+              <Button
+                colorScheme={isSpeakRecording ? "red" : "teal"}
+                onClick={async () => {
+                  if (isSpeakRecording) {
+                    stopSpeakRecording();
+                    return;
+                  }
+                  try {
+                    await startSpeakRecording();
+                  } catch (err) {
+                    const code = err?.code;
+                    if (code === "no-speech-recognition") {
+                      toast({
+                        title:
+                          t("grammar_speak_unavailable") ||
+                          (userLanguage === "es"
+                            ? "Reconocimiento de voz no disponible"
+                            : "Speech recognition unavailable"),
+                        description:
+                          userLanguage === "es"
+                            ? "Usa un navegador Chromium con acceso al micrófono."
+                            : "Use a Chromium-based browser with microphone access.",
+                        status: "warning",
+                        duration: 3200,
+                      });
+                    } else if (code === "mic-denied") {
+                      toast({
+                        title:
+                          userLanguage === "es"
+                            ? "Permiso de micrófono denegado"
+                            : "Microphone denied",
+                        description:
+                          userLanguage === "es"
+                            ? "Activa el micrófono en la configuración del navegador."
+                            : "Enable microphone access in your browser settings.",
+                        status: "error",
+                        duration: 3200,
+                      });
+                    } else {
+                      toast({
+                        title:
+                          userLanguage === "es"
+                            ? "No se pudo iniciar la grabación"
+                            : "Recording failed",
+                        description:
+                          userLanguage === "es"
+                            ? "Inténtalo de nuevo."
+                            : "Please try again.",
+                        status: "error",
+                        duration: 2500,
+                      });
+                    }
+                  }
+                }}
+                isDisabled={!supportsSpeak || loadingSpeakQ || !sTarget}
+              >
+                {isSpeakRecording
+                  ? t("grammar_speak_stop") ||
+                    (userLanguage === "es" ? "Detener" : "Stop")
+                  : t("grammar_speak_record") ||
+                    (userLanguage === "es"
+                      ? "Grabar pronunciación"
+                      : "Record pronunciation")}
+              </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {t("grammar_next") || "Next"}
+                </Button>
+              ) : null}
+            </HStack>
+
+            <HStack spacing={3} mt={3}>
               <ResultBadge ok={lastOk} xp={recentXp} />
             </HStack>
           </>
