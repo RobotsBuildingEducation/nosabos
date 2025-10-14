@@ -721,6 +721,21 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }
   }
 
+  function handleSkip() {
+    if (isSpeakRecording) {
+      try {
+        stopSpeakRecording();
+      } catch {}
+    }
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    const runner = lockedType ? generatorFor(lockedType) : generateRandomRef.current;
+    if (typeof runner === "function") {
+      runner();
+    }
+  }
+
   // ---- FILL (vocab) ----
   const [qFill, setQFill] = useState("");
   const [hFill, setHFill] = useState("");
@@ -2485,7 +2500,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {dragPlaceholderLabel}
                   </Text>
                 )}
-                {provided.placeholder}
+                <Box as="span" display="none">
+                  {provided.placeholder}
+                </Box>
               </Box>
             )}
           </Droppable>
@@ -2587,7 +2604,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {dragPlaceholderLabel}
                   </Text>
                 )}
-                {provided.placeholder}
+                <Box as="span" display="none">
+                  {provided.placeholder}
+                </Box>
               </Box>
             )}
           </Droppable>
@@ -2600,6 +2619,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   const nextLabel =
     t("practice_next_question") ||
     (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
+  const skipLabel =
+    t("practice_skip_question") ||
+    (userLanguage === "es" ? "Omitir pregunta" : "Skip question");
 
   const maReady =
     maLayout === "drag"
@@ -2661,6 +2683,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 isDisabled={loadingGFill || !ansFill.trim() || !qFill}
               >
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQFill || loadingGFill}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
@@ -2796,6 +2825,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 isDisabled={loadingGMC || !pickMC || !choicesMC.length}
               >
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQMC || loadingGMC}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
@@ -2938,6 +2974,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQMA || loadingGMA}
+              >
+                {skipLabel}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
                   {nextLabel}
@@ -3076,9 +3119,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         duration: 2500,
                       });
                     }
-                  }
-                }}
-                isDisabled={!supportsSpeak || loadingQSpeak || !sTarget}
+                }
+              }}
+              isDisabled={!supportsSpeak || loadingQSpeak || !sTarget}
               >
                 {isSpeakRecording
                   ? t("vocab_speak_stop") ||
@@ -3087,6 +3130,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     (userLanguage === "es"
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQSpeak || isSpeakRecording}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
@@ -3267,6 +3317,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingMG || loadingMJ}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>

@@ -641,6 +641,23 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }
   }
 
+  function handleSkip() {
+    if (isSpeakRecording) {
+      try {
+        stopSpeakRecording();
+      } catch {}
+    }
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    const runner = modeLocked
+      ? generatorFor(mode)
+      : generateRandomRef.current;
+    if (typeof runner === "function") {
+      runner();
+    }
+  }
+
   // ---- FILL ----
   const [question, setQuestion] = useState("");
   const [hint, setHint] = useState("");
@@ -2149,6 +2166,9 @@ Return JSON ONLY:
     (userLanguage === "es"
       ? "Suelta la respuesta aquí"
       : "Drop the answer here");
+  const skipLabel =
+    t("practice_skip_question") ||
+    (userLanguage === "es" ? "Omitir pregunta" : "Skip question");
 
   const renderMcPrompt = () => {
     if (!mcQ) return null;
@@ -2244,7 +2264,9 @@ Return JSON ONLY:
                     {dragPlaceholderLabel}
                   </Text>
                 )}
-                {provided.placeholder}
+                <Box as="span" display="none">
+                  {provided.placeholder}
+                </Box>
               </Box>
             )}
           </Droppable>
@@ -2350,7 +2372,9 @@ Return JSON ONLY:
                     {dragPlaceholderLabel}
                   </Text>
                 )}
-                {provided.placeholder}
+                <Box as="span" display="none">
+                  {provided.placeholder}
+                </Box>
               </Box>
             )}
           </Droppable>
@@ -2419,6 +2443,13 @@ Return JSON ONLY:
                 isDisabled={loadingG || !input.trim() || !question}
               >
                 {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQ || loadingG}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
@@ -2562,6 +2593,13 @@ Return JSON ONLY:
                 isDisabled={loadingMCG || !mcPick || !mcChoices.length}
               >
                 {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingMCQ || loadingMCG}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
@@ -2711,6 +2749,13 @@ Return JSON ONLY:
               >
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingMAQ || loadingMAG}
+              >
+                {skipLabel}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
                   {t("practice_next_question") || "Next question"}
@@ -2843,9 +2888,9 @@ Return JSON ONLY:
                         duration: 2500,
                       });
                     }
-                  }
-                }}
-                isDisabled={!supportsSpeak || loadingSpeakQ || !sTarget}
+                }
+              }}
+              isDisabled={!supportsSpeak || loadingSpeakQ || !sTarget}
               >
                 {isSpeakRecording
                   ? t("grammar_speak_stop") ||
@@ -2854,6 +2899,13 @@ Return JSON ONLY:
                     (userLanguage === "es"
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingSpeakQ || isSpeakRecording}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
@@ -3034,6 +3086,13 @@ Return JSON ONLY:
                 isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingMG || loadingMJ}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
