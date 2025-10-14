@@ -2144,6 +2144,194 @@ Return JSON ONLY:
     );
   };
 
+  const dragPlaceholderLabel =
+    t("practice_drag_drop_slot_placeholder") ||
+    (userLanguage === "es"
+      ? "Suelta la respuesta aquí"
+      : "Drop the answer here");
+
+  const renderMcPrompt = () => {
+    if (!mcQ) return null;
+    const segments = String(mcQ).split("___");
+    if (segments.length === 1) {
+      return mcQ;
+    }
+    let blankPlaced = false;
+    const nodes = [];
+    segments.forEach((segment, idx) => {
+      nodes.push(
+        <React.Fragment key={`grammar-mc-segment-${idx}`}>
+          {segment}
+        </React.Fragment>
+      );
+      if (idx < segments.length - 1) {
+        if (blankPlaced) {
+          nodes.push(
+            <React.Fragment key={`grammar-mc-gap-${idx}`}>
+              ___
+            </React.Fragment>
+          );
+          return;
+        }
+        blankPlaced = true;
+        nodes.push(
+          <Droppable
+            droppableId="mc-slot"
+            direction="horizontal"
+            key={`grammar-mc-blank-${idx}`}
+          >
+            {(provided, snapshot) => (
+              <Box
+                as="span"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                minW="72px"
+                minH="32px"
+                px={2}
+                py={1}
+                mx={1}
+                borderRadius="md"
+                borderBottomWidth="2px"
+                borderBottomColor={
+                  snapshot.isDraggingOver
+                    ? "purple.300"
+                    : "rgba(255,255,255,0.6)"
+                }
+                bg={
+                  snapshot.isDraggingOver
+                    ? "rgba(128,90,213,0.18)"
+                    : "rgba(255,255,255,0.08)"
+                }
+                transition="all 0.2s ease"
+              >
+                {mcSlotIndex != null ? (
+                  <Draggable draggableId={`mc-${mcSlotIndex}`} index={0}>
+                    {(dragProvided) => (
+                      <Button
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        {...dragProvided.dragHandleProps}
+                        style={{
+                          cursor: "grab",
+                          ...(dragProvided.draggableProps.style || {}),
+                        }}
+                        colorScheme="purple"
+                        size="sm"
+                      >
+                        {mcChoices[mcSlotIndex]}
+                      </Button>
+                    )}
+                  </Draggable>
+                ) : (
+                  <Text as="span" fontSize="sm" opacity={0.7}>
+                    {dragPlaceholderLabel}
+                  </Text>
+                )}
+                {provided.placeholder}
+              </Box>
+            )}
+          </Droppable>
+        );
+      }
+    });
+    return nodes;
+  };
+
+  const renderMaPrompt = () => {
+    if (!maQ) return null;
+    const segments = String(maQ).split("___");
+    if (segments.length === 1) {
+      return maQ;
+    }
+    let slotNumber = 0;
+    const nodes = [];
+    segments.forEach((segment, idx) => {
+      nodes.push(
+        <React.Fragment key={`grammar-ma-segment-${idx}`}>
+          {segment}
+        </React.Fragment>
+      );
+      if (idx < segments.length - 1) {
+        const currentSlot = slotNumber;
+        slotNumber += 1;
+        if (currentSlot >= maSlots.length) {
+          nodes.push(
+            <React.Fragment key={`grammar-ma-gap-${idx}`}>
+              ___
+            </React.Fragment>
+          );
+          return;
+        }
+        const choiceIdx = maSlots[currentSlot];
+        nodes.push(
+          <Droppable
+            droppableId={`ma-slot-${currentSlot}`}
+            direction="horizontal"
+            key={`grammar-ma-blank-${currentSlot}`}
+          >
+            {(provided, snapshot) => (
+              <Box
+                as="span"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                minW="72px"
+                minH="32px"
+                px={2}
+                py={1}
+                mx={1}
+                borderRadius="md"
+                borderBottomWidth="2px"
+                borderBottomColor={
+                  snapshot.isDraggingOver
+                    ? "purple.300"
+                    : "rgba(255,255,255,0.6)"
+                }
+                bg={
+                  snapshot.isDraggingOver
+                    ? "rgba(128,90,213,0.18)"
+                    : "rgba(255,255,255,0.08)"
+                }
+                transition="all 0.2s ease"
+              >
+                {choiceIdx != null ? (
+                  <Draggable draggableId={`ma-${choiceIdx}`} index={0}>
+                    {(dragProvided) => (
+                      <Button
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        {...dragProvided.dragHandleProps}
+                        style={{
+                          cursor: "grab",
+                          ...(dragProvided.draggableProps.style || {}),
+                        }}
+                        colorScheme="purple"
+                        size="sm"
+                      >
+                        {maChoices[choiceIdx]}
+                      </Button>
+                    )}
+                  </Draggable>
+                ) : (
+                  <Text as="span" fontSize="sm" opacity={0.7}>
+                    {dragPlaceholderLabel}
+                  </Text>
+                )}
+                {provided.placeholder}
+              </Box>
+            )}
+          </Droppable>
+        );
+      }
+    });
+    return nodes;
+  };
+
   return (
     <Box p={4}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
@@ -2220,142 +2408,110 @@ Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (mcQ || loadingMCQ) ? (
           <>
-            <HStack align="start">
-              <CopyAllBtn
-                q={mcQ}
-                h={mcHint}
-                tr={showTRMC ? mcTranslation : ""}
-              />
-              <Text fontWeight="semibold" flex="1">
-                {mcQ || (loadingMCQ ? "…" : "")}
-              </Text>
-            </HStack>
-            {showTRMC && mcTranslation ? (
-              <Text fontSize="sm" opacity={0.8}>
-                {mcTranslation}
-              </Text>
-            ) : null}
-            {mcHint ? (
-              <Text fontSize="sm" opacity={0.85}>
-                💡 {mcHint}
-              </Text>
-            ) : null}
-
             {mcLayout === "drag" ? (
-              <>
-                <Text fontSize="sm" opacity={0.75} mb={1}>
-                  {t("practice_drag_drop_instruction") ||
-                    (userLanguage === "es"
-                      ? "Arrastra la respuesta correcta al espacio en blanco."
-                      : "Drag the correct answer into the blank.")}
-                </Text>
-                <DragDropContext onDragEnd={handleMcDragEnd}>
-                  <VStack align="stretch" spacing={3}>
-                    <Droppable droppableId="grammar-mc-slot" direction="horizontal">
-                      {(provided, snapshot) => (
-                        <HStack
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          border="1px dashed rgba(255,255,255,0.28)"
-                          rounded="md"
-                          p={3}
-                          minH="64px"
-                          bg={
-                            snapshot.isDraggingOver
-                              ? "rgba(255,255,255,0.08)"
-                              : "transparent"
-                          }
-                          spacing={3}
-                          justify="flex-start"
-                        >
-                          {mcSlotIndex != null ? (
-                            <Draggable
-                              draggableId={`grammar-mc-${mcSlotIndex}`}
-                              index={0}
-                              key={`grammar-mc-slot-${mcSlotIndex}`}
-                            >
-                              {(dragProvided) => (
-                                <Button
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  style={{
-                                    cursor: "grab",
-                                    ...(dragProvided.draggableProps.style || {}),
-                                  }}
-                                  colorScheme="purple"
-                                  size="sm"
-                                >
-                                  {mcChoices[mcSlotIndex]}
-                                </Button>
-                              )}
-                            </Draggable>
-                          ) : (
-                            <Text fontSize="sm" opacity={0.6}>
-                              {t("practice_drag_drop_slot_placeholder") ||
-                                (userLanguage === "es"
-                                  ? "Suelta la respuesta aquí"
-                                  : "Drop the answer here")}
-                            </Text>
-                          )}
-                          {provided.placeholder}
-                        </HStack>
-                      )}
-                    </Droppable>
-                    <Droppable droppableId="grammar-mc-bank">
-                      {(provided) => (
-                        <VStack
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          align="stretch"
-                          spacing={2}
-                        >
-                          {mcBankOrder.map((idx, position) => (
-                            <Draggable
-                              draggableId={`grammar-mc-${idx}`}
-                              index={position}
-                              key={`grammar-mc-bank-${idx}`}
-                            >
-                              {(dragProvided) => (
-                                <Button
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  style={{
-                                    cursor: "grab",
-                                    ...(dragProvided.draggableProps.style || {}),
-                                  }}
-                                  variant="outline"
-                                  justifyContent="flex-start"
-                                  size="sm"
-                                >
-                                  {mcChoices[idx]}
-                                </Button>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </VStack>
-                      )}
-                    </Droppable>
-                  </VStack>
-                </DragDropContext>
-              </>
+              <DragDropContext onDragEnd={handleMcDragEnd}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack align="start">
+                    <CopyAllBtn
+                      q={mcQ}
+                      h={mcHint}
+                      tr={showTRMC ? mcTranslation : ""}
+                    />
+                    <Text fontWeight="semibold" flex="1">
+                      {renderMcPrompt() || (loadingMCQ ? "…" : "")}
+                    </Text>
+                  </HStack>
+                  {showTRMC && mcTranslation ? (
+                    <Text fontSize="sm" opacity={0.8}>
+                      {mcTranslation}
+                    </Text>
+                  ) : null}
+                  {mcHint ? (
+                    <Text fontSize="sm" opacity={0.85}>
+                      💡 {mcHint}
+                    </Text>
+                  ) : null}
+                  <Text fontSize="sm" opacity={0.75}>
+                    {t("practice_drag_drop_instruction") ||
+                      (userLanguage === "es"
+                        ? "Arrastra la respuesta correcta al espacio en la frase."
+                        : "Drag the correct answer into the blank in the sentence.")}
+                  </Text>
+                  <Droppable droppableId="mc-bank">
+                    {(provided) => (
+                      <VStack
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        align="stretch"
+                        spacing={2}
+                      >
+                        {mcBankOrder.map((idx, position) => (
+                          <Draggable
+                            draggableId={`mc-${idx}`}
+                            index={position}
+                            key={`grammar-mc-bank-${idx}`}
+                          >
+                            {(dragProvided) => (
+                              <Button
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                {...dragProvided.dragHandleProps}
+                                style={{
+                                  cursor: "grab",
+                                  ...(dragProvided.draggableProps.style || {}),
+                                }}
+                                variant="outline"
+                                justifyContent="flex-start"
+                                size="sm"
+                              >
+                                {mcChoices[idx]}
+                              </Button>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </VStack>
+                    )}
+                  </Droppable>
+                </VStack>
+              </DragDropContext>
             ) : (
-              <RadioGroup value={mcPick} onChange={setMcPick}>
-                <Stack spacing={2}>
-                  {(mcChoices.length
-                    ? mcChoices
-                    : loadingMCQ
-                    ? ["…", "…", "…", "…"]
-                    : []
-                  ).map((c, i) => (
-                    <Radio value={c} key={i} isDisabled={!mcChoices.length}>
-                      {c}
-                    </Radio>
-                  ))}
-                </Stack>
-              </RadioGroup>
+              <>
+                <HStack align="start">
+                  <CopyAllBtn
+                    q={mcQ}
+                    h={mcHint}
+                    tr={showTRMC ? mcTranslation : ""}
+                  />
+                  <Text fontWeight="semibold" flex="1">
+                    {mcQ || (loadingMCQ ? "…" : "")}
+                  </Text>
+                </HStack>
+                {showTRMC && mcTranslation ? (
+                  <Text fontSize="sm" opacity={0.8}>
+                    {mcTranslation}
+                  </Text>
+                ) : null}
+                {mcHint ? (
+                  <Text fontSize="sm" opacity={0.85}>
+                    💡 {mcHint}
+                  </Text>
+                ) : null}
+                <RadioGroup value={mcPick} onChange={setMcPick}>
+                  <Stack spacing={2}>
+                    {(mcChoices.length
+                      ? mcChoices
+                      : loadingMCQ
+                      ? ["…", "…", "…", "…"]
+                      : []
+                    ).map((c, i) => (
+                      <Radio value={c} key={i} isDisabled={!mcChoices.length}>
+                        {c}
+                      </Radio>
+                    ))}
+                  </Stack>
+                </RadioGroup>
+              </>
             )}
 
             <HStack>
@@ -2377,149 +2533,104 @@ Return JSON ONLY:
             </HStack>
           </>
         ) : null}
-
         {/* ---- MA UI ---- */}
         {mode === "ma" && (maQ || loadingMAQ) ? (
           <>
-            <HStack align="start">
-              <CopyAllBtn
-                q={maQ}
-                h={maHint}
-                tr={showTRMA ? maTranslation : ""}
-              />
-              <Text fontWeight="semibold" flex="1">
-                {maQ || (loadingMAQ ? "…" : "")}
-              </Text>
-            </HStack>
-            {showTRMA && maTranslation ? (
-              <Text fontSize="sm" opacity={0.8}>
-                {maTranslation}
-              </Text>
-            ) : null}
-            {maHint ? (
-              <Text fontSize="sm" opacity={0.85}>
-                💡 {maHint}
-              </Text>
-            ) : null}
             {maLayout === "drag" ? (
-              <>
-                <Text fontSize="sm" opacity={0.75} mb={1}>
-                  {t("practice_drag_drop_multi_instruction") ||
-                    (userLanguage === "es"
-                      ? "Arrastra cada respuesta correcta al espacio correspondiente."
-                      : "Drag each correct answer into the matching blank.")}
-                </Text>
-                <DragDropContext onDragEnd={handleMaDragEnd}>
-                  <VStack align="stretch" spacing={3}>
-                    <VStack align="stretch" spacing={2}>
-                      {maSlots.map((slotIdx, slotNumber) => (
-                        <Droppable
-                          droppableId={`grammar-ma-slot-${slotNumber}`}
-                          direction="horizontal"
-                          key={`grammar-ma-slot-${slotNumber}`}
-                        >
-                          {(provided, snapshot) => (
-                            <HStack
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              border="1px dashed rgba(255,255,255,0.28)"
-                              rounded="md"
-                              p={3}
-                              minH="64px"
-                              bg={
-                                snapshot.isDraggingOver
-                                  ? "rgba(255,255,255,0.08)"
-                                  : "transparent"
-                              }
-                              spacing={3}
-                              justify="space-between"
-                            >
-                              <Text fontSize="sm" fontWeight="600">
-                                {t("practice_drag_blank_label", {
-                                  index: slotNumber + 1,
-                                }) || `Blank ${slotNumber + 1}`}
-                              </Text>
-                              {slotIdx != null ? (
-                                <Draggable
-                                  draggableId={`grammar-ma-${slotIdx}`}
-                                  index={0}
-                                  key={`grammar-ma-slot-${slotNumber}-${slotIdx}`}
-                                >
-                                  {(dragProvided) => (
-                                    <Button
-                                      ref={dragProvided.innerRef}
-                                      {...dragProvided.draggableProps}
-                                      {...dragProvided.dragHandleProps}
-                                      style={{
-                                        cursor: "grab",
-                                        ...(dragProvided.draggableProps.style || {}),
-                                      }}
-                                      colorScheme="purple"
-                                      size="sm"
-                                    >
-                                      {maChoices[slotIdx]}
-                                    </Button>
-                                  )}
-                                </Draggable>
-                              ) : (
-                                <Text fontSize="sm" opacity={0.6}>
-                                  {t("practice_drag_drop_slot_placeholder") ||
-                                    (userLanguage === "es"
-                                      ? "Suelta la respuesta aquí"
-                                      : "Drop the answer here")}
-                                </Text>
-                              )}
-                              {provided.placeholder}
-                            </HStack>
-                          )}
-                        </Droppable>
-                      ))}
-                    </VStack>
-                    <Droppable droppableId="grammar-ma-bank">
-                      {(provided) => (
-                        <VStack
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          align="stretch"
-                          spacing={2}
-                        >
-                          {maBankOrder.map((idx, position) => (
-                            <Draggable
-                              draggableId={`grammar-ma-${idx}`}
-                              index={position}
-                              key={`grammar-ma-bank-${idx}`}
-                            >
-                              {(dragProvided) => (
-                                <Button
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  style={{
-                                    cursor: "grab",
-                                    ...(dragProvided.draggableProps.style || {}),
-                                  }}
-                                  variant="outline"
-                                  justifyContent="flex-start"
-                                  size="sm"
-                                >
-                                  {maChoices[idx]}
-                                </Button>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </VStack>
-                      )}
-                    </Droppable>
-                  </VStack>
-                </DragDropContext>
-              </>
+              <DragDropContext onDragEnd={handleMaDragEnd}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack align="start">
+                    <CopyAllBtn
+                      q={maQ}
+                      h={maHint}
+                      tr={showTRMA ? maTranslation : ""}
+                    />
+                    <Text fontWeight="semibold" flex="1">
+                      {renderMaPrompt() || (loadingMAQ ? "…" : "")}
+                    </Text>
+                  </HStack>
+                  {showTRMA && maTranslation ? (
+                    <Text fontSize="sm" opacity={0.8}>
+                      {maTranslation}
+                    </Text>
+                  ) : null}
+                  {maHint ? (
+                    <Text fontSize="sm" opacity={0.85}>
+                      💡 {maHint}
+                    </Text>
+                  ) : null}
+                  <Text fontSize="xs" opacity={0.7}>
+                    {t("grammar_select_all_apply")}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.75}>
+                    {t("practice_drag_drop_multi_instruction") ||
+                      (userLanguage === "es"
+                        ? "Arrastra cada respuesta correcta a su espacio en la frase."
+                        : "Drag each correct answer into its place in the sentence.")}
+                  </Text>
+                  <Droppable droppableId="ma-bank">
+                    {(provided) => (
+                      <VStack
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        align="stretch"
+                        spacing={2}
+                      >
+                        {maBankOrder.map((idx, position) => (
+                          <Draggable
+                            draggableId={`ma-${idx}`}
+                            index={position}
+                            key={`grammar-ma-bank-${idx}`}
+                          >
+                            {(dragProvided) => (
+                              <Button
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                {...dragProvided.dragHandleProps}
+                                style={{
+                                  cursor: "grab",
+                                  ...(dragProvided.draggableProps.style || {}),
+                                }}
+                                variant="outline"
+                                justifyContent="flex-start"
+                                size="sm"
+                              >
+                                {maChoices[idx]}
+                              </Button>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </VStack>
+                    )}
+                  </Droppable>
+                </VStack>
+              </DragDropContext>
             ) : (
               <>
+                <HStack align="start">
+                  <CopyAllBtn
+                    q={maQ}
+                    h={maHint}
+                    tr={showTRMA ? maTranslation : ""}
+                  />
+                  <Text fontWeight="semibold" flex="1">
+                    {maQ || (loadingMAQ ? "…" : "")}
+                  </Text>
+                </HStack>
+                {showTRMA && maTranslation ? (
+                  <Text fontSize="sm" opacity={0.8}>
+                    {maTranslation}
+                  </Text>
+                ) : null}
+                {maHint ? (
+                  <Text fontSize="sm" opacity={0.85}>
+                    💡 {maHint}
+                  </Text>
+                ) : null}
                 <Text fontSize="xs" opacity={0.7}>
                   {t("grammar_select_all_apply")}
                 </Text>
-
                 <CheckboxGroup value={maPicks} onChange={setMaPicks}>
                   <Stack spacing={2}>
                     {(maChoices.length
@@ -2556,7 +2667,6 @@ Return JSON ONLY:
             </HStack>
           </>
         ) : null}
-
         {/* ---- SPEAK UI ---- */}
         {mode === "speak" && (sTarget || loadingSpeakQ) ? (
           <>

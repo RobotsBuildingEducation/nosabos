@@ -2389,6 +2389,187 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     );
   };
 
+  const dragPlaceholderLabel =
+    t("practice_drag_drop_slot_placeholder") ||
+    (userLanguage === "es"
+      ? "Suelta la respuesta aquí"
+      : "Drop the answer here");
+
+  const renderMcPrompt = () => {
+    if (!qMC) return null;
+    const segments = String(qMC).split("___");
+    if (segments.length === 1) {
+      return qMC;
+    }
+    let blankPlaced = false;
+    const nodes = [];
+    segments.forEach((segment, idx) => {
+      nodes.push(
+        <React.Fragment key={`mc-segment-${idx}`}>{segment}</React.Fragment>
+      );
+      if (idx < segments.length - 1) {
+        if (blankPlaced) {
+          nodes.push(
+            <React.Fragment key={`mc-gap-${idx}`}>___</React.Fragment>
+          );
+          return;
+        }
+        blankPlaced = true;
+        nodes.push(
+          <Droppable
+            droppableId="mc-slot"
+            direction="horizontal"
+            key={`mc-blank-${idx}`}
+          >
+            {(provided, snapshot) => (
+              <Box
+                as="span"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                minW="72px"
+                minH="32px"
+                px={2}
+                py={1}
+                mx={1}
+                borderRadius="md"
+                borderBottomWidth="2px"
+                borderBottomColor={
+                  snapshot.isDraggingOver
+                    ? "purple.300"
+                    : "rgba(255,255,255,0.6)"
+                }
+                bg={
+                  snapshot.isDraggingOver
+                    ? "rgba(128,90,213,0.18)"
+                    : "rgba(255,255,255,0.08)"
+                }
+                transition="all 0.2s ease"
+              >
+                {mcSlotIndex != null ? (
+                  <Draggable draggableId={`mc-${mcSlotIndex}`} index={0}>
+                    {(dragProvided) => (
+                      <Button
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        {...dragProvided.dragHandleProps}
+                        style={{
+                          cursor: "grab",
+                          ...(dragProvided.draggableProps.style || {}),
+                        }}
+                        colorScheme="purple"
+                        size="sm"
+                        variant="solid"
+                      >
+                        {choicesMC[mcSlotIndex]}
+                      </Button>
+                    )}
+                  </Draggable>
+                ) : (
+                  <Text as="span" fontSize="sm" opacity={0.7}>
+                    {dragPlaceholderLabel}
+                  </Text>
+                )}
+                {provided.placeholder}
+              </Box>
+            )}
+          </Droppable>
+        );
+      }
+    });
+    return nodes;
+  };
+
+  const renderMaPrompt = () => {
+    if (!qMA) return null;
+    const segments = String(qMA).split("___");
+    if (segments.length === 1) {
+      return qMA;
+    }
+    let slotNumber = 0;
+    const nodes = [];
+    segments.forEach((segment, idx) => {
+      nodes.push(
+        <React.Fragment key={`ma-segment-${idx}`}>{segment}</React.Fragment>
+      );
+      if (idx < segments.length - 1) {
+        const currentSlot = slotNumber;
+        slotNumber += 1;
+        if (currentSlot >= maSlots.length) {
+          nodes.push(
+            <React.Fragment key={`ma-gap-${idx}`}>___</React.Fragment>
+          );
+          return;
+        }
+        const choiceIdx = maSlots[currentSlot];
+        nodes.push(
+          <Droppable
+            droppableId={`ma-slot-${currentSlot}`}
+            direction="horizontal"
+            key={`ma-blank-${currentSlot}`}
+          >
+            {(provided, snapshot) => (
+              <Box
+                as="span"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                minW="72px"
+                minH="32px"
+                px={2}
+                py={1}
+                mx={1}
+                borderRadius="md"
+                borderBottomWidth="2px"
+                borderBottomColor={
+                  snapshot.isDraggingOver
+                    ? "purple.300"
+                    : "rgba(255,255,255,0.6)"
+                }
+                bg={
+                  snapshot.isDraggingOver
+                    ? "rgba(128,90,213,0.18)"
+                    : "rgba(255,255,255,0.08)"
+                }
+                transition="all 0.2s ease"
+              >
+                {choiceIdx != null ? (
+                  <Draggable draggableId={`ma-${choiceIdx}`} index={0}>
+                    {(dragProvided) => (
+                      <Button
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        {...dragProvided.dragHandleProps}
+                        style={{
+                          cursor: "grab",
+                          ...(dragProvided.draggableProps.style || {}),
+                        }}
+                        colorScheme="purple"
+                        size="sm"
+                      >
+                        {choicesMA[choiceIdx]}
+                      </Button>
+                    )}
+                  </Draggable>
+                ) : (
+                  <Text as="span" fontSize="sm" opacity={0.7}>
+                    {dragPlaceholderLabel}
+                  </Text>
+                )}
+                {provided.placeholder}
+              </Box>
+            )}
+          </Droppable>
+        );
+      }
+    });
+    return nodes;
+  };
+
   const nextLabel =
     t("practice_next_question") ||
     (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
@@ -2470,138 +2651,102 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (qMC || loadingQMC) ? (
           <>
-            <HStack align="start">
-              <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-              <Text fontWeight="semibold" flex="1">
-                {qMC || (loadingQMC ? "…" : "")}
-              </Text>
-            </HStack>
-            {showTRMC && trMC ? (
-              <Text fontSize="sm" opacity={0.8}>
-                {trMC}
-              </Text>
-            ) : null}
-            {hMC ? (
-              <Text fontSize="sm" opacity={0.85}>
-                💡 {hMC}
-              </Text>
-            ) : null}
-
             {mcLayout === "drag" ? (
-              <>
-                <Text fontSize="sm" opacity={0.75} mb={1}>
-                  {t("practice_drag_drop_instruction") ||
-                    (userLanguage === "es"
-                      ? "Arrastra la respuesta correcta al espacio en blanco."
-                      : "Drag the correct answer into the blank.")}
-                </Text>
-                <DragDropContext onDragEnd={handleMcDragEnd}>
-                  <VStack align="stretch" spacing={3}>
-                    <Droppable droppableId="mc-slot" direction="horizontal">
-                      {(provided, snapshot) => (
-                        <HStack
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          border="1px dashed rgba(255,255,255,0.28)"
-                          rounded="md"
-                          p={3}
-                          minH="64px"
-                          bg={
-                            snapshot.isDraggingOver
-                              ? "rgba(255,255,255,0.08)"
-                              : "transparent"
-                          }
-                          spacing={3}
-                          justify="flex-start"
-                        >
-                          {mcSlotIndex != null ? (
-                            <Draggable
-                              draggableId={`mc-${mcSlotIndex}`}
-                              index={0}
-                              key={`mc-slot-${mcSlotIndex}`}
-                            >
-                              {(dragProvided) => (
-                                <Button
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  style={{
-                                    cursor: "grab",
-                                    ...(dragProvided.draggableProps.style || {}),
-                                  }}
-                                  colorScheme="purple"
-                                  size="sm"
-                                >
-                                  {choicesMC[mcSlotIndex]}
-                                </Button>
-                              )}
-                            </Draggable>
-                          ) : (
-                            <Text fontSize="sm" opacity={0.6}>
-                              {t("practice_drag_drop_slot_placeholder") ||
-                                (userLanguage === "es"
-                                  ? "Suelta la respuesta aquí"
-                                  : "Drop the answer here")}
-                            </Text>
-                          )}
-                          {provided.placeholder}
-                        </HStack>
-                      )}
-                    </Droppable>
-                    <Droppable droppableId="mc-bank">
-                      {(provided) => (
-                        <VStack
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          align="stretch"
-                          spacing={2}
-                        >
-                          {mcBankOrder.map((idx, position) => (
-                            <Draggable
-                              draggableId={`mc-${idx}`}
-                              index={position}
-                              key={`mc-bank-${idx}`}
-                            >
-                              {(dragProvided) => (
-                                <Button
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  style={{
-                                    cursor: "grab",
-                                    ...(dragProvided.draggableProps.style || {}),
-                                  }}
-                                  variant="outline"
-                                  justifyContent="flex-start"
-                                  size="sm"
-                                >
-                                  {choicesMC[idx]}
-                                </Button>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </VStack>
-                      )}
-                    </Droppable>
-                  </VStack>
-                </DragDropContext>
-              </>
+              <DragDropContext onDragEnd={handleMcDragEnd}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack align="start">
+                    <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+                    <Text fontWeight="semibold" flex="1">
+                      {renderMcPrompt() || (loadingQMC ? "…" : "")}
+                    </Text>
+                  </HStack>
+                  {showTRMC && trMC ? (
+                    <Text fontSize="sm" opacity={0.8}>
+                      {trMC}
+                    </Text>
+                  ) : null}
+                  {hMC ? (
+                    <Text fontSize="sm" opacity={0.85}>
+                      💡 {hMC}
+                    </Text>
+                  ) : null}
+                  <Text fontSize="sm" opacity={0.75}>
+                    {t("practice_drag_drop_instruction") ||
+                      (userLanguage === "es"
+                        ? "Arrastra la respuesta correcta al espacio en la frase."
+                        : "Drag the correct answer into the blank in the sentence.")}
+                  </Text>
+                  <Droppable droppableId="mc-bank">
+                    {(provided) => (
+                      <VStack
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        align="stretch"
+                        spacing={2}
+                      >
+                        {mcBankOrder.map((idx, position) => (
+                          <Draggable
+                            draggableId={`mc-${idx}`}
+                            index={position}
+                            key={`mc-bank-${idx}`}
+                          >
+                            {(dragProvided) => (
+                              <Button
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                {...dragProvided.dragHandleProps}
+                                style={{
+                                  cursor: "grab",
+                                  ...(dragProvided.draggableProps.style || {}),
+                                }}
+                                variant="outline"
+                                justifyContent="flex-start"
+                                size="sm"
+                              >
+                                {choicesMC[idx]}
+                              </Button>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </VStack>
+                    )}
+                  </Droppable>
+                </VStack>
+              </DragDropContext>
             ) : (
-              <RadioGroup value={pickMC} onChange={setPickMC}>
-                <Stack spacing={2}>
-                  {(choicesMC.length
-                    ? choicesMC
-                    : loadingQMC
-                    ? ["…", "…", "…", "…"]
-                    : []
-                  ).map((c, i) => (
-                    <Radio value={c} key={i} isDisabled={!choicesMC.length}>
-                      {c}
-                    </Radio>
-                  ))}
-                </Stack>
-              </RadioGroup>
+              <>
+                <HStack align="start">
+                  <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+                  <Text fontWeight="semibold" flex="1">
+                    {qMC || (loadingQMC ? "…" : "")}
+                  </Text>
+                </HStack>
+                {showTRMC && trMC ? (
+                  <Text fontSize="sm" opacity={0.8}>
+                    {trMC}
+                  </Text>
+                ) : null}
+                {hMC ? (
+                  <Text fontSize="sm" opacity={0.85}>
+                    💡 {hMC}
+                  </Text>
+                ) : null}
+                <RadioGroup value={pickMC} onChange={setPickMC}>
+                  <Stack spacing={2}>
+                    {(choicesMC.length
+                      ? choicesMC
+                      : loadingQMC
+                      ? ["…", "…", "…", "…"]
+                      : []
+                    ).map((c, i) => (
+                      <Radio value={c} key={i} isDisabled={!choicesMC.length}>
+                        {c}
+                      </Radio>
+                    ))}
+                  </Stack>
+                </RadioGroup>
+              </>
             )}
 
             <HStack>
@@ -2627,154 +2772,108 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MA UI ---- */}
         {mode === "ma" && (qMA || loadingQMA) ? (
           <>
-            <HStack align="start">
-              <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-              <Text fontWeight="semibold" flex="1">
-                {qMA || (loadingQMA ? "…" : "")}
-              </Text>
-            </HStack>
-            {showTRMA && trMA ? (
-              <Text fontSize="sm" opacity={0.8}>
-                {trMA}
-              </Text>
-            ) : null}
-            {hMA ? (
-              <Text fontSize="sm" opacity={0.85}>
-                💡 {hMA}
-              </Text>
-            ) : null}
-            <Text fontSize="xs" opacity={0.7}>
-              {t("vocab_select_all_apply")}
-            </Text>
-
             {maLayout === "drag" ? (
-              <>
-                <Text fontSize="sm" opacity={0.75} mb={1}>
-                  {t("practice_drag_drop_multi_instruction") ||
-                    (userLanguage === "es"
-                      ? "Arrastra cada respuesta correcta al espacio correspondiente."
-                      : "Drag each correct answer into the matching blank.")}
-                </Text>
-                <DragDropContext onDragEnd={handleMaDragEnd}>
-                  <VStack align="stretch" spacing={3}>
-                    <VStack align="stretch" spacing={2}>
-                      {maSlots.map((slotIdx, slotNumber) => (
-                        <Droppable
-                          droppableId={`ma-slot-${slotNumber}`}
-                          direction="horizontal"
-                          key={`ma-slot-${slotNumber}`}
-                        >
-                          {(provided, snapshot) => (
-                            <HStack
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              border="1px dashed rgba(255,255,255,0.28)"
-                              rounded="md"
-                              p={3}
-                              minH="64px"
-                              bg={
-                                snapshot.isDraggingOver
-                                  ? "rgba(255,255,255,0.08)"
-                                  : "transparent"
-                              }
-                              spacing={3}
-                              justify="space-between"
-                            >
-                              <Text fontSize="sm" fontWeight="600">
-                                {t("practice_drag_blank_label", {
-                                  index: slotNumber + 1,
-                                }) || `Blank ${slotNumber + 1}`}
-                              </Text>
-                              {slotIdx != null ? (
-                                <Draggable
-                                  draggableId={`ma-${slotIdx}`}
-                                  index={0}
-                                  key={`ma-slot-${slotNumber}-${slotIdx}`}
-                                >
-                                  {(dragProvided) => (
-                                    <Button
-                                      ref={dragProvided.innerRef}
-                                      {...dragProvided.draggableProps}
-                                      {...dragProvided.dragHandleProps}
-                                      style={{
-                                        cursor: "grab",
-                                        ...(dragProvided.draggableProps.style || {}),
-                                      }}
-                                      colorScheme="purple"
-                                      size="sm"
-                                    >
-                                      {choicesMA[slotIdx]}
-                                    </Button>
-                                  )}
-                                </Draggable>
-                              ) : (
-                                <Text fontSize="sm" opacity={0.6}>
-                                  {t("practice_drag_drop_slot_placeholder") ||
-                                    (userLanguage === "es"
-                                      ? "Suelta la respuesta aquí"
-                                      : "Drop the answer here")}
-                                </Text>
-                              )}
-                              {provided.placeholder}
-                            </HStack>
-                          )}
-                        </Droppable>
-                      ))}
-                    </VStack>
-                    <Droppable droppableId="ma-bank">
-                      {(provided) => (
-                        <VStack
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          align="stretch"
-                          spacing={2}
-                        >
-                          {maBankOrder.map((idx, position) => (
-                            <Draggable
-                              draggableId={`ma-${idx}`}
-                              index={position}
-                              key={`ma-bank-${idx}`}
-                            >
-                              {(dragProvided) => (
-                                <Button
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  style={{
-                                    cursor: "grab",
-                                    ...(dragProvided.draggableProps.style || {}),
-                                  }}
-                                  variant="outline"
-                                  justifyContent="flex-start"
-                                  size="sm"
-                                >
-                                  {choicesMA[idx]}
-                                </Button>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </VStack>
-                      )}
-                    </Droppable>
-                  </VStack>
-                </DragDropContext>
-              </>
+              <DragDropContext onDragEnd={handleMaDragEnd}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack align="start">
+                    <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+                    <Text fontWeight="semibold" flex="1">
+                      {renderMaPrompt() || (loadingQMA ? "…" : "")}
+                    </Text>
+                  </HStack>
+                  {showTRMA && trMA ? (
+                    <Text fontSize="sm" opacity={0.8}>
+                      {trMA}
+                    </Text>
+                  ) : null}
+                  {hMA ? (
+                    <Text fontSize="sm" opacity={0.85}>
+                      💡 {hMA}
+                    </Text>
+                  ) : null}
+                  <Text fontSize="xs" opacity={0.7}>
+                    {t("vocab_select_all_apply")}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.75}>
+                    {t("practice_drag_drop_multi_instruction") ||
+                      (userLanguage === "es"
+                        ? "Arrastra cada respuesta correcta a su espacio en la frase."
+                        : "Drag each correct answer into its place in the sentence.")}
+                  </Text>
+                  <Droppable droppableId="ma-bank">
+                    {(provided) => (
+                      <VStack
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        align="stretch"
+                        spacing={2}
+                      >
+                        {maBankOrder.map((idx, position) => (
+                          <Draggable
+                            draggableId={`ma-${idx}`}
+                            index={position}
+                            key={`ma-bank-${idx}`}
+                          >
+                            {(dragProvided) => (
+                              <Button
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                {...dragProvided.dragHandleProps}
+                                style={{
+                                  cursor: "grab",
+                                  ...(dragProvided.draggableProps.style || {}),
+                                }}
+                                variant="outline"
+                                justifyContent="flex-start"
+                                size="sm"
+                              >
+                                {choicesMA[idx]}
+                              </Button>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </VStack>
+                    )}
+                  </Droppable>
+                </VStack>
+              </DragDropContext>
             ) : (
-              <CheckboxGroup value={picksMA} onChange={setPicksMA}>
-                <Stack spacing={2}>
-                  {(choicesMA.length
-                    ? choicesMA
-                    : loadingQMA
-                    ? ["…", "…", "…", "…", "…"]
-                    : []
-                  ).map((c, i) => (
-                    <Checkbox value={c} key={i} isDisabled={!choicesMA.length}>
-                      {c}
-                    </Checkbox>
-                  ))}
-                </Stack>
-              </CheckboxGroup>
+              <>
+                <HStack align="start">
+                  <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+                  <Text fontWeight="semibold" flex="1">
+                    {qMA || (loadingQMA ? "…" : "")}
+                  </Text>
+                </HStack>
+                {showTRMA && trMA ? (
+                  <Text fontSize="sm" opacity={0.8}>
+                    {trMA}
+                  </Text>
+                ) : null}
+                {hMA ? (
+                  <Text fontSize="sm" opacity={0.85}>
+                    💡 {hMA}
+                  </Text>
+                ) : null}
+                <Text fontSize="xs" opacity={0.7}>
+                  {t("vocab_select_all_apply")}
+                </Text>
+                <CheckboxGroup value={picksMA} onChange={setPicksMA}>
+                  <Stack spacing={2}>
+                    {(choicesMA.length
+                      ? choicesMA
+                      : loadingQMA
+                      ? ["…", "…", "…", "…", "…"]
+                      : []
+                    ).map((c, i) => (
+                      <Checkbox value={c} key={i} isDisabled={!choicesMA.length}>
+                        {c}
+                      </Checkbox>
+                    ))}
+                  </Stack>
+                </CheckboxGroup>
+              </>
             )}
 
             <HStack>
