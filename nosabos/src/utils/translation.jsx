@@ -28,6 +28,11 @@ export const translations = {
     practice_speak_banner_you_said: "You said",
     practice_speak_banner_translation: "Meaning",
     practice_speak_banner_xp: "+{xp} XP",
+    practice_drag_drop_instruction: "Drag the correct answer into the blank.",
+    practice_drag_drop_slot_placeholder: "Drop the answer here",
+    practice_drag_drop_multi_instruction:
+      "Drag each correct answer into the matching blank.",
+    practice_drag_blank_label: "Blank {index}",
     quiz_correct: "Correct",
     quiz_try_again: "Try again",
     quiz_checked: "Checked",
@@ -396,6 +401,12 @@ export const translations = {
     practice_speak_banner_you_said: "Dijiste",
     practice_speak_banner_translation: "Significado",
     practice_speak_banner_xp: "+{xp} XP",
+    practice_drag_drop_instruction:
+      "Arrastra la respuesta correcta al espacio en blanco.",
+    practice_drag_drop_slot_placeholder: "Suelta la respuesta aquí",
+    practice_drag_drop_multi_instruction:
+      "Arrastra cada respuesta correcta al espacio correspondiente.",
+    practice_drag_blank_label: "Espacio {index}",
     generic_loading: "Cargando...",
 
     intro:

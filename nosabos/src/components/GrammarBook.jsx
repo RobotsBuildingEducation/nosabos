@@ -14,7 +14,6 @@ import {
   Stack,
   Checkbox,
   CheckboxGroup,
-  SimpleGrid,
   Tooltip,
   IconButton,
   useToast,
@@ -67,6 +66,26 @@ function tryConsumeLine(line, cb) {
   } catch {
     // ignore
   }
+}
+
+function countBlanks(text = "") {
+  return (text.match(/___/g) || []).length;
+}
+
+function stableHash(str = "") {
+  let hash = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+function shouldUseDragVariant(question, choices = [], answers = []) {
+  if (!question || !choices.length) return false;
+  const blanks = countBlanks(question);
+  if (!blanks) return false;
+  const signature = `${question}||${choices.join("|")}||${answers.join("|")}`;
+  return stableHash(signature) % 3 === 0;
 }
 
 /* ---------------------------
@@ -556,8 +575,8 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }
   }, [xp]);
 
-  // random-by-default vs user-locked mode
-  const [modeLocked, setModeLocked] = useState(false);
+  // random-by-default (no manual lock controls)
+  const modeLocked = false;
   const autoInitRef = useRef(false);
 
   // verdict + next control
@@ -622,6 +641,11 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }
   }
 
+  const maReady =
+    maLayout === "drag"
+      ? maSlots.length > 0 && maSlots.every((slot) => slot != null)
+      : maPicks.length > 0;
+
   // ---- FILL ----
   const [question, setQuestion] = useState("");
   const [hint, setHint] = useState("");
@@ -637,6 +661,9 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [mcAnswer, setMcAnswer] = useState("");
   const [mcTranslation, setMcTranslation] = useState("");
   const [mcPick, setMcPick] = useState("");
+  const [mcLayout, setMcLayout] = useState("buttons");
+  const [mcBankOrder, setMcBankOrder] = useState([]);
+  const [mcSlotIndex, setMcSlotIndex] = useState(null);
   const [mcResult, setMcResult] = useState(""); // kept for firestore text; not shown
   const [loadingMCQ, setLoadingMCQ] = useState(false);
   const [loadingMCG, setLoadingMCG] = useState(false);
@@ -648,6 +675,9 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [maAnswers, setMaAnswers] = useState([]); // correct strings
   const [maTranslation, setMaTranslation] = useState("");
   const [maPicks, setMaPicks] = useState([]); // selected strings
+  const [maLayout, setMaLayout] = useState("buttons");
+  const [maSlots, setMaSlots] = useState([]);
+  const [maBankOrder, setMaBankOrder] = useState([]);
   const [maResult, setMaResult] = useState(""); // kept for firestore text; not shown
   const [loadingMAQ, setLoadingMAQ] = useState(false);
   const [loadingMAG, setLoadingMAG] = useState(false);
@@ -674,6 +704,8 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [mAnswerMap, setMAnswerMap] = useState([]); // ✅ right index for each left (deterministic)
 
   const generateRandomRef = useRef(() => {});
+  const mcKeyRef = useRef("");
+  const maKeyRef = useRef("");
 
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function generateRandom() {
@@ -685,6 +717,162 @@ export default function GrammarBook({ userLanguage = "en" }) {
   useEffect(() => {
     generateRandomRef.current = generateRandom;
   });
+
+  useEffect(() => {
+    if (!mcQ || !mcChoices.length) return;
+    const signature = `${mcQ}||${mcChoices.join("|")}`;
+    if (mcKeyRef.current === signature) return;
+    mcKeyRef.current = signature;
+    const useDrag = shouldUseDragVariant(mcQ, mcChoices, [mcAnswer].filter(Boolean));
+    setMcLayout(useDrag ? "drag" : "buttons");
+    setMcSlotIndex(null);
+    setMcBankOrder(useDrag ? mcChoices.map((_, idx) => idx) : []);
+    setMcPick("");
+  }, [mcQ, mcChoices, mcAnswer]);
+
+  useEffect(() => {
+    if (!maQ || !maChoices.length || !maAnswers.length) return;
+    const signature = `${maQ}||${maChoices.join("|")}|${maAnswers.join("|")}`;
+    if (maKeyRef.current === signature) return;
+    maKeyRef.current = signature;
+    const useDrag = shouldUseDragVariant(maQ, maChoices, maAnswers);
+    setMaLayout(useDrag ? "drag" : "buttons");
+    if (useDrag) {
+      const blanks = countBlanks(maQ) || maAnswers.length;
+      const slotCount = Math.min(Math.max(blanks, 1), maAnswers.length);
+      setMaSlots(Array.from({ length: slotCount }, () => null));
+      setMaBankOrder(maChoices.map((_, idx) => idx));
+    } else {
+      setMaSlots([]);
+      setMaBankOrder([]);
+    }
+    setMaPicks([]);
+  }, [maQ, maChoices, maAnswers]);
+
+  const handleMcDragEnd = useCallback(
+    (result) => {
+      if (!result?.destination || mcLayout !== "drag") return;
+      const { source, destination } = result;
+      if (
+        source.droppableId === destination.droppableId &&
+        source.index === destination.index
+      )
+        return;
+
+      if (source.droppableId === "mc-bank" && destination.droppableId === "mc-bank") {
+        const updated = Array.from(mcBankOrder);
+        const [removed] = updated.splice(source.index, 1);
+        updated.splice(destination.index, 0, removed);
+        setMcBankOrder(updated);
+        return;
+      }
+
+      if (source.droppableId === "mc-bank" && destination.droppableId === "mc-slot") {
+        const updated = Array.from(mcBankOrder);
+        const [removed] = updated.splice(source.index, 1);
+        if (mcSlotIndex != null) {
+          updated.splice(destination.index, 0, mcSlotIndex);
+        }
+        setMcBankOrder(updated);
+        setMcSlotIndex(removed);
+        setMcPick(mcChoices[removed] || "");
+        return;
+      }
+
+      if (source.droppableId === "mc-slot" && destination.droppableId === "mc-bank") {
+        if (mcSlotIndex == null) return;
+        const updated = Array.from(mcBankOrder);
+        updated.splice(destination.index, 0, mcSlotIndex);
+        setMcBankOrder(updated);
+        setMcSlotIndex(null);
+        setMcPick("");
+      }
+    },
+    [mcLayout, mcBankOrder, mcSlotIndex, mcChoices]
+  );
+
+  const handleMaDragEnd = useCallback(
+    (result) => {
+      if (!result?.destination || maLayout !== "drag") return;
+      const { source, destination } = result;
+      if (
+        source.droppableId === destination.droppableId &&
+        source.index === destination.index
+      )
+        return;
+
+      const parseSlot = (id) =>
+        id.startsWith("ma-slot-") ? parseInt(id.replace("ma-slot-", ""), 10) : null;
+      const sourceSlot = parseSlot(source.droppableId);
+      const destSlot = parseSlot(destination.droppableId);
+
+      if (source.droppableId === "ma-bank" && destination.droppableId === "ma-bank") {
+        const updated = Array.from(maBankOrder);
+        const [removed] = updated.splice(source.index, 1);
+        updated.splice(destination.index, 0, removed);
+        setMaBankOrder(updated);
+        return;
+      }
+
+      if (source.droppableId === "ma-bank" && destSlot != null) {
+        const updated = Array.from(maBankOrder);
+        const [removed] = updated.splice(source.index, 1);
+        const displaced = maSlots[destSlot];
+        if (displaced != null) {
+          updated.splice(source.index, 0, displaced);
+        }
+        setMaBankOrder(updated);
+        setMaSlots((prev) => {
+          const next = [...prev];
+          next[destSlot] = removed;
+          return next;
+        });
+        return;
+      }
+
+      if (sourceSlot != null && destination.droppableId === "ma-bank") {
+        const slotValue = maSlots[sourceSlot];
+        if (slotValue == null) return;
+        const updated = Array.from(maBankOrder);
+        updated.splice(destination.index, 0, slotValue);
+        setMaBankOrder(updated);
+        setMaSlots((prev) => {
+          const next = [...prev];
+          next[sourceSlot] = null;
+          return next;
+        });
+        return;
+      }
+
+      if (sourceSlot != null && destSlot != null) {
+        setMaSlots((prev) => {
+          const next = [...prev];
+          const temp = next[sourceSlot];
+          next[sourceSlot] = next[destSlot];
+          next[destSlot] = temp;
+          return next;
+        });
+      }
+    },
+    [maLayout, maBankOrder, maSlots]
+  );
+
+  useEffect(() => {
+    if (maLayout !== "drag") return;
+    setMaPicks((prev) => {
+      const filled = maSlots
+        .filter((idx) => idx != null)
+        .map((idx) => maChoices[idx])
+        .filter(Boolean);
+      if (
+        filled.length === prev.length &&
+        filled.every((val, idx) => val === prev[idx])
+      ) {
+        return prev;
+      }
+      return filled;
+    });
+  }, [maLayout, maSlots, maChoices]);
 
   /* ---------- AUTO-GENERATE on first render (respect language settings) ---------- */
   // ✅ Wait until 'ready' so the very first prompt uses the user's target/support language.
@@ -832,6 +1020,9 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
     setLoadingMCQ(true);
     setMcResult("");
     setMcPick("");
+    setMcLayout("buttons");
+    setMcBankOrder([]);
+    setMcSlotIndex(null);
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
@@ -1054,6 +1245,9 @@ Create ONE multiple-choice ${LANG_NAME(
     setLoadingMAQ(true);
     setMaResult("");
     setMaPicks([]);
+    setMaLayout("buttons");
+    setMaSlots([]);
+    setMaBankOrder([]);
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
@@ -1787,15 +1981,6 @@ Return JSON ONLY:
       setNextAction(() => nextFn);
 
       if (ok) {
-        const title =
-          t("grammar_speak_success_title") ||
-          (userLanguage === "es" ? "¡Pronunciación aprobada!" : "Pronunciation approved!");
-        const desc =
-          t("grammar_speak_success_desc", { score: evaluation.score }) ||
-          (userLanguage === "es"
-            ? `Puntaje ${evaluation.score}%`
-            : `Score ${evaluation.score}%`);
-        toast({ title, description: desc, status: "success", duration: 2600 });
         recentCorrectRef.current = [
           ...recentCorrectRef.current,
           { mode: "speak", question: sTarget },
@@ -1805,11 +1990,11 @@ Return JSON ONLY:
           uiLang: userLanguage,
           targetLabel: targetName,
         });
-        const title =
+        const retryTitle =
           t("grammar_speak_retry_title") ||
           (userLanguage === "es" ? "Intenta de nuevo" : "Try again");
         toast({
-          title,
+          title: retryTitle,
           description: tips.join(" "),
           status: "warning",
           duration: 3600,
@@ -1982,100 +2167,6 @@ Return JSON ONLY:
           <Badge variant="subtle">{levelLabel}</Badge>
         </HStack>
 
-        {/* Generators */}
-        <SimpleGrid
-          columns={{ base: 2, md: 5 }}
-          spacing={{ base: 2, md: 3 }}
-          w="100%"
-        >
-          {[
-            {
-              key: "grammar_btn_fill",
-              onClick: () => {
-                setModeLocked(true); // ✅ user locks type
-                generateFill();
-              },
-              loading: loadingQ,
-            },
-            {
-              key: "grammar_btn_mc",
-              onClick: () => {
-                setModeLocked(true);
-                generateMC();
-              },
-              loading: loadingMCQ,
-            },
-            {
-              key: "grammar_btn_ma",
-              onClick: () => {
-                setModeLocked(true);
-                generateMA();
-              },
-              loading: loadingMAQ,
-            },
-            {
-              key: "grammar_btn_speak",
-              onClick: () => {
-                if (!supportsSpeak) {
-                  toast({
-                    title:
-                      t("grammar_speak_unavailable") ||
-                      (userLanguage === "es"
-                        ? "Reconocimiento de voz no disponible"
-                        : "Speech recognition unavailable"),
-                    description:
-                      userLanguage === "es"
-                        ? "Usa un navegador Chromium con micrófono para practicar gramática."
-                        : "Use a Chromium-based browser with microphone access to practice speaking.",
-                    status: "info",
-                    duration: 3200,
-                  });
-                  return;
-                }
-                setModeLocked(true);
-                generateSpeak();
-              },
-              loading: loadingSpeakQ,
-              disabled: !supportsSpeak,
-            },
-            {
-              key: "grammar_btn_match",
-              onClick: () => {
-                setModeLocked(true);
-                generateMatch();
-              },
-              loading: loadingMG,
-            },
-          ].map((b) => (
-            <Button
-              key={b.key}
-              onClick={b.onClick}
-              isDisabled={b.loading || b.disabled}
-              rightIcon={b.loading ? <Spinner size="xs" /> : null}
-              w="100%"
-              size="sm"
-              px={2}
-              py={2}
-              minH={{ base: "44px", md: "52px" }}
-              rounded="lg"
-              whiteSpace="normal"
-              textAlign="center"
-              lineHeight="1.2"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Text
-                noOfLines={2}
-                fontWeight="700"
-                fontSize={{ base: "xs", md: "sm" }}
-              >
-                {t(b.key)}
-              </Text>
-            </Button>
-          ))}
-        </SimpleGrid>
-
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
           <>
@@ -2150,20 +2241,114 @@ Return JSON ONLY:
               </Text>
             ) : null}
 
-            <RadioGroup value={mcPick} onChange={setMcPick}>
-              <Stack spacing={2}>
-                {(mcChoices.length
-                  ? mcChoices
-                  : loadingMCQ
-                  ? ["…", "…", "…", "…"]
-                  : []
-                ).map((c, i) => (
-                  <Radio value={c} key={i} isDisabled={!mcChoices.length}>
-                    {c}
-                  </Radio>
-                ))}
-              </Stack>
-            </RadioGroup>
+            {mcLayout === "drag" ? (
+              <>
+                <Text fontSize="sm" opacity={0.75} mb={1}>
+                  {t("practice_drag_drop_instruction") ||
+                    (userLanguage === "es"
+                      ? "Arrastra la respuesta correcta al espacio en blanco."
+                      : "Drag the correct answer into the blank.")}
+                </Text>
+                <DragDropContext onDragEnd={handleMcDragEnd}>
+                  <VStack align="stretch" spacing={3}>
+                    <Droppable droppableId="grammar-mc-slot" direction="horizontal">
+                      {(provided, snapshot) => (
+                        <HStack
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          border="1px dashed rgba(255,255,255,0.28)"
+                          rounded="md"
+                          p={3}
+                          minH="64px"
+                          bg={
+                            snapshot.isDraggingOver
+                              ? "rgba(255,255,255,0.08)"
+                              : "transparent"
+                          }
+                          spacing={3}
+                          justify="flex-start"
+                        >
+                          {mcSlotIndex != null ? (
+                            <Draggable
+                              draggableId={`grammar-mc-${mcSlotIndex}`}
+                              index={0}
+                              key={`grammar-mc-slot-${mcSlotIndex}`}
+                            >
+                              {(dragProvided) => (
+                                <Button
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  colorScheme="purple"
+                                  size="sm"
+                                >
+                                  {mcChoices[mcSlotIndex]}
+                                </Button>
+                              )}
+                            </Draggable>
+                          ) : (
+                            <Text fontSize="sm" opacity={0.6}>
+                              {t("practice_drag_drop_slot_placeholder") ||
+                                (userLanguage === "es"
+                                  ? "Suelta la respuesta aquí"
+                                  : "Drop the answer here")}
+                            </Text>
+                          )}
+                          {provided.placeholder}
+                        </HStack>
+                      )}
+                    </Droppable>
+                    <Droppable droppableId="grammar-mc-bank">
+                      {(provided) => (
+                        <VStack
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          align="stretch"
+                          spacing={2}
+                        >
+                          {mcBankOrder.map((idx, position) => (
+                            <Draggable
+                              draggableId={`grammar-mc-${idx}`}
+                              index={position}
+                              key={`grammar-mc-bank-${idx}`}
+                            >
+                              {(dragProvided) => (
+                                <Button
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  variant="outline"
+                                  justifyContent="flex-start"
+                                  size="sm"
+                                >
+                                  {mcChoices[idx]}
+                                </Button>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </VStack>
+                      )}
+                    </Droppable>
+                  </VStack>
+                </DragDropContext>
+              </>
+            ) : (
+              <RadioGroup value={mcPick} onChange={setMcPick}>
+                <Stack spacing={2}>
+                  {(mcChoices.length
+                    ? mcChoices
+                    : loadingMCQ
+                    ? ["…", "…", "…", "…"]
+                    : []
+                  ).map((c, i) => (
+                    <Radio value={c} key={i} isDisabled={!mcChoices.length}>
+                      {c}
+                    </Radio>
+                  ))}
+                </Stack>
+              </RadioGroup>
+            )}
 
             <HStack>
               <Button
@@ -2208,29 +2393,138 @@ Return JSON ONLY:
                 💡 {maHint}
               </Text>
             ) : null}
-            <Text fontSize="xs" opacity={0.7}>
-              {t("grammar_select_all_apply")}
-            </Text>
+            {maLayout === "drag" ? (
+              <>
+                <Text fontSize="sm" opacity={0.75} mb={1}>
+                  {t("practice_drag_drop_multi_instruction") ||
+                    (userLanguage === "es"
+                      ? "Arrastra cada respuesta correcta al espacio correspondiente."
+                      : "Drag each correct answer into the matching blank.")}
+                </Text>
+                <DragDropContext onDragEnd={handleMaDragEnd}>
+                  <VStack align="stretch" spacing={3}>
+                    <VStack align="stretch" spacing={2}>
+                      {maSlots.map((slotIdx, slotNumber) => (
+                        <Droppable
+                          droppableId={`grammar-ma-slot-${slotNumber}`}
+                          direction="horizontal"
+                          key={`grammar-ma-slot-${slotNumber}`}
+                        >
+                          {(provided, snapshot) => (
+                            <HStack
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              border="1px dashed rgba(255,255,255,0.28)"
+                              rounded="md"
+                              p={3}
+                              minH="64px"
+                              bg={
+                                snapshot.isDraggingOver
+                                  ? "rgba(255,255,255,0.08)"
+                                  : "transparent"
+                              }
+                              spacing={3}
+                              justify="space-between"
+                            >
+                              <Text fontSize="sm" fontWeight="600">
+                                {t("practice_drag_blank_label", {
+                                  index: slotNumber + 1,
+                                }) || `Blank ${slotNumber + 1}`}
+                              </Text>
+                              {slotIdx != null ? (
+                                <Draggable
+                                  draggableId={`grammar-ma-${slotIdx}`}
+                                  index={0}
+                                  key={`grammar-ma-slot-${slotNumber}-${slotIdx}`}
+                                >
+                                  {(dragProvided) => (
+                                    <Button
+                                      ref={dragProvided.innerRef}
+                                      {...dragProvided.draggableProps}
+                                      {...dragProvided.dragHandleProps}
+                                      colorScheme="purple"
+                                      size="sm"
+                                    >
+                                      {maChoices[slotIdx]}
+                                    </Button>
+                                  )}
+                                </Draggable>
+                              ) : (
+                                <Text fontSize="sm" opacity={0.6}>
+                                  {t("practice_drag_drop_slot_placeholder") ||
+                                    (userLanguage === "es"
+                                      ? "Suelta la respuesta aquí"
+                                      : "Drop the answer here")}
+                                </Text>
+                              )}
+                              {provided.placeholder}
+                            </HStack>
+                          )}
+                        </Droppable>
+                      ))}
+                    </VStack>
+                    <Droppable droppableId="grammar-ma-bank">
+                      {(provided) => (
+                        <VStack
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          align="stretch"
+                          spacing={2}
+                        >
+                          {maBankOrder.map((idx, position) => (
+                            <Draggable
+                              draggableId={`grammar-ma-${idx}`}
+                              index={position}
+                              key={`grammar-ma-bank-${idx}`}
+                            >
+                              {(dragProvided) => (
+                                <Button
+                                  ref={dragProvided.innerRef}
+                                  {...dragProvided.draggableProps}
+                                  {...dragProvided.dragHandleProps}
+                                  variant="outline"
+                                  justifyContent="flex-start"
+                                  size="sm"
+                                >
+                                  {maChoices[idx]}
+                                </Button>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </VStack>
+                      )}
+                    </Droppable>
+                  </VStack>
+                </DragDropContext>
+              </>
+            ) : (
+              <>
+                <Text fontSize="xs" opacity={0.7}>
+                  {t("grammar_select_all_apply")}
+                </Text>
 
-            <CheckboxGroup value={maPicks} onChange={setMaPicks}>
-              <Stack spacing={2}>
-                {(maChoices.length
-                  ? maChoices
-                  : loadingMAQ
-                  ? ["…", "…", "…", "…", "…"]
-                  : []
-                ).map((c, i) => (
-                  <Checkbox value={c} key={i} isDisabled={!maChoices.length}>
-                    {c}
-                  </Checkbox>
-                ))}
-              </Stack>
-            </CheckboxGroup>
+                <CheckboxGroup value={maPicks} onChange={setMaPicks}>
+                  <Stack spacing={2}>
+                    {(maChoices.length
+                      ? maChoices
+                      : loadingMAQ
+                      ? ["…", "…", "…", "…", "…"]
+                      : []
+                    ).map((c, i) => (
+                      <Checkbox value={c} key={i} isDisabled={!maChoices.length}>
+                        {c}
+                      </Checkbox>
+                    ))}
+                  </Stack>
+                </CheckboxGroup>
+              </>
+            )}
 
             <HStack>
               <Button
                 onClick={submitMA}
-                isDisabled={loadingMAG || !maPicks.length || !maChoices.length}
+                isDisabled={loadingMAG || !maChoices.length || !maReady}
               >
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -2312,15 +2606,6 @@ Return JSON ONLY:
                 </Text>{" "}
                 {sRecognized}
               </Text>
-            ) : null}
-
-            {sEval && lastOk !== true ? (
-              <Badge mt={2} colorScheme={sEval.pass ? "green" : "yellow"}>
-                {t("grammar_speak_score", { score: sEval.score }) ||
-                  (userLanguage === "es"
-                    ? `Puntaje ${sEval.score}%`
-                    : `Score ${sEval.score}%`)}
-              </Badge>
             ) : null}
 
             <HStack spacing={3} mt={4} align="center">
