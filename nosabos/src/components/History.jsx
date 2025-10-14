@@ -137,6 +137,10 @@ async function normalizeLectureTexts({
     }
   }
 
+  if (cleanTarget && supportLang === targetLang) {
+    cleanSupport = cleanTarget;
+  }
+
   if (!cleanSupport && cleanTarget) {
     cleanSupport = cleanTarget;
   }
