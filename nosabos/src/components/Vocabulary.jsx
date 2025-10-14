@@ -33,6 +33,7 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources"; 
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
+import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
@@ -950,13 +951,12 @@ Return EXACTLY:
     setRecentXp(delta);
 
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
-    setNextAction(
-        ok
-          ? lockedType
-            ? () => generatorFor(lockedType)()
-            : () => generateRandomRef.current()
-          : null
-    );
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     if (ok) {
       setAnsFill("");
@@ -1194,13 +1194,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
 
-    setNextAction(
-        ok
-          ? lockedType
-            ? () => generatorFor(lockedType)()
-            : () => generateRandomRef.current()
-          : null
-    );
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     if (ok) {
       recentCorrectRef.current = [
@@ -1465,13 +1464,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setResMA(ok ? "correct" : "try_again"); // log only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(
-        ok
-          ? lockedType
-            ? () => generatorFor(lockedType)()
-            : () => generateRandomRef.current()
-          : null
-    );
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     if (ok) {
       setPicksMA([]);
@@ -1927,13 +1925,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setMResult(ok ? "correct" : "try_again"); // log only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(
-      ok
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandom()
-        : null
-    );
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandom()
+      : null;
+    setNextAction(() => nextFn);
 
     setLoadingMJ(false);
   }
@@ -1991,13 +1988,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
       setLastOk(ok);
       setRecentXp(delta);
-      setNextAction(
-        ok
-          ? lockedType
-            ? () => generatorFor(lockedType)()
-            : () => generateRandomRef.current()
-          : null
-      );
+      const nextFn = ok
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
 
       if (ok) {
         const title =
@@ -2598,7 +2594,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
 
-            {sRecognized ? (
+            {sRecognized && lastOk !== true ? (
               <Text fontSize="sm" mt={3} color="teal.200">
                 <Text as="span" fontWeight="600">
                   {t("vocab_speak_last_heard") ||
@@ -2609,7 +2605,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
 
-            {sEval ? (
+            {sEval && lastOk !== true ? (
               <Badge mt={2} colorScheme={sEval.pass ? "green" : "yellow"}>
                 {t("vocab_speak_score", { score: sEval.score }) ||
                   (userLanguage === "es"
@@ -2690,9 +2686,33 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               ) : null}
             </HStack>
 
-            <HStack spacing={3} mt={3}>
-              <ResultBadge ok={lastOk} xp={recentXp} />
-            </HStack>
+            {lastOk === true ? (
+              <SpeakSuccessCard
+                title={
+                  t("vocab_speak_success_title") ||
+                  (userLanguage === "es"
+                    ? "¡Gran pronunciación!"
+                    : "Great pronunciation!")
+                }
+                scoreLabel={
+                  sEval
+                    ? t("vocab_speak_success_desc", { score: sEval.score }) ||
+                      (userLanguage === "es"
+                        ? `Puntaje ${sEval.score}%`
+                        : `Score ${sEval.score}%`)
+                    : ""
+                }
+                xp={recentXp}
+                recognizedText={sRecognized}
+                translation={showTRSpeak ? sTranslation : ""}
+                t={t}
+                userLanguage={userLanguage}
+              />
+            ) : (
+              <HStack spacing={3} mt={3}>
+                <ResultBadge ok={lastOk} xp={recentXp} />
+              </HStack>
+            )}
           </>
         ) : null}
 

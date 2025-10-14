@@ -32,6 +32,7 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources"; 
 import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
+import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
@@ -1581,11 +1582,10 @@ Return JSON ONLY:
         ...recentCorrectRef.current,
         { mode: "fill", question },
       ].slice(-5);
-      setNextAction(
-        modeLocked
-          ? () => generateFill()
-          : () => generateRandomRef.current()
-      ); // ✅ random unless user locked a type
+      const nextFn = modeLocked
+        ? () => generateFill()
+        : () => generateRandomRef.current();
+      setNextAction(() => nextFn); // ✅ random unless user locked a type
     } else {
       setNextAction(null);
     }
@@ -1627,13 +1627,12 @@ Return JSON ONLY:
     setMcResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(
-      ok
-        ? modeLocked
-          ? () => generateMC()
-          : () => generateRandomRef.current()
-        : null
-    );
+    const nextFn = ok
+      ? modeLocked
+        ? () => generateMC()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     setLoadingMCG(false);
   }
@@ -1672,13 +1671,12 @@ Return JSON ONLY:
     setMaResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(
-      ok
-        ? modeLocked
-          ? () => generateMA()
-          : () => generateRandomRef.current()
-        : null
-    );
+    const nextFn = ok
+      ? modeLocked
+        ? () => generateMA()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     setLoadingMAG(false);
   }
@@ -1720,13 +1718,12 @@ Return JSON ONLY:
 
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(
-      ok
-        ? modeLocked
-          ? () => generateMatch()
-          : () => generateRandomRef.current()
-        : null
-    );
+    const nextFn = ok
+      ? modeLocked
+        ? () => generateMatch()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     setLoadingMJ(false);
   }
@@ -1782,13 +1779,12 @@ Return JSON ONLY:
 
       setLastOk(ok);
       setRecentXp(delta);
-      setNextAction(
-        ok
-          ? modeLocked
-            ? () => generateSpeak()
-            : () => generateRandomRef.current()
-          : null
-      );
+      const nextFn = ok
+        ? modeLocked
+          ? () => generateSpeak()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
 
       if (ok) {
         const title =
@@ -2307,7 +2303,7 @@ Return JSON ONLY:
               </Text>
             ) : null}
 
-            {sRecognized ? (
+            {sRecognized && lastOk !== true ? (
               <Text fontSize="sm" mt={3} color="teal.200">
                 <Text as="span" fontWeight="600">
                   {t("grammar_speak_last_heard") ||
@@ -2318,7 +2314,7 @@ Return JSON ONLY:
               </Text>
             ) : null}
 
-            {sEval ? (
+            {sEval && lastOk !== true ? (
               <Badge mt={2} colorScheme={sEval.pass ? "green" : "yellow"}>
                 {t("grammar_speak_score", { score: sEval.score }) ||
                   (userLanguage === "es"
@@ -2399,9 +2395,33 @@ Return JSON ONLY:
               ) : null}
             </HStack>
 
-            <HStack spacing={3} mt={3}>
-              <ResultBadge ok={lastOk} xp={recentXp} />
-            </HStack>
+            {lastOk === true ? (
+              <SpeakSuccessCard
+                title={
+                  t("grammar_speak_success_title") ||
+                  (userLanguage === "es"
+                    ? "¡Pronunciación aprobada!"
+                    : "Pronunciation approved!")
+                }
+                scoreLabel={
+                  sEval
+                    ? t("grammar_speak_success_desc", { score: sEval.score }) ||
+                      (userLanguage === "es"
+                        ? `Puntaje ${sEval.score}%`
+                        : `Score ${sEval.score}%`)
+                    : ""
+                }
+                xp={recentXp}
+                recognizedText={sRecognized}
+                translation={showTRSpeak ? sTranslation : ""}
+                t={t}
+                userLanguage={userLanguage}
+              />
+            ) : (
+              <HStack spacing={3} mt={3}>
+                <ResultBadge ok={lastOk} xp={recentXp} />
+              </HStack>
+            )}
           </>
         ) : null}
 
