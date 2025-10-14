@@ -640,6 +640,7 @@ export default function StoryMode() {
       let buffer = "";
       let sentences = [];
       let revealed = false;
+      const seenLineKeys = new Set();
 
       // Safely parse and apply a line of potential JSON
       const tryConsumeLine = (line) => {
@@ -657,6 +658,9 @@ export default function StoryMode() {
             tgt: String(obj.tgt || "").trim(),
             sup: String(obj.sup || "").trim(),
           };
+          const key = `${item.tgt}|||${item.sup}`;
+          if (seenLineKeys.has(key)) return;
+          seenLineKeys.add(key);
           sentences.push(item);
 
           // Reveal UI as soon as we have the first sentence
@@ -670,7 +674,12 @@ export default function StoryMode() {
           } else {
             // incrementally append
             setStoryData((prev) => {
-              const nextSentences = [...(prev?.sentences || []), item];
+              const prevSentences = prev?.sentences || [];
+              const alreadyExists = prevSentences.some(
+                (s) => s.tgt === item.tgt && s.sup === item.sup
+              );
+              if (alreadyExists) return prev;
+              const nextSentences = [...prevSentences, item];
               return {
                 fullStory: {
                   tgt:
@@ -706,19 +715,27 @@ export default function StoryMode() {
         }
       }
 
-      // Consume any leftover buffer + the final aggregated text
+      const leftover = buffer.trim();
+      if (leftover) {
+        leftover
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((line) => tryConsumeLine(line));
+      }
+
       const finalAgg = await resp.response;
       const finalText =
         (typeof finalAgg?.text === "function"
           ? finalAgg.text()
           : finalAgg?.text) || "";
-      if (buffer) buffer += "\n";
-      if (finalText) buffer += finalText;
-      buffer
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .forEach((line) => tryConsumeLine(line));
+      if (!sentences.length && finalText) {
+        finalText
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((line) => tryConsumeLine(line));
+      }
 
       // If model ignored protocol, fallback to best-effort parse
       if (sentences.length === 0 && finalText) {

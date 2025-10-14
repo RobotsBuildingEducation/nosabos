@@ -106,11 +106,143 @@ function safeParseJSON(text) {
   }
 }
 
+async function normalizeLectureTexts({
+  targetText,
+  supportText,
+  targetLang,
+  supportLang,
+}) {
+  const cleanTarget = sanitizeLectureBlock(targetText, targetLang);
+  let cleanSupport = sanitizeLectureBlock(supportText, supportLang);
+
+  const shouldTranslateSupport =
+    supportLang &&
+    supportLang !== targetLang &&
+    cleanTarget &&
+    (!cleanSupport ||
+      normalizeForCompare(cleanSupport) === normalizeForCompare(cleanTarget));
+
+  if (shouldTranslateSupport) {
+    const prompt = [
+      `Translate the following text from ${LANG_NAME(targetLang)} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
+      "Return only the translation in that language without labels, speaker names, or commentary.",
+      "",
+      cleanTarget,
+    ].join("\n");
+
+    const translatedRaw = await callResponses({ model: MODEL, input: prompt });
+    const translatedClean = sanitizeLectureBlock(translatedRaw, supportLang);
+    if (translatedClean) {
+      cleanSupport = translatedClean;
+    }
+  }
+
+  if (!cleanSupport && cleanTarget) {
+    cleanSupport = cleanTarget;
+  }
+
+  return { cleanTarget, cleanSupport };
+}
+
 /* ---------------------------
    User / XP / Settings
 --------------------------- */
 const LANG_NAME = (code) =>
   ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+
+const LANGUAGE_LABELS = {
+  en: ["English", "Inglés"],
+  es: ["Spanish", "Español"],
+  nah: ["Nahuatl", "Náhuatl"],
+};
+
+const GENERIC_LANGUAGE_PREFIXES = [
+  "Target",
+  "Support",
+  "Translation",
+  "Traducción",
+  "Translated",
+];
+
+const SPECIAL_REGEX_CHARS = new Set([
+  ".",
+  "*",
+  "+",
+  "?",
+  "^",
+  "$",
+  "{",
+  "}",
+  "(",
+  ")",
+  "|",
+  "[",
+  "]",
+  "\\",
+]);
+const escapeRegExp = (str) =>
+  String(str ?? "")
+    .split("")
+    .map((ch) => (SPECIAL_REGEX_CHARS.has(ch) ? `\\${ch}` : ch))
+    .join("");
+
+function buildLabelTokens(langCode) {
+  const baseNames = [
+    ...(LANGUAGE_LABELS[langCode] || []),
+    LANG_NAME(langCode),
+  ].filter(Boolean);
+  const tokens = new Set();
+  baseNames.forEach((name) => {
+    if (!name) return;
+    const variants = [name, name.toLowerCase()];
+    variants.forEach((variant) => {
+      tokens.add(variant);
+      tokens.add(`${variant} translation`);
+      tokens.add(`${variant} Translation`);
+      tokens.add(`${variant} traducción`);
+      tokens.add(`${variant} Traducción`);
+    });
+  });
+  GENERIC_LANGUAGE_PREFIXES.forEach((prefix) => {
+    tokens.add(prefix);
+    baseNames.forEach((name) => {
+      tokens.add(`${prefix} (${name})`);
+      tokens.add(`${prefix} ${name}`);
+      tokens.add(`${name} ${prefix.toLowerCase()}`);
+    });
+  });
+  return Array.from(tokens).filter(Boolean);
+}
+
+function stripLineLabel(text, langCode) {
+  if (!text) return "";
+  const tokens = buildLabelTokens(langCode);
+  let output = text.trim();
+  if (tokens.length) {
+    const pattern = new RegExp(
+      `^(?:${tokens.map((token) => escapeRegExp(token)).join("|")})\\s*[:\\-–—]\\s*`,
+      "i"
+    );
+    output = output.replace(pattern, "").trim();
+  }
+  output = output.replace(/^\[\s*/, "").replace(/\s*\]$/, "").trim();
+  output = output.replace(/^[•·\-–—]+\s*/, "").trim();
+  return output;
+}
+
+function sanitizeLectureBlock(text, langCode) {
+  if (!text) return "";
+  return text
+    .split(/\n+/)
+    .map((line) => stripLineLabel(line, langCode))
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+const normalizeForCompare = (text) =>
+  (text || "").replace(/\s+/g, " ").trim().toLowerCase();
 
 const strongNpub = (user) =>
   (
@@ -205,6 +337,11 @@ Include:
 - 3 concise bullet takeaways in ${TARGET}.
 - A full ${SUPPORT} translation of the lecture (NOT the takeaways).
 
+Language restrictions:
+- Use ${TARGET} only for the title, lecture body, and takeaways.
+- Use ${SUPPORT} only for the translation.
+- Do NOT include any other languages, language labels, or commentary.
+
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
@@ -245,6 +382,11 @@ Include:
 - 3 concise bullet takeaways.
 - Touch on people, culture, governments, and/or wars as relevant.
 - Provide a full ${SUPPORT} translation of the lecture (NOT the takeaways).
+
+Language restrictions:
+- Use ${TARGET} only for the title, lecture body, and takeaways.
+- Use ${SUPPORT} only for the translation.
+- Do NOT include any other languages, labels, or commentary.
 
 Return JSON ONLY:
 {
@@ -423,6 +565,9 @@ function buildStreamingPrompt({
     '5) Finally emit {"type":"done"}',
     "",
     "STRICT RULES:",
+    `- Use ${TARGET} only for \"title\", \"target\", and \"takeaway\" lines.`,
+    `- Use ${SUPPORT} only for \"support\" lines.`,
+    "- Do not include any other languages, labels, or commentary.",
     "- Do not output code fences or commentary.",
     "- Each line must be a single valid JSON object matching one of the types above.",
     "- Keep sentences 8–22 words; simple, clear, engaging.",
@@ -619,12 +764,29 @@ export default function History({ userLanguage = "en" }) {
       };
     }
 
+    const cleanTitle = stripLineLabel(String(parsed.title || ""), targetLang);
+    const { cleanTarget, cleanSupport } = await normalizeLectureTexts({
+      targetText: parsed.target || "",
+      supportText: parsed.support || "",
+      targetLang,
+      supportLang,
+    });
+    const safeTarget = cleanTarget || String(parsed.target || "").trim();
+    const safeSupport =
+      cleanSupport ||
+      sanitizeLectureBlock(String(parsed.support || ""), supportLang) ||
+      safeTarget;
+    const cleanTakeaways = Array.isArray(parsed.takeaways)
+      ? parsed.takeaways
+          .map((t) => stripLineLabel(String(t || ""), targetLang))
+          .filter(Boolean)
+          .slice(0, 3)
+      : [];
+
     const { xp: xpAward, reason: xpReason } = await computeAdaptiveXp({
-      title: String(parsed.title || ""),
-      target: String(parsed.target || ""),
-      takeaways: Array.isArray(parsed.takeaways)
-        ? parsed.takeaways.slice(0, 3)
-        : [],
+      title: cleanTitle,
+      target: safeTarget,
+      takeaways: cleanTakeaways,
       previousTitles,
       level: progress.level || "beginner",
       currentXp: xp,
@@ -632,12 +794,12 @@ export default function History({ userLanguage = "en" }) {
     });
 
     const payload = {
-      title: String(parsed.title || "").trim(),
-      target: String(parsed.target || ""),
-      support: String(parsed.support || ""),
-      takeaways: Array.isArray(parsed.takeaways)
-        ? parsed.takeaways.slice(0, 3)
-        : [],
+      title: cleanTitle,
+      target: safeTarget,
+      support: safeSupport,
+      takeaways: cleanTakeaways,
+      targetLang,
+      supportLang,
       xpAward,
       xpReason,
       createdAt: serverTimestamp(),
@@ -699,14 +861,15 @@ export default function History({ userLanguage = "en" }) {
 
     const revealDraft = () => {
       if (!revealed) revealed = true;
+      const draftTitle =
+        title ||
+        t("history_generating_title") ||
+        t("history_generating") ||
+        "Generating…";
       setDraftLecture({
-        title:
-          title ||
-          t("history_generating_title") ||
-          t("history_generating") ||
-          "Generating…",
-        target: targetParts.join(" ").replace(/\s+/g, " ").trim(),
-        support: supportParts.join(" ").replace(/\s+/g, " ").trim(),
+        title: draftTitle,
+        target: sanitizeLectureBlock(targetParts.join(" "), targetLang),
+        support: sanitizeLectureBlock(supportParts.join(" "), supportLang),
         takeaways: [...takeaways],
       });
     };
@@ -727,32 +890,39 @@ export default function History({ userLanguage = "en" }) {
       const type = obj?.type;
       if (!type || !text) return;
 
-      const key = `${type}|${text}`;
+      const cleaned =
+        type === "support"
+          ? stripLineLabel(text, supportLang)
+          : stripLineLabel(text, targetLang);
+      const normalized = cleaned.replace(/\s+/g, " ").trim();
+      if (!normalized) return;
+
+      const key = `${type}|${normalized}`;
       if (seenLineKeys.has(key)) return; // <-- drop dupes
       seenLineKeys.add(key);
 
       if (type === "title" && !title) {
-        title = text;
+        title = normalized;
         revealDraft();
         return;
       }
       if (type === "target") {
-        if (targetParts[targetParts.length - 1] !== text) {
-          targetParts.push(text);
+        if (targetParts[targetParts.length - 1] !== normalized) {
+          targetParts.push(normalized);
           revealDraft();
         }
         return;
       }
       if (type === "support") {
-        if (supportParts[supportParts.length - 1] !== text) {
-          supportParts.push(text);
+        if (supportParts[supportParts.length - 1] !== normalized) {
+          supportParts.push(normalized);
           revealDraft();
         }
         return;
       }
       if (type === "takeaway") {
-        if (takeaways.length < 3 && !takeaways.includes(text)) {
-          takeaways.push(text);
+        if (takeaways.length < 3 && !takeaways.includes(normalized)) {
+          takeaways.push(normalized);
           revealDraft();
         }
         return;
@@ -793,14 +963,33 @@ export default function History({ userLanguage = "en" }) {
       }
 
       // Build final lecture strings
-      const finalTarget = targetParts.join(" ").replace(/\s+/g, " ").trim();
-      const finalSupport = supportParts.join(" ").replace(/\s+/g, " ").trim();
+      const draftTarget = sanitizeLectureBlock(
+        targetParts.join(" "),
+        targetLang
+      );
+      const draftSupport = sanitizeLectureBlock(
+        supportParts.join(" "),
+        supportLang
+      );
       const finalTakeaways = takeaways.slice(0, 3);
+
+      const { cleanTarget, cleanSupport } = await normalizeLectureTexts({
+        targetText: draftTarget,
+        supportText: draftSupport,
+        targetLang,
+        supportLang,
+      });
+      const safeTarget = cleanTarget || draftTarget;
+      const safeSupport =
+        cleanSupport || sanitizeLectureBlock(draftSupport, supportLang) || safeTarget;
+      const finalTitle =
+        title ||
+        (targetLang === "en" ? "Untitled lecture" : "Lección sin título");
 
       // XP scoring (backend)
       const { xp: xpAward, reason: xpReason } = await computeAdaptiveXp({
-        title: title || "",
-        target: finalTarget,
+        title: finalTitle,
+        target: safeTarget,
         takeaways: finalTakeaways,
         previousTitles,
         level: progress.level || "beginner",
@@ -810,12 +999,12 @@ export default function History({ userLanguage = "en" }) {
 
       // Save to Firestore (do not award yet)
       const payload = {
-        title:
-          title ||
-          (targetLang === "en" ? "Untitled lecture" : "Lección sin título"),
-        target: finalTarget,
-        support: finalSupport,
+        title: finalTitle,
+        target: safeTarget,
+        support: safeSupport,
         takeaways: finalTakeaways,
+        targetLang,
+        supportLang,
         xpAward,
         xpReason,
         createdAt: serverTimestamp(),
