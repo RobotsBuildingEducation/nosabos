@@ -2209,8 +2209,8 @@ Return JSON ONLY:
               >
                 {mcSlotIndex != null ? (
                   <Draggable draggableId={`mc-${mcSlotIndex}`} index={0}>
-                    {(dragProvided) => (
-                      <Button
+                    {(dragProvided, snapshot) => (
+                      <Box
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
@@ -2218,11 +2218,25 @@ Return JSON ONLY:
                           cursor: "grab",
                           ...(dragProvided.draggableProps.style || {}),
                         }}
-                        colorScheme="purple"
-                        size="sm"
+                        px={3}
+                        py={2}
+                        rounded="md"
+                        borderWidth="1px"
+                        borderColor={
+                          snapshot.isDragging
+                            ? "purple.300"
+                            : "rgba(255,255,255,0.22)"
+                        }
+                        bg={
+                          snapshot.isDragging
+                            ? "rgba(128,90,213,0.24)"
+                            : "purple.600"
+                        }
+                        color="white"
+                        fontSize="sm"
                       >
                         {mcChoices[mcSlotIndex]}
-                      </Button>
+                      </Box>
                     )}
                   </Draggable>
                 ) : (
@@ -2301,8 +2315,8 @@ Return JSON ONLY:
               >
                 {choiceIdx != null ? (
                   <Draggable draggableId={`ma-${choiceIdx}`} index={0}>
-                    {(dragProvided) => (
-                      <Button
+                    {(dragProvided, snapshot) => (
+                      <Box
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
@@ -2310,11 +2324,25 @@ Return JSON ONLY:
                           cursor: "grab",
                           ...(dragProvided.draggableProps.style || {}),
                         }}
-                        colorScheme="purple"
-                        size="sm"
+                        px={3}
+                        py={2}
+                        rounded="md"
+                        borderWidth="1px"
+                        borderColor={
+                          snapshot.isDragging
+                            ? "purple.300"
+                            : "rgba(255,255,255,0.22)"
+                        }
+                        bg={
+                          snapshot.isDragging
+                            ? "rgba(128,90,213,0.24)"
+                            : "purple.600"
+                        }
+                        color="white"
+                        fontSize="sm"
                       >
                         {maChoices[choiceIdx]}
-                      </Button>
+                      </Box>
                     )}
                   </Draggable>
                 ) : (
@@ -2451,8 +2479,8 @@ Return JSON ONLY:
                             index={position}
                             key={`grammar-mc-bank-${idx}`}
                           >
-                            {(dragProvided) => (
-                              <Button
+                            {(dragProvided, snapshot) => (
+                              <Box
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
@@ -2460,12 +2488,26 @@ Return JSON ONLY:
                                   cursor: "grab",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
-                                variant="outline"
-                                justifyContent="flex-start"
-                                size="sm"
+                                px={3}
+                                py={2}
+                                rounded="md"
+                                borderWidth="1px"
+                                borderColor={
+                                  snapshot.isDragging
+                                    ? "purple.300"
+                                    : "rgba(255,255,255,0.22)"
+                                }
+                                bg={
+                                  snapshot.isDragging
+                                    ? "rgba(128,90,213,0.16)"
+                                    : "transparent"
+                                }
+                                fontSize="sm"
+                                textAlign="left"
+                                w="100%"
                               >
                                 {mcChoices[idx]}
-                              </Button>
+                              </Box>
                             )}
                           </Draggable>
                         ))}
@@ -2582,8 +2624,8 @@ Return JSON ONLY:
                             index={position}
                             key={`grammar-ma-bank-${idx}`}
                           >
-                            {(dragProvided) => (
-                              <Button
+                            {(dragProvided, snapshot) => (
+                              <Box
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
@@ -2591,12 +2633,26 @@ Return JSON ONLY:
                                   cursor: "grab",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
-                                variant="outline"
-                                justifyContent="flex-start"
-                                size="sm"
+                                px={3}
+                                py={2}
+                                rounded="md"
+                                borderWidth="1px"
+                                borderColor={
+                                  snapshot.isDragging
+                                    ? "purple.300"
+                                    : "rgba(255,255,255,0.22)"
+                                }
+                                bg={
+                                  snapshot.isDragging
+                                    ? "rgba(128,90,213,0.16)"
+                                    : "transparent"
+                                }
+                                fontSize="sm"
+                                textAlign="left"
+                                w="100%"
                               >
                                 {maChoices[idx]}
-                              </Button>
+                              </Box>
                             )}
                           </Draggable>
                         ))}

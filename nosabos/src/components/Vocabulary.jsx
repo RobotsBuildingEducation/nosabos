@@ -2450,8 +2450,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {mcSlotIndex != null ? (
                   <Draggable draggableId={`mc-${mcSlotIndex}`} index={0}>
-                    {(dragProvided) => (
-                      <Button
+                    {(dragProvided, snapshot) => (
+                      <Box
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
@@ -2459,12 +2459,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           cursor: "grab",
                           ...(dragProvided.draggableProps.style || {}),
                         }}
-                        colorScheme="purple"
-                        size="sm"
-                        variant="solid"
+                        px={3}
+                        py={2}
+                        rounded="md"
+                        borderWidth="1px"
+                        borderColor={
+                          snapshot.isDragging
+                            ? "purple.300"
+                            : "rgba(255,255,255,0.22)"
+                        }
+                        bg={
+                          snapshot.isDragging
+                            ? "rgba(128,90,213,0.24)"
+                            : "purple.600"
+                        }
+                        color="white"
+                        fontSize="sm"
                       >
                         {choicesMC[mcSlotIndex]}
-                      </Button>
+                      </Box>
                     )}
                   </Draggable>
                 ) : (
@@ -2539,8 +2552,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {choiceIdx != null ? (
                   <Draggable draggableId={`ma-${choiceIdx}`} index={0}>
-                    {(dragProvided) => (
-                      <Button
+                    {(dragProvided, snapshot) => (
+                      <Box
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
@@ -2548,11 +2561,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           cursor: "grab",
                           ...(dragProvided.draggableProps.style || {}),
                         }}
-                        colorScheme="purple"
-                        size="sm"
+                        px={3}
+                        py={2}
+                        rounded="md"
+                        borderWidth="1px"
+                        borderColor={
+                          snapshot.isDragging
+                            ? "purple.300"
+                            : "rgba(255,255,255,0.22)"
+                        }
+                        bg={
+                          snapshot.isDragging
+                            ? "rgba(128,90,213,0.24)"
+                            : "purple.600"
+                        }
+                        color="white"
+                        fontSize="sm"
                       >
                         {choicesMA[choiceIdx]}
-                      </Button>
+                      </Box>
                     )}
                   </Draggable>
                 ) : (
@@ -2690,8 +2717,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             index={position}
                             key={`mc-bank-${idx}`}
                           >
-                            {(dragProvided) => (
-                              <Button
+                            {(dragProvided, snapshot) => (
+                              <Box
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
@@ -2699,12 +2726,26 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   cursor: "grab",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
-                                variant="outline"
-                                justifyContent="flex-start"
-                                size="sm"
+                                px={3}
+                                py={2}
+                                rounded="md"
+                                borderWidth="1px"
+                                borderColor={
+                                  snapshot.isDragging
+                                    ? "purple.300"
+                                    : "rgba(255,255,255,0.22)"
+                                }
+                                bg={
+                                  snapshot.isDragging
+                                    ? "rgba(128,90,213,0.16)"
+                                    : "transparent"
+                                }
+                                fontSize="sm"
+                                textAlign="left"
+                                w="100%"
                               >
                                 {choicesMC[idx]}
-                              </Button>
+                              </Box>
                             )}
                           </Draggable>
                         ))}
@@ -2814,8 +2855,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             index={position}
                             key={`ma-bank-${idx}`}
                           >
-                            {(dragProvided) => (
-                              <Button
+                            {(dragProvided, snapshot) => (
+                              <Box
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
@@ -2823,12 +2864,26 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   cursor: "grab",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
-                                variant="outline"
-                                justifyContent="flex-start"
-                                size="sm"
+                                px={3}
+                                py={2}
+                                rounded="md"
+                                borderWidth="1px"
+                                borderColor={
+                                  snapshot.isDragging
+                                    ? "purple.300"
+                                    : "rgba(255,255,255,0.22)"
+                                }
+                                bg={
+                                  snapshot.isDragging
+                                    ? "rgba(128,90,213,0.16)"
+                                    : "transparent"
+                                }
+                                fontSize="sm"
+                                textAlign="left"
+                                w="100%"
                               >
                                 {choicesMA[idx]}
-                              </Button>
+                              </Box>
                             )}
                           </Draggable>
                         ))}
