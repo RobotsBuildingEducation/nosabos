@@ -87,7 +87,7 @@ function shouldUseDragVariant(question, choices = [], answers = []) {
   const blanks = countBlanks(question);
   if (!blanks) return false;
   const signature = `${question}||${choices.join("|")}||${answers.join("|")}`;
-  return stableHash(signature) % 3 === 0;
+  return stableHash(signature) % 4 < 2;
 }
 
 /* ---------------------------
@@ -263,7 +263,7 @@ function buildFillVocabStreamPrompt({
 
 /* MC phases:
    1) {"type":"vocab_mc","phase":"q","question":"..."}
-   2) {"type":"vocab_mc","phase":"choices","choices":["A","B","C","D"]}
+   2) {"type":"vocab_mc","phase":"choices","choices":["<choice1>","<choice2>","<choice3>","<choice4>"]}
    3) {"type":"vocab_mc","phase":"meta","hint":"...","answer":"...","translation":"..."}
    4) {"type":"done"}
 */
@@ -283,10 +283,14 @@ function buildMCVocabStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
+  const preferBlank = Math.random() < 0.6;
+  const stemDirective = preferBlank
+    ? `- Stem ≤120 chars and MUST contain a blank "___" inside a natural sentence.`
+    : `- Stem ≤120 chars with a blank "___" OR a short definition asking for a word.`;
 
   return [
     `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${diff}`,
-    `- Stem ≤120 chars with a blank "___" OR a short definition asking for a word.`,
+    stemDirective,
     `- 4 distinct word choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
@@ -296,7 +300,7 @@ function buildMCVocabStreamPrompt({
     "",
     "Stream as NDJSON:",
     `{"type":"vocab_mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
-    `{"type":"vocab_mc","phase":"choices","choices":["A","B","C","D"]}  // second`,
+    `{"type":"vocab_mc","phase":"choices","choices":["<choice1>","<choice2>","<choice3>","<choice4>"]}  // second (replace with real options)`,
     `{"type":"vocab_mc","phase":"meta","hint":"<${SUPPORT} hint>","answer":"<exact correct choice text>","translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
@@ -324,10 +328,14 @@ function buildMAVocabStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
+  const preferBlank = Math.random() < 0.6;
+  const stemDirective = preferBlank
+    ? `- Stem ≤120 chars and MUST include at least one blank "___" within context.`
+    : `- Stem ≤120 chars with context (e.g., “Which words fit the sentence?” or “Select all synonyms for ___”).`;
 
   return [
     `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
-    `- Stem ≤120 chars with context (e.g., “Which words fit the sentence?” or “Select all synonyms for ___”).`,
+    stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
@@ -800,6 +808,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
      GENERATOR DISPATCH
   --------------------------- */
   const types = ["fill", "mc", "ma", "speak", "match"];
+  const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
   const maKeyRef = useRef("");
@@ -819,9 +828,22 @@ export default function Vocabulary({ userLanguage = "en" }) {
         return generateFill;
     }
   }
+  function drawType() {
+    if (!typeDeckRef.current.length) {
+      const reshuffled = [...types];
+      for (let i = reshuffled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [reshuffled[i], reshuffled[j]] = [reshuffled[j], reshuffled[i]];
+      }
+      typeDeckRef.current = reshuffled;
+    }
+    const [next, ...rest] = typeDeckRef.current;
+    typeDeckRef.current = rest;
+    return next || types[0];
+  }
+
   function generateRandom() {
-    const pool = types;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const pick = drawType();
     // do NOT lock when randomizing
     setMode(pick);
     return generatorFor(pick)();
@@ -1322,7 +1344,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
   "hint":"<hint in ${LANG_NAME(
     resolveSupportLang(supportLang, userLanguage)
   )}>",
-  "choices":["A","B","C","D"],
+  "choices":["<choice1>","<choice2>","<choice3>","<choice4>"],
+  "notes":"Replace <choiceN> placeholders with actual ${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} options.",
   "answer":"<exact correct choice>",
   "translation":"${showTranslations ? "<translation>" : ""}"
 }
@@ -2805,7 +2828,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   </Text>
                 ) : null}
                 <RadioGroup value={pickMC} onChange={setPickMC}>
-                  <Stack direction="row" spacing={3} flexWrap="wrap">
+                  <Stack spacing={2} align="stretch">
                     {(choicesMC.length
                       ? choicesMC
                       : loadingQMC
@@ -2954,7 +2977,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   {t("vocab_select_all_apply")}
                 </Text>
                 <CheckboxGroup value={picksMA} onChange={setPicksMA}>
-                  <Stack direction="row" spacing={3} flexWrap="wrap">
+                  <Stack spacing={2} align="stretch">
                     {(choicesMA.length
                       ? choicesMA
                       : loadingQMA

@@ -86,7 +86,7 @@ function shouldUseDragVariant(question, choices = [], answers = []) {
   const blanks = countBlanks(question);
   if (!blanks) return false;
   const signature = `${question}||${choices.join("|")}||${answers.join("|")}`;
-  return stableHash(signature) % 3 === 0;
+  return stableHash(signature) % 4 < 2;
 }
 
 /* ---------------------------
@@ -335,10 +335,14 @@ function buildMCStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = difficultyHint(level, xp);
+  const preferBlank = Math.random() < 0.6;
+  const stemDirective = preferBlank
+    ? `- Stem short (≤120 chars) and MUST include a blank "___" in the sentence.`
+    : `- Stem short (≤120 chars); may include a blank "___" or pose a concise grammar question.`;
 
   return [
     `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${diff}`,
-    `- Stem short (≤120 chars), may include "___".`,
+    stemDirective,
     `- 4 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
@@ -350,7 +354,7 @@ function buildMCStreamPrompt({
     "",
     "Stream as NDJSON:",
     `{"type":"mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
-    `{"type":"mc","phase":"choices","choices":["A","B","C","D"]} // second`,
+    `{"type":"mc","phase":"choices","choices":["<choice1>","<choice2>","<choice3>","<choice4>"]} // second (replace with real options)`,
     `{"type":"mc","phase":"meta","hint":"<${SUPPORT} hint>","answer":"<exact correct choice text>","translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
@@ -401,10 +405,14 @@ function buildMAStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = difficultyHint(level, xp);
+  const preferBlank = Math.random() < 0.6;
+  const stemDirective = preferBlank
+    ? `- Stem short (≤120 chars) and MUST include at least one blank "___".`
+    : `- Stem short (≤120 chars), may include "___".`;
 
   return [
     `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
-    `- Stem short (≤120 chars), may include "___".`,
+    stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
@@ -721,15 +729,35 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [loadingMJ, setLoadingMJ] = useState(false);
   const [mAnswerMap, setMAnswerMap] = useState([]); // ✅ right index for each left (deterministic)
 
+  const generatorDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
   const maKeyRef = useRef("");
 
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
+  function drawGenerator() {
+    if (!generatorDeckRef.current.length) {
+      const order = [
+        generateFill,
+        generateMC,
+        generateMA,
+        generateSpeak,
+        generateMatch,
+      ];
+      for (let i = order.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [order[i], order[j]] = [order[j], order[i]];
+      }
+      generatorDeckRef.current = order;
+    }
+    const [next, ...rest] = generatorDeckRef.current;
+    generatorDeckRef.current = rest;
+    return next || generateFill;
+  }
+
   function generateRandom() {
-    const fns = [generateFill, generateMC, generateMA, generateSpeak, generateMatch];
-    const pick = Math.floor(Math.random() * fns.length);
-    fns[pick]();
+    const fn = drawGenerator();
+    fn();
   }
 
   useEffect(() => {
@@ -1179,7 +1207,8 @@ Create ONE multiple-choice ${LANG_NAME(
   "hint": "<hint in ${LANG_NAME(
     resolveSupportLang(supportLang, userLanguage)
   )}>",
-  "choices": ["A","B","C","D"],
+  "choices": ["<choice1>","<choice2>","<choice3>","<choice4>"],
+  "notes": "Replace <choiceN> with real ${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} options.",
   "answer": "<exact correct choice>",
   "translation": "${showTranslations ? "<translation>" : ""}"
 }
@@ -2573,7 +2602,7 @@ Return JSON ONLY:
                   </Text>
                 ) : null}
                 <RadioGroup value={mcPick} onChange={setMcPick}>
-                  <Stack direction="row" spacing={3} flexWrap="wrap">
+                  <Stack spacing={2} align="stretch">
                     {(mcChoices.length
                       ? mcChoices
                       : loadingMCQ
@@ -2729,7 +2758,7 @@ Return JSON ONLY:
                   {t("grammar_select_all_apply")}
                 </Text>
                 <CheckboxGroup value={maPicks} onChange={setMaPicks}>
-                  <Stack direction="row" spacing={3} flexWrap="wrap">
+                  <Stack spacing={2} align="stretch">
                     {(maChoices.length
                       ? maChoices
                       : loadingMAQ
