@@ -641,11 +641,6 @@ export default function GrammarBook({ userLanguage = "en" }) {
     }
   }
 
-  const maReady =
-    maLayout === "drag"
-      ? maSlots.length > 0 && maSlots.every((slot) => slot != null)
-      : maPicks.length > 0;
-
   // ---- FILL ----
   const [question, setQuestion] = useState("");
   const [hint, setHint] = useState("");
@@ -681,6 +676,11 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [maResult, setMaResult] = useState(""); // kept for firestore text; not shown
   const [loadingMAQ, setLoadingMAQ] = useState(false);
   const [loadingMAG, setLoadingMAG] = useState(false);
+
+  const maReady =
+    maLayout === "drag"
+      ? maSlots.length > 0 && maSlots.every((slot) => slot != null)
+      : maPicks.length > 0;
 
   // ---- SPEAK ----
   const [sPrompt, setSPrompt] = useState("");
