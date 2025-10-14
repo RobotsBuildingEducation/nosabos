@@ -4,6 +4,7 @@ import {
   Box,
   Badge,
   Button,
+  Flex,
   HStack,
   Input,
   Spinner,
@@ -2496,13 +2497,15 @@ Return JSON ONLY:
                         ? "Arrastra la respuesta correcta al espacio en la frase."
                         : "Drag the correct answer into the blank in the sentence.")}
                   </Text>
-                  <Droppable droppableId="mc-bank">
+                  <Droppable droppableId="mc-bank" direction="horizontal">
                     {(provided) => (
-                      <VStack
+                      <Flex
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         align="stretch"
-                        spacing={2}
+                        wrap="wrap"
+                        gap={3}
+                        w="full"
                       >
                         {mcBankOrder.map((idx, position) => (
                           <Draggable
@@ -2535,7 +2538,6 @@ Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
-                                w="100%"
                               >
                                 {mcChoices[idx]}
                               </Box>
@@ -2543,7 +2545,7 @@ Return JSON ONLY:
                           </Draggable>
                         ))}
                         {provided.placeholder}
-                      </VStack>
+                      </Flex>
                     )}
                   </Droppable>
                 </VStack>
@@ -2571,7 +2573,7 @@ Return JSON ONLY:
                   </Text>
                 ) : null}
                 <RadioGroup value={mcPick} onChange={setMcPick}>
-                  <Stack spacing={2}>
+                  <Stack direction="row" spacing={3} flexWrap="wrap">
                     {(mcChoices.length
                       ? mcChoices
                       : loadingMCQ
@@ -2648,13 +2650,15 @@ Return JSON ONLY:
                         ? "Arrastra cada respuesta correcta a su espacio en la frase."
                         : "Drag each correct answer into its place in the sentence.")}
                   </Text>
-                  <Droppable droppableId="ma-bank">
+                  <Droppable droppableId="ma-bank" direction="horizontal">
                     {(provided) => (
-                      <VStack
+                      <Flex
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         align="stretch"
-                        spacing={2}
+                        wrap="wrap"
+                        gap={3}
+                        w="full"
                       >
                         {maBankOrder.map((idx, position) => (
                           <Draggable
@@ -2687,7 +2691,6 @@ Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
-                                w="100%"
                               >
                                 {maChoices[idx]}
                               </Box>
@@ -2695,7 +2698,7 @@ Return JSON ONLY:
                           </Draggable>
                         ))}
                         {provided.placeholder}
-                      </VStack>
+                      </Flex>
                     )}
                   </Droppable>
                 </VStack>
@@ -2726,7 +2729,7 @@ Return JSON ONLY:
                   {t("grammar_select_all_apply")}
                 </Text>
                 <CheckboxGroup value={maPicks} onChange={setMaPicks}>
-                  <Stack spacing={2}>
+                  <Stack direction="row" spacing={3} flexWrap="wrap">
                     {(maChoices.length
                       ? maChoices
                       : loadingMAQ
