@@ -1,9 +1,10 @@
 // components/Vocabulary.jsx
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Badge,
   Button,
+  Flex,
   HStack,
   Input,
   Spinner,
@@ -14,7 +15,6 @@ import {
   Stack,
   Checkbox,
   CheckboxGroup,
-  SimpleGrid,
   Tooltip,
   IconButton,
   useToast,
@@ -31,11 +31,15 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
+import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
+import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
 import { awardXp } from "../utils/utils";
+import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
+import { speechReasonTips } from "../utils/speechEvaluation";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -66,6 +70,26 @@ function tryConsumeLine(line, cb) {
   }
 }
 
+function countBlanks(text = "") {
+  return (text.match(/___/g) || []).length;
+}
+
+function stableHash(str = "") {
+  let hash = 0;
+  for (let i = 0; i < str.length; i += 1) {
+    hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+function shouldUseDragVariant(question, choices = [], answers = []) {
+  if (!question || !choices.length) return false;
+  const blanks = countBlanks(question);
+  if (!blanks) return false;
+  const signature = `${question}||${choices.join("|")}||${answers.join("|")}`;
+  return stableHash(signature) % 4 < 2;
+}
+
 /* ---------------------------
    Minimal i18n helper
 --------------------------- */
@@ -85,45 +109,7 @@ function useT(uiLang = "en") {
 /* ---------------------------
    LLM plumbing (backend fallback)
 --------------------------- */
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const MODEL = import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
-
-async function callResponses({ model, input }) {
-  try {
-    const r = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        text: { format: { type: "text" } },
-        input,
-      }),
-    });
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    const text =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      (typeof payload === "string" ? payload : "");
-    return String(text || "");
-  } catch {
-    return "";
-  }
-}
+const MODEL = DEFAULT_RESPONSES_MODEL;
 
 /* ---------------------------
    User/XP helpers
@@ -277,7 +263,7 @@ function buildFillVocabStreamPrompt({
 
 /* MC phases:
    1) {"type":"vocab_mc","phase":"q","question":"..."}
-   2) {"type":"vocab_mc","phase":"choices","choices":["A","B","C","D"]}
+   2) {"type":"vocab_mc","phase":"choices","choices":["<choice1>","<choice2>","<choice3>","<choice4>"]}
    3) {"type":"vocab_mc","phase":"meta","hint":"...","answer":"...","translation":"..."}
    4) {"type":"done"}
 */
@@ -297,10 +283,14 @@ function buildMCVocabStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
+  const preferBlank = Math.random() < 0.6;
+  const stemDirective = preferBlank
+    ? `- Stem ≤120 chars and MUST contain a blank "___" inside a natural sentence.`
+    : `- Stem ≤120 chars with a blank "___" OR a short definition asking for a word.`;
 
   return [
     `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${diff}`,
-    `- Stem ≤120 chars with a blank "___" OR a short definition asking for a word.`,
+    stemDirective,
     `- 4 distinct word choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
@@ -310,7 +300,7 @@ function buildMCVocabStreamPrompt({
     "",
     "Stream as NDJSON:",
     `{"type":"vocab_mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
-    `{"type":"vocab_mc","phase":"choices","choices":["A","B","C","D"]}  // second`,
+    `{"type":"vocab_mc","phase":"choices","choices":["<choice1>","<choice2>","<choice3>","<choice4>"]}  // second (replace with real options)`,
     `{"type":"vocab_mc","phase":"meta","hint":"<${SUPPORT} hint>","answer":"<exact correct choice text>","translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
@@ -338,10 +328,14 @@ function buildMAVocabStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
+  const preferBlank = Math.random() < 0.6;
+  const stemDirective = preferBlank
+    ? `- Stem ≤120 chars and MUST include at least one blank "___" within context.`
+    : `- Stem ≤120 chars with context (e.g., “Which words fit the sentence?” or “Select all synonyms for ___”).`;
 
   return [
     `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
-    `- Stem ≤120 chars with context (e.g., “Which words fit the sentence?” or “Select all synonyms for ___”).`,
+    stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
@@ -355,6 +349,58 @@ function buildMAVocabStreamPrompt({
     `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
+}
+
+/* SPEAK phases:
+   1) {"type":"vocab_speak","phase":"prompt","target":"<word>","prompt":"<instruction>"}
+   2) {"type":"vocab_speak","phase":"meta","hint":"...","translation":"..."}
+   3) {"type":"done"}
+*/
+function buildSpeakVocabStreamPrompt({
+  level,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang,
+  xp,
+  recentGood,
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
+  const SUPPORT = LANG_NAME(SUPPORT_CODE);
+  const wantTR =
+    showTranslations &&
+    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
+  const diff = vocabDifficulty(level, xp);
+  const allowTranslate =
+    SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
+
+  return [
+    `Create ONE ${TARGET} speaking drill (difficulty: ${diff}). Choose VARIANT:`,
+    `- repeat: show the ${TARGET} word/phrase (≤4 words) to repeat aloud.`,
+    allowTranslate
+      ? `- translate: show a ${SUPPORT} word/phrase (≤3 words) and have them speak the ${TARGET} translation aloud.`
+      : `- translate: SKIP when support language equals ${TARGET}.`,
+    `- complete: show a ${TARGET} sentence (≤120 chars) with ___ and have them speak the completed sentence aloud.`,
+    `- Rotate variants (avoid repeating the same variant more than twice in a row relative to recent successes: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}).`,
+    `- Provide a concise instruction sentence in ${TARGET} (≤120 chars).`,
+    `- Include a hint in ${SUPPORT} (≤10 words).`,
+    wantTR
+      ? `- Provide a ${SUPPORT} translation of the stimulus or completed sentence.`
+      : `- Use empty translation "".`,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"vocab_speak","phase":"prompt","variant":"repeat|translate|complete","display":"<text shown to learner>","target":"<${TARGET} output to evaluate>","prompt":"<instruction in ${TARGET}>"}`,
+    `{"type":"vocab_speak","phase":"meta","hint":"<${SUPPORT} hint>","translation":"<${SUPPORT} translation or empty>"}`,
+    `{"type":"done"}`,
+  ].join("\n");
+}
+
+function normalizeSpeakVariant(variant) {
+  const v = (variant || "").toString().toLowerCase();
+  return ["repeat", "translate", "complete"].includes(v) ? v : "repeat";
 }
 
 /* MATCH phases:
@@ -618,9 +664,9 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }
   }, [xp]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "match"
-  // ✅ whether user has selected a specific type; if null => keep randomizing
-  const [lockedType, setLockedType] = useState(null);
+  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
+  // ✅ always randomize (no manual lock controls in the UI)
+  const lockedType = null;
 
   // verdict + next control
   const [lastOk, setLastOk] = useState(null); // null | true | false
@@ -684,6 +730,21 @@ export default function Vocabulary({ userLanguage = "en" }) {
     }
   }
 
+  function handleSkip() {
+    if (isSpeakRecording) {
+      try {
+        stopSpeakRecording();
+      } catch {}
+    }
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    const runner = lockedType ? generatorFor(lockedType) : generateRandomRef.current;
+    if (typeof runner === "function") {
+      runner();
+    }
+  }
+
   // ---- FILL (vocab) ----
   const [qFill, setQFill] = useState("");
   const [hFill, setHFill] = useState("");
@@ -700,6 +761,9 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [answerMC, setAnswerMC] = useState("");
   const [trMC, setTrMC] = useState("");
   const [pickMC, setPickMC] = useState("");
+  const [mcLayout, setMcLayout] = useState("buttons");
+  const [mcBankOrder, setMcBankOrder] = useState([]);
+  const [mcSlotIndex, setMcSlotIndex] = useState(null);
   const [resMC, setResMC] = useState(""); // log only
   const [loadingQMC, setLoadingQMC] = useState(false);
   const [loadingGMC, setLoadingGMC] = useState(false);
@@ -711,9 +775,23 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [answersMA, setAnswersMA] = useState([]);
   const [trMA, setTrMA] = useState("");
   const [picksMA, setPicksMA] = useState([]);
+  const [maLayout, setMaLayout] = useState("buttons");
+  const [maSlots, setMaSlots] = useState([]);
+  const [maBankOrder, setMaBankOrder] = useState([]);
   const [resMA, setResMA] = useState(""); // log only
   const [loadingQMA, setLoadingQMA] = useState(false);
   const [loadingGMA, setLoadingGMA] = useState(false);
+
+  // ---- SPEAK (vocab) ----
+  const [sPrompt, setSPrompt] = useState("");
+  const [sTarget, setSTarget] = useState("");
+  const [sStimulus, setSStimulus] = useState("");
+  const [sVariant, setSVariant] = useState("repeat");
+  const [sHint, setSHint] = useState("");
+  const [sTranslation, setSTranslation] = useState("");
+  const [sRecognized, setSRecognized] = useState("");
+  const [sEval, setSEval] = useState(null);
+  const [loadingQSpeak, setLoadingQSpeak] = useState(false);
 
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
@@ -729,7 +807,11 @@ export default function Vocabulary({ userLanguage = "en" }) {
   /* ---------------------------
      GENERATOR DISPATCH
   --------------------------- */
-  const types = ["fill", "mc", "ma", "match"];
+  const types = ["fill", "mc", "ma", "speak", "match"];
+  const typeDeckRef = useRef([]);
+  const generateRandomRef = useRef(() => {});
+  const mcKeyRef = useRef("");
+  const maKeyRef = useRef("");
   function generatorFor(type) {
     switch (type) {
       case "fill":
@@ -738,19 +820,194 @@ export default function Vocabulary({ userLanguage = "en" }) {
         return generateMC;
       case "ma":
         return generateMA;
+      case "speak":
+        return generateSpeak;
       case "match":
         return generateMatch;
       default:
         return generateFill;
     }
   }
+  function drawType() {
+    if (!typeDeckRef.current.length) {
+      const reshuffled = [...types];
+      for (let i = reshuffled.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [reshuffled[i], reshuffled[j]] = [reshuffled[j], reshuffled[i]];
+      }
+      typeDeckRef.current = reshuffled;
+    }
+    const [next, ...rest] = typeDeckRef.current;
+    typeDeckRef.current = rest;
+    return next || types[0];
+  }
+
   function generateRandom() {
-    const pool = types;
-    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const pick = drawType();
     // do NOT lock when randomizing
     setMode(pick);
     return generatorFor(pick)();
   }
+
+  useEffect(() => {
+    generateRandomRef.current = generateRandom;
+  });
+
+  useEffect(() => {
+    if (!qMC || !choicesMC.length) return;
+    const signature = `${qMC}||${choicesMC.join("|")}`;
+    if (mcKeyRef.current === signature) return;
+    mcKeyRef.current = signature;
+    const useDrag = shouldUseDragVariant(qMC, choicesMC, [answerMC].filter(Boolean));
+    setMcLayout(useDrag ? "drag" : "buttons");
+    setMcSlotIndex(null);
+    setPickMC("");
+    setMcBankOrder(useDrag ? choicesMC.map((_, idx) => idx) : []);
+  }, [qMC, choicesMC, answerMC]);
+
+  useEffect(() => {
+    if (!qMA || !choicesMA.length || !answersMA.length) return;
+    const signature = `${qMA}||${choicesMA.join("|")}|${answersMA.join("|")}`;
+    if (maKeyRef.current === signature) return;
+    maKeyRef.current = signature;
+    const useDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
+    setMaLayout(useDrag ? "drag" : "buttons");
+    if (useDrag) {
+      const blanks = countBlanks(qMA) || answersMA.length;
+      const slotCount = Math.min(Math.max(blanks, 1), answersMA.length);
+      setMaSlots(Array.from({ length: slotCount }, () => null));
+      setMaBankOrder(choicesMA.map((_, idx) => idx));
+    } else {
+      setMaSlots([]);
+      setMaBankOrder([]);
+    }
+    setPicksMA([]);
+  }, [qMA, choicesMA, answersMA]);
+
+  const handleMcDragEnd = useCallback(
+    (result) => {
+      if (!result?.destination || mcLayout !== "drag") return;
+      const { source, destination } = result;
+      if (
+        source.droppableId === destination.droppableId &&
+        source.index === destination.index
+      )
+        return;
+
+      if (source.droppableId === "mc-bank" && destination.droppableId === "mc-bank") {
+        const updated = Array.from(mcBankOrder);
+        const [removed] = updated.splice(source.index, 1);
+        updated.splice(destination.index, 0, removed);
+        setMcBankOrder(updated);
+        return;
+      }
+
+      if (source.droppableId === "mc-bank" && destination.droppableId === "mc-slot") {
+        const updated = Array.from(mcBankOrder);
+        const [removed] = updated.splice(source.index, 1);
+        if (mcSlotIndex != null) {
+          updated.splice(destination.index, 0, mcSlotIndex);
+        }
+        setMcBankOrder(updated);
+        setMcSlotIndex(removed);
+        setPickMC(choicesMC[removed] || "");
+        return;
+      }
+
+      if (source.droppableId === "mc-slot" && destination.droppableId === "mc-bank") {
+        if (mcSlotIndex == null) return;
+        const updated = Array.from(mcBankOrder);
+        updated.splice(destination.index, 0, mcSlotIndex);
+        setMcBankOrder(updated);
+        setMcSlotIndex(null);
+        setPickMC("");
+      }
+    },
+    [mcLayout, mcBankOrder, mcSlotIndex, choicesMC]
+  );
+
+  const handleMaDragEnd = useCallback(
+    (result) => {
+      if (!result?.destination || maLayout !== "drag") return;
+      const { source, destination } = result;
+      if (
+        source.droppableId === destination.droppableId &&
+        source.index === destination.index
+      )
+        return;
+
+      const parseSlot = (id) =>
+        id.startsWith("ma-slot-") ? parseInt(id.replace("ma-slot-", ""), 10) : null;
+      const sourceSlot = parseSlot(source.droppableId);
+      const destSlot = parseSlot(destination.droppableId);
+
+      if (source.droppableId === "ma-bank" && destination.droppableId === "ma-bank") {
+        const updated = Array.from(maBankOrder);
+        const [removed] = updated.splice(source.index, 1);
+        updated.splice(destination.index, 0, removed);
+        setMaBankOrder(updated);
+        return;
+      }
+
+      if (source.droppableId === "ma-bank" && destSlot != null) {
+        const updated = Array.from(maBankOrder);
+        const [removed] = updated.splice(source.index, 1);
+        const displaced = maSlots[destSlot];
+        if (displaced != null) {
+          updated.splice(source.index, 0, displaced);
+        }
+        setMaBankOrder(updated);
+        setMaSlots((prev) => {
+          const next = [...prev];
+          next[destSlot] = removed;
+          return next;
+        });
+        return;
+      }
+
+      if (sourceSlot != null && destination.droppableId === "ma-bank") {
+        const slotValue = maSlots[sourceSlot];
+        if (slotValue == null) return;
+        const updated = Array.from(maBankOrder);
+        updated.splice(destination.index, 0, slotValue);
+        setMaBankOrder(updated);
+        setMaSlots((prev) => {
+          const next = [...prev];
+          next[sourceSlot] = null;
+          return next;
+        });
+        return;
+      }
+
+      if (sourceSlot != null && destSlot != null) {
+        setMaSlots((prev) => {
+          const next = [...prev];
+          const temp = next[sourceSlot];
+          next[sourceSlot] = next[destSlot];
+          next[destSlot] = temp;
+          return next;
+        });
+      }
+    },
+    [maLayout, maBankOrder, maSlots]
+  );
+
+  useEffect(() => {
+    if (maLayout !== "drag") return;
+    setPicksMA((prev) => {
+      const filled = maSlots
+        .filter((idx) => idx != null)
+        .map((idx) => choicesMA[idx])
+        .filter(Boolean);
+      if (
+        filled.length === prev.length &&
+        filled.every((val, idx) => val === prev[idx])
+      ) {
+        return prev;
+      }
+      return filled;
+    });
+  }, [maLayout, maSlots, choicesMA]);
 
   /* ---------------------------
      STREAM Generate — FILL
@@ -915,13 +1172,12 @@ Return EXACTLY:
     setRecentXp(delta);
 
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
-    setNextAction(
-      ok
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandom()
-        : null
-    );
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     if (ok) {
       setAnsFill("");
@@ -942,6 +1198,9 @@ Return EXACTLY:
     setLoadingQMC(true);
     setResMC("");
     setPickMC("");
+    setMcLayout("buttons");
+    setMcSlotIndex(null);
+    setMcBankOrder([]);
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
@@ -1085,7 +1344,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
   "hint":"<hint in ${LANG_NAME(
     resolveSupportLang(supportLang, userLanguage)
   )}>",
-  "choices":["A","B","C","D"],
+  "choices":["<choice1>","<choice2>","<choice3>","<choice4>"],
+  "notes":"Replace <choiceN> placeholders with actual ${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} options.",
   "answer":"<exact correct choice>",
   "translation":"${showTranslations ? "<translation>" : ""}"
 }
@@ -1159,13 +1419,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
 
-    setNextAction(
-      ok
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandom()
-        : null
-    );
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     if (ok) {
       recentCorrectRef.current = [
@@ -1224,6 +1483,9 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     setLoadingQMA(true);
     setResMA("");
     setPicksMA([]);
+    setMaLayout("buttons");
+    setMaSlots([]);
+    setMaBankOrder([]);
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
@@ -1430,13 +1692,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setResMA(ok ? "correct" : "try_again"); // log only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(
-      ok
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandom()
-        : null
-    );
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
 
     if (ok) {
       setPicksMA([]);
@@ -1447,6 +1708,244 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     }
 
     setLoadingGMA(false);
+  }
+
+  async function generateSpeak() {
+    try {
+      stopSpeakRecording();
+    } catch {}
+    setMode("speak");
+    setLoadingQSpeak(true);
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    setSPrompt("");
+    setSTarget("");
+    setSStimulus("");
+    setSVariant("repeat");
+    setSHint("");
+    setSTranslation("");
+    setSRecognized("");
+    setSEval(null);
+
+    const prompt = buildSpeakVocabStreamPrompt({
+      level,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      xp,
+      recentGood: recentCorrectRef.current,
+    });
+
+    let got = false;
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "vocab_speak" && obj.phase === "prompt") {
+              if (typeof obj.prompt === "string") setSPrompt(obj.prompt.trim());
+              if (typeof obj.target === "string") setSTarget(obj.target.trim());
+              if (typeof obj.display === "string")
+                setSStimulus(obj.display.trim());
+              if (typeof obj.variant === "string")
+                setSVariant(normalizeSpeakVariant(obj.variant));
+              got = true;
+            } else if (obj?.type === "vocab_speak" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") setSHint(obj.hint);
+              if (typeof obj.translation === "string")
+                setSTranslation(obj.translation);
+              got = true;
+            }
+          });
+        }
+      }
+
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (obj?.type === "vocab_speak" && obj.phase === "prompt") {
+                if (typeof obj.prompt === "string")
+                  setSPrompt(obj.prompt.trim());
+                if (typeof obj.target === "string")
+                  setSTarget(obj.target.trim());
+                if (typeof obj.display === "string")
+                  setSStimulus(obj.display.trim());
+                if (typeof obj.variant === "string")
+                  setSVariant(normalizeSpeakVariant(obj.variant));
+                got = true;
+              } else if (obj?.type === "vocab_speak" && obj.phase === "meta") {
+                if (typeof obj.hint === "string") setSHint(obj.hint);
+                if (typeof obj.translation === "string")
+                  setSTranslation(obj.translation);
+                got = true;
+              }
+            })
+          );
+      }
+
+      if (!got) throw new Error("no-speak");
+    } catch {
+      const text = await callResponses({
+        model: MODEL,
+        input: `
+Create ONE ${LANG_NAME(targetLang)} speaking drill. Randomly choose VARIANT from:
+- repeat: show the ${LANG_NAME(targetLang)} word/phrase and have them repeat it aloud.
+- translate: show a ${LANG_NAME(resolveSupportLang(
+          supportLang,
+          userLanguage
+        ))} word and have them speak the ${LANG_NAME(targetLang)} translation aloud.
+- complete: show a ${LANG_NAME(targetLang)} sentence with ___ and have them speak the completed sentence aloud.
+
+Return JSON ONLY:
+{
+  "variant":"repeat"|"translate"|"complete",
+  "prompt":"<${LANG_NAME(targetLang)} instruction>",
+  "display":"<text to show the learner>",
+  "target":"<${LANG_NAME(targetLang)} text they must say>",
+  "hint":"<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} hint>",
+  "translation":"${
+          showTranslations
+            ? `<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} translation or context>`
+            : ""
+        }"
+}`.trim(),
+      });
+
+      const parsed = safeParseJSON(text);
+      if (parsed && typeof parsed.target === "string") {
+        setSTarget(parsed.target.trim());
+        setSStimulus(String(parsed.display || parsed.target || "").trim());
+        setSVariant(normalizeSpeakVariant(parsed.variant));
+        setSPrompt(String(parsed.prompt || ""));
+        setSHint(String(parsed.hint || ""));
+        setSTranslation(String(parsed.translation || ""));
+      } else {
+        const fallbackOptions = ["repeat", "complete"];
+        if (supportCode !== (targetLang === "en" ? "en" : targetLang)) {
+          fallbackOptions.splice(1, 0, "translate");
+        }
+        const fallbackVariant =
+          fallbackOptions[Math.floor(Math.random() * fallbackOptions.length)];
+        setSVariant(normalizeSpeakVariant(fallbackVariant));
+        if (fallbackVariant === "translate") {
+          const supportWord = supportCode === "es" ? "bosque" : "forest";
+          setSStimulus(supportWord);
+          setSTarget(
+            targetLang === "es"
+              ? "bosque"
+              : targetLang === "nah"
+              ? "kwawitl"
+              : "forest"
+          );
+          setSPrompt(
+            targetLang === "es"
+              ? `Traduce en voz alta: ${supportWord}.`
+              : targetLang === "nah"
+              ? `Kijtoa tlen nechicoliz: ${supportWord}.`
+              : `Translate aloud: ${supportWord}.`
+          );
+          setSHint(
+            supportCode === "es"
+              ? "Di la versión en español"
+              : "Say it in the target language"
+          );
+          setSTranslation(
+            showTranslations
+              ? supportCode === "es"
+                ? "bosque"
+                : "forest"
+              : ""
+          );
+        } else if (fallbackVariant === "complete") {
+          const cloze =
+            targetLang === "es"
+              ? "Completa: La niña ___ una canción."
+              : targetLang === "nah"
+              ? "Tlatzotzona: Pilli ___ tlahkuiloa."
+              : "Complete: The child ___ a song.";
+          const completed =
+            targetLang === "es"
+              ? "La niña canta una canción."
+              : targetLang === "nah"
+              ? "Pilli tlahkuiloa tlatzotzontli."
+              : "The child sings a song.";
+          setSStimulus(cloze);
+          setSTarget(completed);
+          setSPrompt(
+            targetLang === "es"
+              ? "Di la oración completa con la palabra que falta."
+              : targetLang === "nah"
+              ? "Kijtoa nochi tlahtolli tlen mokpano."
+              : "Say the full sentence with the missing word."
+          );
+          setSHint(
+            supportCode === "es"
+              ? "El verbo es 'cantar'"
+              : "The verb is 'to sing'"
+          );
+          setSTranslation(
+            showTranslations
+              ? supportCode === "es"
+                ? "La niña canta una canción."
+                : "The girl sings a song."
+              : ""
+          );
+        } else {
+          const repeatWord =
+            targetLang === "es"
+              ? "sonrisa"
+              : targetLang === "nah"
+              ? "yolpaki"
+              : "harmony";
+          setSStimulus(repeatWord);
+          setSTarget(repeatWord);
+          setSPrompt(
+            targetLang === "es"
+              ? "Di la palabra claramente: sonrisa."
+              : targetLang === "nah"
+              ? "Pronuncia la palabra con calma: yolpaki."
+              : "Say this word out loud: harmony."
+          );
+          setSHint(
+            supportCode === "es" ? "significa felicidad" : "means happiness"
+          );
+          setSTranslation(
+            showTranslations
+              ? supportCode === "es"
+                ? "sonrisa"
+                : "harmony"
+              : ""
+          );
+        }
+      }
+    } finally {
+      setLoadingQSpeak(false);
+    }
   }
 
   /* ---------------------------
@@ -1654,16 +2153,123 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setMResult(ok ? "correct" : "try_again"); // log only
     setLastOk(ok);
     setRecentXp(delta);
-    setNextAction(
-      ok
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandom()
-        : null
-    );
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandom()
+      : null;
+    setNextAction(() => nextFn);
 
     setLoadingMJ(false);
   }
+
+  const handleSpeakEvaluation = useCallback(
+    async ({
+      evaluation,
+      recognizedText = "",
+      confidence = 0,
+      audioMetrics = null,
+      method = "",
+      error = null,
+    }) => {
+      if (!sTarget) return;
+      if (error) {
+        toast({
+          title:
+            userLanguage === "es"
+              ? "No se pudo evaluar"
+              : "Could not evaluate",
+          description:
+            userLanguage === "es"
+              ? "Vuelve a intentarlo con una conexión estable."
+              : "Please try again with a stable connection.",
+          status: "error",
+          duration: 2500,
+        });
+        return;
+      }
+      if (!evaluation) return;
+
+      setSRecognized(recognizedText || "");
+      setSEval(evaluation);
+
+      const ok = evaluation.pass;
+      const delta = ok ? 14 : 0;
+
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_speak",
+        question: sPrompt,
+        target: sTarget,
+        stimulus: sStimulus,
+        variant: sVariant,
+        hint: sHint,
+        translation: sTranslation,
+        recognized_text: recognizedText || "",
+        confidence,
+        audio_metrics: audioMetrics,
+        eval: evaluation,
+        method,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+
+      setLastOk(ok);
+      setRecentXp(delta);
+      const nextFn = ok
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
+
+      if (ok) {
+        recentCorrectRef.current = [
+          ...recentCorrectRef.current,
+          { mode: "speak", question: sStimulus || sTarget, variant: sVariant },
+        ].slice(-5);
+      } else {
+        const tips = speechReasonTips(evaluation.reasons, {
+          uiLang: userLanguage,
+          targetLabel: targetName,
+        });
+        const retryTitle =
+          t("vocab_speak_retry_title") ||
+          (userLanguage === "es" ? "Intenta otra vez" : "Try again");
+        toast({
+          title: retryTitle,
+          description: tips.join(" "),
+          status: "warning",
+          duration: 3600,
+        });
+      }
+    },
+    [
+      lockedType,
+      npub,
+      sHint,
+      sPrompt,
+      sStimulus,
+      sTarget,
+      sTranslation,
+      sVariant,
+      t,
+      targetName,
+      toast,
+      userLanguage,
+    ]
+  );
+
+  const {
+    startRecording: startSpeakRecording,
+    stopRecording: stopSpeakRecording,
+    isRecording: isSpeakRecording,
+    supportsSpeech: supportsSpeak,
+  } = useSpeechPractice({
+    targetText: sTarget,
+    targetLang,
+    onResult: handleSpeakEvaluation,
+  });
 
   /* ---------------------------
      Drag & Drop handlers (Match)
@@ -1727,6 +2333,50 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     showTranslations &&
     trMA &&
     supportCode !== (targetLang === "en" ? "en" : targetLang);
+  const showTRSpeak =
+    showTranslations &&
+    sTranslation &&
+    supportCode !== (targetLang === "en" ? "en" : targetLang);
+
+  const speakVariantLabel = useMemo(() => {
+    switch (sVariant) {
+      case "translate":
+        return (
+          t("vocab_speak_variant_translate") ||
+          (userLanguage === "es" ? "Traduce la palabra" : "Translate the word")
+        );
+      case "complete":
+        return (
+          t("vocab_speak_variant_complete") ||
+          (userLanguage === "es"
+            ? "Completa la oración"
+            : "Complete the sentence")
+        );
+      case "repeat":
+      default:
+        return (
+          t("vocab_speak_variant_repeat") ||
+          (userLanguage === "es"
+            ? "Pronuncia la palabra"
+            : "Speak the word")
+        );
+    }
+  }, [sVariant, t, userLanguage]);
+
+  /* ---------------------------
+     AUTO-GENERATE on first render (respecting user settings)
+     - Wait until 'ready' so target/support languages are applied.
+     - Randomize by default; only lock when user picks a type explicitly.
+  --------------------------- */
+  const autoInitRef = useRef(false);
+  useEffect(() => {
+    if (autoInitRef.current) return;
+    if (showPasscodeModal) return;
+    if (!ready) return; // ✅ wait for user progress to load
+    autoInitRef.current = true;
+    generateRandom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, showPasscodeModal]);
 
   if (showPasscodeModal) {
     return (
@@ -1778,22 +2428,229 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     );
   };
 
-  const nextLabel = t("grammar_next") || t("grammar_next") || "Next";
+  const dragPlaceholderLabel =
+    t("practice_drag_drop_slot_placeholder") ||
+    (userLanguage === "es"
+      ? "Suelta la respuesta aquí"
+      : "Drop the answer here");
 
-  /* ---------------------------
-     AUTO-GENERATE on first render (respecting user settings)
-     - Wait until 'ready' so target/support languages are applied.
-     - Randomize by default; only lock when user picks a type explicitly.
-  --------------------------- */
-  const autoInitRef = useRef(false);
-  useEffect(() => {
-    if (autoInitRef.current) return;
-    if (showPasscodeModal) return;
-    if (!ready) return; // ✅ wait for user progress to load
-    autoInitRef.current = true;
-    generateRandom();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal]);
+  const renderMcPrompt = () => {
+    if (!qMC) return null;
+    const segments = String(qMC).split("___");
+    if (segments.length === 1) {
+      return qMC;
+    }
+    let blankPlaced = false;
+    const nodes = [];
+    segments.forEach((segment, idx) => {
+      nodes.push(
+        <React.Fragment key={`mc-segment-${idx}`}>{segment}</React.Fragment>
+      );
+      if (idx < segments.length - 1) {
+        if (blankPlaced) {
+          nodes.push(
+            <React.Fragment key={`mc-gap-${idx}`}>___</React.Fragment>
+          );
+          return;
+        }
+        blankPlaced = true;
+        nodes.push(
+          <Droppable
+            droppableId="mc-slot"
+            direction="horizontal"
+            key={`mc-blank-${idx}`}
+          >
+            {(provided, snapshot) => (
+              <Box
+                as="span"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                minW="72px"
+                minH="32px"
+                px={2}
+                py={1}
+                mx={1}
+                borderRadius="md"
+                borderBottomWidth="2px"
+                borderBottomColor={
+                  snapshot.isDraggingOver
+                    ? "purple.300"
+                    : "rgba(255,255,255,0.6)"
+                }
+                bg={
+                  snapshot.isDraggingOver
+                    ? "rgba(128,90,213,0.18)"
+                    : "rgba(255,255,255,0.08)"
+                }
+                transition="all 0.2s ease"
+              >
+                {mcSlotIndex != null ? (
+                  <Draggable draggableId={`mc-${mcSlotIndex}`} index={0}>
+                    {(dragProvided, snapshot) => (
+                      <Box
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        {...dragProvided.dragHandleProps}
+                        style={{
+                          cursor: "grab",
+                          ...(dragProvided.draggableProps.style || {}),
+                        }}
+                        px={3}
+                        py={2}
+                        rounded="md"
+                        borderWidth="1px"
+                        borderColor={
+                          snapshot.isDragging
+                            ? "purple.300"
+                            : "rgba(255,255,255,0.22)"
+                        }
+                        bg={
+                          snapshot.isDragging
+                            ? "rgba(128,90,213,0.24)"
+                            : "purple.600"
+                        }
+                        color="white"
+                        fontSize="sm"
+                      >
+                        {choicesMC[mcSlotIndex]}
+                      </Box>
+                    )}
+                  </Draggable>
+                ) : (
+                  <Text as="span" fontSize="sm" opacity={0.7}>
+                    {dragPlaceholderLabel}
+                  </Text>
+                )}
+                <Box as="span" display="none">
+                  {provided.placeholder}
+                </Box>
+              </Box>
+            )}
+          </Droppable>
+        );
+      }
+    });
+    return nodes;
+  };
+
+  const renderMaPrompt = () => {
+    if (!qMA) return null;
+    const segments = String(qMA).split("___");
+    if (segments.length === 1) {
+      return qMA;
+    }
+    let slotNumber = 0;
+    const nodes = [];
+    segments.forEach((segment, idx) => {
+      nodes.push(
+        <React.Fragment key={`ma-segment-${idx}`}>{segment}</React.Fragment>
+      );
+      if (idx < segments.length - 1) {
+        const currentSlot = slotNumber;
+        slotNumber += 1;
+        if (currentSlot >= maSlots.length) {
+          nodes.push(
+            <React.Fragment key={`ma-gap-${idx}`}>___</React.Fragment>
+          );
+          return;
+        }
+        const choiceIdx = maSlots[currentSlot];
+        nodes.push(
+          <Droppable
+            droppableId={`ma-slot-${currentSlot}`}
+            direction="horizontal"
+            key={`ma-blank-${currentSlot}`}
+          >
+            {(provided, snapshot) => (
+              <Box
+                as="span"
+                ref={provided.innerRef}
+                {...provided.droppableProps}
+                display="inline-flex"
+                alignItems="center"
+                justifyContent="center"
+                minW="72px"
+                minH="32px"
+                px={2}
+                py={1}
+                mx={1}
+                borderRadius="md"
+                borderBottomWidth="2px"
+                borderBottomColor={
+                  snapshot.isDraggingOver
+                    ? "purple.300"
+                    : "rgba(255,255,255,0.6)"
+                }
+                bg={
+                  snapshot.isDraggingOver
+                    ? "rgba(128,90,213,0.18)"
+                    : "rgba(255,255,255,0.08)"
+                }
+                transition="all 0.2s ease"
+              >
+                {choiceIdx != null ? (
+                  <Draggable draggableId={`ma-${choiceIdx}`} index={0}>
+                    {(dragProvided, snapshot) => (
+                      <Box
+                        ref={dragProvided.innerRef}
+                        {...dragProvided.draggableProps}
+                        {...dragProvided.dragHandleProps}
+                        style={{
+                          cursor: "grab",
+                          ...(dragProvided.draggableProps.style || {}),
+                        }}
+                        px={3}
+                        py={2}
+                        rounded="md"
+                        borderWidth="1px"
+                        borderColor={
+                          snapshot.isDragging
+                            ? "purple.300"
+                            : "rgba(255,255,255,0.22)"
+                        }
+                        bg={
+                          snapshot.isDragging
+                            ? "rgba(128,90,213,0.24)"
+                            : "purple.600"
+                        }
+                        color="white"
+                        fontSize="sm"
+                      >
+                        {choicesMA[choiceIdx]}
+                      </Box>
+                    )}
+                  </Draggable>
+                ) : (
+                  <Text as="span" fontSize="sm" opacity={0.7}>
+                    {dragPlaceholderLabel}
+                  </Text>
+                )}
+                <Box as="span" display="none">
+                  {provided.placeholder}
+                </Box>
+              </Box>
+            )}
+          </Droppable>
+        );
+      }
+    });
+    return nodes;
+  };
+
+  const nextLabel =
+    t("practice_next_question") ||
+    (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
+  const skipLabel =
+    t("practice_skip_question") ||
+    (userLanguage === "es" ? "Omitir pregunta" : "Skip question");
+
+  const maReady =
+    maLayout === "drag"
+      ? maSlots.length > 0 && maSlots.every((slot) => slot != null)
+      : picksMA.length > 0;
 
   return (
     <Box p={4}>
@@ -1817,105 +2674,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           <Badge variant="outline">{supportName}</Badge>
           <Badge variant="subtle">{levelLabel}</Badge>
         </HStack>
-
-        {/* Generators */}
-        <SimpleGrid
-          columns={{ base: 2, md: 4 }}
-          spacing={{ base: 2, md: 3 }}
-          w="100%"
-        >
-          <Button
-            onClick={() => {
-              setLockedType("fill");
-              generateFill();
-            }}
-            isDisabled={loadingQFill}
-            rightIcon={loadingQFill ? <Spinner size="xs" /> : null}
-            w="100%"
-            size="sm"
-            px={2}
-            py={2}
-            minH={{ base: "44px", md: "52px" }}
-            rounded="lg"
-          >
-            <Text
-              noOfLines={2}
-              fontWeight="700"
-              fontSize={{ base: "xs", md: "sm" }}
-            >
-              {t("vocab_btn_fill")}
-            </Text>
-          </Button>
-
-          <Button
-            onClick={() => {
-              setLockedType("mc");
-              generateMC();
-            }}
-            isDisabled={loadingQMC}
-            rightIcon={loadingQMC ? <Spinner size="xs" /> : null}
-            w="100%"
-            size="sm"
-            px={2}
-            py={2}
-            minH={{ base: "44px", md: "52px" }}
-            rounded="lg"
-          >
-            <Text
-              noOfLines={2}
-              fontWeight="700"
-              fontSize={{ base: "xs", md: "sm" }}
-            >
-              {t("vocab_btn_mc")}
-            </Text>
-          </Button>
-
-          <Button
-            onClick={() => {
-              setLockedType("ma");
-              generateMA();
-            }}
-            isDisabled={loadingQMA}
-            rightIcon={loadingQMA ? <Spinner size="xs" /> : null}
-            w="100%"
-            size="sm"
-            px={2}
-            py={2}
-            minH={{ base: "44px", md: "52px" }}
-            rounded="lg"
-          >
-            <Text
-              noOfLines={2}
-              fontWeight="700"
-              fontSize={{ base: "xs", md: "sm" }}
-            >
-              {t("vocab_btn_ma")}
-            </Text>
-          </Button>
-
-          <Button
-            onClick={() => {
-              setLockedType("match");
-              generateMatch();
-            }}
-            isDisabled={loadingMG}
-            rightIcon={loadingMG ? <Spinner size="xs" /> : null}
-            w="100%"
-            size="sm"
-            px={2}
-            py={2}
-            minH={{ base: "44px", md: "52px" }}
-            rounded="lg"
-          >
-            <Text
-              noOfLines={2}
-              fontWeight="700"
-              fontSize={{ base: "xs", md: "sm" }}
-            >
-              {t("vocab_btn_match")}
-            </Text>
-          </Button>
-        </SimpleGrid>
 
         {/* ---- FILL UI ---- */}
         {mode === "fill" && (qFill || loadingQFill) ? (
@@ -1950,6 +2708,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQFill || loadingGFill}
+              >
+                {skipLabel}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
                   {nextLabel}
@@ -1966,37 +2731,118 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (qMC || loadingQMC) ? (
           <>
-            <HStack align="start">
-              <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-              <Text fontWeight="semibold" flex="1">
-                {qMC || (loadingQMC ? "…" : "")}
-              </Text>
-            </HStack>
-            {showTRMC && trMC ? (
-              <Text fontSize="sm" opacity={0.8}>
-                {trMC}
-              </Text>
-            ) : null}
-            {hMC ? (
-              <Text fontSize="sm" opacity={0.85}>
-                💡 {hMC}
-              </Text>
-            ) : null}
-
-            <RadioGroup value={pickMC} onChange={setPickMC}>
-              <Stack spacing={2}>
-                {(choicesMC.length
-                  ? choicesMC
-                  : loadingQMC
-                  ? ["…", "…", "…", "…"]
-                  : []
-                ).map((c, i) => (
-                  <Radio value={c} key={i} isDisabled={!choicesMC.length}>
-                    {c}
-                  </Radio>
-                ))}
-              </Stack>
-            </RadioGroup>
+            {mcLayout === "drag" ? (
+              <DragDropContext onDragEnd={handleMcDragEnd}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack align="start">
+                    <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+                    <Text fontWeight="semibold" flex="1">
+                      {renderMcPrompt() || (loadingQMC ? "…" : "")}
+                    </Text>
+                  </HStack>
+                  {showTRMC && trMC ? (
+                    <Text fontSize="sm" opacity={0.8}>
+                      {trMC}
+                    </Text>
+                  ) : null}
+                  {hMC ? (
+                    <Text fontSize="sm" opacity={0.85}>
+                      💡 {hMC}
+                    </Text>
+                  ) : null}
+                  <Text fontSize="sm" opacity={0.75}>
+                    {t("practice_drag_drop_instruction") ||
+                      (userLanguage === "es"
+                        ? "Arrastra la respuesta correcta al espacio en la frase."
+                        : "Drag the correct answer into the blank in the sentence.")}
+                  </Text>
+                  <Droppable droppableId="mc-bank" direction="horizontal">
+                    {(provided) => (
+                      <Flex
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        align="stretch"
+                        wrap="wrap"
+                        gap={3}
+                        w="full"
+                      >
+                        {mcBankOrder.map((idx, position) => (
+                          <Draggable
+                            draggableId={`mc-${idx}`}
+                            index={position}
+                            key={`mc-bank-${idx}`}
+                          >
+                            {(dragProvided, snapshot) => (
+                              <Box
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                {...dragProvided.dragHandleProps}
+                                style={{
+                                  cursor: "grab",
+                                  ...(dragProvided.draggableProps.style || {}),
+                                }}
+                                px={3}
+                                py={2}
+                                rounded="md"
+                                borderWidth="1px"
+                                borderColor={
+                                  snapshot.isDragging
+                                    ? "purple.300"
+                                    : "rgba(255,255,255,0.22)"
+                                }
+                                bg={
+                                  snapshot.isDragging
+                                    ? "rgba(128,90,213,0.16)"
+                                    : "transparent"
+                                }
+                                fontSize="sm"
+                                textAlign="left"
+                              >
+                                {choicesMC[idx]}
+                              </Box>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </Flex>
+                    )}
+                  </Droppable>
+                </VStack>
+              </DragDropContext>
+            ) : (
+              <>
+                <HStack align="start">
+                  <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+                  <Text fontWeight="semibold" flex="1">
+                    {qMC || (loadingQMC ? "…" : "")}
+                  </Text>
+                </HStack>
+                {showTRMC && trMC ? (
+                  <Text fontSize="sm" opacity={0.8}>
+                    {trMC}
+                  </Text>
+                ) : null}
+                {hMC ? (
+                  <Text fontSize="sm" opacity={0.85}>
+                    💡 {hMC}
+                  </Text>
+                ) : null}
+                <RadioGroup value={pickMC} onChange={setPickMC}>
+                  <Stack spacing={2} align="stretch">
+                    {(choicesMC.length
+                      ? choicesMC
+                      : loadingQMC
+                      ? ["…", "…", "…", "…"]
+                      : []
+                    ).map((c, i) => (
+                      <Radio value={c} key={i} isDisabled={!choicesMC.length}>
+                        {c}
+                      </Radio>
+                    ))}
+                  </Stack>
+                </RadioGroup>
+              </>
+            )}
 
             <HStack>
               <Button
@@ -2004,6 +2850,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 isDisabled={loadingGMC || !pickMC || !choicesMC.length}
               >
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQMC || loadingGMC}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
@@ -2021,47 +2874,138 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MA UI ---- */}
         {mode === "ma" && (qMA || loadingQMA) ? (
           <>
-            <HStack align="start">
-              <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-              <Text fontWeight="semibold" flex="1">
-                {qMA || (loadingQMA ? "…" : "")}
-              </Text>
-            </HStack>
-            {showTRMA && trMA ? (
-              <Text fontSize="sm" opacity={0.8}>
-                {trMA}
-              </Text>
-            ) : null}
-            {hMA ? (
-              <Text fontSize="sm" opacity={0.85}>
-                💡 {hMA}
-              </Text>
-            ) : null}
-            <Text fontSize="xs" opacity={0.7}>
-              {t("vocab_select_all_apply")}
-            </Text>
-
-            <CheckboxGroup value={picksMA} onChange={setPicksMA}>
-              <Stack spacing={2}>
-                {(choicesMA.length
-                  ? choicesMA
-                  : loadingQMA
-                  ? ["…", "…", "…", "…", "…"]
-                  : []
-                ).map((c, i) => (
-                  <Checkbox value={c} key={i} isDisabled={!choicesMA.length}>
-                    {c}
-                  </Checkbox>
-                ))}
-              </Stack>
-            </CheckboxGroup>
+            {maLayout === "drag" ? (
+              <DragDropContext onDragEnd={handleMaDragEnd}>
+                <VStack align="stretch" spacing={3}>
+                  <HStack align="start">
+                    <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+                    <Text fontWeight="semibold" flex="1">
+                      {renderMaPrompt() || (loadingQMA ? "…" : "")}
+                    </Text>
+                  </HStack>
+                  {showTRMA && trMA ? (
+                    <Text fontSize="sm" opacity={0.8}>
+                      {trMA}
+                    </Text>
+                  ) : null}
+                  {hMA ? (
+                    <Text fontSize="sm" opacity={0.85}>
+                      💡 {hMA}
+                    </Text>
+                  ) : null}
+                  <Text fontSize="xs" opacity={0.7}>
+                    {t("vocab_select_all_apply")}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.75}>
+                    {t("practice_drag_drop_multi_instruction") ||
+                      (userLanguage === "es"
+                        ? "Arrastra cada respuesta correcta a su espacio en la frase."
+                        : "Drag each correct answer into its place in the sentence.")}
+                  </Text>
+                  <Droppable droppableId="ma-bank" direction="horizontal">
+                    {(provided) => (
+                      <Flex
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        align="stretch"
+                        wrap="wrap"
+                        gap={3}
+                        w="full"
+                      >
+                        {maBankOrder.map((idx, position) => (
+                          <Draggable
+                            draggableId={`ma-${idx}`}
+                            index={position}
+                            key={`ma-bank-${idx}`}
+                          >
+                            {(dragProvided, snapshot) => (
+                              <Box
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                {...dragProvided.dragHandleProps}
+                                style={{
+                                  cursor: "grab",
+                                  ...(dragProvided.draggableProps.style || {}),
+                                }}
+                                px={3}
+                                py={2}
+                                rounded="md"
+                                borderWidth="1px"
+                                borderColor={
+                                  snapshot.isDragging
+                                    ? "purple.300"
+                                    : "rgba(255,255,255,0.22)"
+                                }
+                                bg={
+                                  snapshot.isDragging
+                                    ? "rgba(128,90,213,0.16)"
+                                    : "transparent"
+                                }
+                                fontSize="sm"
+                                textAlign="left"
+                              >
+                                {choicesMA[idx]}
+                              </Box>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </Flex>
+                    )}
+                  </Droppable>
+                </VStack>
+              </DragDropContext>
+            ) : (
+              <>
+                <HStack align="start">
+                  <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+                  <Text fontWeight="semibold" flex="1">
+                    {qMA || (loadingQMA ? "…" : "")}
+                  </Text>
+                </HStack>
+                {showTRMA && trMA ? (
+                  <Text fontSize="sm" opacity={0.8}>
+                    {trMA}
+                  </Text>
+                ) : null}
+                {hMA ? (
+                  <Text fontSize="sm" opacity={0.85}>
+                    💡 {hMA}
+                  </Text>
+                ) : null}
+                <Text fontSize="xs" opacity={0.7}>
+                  {t("vocab_select_all_apply")}
+                </Text>
+                <CheckboxGroup value={picksMA} onChange={setPicksMA}>
+                  <Stack spacing={2} align="stretch">
+                    {(choicesMA.length
+                      ? choicesMA
+                      : loadingQMA
+                      ? ["…", "…", "…", "…", "…"]
+                      : []
+                    ).map((c, i) => (
+                      <Checkbox value={c} key={i} isDisabled={!choicesMA.length}>
+                        {c}
+                      </Checkbox>
+                    ))}
+                  </Stack>
+                </CheckboxGroup>
+              </>
+            )}
 
             <HStack>
               <Button
                 onClick={submitMA}
-                isDisabled={loadingGMA || !picksMA.length || !choicesMA.length}
+                isDisabled={loadingGMA || !choicesMA.length || !maReady}
               >
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQMA || loadingGMA}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
@@ -2073,6 +3017,187 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
             </HStack>
+          </>
+        ) : null}
+
+        {/* ---- SPEAK UI ---- */}
+        {mode === "speak" && (sTarget || loadingQSpeak) ? (
+          <>
+            <HStack align="flex-start" spacing={2} mb={2}>
+              <CopyAllBtn
+                q={`${sPrompt ? `${sPrompt}\n` : ""}${
+                  sStimulus || sTarget || ""
+                }`}
+                h={sHint}
+                tr={sTranslation}
+              />
+              <VStack align="flex-start" spacing={1} flex="1">
+                <Text fontSize="sm" opacity={0.85}>
+                  {t("vocab_speak_instruction_label") ||
+                    (userLanguage === "es"
+                      ? "Sigue la indicación y di la frase en voz alta."
+                      : "Follow the prompt and say it aloud.")}
+                </Text>
+                <Text fontWeight="600" fontSize="md">
+                  {loadingQSpeak ? "…" : sPrompt || ""}
+                </Text>
+              </VStack>
+            </HStack>
+
+            <Box
+              border="1px solid rgba(255,255,255,0.18)"
+              rounded="xl"
+              p={6}
+              textAlign="center"
+              bg="rgba(255,255,255,0.04)"
+            >
+              <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
+                {speakVariantLabel}
+              </Badge>
+              <Text fontSize="3xl" fontWeight="700">
+                {loadingQSpeak ? "…" : sStimulus || sTarget || "…"}
+              </Text>
+            </Box>
+
+            {sHint ? (
+              <Text fontSize="sm" mt={3}>
+                <Text as="span" fontWeight="600">
+                  {t("vocab_speak_hint_label") ||
+                    (userLanguage === "es" ? "Pista" : "Hint")}
+                  :
+                </Text>{" "}
+                {sHint}
+              </Text>
+            ) : null}
+
+            {showTRSpeak ? (
+              <Text fontSize="sm" mt={1} opacity={0.85}>
+                <Text as="span" fontWeight="600">
+                  {t("vocab_speak_translation_label") ||
+                    (userLanguage === "es" ? "Traducción" : "Translation")}
+                  :
+                </Text>{" "}
+                {sTranslation}
+              </Text>
+            ) : null}
+
+            {sRecognized && lastOk !== true ? (
+              <Text fontSize="sm" mt={3} color="teal.200">
+                <Text as="span" fontWeight="600">
+                  {t("vocab_speak_last_heard") ||
+                    (userLanguage === "es" ? "Último intento" : "Last attempt")}
+                  :
+                </Text>{" "}
+                {sRecognized}
+              </Text>
+            ) : null}
+
+            <HStack spacing={3} mt={4} align="center">
+              <Button
+                colorScheme={isSpeakRecording ? "red" : "teal"}
+                onClick={async () => {
+                  if (isSpeakRecording) {
+                    stopSpeakRecording();
+                    return;
+                  }
+                  try {
+                    await startSpeakRecording();
+                  } catch (err) {
+                    const code = err?.code;
+                    if (code === "no-speech-recognition") {
+                      toast({
+                        title:
+                          t("vocab_speak_unavailable") ||
+                          (userLanguage === "es"
+                            ? "Reconocimiento de voz no disponible"
+                            : "Speech recognition unavailable"),
+                        description:
+                          userLanguage === "es"
+                            ? "Usa un navegador Chromium con acceso al micrófono."
+                            : "Use a Chromium-based browser with microphone access.",
+                        status: "warning",
+                        duration: 3200,
+                      });
+                    } else if (code === "mic-denied") {
+                      toast({
+                        title:
+                          userLanguage === "es"
+                            ? "Permiso de micrófono denegado"
+                            : "Microphone denied",
+                        description:
+                          userLanguage === "es"
+                            ? "Activa el micrófono en la configuración del navegador."
+                            : "Enable microphone access in your browser settings.",
+                        status: "error",
+                        duration: 3200,
+                      });
+                    } else {
+                      toast({
+                        title:
+                          userLanguage === "es"
+                            ? "No se pudo iniciar la grabación"
+                            : "Recording failed",
+                        description:
+                          userLanguage === "es"
+                            ? "Inténtalo nuevamente."
+                            : "Please try again.",
+                        status: "error",
+                        duration: 2500,
+                      });
+                    }
+                }
+              }}
+              isDisabled={!supportsSpeak || loadingQSpeak || !sTarget}
+              >
+                {isSpeakRecording
+                  ? t("vocab_speak_stop") ||
+                    (userLanguage === "es" ? "Detener" : "Stop")
+                  : t("vocab_speak_record") ||
+                    (userLanguage === "es"
+                      ? "Grabar pronunciación"
+                      : "Record pronunciation")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQSpeak || isSpeakRecording}
+              >
+                {skipLabel}
+              </Button>
+              {lastOk === true && nextAction ? (
+                <Button variant="outline" onClick={handleNext}>
+                  {nextLabel}
+                </Button>
+              ) : null}
+            </HStack>
+
+            {lastOk === true ? (
+              <SpeakSuccessCard
+                title={
+                  t("vocab_speak_success_title") ||
+                  (userLanguage === "es"
+                    ? "¡Gran pronunciación!"
+                    : "Great pronunciation!")
+                }
+                scoreLabel={
+                  sEval
+                    ? t("vocab_speak_success_desc", { score: sEval.score }) ||
+                      (userLanguage === "es"
+                        ? `Puntaje ${sEval.score}%`
+                        : `Score ${sEval.score}%`)
+                    : ""
+                }
+                xp={recentXp}
+                recognizedText={sRecognized}
+                translation={showTRSpeak ? sTranslation : ""}
+                t={t}
+                userLanguage={userLanguage}
+              />
+            ) : (
+              <HStack spacing={3} mt={3}>
+                <ResultBadge ok={lastOk} xp={recentXp} />
+              </HStack>
+            )}
           </>
         ) : null}
 
@@ -2122,6 +3247,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     ref={dragProvided.innerRef}
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
+                                    style={{
+                                      cursor: "grab",
+                                      ...(dragProvided.draggableProps.style || {}),
+                                    }}
                                     px={3}
                                     py={1.5}
                                     rounded="md"
@@ -2175,6 +3304,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   px={3}
                                   py={1.5}
                                   rounded="md"
@@ -2210,6 +3343,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingMG || loadingMJ}
+              >
+                {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
                 <Button variant="outline" onClick={handleNext}>
