@@ -2279,6 +2279,10 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   colorScheme="purple"
                                   size="sm"
                                 >
@@ -2317,6 +2321,10 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   variant="outline"
                                   justifyContent="flex-start"
                                   size="sm"
@@ -2442,6 +2450,10 @@ Return JSON ONLY:
                                       ref={dragProvided.innerRef}
                                       {...dragProvided.draggableProps}
                                       {...dragProvided.dragHandleProps}
+                                      style={{
+                                        cursor: "grab",
+                                        ...(dragProvided.draggableProps.style || {}),
+                                      }}
                                       colorScheme="purple"
                                       size="sm"
                                     >
@@ -2482,6 +2494,10 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   variant="outline"
                                   justifyContent="flex-start"
                                   size="sm"
@@ -2756,6 +2772,10 @@ Return JSON ONLY:
                                     ref={dragProvided.innerRef}
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
+                                    style={{
+                                      cursor: "grab",
+                                      ...(dragProvided.draggableProps.style || {}),
+                                    }}
                                     px={3}
                                     py={1.5}
                                     rounded="md"
@@ -2809,6 +2829,10 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   px={3}
                                   py={1.5}
                                   rounded="md"

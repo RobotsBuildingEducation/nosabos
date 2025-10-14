@@ -2525,6 +2525,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   colorScheme="purple"
                                   size="sm"
                                 >
@@ -2563,6 +2567,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   variant="outline"
                                   justifyContent="flex-start"
                                   size="sm"
@@ -2688,6 +2696,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                       ref={dragProvided.innerRef}
                                       {...dragProvided.draggableProps}
                                       {...dragProvided.dragHandleProps}
+                                      style={{
+                                        cursor: "grab",
+                                        ...(dragProvided.draggableProps.style || {}),
+                                      }}
                                       colorScheme="purple"
                                       size="sm"
                                     >
@@ -2728,6 +2740,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   variant="outline"
                                   justifyContent="flex-start"
                                   size="sm"
@@ -3001,6 +3017,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     ref={dragProvided.innerRef}
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
+                                    style={{
+                                      cursor: "grab",
+                                      ...(dragProvided.draggableProps.style || {}),
+                                    }}
                                     px={3}
                                     py={1.5}
                                     rounded="md"
@@ -3054,6 +3074,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  style={{
+                                    cursor: "grab",
+                                    ...(dragProvided.draggableProps.style || {}),
+                                  }}
                                   px={3}
                                   py={1.5}
                                   rounded="md"
