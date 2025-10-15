@@ -523,8 +523,11 @@ export default function RealTimeTest({
       translations[uiLang][`language_${secondaryPref}`]
     ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
 
-  const languageNameFor = (code) =>
-    translations[uiLang][`language_${code === "nah" ? "nah" : code}`];
+  const languageNameFor = (code) => {
+    const safe = typeof code === "string" ? code : "";
+    const key = ["nah", "yua", "tzo"].includes(safe) ? safe : safe;
+    return translations[uiLang][`language_${key}`] || safe || code;
+  };
 
   const levelLabel = translations[uiLang][`onboarding_level_${level}`] || level;
   const levelColor =
@@ -743,7 +746,7 @@ export default function RealTimeTest({
       voicePersonaRef.current = p.voicePersona;
       setVoicePersona(p.voicePersona);
     }
-    if (["nah", "es", "en"].includes(p.targetLang)) {
+    if (["nah", "yua", "tzo", "es", "en"].includes(p.targetLang)) {
       targetLangRef.current = p.targetLang;
       setTargetLang(p.targetLang);
     }
@@ -1396,13 +1399,21 @@ Return ONLY JSON:
       prefs?.practicePronunciation ?? practicePronunciationRef.current
     );
     const activeGoal = goalTitleForTarget(goalRef.current);
+    const supportPref = prefs?.supportLang ?? supportLangRef.current ?? "en";
+    const supportName = supportPref === "es" ? "Spanish" : "English";
 
-    let strict =
-      tLang === "nah"
-        ? "Respond ONLY in Nahuatl (Náhuatl). Do not use Spanish or English."
-        : tLang === "es"
-        ? "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl."
-        : "Respond ONLY in English. Do not use Spanish or Nahuatl.";
+    let strict;
+    if (tLang === "nah") {
+      strict = `Respond ONLY in Huasteca Nahuatl (Eastern Huasteca). Give the Huasteca Nahuatl phrase first, then offer at most a brief ${supportName} gloss when the learner explicitly asks for meaning. Avoid mixing in other dialects or Spanish.`;
+    } else if (tLang === "yua") {
+      strict = `Respond ONLY in Yucatec Maya. Keep replies in Yucatec Maya and provide a short ${supportName} explanation only if the learner asks for a translation.`;
+    } else if (tLang === "tzo") {
+      strict = `Respond ONLY in Tzotzil Maya. Stay in Tzotzil Maya, giving a concise ${supportName} gloss only when requested.`;
+    } else if (tLang === "es") {
+      strict = "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl.";
+    } else {
+      strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
+    }
 
     const levelHint =
       lvl === "beginner"

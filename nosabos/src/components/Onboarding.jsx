@@ -234,6 +234,8 @@ export default function Onboarding({
                       title={ui.onboarding_practice_label_title}
                     >
                       <option value="nah">{ui.onboarding_practice_nah}</option>
+                      <option value="yua">{ui.onboarding_practice_yua}</option>
+                      <option value="tzo">{ui.onboarding_practice_tzo}</option>
                       <option value="es">{ui.onboarding_practice_es}</option>
                       <option value="en">{ui.onboarding_practice_en}</option>
                     </Select>

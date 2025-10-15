@@ -1,5 +1,5 @@
 // src/App.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box,
   Drawer,
@@ -58,7 +58,7 @@ import { RiSpeakLine } from "react-icons/ri";
 import { LuBadgeCheck, LuBookOpen, LuShuffle } from "react-icons/lu";
 
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
-import { database } from "./firebaseResources/firebaseResources";
+import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
 import useUserStore from "./hooks/useUserStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
@@ -69,6 +69,7 @@ import RobotBuddyPro from "./components/RobotBuddyPro";
 import RealTimeTest from "./components/RealTimeTest";
 
 import { translations } from "./utils/translation";
+import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
@@ -81,6 +82,38 @@ import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
    Small helpers
 --------------------------- */
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
+
+const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
+
+function extractJsonBlock(text = "") {
+  if (!text) return "";
+  const blockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (blockMatch) {
+    return blockMatch[1].trim();
+  }
+  const braceMatch = text.match(/\{[\s\S]*\}/);
+  return braceMatch ? braceMatch[0].trim() : text.trim();
+}
+
+function parseCefrResponse(raw = "") {
+  if (!raw) return null;
+  const snippet = extractJsonBlock(raw);
+  try {
+    const payload = JSON.parse(snippet);
+    if (!payload || typeof payload !== "object") return null;
+    const level = String(payload.level || payload.cefr || "")
+      .trim()
+      .toUpperCase();
+    if (!CEFR_LEVELS.has(level)) return null;
+    const explanation = String(
+      payload.explanation || payload.reason || payload.summary || ""
+    ).trim();
+    if (!explanation) return null;
+    return { level, explanation };
+  } catch {
+    return null;
+  }
+}
 
 async function ensureOnboardingField(db, id, data) {
   const hasNested = data?.onboarding && typeof data.onboarding === "object";
@@ -128,6 +161,9 @@ function TopBar({
   activeNpub,
   activeNsec,
   auth,
+  cefrResult,
+  cefrLoading,
+  cefrError,
   onToggleAppLanguage,
   onPatchSettings,
   onSwitchedAccount,
@@ -137,6 +173,7 @@ function TopBar({
   accountOpen,
   openAccount,
   closeAccount,
+  onRunCefrAnalysis,
   installOpen,
   openInstall,
   closeInstall,
@@ -193,9 +230,12 @@ function TopBar({
   useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
   useEffect(() => setCurrentSecret(activeNsec || ""), [activeNsec]);
 
-  const languageName = (code) =>
-    translations[appLanguage][`language_${code === "nah" ? "nah" : code}`] ||
-    code;
+  const languageName = (code) => {
+    const safe = typeof code === "string" ? code : "";
+    const key = ["nah", "yua", "tzo"].includes(safe) ? safe : safe;
+    const label = translations[appLanguage][`language_${key}`];
+    return label || safe || code;
+  };
 
   const toggleLabel =
     translations[appLanguage].onboarding_translations_toggle?.replace(
@@ -354,6 +394,12 @@ function TopBar({
       });
     }
   };
+
+  const cefrTimestamp =
+    cefrResult?.updatedAt &&
+    new Date(cefrResult.updatedAt).toLocaleString(
+      appLanguage === "es" ? "es" : "en-US"
+    );
 
   return (
     <>
@@ -545,6 +591,12 @@ function TopBar({
                 >
                   <option value="nah">
                     {translations[appLanguage].onboarding_practice_nah}
+                  </option>
+                  <option value="yua">
+                    {translations[appLanguage].onboarding_practice_yua}
+                  </option>
+                  <option value="tzo">
+                    {translations[appLanguage].onboarding_practice_tzo}
                   </option>
                   <option value="es">
                     {translations[appLanguage].onboarding_practice_es}
@@ -801,6 +853,69 @@ function TopBar({
                     "We’ll derive your public key (npub) from the secret and switch safely."}
                 </Text>
               </Box>
+
+              <Box bg="gray.800" p={3} rounded="md">
+                <HStack justify="space-between" align="flex-start" mb={2}>
+                  <VStack align="flex-start" spacing={0} flex="1">
+                    <Text fontSize="sm" fontWeight="semibold">
+                      {t.app_cefr_heading || "CEFR insight"}
+                    </Text>
+                    <Text fontSize="xs" opacity={0.75}>
+                      {t.app_cefr_subtitle ||
+                        "Ask the AI to review your progress and assign a CEFR level."}
+                    </Text>
+                  </VStack>
+                  {cefrResult?.level ? (
+                    <Badge colorScheme="purple" fontSize="0.75rem">
+                      {t.app_cefr_level_label
+                        ? t.app_cefr_level_label.replace(
+                            "{level}",
+                            cefrResult.level
+                          )
+                        : `Level ${cefrResult.level}`}
+                    </Badge>
+                  ) : null}
+                </HStack>
+
+                <Text fontSize="sm" whiteSpace="pre-wrap">
+                  {cefrResult?.explanation
+                    ? cefrResult.explanation
+                    : t.app_cefr_empty ||
+                      "No analysis yet. Run the evaluator to see your level."}
+                </Text>
+
+                {cefrTimestamp ? (
+                  <Text fontSize="xs" opacity={0.65} mt={2}>
+                    {t.app_cefr_updated
+                      ? t.app_cefr_updated.replace("{timestamp}", cefrTimestamp)
+                      : `Last analyzed ${cefrTimestamp}`}
+                  </Text>
+                ) : null}
+
+                {cefrError ? (
+                  <Text fontSize="xs" color="red.300" mt={2}>
+                    {cefrError}
+                  </Text>
+                ) : null}
+
+                <Button
+                  mt={3}
+                  size="sm"
+                  variant="outline"
+                  colorScheme="purple"
+                  onClick={() =>
+                    onRunCefrAnalysis?.({
+                      dailyGoalXp,
+                      dailyXp,
+                    })
+                  }
+                  isLoading={cefrLoading}
+                  loadingText={t.app_cefr_loading || "Analyzing…"}
+                  isDisabled={!activeNpub || cefrLoading}
+                >
+                  {t.app_cefr_run || "Analyze level"}
+                </Button>
+              </Box>
             </VStack>
           </DrawerBody>
         </DrawerContent>
@@ -901,6 +1016,10 @@ export default function App() {
   );
   const t = translations[appLanguage] || translations.en;
 
+  const [cefrResult, setCefrResult] = useState(null);
+  const [cefrLoading, setCefrLoading] = useState(false);
+  const [cefrError, setCefrError] = useState("");
+
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
     typeof window !== "undefined"
@@ -918,6 +1037,56 @@ export default function App() {
     "vocabulary",
     "random",
   ];
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!activeNpub) {
+      setCefrResult(null);
+      setCefrError("");
+      setCefrLoading(false);
+      return;
+    }
+    const raw = localStorage.getItem(`cefrResult:${activeNpub}`);
+    if (!raw) {
+      setCefrResult(null);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      const level = String(parsed?.level || "").trim().toUpperCase();
+      const explanation = String(parsed?.explanation || "").trim();
+      if (CEFR_LEVELS.has(level) && explanation) {
+        setCefrResult({
+          level,
+          explanation,
+          updatedAt: Number(parsed?.updatedAt) || Date.now(),
+        });
+      } else {
+        setCefrResult(null);
+      }
+    } catch {
+      setCefrResult(null);
+    }
+  }, [activeNpub]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!activeNpub) return;
+    if (cefrResult) {
+      try {
+        localStorage.setItem(
+          `cefrResult:${activeNpub}`,
+          JSON.stringify({
+            level: cefrResult.level,
+            explanation: cefrResult.explanation,
+            updatedAt: cefrResult.updatedAt,
+          })
+        );
+      } catch {}
+    } else {
+      localStorage.removeItem(`cefrResult:${activeNpub}`);
+    }
+  }, [activeNpub, cefrResult]);
   const keyToIndex = (k) => Math.max(0, TAB_KEYS.indexOf(k));
   const indexToKey = (i) => TAB_KEYS[i] ?? "realtime";
   const tabIndex = keyToIndex(currentTab);
@@ -1140,7 +1309,7 @@ export default function App() {
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
         .slice(0, 240)
         .trim(),
-      targetLang: ["nah", "es", "en"].includes(
+      targetLang: ["nah", "yua", "tzo", "es", "en"].includes(
         partial.targetLang ?? prev.targetLang
       )
         ? partial.targetLang ?? prev.targetLang
@@ -1219,7 +1388,7 @@ export default function App() {
           payload.voicePersona,
           translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "en"].includes(payload.targetLang)
+        targetLang: ["nah", "yua", "tzo", "es", "en"].includes(payload.targetLang)
           ? payload.targetLang
           : "es",
         showTranslations:
@@ -1268,6 +1437,127 @@ export default function App() {
       console.error("Failed to complete onboarding:", e);
     }
   };
+
+  const runCefrAnalysis = useCallback(async ({
+    dailyGoalXp: goal = 0,
+    dailyXp: earned = 0,
+  } = {}) => {
+    if (!activeNpub) {
+      const title =
+        t.app_cefr_need_account_title ||
+        (appLanguage === "es" ? "Cuenta requerida" : "Account required");
+      const description =
+        t.app_cefr_need_account ||
+        (appLanguage === "es"
+          ? "Conéctate para analizar tu nivel con la IA."
+          : "Connect your account to analyze your level.");
+      toast({ title, description, status: "info", duration: 2200 });
+      return;
+    }
+
+    setCefrLoading(true);
+    setCefrError("");
+
+    try {
+      const progress = user?.progress || {};
+      const xp = Number(user?.xp || 0);
+      const snapshot = {
+        xp,
+        xpLevel: Math.floor(xp / 100) + 1,
+        streak: Number(user?.streak || 0),
+        selectedDifficulty: progress.level || "beginner",
+        targetLang: progress.targetLang || "es",
+        supportLang: progress.supportLang || "en",
+        showTranslations: progress.showTranslations !== false,
+        dailyGoalXp: goal,
+        dailyXp: earned,
+        practicePronunciation: !!(
+          progress.practicePronunciation ?? user?.practicePronunciation
+        ),
+        helpRequest: progress.helpRequest || user?.helpRequest || "",
+        challenge: progress.challenge || null,
+        updatedAt: user?.updatedAt || null,
+      };
+
+      const localeName = appLanguage === "es" ? "Spanish" : "English";
+      const prompt = [
+        "You are an expert language placement coach.",
+        "Assign a CEFR level (A1, A2, B1, B2, C1, or C2) based on the learner metrics below.",
+        "Use XP as a rough progress indicator (0-200≈A1, 200-500≈A2, 500-1000≈B1, 1000-1600≈B2, 1600-2200≈C1, >2200≈C2) and adjust using streaks, goals, and translation reliance.",
+        "Respond ONLY with compact JSON: {\"level\":\"B1\",\"explanation\":\"...\"}.",
+        `Explanation must be <= 60 words, written in ${localeName}, and cite the strongest factors.`,
+        "Learner data:",
+        JSON.stringify(snapshot, null, 2),
+      ].join("\n");
+
+      let text = "";
+      if (simplemodel) {
+        try {
+          const resp = await simplemodel.generateContent({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+          });
+          text =
+            (typeof resp?.response?.text === "function"
+              ? resp.response.text()
+              : resp?.response?.text) || "";
+        } catch (err) {
+          console.warn("CEFR simplemodel failed", err);
+        }
+      }
+
+      if (!text) {
+        text = await callResponses({
+          model: DEFAULT_RESPONSES_MODEL,
+          input: prompt,
+        });
+      }
+
+      const parsed = parseCefrResponse(text);
+      if (!parsed) throw new Error("parse");
+
+      const explanation = parsed.explanation.length > 420
+        ? `${parsed.explanation.slice(0, 417).trimEnd()}…`
+        : parsed.explanation;
+
+      const result = {
+        level: parsed.level,
+        explanation,
+        updatedAt: Date.now(),
+      };
+
+      setCefrResult(result);
+
+      const successTitle =
+        t.app_cefr_success_title ||
+        (appLanguage === "es" ? "Análisis completado" : "Analysis complete");
+      const successDescTemplate =
+        t.app_cefr_success_desc ||
+        (appLanguage === "es"
+          ? "Nivel asignado: {level}."
+          : "Assigned level: {level}.");
+
+      toast({
+        title: successTitle,
+        description: successDescTemplate.replace("{level}", result.level),
+        status: "success",
+        duration: 2600,
+      });
+    } catch (err) {
+      console.error("CEFR analysis failed:", err);
+      const errorTitle =
+        t.app_cefr_error_title ||
+        (appLanguage === "es" ? "No se pudo analizar" : "Analysis failed");
+      const errorDesc =
+        t.app_cefr_error ||
+        (appLanguage === "es"
+          ? "Vuelve a intentarlo más tarde."
+          : "Please try again later.");
+      setCefrError(errorDesc);
+      toast({ title: errorTitle, description: errorDesc, status: "error", duration: 2800 });
+    } finally {
+      setCefrLoading(false);
+    }
+  }, [activeNpub, appLanguage, t, toast, user]);
 
   /* -----------------------------------
      RANDOMIZE tab mechanics (no routing)
@@ -1470,6 +1760,9 @@ export default function App() {
         activeNpub={activeNpub}
         activeNsec={activeNsec}
         auth={auth}
+        cefrResult={cefrResult}
+        cefrLoading={cefrLoading}
+        cefrError={cefrError}
         onSwitchedAccount={async (id, sec) => {
           if (id) localStorage.setItem("local_npub", id);
           if (typeof sec === "string") localStorage.setItem("local_nsec", sec);
@@ -1488,6 +1781,7 @@ export default function App() {
         accountOpen={accountOpen}
         openAccount={() => setAccountOpen(true)}
         closeAccount={() => setAccountOpen(false)}
+        onRunCefrAnalysis={runCefrAnalysis}
         installOpen={installOpen}
         openInstall={() => setInstallOpen(true)}
         closeInstall={() => setInstallOpen(false)}
