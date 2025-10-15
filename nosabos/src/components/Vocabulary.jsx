@@ -18,6 +18,7 @@ import {
   Tooltip,
   IconButton,
   useToast,
+  Wrap,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -2645,7 +2646,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
   const skipLabel =
     t("practice_skip_question") ||
-    (userLanguage === "es" ? "Omitir pregunta" : "Skip question");
+    (userLanguage === "es" ? "omitir" : "skip");
 
   const maReady =
     maLayout === "drag"
@@ -2695,32 +2696,44 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack>
+            <Stack spacing={3} mt={4} align="stretch">
               <Input
                 value={ansFill}
                 onChange={(e) => setAnsFill(e.target.value)}
                 placeholder={t("vocab_input_placeholder_word")}
                 isDisabled={loadingGFill}
               />
-              <Button
-                onClick={submitFill}
-                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
-              >
-                {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQFill || loadingGFill}
-              >
-                {skipLabel}
-              </Button>
-              {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
-                  {nextLabel}
+              <Wrap spacing={2} shouldWrapChildren>
+                <Button
+                  colorScheme="purple"
+                  size="md"
+                  px={6}
+                  onClick={submitFill}
+                  isDisabled={loadingGFill || !ansFill.trim() || !qFill}
+                >
+                  {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
                 </Button>
-              ) : null}
-            </HStack>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  px={6}
+                  onClick={handleSkip}
+                  isDisabled={loadingQFill || loadingGFill}
+                >
+                  {skipLabel}
+                </Button>
+                {lastOk === true && nextAction ? (
+                  <Button
+                    variant="outline"
+                    size="md"
+                    px={6}
+                    onClick={handleNext}
+                  >
+                    {nextLabel}
+                  </Button>
+                ) : null}
+              </Wrap>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2844,8 +2857,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMC}
                 isDisabled={loadingGMC || !pickMC || !choicesMC.length}
               >
@@ -2853,17 +2869,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingQMC || loadingGMC}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2993,8 +3016,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMA}
                 isDisabled={loadingGMA || !choicesMA.length || !maReady}
               >
@@ -3002,17 +3028,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingQMA || loadingGMA}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -3092,9 +3125,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack spacing={3} mt={4} align="center">
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
+                size="md"
+                px={6}
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
@@ -3159,17 +3194,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingQSpeak || isSpeakRecording}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             {lastOk === true ? (
               <SpeakSuccessCard
@@ -3337,8 +3379,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Box>
             </DragDropContext>
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMatch}
                 isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
               >
@@ -3346,17 +3391,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />

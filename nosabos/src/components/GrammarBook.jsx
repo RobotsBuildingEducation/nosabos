@@ -19,6 +19,7 @@ import {
   IconButton,
   useToast,
   Center,
+  Wrap,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -2198,7 +2199,7 @@ Return JSON ONLY:
       : "Drop the answer here");
   const skipLabel =
     t("practice_skip_question") ||
-    (userLanguage === "es" ? "Omitir pregunta" : "Skip question");
+    (userLanguage === "es" ? "omitir" : "skip");
 
   const renderMcPrompt = () => {
     if (!mcQ) return null;
@@ -2461,32 +2462,44 @@ Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack>
+            <Stack spacing={3} mt={4} align="stretch">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={t("grammar_input_placeholder_answer")}
                 isDisabled={loadingG}
               />
-              <Button
-                onClick={submitFill}
-                isDisabled={loadingG || !input.trim() || !question}
-              >
-                {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQ || loadingG}
-              >
-                {skipLabel}
-              </Button>
-              {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
-                  {t("practice_next_question") || "Next question"}
+              <Wrap spacing={2} shouldWrapChildren>
+                <Button
+                  colorScheme="purple"
+                  size="md"
+                  px={6}
+                  onClick={submitFill}
+                  isDisabled={loadingG || !input.trim() || !question}
+                >
+                  {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
                 </Button>
-              ) : null}
-            </HStack>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  px={6}
+                  onClick={handleSkip}
+                  isDisabled={loadingQ || loadingG}
+                >
+                  {skipLabel}
+                </Button>
+                {lastOk === true && nextAction ? (
+                  <Button
+                    variant="outline"
+                    size="md"
+                    px={6}
+                    onClick={handleNext}
+                  >
+                    {t("practice_next_question") || "Next question"}
+                  </Button>
+                ) : null}
+              </Wrap>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2618,8 +2631,11 @@ Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMC}
                 isDisabled={loadingMCG || !mcPick || !mcChoices.length}
               >
@@ -2627,17 +2643,24 @@ Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingMCQ || loadingMCG}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2774,8 +2797,11 @@ Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMA}
                 isDisabled={loadingMAG || !maChoices.length || !maReady}
               >
@@ -2783,17 +2809,24 @@ Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingMAQ || loadingMAG}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2867,9 +2900,11 @@ Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack spacing={3} mt={4} align="center">
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
+                size="md"
+                px={6}
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
@@ -2934,17 +2969,24 @@ Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingSpeakQ || isSpeakRecording}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             {lastOk === true ? (
               <SpeakSuccessCard
@@ -3112,8 +3154,11 @@ Return JSON ONLY:
               </Box>
             </DragDropContext>
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMatch}
                 isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
               >
@@ -3121,17 +3166,24 @@ Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />

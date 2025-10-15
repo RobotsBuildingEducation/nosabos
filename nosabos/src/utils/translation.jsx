@@ -25,7 +25,7 @@ export const translations = {
     copy_all: "Copy question",
     grammar_next: "Next",
     practice_next_question: "Next question",
-    practice_skip_question: "Skip question",
+    practice_skip_question: "skip",
     practice_speak_banner_you_said: "You said",
     practice_speak_banner_translation: "Meaning",
     practice_speak_banner_xp: "+{xp} XP",
@@ -399,7 +399,7 @@ export const translations = {
 
     grammar_next: "Siguiente",
     practice_next_question: "Siguiente pregunta",
-    practice_skip_question: "Omitir pregunta",
+    practice_skip_question: "omitir",
     practice_speak_banner_you_said: "Dijiste",
     practice_speak_banner_translation: "Significado",
     practice_speak_banner_xp: "+{xp} XP",
