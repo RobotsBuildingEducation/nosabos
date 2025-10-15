@@ -1430,26 +1430,28 @@ ${dialectNote ? `${dialectNote}\n` : ""}Create ONE ${LANG_NAME(targetLang)} voca
     if (!qMC || !pickMC) return;
     setLoadingGMC(true);
 
-    const verdictRaw = await callResponses({
-      model: MODEL,
-      input: buildMCVocabJudgePrompt({
-        targetLang,
-        stem: qMC,
-        choices: choicesMC,
-        userChoice: pickMC,
-        hint: hMC,
-      }),
-    });
+    const normalizedPick = norm(pickMC);
+    const normalizedAnswer = answerMC ? norm(answerMC) : "";
 
-    let ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    if (!ok && LOW_RESOURCE_LANGS.has(targetLang)) {
-      const expected = new Set((answersMA || []).map(norm));
-      if (expected.size) {
-        const picked = new Set((picksMA || []).map(norm));
-        ok =
-          picked.size === expected.size &&
-          Array.from(expected).every((ans) => picked.has(ans));
-      }
+    let ok = Boolean(normalizedAnswer) && normalizedPick === normalizedAnswer;
+
+    if (!ok) {
+      const verdictRaw = await callResponses({
+        model: MODEL,
+        input: buildMCVocabJudgePrompt({
+          targetLang,
+          stem: qMC,
+          choices: choicesMC,
+          userChoice: pickMC,
+          hint: hMC,
+        }),
+      });
+
+      ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    }
+
+    if (!ok && LOW_RESOURCE_LANGS.has(targetLang) && normalizedAnswer) {
+      ok = normalizedPick === normalizedAnswer;
     }
     const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
 
@@ -1725,7 +1727,16 @@ ${dialectNote ? `${dialectNote}\n` : ""}Create ONE ${LANG_NAME(targetLang)} voca
       }),
     });
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    let ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    if (!ok && LOW_RESOURCE_LANGS.has(targetLang)) {
+      const expected = new Set((answersMA || []).map(norm));
+      if (expected.size) {
+        const picked = new Set((picksMA || []).map(norm));
+        ok =
+          picked.size === expected.size &&
+          Array.from(expected).every((ans) => picked.has(ans));
+      }
+    }
     const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {

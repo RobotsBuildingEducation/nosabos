@@ -1908,26 +1908,28 @@ Return JSON ONLY:
     if (!mcQ || !mcPick) return;
     setLoadingMCG(true);
 
-    const verdictRaw = await callResponses({
-      model: MODEL,
-      input: buildMCJudgePrompt({
-        targetLang,
-        stem: mcQ,
-        choices: mcChoices,
-        userChoice: mcPick,
-        hint: mcHint,
-      }),
-    });
+    const normalizedPick = norm(mcPick);
+    const normalizedAnswer = mcAnswer ? norm(mcAnswer) : "";
 
-    let ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    if (!ok && LOW_RESOURCE_LANGS.has(targetLang)) {
-      const expected = new Set((maAnswers || []).map(norm));
-      if (expected.size) {
-        const picked = new Set((maPicks || []).map(norm));
-        ok =
-          picked.size === expected.size &&
-          Array.from(expected).every((ans) => picked.has(ans));
-      }
+    let ok = Boolean(normalizedAnswer) && normalizedPick === normalizedAnswer;
+
+    if (!ok) {
+      const verdictRaw = await callResponses({
+        model: MODEL,
+        input: buildMCJudgePrompt({
+          targetLang,
+          stem: mcQ,
+          choices: mcChoices,
+          userChoice: mcPick,
+          hint: mcHint,
+        }),
+      });
+
+      ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    }
+
+    if (!ok && LOW_RESOURCE_LANGS.has(targetLang) && normalizedAnswer) {
+      ok = normalizedPick === normalizedAnswer;
     }
     const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
 
@@ -1972,7 +1974,16 @@ Return JSON ONLY:
       }),
     });
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    let ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    if (!ok && LOW_RESOURCE_LANGS.has(targetLang)) {
+      const expected = new Set((maAnswers || []).map(norm));
+      if (expected.size) {
+        const picked = new Set((maPicks || []).map(norm));
+        ok =
+          picked.size === expected.size &&
+          Array.from(expected).every((ans) => picked.has(ans));
+      }
+    }
     const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
 
     await saveAttempt(npub, {
