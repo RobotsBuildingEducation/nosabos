@@ -1,5 +1,5 @@
 // components/GrammarBook.jsx
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Badge,
@@ -37,6 +37,7 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
+import { PiSpeakerHighBold } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
@@ -106,6 +107,22 @@ function useT(uiLang = "en") {
   };
 }
 
+const normalizeLangCode = (v) =>
+  String(v || "")
+    .trim()
+    .toLowerCase();
+
+const toBCP47 = (v, fallback = "en-US") => {
+  const m = normalizeLangCode(v);
+  if (!m) return fallback;
+  if (m === "en") return "en-US";
+  if (m === "es") return "es-ES";
+  if (m === "nah") return "es-ES";
+  if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
+  if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
+  return fallback;
+};
+
 /* ---------------------------
    LLM plumbing (backend fallback)
 --------------------------- */
@@ -134,6 +151,7 @@ function useSharedProgress() {
     targetLang: "es",
     supportLang: "en",
     showTranslations: true,
+    voice: "alloy",
   });
   // ✅ ready flag so first generated question uses the user's settings
   const [ready, setReady] = useState(false);
@@ -158,6 +176,7 @@ function useSharedProgress() {
           : "en",
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
+        voice: p.voice || "alloy",
       });
       setReady(true); // ✅ we've loaded user settings at least once
     });
@@ -571,6 +590,11 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
+  const speakListenLabel = useMemo(() => {
+    const label = t("vocab_speak_listen");
+    if (label && label !== "vocab_speak_listen") return label;
+    return userLanguage === "es" ? "Escuchar" : "Listen";
+  }, [t, userLanguage]);
 
   const recentCorrectRef = useRef([]);
 
@@ -717,6 +741,96 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [sRecognized, setSRecognized] = useState("");
   const [sEval, setSEval] = useState(null);
   const [loadingSpeakQ, setLoadingSpeakQ] = useState(false);
+  const speakAudioRef = useRef(null);
+  const speakAudioCacheRef = useRef(new Map());
+  const [loadingSpeakAudio, setLoadingSpeakAudio] = useState(false);
+  const [isPlayingSpeakAudio, setIsPlayingSpeakAudio] = useState(false);
+
+  const stopSpeakAudio = useCallback(() => {
+    try {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    } catch {}
+    if (speakAudioRef.current) {
+      speakAudioRef.current.pause();
+      speakAudioRef.current.currentTime = 0;
+      speakAudioRef.current = null;
+    }
+    setIsPlayingSpeakAudio(false);
+    setLoadingSpeakAudio(false);
+  }, []);
+
+  const playSpeakTTS = useCallback(
+    async (text) => {
+      const phrase = String(text || "").trim();
+      if (!phrase) return;
+      stopSpeakAudio();
+      setLoadingSpeakAudio(true);
+      try {
+        const voice = progress.voice || "alloy";
+        const langTag = toBCP47(targetLang, "es-ES");
+        const cacheKey = `${voice}__${langTag}__${phrase}`;
+        let audioUrl = speakAudioCacheRef.current.get(cacheKey);
+
+        if (!audioUrl) {
+          const res = await fetch(
+            "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                input: phrase,
+                voice,
+                model: "tts-1",
+                response_format: "mp3",
+                language: langTag,
+              }),
+            }
+          );
+          if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
+          const blob = await res.blob();
+          audioUrl = URL.createObjectURL(blob);
+          speakAudioCacheRef.current.set(cacheKey, audioUrl);
+        }
+
+        const audio = new Audio(audioUrl);
+        speakAudioRef.current = audio;
+
+        audio.onended = () => {
+          setIsPlayingSpeakAudio(false);
+          setLoadingSpeakAudio(false);
+          speakAudioRef.current = null;
+        };
+        audio.onerror = () => {
+          setIsPlayingSpeakAudio(false);
+          setLoadingSpeakAudio(false);
+          speakAudioRef.current = null;
+        };
+
+        await audio.play();
+        setIsPlayingSpeakAudio(true);
+        setLoadingSpeakAudio(false);
+      } catch (err) {
+        console.error("Grammar speak TTS failed:", err);
+        setIsPlayingSpeakAudio(false);
+        setLoadingSpeakAudio(false);
+      }
+    },
+    [progress.voice, targetLang, stopSpeakAudio]
+  );
+
+  useEffect(() => () => stopSpeakAudio(), [stopSpeakAudio]);
+
+  useEffect(() => {
+    stopSpeakAudio();
+  }, [sTarget, stopSpeakAudio]);
+
+  useEffect(() => {
+    if (mode !== "speak") {
+      stopSpeakAudio();
+    }
+  }, [mode, stopSpeakAudio]);
 
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
@@ -2862,9 +2976,26 @@ Return JSON ONLY:
               textAlign="center"
               bg="rgba(255,255,255,0.04)"
             >
-              <Text fontSize="3xl" fontWeight="700">
-                {loadingSpeakQ ? "…" : sTarget || "…"}
-              </Text>
+              <HStack justify="center" spacing={3}>
+                <Text fontSize="3xl" fontWeight="700">
+                  {loadingSpeakQ ? "…" : sTarget || "…"}
+                </Text>
+                <Tooltip label={speakListenLabel} placement="top">
+                  <IconButton
+                    aria-label={speakListenLabel}
+                    title={speakListenLabel}
+                    icon={<PiSpeakerHighBold />}
+                    size="sm"
+                    variant={isPlayingSpeakAudio ? "solid" : "outline"}
+                    colorScheme="purple"
+                    isDisabled={
+                      loadingSpeakQ || !sTarget || isSpeakRecording || loadingSpeakAudio
+                    }
+                    isLoading={loadingSpeakAudio}
+                    onClick={() => playSpeakTTS(sTarget)}
+                  />
+                </Tooltip>
+              </HStack>
             </Box>
 
             {sHint ? (
@@ -2911,6 +3042,7 @@ Return JSON ONLY:
                     return;
                   }
                   try {
+                    stopSpeakAudio();
                     await startSpeakRecording();
                   } catch (err) {
                     const code = err?.code;

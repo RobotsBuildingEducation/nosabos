@@ -15,7 +15,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
-import { PiMicrophoneStageDuotone } from "react-icons/pi";
+import { PiMicrophoneStageDuotone, PiRepeatBold } from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
 
 import {
@@ -2421,7 +2421,7 @@ Return ONLY JSON:
                 <IconButton
                   aria-label={tRepeat}
                   title={tRepeat}
-                  icon={<PiMicrophoneStageDuotone />} // keep the mic glyph for replay button? (optional)
+                  icon={<PiRepeatBold />}
                   size="xs"
                   variant="outline"
                   top="6px"
