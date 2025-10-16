@@ -35,6 +35,7 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import translations from "../utils/translation";
+import { streamResponseToAudio } from "../utils/streamingAudio";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighBold } from "react-icons/pi";
@@ -742,6 +743,8 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [sEval, setSEval] = useState(null);
   const [loadingSpeakQ, setLoadingSpeakQ] = useState(false);
   const speakAudioRef = useRef(null);
+  const speakStreamUrlRef = useRef(null);
+  const speakAbortRef = useRef(null);
   const speakAudioCacheRef = useRef(new Map());
   const [loadingSpeakAudio, setLoadingSpeakAudio] = useState(false);
   const [isPlayingSpeakAudio, setIsPlayingSpeakAudio] = useState(false);
@@ -752,10 +755,23 @@ export default function GrammarBook({ userLanguage = "en" }) {
         window.speechSynthesis.cancel();
       }
     } catch {}
+    if (speakAbortRef.current) {
+      try {
+        speakAbortRef.current.abort();
+      } catch {}
+      speakAbortRef.current = null;
+    }
     if (speakAudioRef.current) {
       speakAudioRef.current.pause();
       speakAudioRef.current.currentTime = 0;
+      speakAudioRef.current.src = "";
       speakAudioRef.current = null;
+    }
+    if (speakStreamUrlRef.current) {
+      try {
+        URL.revokeObjectURL(speakStreamUrlRef.current);
+      } catch {}
+      speakStreamUrlRef.current = null;
     }
     setIsPlayingSpeakAudio(false);
     setLoadingSpeakAudio(false);
@@ -774,29 +790,91 @@ export default function GrammarBook({ userLanguage = "en" }) {
         let audioUrl = speakAudioCacheRef.current.get(cacheKey);
 
         if (!audioUrl) {
-          const res = await fetch(
-            "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                input: phrase,
-                voice,
-                model: "tts-1",
-                response_format: "mp3",
-                language: langTag,
-              }),
-            }
-          );
+          const payload = {
+            input: phrase,
+            voice,
+            model: "tts-1",
+            response_format: "mp3",
+            language: langTag,
+          };
+
+          const controller = new AbortController();
+          speakAbortRef.current = controller;
+
+          const res = await fetch("https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
           if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
+
+          const canStream =
+            typeof window !== "undefined" &&
+            typeof window.MediaSource !== "undefined" &&
+            res.body &&
+            typeof res.body.getReader === "function";
+
+          if (canStream) {
+            const audio = new Audio();
+            speakAudioRef.current = audio;
+            audio.onended = () => {
+              setIsPlayingSpeakAudio(false);
+              setLoadingSpeakAudio(false);
+              if (speakStreamUrlRef.current) {
+                try {
+                  URL.revokeObjectURL(speakStreamUrlRef.current);
+                } catch {}
+                speakStreamUrlRef.current = null;
+              }
+              speakAudioRef.current = null;
+            };
+            audio.onerror = () => {
+              setIsPlayingSpeakAudio(false);
+              setLoadingSpeakAudio(false);
+              if (speakStreamUrlRef.current) {
+                try {
+                  URL.revokeObjectURL(speakStreamUrlRef.current);
+                } catch {}
+                speakStreamUrlRef.current = null;
+              }
+              speakAudioRef.current = null;
+            };
+
+            try {
+              const { objectUrl, blob } = await streamResponseToAudio({
+                response: res,
+                audio,
+                onFirstChunk: async () => {
+                  setLoadingSpeakAudio(false);
+                  setIsPlayingSpeakAudio(true);
+                  try {
+                    await audio.play();
+                  } catch (playErr) {
+                    console.warn("Grammar speak autoplay blocked:", playErr);
+                    setIsPlayingSpeakAudio(false);
+                  }
+                },
+              });
+              speakStreamUrlRef.current = objectUrl;
+              const cachedUrl = URL.createObjectURL(blob);
+              speakAudioCacheRef.current.set(cacheKey, cachedUrl);
+            } finally {
+              speakAbortRef.current = null;
+            }
+            return;
+          }
+
           const blob = await res.blob();
           audioUrl = URL.createObjectURL(blob);
           speakAudioCacheRef.current.set(cacheKey, audioUrl);
+          speakAbortRef.current = null;
+        } else {
+          speakAbortRef.current = null;
         }
 
         const audio = new Audio(audioUrl);
         speakAudioRef.current = audio;
-
         audio.onended = () => {
           setIsPlayingSpeakAudio(false);
           setLoadingSpeakAudio(false);
@@ -808,10 +886,19 @@ export default function GrammarBook({ userLanguage = "en" }) {
           speakAudioRef.current = null;
         };
 
-        await audio.play();
-        setIsPlayingSpeakAudio(true);
         setLoadingSpeakAudio(false);
+        setIsPlayingSpeakAudio(true);
+        try {
+          await audio.play();
+        } catch (errPlay) {
+          setIsPlayingSpeakAudio(false);
+          console.warn("Grammar speak playback failed:", errPlay);
+        }
       } catch (err) {
+        speakAbortRef.current = null;
+        if (err?.name === "AbortError") {
+          return;
+        }
         console.error("Grammar speak TTS failed:", err);
         setIsPlayingSpeakAudio(false);
         setLoadingSpeakAudio(false);
@@ -819,6 +906,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
     },
     [progress.voice, targetLang, stopSpeakAudio]
   );
+
 
   useEffect(() => () => stopSpeakAudio(), [stopSpeakAudio]);
 
