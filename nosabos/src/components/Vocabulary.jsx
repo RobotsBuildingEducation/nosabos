@@ -37,9 +37,15 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
+import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
+import {
+  DEFAULT_TTS_VOICE,
+  TTS_LANG_TAG,
+  fetchTTSBlob,
+} from "../utils/tts";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -651,6 +657,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
+  const voicePreference = progress.voice || DEFAULT_TTS_VOICE;
 
   const recentCorrectRef = useRef([]);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
@@ -792,6 +799,33 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [sRecognized, setSRecognized] = useState("");
   const [sEval, setSEval] = useState(null);
   const [loadingQSpeak, setLoadingQSpeak] = useState(false);
+  const speakAudioRef = useRef(null);
+  const speakAudioCacheRef = useRef(new Map());
+  const [isSpeakPlaying, setIsSpeakPlaying] = useState(false);
+
+  useEffect(() => {
+    const cache = speakAudioCacheRef.current;
+    return () => {
+      try {
+        speakAudioRef.current?.pause?.();
+      } catch {}
+      speakAudioRef.current = null;
+      cache.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+      });
+      cache.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      speakAudioRef.current?.pause?.();
+    } catch {}
+    speakAudioRef.current = null;
+    setIsSpeakPlaying(false);
+  }, [sTarget]);
 
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
@@ -2645,7 +2679,79 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
   const skipLabel =
     t("practice_skip_question") ||
-    (userLanguage === "es" ? "Omitir pregunta" : "Skip question");
+    (userLanguage === "es" ? "Omitir pregunta" : "skip");
+  const speakLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
+  const speakListenLabel =
+    userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
+
+  const handleToggleSpeakPlayback = useCallback(async () => {
+    const text = (sTarget || "").trim();
+    if (!text) return;
+
+    if (isSpeakPlaying && speakAudioRef.current) {
+      try {
+        speakAudioRef.current.pause();
+      } catch {}
+      speakAudioRef.current = null;
+      setIsSpeakPlaying(false);
+      return;
+    }
+
+    try {
+      setIsSpeakPlaying(true);
+      try {
+        speakAudioRef.current?.pause?.();
+      } catch {}
+      speakAudioRef.current = null;
+
+      const cacheKey = `${speakLangTag}::${voicePreference}::${text}`;
+      let audioUrl = speakAudioCacheRef.current.get(cacheKey);
+      if (!audioUrl) {
+        const blob = await fetchTTSBlob({
+          text,
+          voice: voicePreference,
+          langTag: speakLangTag,
+        });
+        audioUrl = URL.createObjectURL(blob);
+        speakAudioCacheRef.current.set(cacheKey, audioUrl);
+      }
+
+      const audio = new Audio(audioUrl);
+      speakAudioRef.current = audio;
+      audio.onended = () => {
+        setIsSpeakPlaying(false);
+        speakAudioRef.current = null;
+      };
+      audio.onerror = () => {
+        setIsSpeakPlaying(false);
+        speakAudioRef.current = null;
+      };
+      await audio.play();
+    } catch (err) {
+      console.error("Vocabulary speak playback failed", err);
+      setIsSpeakPlaying(false);
+      speakAudioRef.current = null;
+      toast({
+        title:
+          userLanguage === "es"
+            ? "No se pudo reproducir el audio"
+            : "Audio playback failed",
+        description:
+          userLanguage === "es"
+            ? "Inténtalo de nuevo."
+            : "Please try again.",
+        status: "error",
+        duration: 2600,
+      });
+    }
+  }, [
+    isSpeakPlaying,
+    sTarget,
+    speakLangTag,
+    toast,
+    userLanguage,
+    voicePreference,
+  ]);
 
   const maReady =
     maLayout === "drag"
@@ -2677,7 +2783,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
         {/* ---- FILL UI ---- */}
         {mode === "fill" && (qFill || loadingQFill) ? (
-          <>
+          <VStack align="stretch" spacing={4}>
             <HStack align="start">
               <CopyAllBtn q={qFill} h={hFill} tr={showTRFill ? trFill : ""} />
               <Text fontWeight="semibold" flex="1">
@@ -2695,16 +2801,23 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack>
-              <Input
-                value={ansFill}
-                onChange={(e) => setAnsFill(e.target.value)}
-                placeholder={t("vocab_input_placeholder_word")}
-                isDisabled={loadingGFill}
-              />
+            <Input
+              value={ansFill}
+              onChange={(e) => setAnsFill(e.target.value)}
+              placeholder={t("vocab_input_placeholder_word")}
+              isDisabled={loadingGFill}
+            />
+
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+            >
               <Button
+                colorScheme="purple"
                 onClick={submitFill}
                 isDisabled={loadingGFill || !ansFill.trim() || !qFill}
+                w={{ base: "100%", md: "auto" }}
               >
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
@@ -2712,20 +2825,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQFill || loadingGFill}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
-            <HStack spacing={3} mt={1}>
+            <HStack spacing={3}>
               <ResultBadge ok={lastOk} xp={recentXp} />
             </HStack>
-          </>
+          </VStack>
         ) : null}
 
         {/* ---- MC UI ---- */}
@@ -2844,10 +2962,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+            >
               <Button
+                colorScheme="purple"
                 onClick={submitMC}
                 isDisabled={loadingGMC || !pickMC || !choicesMC.length}
+                w={{ base: "100%", md: "auto" }}
               >
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
@@ -2855,15 +2979,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQMC || loadingGMC}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2993,10 +3122,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+            >
               <Button
+                colorScheme="purple"
                 onClick={submitMA}
                 isDisabled={loadingGMA || !choicesMA.length || !maReady}
+                w={{ base: "100%", md: "auto" }}
               >
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
@@ -3004,15 +3139,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQMA || loadingGMA}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -3050,7 +3190,22 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               p={6}
               textAlign="center"
               bg="rgba(255,255,255,0.04)"
+              position="relative"
             >
+              <Tooltip label={speakListenLabel} placement="top">
+                <IconButton
+                  aria-label={speakListenLabel}
+                  icon={<PiSpeakerHighDuotone />}
+                  size="sm"
+                  variant="ghost"
+                  colorScheme={isSpeakPlaying ? "teal" : "purple"}
+                  position="absolute"
+                  top="3"
+                  right="3"
+                  onClick={handleToggleSpeakPlayback}
+                  isDisabled={loadingQSpeak || !sTarget}
+                />
+              </Tooltip>
               <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
                 {speakVariantLabel}
               </Badge>
@@ -3092,9 +3247,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack spacing={3} mt={4} align="center">
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+              mt={4}
+            >
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
+                w={{ base: "100%", md: "auto" }}
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
@@ -3161,15 +3322,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQSpeak || isSpeakRecording}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
             {lastOk === true ? (
               <SpeakSuccessCard
@@ -3337,10 +3503,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Box>
             </DragDropContext>
 
-            <HStack>
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+            >
               <Button
+                colorScheme="purple"
                 onClick={submitMatch}
                 isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                w={{ base: "100%", md: "auto" }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
@@ -3348,15 +3520,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
