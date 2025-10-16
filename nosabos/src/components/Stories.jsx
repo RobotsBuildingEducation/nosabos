@@ -38,6 +38,7 @@ import {
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { translations } from "../utils/translation";
+import { streamResponseToAudio } from "../utils/streamingAudio";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
@@ -296,6 +297,8 @@ export default function StoryMode() {
   const currentUtteranceRef = useRef(null);
   const animationFrameRef = useRef(null);
   const currentAudioRef = useRef(null);
+  const ttsStreamUrlRef = useRef(null);
+  const ttsAbortRef = useRef(null);
   const eventSourceRef = useRef(null);
   const audioCacheRef = useRef(new Map());
   const evalRef = useRef({
@@ -445,10 +448,23 @@ export default function StoryMode() {
     try {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
     } catch {}
+    if (ttsAbortRef.current) {
+      try {
+        ttsAbortRef.current.abort();
+      } catch {}
+      ttsAbortRef.current = null;
+    }
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current.src = "";
       currentAudioRef.current = null;
+    }
+    if (ttsStreamUrlRef.current) {
+      try {
+        URL.revokeObjectURL(ttsStreamUrlRef.current);
+      } catch {}
+      ttsStreamUrlRef.current = null;
     }
     currentUtteranceRef.current = null;
     if (highlightIntervalRef.current) {
@@ -811,35 +827,27 @@ export default function StoryMode() {
     { alignToText = false, onStart = () => {}, onEnd = () => {} } = {}
   ) => {
     try {
+      if (ttsAbortRef.current) {
+        try {
+          ttsAbortRef.current.abort();
+        } catch {}
+        ttsAbortRef.current = null;
+      }
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current.src = "";
         currentAudioRef.current = null;
+      }
+      if (ttsStreamUrlRef.current) {
+        try {
+          URL.revokeObjectURL(ttsStreamUrlRef.current);
+        } catch {}
+        ttsStreamUrlRef.current = null;
       }
       const voice = progress.voice || "alloy";
       const cacheKey = `${text}-${voice}-${langTag}`;
       let audioUrl = audioCacheRef.current.get(cacheKey);
-
-      if (!audioUrl) {
-        usageStatsRef.current.ttsCalls++;
-        const res = await fetch(
-          "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              input: text,
-              voice,
-              model: "tts-1",
-              response_format: "mp3",
-              language: langTag,
-            }),
-          }
-        );
-        if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
-        const blob = await res.blob();
-        audioUrl = URL.createObjectURL(blob);
-        audioCacheRef.current.set(cacheKey, audioUrl);
-      }
 
       let tokenMap = null;
       if (alignToText) {
@@ -848,10 +856,105 @@ export default function StoryMode() {
         setHighlightedWordIndex(-1);
       }
 
-      const audio = new Audio(audioUrl);
-      currentAudioRef.current = audio;
+      if (!audioUrl) {
+        usageStatsRef.current.ttsCalls++;
+        const payload = {
+          input: text,
+          voice,
+          model: "tts-1",
+          response_format: "mp3",
+          language: langTag,
+        };
+
+        const controller = new AbortController();
+        ttsAbortRef.current = controller;
+
+        const res = await fetch("https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+        if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
+
+        const canStream =
+          typeof window !== "undefined" &&
+          typeof window.MediaSource !== "undefined" &&
+          res.body &&
+          typeof res.body.getReader === "function";
+
+        if (canStream) {
+          const audio = new Audio();
+          currentAudioRef.current = audio;
+          let stopHighlighter = null;
+          audio.onloadedmetadata = () => {
+            if (alignToText && tokenMap) {
+              stopHighlighter = startAudioAlignedHighlight(
+                audio,
+                tokenMap.tokens,
+                (idx) => setHighlightedWordIndex(idx)
+              );
+            }
+          };
+          audio.onplay = () => onStart?.();
+          audio.onended = () => {
+            stopHighlighter?.();
+            onEnd?.();
+            if (ttsStreamUrlRef.current) {
+              try {
+                URL.revokeObjectURL(ttsStreamUrlRef.current);
+              } catch {}
+              ttsStreamUrlRef.current = null;
+            }
+            currentAudioRef.current = null;
+          };
+          audio.onerror = (e) => {
+            stopHighlighter?.();
+            console.error("Audio playback error", e);
+            onEnd?.();
+            if (ttsStreamUrlRef.current) {
+              try {
+                URL.revokeObjectURL(ttsStreamUrlRef.current);
+              } catch {}
+              ttsStreamUrlRef.current = null;
+            }
+            currentAudioRef.current = null;
+          };
+
+          try {
+            const { objectUrl, blob } = await streamResponseToAudio({
+              response: res,
+              audio,
+              onFirstChunk: async () => {
+                try {
+                  await audio.play();
+                } catch (playErr) {
+                  console.warn("Story TTS autoplay blocked:", playErr);
+                  stopHighlighter?.();
+                  onEnd?.();
+                  currentAudioRef.current = null;
+                  throw playErr;
+                }
+              },
+            });
+            ttsStreamUrlRef.current = objectUrl;
+            const cachedUrl = URL.createObjectURL(blob);
+            audioCacheRef.current.set(cacheKey, cachedUrl);
+          } finally {
+            ttsAbortRef.current = null;
+          }
+          return;
+        }
+
+        const blob = await res.blob();
+        audioUrl = URL.createObjectURL(blob);
+        audioCacheRef.current.set(cacheKey, audioUrl);
+        ttsAbortRef.current = null;
+      }
 
       let stopHighlighter = null;
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
       audio.onloadedmetadata = () => {
         if (alignToText && tokenMap) {
           stopHighlighter = startAudioAlignedHighlight(
@@ -876,10 +979,18 @@ export default function StoryMode() {
 
       await audio.play();
     } catch (e) {
+      ttsAbortRef.current = null;
+      if (ttsStreamUrlRef.current) {
+        try {
+          URL.revokeObjectURL(ttsStreamUrlRef.current);
+        } catch {}
+        ttsStreamUrlRef.current = null;
+      }
       onEnd?.();
       throw e;
     }
   };
+
 
   const playNarrationWithHighlighting = async (text) => {
     stopAllAudio();

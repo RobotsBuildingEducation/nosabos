@@ -18,6 +18,7 @@ import {
   Tooltip,
   IconButton,
   useToast,
+  Wrap,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -35,8 +36,10 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import translations from "../utils/translation";
+import { streamResponseToAudio } from "../utils/streamingAudio";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
+import { PiSpeakerHighBold } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
@@ -106,6 +109,22 @@ function useT(uiLang = "en") {
   };
 }
 
+const normalizeLangCode = (v) =>
+  String(v || "")
+    .trim()
+    .toLowerCase();
+
+const toBCP47 = (v, fallback = "en-US") => {
+  const m = normalizeLangCode(v);
+  if (!m) return fallback;
+  if (m === "en") return "en-US";
+  if (m === "es") return "es-ES";
+  if (m === "nah") return "es-ES"; // fallback voice for Nahuatl
+  if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
+  if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
+  return fallback;
+};
+
 /* ---------------------------
    LLM plumbing (backend fallback)
 --------------------------- */
@@ -134,6 +153,7 @@ function useSharedProgress() {
     targetLang: "es",
     supportLang: "en",
     showTranslations: true,
+    voice: "alloy",
   });
   // ✅ ready flag so we know when user settings have been loaded once
   const [ready, setReady] = useState(false);
@@ -158,6 +178,7 @@ function useSharedProgress() {
           : "en",
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
+        voice: p.voice || "alloy",
       });
       setReady(true); // ✅ we’ve received user settings
     });
@@ -651,6 +672,11 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
+  const speakListenLabel = useMemo(() => {
+    const label = t("vocab_speak_listen");
+    if (label && label !== "vocab_speak_listen") return label;
+    return userLanguage === "es" ? "Escuchar" : "Listen";
+  }, [t, userLanguage]);
 
   const recentCorrectRef = useRef([]);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
@@ -792,6 +818,183 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const [sRecognized, setSRecognized] = useState("");
   const [sEval, setSEval] = useState(null);
   const [loadingQSpeak, setLoadingQSpeak] = useState(false);
+  const speakAudioRef = useRef(null);
+  const speakStreamUrlRef = useRef(null);
+  const speakAbortRef = useRef(null);
+  const speakAudioCacheRef = useRef(new Map());
+  const [loadingSpeakAudio, setLoadingSpeakAudio] = useState(false);
+  const [isPlayingSpeakAudio, setIsPlayingSpeakAudio] = useState(false);
+
+  const stopSpeakAudio = useCallback(() => {
+    try {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    } catch {}
+    if (speakAbortRef.current) {
+      try {
+        speakAbortRef.current.abort();
+      } catch {}
+      speakAbortRef.current = null;
+    }
+    if (speakAudioRef.current) {
+      speakAudioRef.current.pause();
+      speakAudioRef.current.currentTime = 0;
+      speakAudioRef.current.src = "";
+      speakAudioRef.current = null;
+    }
+    if (speakStreamUrlRef.current) {
+      try {
+        URL.revokeObjectURL(speakStreamUrlRef.current);
+      } catch {}
+      speakStreamUrlRef.current = null;
+    }
+    setIsPlayingSpeakAudio(false);
+    setLoadingSpeakAudio(false);
+  }, []);
+
+  const playSpeakTTS = useCallback(
+    async (text) => {
+      const phrase = String(text || "").trim();
+      if (!phrase) return;
+      stopSpeakAudio();
+      setLoadingSpeakAudio(true);
+      try {
+        const voice = progress.voice || "alloy";
+        const langTag = toBCP47(targetLang, "es-ES");
+        const cacheKey = `${voice}__${langTag}__${phrase}`;
+        let audioUrl = speakAudioCacheRef.current.get(cacheKey);
+
+        if (!audioUrl) {
+          const payload = {
+            input: phrase,
+            voice,
+            model: "tts-1",
+            response_format: "mp3",
+            language: langTag,
+          };
+
+          const controller = new AbortController();
+          speakAbortRef.current = controller;
+
+          const res = await fetch("https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          });
+          if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
+
+          const canStream =
+            typeof window !== "undefined" &&
+            typeof window.MediaSource !== "undefined" &&
+            res.body &&
+            typeof res.body.getReader === "function";
+
+          if (canStream) {
+            const audio = new Audio();
+            speakAudioRef.current = audio;
+            audio.onended = () => {
+              setIsPlayingSpeakAudio(false);
+              setLoadingSpeakAudio(false);
+              if (speakStreamUrlRef.current) {
+                try {
+                  URL.revokeObjectURL(speakStreamUrlRef.current);
+                } catch {}
+                speakStreamUrlRef.current = null;
+              }
+              speakAudioRef.current = null;
+            };
+            audio.onerror = () => {
+              setIsPlayingSpeakAudio(false);
+              setLoadingSpeakAudio(false);
+              if (speakStreamUrlRef.current) {
+                try {
+                  URL.revokeObjectURL(speakStreamUrlRef.current);
+                } catch {}
+                speakStreamUrlRef.current = null;
+              }
+              speakAudioRef.current = null;
+            };
+
+            try {
+              const { objectUrl, blob } = await streamResponseToAudio({
+                response: res,
+                audio,
+                onFirstChunk: async () => {
+                  setLoadingSpeakAudio(false);
+                  setIsPlayingSpeakAudio(true);
+                  try {
+                    await audio.play();
+                  } catch (playErr) {
+                    console.warn("Speak TTS autoplay was blocked:", playErr);
+                    setIsPlayingSpeakAudio(false);
+                  }
+                },
+              });
+              speakStreamUrlRef.current = objectUrl;
+              const cachedUrl = URL.createObjectURL(blob);
+              speakAudioCacheRef.current.set(cacheKey, cachedUrl);
+            } finally {
+              speakAbortRef.current = null;
+            }
+            return;
+          }
+
+          const blob = await res.blob();
+          audioUrl = URL.createObjectURL(blob);
+          speakAudioCacheRef.current.set(cacheKey, audioUrl);
+          speakAbortRef.current = null;
+        } else {
+          speakAbortRef.current = null;
+        }
+
+        const audio = new Audio(audioUrl);
+        speakAudioRef.current = audio;
+        audio.onended = () => {
+          setIsPlayingSpeakAudio(false);
+          setLoadingSpeakAudio(false);
+          speakAudioRef.current = null;
+        };
+        audio.onerror = () => {
+          setIsPlayingSpeakAudio(false);
+          setLoadingSpeakAudio(false);
+          speakAudioRef.current = null;
+        };
+
+        setLoadingSpeakAudio(false);
+        setIsPlayingSpeakAudio(true);
+        try {
+          await audio.play();
+        } catch (errPlay) {
+          setIsPlayingSpeakAudio(false);
+          console.warn("Speak TTS playback failed:", errPlay);
+        }
+      } catch (err) {
+        speakAbortRef.current = null;
+        if (err?.name === "AbortError") {
+          return;
+        }
+        console.error("Speak TTS failed:", err);
+        setIsPlayingSpeakAudio(false);
+        setLoadingSpeakAudio(false);
+      }
+    },
+    [progress.voice, targetLang, stopSpeakAudio]
+  );
+
+
+  useEffect(() => () => stopSpeakAudio(), [stopSpeakAudio]);
+
+  useEffect(() => {
+    stopSpeakAudio();
+  }, [sStimulus, stopSpeakAudio]);
+
+  useEffect(() => {
+    if (mode !== "speak") {
+      stopSpeakAudio();
+    }
+  }, [mode, stopSpeakAudio]);
 
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
@@ -2645,7 +2848,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
   const skipLabel =
     t("practice_skip_question") ||
-    (userLanguage === "es" ? "Omitir pregunta" : "Skip question");
+    (userLanguage === "es" ? "omitir" : "skip");
 
   const maReady =
     maLayout === "drag"
@@ -2695,32 +2898,44 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack>
+            <Stack spacing={3} mt={4} align="stretch">
               <Input
                 value={ansFill}
                 onChange={(e) => setAnsFill(e.target.value)}
                 placeholder={t("vocab_input_placeholder_word")}
                 isDisabled={loadingGFill}
               />
-              <Button
-                onClick={submitFill}
-                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
-              >
-                {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQFill || loadingGFill}
-              >
-                {skipLabel}
-              </Button>
-              {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
-                  {nextLabel}
+              <Wrap spacing={2} shouldWrapChildren>
+                <Button
+                  colorScheme="purple"
+                  size="md"
+                  px={6}
+                  onClick={submitFill}
+                  isDisabled={loadingGFill || !ansFill.trim() || !qFill}
+                >
+                  {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
                 </Button>
-              ) : null}
-            </HStack>
+                <Button
+                  variant="ghost"
+                  size="md"
+                  px={6}
+                  onClick={handleSkip}
+                  isDisabled={loadingQFill || loadingGFill}
+                >
+                  {skipLabel}
+                </Button>
+                {lastOk === true && nextAction ? (
+                  <Button
+                    variant="outline"
+                    size="md"
+                    px={6}
+                    onClick={handleNext}
+                  >
+                    {nextLabel}
+                  </Button>
+                ) : null}
+              </Wrap>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2844,8 +3059,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMC}
                 isDisabled={loadingGMC || !pickMC || !choicesMC.length}
               >
@@ -2853,17 +3071,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingQMC || loadingGMC}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2993,8 +3218,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMA}
                 isDisabled={loadingGMA || !choicesMA.length || !maReady}
               >
@@ -3002,17 +3230,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingQMA || loadingGMA}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -3054,9 +3289,28 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
                 {speakVariantLabel}
               </Badge>
-              <Text fontSize="3xl" fontWeight="700">
-                {loadingQSpeak ? "…" : sStimulus || sTarget || "…"}
-              </Text>
+              <HStack justify="center" spacing={3}>
+                <Text fontSize="3xl" fontWeight="700">
+                  {loadingQSpeak ? "…" : sStimulus || sTarget || "…"}
+                </Text>
+                <Tooltip label={speakListenLabel} placement="top">
+                  <IconButton
+                    aria-label={speakListenLabel}
+                    title={speakListenLabel}
+                    icon={<PiSpeakerHighBold />}
+                    size="sm"
+                    variant={isPlayingSpeakAudio ? "solid" : "outline"}
+                    colorScheme="purple"
+                    isDisabled={
+                      loadingQSpeak || !sTarget || isSpeakRecording || loadingSpeakAudio
+                    }
+                    isLoading={loadingSpeakAudio}
+                    onClick={() =>
+                      playSpeakTTS((sStimulus || sTarget || "").trim())
+                    }
+                  />
+                </Tooltip>
+              </HStack>
             </Box>
 
             {sHint ? (
@@ -3092,15 +3346,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack spacing={3} mt={4} align="center">
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
+                size="md"
+                px={6}
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
                     return;
                   }
                   try {
+                    stopSpeakAudio();
                     await startSpeakRecording();
                   } catch (err) {
                     const code = err?.code;
@@ -3159,17 +3416,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingQSpeak || isSpeakRecording}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             {lastOk === true ? (
               <SpeakSuccessCard
@@ -3337,8 +3601,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Box>
             </DragDropContext>
 
-            <HStack>
+            <Wrap spacing={2} mt={4} shouldWrapChildren>
               <Button
+                colorScheme="purple"
+                size="md"
+                px={6}
                 onClick={submitMatch}
                 isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
               >
@@ -3346,17 +3613,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Button>
               <Button
                 variant="ghost"
+                size="md"
+                px={6}
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  size="md"
+                  px={6}
+                  onClick={handleNext}
+                >
                   {nextLabel}
                 </Button>
               ) : null}
-            </HStack>
+            </Wrap>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />

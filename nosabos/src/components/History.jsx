@@ -29,6 +29,7 @@ import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
+import { streamResponseToAudio } from "../utils/streamingAudio";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
@@ -637,6 +638,8 @@ export default function History({ userLanguage = "en" }) {
 
   // Refs for audio
   const currentAudioRef = useRef(null);
+  const ttsStreamUrlRef = useRef(null);
+  const ttsAbortRef = useRef(null);
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -1047,13 +1050,26 @@ export default function History({ userLanguage = "en" }) {
     try {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
     } catch {}
+    if (ttsAbortRef.current) {
+      try {
+        ttsAbortRef.current.abort();
+      } catch {}
+      ttsAbortRef.current = null;
+    }
     try {
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current.src = "";
         currentAudioRef.current = null;
       }
     } catch {}
+    if (ttsStreamUrlRef.current) {
+      try {
+        URL.revokeObjectURL(ttsStreamUrlRef.current);
+      } catch {}
+      ttsStreamUrlRef.current = null;
+    }
     setIsReadingTarget(false);
     setIsReadingSupport(false);
   };
@@ -1064,23 +1080,72 @@ export default function History({ userLanguage = "en" }) {
     setReading(true);
 
     try {
-      const res = await fetch(
-        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: text,
-            voice: voice || "alloy",
-            model: "tts-1",
-            response_format: "mp3",
-            language: langTag,
-          }),
-        }
-      );
+      const payload = {
+        input: text,
+        voice: voice || "alloy",
+        model: "tts-1",
+        response_format: "mp3",
+        language: langTag,
+      };
+
+      const controller = new AbortController();
+      ttsAbortRef.current = controller;
+
+      const res = await fetch("https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+        signal: controller.signal,
+      });
       if (!res.ok) throw new Error(`TTS ${res.status}`);
+
+      const canStream =
+        typeof window !== "undefined" &&
+        typeof window.MediaSource !== "undefined" &&
+        res.body &&
+        typeof res.body.getReader === "function";
+
+      if (canStream) {
+        const audio = new Audio();
+        currentAudioRef.current = audio;
+        const cleanup = () => {
+          setReading(false);
+          if (ttsStreamUrlRef.current) {
+            try {
+              URL.revokeObjectURL(ttsStreamUrlRef.current);
+            } catch {}
+            ttsStreamUrlRef.current = null;
+          }
+          currentAudioRef.current = null;
+          onDone?.();
+        };
+
+        audio.onended = cleanup;
+        audio.onerror = cleanup;
+
+        try {
+          const { objectUrl } = await streamResponseToAudio({
+            response: res,
+            audio,
+            onFirstChunk: async () => {
+              try {
+                await audio.play();
+              } catch (playErr) {
+                cleanup();
+                throw playErr;
+              }
+            },
+          });
+          ttsStreamUrlRef.current = objectUrl;
+        } finally {
+          ttsAbortRef.current = null;
+        }
+        return;
+      }
+
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
+      ttsAbortRef.current = null;
       const audio = new Audio(url);
       currentAudioRef.current = audio;
 
@@ -1096,6 +1161,13 @@ export default function History({ userLanguage = "en" }) {
       await audio.play();
       return;
     } catch {
+      ttsAbortRef.current = null;
+      if (ttsStreamUrlRef.current) {
+        try {
+          URL.revokeObjectURL(ttsStreamUrlRef.current);
+        } catch {}
+        ttsStreamUrlRef.current = null;
+      }
       if ("speechSynthesis" in window) {
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = langTag || "es-ES";
@@ -1116,6 +1188,8 @@ export default function History({ userLanguage = "en" }) {
       onDone?.();
     }
   }
+
+  const readTarget = async () =>
 
   const readTarget = async () =>
     speak({

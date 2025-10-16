@@ -36,6 +36,7 @@ import {
 import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { translations } from "../utils/translation";
+import { streamResponseToAudio } from "../utils/streamingAudio";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
@@ -919,6 +920,8 @@ export default function JobScript() {
 
   // Audio / recording
   const currentAudioRef = useRef(null);
+  const ttsStreamUrlRef = useRef(null);
+  const ttsAbortRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recognitionRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -1224,10 +1227,23 @@ export default function JobScript() {
     try {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
     } catch {}
+    if (ttsAbortRef.current) {
+      try {
+        ttsAbortRef.current.abort();
+      } catch {}
+      ttsAbortRef.current = null;
+    }
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current.currentTime = 0;
+      currentAudioRef.current.src = "";
       currentAudioRef.current = null;
+    }
+    if (ttsStreamUrlRef.current) {
+      try {
+        URL.revokeObjectURL(ttsStreamUrlRef.current);
+      } catch {}
+      ttsStreamUrlRef.current = null;
     }
     setIsPlayingTarget(false);
     setIsPlayingSupport(false);
@@ -1235,33 +1251,105 @@ export default function JobScript() {
 
   const playWithOpenAITTS = async (text, langTag, setLoading) => {
     try {
+      if (ttsAbortRef.current) {
+        try {
+          ttsAbortRef.current.abort();
+        } catch {}
+        ttsAbortRef.current = null;
+      }
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
+        currentAudioRef.current.currentTime = 0;
+        currentAudioRef.current.src = "";
         currentAudioRef.current = null;
+      }
+      if (ttsStreamUrlRef.current) {
+        try {
+          URL.revokeObjectURL(ttsStreamUrlRef.current);
+        } catch {}
+        ttsStreamUrlRef.current = null;
       }
       const voice = progress.voice || "alloy";
       const cacheKey = `${text}-${voice}-${langTag}`;
       let audioUrl = audioCacheRef.current.get(cacheKey);
 
       if (!audioUrl) {
-        const res = await fetch(
-          "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              input: text,
-              voice,
-              model: "tts-1",
-              response_format: "mp3",
-              language: langTag,
-            }),
-          }
-        );
+        const payload = {
+          input: text,
+          voice,
+          model: "tts-1",
+          response_format: "mp3",
+          language: langTag,
+        };
+
+        const controller = new AbortController();
+        ttsAbortRef.current = controller;
+
+        const res = await fetch("https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
         if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
+
+        const canStream =
+          typeof window !== "undefined" &&
+          typeof window.MediaSource !== "undefined" &&
+          res.body &&
+          typeof res.body.getReader === "function";
+
+        if (canStream) {
+          const audio = new Audio();
+          currentAudioRef.current = audio;
+          audio.onended = () => {
+            setLoading(false);
+            if (ttsStreamUrlRef.current) {
+              try {
+                URL.revokeObjectURL(ttsStreamUrlRef.current);
+              } catch {}
+              ttsStreamUrlRef.current = null;
+            }
+            currentAudioRef.current = null;
+          };
+          audio.onerror = () => {
+            setLoading(false);
+            if (ttsStreamUrlRef.current) {
+              try {
+                URL.revokeObjectURL(ttsStreamUrlRef.current);
+              } catch {}
+              ttsStreamUrlRef.current = null;
+            }
+            currentAudioRef.current = null;
+          };
+
+          try {
+            const { objectUrl, blob } = await streamResponseToAudio({
+              response: res,
+              audio,
+              onFirstChunk: async () => {
+                try {
+                  await audio.play();
+                } catch (playErr) {
+                  setLoading(false);
+                  currentAudioRef.current = null;
+                  throw playErr;
+                }
+              },
+            });
+            ttsStreamUrlRef.current = objectUrl;
+            const cachedUrl = URL.createObjectURL(blob);
+            audioCacheRef.current.set(cacheKey, cachedUrl);
+          } finally {
+            ttsAbortRef.current = null;
+          }
+          return;
+        }
+
         const blob = await res.blob();
         audioUrl = URL.createObjectURL(blob);
         audioCacheRef.current.set(cacheKey, audioUrl);
+        ttsAbortRef.current = null;
       }
 
       const audio = new Audio(audioUrl);
@@ -1278,10 +1366,18 @@ export default function JobScript() {
 
       await audio.play();
     } catch (e) {
+      ttsAbortRef.current = null;
+      if (ttsStreamUrlRef.current) {
+        try {
+          URL.revokeObjectURL(ttsStreamUrlRef.current);
+        } catch {}
+        ttsStreamUrlRef.current = null;
+      }
       setLoading(false);
       throw e;
     }
   };
+
 
   const playTargetTTS = async (text) => {
     if (!text) return;
