@@ -794,6 +794,23 @@ export default function GrammarBook({ userLanguage = "en" }) {
     fn();
   }
 
+  function generatorFor(kind) {
+    switch (kind) {
+      case "fill":
+        return generateFill;
+      case "mc":
+        return generateMC;
+      case "ma":
+        return generateMA;
+      case "match":
+        return generateMatch;
+      case "speak":
+        return generateSpeak;
+      default:
+        return generateRandom;
+    }
+  }
+
   useEffect(() => {
     generateRandomRef.current = generateRandom;
   });
@@ -2236,6 +2253,9 @@ Return JSON ONLY:
   const speakLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
   const speakListenLabel =
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
+  const speakVariantLabel =
+    t("grammar_btn_speak") ||
+    (userLanguage === "es" ? "Pronunciar" : "Speak");
 
   const handleToggleSpeakPlayback = useCallback(async () => {
     const text = (sTarget || "").trim();
