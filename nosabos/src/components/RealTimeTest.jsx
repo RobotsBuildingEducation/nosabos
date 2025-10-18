@@ -9,6 +9,7 @@ import {
   Text,
   VStack,
   Wrap,
+  WrapItem,
   useToast,
   Flex,
   IconButton,
@@ -42,6 +43,7 @@ import { translations } from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
+import { DEFAULT_TTS_VOICE } from "../utils/tts";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -102,7 +104,7 @@ async function ensureUserDoc(npub, defaults = {}) {
           progress: {
             level: "beginner",
             supportLang: "en",
-            voice: "alloy",
+            voice: DEFAULT_TTS_VOICE,
             voicePersona: translations.en.onboarding_persona_default_example,
             targetLang: "es",
             showTranslations: true,
@@ -148,6 +150,63 @@ const COLORS = [
   "#B0F0FF",
 ];
 const colorFor = (i) => COLORS[i % COLORS.length];
+
+function hexToRgba(hex, alpha = 1) {
+  if (!hex) return `rgba(255,255,255,${alpha})`;
+  let clean = hex.replace("#", "");
+  if (clean.length === 3) {
+    clean = clean
+      .split("")
+      .map((ch) => ch + ch)
+      .join("");
+  }
+  if (clean.length !== 6) {
+    return `rgba(255,255,255,${alpha})`;
+  }
+  const int = parseInt(clean, 16);
+  const r = (int >> 16) & 255;
+  const g = (int >> 8) & 255;
+  const b = int & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function splitByDelimiters(text) {
+  if (!text) return [];
+  const raw = String(text)
+    .split(/[,;·•]/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return raw.length ? raw : [String(text).trim()];
+}
+
+function tidyPairs(rawPairs) {
+  if (!Array.isArray(rawPairs)) return [];
+  const results = [];
+
+  rawPairs.forEach((pair) => {
+    const lhs = String(pair?.lhs || "").trim();
+    const rhs = String(pair?.rhs || "").trim();
+    if (!lhs || !rhs) return;
+
+    if (lhs.length > 80 || rhs.length > 80) {
+      const lhsParts = splitByDelimiters(lhs);
+      const rhsParts = splitByDelimiters(rhs);
+      if (lhsParts.length === rhsParts.length && lhsParts.length > 1) {
+        lhsParts.forEach((segment, idx) => {
+          const translated = rhsParts[idx] || "";
+          if (segment && translated) {
+            results.push({ lhs: segment, rhs: translated });
+          }
+        });
+        return;
+      }
+    }
+
+    results.push({ lhs, rhs });
+  });
+
+  return results.slice(0, 8);
+}
 
 function wrapFirst(text, phrase, tokenId) {
   if (!text || !phrase) return [text];
@@ -263,25 +322,36 @@ function AlignedBubble({
       )}
 
       {!!pairs?.length && showSecondary && (
-        <Wrap spacing={2} mt={2} shouldWrapChildren>
-          {pairs.slice(0, 6).map((p, i) => (
-            <Badge
-              key={i}
-              variant="outline"
-              style={{
-                borderColor: colorFor(i),
-                backgroundColor: colorFor(i),
-                borderWidth: 2,
-                color: "#5C6064",
-              }}
-              whiteSpace="normal"
-              maxW="100%"
-            >
-              <Text as="span" fontSize="xs">
-                {p.lhs} ⇄ {p.rhs}
-              </Text>
-            </Badge>
-          ))}
+        <Wrap spacing={3} mt={3} shouldWrapChildren>
+          {pairs.slice(0, 8).map((p, i) => {
+            const color = colorFor(i);
+            return (
+              <WrapItem key={`${p.lhs}-${p.rhs}-${i}`} maxW="100%">
+                <Box
+                  px={3}
+                  py={2.5}
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor={hexToRgba(color, 0.8)}
+                  background={`linear-gradient(135deg, ${hexToRgba(
+                    color,
+                    0.28
+                  )} 0%, rgba(15,17,22,0.45) 100%)`}
+                  boxShadow={`0 10px 24px ${hexToRgba(color, 0.22)}`}
+                  color="whiteAlpha.900"
+                  minW="0"
+                  maxW="260px"
+                >
+                  <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
+                    {p.lhs}
+                  </Text>
+                  <Text fontSize="xs" color="whiteAlpha.800" mt={1} lineHeight="1.35">
+                    {p.rhs}
+                  </Text>
+                </Box>
+              </WrapItem>
+            );
+          })}
         </Wrap>
       )}
     </Box>
@@ -1989,10 +2059,14 @@ Return ONLY JSON:
 
     const prompt =
       target === "es"
-        ? `Traduce lo siguiente al español claro y natural. Devuelve SOLO JSON:
-{"translation":"...","pairs":[{"lhs":"<frase original>","rhs":"<frase traducida>"}]}`
-        : `Translate the following into natural US English. Return ONLY JSON:
-{"translation":"...","pairs":[{"lhs":"<source phrase>","rhs":"<translated phrase>"}]}`;
+        ? `Traduce lo siguiente al español claro y natural.
+Devuelve SOLO JSON con el formato {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
+Divide la oración en fragmentos paralelos muy cortos (2 a 6 palabras) dentro de "pairs" para alinear las ideas.
+Evita responder con toda la frase en un solo fragmento.`
+        : `Translate the following into natural US English.
+Return ONLY JSON in the format {"translation":"...","pairs":[{"lhs":"...","rhs":"..."}]}.
+Split the sentence into short, aligned chunks (2-6 words) inside "pairs" for phrase-by-phrase study.
+Do not return the whole sentence as a single chunk.`;
 
     const body = {
       model: TRANSLATE_MODEL,
@@ -2037,13 +2111,7 @@ Return ONLY JSON:
     const parsed = safeParseJson(mergedText);
     const translation = (parsed?.translation || mergedText || "").trim();
     const rawPairs = Array.isArray(parsed?.pairs) ? parsed.pairs : [];
-    const pairs = rawPairs
-      .map((p) => ({
-        lhs: String(p?.lhs || "").trim(),
-        rhs: String(p?.rhs || "").trim(),
-      }))
-      .filter((p) => p.lhs && p.rhs)
-      .slice(0, 8);
+    const pairs = tidyPairs(rawPairs);
 
     updateMessage(id, (prev) => ({ ...prev, translation, pairs }));
     await upsertAssistantTurn(id, {

@@ -42,9 +42,9 @@ import { awardXp } from "../utils/utils";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import {
-  DEFAULT_TTS_VOICE,
   TTS_LANG_TAG,
   fetchTTSBlob,
+  resolveVoicePreference,
 } from "../utils/tts";
 
 /* ---------------------------
@@ -638,6 +638,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
+  const speakLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
   const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
     ? progress.supportLang
     : "en";
@@ -657,7 +658,11 @@ export default function Vocabulary({ userLanguage = "en" }) {
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
-  const voicePreference = progress.voice || DEFAULT_TTS_VOICE;
+  const voicePreference = resolveVoicePreference({
+    voice: progress.voice,
+    lang: targetLang,
+    langTag: speakLangTag,
+  });
 
   const recentCorrectRef = useRef([]);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
@@ -2680,7 +2685,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   const skipLabel =
     t("practice_skip_question") ||
     (userLanguage === "es" ? "Omitir pregunta" : "skip");
-  const speakLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
   const speakListenLabel =
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
 
@@ -2710,6 +2714,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         const blob = await fetchTTSBlob({
           text,
           voice: voicePreference,
+          lang: targetLang,
           langTag: speakLangTag,
         });
         audioUrl = URL.createObjectURL(blob);
