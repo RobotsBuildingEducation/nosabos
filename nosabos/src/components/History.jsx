@@ -1072,9 +1072,8 @@ export default function History({ userLanguage = "en" }) {
           body: JSON.stringify({
             input: text,
             voice: voice || "alloy",
-            model: "tts-1",
+            model: "gpt-4o-mini-tts",
             response_format: "mp3",
-            language: langTag,
           }),
         }
       );

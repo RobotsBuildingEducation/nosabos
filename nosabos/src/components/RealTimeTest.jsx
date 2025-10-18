@@ -332,12 +332,12 @@ function AlignedBubble({
                   py={2.5}
                   borderRadius="lg"
                   borderWidth="1px"
-                  borderColor={hexToRgba(color, 0.8)}
-                  background={`linear-gradient(135deg, ${hexToRgba(
+                  borderColor={hexToRgba(color, 0.6)}
+                  background={`linear-gradient(140deg, ${hexToRgba(
                     color,
-                    0.28
-                  )} 0%, rgba(15,17,22,0.45) 100%)`}
-                  boxShadow={`0 10px 24px ${hexToRgba(color, 0.22)}`}
+                    0.22
+                  )} 0%, rgba(15,17,22,0.5) 100%)`}
+                  boxShadow={`0 6px 18px ${hexToRgba(color, 0.12)}`}
                   color="whiteAlpha.900"
                   minW="0"
                   maxW="260px"

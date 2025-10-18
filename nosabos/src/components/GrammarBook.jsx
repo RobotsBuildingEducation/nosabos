@@ -2179,6 +2179,34 @@ Return JSON ONLY:
     }
   }
 
+  function handleMatchAutoMove(ri, sourceId) {
+    if (typeof ri !== "number" || Number.isNaN(ri)) return;
+    const draggableId = `r-${ri}`;
+
+    if (sourceId === "bank") {
+      const sourceIndex = mBank.indexOf(ri);
+      if (sourceIndex === -1) return;
+      const targetSlot = mSlots.indexOf(null);
+      if (targetSlot === -1) return;
+      onDragEnd({
+        draggableId,
+        source: { droppableId: "bank", index: sourceIndex },
+        destination: { droppableId: `slot-${targetSlot}`, index: 0 },
+      });
+      return;
+    }
+
+    if (sourceId?.startsWith("slot-")) {
+      const slotIndex = parseInt(sourceId.replace("slot-", ""), 10);
+      if (Number.isNaN(slotIndex)) return;
+      onDragEnd({
+        draggableId,
+        source: { droppableId: `slot-${slotIndex}`, index: 0 },
+        destination: { droppableId: "bank", index: mBank.length },
+      });
+    }
+  }
+
   const showTRFill =
     showTranslations &&
     translation &&
@@ -3216,9 +3244,33 @@ Return JSON ONLY:
                                     ref={dragProvided.innerRef}
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
+                                    onClick={() =>
+                                      handleMatchAutoMove(
+                                        mSlots[i],
+                                        `slot-${i}`
+                                      )
+                                    }
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter" || event.key === " ") {
+                                        event.preventDefault();
+                                        handleMatchAutoMove(
+                                          mSlots[i],
+                                          `slot-${i}`
+                                        );
+                                      }
+                                    }}
+                                    role="button"
+                                    tabIndex={0}
                                     style={{
-                                      cursor: "grab",
+                                      cursor: "pointer",
+                                      transition:
+                                        "transform 0.18s ease, box-shadow 0.18s ease",
                                       ...(dragProvided.draggableProps.style || {}),
+                                    }}
+                                    _hover={{ transform: "translateY(-2px)" }}
+                                    _focusVisible={{
+                                      boxShadow: "0 0 0 2px rgba(255,255,255,0.35)",
+                                      transform: "translateY(-2px)",
                                     }}
                                     px={3}
                                     py={1.5}
@@ -3273,9 +3325,25 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  onClick={() => handleMatchAutoMove(ri, "bank")}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                      event.preventDefault();
+                                      handleMatchAutoMove(ri, "bank");
+                                    }
+                                  }}
+                                  role="button"
+                                  tabIndex={0}
                                   style={{
-                                    cursor: "grab",
+                                    cursor: "pointer",
+                                    transition:
+                                      "transform 0.18s ease, box-shadow 0.18s ease",
                                     ...(dragProvided.draggableProps.style || {}),
+                                  }}
+                                  _hover={{ transform: "translateY(-2px)" }}
+                                  _focusVisible={{
+                                    boxShadow: "0 0 0 2px rgba(255,255,255,0.35)",
+                                    transform: "translateY(-2px)",
                                   }}
                                   px={3}
                                   py={1.5}

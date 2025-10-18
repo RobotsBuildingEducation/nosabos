@@ -829,9 +829,8 @@ export default function StoryMode() {
             body: JSON.stringify({
               input: text,
               voice,
-              model: "tts-1",
+              model: "gpt-4o-mini-tts",
               response_format: "mp3",
-              language: langTag,
             }),
           }
         );

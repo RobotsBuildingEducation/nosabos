@@ -258,7 +258,7 @@ exports.proxyTTS = onRequest(
     const {
       input,
       voice = "alloy",
-      model = "tts-1",
+      model = "gpt-4o-mini-tts",
       response_format = "mp3",
     } = body;
 
