@@ -16,7 +16,10 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
-import { PiArrowsClockwiseDuotone } from "react-icons/pi";
+import {
+  PiArrowsClockwiseDuotone,
+  PiMicrophoneStageDuotone,
+} from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
 
 import {
@@ -345,7 +348,12 @@ function AlignedBubble({
                   <Text fontSize="sm" fontWeight="semibold" lineHeight="1.4">
                     {p.lhs}
                   </Text>
-                  <Text fontSize="xs" color="whiteAlpha.800" mt={1} lineHeight="1.35">
+                  <Text
+                    fontSize="xs"
+                    color="whiteAlpha.800"
+                    mt={1}
+                    lineHeight="1.35"
+                  >
                     {p.rhs}
                   </Text>
                 </Box>
