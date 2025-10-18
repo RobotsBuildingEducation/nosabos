@@ -8,21 +8,41 @@ export const TTS_LANG_TAG = {
 
 export const DEFAULT_TTS_VOICE = "alloy";
 
+const SUPPORTED_TTS_VOICES = new Set([
+  "alloy",
+  "echo",
+  "fable",
+  "onyx",
+  "nova",
+  "shimmer",
+  "coral",
+  "verse",
+  "ballad",
+  "ash",
+  "sage",
+  "marin",
+  "cedar",
+]);
+
 const TTS_NATIVE_VOICE = {
   en: "alloy",
-  es: "viva",
-  nah: "viva",
+  es: "marin",
+  nah: "marin",
 };
+
+function sanitizeVoice(voice) {
+  return SUPPORTED_TTS_VOICES.has(voice) ? voice : DEFAULT_TTS_VOICE;
+}
 
 export function voiceForLang(lang, langTag) {
   const normalizedLang = (lang || "").toLowerCase();
   if (normalizedLang && TTS_NATIVE_VOICE[normalizedLang]) {
-    return TTS_NATIVE_VOICE[normalizedLang];
+    return sanitizeVoice(TTS_NATIVE_VOICE[normalizedLang]);
   }
 
   const normalizedTag = (langTag || "").toLowerCase();
-  if (normalizedTag.startsWith("es")) return TTS_NATIVE_VOICE.es;
-  if (normalizedTag.startsWith("en")) return TTS_NATIVE_VOICE.en;
+  if (normalizedTag.startsWith("es")) return sanitizeVoice(TTS_NATIVE_VOICE.es);
+  if (normalizedTag.startsWith("en")) return sanitizeVoice(TTS_NATIVE_VOICE.en);
   return DEFAULT_TTS_VOICE;
 }
 
@@ -34,11 +54,11 @@ export function resolveVoicePreference({
 }) {
   const trimmed = typeof voice === "string" ? voice.trim() : "";
   if (!preferNativeVoice) {
-    return trimmed || DEFAULT_TTS_VOICE;
+    return sanitizeVoice(trimmed || DEFAULT_TTS_VOICE);
   }
 
   if (trimmed && trimmed !== DEFAULT_TTS_VOICE) {
-    return trimmed;
+    return sanitizeVoice(trimmed);
   }
 
   return voiceForLang(lang, langTag);
