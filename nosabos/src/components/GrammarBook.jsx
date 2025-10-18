@@ -36,9 +36,15 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
+import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
+import {
+  TTS_LANG_TAG,
+  fetchTTSBlob,
+  resolveVoicePreference,
+} from "../utils/tts";
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -551,6 +557,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
+  const speakLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
   const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
     ? progress.supportLang
     : "en";
@@ -570,6 +577,11 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
+  const voicePreference = resolveVoicePreference({
+    voice: progress.voice,
+    lang: targetLang,
+    langTag: speakLangTag,
+  });
 
   const recentCorrectRef = useRef([]);
 
@@ -716,6 +728,33 @@ export default function GrammarBook({ userLanguage = "en" }) {
   const [sRecognized, setSRecognized] = useState("");
   const [sEval, setSEval] = useState(null);
   const [loadingSpeakQ, setLoadingSpeakQ] = useState(false);
+  const speakAudioRef = useRef(null);
+  const speakAudioCacheRef = useRef(new Map());
+  const [isSpeakPlaying, setIsSpeakPlaying] = useState(false);
+
+  useEffect(() => {
+    const cache = speakAudioCacheRef.current;
+    return () => {
+      try {
+        speakAudioRef.current?.pause?.();
+      } catch {}
+      speakAudioRef.current = null;
+      cache.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+      });
+      cache.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      speakAudioRef.current?.pause?.();
+    } catch {}
+    speakAudioRef.current = null;
+    setIsSpeakPlaying(false);
+  }, [sTarget]);
 
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
@@ -758,6 +797,23 @@ export default function GrammarBook({ userLanguage = "en" }) {
   function generateRandom() {
     const fn = drawGenerator();
     fn();
+  }
+
+  function generatorFor(kind) {
+    switch (kind) {
+      case "fill":
+        return generateFill;
+      case "mc":
+        return generateMC;
+      case "ma":
+        return generateMA;
+      case "match":
+        return generateMatch;
+      case "speak":
+        return generateSpeak;
+      default:
+        return generateRandom;
+    }
   }
 
   useEffect(() => {
@@ -2123,6 +2179,34 @@ Return JSON ONLY:
     }
   }
 
+  function handleMatchAutoMove(ri, sourceId) {
+    if (typeof ri !== "number" || Number.isNaN(ri)) return;
+    const draggableId = `r-${ri}`;
+
+    if (sourceId === "bank") {
+      const sourceIndex = mBank.indexOf(ri);
+      if (sourceIndex === -1) return;
+      const targetSlot = mSlots.indexOf(null);
+      if (targetSlot === -1) return;
+      onDragEnd({
+        draggableId,
+        source: { droppableId: "bank", index: sourceIndex },
+        destination: { droppableId: `slot-${targetSlot}`, index: 0 },
+      });
+      return;
+    }
+
+    if (sourceId?.startsWith("slot-")) {
+      const slotIndex = parseInt(sourceId.replace("slot-", ""), 10);
+      if (Number.isNaN(slotIndex)) return;
+      onDragEnd({
+        draggableId,
+        source: { droppableId: `slot-${slotIndex}`, index: 0 },
+        destination: { droppableId: "bank", index: mBank.length },
+      });
+    }
+  }
+
   const showTRFill =
     showTranslations &&
     translation &&
@@ -2198,7 +2282,82 @@ Return JSON ONLY:
       : "Drop the answer here");
   const skipLabel =
     t("practice_skip_question") ||
-    (userLanguage === "es" ? "Omitir pregunta" : "Skip question");
+    (userLanguage === "es" ? "Omitir pregunta" : "skip");
+  const speakListenLabel =
+    userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
+  const speakVariantLabel =
+    t("grammar_btn_speak") ||
+    (userLanguage === "es" ? "Pronunciar" : "Speak");
+
+  const handleToggleSpeakPlayback = useCallback(async () => {
+    const text = (sTarget || "").trim();
+    if (!text) return;
+
+    if (isSpeakPlaying && speakAudioRef.current) {
+      try {
+        speakAudioRef.current.pause();
+      } catch {}
+      speakAudioRef.current = null;
+      setIsSpeakPlaying(false);
+      return;
+    }
+
+    try {
+      setIsSpeakPlaying(true);
+      try {
+        speakAudioRef.current?.pause?.();
+      } catch {}
+      speakAudioRef.current = null;
+
+      const cacheKey = `${speakLangTag}::${voicePreference}::${text}`;
+      let audioUrl = speakAudioCacheRef.current.get(cacheKey);
+      if (!audioUrl) {
+        const blob = await fetchTTSBlob({
+          text,
+          voice: voicePreference,
+          lang: targetLang,
+          langTag: speakLangTag,
+        });
+        audioUrl = URL.createObjectURL(blob);
+        speakAudioCacheRef.current.set(cacheKey, audioUrl);
+      }
+
+      const audio = new Audio(audioUrl);
+      speakAudioRef.current = audio;
+      audio.onended = () => {
+        setIsSpeakPlaying(false);
+        speakAudioRef.current = null;
+      };
+      audio.onerror = () => {
+        setIsSpeakPlaying(false);
+        speakAudioRef.current = null;
+      };
+      await audio.play();
+    } catch (err) {
+      console.error("Grammar speak playback failed", err);
+      setIsSpeakPlaying(false);
+      speakAudioRef.current = null;
+      toast({
+        title:
+          userLanguage === "es"
+            ? "No se pudo reproducir el audio"
+            : "Audio playback failed",
+        description:
+          userLanguage === "es"
+            ? "Inténtalo de nuevo."
+            : "Please try again.",
+        status: "error",
+        duration: 2600,
+      });
+    }
+  }, [
+    isSpeakPlaying,
+    sTarget,
+    speakLangTag,
+    toast,
+    userLanguage,
+    voicePreference,
+  ]);
 
   const renderMcPrompt = () => {
     if (!mcQ) return null;
@@ -2439,7 +2598,7 @@ Return JSON ONLY:
 
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
-          <>
+          <VStack align="stretch" spacing={4}>
             <HStack align="start">
               <CopyAllBtn
                 q={question}
@@ -2461,16 +2620,23 @@ Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack>
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder={t("grammar_input_placeholder_answer")}
-                isDisabled={loadingG}
-              />
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={t("grammar_input_placeholder_answer")}
+              isDisabled={loadingG}
+            />
+
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+            >
               <Button
+                colorScheme="purple"
                 onClick={submitFill}
                 isDisabled={loadingG || !input.trim() || !question}
+                w={{ base: "100%", md: "auto" }}
               >
                 {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -2478,20 +2644,25 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQ || loadingG}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
-            <HStack spacing={3} mt={1}>
+            <HStack spacing={3}>
               <ResultBadge ok={lastOk} xp={recentXp} />
             </HStack>
-          </>
+          </VStack>
         ) : null}
 
         {/* ---- MC UI ---- */}
@@ -2618,10 +2789,16 @@ Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+            >
               <Button
+                colorScheme="purple"
                 onClick={submitMC}
                 isDisabled={loadingMCG || !mcPick || !mcChoices.length}
+                w={{ base: "100%", md: "auto" }}
               >
                 {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -2629,15 +2806,20 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMCQ || loadingMCG}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2774,10 +2956,16 @@ Return JSON ONLY:
               </>
             )}
 
-            <HStack>
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+            >
               <Button
+                colorScheme="purple"
                 onClick={submitMA}
                 isDisabled={loadingMAG || !maChoices.length || !maReady}
+                w={{ base: "100%", md: "auto" }}
               >
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -2785,15 +2973,20 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMAQ || loadingMAG}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
@@ -2828,7 +3021,25 @@ Return JSON ONLY:
               p={6}
               textAlign="center"
               bg="rgba(255,255,255,0.04)"
+              position="relative"
             >
+              <Tooltip label={speakListenLabel} placement="top">
+                <IconButton
+                  aria-label={speakListenLabel}
+                  icon={<PiSpeakerHighDuotone />}
+                  size="sm"
+                  variant="ghost"
+                  colorScheme={isSpeakPlaying ? "teal" : "purple"}
+                  position="absolute"
+                  top="3"
+                  right="3"
+                  onClick={handleToggleSpeakPlayback}
+                  isDisabled={loadingSpeakQ || !sTarget}
+                />
+              </Tooltip>
+              <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
+                {speakVariantLabel}
+              </Badge>
               <Text fontSize="3xl" fontWeight="700">
                 {loadingSpeakQ ? "…" : sTarget || "…"}
               </Text>
@@ -2867,9 +3078,15 @@ Return JSON ONLY:
               </Text>
             ) : null}
 
-            <HStack spacing={3} mt={4} align="center">
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+              mt={4}
+            >
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
+                w={{ base: "100%", md: "auto" }}
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
@@ -2936,15 +3153,20 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingSpeakQ || isSpeakRecording}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
             {lastOk === true ? (
               <SpeakSuccessCard
@@ -3022,9 +3244,33 @@ Return JSON ONLY:
                                     ref={dragProvided.innerRef}
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
+                                    onClick={() =>
+                                      handleMatchAutoMove(
+                                        mSlots[i],
+                                        `slot-${i}`
+                                      )
+                                    }
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter" || event.key === " ") {
+                                        event.preventDefault();
+                                        handleMatchAutoMove(
+                                          mSlots[i],
+                                          `slot-${i}`
+                                        );
+                                      }
+                                    }}
+                                    role="button"
+                                    tabIndex={0}
                                     style={{
-                                      cursor: "grab",
+                                      cursor: "pointer",
+                                      transition:
+                                        "transform 0.18s ease, box-shadow 0.18s ease",
                                       ...(dragProvided.draggableProps.style || {}),
+                                    }}
+                                    _hover={{ transform: "translateY(-2px)" }}
+                                    _focusVisible={{
+                                      boxShadow: "0 0 0 2px rgba(255,255,255,0.35)",
+                                      transform: "translateY(-2px)",
                                     }}
                                     px={3}
                                     py={1.5}
@@ -3079,9 +3325,25 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
+                                  onClick={() => handleMatchAutoMove(ri, "bank")}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                      event.preventDefault();
+                                      handleMatchAutoMove(ri, "bank");
+                                    }
+                                  }}
+                                  role="button"
+                                  tabIndex={0}
                                   style={{
-                                    cursor: "grab",
+                                    cursor: "pointer",
+                                    transition:
+                                      "transform 0.18s ease, box-shadow 0.18s ease",
                                     ...(dragProvided.draggableProps.style || {}),
+                                  }}
+                                  _hover={{ transform: "translateY(-2px)" }}
+                                  _focusVisible={{
+                                    boxShadow: "0 0 0 2px rgba(255,255,255,0.35)",
+                                    transform: "translateY(-2px)",
                                   }}
                                   px={3}
                                   py={1.5}
@@ -3112,10 +3374,16 @@ Return JSON ONLY:
               </Box>
             </DragDropContext>
 
-            <HStack>
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+            >
               <Button
+                colorScheme="purple"
                 onClick={submitMatch}
                 isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                w={{ base: "100%", md: "auto" }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -3123,15 +3391,20 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
+                w={{ base: "100%", md: "auto" }}
               >
                 {skipLabel}
               </Button>
               {lastOk === true && nextAction ? (
-                <Button variant="outline" onClick={handleNext}>
+                <Button
+                  variant="outline"
+                  onClick={handleNext}
+                  w={{ base: "100%", md: "auto" }}
+                >
                   {t("practice_next_question") || "Next question"}
                 </Button>
               ) : null}
-            </HStack>
+            </Stack>
 
             <HStack spacing={3} mt={1}>
               <ResultBadge ok={lastOk} xp={recentXp} />
