@@ -21,6 +21,9 @@ import {
   Divider,
   Spinner,
   Input,
+  Tag,
+  TagLabel,
+  TagLeftIcon,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaVolumeUp, FaStop } from "react-icons/fa";
@@ -1618,7 +1621,18 @@ export default function StoryMode() {
                   size="lg"
                   px={6}
                   leftIcon={<FaWandMagicSparkles />}
-                  color="white"
+                  bgGradient="linear(to-r, teal.400, cyan.400)"
+                  color="gray.900"
+                  fontWeight="700"
+                  boxShadow="0 12px 28px rgba(20, 184, 166, 0.35)"
+                  _hover={{
+                    bgGradient: "linear(to-r, teal.300, cyan.300)",
+                    boxShadow: "0 14px 30px rgba(20, 184, 166, 0.45)",
+                  }}
+                  _active={{
+                    bgGradient: "linear(to-r, teal.500, cyan.500)",
+                    boxShadow: "0 8px 18px rgba(13, 148, 136, 0.45)",
+                  }}
                   isLoading={isLoading}
                 >
                   {uiText.startRole}
@@ -1667,34 +1681,73 @@ export default function StoryMode() {
                 +{sessionXp}
               </Badge>
             )}
-            <Box
-              as="form"
-              onSubmit={handleRoleSubmit}
-              display="flex"
-              gap={2}
-              alignItems="center"
-            >
-              <Input
-                value={roleInput}
-                onChange={(e) => setRoleInput(e.target.value)}
-                placeholder={uiText.rolePlaceholder}
-                size="sm"
-                bg="rgba(15, 23, 42, 0.6)"
-                color="white"
-                maxW={{ base: "200px", md: "260px" }}
-                _placeholder={{ color: "rgba(148, 163, 184, 0.7)" }}
-                isDisabled={isLoading}
-              />
-              <Button
-                type="submit"
-                size="sm"
-                leftIcon={<FaWandMagicSparkles />}
-                color="white"
-                border="1px solid rgba(20, 184, 166, 0.35)"
-                isLoading={isLoading}
+            <Box as="form" onSubmit={handleRoleSubmit}>
+              <HStack
+                spacing={2}
+                alignItems="center"
+                justify="flex-end"
+                flexWrap="wrap"
               >
-                {uiText.updateRole}
-              </Button>
+                {activeRole && (
+                  <Tag
+                    size="lg"
+                    borderRadius="full"
+                    bg="rgba(20, 184, 166, 0.16)"
+                    color="teal.50"
+                    border="1px solid rgba(45, 212, 191, 0.35)"
+                    px={3}
+                    py={1}
+                    maxW={{ base: "100%", sm: "260px" }}
+                  >
+                    <TagLeftIcon
+                      as={PiMicrophoneStageDuotone}
+                      boxSize={3.5}
+                      color="teal.200"
+                    />
+                    <TagLabel
+                      fontWeight="600"
+                      fontSize="sm"
+                      whiteSpace="nowrap"
+                      overflow="hidden"
+                      textOverflow="ellipsis"
+                      maxW="100%"
+                    >
+                      {activeRole}
+                    </TagLabel>
+                  </Tag>
+                )}
+                <Input
+                  value={roleInput}
+                  onChange={(e) => setRoleInput(e.target.value)}
+                  placeholder={uiText.rolePlaceholder}
+                  size="sm"
+                  bg="rgba(15, 23, 42, 0.6)"
+                  color="white"
+                  maxW={{ base: "200px", md: "240px" }}
+                  _placeholder={{ color: "rgba(148, 163, 184, 0.7)" }}
+                  isDisabled={isLoading}
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  leftIcon={<FaWandMagicSparkles />}
+                  bgGradient="linear(to-r, teal.400, cyan.400)"
+                  color="gray.900"
+                  fontWeight="700"
+                  boxShadow="0 8px 18px rgba(20, 184, 166, 0.25)"
+                  _hover={{
+                    bgGradient: "linear(to-r, teal.300, cyan.300)",
+                    boxShadow: "0 10px 22px rgba(20, 184, 166, 0.35)",
+                  }}
+                  _active={{
+                    bgGradient: "linear(to-r, teal.500, cyan.500)",
+                    boxShadow: "0 4px 12px rgba(13, 148, 136, 0.4)",
+                  }}
+                  isLoading={isLoading}
+                >
+                  {uiText.updateRole}
+                </Button>
+              </HStack>
             </Box>
           </HStack>
         </HStack>
