@@ -315,7 +315,7 @@ export const translations = {
     app_err_save_language_title: "Could not save language",
 
     tabs_realtime: "Chat",
-    tabs_stories: "Stories",
+    tabs_stories: "Role Play",
     tabs_history: "History",
     tabs_grammar: "Grammar",
     tabs_vocab: "Vocabulary",

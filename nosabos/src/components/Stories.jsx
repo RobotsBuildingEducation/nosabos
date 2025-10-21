@@ -193,7 +193,7 @@ function useUIText(uiLang, level, translationsObj) {
           ? "Por ejemplo: una doctora ayudando a pacientes"
           : "e.g. a teacher helping new students",
       startRole: uiLang === "es" ? "Comenzar" : "Start role play",
-      updateRole: uiLang === "es" ? "Actualizar rol" : "Update role",
+      updateRole: uiLang === "es" ? "Actualizar rol" : "Update",
       editRole: uiLang === "es" ? "Editar" : "Edit",
       cancelEdit: uiLang === "es" ? "Cancelar" : "Cancel",
       playing: uiLang === "es" ? "Reproduciendo..." : "Playing...",
@@ -538,8 +538,13 @@ export default function StoryMode() {
           targetLang,
           supportLang
         );
-        if (!normalized) throw new Error("Story payload missing expected fields");
-        const validated = validateAndFixStorySentences(normalized, "tgt", "sup");
+        if (!normalized)
+          throw new Error("Story payload missing expected fields");
+        const validated = validateAndFixStorySentences(
+          normalized,
+          "tgt",
+          "sup"
+        );
         setStoryData(validated);
         storyCacheRef.current = validated;
         setCurrentSentenceIndex(0);
@@ -551,143 +556,143 @@ export default function StoryMode() {
         // Bilingual fallback (ES/EN) that respects target/support languages
         const fallback = {
           fullStory: {
-          tgt:
-            targetLang === "en"
-              ? roleFocus
-                ? `In this scene, you are ${roleFocus}. One afternoon in San Miguel, the town square is lively as you guide your friends through a new challenge.`
-                : "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
-              : roleFocus
-              ? `En esta historia eres ${roleFocus}. Una tarde en San Miguel, la plaza del pueblo está llena de vida mientras guías a tus amistades en un nuevo reto.`
-              : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-          sup:
-            supportLang === "es"
-              ? roleFocus
+            tgt:
+              targetLang === "en"
+                ? roleFocus
+                  ? `In this scene, you are ${roleFocus}. One afternoon in San Miguel, the town square is lively as you guide your friends through a new challenge.`
+                  : "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
+                : roleFocus
                 ? `En esta historia eres ${roleFocus}. Una tarde en San Miguel, la plaza del pueblo está llena de vida mientras guías a tus amistades en un nuevo reto.`
-                : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-              : roleFocus
-              ? `In this role play you are ${roleFocus}. One afternoon in San Miguel, the town square is buzzing while you guide your friends through a new challenge.`
-              : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
-        },
-        sentences:
-          targetLang === "en"
-            ? [
-                {
-                  tgt: roleFocus
-                    ? `You step into the plaza as ${roleFocus}, ready to help.`
-                    : "Once upon a time, there was a small town called San Miguel.",
-                  sup:
-                    supportLang === "es"
-                      ? roleFocus
-                        ? `Entras a la plaza como ${roleFocus}, listo para ayudar.`
-                        : "Había una vez un pequeño pueblo llamado San Miguel."
-                      : roleFocus
+                : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+            sup:
+              supportLang === "es"
+                ? roleFocus
+                  ? `En esta historia eres ${roleFocus}. Una tarde en San Miguel, la plaza del pueblo está llena de vida mientras guías a tus amistades en un nuevo reto.`
+                  : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
+                : roleFocus
+                ? `In this role play you are ${roleFocus}. One afternoon in San Miguel, the town square is buzzing while you guide your friends through a new challenge.`
+                : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
+          },
+          sentences:
+            targetLang === "en"
+              ? [
+                  {
+                    tgt: roleFocus
                       ? `You step into the plaza as ${roleFocus}, ready to help.`
                       : "Once upon a time, there was a small town called San Miguel.",
-                },
-                {
-                  tgt: roleFocus
-                    ? "The townspeople gather around you, eager for guidance."
-                    : "The town had a lovely square where kids played every day.",
-                  sup:
-                    supportLang === "es"
-                      ? roleFocus
-                        ? "La gente del pueblo se reúne contigo, con ganas de escuchar tus consejos."
-                        : "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
-                      : roleFocus
+                    sup:
+                      supportLang === "es"
+                        ? roleFocus
+                          ? `Entras a la plaza como ${roleFocus}, listo para ayudar.`
+                          : "Había una vez un pequeño pueblo llamado San Miguel."
+                        : roleFocus
+                        ? `You step into the plaza as ${roleFocus}, ready to help.`
+                        : "Once upon a time, there was a small town called San Miguel.",
+                  },
+                  {
+                    tgt: roleFocus
                       ? "The townspeople gather around you, eager for guidance."
                       : "The town had a lovely square where kids played every day.",
-                },
-                {
-                  tgt: roleFocus
-                    ? "You show them how to use the fountain to solve their problem."
-                    : "In the square, an old fountain always had fresh water.",
-                  sup:
-                    supportLang === "es"
-                      ? roleFocus
-                        ? "Les enseñas a usar la fuente para resolver su problema."
-                        : "En la plaza, una fuente antigua siempre tenía agua fresca."
-                      : roleFocus
+                    sup:
+                      supportLang === "es"
+                        ? roleFocus
+                          ? "La gente del pueblo se reúne contigo, con ganas de escuchar tus consejos."
+                          : "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
+                        : roleFocus
+                        ? "The townspeople gather around you, eager for guidance."
+                        : "The town had a lovely square where kids played every day.",
+                  },
+                  {
+                    tgt: roleFocus
                       ? "You show them how to use the fountain to solve their problem."
                       : "In the square, an old fountain always had fresh water.",
-                },
-                {
-                  tgt: roleFocus
-                    ? "Everyone thanks you for leading the way with calm confidence."
-                    : "Adults sat around it to talk and rest after work.",
-                  sup:
-                    supportLang === "es"
-                      ? roleFocus
-                        ? "Todos te agradecen por guiarlos con calma y confianza."
-                        : "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
-                      : roleFocus
+                    sup:
+                      supportLang === "es"
+                        ? roleFocus
+                          ? "Les enseñas a usar la fuente para resolver su problema."
+                          : "En la plaza, una fuente antigua siempre tenía agua fresca."
+                        : roleFocus
+                        ? "You show them how to use the fountain to solve their problem."
+                        : "In the square, an old fountain always had fresh water.",
+                  },
+                  {
+                    tgt: roleFocus
                       ? "Everyone thanks you for leading the way with calm confidence."
                       : "Adults sat around it to talk and rest after work.",
-                },
-              ]
-            : [
-                {
-                  tgt: roleFocus
-                    ? `Eres ${roleFocus} y llegas a la plaza principal.`
-                    : "Había una vez un pequeño pueblo en México llamado San Miguel.",
-                  sup:
-                    supportLang === "es"
-                      ? "Había una vez un pequeño pueblo en México llamado San Miguel."
-                      : roleFocus
-                      ? `You are ${roleFocus} arriving at the main square.`
-                      : "Once upon a time, there was a small town in Mexico called San Miguel.",
-                },
-                {
-                  tgt: roleFocus
-                    ? "La gente se reúne a tu alrededor para pedirte ayuda."
-                    : "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
-                  sup:
-                    supportLang === "es"
-                      ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
-                      : roleFocus
-                      ? "People gather around you to ask for help."
-                      : "The town had a very beautiful square where the children played every day.",
-                },
-                {
-                  tgt: roleFocus
-                    ? "Enseñas a todos a usar la fuente para resolver la situación."
-                    : "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
-                  sup:
-                    supportLang === "es"
-                      ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
-                      : roleFocus
-                      ? "You teach everyone to use the fountain to solve the situation."
-                      : "In the square, there was an old fountain that always had fresh water.",
-                },
-                {
-                  tgt: roleFocus
-                    ? "Todos te agradecen por liderar con calma y creatividad."
-                    : "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-                  sup:
-                    supportLang === "es"
-                      ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                      : roleFocus
-                      ? "The adults thank you for leading with calm creativity."
-                      : "The adults sat around the fountain to talk and rest after work.",
-                },
-              ],
+                    sup:
+                      supportLang === "es"
+                        ? roleFocus
+                          ? "Todos te agradecen por guiarlos con calma y confianza."
+                          : "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
+                        : roleFocus
+                        ? "Everyone thanks you for leading the way with calm confidence."
+                        : "Adults sat around it to talk and rest after work.",
+                  },
+                ]
+              : [
+                  {
+                    tgt: roleFocus
+                      ? `Eres ${roleFocus} y llegas a la plaza principal.`
+                      : "Había una vez un pequeño pueblo en México llamado San Miguel.",
+                    sup:
+                      supportLang === "es"
+                        ? "Había una vez un pequeño pueblo en México llamado San Miguel."
+                        : roleFocus
+                        ? `You are ${roleFocus} arriving at the main square.`
+                        : "Once upon a time, there was a small town in Mexico called San Miguel.",
+                  },
+                  {
+                    tgt: roleFocus
+                      ? "La gente se reúne a tu alrededor para pedirte ayuda."
+                      : "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
+                    sup:
+                      supportLang === "es"
+                        ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
+                        : roleFocus
+                        ? "People gather around you to ask for help."
+                        : "The town had a very beautiful square where the children played every day.",
+                  },
+                  {
+                    tgt: roleFocus
+                      ? "Enseñas a todos a usar la fuente para resolver la situación."
+                      : "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
+                    sup:
+                      supportLang === "es"
+                        ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
+                        : roleFocus
+                        ? "You teach everyone to use the fountain to solve the situation."
+                        : "In the square, there was an old fountain that always had fresh water.",
+                  },
+                  {
+                    tgt: roleFocus
+                      ? "Todos te agradecen por liderar con calma y creatividad."
+                      : "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                    sup:
+                      supportLang === "es"
+                        ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
+                        : roleFocus
+                        ? "The adults thank you for leading with calm creativity."
+                        : "The adults sat around the fountain to talk and rest after work.",
+                  },
+                ],
         };
-      setStoryData(fallback);
-      storyCacheRef.current = fallback;
-      toast({
-        title:
-          uiLang === "es"
-            ? "Usando juego de roles de demo"
-            : "Using Demo Role Play",
-        description:
-          uiLang === "es"
-            ? "API no disponible. Usando juego de roles de demo para pruebas."
-            : "API unavailable. Using demo role play for testing.",
-        status: "info",
-        duration: 3000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
+        setStoryData(fallback);
+        storyCacheRef.current = fallback;
+        toast({
+          title:
+            uiLang === "es"
+              ? "Usando juego de roles de demo"
+              : "Using Demo Role Play",
+          description:
+            uiLang === "es"
+              ? "API no disponible. Usando juego de roles de demo para pruebas."
+              : "API unavailable. Using demo role play for testing.",
+          status: "info",
+          duration: 3000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
     },
     [
       activeRole,
@@ -741,7 +746,7 @@ export default function StoryMode() {
           `Also provide a brief support translation in ${sName} (${sLang}).`,
           "",
           "Constraints:",
-          "- 4 to 6 sentences total.",
+          "- 8 to 10 sentences total.",
           "- Simple, culturally-relevant, 8–15 words per sentence.",
           `- Make the learner, acting as ${roleFocus}, the protagonist of the story.`,
           "- NO headings, NO commentary, NO code fences.",
@@ -753,165 +758,168 @@ export default function StoryMode() {
           "Begin now and follow the protocol exactly.",
         ].join(" ");
 
-      // Stream from Gemini
-      const resp = await simplemodel.generateContentStream({
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-      });
+        // Stream from Gemini
+        const resp = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
 
-      let buffer = "";
-      let sentences = [];
-      let revealed = false;
-      const seenLineKeys = new Set();
+        let buffer = "";
+        let sentences = [];
+        let revealed = false;
+        const seenLineKeys = new Set();
 
-      // Safely parse and apply a line of potential JSON
-      const tryConsumeLine = (line) => {
-        const trimmed = line.trim();
-        if (!trimmed || trimmed.startsWith("```")) return;
-        if (!(trimmed.startsWith("{") && trimmed.endsWith("}"))) return;
-        let obj;
-        try {
-          obj = JSON.parse(trimmed);
-        } catch {
-          return;
-        }
-        if (obj?.type === "sentence" && (obj.tgt || obj.sup)) {
-          const item = {
-            tgt: String(obj.tgt || "").trim(),
-            sup: String(obj.sup || "").trim(),
-          };
-          const key = `${item.tgt}|||${item.sup}`;
-          if (seenLineKeys.has(key)) return;
-          seenLineKeys.add(key);
-          sentences.push(item);
-
-          // Reveal UI as soon as we have the first sentence
-          if (!revealed) {
-            setStoryData({
-              fullStory: { tgt: item.tgt, sup: item.sup || "" },
-              sentences: [item],
-            });
-            setIsLoading(false);
-            revealed = true;
-          } else {
-            // incrementally append
-            setStoryData((prev) => {
-              const prevSentences = prev?.sentences || [];
-              const alreadyExists = prevSentences.some(
-                (s) => s.tgt === item.tgt && s.sup === item.sup
-              );
-              if (alreadyExists) return prev;
-              const nextSentences = [...prevSentences, item];
-              return {
-                fullStory: {
-                  tgt:
-                    (prev?.fullStory?.tgt ? prev.fullStory.tgt + " " : "") +
-                    item.tgt,
-                  sup:
-                    (prev?.fullStory?.sup ? prev.fullStory.sup + " " : "") +
-                    (item.sup || ""),
-                },
-                sentences: nextSentences,
-              };
-            });
+        // Safely parse and apply a line of potential JSON
+        const tryConsumeLine = (line) => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith("```")) return;
+          if (!(trimmed.startsWith("{") && trimmed.endsWith("}"))) return;
+          let obj;
+          try {
+            obj = JSON.parse(trimmed);
+          } catch {
+            return;
           }
-          return;
+          if (obj?.type === "sentence" && (obj.tgt || obj.sup)) {
+            const item = {
+              tgt: String(obj.tgt || "").trim(),
+              sup: String(obj.sup || "").trim(),
+            };
+            const key = `${item.tgt}|||${item.sup}`;
+            if (seenLineKeys.has(key)) return;
+            seenLineKeys.add(key);
+            sentences.push(item);
+
+            // Reveal UI as soon as we have the first sentence
+            if (!revealed) {
+              setStoryData({
+                fullStory: { tgt: item.tgt, sup: item.sup || "" },
+                sentences: [item],
+              });
+              setIsLoading(false);
+              revealed = true;
+            } else {
+              // incrementally append
+              setStoryData((prev) => {
+                const prevSentences = prev?.sentences || [];
+                const alreadyExists = prevSentences.some(
+                  (s) => s.tgt === item.tgt && s.sup === item.sup
+                );
+                if (alreadyExists) return prev;
+                const nextSentences = [...prevSentences, item];
+                return {
+                  fullStory: {
+                    tgt:
+                      (prev?.fullStory?.tgt ? prev.fullStory.tgt + " " : "") +
+                      item.tgt,
+                    sup:
+                      (prev?.fullStory?.sup ? prev.fullStory.sup + " " : "") +
+                      (item.sup || ""),
+                  },
+                  sentences: nextSentences,
+                };
+              });
+            }
+            return;
+          }
+          if (obj?.type === "done") {
+            // no-op; we finalize after stream end as well
+            return;
+          }
+        };
+
+        for await (const chunk of resp.stream) {
+          const piece = textFromChunk(chunk);
+          if (!piece) continue;
+          buffer += piece;
+
+          // Consume complete lines
+          let nl;
+          while ((nl = buffer.indexOf("\n")) !== -1) {
+            const line = buffer.slice(0, nl);
+            buffer = buffer.slice(nl + 1);
+            tryConsumeLine(line);
+          }
         }
-        if (obj?.type === "done") {
-          // no-op; we finalize after stream end as well
-          return;
+
+        const leftover = buffer.trim();
+        if (leftover) {
+          leftover
+            .split("\n")
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .forEach((line) => tryConsumeLine(line));
         }
-      };
 
-      for await (const chunk of resp.stream) {
-        const piece = textFromChunk(chunk);
-        if (!piece) continue;
-        buffer += piece;
-
-        // Consume complete lines
-        let nl;
-        while ((nl = buffer.indexOf("\n")) !== -1) {
-          const line = buffer.slice(0, nl);
-          buffer = buffer.slice(nl + 1);
-          tryConsumeLine(line);
+        const finalAgg = await resp.response;
+        const finalText =
+          (typeof finalAgg?.text === "function"
+            ? finalAgg.text()
+            : finalAgg?.text) || "";
+        if (!sentences.length && finalText) {
+          finalText
+            .split("\n")
+            .map((l) => l.trim())
+            .filter(Boolean)
+            .forEach((line) => tryConsumeLine(line));
         }
-      }
 
-      const leftover = buffer.trim();
-      if (leftover) {
-        leftover
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .forEach((line) => tryConsumeLine(line));
-      }
-
-      const finalAgg = await resp.response;
-      const finalText =
-        (typeof finalAgg?.text === "function"
-          ? finalAgg.text()
-          : finalAgg?.text) || "";
-      if (!sentences.length && finalText) {
-        finalText
-          .split("\n")
-          .map((l) => l.trim())
-          .filter(Boolean)
-          .forEach((line) => tryConsumeLine(line));
-      }
-
-      // If model ignored protocol, fallback to best-effort parse
-      if (sentences.length === 0 && finalText) {
-        const rough = finalText
-          .replace(/```[\s\S]*?```/g, "")
-          .replace(/\n+/g, " ")
-          .split(/[.!?]+/)
-          .map((s) => s.trim())
-          .filter(Boolean)
-          .slice(0, 6);
-        sentences = rough.map((s) => ({
-          tgt: s.endsWith(".") ? s : s + ".",
-          sup: "",
-        }));
-        if (sentences.length) {
-          setIsLoading(false);
-          setStoryData({
-            fullStory: { tgt: sentences.map((s) => s.tgt).join(" "), sup: "" },
-            sentences,
-          });
-          revealed = true;
+        // If model ignored protocol, fallback to best-effort parse
+        if (sentences.length === 0 && finalText) {
+          const rough = finalText
+            .replace(/```[\s\S]*?```/g, "")
+            .replace(/\n+/g, " ")
+            .split(/[.!?]+/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .slice(0, 6);
+          sentences = rough.map((s) => ({
+            tgt: s.endsWith(".") ? s : s + ".",
+            sup: "",
+          }));
+          if (sentences.length) {
+            setIsLoading(false);
+            setStoryData({
+              fullStory: {
+                tgt: sentences.map((s) => s.tgt).join(" "),
+                sup: "",
+              },
+              sentences,
+            });
+            revealed = true;
+          }
         }
-      }
 
-      if (!revealed) throw new Error("No story produced.");
+        if (!revealed) throw new Error("No story produced.");
 
-      // Final tidy/validation (keeps your existing UX expectations)
-      setStoryData((prev) => {
-        const normalized = normalizeStory(
-          {
-            fullStory: {
-              [tLang]: prev.fullStory.tgt,
-              [sLang]: prev.fullStory.sup,
+        // Final tidy/validation (keeps your existing UX expectations)
+        setStoryData((prev) => {
+          const normalized = normalizeStory(
+            {
+              fullStory: {
+                [tLang]: prev.fullStory.tgt,
+                [sLang]: prev.fullStory.sup,
+              },
+              sentences: prev.sentences.map((s) => ({
+                [tLang]: s.tgt,
+                [sLang]: s.sup,
+              })),
             },
-            sentences: prev.sentences.map((s) => ({
-              [tLang]: s.tgt,
-              [sLang]: s.sup,
-            })),
-          },
-          tLang,
-          sLang
-        );
-        const validated = validateAndFixStorySentences(
-          normalized,
-          "tgt",
-          "sup"
-        );
-        storyCacheRef.current = validated;
-        setCurrentSentenceIndex(0);
-        setSessionXp(0);
-        setPassedCount(0);
-        setShowFullStory(true);
-        setHighlightedWordIndex(-1);
-        return validated;
-      });
+            tLang,
+            sLang
+          );
+          const validated = validateAndFixStorySentences(
+            normalized,
+            "tgt",
+            "sup"
+          );
+          storyCacheRef.current = validated;
+          setCurrentSentenceIndex(0);
+          setSessionXp(0);
+          setPassedCount(0);
+          setShowFullStory(true);
+          setHighlightedWordIndex(-1);
+          return validated;
+        });
       } catch (error) {
         console.error(
           "Gemini streaming failed; falling back to backend/demo.",
@@ -934,74 +942,74 @@ export default function StoryMode() {
       uiLang,
       generateStory,
     ]
-    );
+  );
 
-    const handleRoleSubmit = async (event) => {
-      event?.preventDefault?.();
-      const trimmed = roleInput.trim();
-      if (!trimmed) {
-        toast({
-          title: uiLang === "es" ? "Agrega un rol" : "Add a role",
-          description:
-            uiLang === "es"
-              ? "Escribe quién quieres ser en esta práctica."
-              : "Describe who you want to role play as before continuing.",
-          status: "warning",
-          duration: 3000,
-        });
-        return;
-      }
+  const handleRoleSubmit = async (event) => {
+    event?.preventDefault?.();
+    const trimmed = roleInput.trim();
+    if (!trimmed) {
+      toast({
+        title: uiLang === "es" ? "Agrega un rol" : "Add a role",
+        description:
+          uiLang === "es"
+            ? "Escribe quién quieres ser en esta práctica."
+            : "Describe who you want to role play as before continuing.",
+        status: "warning",
+        duration: 3000,
+      });
+      return;
+    }
 
-      try {
-        if (npub) {
-          await setDoc(
-            doc(database, "users", npub),
-            {
-              rolePlay: {
-                role: trimmed,
-                updatedAt: isoNow(),
-              },
+    try {
+      if (npub) {
+        await setDoc(
+          doc(database, "users", npub),
+          {
+            rolePlay: {
+              role: trimmed,
+              updatedAt: isoNow(),
             },
-            { merge: true }
-          );
-        }
-      } catch (error) {
-        console.error("Failed to save role play preference", error);
-        toast({
-          title:
-            uiLang === "es"
-              ? "No se pudo guardar el rol"
-              : "Couldn't save your role",
-          description:
-            uiLang === "es"
-              ? "Intentaremos generar el juego de todas formas."
-              : "We'll still try to generate your role play.",
-          status: "error",
-          duration: 3000,
-        });
+          },
+          { merge: true }
+        );
       }
+    } catch (error) {
+      console.error("Failed to save role play preference", error);
+      toast({
+        title:
+          uiLang === "es"
+            ? "No se pudo guardar el rol"
+            : "Couldn't save your role",
+        description:
+          uiLang === "es"
+            ? "Intentaremos generar el juego de todas formas."
+            : "We'll still try to generate your role play.",
+        status: "error",
+        duration: 3000,
+      });
+    }
 
-      setRoleInput(trimmed);
-      setActiveRole(trimmed);
-      storyCacheRef.current = null;
-      setStoryData(null);
-      setCurrentSentenceIndex(0);
-      setSessionXp(0);
-      setPassedCount(0);
-      setShowFullStory(true);
-      setHighlightedWordIndex(-1);
-      setIsEditingRole(false);
-      await generateStoryGeminiStream(trimmed);
-    };
+    setRoleInput(trimmed);
+    setActiveRole(trimmed);
+    storyCacheRef.current = null;
+    setStoryData(null);
+    setCurrentSentenceIndex(0);
+    setSessionXp(0);
+    setPassedCount(0);
+    setShowFullStory(true);
+    setHighlightedWordIndex(-1);
+    setIsEditingRole(false);
+    await generateStoryGeminiStream(trimmed);
+  };
 
-    useEffect(() => {
-      const normalized = activeRole.trim();
-      if (!normalized) return;
-      if (storyData || isLoading) return;
-      generateStoryGeminiStream(normalized);
-    }, [activeRole, storyData, isLoading, generateStoryGeminiStream]);
+  useEffect(() => {
+    const normalized = activeRole.trim();
+    if (!normalized) return;
+    if (storyData || isLoading) return;
+    generateStoryGeminiStream(normalized);
+  }, [activeRole, storyData, isLoading, generateStoryGeminiStream]);
 
-    /* ----------------------------- TTS / playback ----------------------------- */
+  /* ----------------------------- TTS / playback ----------------------------- */
   const playWithOpenAITTS = async (
     text,
     langTag,
@@ -1691,7 +1699,7 @@ export default function StoryMode() {
                   spacing={2}
                   alignItems="center"
                   justify="flex-end"
-                  flexWrap="wrap"
+                  // flexWrap="wrap"
                 >
                   <Input
                     ref={roleInputRef}
@@ -1701,16 +1709,18 @@ export default function StoryMode() {
                     size="sm"
                     bg="rgba(15, 23, 42, 0.6)"
                     color="white"
-                    maxW={{ base: "200px", md: "240px" }}
+                    // maxW={{ base: "200px", md: "240px" }}
                     _placeholder={{ color: "rgba(148, 163, 184, 0.7)" }}
                     isDisabled={isLoading}
                   />
                   <Button
                     type="submit"
                     size="sm"
-                    leftIcon={<FaWandMagicSparkles />}
+                    // leftIcon={<FaWandMagicSparkles />}
                     colorScheme="teal"
                     isLoading={isLoading}
+                    pl={8}
+                    pr={8}
                   >
                     {activeRole ? uiText.updateRole : uiText.startRole}
                   </Button>
@@ -1756,16 +1766,17 @@ export default function StoryMode() {
                       </TagLabel>
                     </Tag>
                   )}
-                  <Button
+                  <IconButton
                     type="button"
                     size="sm"
-                    leftIcon={<FaPen />}
+                    leftIcon={<FaPen fontSizesize="sm" />}
+                    textAlign={"center"}
+                    pl="2"
                     colorScheme="teal"
                     variant="outline"
                     onClick={() => setIsEditingRole(true)}
-                  >
-                    {uiText.editRole}
-                  </Button>
+                  />
+                  {/* {uiText.editRole} */}
                 </HStack>
               )}
             </Box>
@@ -2065,18 +2076,18 @@ export default function StoryMode() {
                           } else {
                             // Last sentence — finish session and award accumulated XP once
                             finalizePracticeSession(sessionXp).finally(() => {
-                                  toast({
-                                    title:
-                                      uiLang === "es"
-                                        ? "¡Felicidades!"
-                                        : "Congrats!",
-                                    description:
-                                      uiLang === "es"
-                                        ? `¡Completaste el juego de roles! Ganaste ${sessionXp} ${uiText.xp} en esta sesión.`
-                                        : `Role play completed! You earned ${sessionXp} ${uiText.xp} this session.`,
-                                    status: "success",
-                                    duration: 3000,
-                                  });
+                              toast({
+                                title:
+                                  uiLang === "es"
+                                    ? "¡Felicidades!"
+                                    : "Congrats!",
+                                description:
+                                  uiLang === "es"
+                                    ? `¡Completaste el juego de roles! Ganaste ${sessionXp} ${uiText.xp} en esta sesión.`
+                                    : `Role play completed! You earned ${sessionXp} ${uiText.xp} this session.`,
+                                status: "success",
+                                duration: 3000,
+                              });
                               setShowFullStory(true);
                               setCurrentSentenceIndex(0);
                             });
