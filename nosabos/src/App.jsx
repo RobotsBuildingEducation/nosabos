@@ -592,6 +592,9 @@ function TopBar({
                   <option value="es">
                     {translations[appLanguage].onboarding_practice_es}
                   </option>
+                  <option value="pt">
+                    {translations[appLanguage].onboarding_practice_pt}
+                  </option>
                   <option value="en">
                     {translations[appLanguage].onboarding_practice_en}
                   </option>
