@@ -152,11 +152,14 @@ async function normalizeLectureTexts({
    User / XP / Settings
 --------------------------- */
 const LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+  ({ en: "English", es: "Spanish", pt: "Portuguese", nah: "Nahuatl" }[
+    code
+  ] || code);
 
 const LANGUAGE_LABELS = {
   en: ["English", "Inglés"],
   es: ["Spanish", "Español"],
+  pt: ["Portuguese", "Portugués"],
   nah: ["Nahuatl", "Náhuatl"],
 };
 
@@ -277,7 +280,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "en"].includes(p.targetLang)
+        targetLang: ["nah", "es", "pt", "en"].includes(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
@@ -516,6 +519,7 @@ async function computeAdaptiveXp({
 const BCP47 = {
   es: { tts: "es-ES" },
   en: { tts: "en-US" },
+  pt: { tts: "pt-BR" },
   nah: { tts: "es-ES" },
 };
 
@@ -590,7 +594,7 @@ export default function History({ userLanguage = "en" }) {
 
   const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
 
-  const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
+  const targetLang = ["en", "es", "pt", "nah"].includes(progress.targetLang)
     ? progress.targetLang
     : "es";
   const supportLang =
@@ -605,6 +609,7 @@ export default function History({ userLanguage = "en" }) {
     ({
       en: t("language_en"),
       es: t("language_es"),
+      pt: t("language_pt"),
       nah: t("language_nah"),
     }[code] || code);
 

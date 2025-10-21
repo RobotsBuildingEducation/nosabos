@@ -77,6 +77,8 @@ const LLM_LANG_NAME = (codeOrName) => {
     .toLowerCase();
   if (m === "en" || m === "english") return "English";
   if (m === "es" || m === "spanish" || m === "español") return "Spanish";
+  if (m === "pt" || m === "portuguese" || m === "português")
+    return "Portuguese";
   if (m === "nah" || m === "nahuatl") return "Nahuatl";
   return capName(m);
 };
@@ -92,6 +94,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (!m) return fallback;
   if (m === "en") return "en-US";
   if (m === "es") return "es-ES";
+  if (m === "pt") return "pt-BR";
   if (m === "nah") return "es-ES"; // fallback
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;

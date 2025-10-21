@@ -104,6 +104,7 @@ export const translations = {
     // language names (for interpolation)
     language_en: "English",
     language_es: "Spanish",
+    language_pt: "Portuguese",
     language_nah: "Náhuatl",
     onboarding_voice_alloy: "Alloy",
     onboarding_voice_ash: "Ash",
@@ -132,6 +133,7 @@ export const translations = {
     onboarding_practice_label_title: "Practice language",
     onboarding_practice_nah: "Practice: Náhuatl",
     onboarding_practice_es: "Practice: Spanish",
+    onboarding_practice_pt: "Practice: Portuguese",
     onboarding_practice_en: "Practice: English",
 
     onboarding_voice_Leda: "Leda",
@@ -323,6 +325,7 @@ export const translations = {
     onboarding_translations_toggle: "Show translation to {language}",
     language_en: "English",
     language_es: "Spanish",
+    language_pt: "Portuguese",
     language_nah: "Nahuatl",
     story_header: "Story Mode",
     story_generate: "Generate Story",
@@ -526,6 +529,7 @@ export const translations = {
     onboarding_translations_toggle: "Mostrar traducción al {language}",
     language_en: "Inglés",
     language_es: "Español",
+    language_pt: "Portugués",
     language_nah: "Náhuatl",
     grammar_badge_level: "Nivel {level}",
     grammar_badge_xp: "XP {xp}",
@@ -625,6 +629,7 @@ export const translations = {
     // language names (for interpolation)
     language_en: "Inglés",
     language_es: "Español",
+    language_pt: "Portugués",
     language_nah: "Náhuatl",
 
     onboarding_voice_alloy: "Alloy",
@@ -654,6 +659,7 @@ export const translations = {
     onboarding_practice_label_title: "Idioma de práctica",
     onboarding_practice_nah: "Práctica: Náhuatl",
     onboarding_practice_es: "Práctica: Español",
+    onboarding_practice_pt: "Práctica: Portugués",
     onboarding_practice_en: "Práctica: Inglés",
 
     onboarding_voice_Leda: "Leda",

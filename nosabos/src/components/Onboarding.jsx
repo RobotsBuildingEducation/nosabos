@@ -39,7 +39,7 @@ export default function Onboarding({
   const [level, setLevel] = useState("beginner"); // 'beginner' | 'intermediate' | 'advanced'
   const [supportLang, setSupportLang] = useState("en"); // 'en' | 'bilingual' | 'es'
   const [voice, setVoice] = useState("alloy"); // GPT Realtime default voices
-  const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es' | 'en'
+  const [targetLang, setTargetLang] = useState("es"); // 'nah' | 'es' | 'pt' | 'en'
   const [practicePronunciation, setPracticePronunciation] = useState(false);
   const [voicePersona, setVoicePersona] = useState(ui.DEFAULT_PERSONA || "");
   const [showTranslations, setShowTranslations] = useState(true);
@@ -235,6 +235,7 @@ export default function Onboarding({
                     >
                       <option value="nah">{ui.onboarding_practice_nah}</option>
                       <option value="es">{ui.onboarding_practice_es}</option>
+                      <option value="pt">{ui.onboarding_practice_pt}</option>
                       <option value="en">{ui.onboarding_practice_en}</option>
                     </Select>
                   </WrapItem>

@@ -46,7 +46,7 @@ const FAQ_ITEMS = [
   {
     question: "Which languages can I practice?",
     answer:
-      "Start with Spanish or English right away, then explore Nahuatl-inspired cultural modules and more advanced grammar labs as you progress.",
+      "Start with Spanish, English, or Portuguese right away, then explore Nahuatl-inspired cultural modules and more advanced grammar labs as you progress.",
   },
   {
     question: "Is there a cost?",

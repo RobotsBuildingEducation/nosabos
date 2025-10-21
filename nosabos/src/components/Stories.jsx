@@ -75,11 +75,14 @@ const strongNpub = (user) =>
   ).trim();
 
 const LLM_LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+  ({ en: "English", es: "Spanish", pt: "Portuguese", nah: "Nahuatl" }[
+    code
+  ] || code);
 
 const BCP47 = {
   es: { stt: "es-ES", tts: "es-ES" },
   en: { stt: "en-US", tts: "en-US" },
+  pt: { stt: "pt-BR", tts: "pt-BR" },
   nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Nahuatl is unsupported by engines
 };
 
@@ -128,7 +131,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "en"].includes(p.targetLang)
+        targetLang: ["nah", "es", "pt", "en"].includes(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)

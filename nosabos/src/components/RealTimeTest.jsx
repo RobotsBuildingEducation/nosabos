@@ -821,7 +821,7 @@ export default function RealTimeTest({
       voicePersonaRef.current = p.voicePersona;
       setVoicePersona(p.voicePersona);
     }
-    if (["nah", "es", "en"].includes(p.targetLang)) {
+    if (["nah", "es", "pt", "en"].includes(p.targetLang)) {
       targetLangRef.current = p.targetLang;
       setTargetLang(p.targetLang);
     }
@@ -1475,12 +1475,17 @@ Return ONLY JSON:
     );
     const activeGoal = goalTitleForTarget(goalRef.current);
 
-    let strict =
-      tLang === "nah"
-        ? "Respond ONLY in Nahuatl (Náhuatl). Do not use Spanish or English."
-        : tLang === "es"
-        ? "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl."
-        : "Respond ONLY in English. Do not use Spanish or Nahuatl.";
+    let strict;
+    if (tLang === "nah") {
+      strict =
+        "Respond ONLY in Nahuatl (Náhuatl). Do not use Spanish or English.";
+    } else if (tLang === "es") {
+      strict = "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl.";
+    } else if (tLang === "pt") {
+      strict = "Responda APENAS em português. Não use espanhol ou inglês.";
+    } else {
+      strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
+    }
 
     const levelHint =
       lvl === "beginner"
@@ -1614,7 +1619,11 @@ Return ONLY JSON:
     await new Promise((r) => setTimeout(r, 40));
     if (speakProbe) {
       const probeText =
-        targetLangRef.current === "es" ? "Voz actualizada." : "Voice updated.";
+        targetLangRef.current === "es"
+          ? "Voz actualizada."
+          : targetLangRef.current === "pt"
+          ? "Voz atualizada."
+          : "Voice updated.";
       try {
         dcRef.current.send(
           JSON.stringify({

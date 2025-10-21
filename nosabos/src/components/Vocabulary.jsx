@@ -121,7 +121,9 @@ const MODEL = DEFAULT_RESPONSES_MODEL;
    User/XP helpers
 --------------------------- */
 const LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", nah: "Nahuatl" }[code] || code);
+  ({ en: "English", es: "Spanish", pt: "Portuguese", nah: "Nahuatl" }[
+    code
+  ] || code);
 
 const strongNpub = (user) =>
   (
@@ -156,7 +158,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "en"].includes(p.targetLang)
+        targetLang: ["nah", "es", "pt", "en"].includes(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
@@ -635,7 +637,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
     useSharedProgress();
 
   const level = progress.level || "beginner";
-  const targetLang = ["en", "es", "nah"].includes(progress.targetLang)
+  const targetLang = ["en", "es", "pt", "nah"].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
   const speakLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
@@ -653,6 +655,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
     ({
       en: t("language_en"),
       es: t("language_es"),
+      pt: t("language_pt"),
       nah: t("language_nah"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
