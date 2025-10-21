@@ -23,12 +23,10 @@ import {
   Input,
   Tag,
   TagLabel,
-  TagLeftIcon,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { FaArrowLeft, FaVolumeUp, FaStop } from "react-icons/fa";
+import { FaArrowLeft, FaVolumeUp, FaStop, FaPen } from "react-icons/fa";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -196,6 +194,8 @@ function useUIText(uiLang, level, translationsObj) {
           : "e.g. a teacher helping new students",
       startRole: uiLang === "es" ? "Comenzar" : "Start role play",
       updateRole: uiLang === "es" ? "Actualizar rol" : "Update role",
+      editRole: uiLang === "es" ? "Editar" : "Edit",
+      cancelEdit: uiLang === "es" ? "Cancelar" : "Cancel",
       playing: uiLang === "es" ? "Reproduciendo..." : "Playing...",
       playTarget: (name) =>
         uiLang === "es" ? `Reproducir ${name}` : `Play ${name}`,
@@ -295,6 +295,7 @@ export default function StoryMode() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeRole, setActiveRole] = useState("");
   const [roleInput, setRoleInput] = useState("");
+  const [isEditingRole, setIsEditingRole] = useState(false);
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
@@ -319,6 +320,7 @@ export default function StoryMode() {
   const audioRef = useRef(null);
   const storyCacheRef = useRef(null);
   const highlightIntervalRef = useRef(null);
+  const roleInputRef = useRef(null);
   const currentUtteranceRef = useRef(null);
   const animationFrameRef = useRef(null);
   const currentAudioRef = useRef(null);
@@ -334,7 +336,15 @@ export default function StoryMode() {
     const normalized = (rolePlayRole || "").trim();
     setActiveRole(normalized);
     setRoleInput(normalized);
+    setIsEditingRole(!normalized);
   }, [rolePlayRole]);
+
+  useEffect(() => {
+    if (isEditingRole) {
+      roleInputRef.current?.focus();
+      roleInputRef.current?.select();
+    }
+  }, [isEditingRole]);
   const usageStatsRef = useRef({
     ttsCalls: 0,
     storyGenerations: 0,
@@ -980,6 +990,7 @@ export default function StoryMode() {
       setPassedCount(0);
       setShowFullStory(true);
       setHighlightedWordIndex(-1);
+      setIsEditingRole(false);
       await generateStoryGeminiStream(trimmed);
     };
 
@@ -1608,6 +1619,7 @@ export default function StoryMode() {
                   {uiText.rolePrompt}
                 </Text>
                 <Input
+                  ref={roleInputRef}
                   value={roleInput}
                   onChange={(e) => setRoleInput(e.target.value)}
                   placeholder={uiText.rolePlaceholder}
@@ -1621,18 +1633,7 @@ export default function StoryMode() {
                   size="lg"
                   px={6}
                   leftIcon={<FaWandMagicSparkles />}
-                  bgGradient="linear(to-r, teal.400, cyan.400)"
-                  color="gray.900"
-                  fontWeight="700"
-                  boxShadow="0 12px 28px rgba(20, 184, 166, 0.35)"
-                  _hover={{
-                    bgGradient: "linear(to-r, teal.300, cyan.300)",
-                    boxShadow: "0 14px 30px rgba(20, 184, 166, 0.45)",
-                  }}
-                  _active={{
-                    bgGradient: "linear(to-r, teal.500, cyan.500)",
-                    boxShadow: "0 8px 18px rgba(13, 148, 136, 0.45)",
-                  }}
+                  colorScheme="teal"
                   isLoading={isLoading}
                 >
                   {uiText.startRole}
@@ -1681,73 +1682,92 @@ export default function StoryMode() {
                 +{sessionXp}
               </Badge>
             )}
-            <Box as="form" onSubmit={handleRoleSubmit}>
-              <HStack
-                spacing={2}
-                alignItems="center"
-                justify="flex-end"
-                flexWrap="wrap"
-              >
-                {activeRole && (
-                  <Tag
-                    size="lg"
-                    borderRadius="full"
-                    bg="rgba(20, 184, 166, 0.16)"
-                    color="teal.50"
-                    border="1px solid rgba(45, 212, 191, 0.35)"
-                    px={3}
-                    py={1}
-                    maxW={{ base: "100%", sm: "260px" }}
-                  >
-                    <TagLeftIcon
-                      as={PiMicrophoneStageDuotone}
-                      boxSize={3.5}
-                      color="teal.200"
-                    />
-                    <TagLabel
-                      fontWeight="600"
-                      fontSize="sm"
-                      whiteSpace="nowrap"
-                      overflow="hidden"
-                      textOverflow="ellipsis"
-                      maxW="100%"
-                    >
-                      {activeRole}
-                    </TagLabel>
-                  </Tag>
-                )}
-                <Input
-                  value={roleInput}
-                  onChange={(e) => setRoleInput(e.target.value)}
-                  placeholder={uiText.rolePlaceholder}
-                  size="sm"
-                  bg="rgba(15, 23, 42, 0.6)"
-                  color="white"
-                  maxW={{ base: "200px", md: "240px" }}
-                  _placeholder={{ color: "rgba(148, 163, 184, 0.7)" }}
-                  isDisabled={isLoading}
-                />
-                <Button
-                  type="submit"
-                  size="sm"
-                  leftIcon={<FaWandMagicSparkles />}
-                  bgGradient="linear(to-r, teal.400, cyan.400)"
-                  color="gray.900"
-                  fontWeight="700"
-                  boxShadow="0 8px 18px rgba(20, 184, 166, 0.25)"
-                  _hover={{
-                    bgGradient: "linear(to-r, teal.300, cyan.300)",
-                    boxShadow: "0 10px 22px rgba(20, 184, 166, 0.35)",
-                  }}
-                  _active={{
-                    bgGradient: "linear(to-r, teal.500, cyan.500)",
-                    boxShadow: "0 4px 12px rgba(13, 148, 136, 0.4)",
-                  }}
-                  isLoading={isLoading}
+            <Box
+              as={isEditingRole ? "form" : "div"}
+              onSubmit={isEditingRole ? handleRoleSubmit : undefined}
+            >
+              {isEditingRole ? (
+                <HStack
+                  spacing={2}
+                  alignItems="center"
+                  justify="flex-end"
+                  flexWrap="wrap"
                 >
-                  {uiText.updateRole}
-                </Button>
-              </HStack>
+                  <Input
+                    ref={roleInputRef}
+                    value={roleInput}
+                    onChange={(e) => setRoleInput(e.target.value)}
+                    placeholder={uiText.rolePlaceholder}
+                    size="sm"
+                    bg="rgba(15, 23, 42, 0.6)"
+                    color="white"
+                    maxW={{ base: "200px", md: "240px" }}
+                    _placeholder={{ color: "rgba(148, 163, 184, 0.7)" }}
+                    isDisabled={isLoading}
+                  />
+                  <Button
+                    type="submit"
+                    size="sm"
+                    leftIcon={<FaWandMagicSparkles />}
+                    colorScheme="teal"
+                    isLoading={isLoading}
+                  >
+                    {activeRole ? uiText.updateRole : uiText.startRole}
+                  </Button>
+                  {activeRole && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      colorScheme="teal"
+                      onClick={() => {
+                        setRoleInput(activeRole);
+                        setIsEditingRole(false);
+                      }}
+                    >
+                      {uiText.cancelEdit}
+                    </Button>
+                  )}
+                </HStack>
+              ) : (
+                <HStack spacing={2} alignItems="center" flexWrap="wrap">
+                  {activeRole && (
+                    <Tag
+                      size="lg"
+                      borderRadius="full"
+                      bg="rgba(20, 184, 166, 0.16)"
+                      color="teal.50"
+                      border="1px solid rgba(45, 212, 191, 0.35)"
+                      px={3}
+                      py={1}
+                      maxW={{ base: "100%", sm: "260px" }}
+                      cursor="pointer"
+                      onClick={() => setIsEditingRole(true)}
+                    >
+                      <TagLabel
+                        fontWeight="600"
+                        fontSize="sm"
+                        whiteSpace="nowrap"
+                        overflow="hidden"
+                        textOverflow="ellipsis"
+                        maxW="100%"
+                      >
+                        {activeRole}
+                      </TagLabel>
+                    </Tag>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    leftIcon={<FaPen />}
+                    colorScheme="teal"
+                    variant="outline"
+                    onClick={() => setIsEditingRole(true)}
+                  >
+                    {uiText.editRole}
+                  </Button>
+                </HStack>
+              )}
             </Box>
           </HStack>
         </HStack>
