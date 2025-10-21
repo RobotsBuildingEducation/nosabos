@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -9,8 +9,6 @@ import {
   Button,
   Checkbox,
   Flex,
-  Grid,
-  GridItem,
   HStack,
   Icon,
   Input,
@@ -22,7 +20,14 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { ArrowForwardIcon, LockIcon, RepeatIcon } from "@chakra-ui/icons";
-import { FiBookOpen, FiMessageCircle, FiMic, FiTarget } from "react-icons/fi";
+import {
+  FiBookOpen,
+  FiCompass,
+  FiLayers,
+  FiMessageCircle,
+  FiShuffle,
+  FiTarget,
+} from "react-icons/fi";
 
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 
@@ -51,28 +56,40 @@ const FAQ_ITEMS = [
 
 const FEATURE_CARDS = [
   {
-    title: "Live Conversation Studio",
+    title: "Real-time conversations",
     description:
-      "Practice speaking with responsive AI partners that adapt to your level and provide gentle corrections in real time.",
+      "Stay immersed with responsive dialogues that coach you through speaking and listening in the moment.",
     icon: FiMessageCircle,
   },
   {
-    title: "Grammar & Structure Coach",
+    title: "Stories for reading & speaking",
     description:
-      "Interactive walkthroughs break down tricky grammar topics with examples, micro-quizzes, and tailored drills.",
+      "Follow interactive stories that invite you to read aloud, summarize, and role-play every scene.",
     icon: FiBookOpen,
   },
   {
-    title: "Vocabulary Builders",
+    title: "History lectures",
     description:
-      "Grow your word bank with spaced review lists, contextual flashcards, and audio recordings you can mimic.",
+      "Explore bilingual briefings on key historical moments to expand your cultural and academic vocabulary.",
+    icon: FiLayers,
+  },
+  {
+    title: "Grammar book & vocabulary",
+    description:
+      "Check rules quickly, drill tricky concepts, and test yourself with adaptive vocab review sets.",
     icon: FiTarget,
   },
   {
-    title: "Pronunciation Lab",
+    title: "Job scripts",
     description:
-      "Record yourself, compare waveforms, and receive pronunciation guidance that targets the sounds you struggle with most.",
-    icon: FiMic,
+      "Practice professional dialogues so you can present, interview, and collaborate with confidence.",
+    icon: FiCompass,
+  },
+  {
+    title: "Random mode",
+    description:
+      "Mix up your routine with surprise prompts that blend speaking, reading, and listening challenges.",
+    icon: FiShuffle,
   },
 ];
 
@@ -115,6 +132,11 @@ const HeroOverlay = () => (
 );
 
 const defaultLoadingMessage = "Setting up your study space...";
+
+const BASE_BUTTON_PROPS = {
+  size: "lg",
+  fontWeight: "bold",
+};
 
 const LandingPage = ({ onAuthenticated }) => {
   const toast = useToast();
@@ -212,73 +234,7 @@ const LandingPage = ({ onAuthenticated }) => {
     onAuthenticated?.();
   }, [acknowledged, onAuthenticated]);
 
-  const heroCta = useMemo(
-    () => (
-      <VStack
-        spacing={5}
-        alignItems="stretch"
-        bg="rgba(17, 24, 39, 0.85)"
-        borderRadius="xl"
-        boxShadow="2xl"
-        p={{ base: 6, md: 8 }}
-        border="1px solid rgba(148, 163, 184, 0.2)"
-      >
-        <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="semibold" color="white">
-          Create your free account
-        </Text>
-        <Text fontSize="sm" color="gray.300">
-          Choose a display name and we will prepare your secure study profile. All you need to remember is the secret key you receive.
-        </Text>
-        <Stack direction={{ base: "column", md: "row" }} spacing={3}>
-          <Input
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="Display name"
-            bg="rgba(15, 23, 42, 0.9)"
-            borderColor="rgba(148, 163, 184, 0.4)"
-            color="white"
-            _placeholder={{ color: "gray.500" }}
-          />
-          <Button
-            bgGradient="linear(to-r, #8b5cf6, #ec4899)"
-            color="white"
-            fontWeight="semibold"
-            px={{ base: 4, md: 6 }}
-            py={2.5}
-            rightIcon={<ArrowForwardIcon />}
-            onClick={handleCreateAccount}
-            isLoading={isCreatingAccount}
-            isDisabled={!hasDisplayName}
-            _hover={{ bgGradient: "linear(to-r, #7c3aed, #db2777)" }}
-            _active={{ bgGradient: "linear(to-r, #6d28d9, #be185d)" }}
-          >
-            {isCreatingAccount ? "Creating" : "Create account"}
-          </Button>
-        </Stack>
-        <Button
-          variant="ghost"
-          color="pink.200"
-          _hover={{ color: "pink.100", bg: "whiteAlpha.100" }}
-          onClick={() => setView("signIn")}
-        >
-          Already have a key? Sign in
-        </Button>
-        {errorMessage && view === "landing" && (
-          <Text color="red.300" fontSize="sm">
-            {errorMessage}
-          </Text>
-        )}
-      </VStack>
-    ),
-    [
-      displayName,
-      errorMessage,
-      handleCreateAccount,
-      hasDisplayName,
-      isCreatingAccount,
-      view,
-    ]
-  );
+  const ActionButton = (props) => <Button {...BASE_BUTTON_PROPS} {...props} />;
 
   if (view === "signIn") {
     return (
@@ -321,25 +277,17 @@ const LandingPage = ({ onAuthenticated }) => {
               {errorMessage}
             </Text>
           )}
-          <Button
-            bgGradient="linear(to-r, #8b5cf6, #ec4899)"
-            color="white"
+          <ActionButton
+            colorScheme="purple"
             onClick={handleSignIn}
             isLoading={isSigningIn}
             rightIcon={<LockIcon />}
-            _hover={{ bgGradient: "linear(to-r, #7c3aed, #db2777)" }}
-            _active={{ bgGradient: "linear(to-r, #6d28d9, #be185d)" }}
           >
             Sign in
-          </Button>
-          <Button
-            variant="ghost"
-            color="pink.200"
-            _hover={{ color: "pink.100", bg: "whiteAlpha.100" }}
-            onClick={() => setView("landing")}
-          >
-            Back to landing page
-          </Button>
+          </ActionButton>
+          <ActionButton colorScheme="gray" onClick={() => setView("landing")}>
+            Back
+          </ActionButton>
         </VStack>
       </Flex>
     );
@@ -389,26 +337,17 @@ const LandingPage = ({ onAuthenticated }) => {
             {generatedKeys?.nsec || "Generating key..."}
           </Box>
           <Stack direction={{ base: "column", md: "row" }} spacing={4}>
-            <Button
-              variant="outline"
-              borderColor="pink.300"
-              color="pink.200"
-              _hover={{ bg: "whiteAlpha.100" }}
-              onClick={handleCopyKey}
-            >
+            <ActionButton colorScheme="pink" onClick={handleCopyKey}>
               Copy key
-            </Button>
-            <Button
-              bgGradient="linear(to-r, #8b5cf6, #ec4899)"
-              color="white"
+            </ActionButton>
+            <ActionButton
+              colorScheme="purple"
               isDisabled={!acknowledged}
               onClick={handleLaunch}
               rightIcon={<ArrowForwardIcon />}
-              _hover={{ bgGradient: "linear(to-r, #7c3aed, #db2777)" }}
-              _active={{ bgGradient: "linear(to-r, #6d28d9, #be185d)" }}
             >
               Start learning
-            </Button>
+            </ActionButton>
           </Stack>
           <Checkbox
             isChecked={acknowledged}
@@ -423,217 +362,202 @@ const LandingPage = ({ onAuthenticated }) => {
               <Text fontSize="sm">{loadingMessage}</Text>
             </HStack>
           )}
-          <Button
-            variant="ghost"
-            color="pink.200"
-            _hover={{ color: "pink.100", bg: "whiteAlpha.100" }}
-            onClick={() => setView("landing")}
-          >
+          <ActionButton colorScheme="gray" onClick={() => setView("landing")}>
             Make another account
-          </Button>
+          </ActionButton>
         </VStack>
       </Flex>
     );
   }
 
+  if (view === "features") {
+    return (
+      <Box position="relative" minH="100vh" bg="gray.900" color="gray.100" pb={20}>
+        <HeroBackground />
+        <HeroOverlay />
+        <Flex direction="column" align="center" px={{ base: 4, md: 8 }} py={{ base: 10, md: 16 }} gap={12}>
+          <VStack spacing={4} align="center" textAlign="center" maxW="3xl">
+            <Text fontSize="4xl" fontWeight="black">
+              Explore the toolkit that keeps your language practice fresh
+            </Text>
+            <Text color="gray.300" fontSize="lg">
+              Dive into stories, live conversations, lectures, and drills designed to stretch every skill—then jump back to create your account when you're ready.
+            </Text>
+            <ActionButton colorScheme="purple" onClick={() => setView("landing")} rightIcon={<ArrowForwardIcon />}>
+              Create an account
+            </ActionButton>
+          </VStack>
+
+          <LandingSection bg="rgba(17, 24, 39, 0.75)" borderRadius="3xl">
+            <VStack spacing={8} align="stretch">
+              <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
+                How Nosabos guides your learning
+              </Text>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                {VALUE_POINTS.map((point) => (
+                  <HStack
+                    key={point}
+                    align="flex-start"
+                    spacing={3}
+                    bg="rgba(15, 23, 42, 0.9)"
+                    borderRadius="lg"
+                    px={4}
+                    py={4}
+                    border="1px solid rgba(148, 163, 184, 0.2)"
+                  >
+                    <Icon as={ArrowForwardIcon} color="pink.300" mt={1} />
+                    <Text color="gray.300">{point}</Text>
+                  </HStack>
+                ))}
+              </SimpleGrid>
+            </VStack>
+          </LandingSection>
+
+          <LandingSection bg="rgba(24, 24, 27, 0.75)" borderRadius="3xl">
+            <VStack spacing={8} align="stretch">
+              <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
+                What you can do inside the app today
+              </Text>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                {FEATURE_CARDS.map((feature) => (
+                  <Box
+                    key={feature.title}
+                    p={6}
+                    borderRadius="xl"
+                    border="1px solid rgba(148, 163, 184, 0.25)"
+                    bg="rgba(15, 23, 42, 0.95)"
+                    boxShadow="xl"
+                  >
+                    <VStack align="flex-start" spacing={4}>
+                      <Icon as={feature.icon} color="pink.300" boxSize={8} />
+                      <Text fontSize="xl" fontWeight="semibold" color="white">
+                        {feature.title}
+                      </Text>
+                      <Text color="gray.300">{feature.description}</Text>
+                    </VStack>
+                  </Box>
+                ))}
+              </SimpleGrid>
+            </VStack>
+          </LandingSection>
+
+          <LandingSection bg="rgba(17, 24, 39, 0.9)" borderRadius="3xl" border="1px solid rgba(148, 163, 184, 0.2)">
+            <VStack spacing={6} align="center">
+              <Text fontSize="3xl" fontWeight="bold" textAlign="center">
+                Ready to jump in?
+              </Text>
+              <Text textAlign="center" color="gray.300" maxW="2xl">
+                Create your secure profile in seconds, save your key, and unlock every mode you just explored.
+              </Text>
+              <ActionButton colorScheme="purple" onClick={() => setView("landing")} rightIcon={<ArrowForwardIcon />}>
+                Create an account
+              </ActionButton>
+              <ActionButton colorScheme="gray" onClick={() => setView("signIn")}>
+                I already have a key
+              </ActionButton>
+            </VStack>
+          </LandingSection>
+
+          <LandingSection bg="rgba(15, 23, 42, 0.95)" borderRadius="3xl">
+            <VStack spacing={6} align="stretch">
+              <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
+                Frequently asked questions
+              </Text>
+              <Accordion allowMultiple borderRadius="xl" bg="rgba(15, 23, 42, 0.95)" boxShadow="2xl" border="1px solid rgba(148, 163, 184, 0.25)">
+                {FAQ_ITEMS.map((item) => (
+                  <AccordionItem key={item.question} border="none">
+                    <h3>
+                      <AccordionButton px={6} py={5}>
+                        <Box flex="1" textAlign="left" fontWeight="semibold" color="white">
+                          {item.question}
+                        </Box>
+                        <AccordionIcon />
+                      </AccordionButton>
+                    </h3>
+                    <AccordionPanel px={6} pb={6} color="gray.300">
+                      {item.answer}
+                    </AccordionPanel>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </VStack>
+          </LandingSection>
+        </Flex>
+      </Box>
+    );
+  }
+
   return (
-    <Box
+    <Flex
       position="relative"
-      overflow="hidden"
       minH="100vh"
       bg="gray.900"
       color="gray.100"
+      align="center"
+      justify="center"
+      px={{ base: 4, md: 8 }}
+      py={{ base: 12, md: 20 }}
+      textAlign="center"
     >
       <HeroBackground />
       <HeroOverlay />
-      <Flex
-        direction="column"
-        align="center"
-        justify="flex-start"
-        minH="100vh"
-        gap={{ base: 12, md: 16 }}
+      <VStack
+        spacing={8}
+        bg="rgba(17, 24, 39, 0.9)"
+        borderRadius="3xl"
+        border="1px solid rgba(148, 163, 184, 0.2)"
+        boxShadow="2xl"
+        p={{ base: 8, md: 12 }}
+        maxW="lg"
+        w="full"
       >
-        <LandingSection pt={{ base: 20, md: 28 }} pb={{ base: 12, md: 20 }}>
-          <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={12}>
-            <GridItem>
-              <VStack align="flex-start" spacing={6}>
-                <Box
-                  bg="whiteAlpha.100"
-                  borderRadius="full"
-                  px={4}
-                  py={1}
-                  boxShadow="inner"
-                  border="1px solid rgba(148, 163, 184, 0.2)"
-                >
-                  <Text fontSize="sm" fontWeight="medium" color="pink.200">
-                    Language practice for future-ready students
-                  </Text>
-                </Box>
-                <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="black" lineHeight="1.1">
-                  Build confidence in Spanish, English, and beyond with an AI-powered coach by your side.
-                </Text>
-                <Text fontSize="lg" color="gray.300">
-                  Nosabos turns everyday curiosity into language superpowers. Chat, drill, and explore cultural stories while our tutors adapt to your goals.
-                </Text>
-                <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} w="full">
-                  {VALUE_POINTS.map((point) => (
-                    <HStack
-                      key={point}
-                      align="flex-start"
-                      spacing={3}
-                      bg="rgba(15, 23, 42, 0.85)"
-                      borderRadius="lg"
-                      px={4}
-                      py={3}
-                      border="1px solid rgba(148, 163, 184, 0.2)"
-                    >
-                      <Icon as={ArrowForwardIcon} color="pink.300" />
-                      <Text fontSize="sm" color="gray.300">
-                        {point}
-                      </Text>
-                    </HStack>
-                  ))}
-                </SimpleGrid>
-              </VStack>
-            </GridItem>
-            <GridItem>{heroCta}</GridItem>
-          </Grid>
-        </LandingSection>
+        <VStack spacing={3}>
+          <Text fontSize="2xl" fontWeight="semibold" color="pink.200">
+            Nosabos
+          </Text>
+          <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="black" lineHeight="1.1">
+            Your AI coach for immersive language learning
+          </Text>
+          <Text color="gray.300">
+            Create a display name to receive your secure key, then dive straight into conversations, stories, and lectures.
+          </Text>
+        </VStack>
 
-        <LandingSection bg="rgba(17, 24, 39, 0.75)" borderRadius="3xl">
-          <VStack spacing={8} align="stretch">
-            <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
-              Everything you need to grow your language skills
-            </Text>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-              {FEATURE_CARDS.map((feature) => (
-                <Box
-                  key={feature.title}
-                  p={6}
-                  borderRadius="xl"
-                  border="1px solid rgba(148, 163, 184, 0.25)"
-                  bg="rgba(15, 23, 42, 0.9)"
-                  boxShadow="xl"
-                >
-                  <VStack align="flex-start" spacing={4}>
-                    <Icon as={feature.icon} color="pink.300" boxSize={8} />
-                    <Text fontSize="xl" fontWeight="semibold" color="white">
-                      {feature.title}
-                    </Text>
-                    <Text color="gray.300">{feature.description}</Text>
-                  </VStack>
-                </Box>
-              ))}
-            </SimpleGrid>
-          </VStack>
-        </LandingSection>
+        <Stack direction={{ base: "column", md: "row" }} spacing={4} w="full">
+          <Input
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder="Display name"
+            bg="rgba(15, 23, 42, 0.95)"
+            borderColor="rgba(148, 163, 184, 0.4)"
+            color="white"
+            _placeholder={{ color: "gray.500" }}
+          />
+          <ActionButton
+            colorScheme="purple"
+            onClick={handleCreateAccount}
+            isLoading={isCreatingAccount}
+            isDisabled={!hasDisplayName}
+            rightIcon={<ArrowForwardIcon />}
+            w={{ base: "full", md: "auto" }}
+          >
+            {isCreatingAccount ? "Creating" : "Create account"}
+          </ActionButton>
+        </Stack>
+        {errorMessage && (
+          <Text color="red.300" fontSize="sm">
+            {errorMessage}
+          </Text>
+        )}
 
-        <LandingSection bg="rgba(24, 24, 27, 0.7)" borderRadius="3xl">
-          <VStack spacing={6} align="stretch">
-            <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
-              Why learners choose Nosabos
-            </Text>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-              <Box bg="rgba(15, 23, 42, 0.9)" borderRadius="xl" p={6} boxShadow="xl" border="1px solid rgba(148, 163, 184, 0.2)">
-                <Text fontSize="lg" fontWeight="semibold" mb={3} color="white">
-                  Daily progress tracking
-                </Text>
-                <Text color="gray.300">
-                  Unlock streak celebrations and see how much XP you earn from every activity. Goals adjust to your pace so you stay motivated.
-                </Text>
-              </Box>
-              <Box bg="rgba(15, 23, 42, 0.9)" borderRadius="xl" p={6} boxShadow="xl" border="1px solid rgba(148, 163, 184, 0.2)">
-                <Text fontSize="lg" fontWeight="semibold" mb={3} color="white">
-                  Cultural storytelling
-                </Text>
-                <Text color="gray.300">
-                  Explore legends, community news, and bilingual prompts that connect language learning to lived experiences.
-                </Text>
-              </Box>
-              <Box bg="rgba(15, 23, 42, 0.9)" borderRadius="xl" p={6} boxShadow="xl" border="1px solid rgba(148, 163, 184, 0.2)">
-                <Text fontSize="lg" fontWeight="semibold" mb={3} color="white">
-                  Learning on your terms
-                </Text>
-                <Text color="gray.300">
-                  Swap between writing, speaking, and comprehension tasks anytime. Our tutor adapts to your schedule and comfort level.
-                </Text>
-              </Box>
-            </SimpleGrid>
-          </VStack>
-        </LandingSection>
-
-        <LandingSection bg="rgba(17, 24, 39, 0.8)" borderRadius="3xl">
-          <VStack spacing={6} align="stretch">
-            <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
-              Frequently asked questions
-            </Text>
-            <Accordion allowMultiple borderRadius="xl" bg="rgba(15, 23, 42, 0.95)" boxShadow="2xl" border="1px solid rgba(148, 163, 184, 0.25)">
-              {FAQ_ITEMS.map((item) => (
-                <AccordionItem key={item.question} border="none">
-                  <h3>
-                    <AccordionButton px={6} py={5}>
-                      <Box flex="1" textAlign="left" fontWeight="semibold" color="white">
-                        {item.question}
-                      </Box>
-                      <AccordionIcon />
-                    </AccordionButton>
-                  </h3>
-                  <AccordionPanel px={6} pb={6} color="gray.300">
-                    {item.answer}
-                  </AccordionPanel>
-                </AccordionItem>
-              ))}
-            </Accordion>
-          </VStack>
-        </LandingSection>
-
-        <LandingSection bg="rgba(15, 23, 42, 0.95)" color="white" borderRadius="3xl" border="1px solid rgba(148, 163, 184, 0.2)">
-          <VStack spacing={6} align="center">
-            <Text fontSize="3xl" fontWeight="bold" textAlign="center">
-              Ready to begin?
-            </Text>
-            <Text textAlign="center" maxW="2xl" color="gray.300">
-              Create an account in seconds and get instant access to all of the conversation tools, grammar labs, and vocabulary builders.
-            </Text>
-            <Stack direction={{ base: "column", sm: "row" }} spacing={4} w="full" maxW="lg">
-              <Input
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder="Display name"
-                bg="rgba(17, 24, 39, 0.9)"
-                borderColor="rgba(148, 163, 184, 0.4)"
-                color="white"
-                _placeholder={{ color: "gray.500" }}
-              />
-              <Button
-                flexShrink={0}
-                bgGradient="linear(to-r, #8b5cf6, #ec4899)"
-                color="white"
-                rightIcon={<ArrowForwardIcon />}
-                onClick={handleCreateAccount}
-                isLoading={isCreatingAccount}
-                isDisabled={!hasDisplayName}
-                px={{ base: 4, md: 6 }}
-                py={2.5}
-                fontWeight="semibold"
-                _hover={{ bgGradient: "linear(to-r, #7c3aed, #db2777)" }}
-                _active={{ bgGradient: "linear(to-r, #6d28d9, #be185d)" }}
-              >
-                Create account
-              </Button>
-            </Stack>
-            <Button
-              variant="link"
-              color="pink.200"
-              _hover={{ color: "pink.100" }}
-              onClick={() => setView("signIn")}
-            >
-              I already have a key
-            </Button>
-          </VStack>
-        </LandingSection>
-      </Flex>
-    </Box>
+        <ActionButton colorScheme="pink" onClick={() => setView("signIn")}>
+          I already have a key
+        </ActionButton>
+        <ActionButton colorScheme="gray" onClick={() => setView("features")}>
+          See features
+        </ActionButton>
+      </VStack>
+    </Flex>
   );
 };
 
