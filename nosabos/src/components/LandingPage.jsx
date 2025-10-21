@@ -19,7 +19,7 @@ import {
   VStack,
   useToast,
 } from "@chakra-ui/react";
-import { ArrowForwardIcon, LockIcon, RepeatIcon } from "@chakra-ui/icons";
+import { ArrowForwardIcon, LockIcon } from "@chakra-ui/icons";
 import {
   FiBookOpen,
   FiCompass,
@@ -123,49 +123,33 @@ const HeroBackground = () => (
   />
 );
 
-const HeroOverlay = () => (
-  <Box
-    position="absolute"
-    inset={0}
-    bgImage="radial-gradient(circle at 18% 20%, rgba(14,165,233,0.35), transparent 45%), radial-gradient(circle at 75% 12%, rgba(45,212,191,0.25), transparent 45%), radial-gradient(circle at 42% 78%, rgba(59,130,246,0.18), transparent 42%)"
-    zIndex={-1}
-  />
-);
-
 const defaultLoadingMessage = "Setting up your study space...";
 
 const BASE_BUTTON_PROPS = {
   size: "lg",
   fontWeight: "semibold",
   borderRadius: "full",
-  px: 6,
+  px: 8,
   minH: 12,
-  letterSpacing: "wide",
   transition: "all 0.2s ease",
   whiteSpace: "nowrap",
   flexShrink: 0,
-  _hover: { transform: "translateY(-1px)" },
-  _active: { transform: "translateY(0)" },
 };
 
 const BUTTON_VARIANTS = {
   primary: {
-    bgGradient: "linear(to-r, teal.400, cyan.400)",
+    bg: "teal.400",
     color: "gray.900",
-    boxShadow: "0 18px 35px rgba(13, 148, 136, 0.35)",
     _hover: {
-      bgGradient: "linear(to-r, teal.300, cyan.300)",
-      boxShadow: "0 14px 30px rgba(8, 145, 178, 0.35)",
+      bg: "teal.300",
     },
   },
   secondary: {
-    bg: "rgba(6, 182, 212, 0.08)",
-    color: "teal.200",
+    bg: "rgba(45, 212, 191, 0.12)",
+    color: "teal.100",
     border: "1px solid rgba(45, 212, 191, 0.45)",
-    boxShadow: "0 8px 20px rgba(6, 182, 212, 0.18)",
     _hover: {
-      bg: "rgba(6, 182, 212, 0.18)",
-      borderColor: "rgba(45, 212, 191, 0.6)",
+      bg: "rgba(45, 212, 191, 0.18)",
     },
   },
   ghost: {
@@ -187,7 +171,6 @@ const LandingPage = ({ onAuthenticated }) => {
   );
 
   const [view, setView] = useState("landing");
-  const [showFeatures, setShowFeatures] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [generatedKeys, setGeneratedKeys] = useState(null);
@@ -212,7 +195,6 @@ const LandingPage = ({ onAuthenticated }) => {
       setGeneratedKeys(keys);
       localStorage.setItem("displayName", displayName.trim());
       setView("created");
-      setShowFeatures(false);
       toast({
         title: "Account created",
         description: "Save your secret key before you continue.",
@@ -263,7 +245,6 @@ const LandingPage = ({ onAuthenticated }) => {
         status: "success",
         duration: 2000,
       });
-      setShowFeatures(false);
       onAuthenticated?.();
     } catch (error) {
       console.error("Failed to sign in", error);
@@ -275,7 +256,6 @@ const LandingPage = ({ onAuthenticated }) => {
 
   const handleLaunch = useCallback(() => {
     if (!acknowledged) return;
-    setShowFeatures(false);
     onAuthenticated?.();
   }, [acknowledged, onAuthenticated]);
 
@@ -303,7 +283,6 @@ const LandingPage = ({ onAuthenticated }) => {
           maxW="md"
           w="full"
           bg="rgba(10, 20, 34, 0.95)"
-          boxShadow="0 24px 60px rgba(6, 182, 212, 0.25)"
           borderRadius="2xl"
           border="1px solid rgba(45, 212, 191, 0.35)"
           p={{ base: 6, md: 8 }}
@@ -338,7 +317,6 @@ const LandingPage = ({ onAuthenticated }) => {
           <ActionButton
             variant="ghost"
             onClick={() => {
-              setShowFeatures(false);
               setView("landing");
             }}
           >
@@ -366,17 +344,13 @@ const LandingPage = ({ onAuthenticated }) => {
           maxW="lg"
           w="full"
           bg="rgba(7, 17, 28, 0.95)"
-          boxShadow="0 32px 70px rgba(8, 145, 178, 0.3)"
           borderRadius="3xl"
           border="1px solid rgba(45, 212, 191, 0.4)"
           p={{ base: 6, md: 10 }}
         >
-          <HStack spacing={3}>
-            <Icon as={RepeatIcon} color="cyan.300" boxSize={6} />
-            <Text fontSize="2xl" fontWeight="bold">
-              Save your secret key
-            </Text>
-          </HStack>
+          <Text fontSize="2xl" fontWeight="bold">
+            Save your secret key
+          </Text>
           <Text color="teal.100">
             This key is the only way to access your study progress. Store it in a password manager or another safe place. We cannot recover it for you.
           </Text>
@@ -392,6 +366,13 @@ const LandingPage = ({ onAuthenticated }) => {
           >
             {generatedKeys?.nsec || "Generating key..."}
           </Box>
+          <Checkbox
+            isChecked={acknowledged}
+            onChange={(event) => setAcknowledged(event.target.checked)}
+            colorScheme="teal"
+          >
+            I understand that I must store this key securely to keep my account.
+          </Checkbox>
           <Stack direction={{ base: "column", md: "row" }} spacing={4}>
             <ActionButton variant="secondary" onClick={handleCopyKey}>
               Copy key
@@ -405,13 +386,6 @@ const LandingPage = ({ onAuthenticated }) => {
               Start learning
             </ActionButton>
           </Stack>
-          <Checkbox
-            isChecked={acknowledged}
-            onChange={(event) => setAcknowledged(event.target.checked)}
-            colorScheme="teal"
-          >
-            I understand that I must store this key securely to keep my account.
-          </Checkbox>
           {isCreatingAccount && (
             <HStack color="gray.400">
               <Spinner size="sm" />
@@ -421,11 +395,10 @@ const LandingPage = ({ onAuthenticated }) => {
           <ActionButton
             variant="ghost"
             onClick={() => {
-              setShowFeatures(false);
               setView("landing");
             }}
           >
-            Make another account
+            Go back
           </ActionButton>
         </VStack>
       </Flex>
@@ -433,9 +406,8 @@ const LandingPage = ({ onAuthenticated }) => {
   }
 
   return (
-    <Box position="relative" minH="100vh" bg="gray.900" color="gray.100" pb={showFeatures ? 24 : 16}>
+    <Box position="relative" minH="100vh" bg="gray.900" color="gray.100" pb={24}>
       <HeroBackground />
-      <HeroOverlay />
       <Flex
         align="center"
         justify="center"
@@ -448,7 +420,6 @@ const LandingPage = ({ onAuthenticated }) => {
           bg="rgba(8, 18, 29, 0.92)"
           borderRadius="3xl"
           border="1px solid rgba(45, 212, 191, 0.35)"
-          boxShadow="0 32px 80px rgba(6, 182, 212, 0.25)"
           p={{ base: 8, md: 12 }}
           maxW="lg"
           w="full"
@@ -495,45 +466,34 @@ const LandingPage = ({ onAuthenticated }) => {
           <ActionButton
             variant="secondary"
             onClick={() => {
-              setShowFeatures(false);
               setView("signIn");
             }}
           >
             I already have a key
           </ActionButton>
-          <ActionButton
-            variant={showFeatures ? "ghost" : "secondary"}
-            onClick={() => setShowFeatures((prev) => !prev)}
-          >
-            {showFeatures ? "Hide features" : "See features"}
-          </ActionButton>
         </VStack>
       </Flex>
 
-      {showFeatures && (
-        <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
-          <Flex direction="column" align="center" gap={12}>
-            <VStack spacing={4} align="center" textAlign="center" maxW="3xl">
-              <Text fontSize="4xl" fontWeight="black">
-                Explore the toolkit that keeps your language practice fresh
-              </Text>
-              <Text color="cyan.100" fontSize="lg">
-                Dive into stories, live conversations, lectures, and drills designed to stretch every skill—then jump back to create your account when you're ready.
-              </Text>
-              <ActionButton
-                rightIcon={<ArrowForwardIcon />}
-                onClick={() => {
-                  if (hasDisplayName) {
-                    handleCreateAccount();
-                  } else {
-                    setShowFeatures(false);
-                  }
-                }}
-                isDisabled={isCreatingAccount}
-              >
-                Create an account
-              </ActionButton>
-            </VStack>
+      <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
+        <Flex direction="column" align="center" gap={12}>
+          <VStack spacing={4} align="center" textAlign="center" maxW="3xl">
+            <Text fontSize="4xl" fontWeight="black">
+              Explore the toolkit that keeps your language practice fresh
+            </Text>
+            <Text color="cyan.100" fontSize="lg">
+              Dive into stories, live conversations, lectures, and drills designed to stretch every skill—then jump back to create your account when you're ready.
+            </Text>
+            <ActionButton
+              rightIcon={<ArrowForwardIcon />}
+              onClick={handleCreateAccount}
+              isDisabled={!hasDisplayName || isCreatingAccount}
+            >
+              Create an account
+            </ActionButton>
+            <ActionButton variant="secondary" onClick={() => setView("signIn")}>
+              I already have a key
+            </ActionButton>
+          </VStack>
 
             <LandingSection bg="rgba(6, 18, 30, 0.82)" borderRadius="3xl" border="1px solid rgba(45, 212, 191, 0.25)">
               <VStack spacing={8} align="stretch">
@@ -573,7 +533,6 @@ const LandingPage = ({ onAuthenticated }) => {
                       borderRadius="xl"
                       border="1px solid rgba(14, 165, 233, 0.35)"
                       bg="rgba(6, 18, 30, 0.95)"
-                      boxShadow="0 20px 45px rgba(37, 99, 235, 0.25)"
                     >
                       <VStack align="flex-start" spacing={4}>
                         <Icon as={feature.icon} color="teal.200" boxSize={8} />
@@ -588,72 +547,63 @@ const LandingPage = ({ onAuthenticated }) => {
               </VStack>
             </LandingSection>
 
-            <LandingSection bg="rgba(6, 18, 30, 0.9)" borderRadius="3xl" border="1px solid rgba(45, 212, 191, 0.3)">
-              <VStack spacing={6} align="center">
-                <Text fontSize="3xl" fontWeight="bold" textAlign="center">
-                  Ready to jump in?
-                </Text>
-                <Text textAlign="center" color="cyan.100" maxW="2xl">
-                  Create your secure profile in seconds, save your key, and unlock every mode you just explored.
-                </Text>
-                <ActionButton
-                  rightIcon={<ArrowForwardIcon />}
-                  onClick={() => {
-                    if (hasDisplayName) {
-                      handleCreateAccount();
-                    } else {
-                      setShowFeatures(false);
-                    }
-                  }}
-                  isDisabled={isCreatingAccount}
-                >
-                  Create an account
-                </ActionButton>
-                <ActionButton
-                  variant="secondary"
-                  onClick={() => {
-                    setShowFeatures(false);
-                    setView("signIn");
-                  }}
-                >
-                  I already have a key
-                </ActionButton>
-              </VStack>
-            </LandingSection>
+          <LandingSection bg="rgba(6, 18, 30, 0.9)" borderRadius="3xl" border="1px solid rgba(45, 212, 191, 0.3)">
+            <VStack spacing={6} align="center">
+              <Text fontSize="3xl" fontWeight="bold" textAlign="center">
+                Ready to jump in?
+              </Text>
+              <Text textAlign="center" color="cyan.100" maxW="2xl">
+                Create your secure profile in seconds, save your key, and unlock every mode you just explored.
+              </Text>
+              <ActionButton
+                rightIcon={<ArrowForwardIcon />}
+                onClick={handleCreateAccount}
+                isDisabled={!hasDisplayName || isCreatingAccount}
+              >
+                Create an account
+              </ActionButton>
+              <ActionButton
+                variant="secondary"
+                onClick={() => {
+                  setView("signIn");
+                }}
+              >
+                I already have a key
+              </ActionButton>
+            </VStack>
+          </LandingSection>
 
-            <LandingSection bg="rgba(5, 15, 24, 0.95)" borderRadius="3xl" border="1px solid rgba(37, 99, 235, 0.28)">
-              <VStack spacing={6} align="stretch">
-                <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
-                  Frequently asked questions
-                </Text>
-                <Accordion
-                  allowMultiple
-                  borderRadius="xl"
-                  bg="rgba(5, 15, 24, 0.9)"
-                  boxShadow="0 24px 60px rgba(14, 165, 233, 0.2)"
-                  border="1px solid rgba(96, 165, 250, 0.35)"
-                >
-                  {FAQ_ITEMS.map((item) => (
-                    <AccordionItem key={item.question} border="none">
-                      <h3>
-                        <AccordionButton px={6} py={5}>
-                          <Box flex="1" textAlign="left" fontWeight="semibold" color="white">
-                            {item.question}
-                          </Box>
-                          <AccordionIcon />
-                        </AccordionButton>
-                      </h3>
-                      <AccordionPanel px={6} pb={6} color="cyan.100">
-                        {item.answer}
-                      </AccordionPanel>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
-              </VStack>
-            </LandingSection>
-          </Flex>
-        </Box>
-      )}
+          <LandingSection bg="rgba(5, 15, 24, 0.95)" borderRadius="3xl" border="1px solid rgba(37, 99, 235, 0.28)">
+            <VStack spacing={6} align="stretch">
+              <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
+                Frequently asked questions
+              </Text>
+              <Accordion
+                allowMultiple
+                borderRadius="xl"
+                bg="rgba(5, 15, 24, 0.9)"
+                border="1px solid rgba(96, 165, 250, 0.35)"
+              >
+                {FAQ_ITEMS.map((item) => (
+                  <AccordionItem key={item.question} border="none">
+                    <h3>
+                      <AccordionButton px={6} py={5}>
+                        <Box flex="1" textAlign="left" fontWeight="semibold" color="white">
+                          {item.question}
+                        </Box>
+                        <AccordionIcon />
+                      </AccordionButton>
+                    </h3>
+                    <AccordionPanel px={6} pb={6} color="cyan.100">
+                      {item.answer}
+                    </AccordionPanel>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            </VStack>
+          </LandingSection>
+        </Flex>
+      </Box>
     </Box>
   );
 };
