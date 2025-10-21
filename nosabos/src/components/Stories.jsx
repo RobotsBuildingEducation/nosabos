@@ -332,70 +332,6 @@ export default function StoryMode() {
     setActiveRole(normalized);
     setRoleInput(normalized);
   }, [rolePlayRole]);
-
-  const handleRoleSubmit = async (event) => {
-    event?.preventDefault?.();
-    const trimmed = roleInput.trim();
-    if (!trimmed) {
-      toast({
-        title: uiLang === "es" ? "Agrega un rol" : "Add a role",
-        description:
-          uiLang === "es"
-            ? "Escribe quién quieres ser en esta práctica."
-            : "Describe who you want to role play as before continuing.",
-        status: "warning",
-        duration: 3000,
-      });
-      return;
-    }
-
-    try {
-      if (npub) {
-        await setDoc(
-          doc(database, "users", npub),
-          {
-            rolePlay: {
-              role: trimmed,
-              updatedAt: isoNow(),
-            },
-          },
-          { merge: true }
-        );
-      }
-    } catch (error) {
-      console.error("Failed to save role play preference", error);
-      toast({
-        title:
-          uiLang === "es"
-            ? "No se pudo guardar el rol"
-            : "Couldn't save your role",
-        description:
-          uiLang === "es"
-            ? "Intentaremos generar el juego de todas formas."
-            : "We'll still try to generate your role play.",
-        status: "error",
-        duration: 3000,
-      });
-    }
-
-    setRoleInput(trimmed);
-    setActiveRole(trimmed);
-    storyCacheRef.current = null;
-    setStoryData(null);
-    setCurrentSentenceIndex(0);
-    setSessionXp(0);
-    setPassedCount(0);
-    setShowFullStory(true);
-    setHighlightedWordIndex(-1);
-    await generateStoryGeminiStream(trimmed);
-  };
-
-  useEffect(() => {
-    const normalized = activeRole.trim();
-    if (!normalized) return;
-    if (storyData || isLoading) return;
-    generateStoryGeminiStream(normalized);
-  }, [activeRole, storyData, isLoading, generateStoryGeminiStream]);
   const usageStatsRef = useRef({
     ttsCalls: 0,
     storyGenerations: 0,
@@ -985,9 +921,73 @@ export default function StoryMode() {
       uiLang,
       generateStory,
     ]
-  );
+    );
 
-  /* ----------------------------- TTS / playback ----------------------------- */
+    const handleRoleSubmit = async (event) => {
+      event?.preventDefault?.();
+      const trimmed = roleInput.trim();
+      if (!trimmed) {
+        toast({
+          title: uiLang === "es" ? "Agrega un rol" : "Add a role",
+          description:
+            uiLang === "es"
+              ? "Escribe quién quieres ser en esta práctica."
+              : "Describe who you want to role play as before continuing.",
+          status: "warning",
+          duration: 3000,
+        });
+        return;
+      }
+
+      try {
+        if (npub) {
+          await setDoc(
+            doc(database, "users", npub),
+            {
+              rolePlay: {
+                role: trimmed,
+                updatedAt: isoNow(),
+              },
+            },
+            { merge: true }
+          );
+        }
+      } catch (error) {
+        console.error("Failed to save role play preference", error);
+        toast({
+          title:
+            uiLang === "es"
+              ? "No se pudo guardar el rol"
+              : "Couldn't save your role",
+          description:
+            uiLang === "es"
+              ? "Intentaremos generar el juego de todas formas."
+              : "We'll still try to generate your role play.",
+          status: "error",
+          duration: 3000,
+        });
+      }
+
+      setRoleInput(trimmed);
+      setActiveRole(trimmed);
+      storyCacheRef.current = null;
+      setStoryData(null);
+      setCurrentSentenceIndex(0);
+      setSessionXp(0);
+      setPassedCount(0);
+      setShowFullStory(true);
+      setHighlightedWordIndex(-1);
+      await generateStoryGeminiStream(trimmed);
+    };
+
+    useEffect(() => {
+      const normalized = activeRole.trim();
+      if (!normalized) return;
+      if (storyData || isLoading) return;
+      generateStoryGeminiStream(normalized);
+    }, [activeRole, storyData, isLoading, generateStoryGeminiStream]);
+
+    /* ----------------------------- TTS / playback ----------------------------- */
   const playWithOpenAITTS = async (
     text,
     langTag,
