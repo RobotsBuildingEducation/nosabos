@@ -476,7 +476,6 @@ const LandingPage = ({ onAuthenticated }) => {
               bg="rgba(6, 18, 30, 0.95)"
               borderColor="rgba(45, 212, 191, 0.45)"
               color="white"
-              _placeholder={{ color: "cyan.500" }}
             />
             <Button
               color="white"
