@@ -65,19 +65,19 @@ const FEATURE_CARDS = [
   {
     title: "Stories for reading & speaking",
     description:
-      "Follow interactive stories that invite you to read aloud, summarize, and role-play every scene.",
+      "Follow interactive stories that invite you to read aloud, summarize, and role-play to your liking.",
     icon: FiBookOpen,
   },
   {
     title: "History lectures",
     description:
-      "Explore bilingual briefings on key historical moments to expand your cultural and academic vocabulary.",
+      "Explore briefings on Mexican history to expand your cultural and academic vocabulary.",
     icon: FiLayers,
   },
   {
-    title: "Grammar book & vocabulary",
+    title: "Grammar & vocabulary books",
     description:
-      "Check rules quickly, drill tricky concepts, and test yourself with adaptive vocab review sets.",
+      "Check rules quickly, drill tricky concepts, and test yourself with adaptive review sets.",
     icon: FiTarget,
   },
   {
@@ -203,11 +203,19 @@ const LandingPage = ({ onAuthenticated }) => {
       });
     } catch (error) {
       console.error("Failed to create account", error);
-      setErrorMessage(error?.message || "Something went wrong. Please try again.");
+      setErrorMessage(
+        error?.message || "Something went wrong. Please try again."
+      );
     } finally {
       setIsCreatingAccount(false);
     }
-  }, [displayName, generateNostrKeys, hasDisplayName, isCreatingAccount, toast]);
+  }, [
+    displayName,
+    generateNostrKeys,
+    hasDisplayName,
+    isCreatingAccount,
+    toast,
+  ]);
 
   const handleCopyKey = useCallback(() => {
     if (!generatedKeys?.nsec) return;
@@ -224,7 +232,8 @@ const LandingPage = ({ onAuthenticated }) => {
       .catch(() =>
         toast({
           title: "Copy failed",
-          description: "Select the key manually if clipboard access is blocked.",
+          description:
+            "Select the key manually if clipboard access is blocked.",
           status: "error",
           duration: 2400,
         })
@@ -352,7 +361,9 @@ const LandingPage = ({ onAuthenticated }) => {
             Save your secret key
           </Text>
           <Text color="teal.100">
-            This key is the only way to access your study progress. Store it in a password manager or another safe place. We cannot recover it for you.
+            This key is the only way to access your accounts on Robots Building
+            Education apps. Store it in a password manager or a safe place. We
+            cannot recover it for you.
           </Text>
           <Box
             border="1px dashed"
@@ -371,21 +382,30 @@ const LandingPage = ({ onAuthenticated }) => {
             onChange={(event) => setAcknowledged(event.target.checked)}
             colorScheme="teal"
           >
-            I understand that I must store this key securely to keep my account.
+            <Text fontSize={"sm"}>
+              I understand that I must store this key securely to keep my
+              account and holds important data like my Bitcoin deposits.
+            </Text>
           </Checkbox>
-          <Stack direction={{ base: "column", md: "row" }} spacing={4}>
-            <ActionButton variant="secondary" onClick={handleCopyKey}>
+          <VStack direction={{ base: "column", md: "row" }} spacing={4}>
+            <ActionButton
+              variant="secondary"
+              onClick={handleCopyKey}
+              colorScheme="blue"
+            >
               Copy key
             </ActionButton>
             <ActionButton
               variant="primary"
               isDisabled={!acknowledged}
+              bg={!acknowledged ? "gray" : "teal"}
               onClick={handleLaunch}
               rightIcon={<ArrowForwardIcon />}
+              color="white"
             >
               Start learning
             </ActionButton>
-          </Stack>
+          </VStack>
           {isCreatingAccount && (
             <HStack color="gray.400">
               <Spinner size="sm" />
@@ -397,6 +417,7 @@ const LandingPage = ({ onAuthenticated }) => {
             onClick={() => {
               setView("landing");
             }}
+            width="100px"
           >
             Go back
           </ActionButton>
@@ -406,7 +427,7 @@ const LandingPage = ({ onAuthenticated }) => {
   }
 
   return (
-    <Box position="relative" minH="100vh" bg="gray.900" color="gray.100" pb={24}>
+    <Box position="relative" minH="100vh" color="gray.100" pb={24}>
       <HeroBackground />
       <Flex
         align="center"
@@ -427,17 +448,27 @@ const LandingPage = ({ onAuthenticated }) => {
           <VStack spacing={3}>
             <RobotBuddyPro palette="ocean" variant="abstract" />
             <Text fontSize="2xl" fontWeight="semibold" color="cyan.200">
-              Nosabos
+              No Sabos
             </Text>
-            <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="black" lineHeight="1.1">
-              Your AI coach for immersive language learning
+            <Text
+              fontSize={{ base: "3xl", md: "4xl" }}
+              fontWeight="black"
+              lineHeight="1.1"
+            >
+              A smart tool to help you practice your language skills.
             </Text>
             <Text color="teal.100">
-              Create a display name to receive your secure key, then dive straight into conversations, stories, and lectures.
+              English, Spanish, Portuguese or Nahuatl.
             </Text>
           </VStack>
 
-          <Stack direction={{ base: "column", md: "row" }} spacing={4} w="full">
+          <Stack
+            direction={{ base: "column", md: "column" }}
+            spacing={4}
+            w="full"
+            display="flex"
+            alignItems={"center"}
+          >
             <Input
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
@@ -447,15 +478,16 @@ const LandingPage = ({ onAuthenticated }) => {
               color="white"
               _placeholder={{ color: "cyan.500" }}
             />
-            <ActionButton
+            <Button
+              color="white"
               onClick={handleCreateAccount}
               isLoading={isCreatingAccount}
               isDisabled={!hasDisplayName}
               rightIcon={<ArrowForwardIcon />}
-              w={{ base: "full", md: "auto" }}
+              // w={{ base: "full", md: "auto" }}
             >
               {isCreatingAccount ? "Creating" : "Create account"}
-            </ActionButton>
+            </Button>
           </Stack>
           {errorMessage && (
             <Text color="red.300" fontSize="sm">
@@ -464,10 +496,10 @@ const LandingPage = ({ onAuthenticated }) => {
           )}
 
           <ActionButton
-            variant="secondary"
             onClick={() => {
               setView("signIn");
             }}
+            color="white"
           >
             I already have a key
           </ActionButton>
@@ -476,130 +508,70 @@ const LandingPage = ({ onAuthenticated }) => {
 
       <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
         <Flex direction="column" align="center" gap={12}>
-          <VStack spacing={4} align="center" textAlign="center" maxW="3xl">
-            <Text fontSize="4xl" fontWeight="black">
-              Explore the toolkit that keeps your language practice fresh
-            </Text>
-            <Text color="cyan.100" fontSize="lg">
-              Dive into stories, live conversations, lectures, and drills designed to stretch every skill—then jump back to create your account when you're ready.
-            </Text>
-            <ActionButton
-              rightIcon={<ArrowForwardIcon />}
-              onClick={handleCreateAccount}
-              isDisabled={!hasDisplayName || isCreatingAccount}
-            >
-              Create an account
-            </ActionButton>
-            <ActionButton variant="secondary" onClick={() => setView("signIn")}>
-              I already have a key
-            </ActionButton>
-          </VStack>
+          <LandingSection
+            bg="rgba(4, 12, 22, 0.92)"
+            borderRadius="3xl"
+            border="1px solid rgba(96, 165, 250, 0.25)"
+          >
+            <VStack spacing={8} align="stretch">
+              <Text
+                textAlign="center"
+                fontSize="3xl"
+                fontWeight="bold"
+                color="white"
+              >
+                What you can do inside the app today
+              </Text>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+                {FEATURE_CARDS.map((feature) => (
+                  <Box
+                    key={feature.title}
+                    p={6}
+                    borderRadius="xl"
+                    border="1px solid rgba(14, 165, 233, 0.35)"
+                    bg="rgba(6, 18, 30, 0.95)"
+                  >
+                    <VStack align="flex-start" spacing={4}>
+                      <Icon as={feature.icon} color="teal.200" boxSize={8} />
+                      <Text fontSize="xl" fontWeight="semibold" color="white">
+                        {feature.title}
+                      </Text>
+                      <Text color="cyan.100">{feature.description}</Text>
+                    </VStack>
+                  </Box>
+                ))}
+              </SimpleGrid>
+            </VStack>
+          </LandingSection>
 
-            <LandingSection bg="rgba(6, 18, 30, 0.82)" borderRadius="3xl" border="1px solid rgba(45, 212, 191, 0.25)">
-              <VStack spacing={8} align="stretch">
-                <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
-                  How Nosabos guides your learning
-                </Text>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                  {VALUE_POINTS.map((point) => (
-                    <HStack
-                      key={point}
-                      align="flex-start"
-                      spacing={3}
-                      bg="rgba(5, 15, 24, 0.9)"
-                      borderRadius="lg"
-                      px={4}
-                      py={4}
-                      border="1px solid rgba(45, 212, 191, 0.35)"
-                    >
-                      <Icon as={ArrowForwardIcon} color="cyan.300" mt={1} />
-                      <Text color="cyan.100">{point}</Text>
-                    </HStack>
-                  ))}
-                </SimpleGrid>
-              </VStack>
-            </LandingSection>
-
-            <LandingSection bg="rgba(4, 12, 22, 0.92)" borderRadius="3xl" border="1px solid rgba(96, 165, 250, 0.25)">
-              <VStack spacing={8} align="stretch">
-                <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
-                  What you can do inside the app today
-                </Text>
-                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                  {FEATURE_CARDS.map((feature) => (
-                    <Box
-                      key={feature.title}
-                      p={6}
-                      borderRadius="xl"
-                      border="1px solid rgba(14, 165, 233, 0.35)"
-                      bg="rgba(6, 18, 30, 0.95)"
-                    >
-                      <VStack align="flex-start" spacing={4}>
-                        <Icon as={feature.icon} color="teal.200" boxSize={8} />
-                        <Text fontSize="xl" fontWeight="semibold" color="white">
-                          {feature.title}
-                        </Text>
-                        <Text color="cyan.100">{feature.description}</Text>
-                      </VStack>
-                    </Box>
-                  ))}
-                </SimpleGrid>
-              </VStack>
-            </LandingSection>
-
-          <LandingSection bg="rgba(6, 18, 30, 0.9)" borderRadius="3xl" border="1px solid rgba(45, 212, 191, 0.3)">
+          <LandingSection
+            bg="rgba(6, 18, 30, 0.9)"
+            borderRadius="3xl"
+            border="1px solid rgba(45, 212, 191, 0.3)"
+          >
             <VStack spacing={6} align="center">
               <Text fontSize="3xl" fontWeight="bold" textAlign="center">
                 Ready to jump in?
               </Text>
               <Text textAlign="center" color="cyan.100" maxW="2xl">
-                Create your secure profile in seconds, save your key, and unlock every mode you just explored.
+                Create your secure profile in seconds, save your key, and unlock
+                every mode you just explored.
               </Text>
-              <ActionButton
+              <Button
                 rightIcon={<ArrowForwardIcon />}
                 onClick={handleCreateAccount}
                 isDisabled={!hasDisplayName || isCreatingAccount}
               >
-                Create an account
-              </ActionButton>
+                Create account
+              </Button>
               <ActionButton
-                variant="secondary"
+                color="white"
                 onClick={() => {
                   setView("signIn");
                 }}
               >
                 I already have a key
               </ActionButton>
-            </VStack>
-          </LandingSection>
-
-          <LandingSection bg="rgba(5, 15, 24, 0.95)" borderRadius="3xl" border="1px solid rgba(37, 99, 235, 0.28)">
-            <VStack spacing={6} align="stretch">
-              <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
-                Frequently asked questions
-              </Text>
-              <Accordion
-                allowMultiple
-                borderRadius="xl"
-                bg="rgba(5, 15, 24, 0.9)"
-                border="1px solid rgba(96, 165, 250, 0.35)"
-              >
-                {FAQ_ITEMS.map((item) => (
-                  <AccordionItem key={item.question} border="none">
-                    <h3>
-                      <AccordionButton px={6} py={5}>
-                        <Box flex="1" textAlign="left" fontWeight="semibold" color="white">
-                          {item.question}
-                        </Box>
-                        <AccordionIcon />
-                      </AccordionButton>
-                    </h3>
-                    <AccordionPanel px={6} pb={6} color="cyan.100">
-                      {item.answer}
-                    </AccordionPanel>
-                  </AccordionItem>
-                ))}
-              </Accordion>
             </VStack>
           </LandingSection>
         </Flex>
