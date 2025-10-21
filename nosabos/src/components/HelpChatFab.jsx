@@ -252,7 +252,12 @@ export default function HelpChatFab({ progress, appLanguage = "en" }) {
         ? "es"
         : "en";
 
-    const glossHuman = glossLang === "es" ? "Spanish (español)" : "English";
+    const glossHuman =
+      glossLang === "es"
+        ? "Spanish (español)"
+        : glossLang === "pt"
+        ? "Portuguese (português)"
+        : "English";
     const glossLine = showTranslations
       ? `After your main answer, add one short translation in ${glossHuman}. Put it on a new line starting with "// ".`
       : "Do not add any translation/gloss.";

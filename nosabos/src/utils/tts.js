@@ -3,6 +3,7 @@ export const TTS_ENDPOINT = "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS";
 export const TTS_LANG_TAG = {
   en: "en-US",
   es: "es-ES",
+  pt: "pt-BR",
   nah: "es-ES",
 };
 
@@ -27,6 +28,7 @@ const SUPPORTED_TTS_VOICES = new Set([
 const TTS_NATIVE_VOICE = {
   en: "alloy",
   es: "marin",
+  pt: "coral",
   nah: "marin",
 };
 
@@ -43,6 +45,7 @@ export function voiceForLang(lang, langTag) {
   const normalizedTag = (langTag || "").toLowerCase();
   if (normalizedTag.startsWith("es")) return sanitizeVoice(TTS_NATIVE_VOICE.es);
   if (normalizedTag.startsWith("en")) return sanitizeVoice(TTS_NATIVE_VOICE.en);
+  if (normalizedTag.startsWith("pt")) return sanitizeVoice(TTS_NATIVE_VOICE.pt);
   return DEFAULT_TTS_VOICE;
 }
 

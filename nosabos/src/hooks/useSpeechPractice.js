@@ -8,6 +8,7 @@ import {
 const BCP47 = {
   es: "es-ES",
   en: "en-US",
+  pt: "pt-BR",
   nah: "es-ES",
 };
 
