@@ -100,7 +100,7 @@ const HeroBackground = () => (
   <Box
     position="absolute"
     inset={0}
-    bgGradient="linear(to-br, #fef3f7, #f4f1ff)"
+    bgGradient="linear(to-br, #0f172a, #1e1b4b)"
     zIndex={-2}
   />
 );
@@ -109,7 +109,7 @@ const HeroOverlay = () => (
   <Box
     position="absolute"
     inset={0}
-    bgImage="radial-gradient(circle at 15% 20%, rgba(255, 176, 189, 0.35), transparent 45%), radial-gradient(circle at 80% 10%, rgba(162, 132, 255, 0.35), transparent 45%), radial-gradient(circle at 40% 80%, rgba(255, 214, 153, 0.35), transparent 40%)"
+    bgImage="radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.35), transparent 45%), radial-gradient(circle at 80% 10%, rgba(236, 72, 153, 0.25), transparent 45%), radial-gradient(circle at 40% 80%, rgba(56, 189, 248, 0.2), transparent 40%)"
     zIndex={-1}
   />
 );
@@ -215,17 +215,18 @@ const LandingPage = ({ onAuthenticated }) => {
   const heroCta = useMemo(
     () => (
       <VStack
-        spacing={4}
+        spacing={5}
         alignItems="stretch"
-        bg="whiteAlpha.900"
+        bg="rgba(17, 24, 39, 0.85)"
         borderRadius="xl"
-        boxShadow="lg"
+        boxShadow="2xl"
         p={{ base: 6, md: 8 }}
+        border="1px solid rgba(148, 163, 184, 0.2)"
       >
-        <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="semibold">
+        <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="semibold" color="white">
           Create your free account
         </Text>
-        <Text fontSize="sm" color="gray.600">
+        <Text fontSize="sm" color="gray.300">
           Choose a display name and we will prepare your secure study profile. All you need to remember is the secret key you receive.
         </Text>
         <Stack direction={{ base: "column", md: "row" }} spacing={3}>
@@ -233,28 +234,37 @@ const LandingPage = ({ onAuthenticated }) => {
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             placeholder="Display name"
-            bg="white"
-            borderColor="gray.200"
+            bg="rgba(15, 23, 42, 0.9)"
+            borderColor="rgba(148, 163, 184, 0.4)"
+            color="white"
+            _placeholder={{ color: "gray.500" }}
           />
           <Button
-            colorScheme="pink"
+            bgGradient="linear(to-r, #8b5cf6, #ec4899)"
+            color="white"
+            fontWeight="semibold"
+            px={{ base: 4, md: 6 }}
+            py={2.5}
             rightIcon={<ArrowForwardIcon />}
             onClick={handleCreateAccount}
             isLoading={isCreatingAccount}
             isDisabled={!hasDisplayName}
+            _hover={{ bgGradient: "linear(to-r, #7c3aed, #db2777)" }}
+            _active={{ bgGradient: "linear(to-r, #6d28d9, #be185d)" }}
           >
             {isCreatingAccount ? "Creating" : "Create account"}
           </Button>
         </Stack>
         <Button
           variant="ghost"
+          color="pink.200"
+          _hover={{ color: "pink.100", bg: "whiteAlpha.100" }}
           onClick={() => setView("signIn")}
-          textDecoration="underline"
         >
           Already have a key? Sign in
         </Button>
         {errorMessage && view === "landing" && (
-          <Text color="red.500" fontSize="sm">
+          <Text color="red.300" fontSize="sm">
             {errorMessage}
           </Text>
         )}
@@ -272,43 +282,62 @@ const LandingPage = ({ onAuthenticated }) => {
 
   if (view === "signIn") {
     return (
-      <Flex minH="100vh" align="center" justify="center" bg="gray.50" px={4}>
+      <Flex
+        minH="100vh"
+        align="center"
+        justify="center"
+        bg="gray.900"
+        color="gray.100"
+        px={4}
+      >
         <VStack
           spacing={6}
           align="stretch"
           maxW="md"
           w="full"
-          bg="white"
-          boxShadow="lg"
+          bg="rgba(15, 23, 42, 0.95)"
+          boxShadow="2xl"
           borderRadius="xl"
+          border="1px solid rgba(148, 163, 184, 0.2)"
           p={{ base: 6, md: 8 }}
         >
           <Text fontSize="2xl" fontWeight="bold">
             Welcome back
           </Text>
-          <Text fontSize="sm" color="gray.600">
+          <Text fontSize="sm" color="gray.300">
             Paste the secret key you saved when you first created an account.
           </Text>
           <Input
             value={secretKey}
             onChange={(event) => setSecretKey(event.target.value)}
             placeholder="Paste your secret key"
-            bg="white"
+            bg="rgba(17, 24, 39, 0.9)"
+            borderColor="rgba(148, 163, 184, 0.4)"
+            color="white"
+            _placeholder={{ color: "gray.500" }}
           />
           {errorMessage && (
-            <Text color="red.500" fontSize="sm">
+            <Text color="red.300" fontSize="sm">
               {errorMessage}
             </Text>
           )}
           <Button
-            colorScheme="pink"
+            bgGradient="linear(to-r, #8b5cf6, #ec4899)"
+            color="white"
             onClick={handleSignIn}
             isLoading={isSigningIn}
             rightIcon={<LockIcon />}
+            _hover={{ bgGradient: "linear(to-r, #7c3aed, #db2777)" }}
+            _active={{ bgGradient: "linear(to-r, #6d28d9, #be185d)" }}
           >
             Sign in
           </Button>
-          <Button variant="ghost" onClick={() => setView("landing")}>
+          <Button
+            variant="ghost"
+            color="pink.200"
+            _hover={{ color: "pink.100", bg: "whiteAlpha.100" }}
+            onClick={() => setView("landing")}
+          >
             Back to landing page
           </Button>
         </VStack>
@@ -322,7 +351,8 @@ const LandingPage = ({ onAuthenticated }) => {
         minH="100vh"
         align="center"
         justify="center"
-        bg="gray.50"
+        bg="gray.900"
+        color="gray.100"
         px={4}
         py={{ base: 12, md: 16 }}
       >
@@ -331,26 +361,27 @@ const LandingPage = ({ onAuthenticated }) => {
           align="stretch"
           maxW="lg"
           w="full"
-          bg="white"
-          boxShadow="xl"
+          bg="rgba(15, 23, 42, 0.95)"
+          boxShadow="2xl"
           borderRadius="2xl"
+          border="1px solid rgba(148, 163, 184, 0.2)"
           p={{ base: 6, md: 10 }}
         >
           <HStack spacing={3}>
-            <Icon as={RepeatIcon} color="pink.400" boxSize={6} />
+            <Icon as={RepeatIcon} color="pink.300" boxSize={6} />
             <Text fontSize="2xl" fontWeight="bold">
               Save your secret key
             </Text>
           </HStack>
-          <Text color="gray.600">
+          <Text color="gray.300">
             This key is the only way to access your study progress. Store it in a password manager or another safe place. We cannot recover it for you.
           </Text>
           <Box
             border="1px dashed"
-            borderColor="pink.200"
+            borderColor="rgba(236, 72, 153, 0.4)"
             borderRadius="lg"
             p={4}
-            bg="pink.50"
+            bg="rgba(24, 24, 27, 0.7)"
             fontFamily="mono"
             fontSize="sm"
             wordBreak="break-all"
@@ -358,14 +389,23 @@ const LandingPage = ({ onAuthenticated }) => {
             {generatedKeys?.nsec || "Generating key..."}
           </Box>
           <Stack direction={{ base: "column", md: "row" }} spacing={4}>
-            <Button colorScheme="pink" variant="outline" onClick={handleCopyKey}>
+            <Button
+              variant="outline"
+              borderColor="pink.300"
+              color="pink.200"
+              _hover={{ bg: "whiteAlpha.100" }}
+              onClick={handleCopyKey}
+            >
               Copy key
             </Button>
             <Button
-              colorScheme="pink"
+              bgGradient="linear(to-r, #8b5cf6, #ec4899)"
+              color="white"
               isDisabled={!acknowledged}
               onClick={handleLaunch}
               rightIcon={<ArrowForwardIcon />}
+              _hover={{ bgGradient: "linear(to-r, #7c3aed, #db2777)" }}
+              _active={{ bgGradient: "linear(to-r, #6d28d9, #be185d)" }}
             >
               Start learning
             </Button>
@@ -373,19 +413,21 @@ const LandingPage = ({ onAuthenticated }) => {
           <Checkbox
             isChecked={acknowledged}
             onChange={(event) => setAcknowledged(event.target.checked)}
+            colorScheme="pink"
           >
             I understand that I must store this key securely to keep my account.
           </Checkbox>
           {isCreatingAccount && (
-            <HStack color="gray.500">
+            <HStack color="gray.400">
               <Spinner size="sm" />
               <Text fontSize="sm">{loadingMessage}</Text>
             </HStack>
           )}
           <Button
             variant="ghost"
+            color="pink.200"
+            _hover={{ color: "pink.100", bg: "whiteAlpha.100" }}
             onClick={() => setView("landing")}
-            textDecoration="underline"
           >
             Make another account
           </Button>
@@ -395,7 +437,13 @@ const LandingPage = ({ onAuthenticated }) => {
   }
 
   return (
-    <Box position="relative" overflow="hidden" minH="100vh">
+    <Box
+      position="relative"
+      overflow="hidden"
+      minH="100vh"
+      bg="gray.900"
+      color="gray.100"
+    >
       <HeroBackground />
       <HeroOverlay />
       <Flex
@@ -409,15 +457,22 @@ const LandingPage = ({ onAuthenticated }) => {
           <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={12}>
             <GridItem>
               <VStack align="flex-start" spacing={6}>
-                <Box bg="white" borderRadius="full" px={4} py={1} boxShadow="sm">
-                  <Text fontSize="sm" fontWeight="medium" color="pink.500">
+                <Box
+                  bg="whiteAlpha.100"
+                  borderRadius="full"
+                  px={4}
+                  py={1}
+                  boxShadow="inner"
+                  border="1px solid rgba(148, 163, 184, 0.2)"
+                >
+                  <Text fontSize="sm" fontWeight="medium" color="pink.200">
                     Language practice for future-ready students
                   </Text>
                 </Box>
                 <Text fontSize={{ base: "3xl", md: "4xl" }} fontWeight="black" lineHeight="1.1">
                   Build confidence in Spanish, English, and beyond with an AI-powered coach by your side.
                 </Text>
-                <Text fontSize="lg" color="gray.600">
+                <Text fontSize="lg" color="gray.300">
                   Nosabos turns everyday curiosity into language superpowers. Chat, drill, and explore cultural stories while our tutors adapt to your goals.
                 </Text>
                 <SimpleGrid columns={{ base: 1, sm: 2 }} spacing={4} w="full">
@@ -426,14 +481,14 @@ const LandingPage = ({ onAuthenticated }) => {
                       key={point}
                       align="flex-start"
                       spacing={3}
-                      bg="white"
+                      bg="rgba(15, 23, 42, 0.85)"
                       borderRadius="lg"
                       px={4}
                       py={3}
-                      boxShadow="sm"
+                      border="1px solid rgba(148, 163, 184, 0.2)"
                     >
-                      <Icon as={ArrowForwardIcon} color="pink.400" />
-                      <Text fontSize="sm" color="gray.600">
+                      <Icon as={ArrowForwardIcon} color="pink.300" />
+                      <Text fontSize="sm" color="gray.300">
                         {point}
                       </Text>
                     </HStack>
@@ -445,9 +500,9 @@ const LandingPage = ({ onAuthenticated }) => {
           </Grid>
         </LandingSection>
 
-        <LandingSection bg="white">
+        <LandingSection bg="rgba(17, 24, 39, 0.75)" borderRadius="3xl">
           <VStack spacing={8} align="stretch">
-            <Text textAlign="center" fontSize="3xl" fontWeight="bold">
+            <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
               Everything you need to grow your language skills
             </Text>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
@@ -456,17 +511,16 @@ const LandingPage = ({ onAuthenticated }) => {
                   key={feature.title}
                   p={6}
                   borderRadius="xl"
-                  border="1px solid"
-                  borderColor="gray.100"
-                  bg="gray.50"
-                  boxShadow="sm"
+                  border="1px solid rgba(148, 163, 184, 0.25)"
+                  bg="rgba(15, 23, 42, 0.9)"
+                  boxShadow="xl"
                 >
                   <VStack align="flex-start" spacing={4}>
-                    <Icon as={feature.icon} color="pink.400" boxSize={8} />
-                    <Text fontSize="xl" fontWeight="semibold">
+                    <Icon as={feature.icon} color="pink.300" boxSize={8} />
+                    <Text fontSize="xl" fontWeight="semibold" color="white">
                       {feature.title}
                     </Text>
-                    <Text color="gray.600">{feature.description}</Text>
+                    <Text color="gray.300">{feature.description}</Text>
                   </VStack>
                 </Box>
               ))}
@@ -474,33 +528,33 @@ const LandingPage = ({ onAuthenticated }) => {
           </VStack>
         </LandingSection>
 
-        <LandingSection bg="gray.50">
+        <LandingSection bg="rgba(24, 24, 27, 0.7)" borderRadius="3xl">
           <VStack spacing={6} align="stretch">
-            <Text textAlign="center" fontSize="3xl" fontWeight="bold">
+            <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
               Why learners choose Nosabos
             </Text>
             <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-              <Box bg="white" borderRadius="xl" p={6} boxShadow="md">
-                <Text fontSize="lg" fontWeight="semibold" mb={3}>
+              <Box bg="rgba(15, 23, 42, 0.9)" borderRadius="xl" p={6} boxShadow="xl" border="1px solid rgba(148, 163, 184, 0.2)">
+                <Text fontSize="lg" fontWeight="semibold" mb={3} color="white">
                   Daily progress tracking
                 </Text>
-                <Text color="gray.600">
+                <Text color="gray.300">
                   Unlock streak celebrations and see how much XP you earn from every activity. Goals adjust to your pace so you stay motivated.
                 </Text>
               </Box>
-              <Box bg="white" borderRadius="xl" p={6} boxShadow="md">
-                <Text fontSize="lg" fontWeight="semibold" mb={3}>
+              <Box bg="rgba(15, 23, 42, 0.9)" borderRadius="xl" p={6} boxShadow="xl" border="1px solid rgba(148, 163, 184, 0.2)">
+                <Text fontSize="lg" fontWeight="semibold" mb={3} color="white">
                   Cultural storytelling
                 </Text>
-                <Text color="gray.600">
+                <Text color="gray.300">
                   Explore legends, community news, and bilingual prompts that connect language learning to lived experiences.
                 </Text>
               </Box>
-              <Box bg="white" borderRadius="xl" p={6} boxShadow="md">
-                <Text fontSize="lg" fontWeight="semibold" mb={3}>
+              <Box bg="rgba(15, 23, 42, 0.9)" borderRadius="xl" p={6} boxShadow="xl" border="1px solid rgba(148, 163, 184, 0.2)">
+                <Text fontSize="lg" fontWeight="semibold" mb={3} color="white">
                   Learning on your terms
                 </Text>
-                <Text color="gray.600">
+                <Text color="gray.300">
                   Swap between writing, speaking, and comprehension tasks anytime. Our tutor adapts to your schedule and comfort level.
                 </Text>
               </Box>
@@ -508,23 +562,23 @@ const LandingPage = ({ onAuthenticated }) => {
           </VStack>
         </LandingSection>
 
-        <LandingSection bg="white">
+        <LandingSection bg="rgba(17, 24, 39, 0.8)" borderRadius="3xl">
           <VStack spacing={6} align="stretch">
-            <Text textAlign="center" fontSize="3xl" fontWeight="bold">
+            <Text textAlign="center" fontSize="3xl" fontWeight="bold" color="white">
               Frequently asked questions
             </Text>
-            <Accordion allowMultiple borderRadius="xl" bg="white" boxShadow="lg">
+            <Accordion allowMultiple borderRadius="xl" bg="rgba(15, 23, 42, 0.95)" boxShadow="2xl" border="1px solid rgba(148, 163, 184, 0.25)">
               {FAQ_ITEMS.map((item) => (
                 <AccordionItem key={item.question} border="none">
                   <h3>
                     <AccordionButton px={6} py={5}>
-                      <Box flex="1" textAlign="left" fontWeight="semibold">
+                      <Box flex="1" textAlign="left" fontWeight="semibold" color="white">
                         {item.question}
                       </Box>
                       <AccordionIcon />
                     </AccordionButton>
                   </h3>
-                  <AccordionPanel px={6} pb={6} color="gray.600">
+                  <AccordionPanel px={6} pb={6} color="gray.300">
                     {item.answer}
                   </AccordionPanel>
                 </AccordionItem>
@@ -533,12 +587,12 @@ const LandingPage = ({ onAuthenticated }) => {
           </VStack>
         </LandingSection>
 
-        <LandingSection bg="gray.900" color="white" borderTopRadius="3xl">
+        <LandingSection bg="rgba(15, 23, 42, 0.95)" color="white" borderRadius="3xl" border="1px solid rgba(148, 163, 184, 0.2)">
           <VStack spacing={6} align="center">
             <Text fontSize="3xl" fontWeight="bold" textAlign="center">
               Ready to begin?
             </Text>
-            <Text textAlign="center" maxW="2xl" color="gray.200">
+            <Text textAlign="center" maxW="2xl" color="gray.300">
               Create an account in seconds and get instant access to all of the conversation tools, grammar labs, and vocabulary builders.
             </Text>
             <Stack direction={{ base: "column", sm: "row" }} spacing={4} w="full" maxW="lg">
@@ -546,21 +600,34 @@ const LandingPage = ({ onAuthenticated }) => {
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
                 placeholder="Display name"
-                bg="white"
-                color="gray.800"
+                bg="rgba(17, 24, 39, 0.9)"
+                borderColor="rgba(148, 163, 184, 0.4)"
+                color="white"
+                _placeholder={{ color: "gray.500" }}
               />
               <Button
                 flexShrink={0}
-                colorScheme="pink"
+                bgGradient="linear(to-r, #8b5cf6, #ec4899)"
+                color="white"
                 rightIcon={<ArrowForwardIcon />}
                 onClick={handleCreateAccount}
                 isLoading={isCreatingAccount}
                 isDisabled={!hasDisplayName}
+                px={{ base: 4, md: 6 }}
+                py={2.5}
+                fontWeight="semibold"
+                _hover={{ bgGradient: "linear(to-r, #7c3aed, #db2777)" }}
+                _active={{ bgGradient: "linear(to-r, #6d28d9, #be185d)" }}
               >
                 Create account
               </Button>
             </Stack>
-            <Button variant="link" color="pink.200" onClick={() => setView("signIn")}>
+            <Button
+              variant="link"
+              color="pink.200"
+              _hover={{ color: "pink.100" }}
+              onClick={() => setView("signIn")}
+            >
               I already have a key
             </Button>
           </VStack>
