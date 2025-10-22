@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -55,41 +55,35 @@ const FAQ_ITEMS = [
   },
 ];
 
-const FEATURE_CARDS = [
+const FEATURE_CARD_CONFIG = [
   {
-    title: "Real-time conversations",
-    description:
-      "Stay immersed with responsive dialogues that coach you through speaking and listening in the moment.",
+    titleKey: "landing_feature_conversations_title",
+    descriptionKey: "landing_feature_conversations_desc",
     icon: FiMessageCircle,
   },
   {
-    title: "Stories for reading & speaking",
-    description:
-      "Follow interactive stories that invite you to read aloud, summarize, and role-play to your liking.",
+    titleKey: "landing_feature_stories_title",
+    descriptionKey: "landing_feature_stories_desc",
     icon: FiBookOpen,
   },
   {
-    title: "History lectures",
-    description:
-      "Explore briefings on Mexican history to expand your cultural and academic vocabulary.",
+    titleKey: "landing_feature_history_title",
+    descriptionKey: "landing_feature_history_desc",
     icon: FiLayers,
   },
   {
-    title: "Grammar & vocabulary books",
-    description:
-      "Check rules quickly, drill tricky concepts, and test yourself with adaptive review sets.",
+    titleKey: "landing_feature_grammar_title",
+    descriptionKey: "landing_feature_grammar_desc",
     icon: FiTarget,
   },
   {
-    title: "Job scripts",
-    description:
-      "Practice professional dialogues so you can present, interview, and collaborate with confidence.",
+    titleKey: "landing_feature_jobs_title",
+    descriptionKey: "landing_feature_jobs_desc",
     icon: FiCompass,
   },
   {
-    title: "Random mode",
-    description:
-      "Mix up your routine with surprise prompts that blend speaking, reading, and listening challenges.",
+    titleKey: "landing_feature_random_title",
+    descriptionKey: "landing_feature_random_desc",
     icon: FiShuffle,
   },
 ];
@@ -122,8 +116,6 @@ const HeroBackground = () => (
     zIndex={-2}
   />
 );
-
-const defaultLoadingMessage = "Setting up your study space...";
 
 const BASE_BUTTON_PROPS = {
   size: "lg",
@@ -163,12 +155,153 @@ const BUTTON_VARIANTS = {
   },
 };
 
+const landingTranslations = {
+  en: {
+    language_en: "English",
+    language_es: "Spanish",
+    default_loading: "Setting up your study space...",
+    toast_account_created_title: "Account created",
+    toast_account_created_desc: "Save your secret key before you continue.",
+    error_create_generic: "Something went wrong. Please try again.",
+    toast_copy_success_title: "Secret key copied",
+    toast_copy_success_desc:
+      "Store it somewhere safe—it's your only way back in.",
+    toast_copy_error_title: "Copy failed",
+    toast_copy_error_desc:
+      "Select the key manually if clipboard access is blocked.",
+    toast_signin_success_title: "Welcome back!",
+    error_signin_invalid: "We couldn't verify that key. Check it and try again.",
+    error_signin_generic: "We couldn't sign you in. Try again.",
+    brand_name: "No Sabos",
+    hero_title: "A smart tool to help you practice your language skills.",
+    hero_languages: "English, Spanish, Portuguese or Nahuatl.",
+    display_name_placeholder: "Display name",
+    create_button: "Create account",
+    create_loading: "Creating",
+    have_key_button: "I already have a key",
+    section_features_title: "What you can do inside the app today",
+    feature_conversations_title: "Real-time conversations",
+    feature_conversations_desc:
+      "Stay immersed with responsive dialogues that coach you through speaking and listening in the moment.",
+    feature_stories_title: "Stories for reading & speaking",
+    feature_stories_desc:
+      "Follow interactive stories that invite you to read aloud, summarize, and role-play to your liking.",
+    feature_history_title: "History lectures",
+    feature_history_desc:
+      "Explore briefings on Mexican history to expand your cultural and academic vocabulary.",
+    feature_grammar_title: "Grammar & vocabulary books",
+    feature_grammar_desc:
+      "Check rules quickly, drill tricky concepts, and test yourself with adaptive review sets.",
+    feature_jobs_title: "Job scripts",
+    feature_jobs_desc:
+      "Practice professional dialogues so you can present, interview, and collaborate with confidence.",
+    feature_random_title: "Random mode",
+    feature_random_desc:
+      "Mix up your routine with surprise prompts that blend speaking, reading, and listening challenges.",
+    ready_title: "Ready to jump in?",
+    ready_subtitle:
+      "Create your secure profile in seconds, save your key, and unlock every mode you just explored.",
+    ready_cta: "Create account",
+    signin_title: "Welcome back",
+    signin_subtitle:
+      "Paste the secret key you saved when you first created an account.",
+    signin_placeholder: "Paste your secret key",
+    signin_button: "Sign in",
+    back_button: "Back",
+    created_title: "Save your secret key",
+    created_description:
+      "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
+    created_generating: "Generating key...",
+    created_checkbox:
+      "I understand that I must store this key securely to keep my account safe—it protects everything, including my Bitcoin deposits.",
+    created_copy: "Copy key",
+    created_launch: "Start learning",
+    created_back: "Go back",
+  },
+  es: {
+    language_en: "Inglés",
+    language_es: "Español",
+    default_loading: "Preparando tu espacio de estudio...",
+    toast_account_created_title: "Cuenta creada",
+    toast_account_created_desc: "Guarda tu llave secreta antes de continuar.",
+    error_create_generic: "Ocurrió un problema. Inténtalo de nuevo.",
+    toast_copy_success_title: "Llave secreta copiada",
+    toast_copy_success_desc:
+      "Guárdala en un lugar seguro: es la única forma de volver a entrar.",
+    toast_copy_error_title: "No se pudo copiar",
+    toast_copy_error_desc:
+      "Selecciona la llave manualmente si el portapapeles está bloqueado.",
+    toast_signin_success_title: "¡Bienvenido de nuevo!",
+    error_signin_invalid:
+      "No pudimos verificar esa llave. Revísala e inténtalo otra vez.",
+    error_signin_generic: "No pudimos iniciar tu sesión. Inténtalo de nuevo.",
+    brand_name: "No Sabos",
+    hero_title:
+      "Una herramienta inteligente para practicar tus habilidades lingüísticas.",
+    hero_languages: "Inglés, español, portugués o náhuatl.",
+    display_name_placeholder: "Nombre para mostrar",
+    create_button: "Crear cuenta",
+    create_loading: "Creando",
+    have_key_button: "Ya tengo una llave",
+    section_features_title: "Lo que puedes hacer en la app hoy",
+    feature_conversations_title: "Conversaciones en tiempo real",
+    feature_conversations_desc:
+      "Mantente inmerso con diálogos receptivos que te guían en la expresión y comprensión al momento.",
+    feature_stories_title: "Historias para leer y hablar",
+    feature_stories_desc:
+      "Sigue historias interactivas que te invitan a leer en voz alta, resumir y representar papeles.",
+    feature_history_title: "Lecciones de historia",
+    feature_history_desc:
+      "Explora resúmenes de historia mexicana para ampliar tu vocabulario cultural y académico.",
+    feature_grammar_title: "Libros de gramática y vocabulario",
+    feature_grammar_desc:
+      "Consulta reglas rápido, practica puntos difíciles y pon a prueba tus conocimientos con repasos adaptativos.",
+    feature_jobs_title: "Guiones profesionales",
+    feature_jobs_desc:
+      "Practica diálogos profesionales para presentar, entrevistar y colaborar con confianza.",
+    feature_random_title: "Modo aleatorio",
+    feature_random_desc:
+      "Varía tu rutina con retos sorpresa que combinan expresión oral, lectura y escucha.",
+    ready_title: "¿Listo para empezar?",
+    ready_subtitle:
+      "Crea tu perfil seguro en segundos, guarda tu llave y desbloquea todos los modos que viste.",
+    ready_cta: "Crear cuenta",
+    signin_title: "Bienvenido de nuevo",
+    signin_subtitle:
+      "Pega la llave secreta que guardaste cuando creaste tu cuenta.",
+    signin_placeholder: "Pega tu llave secreta",
+    signin_button: "Iniciar sesión",
+    back_button: "Regresar",
+    created_title: "Guarda tu llave secreta",
+    created_description:
+      "Esta llave es la única forma de acceder a tus cuentas en las apps de Robots Building Education. Guárdala en un gestor de contraseñas o en un lugar seguro. No podemos recuperarla por ti.",
+    created_generating: "Generando llave...",
+    created_checkbox:
+      "Entiendo que debo guardar esta llave de forma segura para proteger mi cuenta; resguarda todo, incluso mis depósitos de Bitcoin.",
+    created_copy: "Copiar llave",
+    created_launch: "Comenzar a aprender",
+    created_back: "Regresar",
+  },
+};
+
+const getStoredLanguage = () =>
+  typeof window !== "undefined" && localStorage.getItem("appLanguage") === "es"
+    ? "es"
+    : "en";
+
 const LandingPage = ({ onAuthenticated }) => {
   const toast = useToast();
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
   );
+
+  const [landingLanguage, setLandingLanguage] = useState(getStoredLanguage);
+  const copy =
+    landingTranslations[landingLanguage] || landingTranslations.en;
+  const defaultLoadingMessage = copy.default_loading;
+  const englishLabel = copy.language_en || landingTranslations.en.language_en;
+  const spanishLabel = copy.language_es || landingTranslations.en.language_es;
 
   const [view, setView] = useState("landing");
   const [displayName, setDisplayName] = useState("");
@@ -180,7 +313,19 @@ const LandingPage = ({ onAuthenticated }) => {
   const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
   const [errorMessage, setErrorMessage] = useState("");
 
+  useEffect(() => {
+    setLoadingMessage(copy.default_loading);
+  }, [copy.default_loading, landingLanguage]);
+
   const hasDisplayName = displayName.trim().length >= 2;
+
+  const handleLanguageChange = useCallback((lang) => {
+    const norm = lang === "es" ? "es" : "en";
+    setLandingLanguage(norm);
+    try {
+      localStorage.setItem("appLanguage", norm);
+    } catch {}
+  }, []);
 
   const handleCreateAccount = useCallback(async () => {
     if (!hasDisplayName || isCreatingAccount) return;
@@ -196,20 +341,24 @@ const LandingPage = ({ onAuthenticated }) => {
       localStorage.setItem("displayName", displayName.trim());
       setView("created");
       toast({
-        title: "Account created",
-        description: "Save your secret key before you continue.",
+        title: copy.toast_account_created_title,
+        description: copy.toast_account_created_desc,
         status: "success",
         duration: 2500,
       });
     } catch (error) {
       console.error("Failed to create account", error);
       setErrorMessage(
-        error?.message || "Something went wrong. Please try again."
+        error?.message || copy.error_create_generic
       );
     } finally {
       setIsCreatingAccount(false);
     }
   }, [
+    copy.error_create_generic,
+    copy.toast_account_created_desc,
+    copy.toast_account_created_title,
+    defaultLoadingMessage,
     displayName,
     generateNostrKeys,
     hasDisplayName,
@@ -223,22 +372,28 @@ const LandingPage = ({ onAuthenticated }) => {
       .writeText(generatedKeys.nsec)
       .then(() =>
         toast({
-          title: "Secret key copied",
-          description: "Store it somewhere safe—it's your only way back in.",
+          title: copy.toast_copy_success_title,
+          description: copy.toast_copy_success_desc,
           status: "info",
           duration: 2400,
         })
       )
       .catch(() =>
         toast({
-          title: "Copy failed",
-          description:
-            "Select the key manually if clipboard access is blocked.",
+          title: copy.toast_copy_error_title,
+          description: copy.toast_copy_error_desc,
           status: "error",
           duration: 2400,
         })
       );
-  }, [generatedKeys?.nsec, toast]);
+  }, [
+    copy.toast_copy_error_desc,
+    copy.toast_copy_error_title,
+    copy.toast_copy_success_desc,
+    copy.toast_copy_success_title,
+    generatedKeys?.nsec,
+    toast,
+  ]);
 
   const handleSignIn = useCallback(async () => {
     if (!secretKey.trim()) return;
@@ -247,21 +402,29 @@ const LandingPage = ({ onAuthenticated }) => {
     try {
       const result = await auth(secretKey.trim());
       if (!result) {
-        throw new Error("We couldn't verify that key. Check it and try again.");
+        throw new Error(copy.error_signin_invalid);
       }
       toast({
-        title: "Welcome back!",
+        title: copy.toast_signin_success_title,
         status: "success",
         duration: 2000,
       });
       onAuthenticated?.();
     } catch (error) {
       console.error("Failed to sign in", error);
-      setErrorMessage(error?.message || "We couldn't sign you in. Try again.");
+      setErrorMessage(error?.message || copy.error_signin_generic);
     } finally {
       setIsSigningIn(false);
     }
-  }, [auth, onAuthenticated, secretKey, toast]);
+  }, [
+    auth,
+    copy.error_signin_generic,
+    copy.error_signin_invalid,
+    copy.toast_signin_success_title,
+    onAuthenticated,
+    secretKey,
+    toast,
+  ]);
 
   const handleLaunch = useCallback(() => {
     if (!acknowledged) return;
@@ -297,15 +460,15 @@ const LandingPage = ({ onAuthenticated }) => {
           p={{ base: 6, md: 8 }}
         >
           <Text fontSize="2xl" fontWeight="bold">
-            Welcome back
+            {copy.signin_title}
           </Text>
           <Text fontSize="sm" color="teal.100">
-            Paste the secret key you saved when you first created an account.
+            {copy.signin_subtitle}
           </Text>
           <Input
             value={secretKey}
             onChange={(event) => setSecretKey(event.target.value)}
-            placeholder="Paste your secret key"
+            placeholder={copy.signin_placeholder}
             bg="rgba(6, 18, 30, 0.9)"
             borderColor="rgba(45, 212, 191, 0.4)"
             color="white"
@@ -321,7 +484,7 @@ const LandingPage = ({ onAuthenticated }) => {
             isLoading={isSigningIn}
             rightIcon={<LockIcon />}
           >
-            Sign in
+            {copy.signin_button}
           </ActionButton>
           <ActionButton
             variant="ghost"
@@ -329,7 +492,7 @@ const LandingPage = ({ onAuthenticated }) => {
               setView("landing");
             }}
           >
-            Back
+            {copy.back_button}
           </ActionButton>
         </VStack>
       </Flex>
@@ -358,13 +521,9 @@ const LandingPage = ({ onAuthenticated }) => {
           p={{ base: 6, md: 10 }}
         >
           <Text fontSize="2xl" fontWeight="bold">
-            Save your secret key
+            {copy.created_title}
           </Text>
-          <Text color="teal.100">
-            This key is the only way to access your accounts on Robots Building
-            Education apps. Store it in a password manager or a safe place. We
-            cannot recover it for you.
-          </Text>
+          <Text color="teal.100">{copy.created_description}</Text>
           <Box
             border="1px dashed"
             borderColor="rgba(45, 212, 191, 0.45)"
@@ -375,17 +534,14 @@ const LandingPage = ({ onAuthenticated }) => {
             fontSize="sm"
             wordBreak="break-all"
           >
-            {generatedKeys?.nsec || "Generating key..."}
+            {generatedKeys?.nsec || copy.created_generating}
           </Box>
           <Checkbox
             isChecked={acknowledged}
             onChange={(event) => setAcknowledged(event.target.checked)}
             colorScheme="teal"
           >
-            <Text fontSize={"sm"}>
-              I understand that I must store this key securely to keep my
-              account and holds important data like my Bitcoin deposits.
-            </Text>
+            <Text fontSize={"sm"}>{copy.created_checkbox}</Text>
           </Checkbox>
           <VStack direction={{ base: "column", md: "row" }} spacing={4}>
             <ActionButton
@@ -393,7 +549,7 @@ const LandingPage = ({ onAuthenticated }) => {
               onClick={handleCopyKey}
               colorScheme="blue"
             >
-              Copy key
+              {copy.created_copy}
             </ActionButton>
             <ActionButton
               variant="primary"
@@ -403,7 +559,7 @@ const LandingPage = ({ onAuthenticated }) => {
               rightIcon={<ArrowForwardIcon />}
               color="white"
             >
-              Start learning
+              {copy.created_launch}
             </ActionButton>
           </VStack>
           {isCreatingAccount && (
@@ -419,7 +575,7 @@ const LandingPage = ({ onAuthenticated }) => {
             }}
             width="100px"
           >
-            Go back
+            {copy.created_back}
           </ActionButton>
         </VStack>
       </Flex>
@@ -446,20 +602,36 @@ const LandingPage = ({ onAuthenticated }) => {
           w="full"
         >
           <VStack spacing={3}>
+            <HStack spacing={2} justify="center">
+              <Button
+                size="sm"
+                variant={landingLanguage === "en" ? "solid" : "ghost"}
+                colorScheme="teal"
+                onClick={() => handleLanguageChange("en")}
+              >
+                {englishLabel}
+              </Button>
+              <Button
+                size="sm"
+                variant={landingLanguage === "es" ? "solid" : "ghost"}
+                colorScheme="teal"
+                onClick={() => handleLanguageChange("es")}
+              >
+                {spanishLabel}
+              </Button>
+            </HStack>
             <RobotBuddyPro palette="ocean" variant="abstract" />
             <Text fontSize="2xl" fontWeight="semibold" color="cyan.200">
-              No Sabos
+              {copy.brand_name}
             </Text>
             <Text
               fontSize={{ base: "3xl", md: "4xl" }}
               fontWeight="black"
               lineHeight="1.1"
             >
-              A smart tool to help you practice your language skills.
+              {copy.hero_title}
             </Text>
-            <Text color="teal.100">
-              English, Spanish, Portuguese or Nahuatl.
-            </Text>
+            <Text color="teal.100">{copy.hero_languages}</Text>
           </VStack>
 
           <Stack
@@ -472,7 +644,7 @@ const LandingPage = ({ onAuthenticated }) => {
             <Input
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
-              placeholder="Display name"
+              placeholder={copy.display_name_placeholder}
               bg="rgba(6, 18, 30, 0.95)"
               borderColor="rgba(45, 212, 191, 0.45)"
               color="white"
@@ -485,7 +657,9 @@ const LandingPage = ({ onAuthenticated }) => {
               rightIcon={<ArrowForwardIcon />}
               // w={{ base: "full", md: "auto" }}
             >
-              {isCreatingAccount ? "Creating" : "Create account"}
+              {isCreatingAccount
+                ? copy.create_loading
+                : copy.create_button}
             </Button>
           </Stack>
           {errorMessage && (
@@ -500,7 +674,7 @@ const LandingPage = ({ onAuthenticated }) => {
             }}
             color="white"
           >
-            I already have a key
+            {copy.have_key_button}
           </ActionButton>
         </VStack>
       </Flex>
@@ -519,12 +693,12 @@ const LandingPage = ({ onAuthenticated }) => {
                 fontWeight="bold"
                 color="white"
               >
-                What you can do inside the app today
+                {copy.section_features_title}
               </Text>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                {FEATURE_CARDS.map((feature) => (
+                {FEATURE_CARD_CONFIG.map((feature) => (
                   <Box
-                    key={feature.title}
+                    key={feature.titleKey}
                     p={6}
                     borderRadius="xl"
                     border="1px solid rgba(14, 165, 233, 0.35)"
@@ -533,9 +707,15 @@ const LandingPage = ({ onAuthenticated }) => {
                     <VStack align="flex-start" spacing={4}>
                       <Icon as={feature.icon} color="teal.200" boxSize={8} />
                       <Text fontSize="xl" fontWeight="semibold" color="white">
-                        {feature.title}
+                        {copy[feature.titleKey] ||
+                          landingTranslations.en[feature.titleKey] ||
+                          feature.titleKey}
                       </Text>
-                      <Text color="cyan.100">{feature.description}</Text>
+                      <Text color="cyan.100">
+                        {copy[feature.descriptionKey] ||
+                          landingTranslations.en[feature.descriptionKey] ||
+                          feature.descriptionKey}
+                      </Text>
                     </VStack>
                   </Box>
                 ))}
@@ -550,18 +730,17 @@ const LandingPage = ({ onAuthenticated }) => {
           >
             <VStack spacing={6} align="center">
               <Text fontSize="3xl" fontWeight="bold" textAlign="center">
-                Ready to jump in?
+                {copy.ready_title}
               </Text>
               <Text textAlign="center" color="cyan.100" maxW="2xl">
-                Create your secure profile in seconds, save your key, and unlock
-                every mode you just explored.
+                {copy.ready_subtitle}
               </Text>
               <Button
                 rightIcon={<ArrowForwardIcon />}
                 onClick={handleCreateAccount}
                 isDisabled={!hasDisplayName || isCreatingAccount}
               >
-                Create account
+                {copy.ready_cta}
               </Button>
               <ActionButton
                 color="white"
@@ -569,7 +748,7 @@ const LandingPage = ({ onAuthenticated }) => {
                   setView("signIn");
                 }}
               >
-                I already have a key
+                {copy.have_key_button}
               </ActionButton>
             </VStack>
           </LandingSection>

@@ -60,6 +60,8 @@ import { LuBadgeCheck, LuBookOpen, LuShuffle } from "react-icons/lu";
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
+import { Navigate, useLocation } from "react-router-dom";
+
 import useUserStore from "./hooks/useUserStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
 
@@ -84,6 +86,7 @@ import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
+const ONBOARDING_TOTAL_STEPS = 3;
 
 function extractJsonBlock(text = "") {
   if (!text) return "";
@@ -124,11 +127,31 @@ async function ensureOnboardingField(db, id, data) {
     data || {},
     "onboardingCompleted"
   );
+  const hasStep =
+    hasNested && Number.isFinite(Number(data.onboarding?.currentStep));
 
-  if (!hasCompleted && !hasLegacyTopLevel) {
+  const shouldSetDefaults = !hasCompleted && !hasLegacyTopLevel;
+  const shouldSetStep = !hasStep;
+
+  if (shouldSetDefaults || shouldSetStep) {
+    const onboardingPayload = {
+      ...(hasNested ? data.onboarding : {}),
+    };
+
+    if (shouldSetDefaults && !hasCompleted) {
+      onboardingPayload.completed = false;
+    }
+
+    if (shouldSetStep) {
+      const existing = Number(onboardingPayload.currentStep);
+      onboardingPayload.currentStep = Number.isFinite(existing)
+        ? existing
+        : 1;
+    }
+
     await setDoc(
       doc(db, "users", id),
-      { onboarding: { completed: false } },
+      { onboarding: onboardingPayload },
       { merge: true }
     );
     const snap = await getDoc(doc(db, "users", id));
@@ -975,6 +998,7 @@ function TopBar({
 export default function App() {
   const toast = useToast();
   const initRef = useRef(false);
+  const location = useLocation();
 
   const [isLoadingApp, setIsLoadingApp] = useState(true);
 
@@ -1132,7 +1156,7 @@ export default function App() {
           const base = {
             local_npub: id,
             createdAt: new Date().toISOString(),
-            onboarding: { completed: false },
+            onboarding: { completed: false, currentStep: 1 },
             appLanguage:
               localStorage.getItem("appLanguage") === "es" ? "es" : "en",
             helpRequest: "",
@@ -1147,7 +1171,7 @@ export default function App() {
         const base = {
           local_npub: id,
           createdAt: new Date().toISOString(),
-          onboarding: { completed: false },
+          onboarding: { completed: false, currentStep: 1 },
           appLanguage:
             localStorage.getItem("appLanguage") === "es" ? "es" : "en",
           helpRequest: "",
@@ -1224,7 +1248,7 @@ export default function App() {
   /* -----------------------------------
      Persistence helpers
   ----------------------------------- */
-  const resolveNpub = () => {
+  const resolveNpub = useCallback(() => {
     const candidates = [
       activeNpub,
       user?.id,
@@ -1239,7 +1263,7 @@ export default function App() {
         v.trim() !== "undefined"
     );
     return (pick || "").trim();
-  };
+  }, [activeNpub, user]);
 
   const saveAppLanguage = async (lang = "en") => {
     const id = resolveNpub();
@@ -1355,6 +1379,47 @@ export default function App() {
     );
   };
 
+  const handleOnboardingDraftSave = useCallback(
+    async (partial = {}, stepNumber = 1) => {
+      const id = resolveNpub();
+      if (!id) return;
+      const now = new Date().toISOString();
+      const existingDraft = (user?.onboarding && user.onboarding.draft) || {};
+      const mergedDraft = { ...existingDraft, ...partial };
+
+      try {
+        await setDoc(
+          doc(database, "users", id),
+          {
+            local_npub: id,
+            updatedAt: now,
+            onboarding: {
+              ...(user?.onboarding || {}),
+              completed: false,
+              currentStep: stepNumber,
+              draft: mergedDraft,
+            },
+          },
+          { merge: true }
+        );
+
+        setUser?.({
+          ...(user || {}),
+          updatedAt: now,
+          onboarding: {
+            ...(user?.onboarding || {}),
+            completed: false,
+            currentStep: stepNumber,
+            draft: mergedDraft,
+          },
+        });
+      } catch (error) {
+        console.error("Failed to save onboarding draft:", error);
+      }
+    },
+    [resolveNpub, setUser, user]
+  );
+
   const handleOnboardingComplete = async (payload = {}) => {
     try {
       const id = resolveNpub();
@@ -1411,7 +1476,13 @@ export default function App() {
           local_npub: id,
           updatedAt: now,
           appLanguage: uiLangForPersist,
-          onboarding: { completed: true, completedAt: now },
+          onboarding: {
+            ...(user?.onboarding || {}),
+            completed: true,
+            completedAt: now,
+            currentStep: ONBOARDING_TOTAL_STEPS,
+            draft: null,
+          },
           lastGoal: normalized.challenge.en,
           xp: 0,
           streak: 0,
@@ -1727,19 +1798,43 @@ export default function App() {
     );
   }
 
+  const isOnboardingRoute = location.pathname.startsWith("/onboarding");
+  const rawOnboardingStep = Number(user?.onboarding?.currentStep);
+  const onboardingStep = Number.isFinite(rawOnboardingStep)
+    ? rawOnboardingStep
+    : 1;
+  const clampedOnboardingStep = Math.min(
+    Math.max(Math.round(onboardingStep) || 1, 1),
+    ONBOARDING_TOTAL_STEPS
+  );
+  const onboardingDefaultPath = `/onboarding/step-${clampedOnboardingStep}`;
+  const onboardingInitialDraft = {
+    ...(user?.progress || {}),
+    ...(user?.onboarding?.draft || {}),
+  };
+
   if (needsOnboarding) {
+    if (!isOnboardingRoute) {
+      return <Navigate to={onboardingDefaultPath} replace />;
+    }
+
     return (
       <Box minH="100vh" bg="gray.900" color="gray.100">
         <Onboarding
           userLanguage={appLanguage}
-          npub={activeNpub}
           onComplete={handleOnboardingComplete}
           onAppLanguageChange={async (lang) => {
             await saveAppLanguage(lang);
           }}
+          initialDraft={onboardingInitialDraft}
+          onSaveDraft={handleOnboardingDraftSave}
         />
       </Box>
     );
+  }
+
+  if (isOnboardingRoute) {
+    return <Navigate to="/" replace />;
   }
 
   /* -----------------------------------
