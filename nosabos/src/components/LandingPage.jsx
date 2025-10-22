@@ -201,7 +201,8 @@ const landingTranslations = {
     toast_copy_error_desc:
       "Select the key manually if clipboard access is blocked.",
     toast_signin_success_title: "Welcome back!",
-    error_signin_invalid: "We couldn't verify that key. Check it and try again.",
+    error_signin_invalid:
+      "We couldn't verify that key. Check it and try again.",
     error_signin_generic: "We couldn't sign you in. Try again.",
     brand_name: "No Sabos",
     hero_title: "A smart tool to help you practice your language skills.",
@@ -328,8 +329,7 @@ const LandingPage = ({ onAuthenticated }) => {
   );
 
   const [landingLanguage, setLandingLanguage] = useState(getStoredLanguage);
-  const copy =
-    landingTranslations[landingLanguage] || landingTranslations.en;
+  const copy = landingTranslations[landingLanguage] || landingTranslations.en;
   const defaultLoadingMessage = copy.default_loading;
   const englishLabel = copy.language_en || landingTranslations.en.language_en;
   const spanishLabel = copy.language_es || landingTranslations.en.language_es;
@@ -379,9 +379,7 @@ const LandingPage = ({ onAuthenticated }) => {
       });
     } catch (error) {
       console.error("Failed to create account", error);
-      setErrorMessage(
-        error?.message || copy.error_create_generic
-      );
+      setErrorMessage(error?.message || copy.error_create_generic);
     } finally {
       setIsCreatingAccount(false);
     }
@@ -567,6 +565,13 @@ const LandingPage = ({ onAuthenticated }) => {
           >
             {generatedKeys?.nsec || copy.created_generating}
           </Box>
+          <ActionButton
+            variant="secondary"
+            onClick={handleCopyKey}
+            colorScheme="blue"
+          >
+            {copy.created_copy}
+          </ActionButton>
           <Checkbox
             isChecked={acknowledged}
             onChange={(event) => setAcknowledged(event.target.checked)}
@@ -575,13 +580,6 @@ const LandingPage = ({ onAuthenticated }) => {
             <Text fontSize={"sm"}>{copy.created_checkbox}</Text>
           </Checkbox>
           <VStack direction={{ base: "column", md: "row" }} spacing={4}>
-            <ActionButton
-              variant="secondary"
-              onClick={handleCopyKey}
-              colorScheme="blue"
-            >
-              {copy.created_copy}
-            </ActionButton>
             <ActionButton
               variant="primary"
               isDisabled={!acknowledged}
@@ -620,7 +618,7 @@ const LandingPage = ({ onAuthenticated }) => {
         align="center"
         justify="center"
         px={{ base: 4, md: 8 }}
-        py={{ base: 12, md: 20 }}
+        py={{ base: 4, md: 4 }}
         textAlign="center"
       >
         <VStack
@@ -633,24 +631,6 @@ const LandingPage = ({ onAuthenticated }) => {
           w="full"
         >
           <VStack spacing={3}>
-            <HStack spacing={2} justify="center">
-              <Button
-                size="sm"
-                variant={landingLanguage === "en" ? "solid" : "ghost"}
-                colorScheme="teal"
-                onClick={() => handleLanguageChange("en")}
-              >
-                {englishLabel}
-              </Button>
-              <Button
-                size="sm"
-                variant={landingLanguage === "es" ? "solid" : "ghost"}
-                colorScheme="teal"
-                onClick={() => handleLanguageChange("es")}
-              >
-                {spanishLabel}
-              </Button>
-            </HStack>
             <RobotBuddyPro palette="ocean" variant="abstract" />
             <Text fontSize="2xl" fontWeight="semibold" color="cyan.200">
               {copy.brand_name}
@@ -688,9 +668,7 @@ const LandingPage = ({ onAuthenticated }) => {
               rightIcon={<ArrowForwardIcon />}
               // w={{ base: "full", md: "auto" }}
             >
-              {isCreatingAccount
-                ? copy.create_loading
-                : copy.create_button}
+              {isCreatingAccount ? copy.create_loading : copy.create_button}
             </Button>
           </Stack>
           {errorMessage && (
@@ -707,6 +685,25 @@ const LandingPage = ({ onAuthenticated }) => {
           >
             {copy.have_key_button}
           </ActionButton>
+
+          <HStack spacing={2} justify="center">
+            <Button
+              size="sm"
+              variant={landingLanguage === "en" ? "solid" : "ghost"}
+              colorScheme="teal"
+              onClick={() => handleLanguageChange("en")}
+            >
+              {englishLabel}
+            </Button>
+            <Button
+              size="sm"
+              variant={landingLanguage === "es" ? "solid" : "ghost"}
+              colorScheme="teal"
+              onClick={() => handleLanguageChange("es")}
+            >
+              {spanishLabel}
+            </Button>
+          </HStack>
         </VStack>
       </Flex>
 

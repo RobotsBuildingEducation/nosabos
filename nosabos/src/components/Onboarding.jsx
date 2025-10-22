@@ -245,7 +245,9 @@ export default function Onboarding({
       ? "Más corta = más sensible; más larga = te deja terminar de hablar."
       : "Shorter = more responsive; longer = gives you time to finish speaking.");
 
-  const stepIndicator = (ui.onboarding_step_indicator || "Step {current} of {total}")
+  const stepIndicator = (
+    ui.onboarding_step_indicator || "Step {current} of {total}"
+  )
     .replace("{current}", currentStepIndex + 1)
     .replace("{total}", totalSteps);
 
@@ -261,6 +263,15 @@ export default function Onboarding({
         <DrawerOverlay bg="blackAlpha.700" />
         <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
           <DrawerHeader pb={4}>
+            <IconButton
+              aria-label="Back"
+              icon={<ArrowBackIcon />}
+              onClick={handleBack}
+              isDisabled={currentStepIndex === 0 || isPersisting || isSaving}
+              variant="ghost"
+              colorScheme="teal"
+              mb={2}
+            />
             <VStack align="stretch" spacing={4}>
               <HStack align="center" w="100%">
                 <VStack align="stretch" spacing={1}>
@@ -401,7 +412,9 @@ export default function Onboarding({
                     </Box>
                     <Switch
                       isChecked={practicePronunciation}
-                      onChange={(e) => setPracticePronunciation(e.target.checked)}
+                      onChange={(e) =>
+                        setPracticePronunciation(e.target.checked)
+                      }
                       colorScheme="teal"
                     />
                   </HStack>
@@ -430,13 +443,21 @@ export default function Onboarding({
                           <option value="ballad">
                             {ui.onboarding_voice_ballad}
                           </option>
-                          <option value="coral">{ui.onboarding_voice_coral}</option>
-                          <option value="echo">{ui.onboarding_voice_echo}</option>
-                          <option value="sage">{ui.onboarding_voice_sage}</option>
+                          <option value="coral">
+                            {ui.onboarding_voice_coral}
+                          </option>
+                          <option value="echo">
+                            {ui.onboarding_voice_echo}
+                          </option>
+                          <option value="sage">
+                            {ui.onboarding_voice_sage}
+                          </option>
                           <option value="shimmer">
                             {ui.onboarding_voice_shimmer}
                           </option>
-                          <option value="verse">{ui.onboarding_voice_verse}</option>
+                          <option value="verse">
+                            {ui.onboarding_voice_verse}
+                          </option>
                         </Select>
                       </WrapItem>
                     </Wrap>
@@ -533,17 +554,9 @@ export default function Onboarding({
             px={6}
             pb={6}
             display="flex"
-            justifyContent="space-between"
+            justifyContent="flex-end"
             alignItems="center"
           >
-            <IconButton
-              aria-label="Back"
-              icon={<ArrowBackIcon />}
-              onClick={handleBack}
-              isDisabled={currentStepIndex === 0 || isPersisting || isSaving}
-              variant="ghost"
-              colorScheme="teal"
-            />
             {currentStepIndex < totalSteps - 1 ? (
               <Button
                 size="lg"
