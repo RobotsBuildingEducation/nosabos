@@ -57,36 +57,67 @@ const FAQ_ITEMS = [
 
 const FEATURE_CARD_CONFIG = [
   {
-    titleKey: "landing_feature_conversations_title",
-    descriptionKey: "landing_feature_conversations_desc",
+    titleKey: "feature_conversations_title",
+    legacyTitleKey: "landing_feature_conversations_title",
+    descriptionKey: "feature_conversations_desc",
+    legacyDescriptionKey: "landing_feature_conversations_desc",
     icon: FiMessageCircle,
   },
   {
-    titleKey: "landing_feature_stories_title",
-    descriptionKey: "landing_feature_stories_desc",
+    titleKey: "feature_stories_title",
+    legacyTitleKey: "landing_feature_stories_title",
+    descriptionKey: "feature_stories_desc",
+    legacyDescriptionKey: "landing_feature_stories_desc",
     icon: FiBookOpen,
   },
   {
-    titleKey: "landing_feature_history_title",
-    descriptionKey: "landing_feature_history_desc",
+    titleKey: "feature_history_title",
+    legacyTitleKey: "landing_feature_history_title",
+    descriptionKey: "feature_history_desc",
+    legacyDescriptionKey: "landing_feature_history_desc",
     icon: FiLayers,
   },
   {
-    titleKey: "landing_feature_grammar_title",
-    descriptionKey: "landing_feature_grammar_desc",
+    titleKey: "feature_grammar_title",
+    legacyTitleKey: "landing_feature_grammar_title",
+    descriptionKey: "feature_grammar_desc",
+    legacyDescriptionKey: "landing_feature_grammar_desc",
     icon: FiTarget,
   },
   {
-    titleKey: "landing_feature_jobs_title",
-    descriptionKey: "landing_feature_jobs_desc",
+    titleKey: "feature_jobs_title",
+    legacyTitleKey: "landing_feature_jobs_title",
+    descriptionKey: "feature_jobs_desc",
+    legacyDescriptionKey: "landing_feature_jobs_desc",
     icon: FiCompass,
   },
   {
-    titleKey: "landing_feature_random_title",
-    descriptionKey: "landing_feature_random_desc",
+    titleKey: "feature_random_title",
+    legacyTitleKey: "landing_feature_random_title",
+    descriptionKey: "feature_random_desc",
+    legacyDescriptionKey: "landing_feature_random_desc",
     icon: FiShuffle,
   },
 ];
+
+const extendWithFeatureAliases = (copy) => {
+  const next = { ...copy };
+  FEATURE_CARD_CONFIG.forEach(
+    ({ titleKey, legacyTitleKey, descriptionKey, legacyDescriptionKey }) => {
+      if (legacyTitleKey && !next[legacyTitleKey] && next[titleKey]) {
+        next[legacyTitleKey] = next[titleKey];
+      }
+      if (
+        legacyDescriptionKey &&
+        !next[legacyDescriptionKey] &&
+        next[descriptionKey]
+      ) {
+        next[legacyDescriptionKey] = next[descriptionKey];
+      }
+    }
+  );
+  return next;
+};
 
 const VALUE_POINTS = [
   "Personalized study paths generated from every conversation",
@@ -156,7 +187,7 @@ const BUTTON_VARIANTS = {
 };
 
 const landingTranslations = {
-  en: {
+  en: extendWithFeatureAliases({
     language_en: "English",
     language_es: "Spanish",
     default_loading: "Setting up your study space...",
@@ -217,8 +248,8 @@ const landingTranslations = {
     created_copy: "Copy key",
     created_launch: "Start learning",
     created_back: "Go back",
-  },
-  es: {
+  }),
+  es: extendWithFeatureAliases({
     language_en: "Inglés",
     language_es: "Español",
     default_loading: "Preparando tu espacio de estudio...",
@@ -281,7 +312,7 @@ const landingTranslations = {
     created_copy: "Copiar llave",
     created_launch: "Comenzar a aprender",
     created_back: "Regresar",
-  },
+  }),
 };
 
 const getStoredLanguage = () =>
@@ -708,12 +739,26 @@ const LandingPage = ({ onAuthenticated }) => {
                       <Icon as={feature.icon} color="teal.200" boxSize={8} />
                       <Text fontSize="xl" fontWeight="semibold" color="white">
                         {copy[feature.titleKey] ||
+                          (feature.legacyTitleKey
+                            ? copy[feature.legacyTitleKey]
+                            : null) ||
                           landingTranslations.en[feature.titleKey] ||
+                          (feature.legacyTitleKey
+                            ? landingTranslations.en[feature.legacyTitleKey]
+                            : null) ||
                           feature.titleKey}
                       </Text>
                       <Text color="cyan.100">
                         {copy[feature.descriptionKey] ||
+                          (feature.legacyDescriptionKey
+                            ? copy[feature.legacyDescriptionKey]
+                            : null) ||
                           landingTranslations.en[feature.descriptionKey] ||
+                          (feature.legacyDescriptionKey
+                            ? landingTranslations.en[
+                                feature.legacyDescriptionKey
+                              ]
+                            : null) ||
                           feature.descriptionKey}
                       </Text>
                     </VStack>
