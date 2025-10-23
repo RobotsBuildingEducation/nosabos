@@ -75,7 +75,12 @@ const strongNpub = (user) =>
   ).trim();
 
 const LLM_LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", pt: "Portuguese", nah: "Nahuatl" }[code] ||
+  ({
+    en: "English",
+    es: "Spanish",
+    pt: "Brazilian Portuguese",
+    nah: "Nahuatl",
+  }[code] ||
   code);
 
 const BCP47 = {

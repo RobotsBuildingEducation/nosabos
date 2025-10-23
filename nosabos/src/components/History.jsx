@@ -152,14 +152,17 @@ async function normalizeLectureTexts({
    User / XP / Settings
 --------------------------- */
 const LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", pt: "Portuguese", nah: "Nahuatl" }[
-    code
-  ] || code);
+  ({
+    en: "English",
+    es: "Spanish",
+    pt: "Brazilian Portuguese",
+    nah: "Nahuatl",
+  }[code] || code);
 
 const LANGUAGE_LABELS = {
   en: ["English", "Inglés"],
   es: ["Spanish", "Español"],
-  pt: ["Portuguese", "Portugués"],
+  pt: ["Brazilian Portuguese", "Portugués brasileño"],
   nah: ["Nahuatl", "Náhuatl"],
 };
 

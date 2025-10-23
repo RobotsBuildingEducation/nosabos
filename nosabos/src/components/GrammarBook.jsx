@@ -120,9 +120,12 @@ const MODEL = DEFAULT_RESPONSES_MODEL;
    User/XP helpers
 --------------------------- */
 const LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", pt: "Portuguese", nah: "Nahuatl" }[
-    code
-  ] || code);
+  ({
+    en: "English",
+    es: "Spanish",
+    pt: "Brazilian Portuguese",
+    nah: "Nahuatl",
+  }[code] || code);
 
 const strongNpub = (user) =>
   (
