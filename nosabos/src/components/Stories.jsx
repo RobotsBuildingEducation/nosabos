@@ -75,14 +75,43 @@ const strongNpub = (user) =>
   ).trim();
 
 const LLM_LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", pt: "Portuguese", nah: "Nahuatl" }[code] ||
-  code);
+  ({
+    en: "English",
+    es: "Spanish",
+    pt: "Brazilian Portuguese",
+    nah: "Nahuatl",
+  }[code] || code);
 
 const BCP47 = {
   es: { stt: "es-ES", tts: "es-ES" },
   en: { stt: "en-US", tts: "en-US" },
   pt: { stt: "pt-BR", tts: "pt-BR" },
   nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Nahuatl is unsupported by engines
+};
+
+const toLangKey = (value) => {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (!raw) return null;
+  if (["en", "english"].includes(raw)) return "en";
+  if (["es", "spanish", "español"].includes(raw)) return "es";
+  if (["pt", "portuguese", "português", "portugues"].includes(raw))
+    return "pt";
+  if (["nah", "nahuatl", "náhuatl"].includes(raw)) return "nah";
+  return null;
+};
+
+const DISPLAY_LANG_NAME = (code, uiLang) => {
+  const dict = translations[uiLang] || translations.en || {};
+  const fallback = translations.en || {};
+  const langKey = toLangKey(code);
+  if (langKey) {
+    const key = `language_${langKey}`;
+    return dict[key] || fallback[key] || langKey;
+  }
+  const raw = String(code ?? "").trim();
+  return raw || LLM_LANG_NAME(code);
 };
 
 const getAppUILang = () => {
@@ -277,8 +306,8 @@ export default function StoryMode() {
         : "en"
       : progress.supportLang;
 
-  const targetName = LLM_LANG_NAME(targetLang);
-  const supportName = LLM_LANG_NAME(supportLang);
+  const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
+  const supportDisplayName = DISPLAY_LANG_NAME(supportLang, uiLang);
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
@@ -1447,7 +1476,7 @@ export default function StoryMode() {
     if (!evalOut.pass) {
       const tips = speechReasonTips(evalOut.reasons, {
         uiLang,
-        targetLabel: LLM_LANG_NAME(targetLang),
+        targetLabel: targetDisplayName,
       });
 
       toast({
@@ -1933,7 +1962,7 @@ export default function StoryMode() {
                     >
                       {isAutoPlaying
                         ? uiText.playing
-                        : uiText.playTarget(targetName)}
+                        : uiText.playTarget(targetDisplayName)}
                     </Button>
                     {!!storyData.fullStory?.sup && (
                       <Button
@@ -1945,7 +1974,7 @@ export default function StoryMode() {
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"
                       >
-                        {supportName}
+                        {supportDisplayName}
                       </Button>
                     )}
                     {(isPlayingTarget || isPlayingSupport || isAutoPlaying) && (

@@ -78,7 +78,7 @@ const LLM_LANG_NAME = (codeOrName) => {
   if (m === "en" || m === "english") return "English";
   if (m === "es" || m === "spanish" || m === "español") return "Spanish";
   if (m === "pt" || m === "portuguese" || m === "português")
-    return "Portuguese";
+    return "Brazilian Portuguese";
   if (m === "nah" || m === "nahuatl") return "Nahuatl";
   return capName(m);
 };
@@ -99,6 +99,31 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
   return fallback;
+};
+
+const toLangKey = (value) => {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (!raw) return null;
+  if (["en", "english"].includes(raw)) return "en";
+  if (["es", "spanish", "español"].includes(raw)) return "es";
+  if (["pt", "portuguese", "português", "portugues"].includes(raw))
+    return "pt";
+  if (["nah", "nahuatl", "náhuatl"].includes(raw)) return "nah";
+  return null;
+};
+
+const displayLanguageName = (code, uiLang) => {
+  const dict = translations[uiLang] || translations.en || {};
+  const fallback = translations.en || {};
+  const langKey = toLangKey(code);
+  if (langKey) {
+    const key = `language_${langKey}`;
+    return dict[key] || fallback[key] || langKey;
+  }
+  const raw = String(code ?? "").trim();
+  return raw || LLM_LANG_NAME(code);
 };
 
 const getAppUILang = () => {
@@ -2071,8 +2096,8 @@ export default function JobScript() {
                     </Button>
                     <Spacer />
                     <Badge variant="subtle" colorScheme="cyan">
-                      {LLM_LANG_NAME(it.targetLang)} /{" "}
-                      {LLM_LANG_NAME(it.supportLang)}
+                      {displayLanguageName(it.targetLang, uiLang)} /{" "}
+                      {displayLanguageName(it.supportLang, uiLang)}
                     </Badge>
                   </HStack>
                 </CardBody>
