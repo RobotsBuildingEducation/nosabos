@@ -1482,7 +1482,8 @@ Return ONLY JSON:
     } else if (tLang === "es") {
       strict = "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl.";
     } else if (tLang === "pt") {
-      strict = "Responda APENAS em português. Não use espanhol ou inglês.";
+      strict =
+        "Responda APENAS em português brasileiro. Não use espanhol ou inglês.";
     } else {
       strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
     }

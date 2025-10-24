@@ -78,7 +78,7 @@ const LLM_LANG_NAME = (codeOrName) => {
   if (m === "en" || m === "english") return "English";
   if (m === "es" || m === "spanish" || m === "español") return "Spanish";
   if (m === "pt" || m === "portuguese" || m === "português")
-    return "Portuguese";
+    return "Brazilian Portuguese";
   if (m === "nah" || m === "nahuatl") return "Nahuatl";
   return capName(m);
 };
