@@ -159,7 +159,12 @@ const LANG_NAME = (code) =>
 const LANGUAGE_LABELS = {
   en: ["English", "Inglés"],
   es: ["Spanish", "Español"],
-  pt: ["Brazilian Portuguese", "Portugués brasileño"],
+  pt: [
+    "Portuguese",
+    "Portugués",
+    "Brazilian Portuguese",
+    "Portugués brasileño",
+  ],
   nah: ["Nahuatl", "Náhuatl"],
 };
 

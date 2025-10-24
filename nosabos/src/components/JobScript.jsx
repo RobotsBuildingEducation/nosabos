@@ -101,6 +101,31 @@ const toBCP47 = (v, fallback = "en-US") => {
   return fallback;
 };
 
+const toLangKey = (value) => {
+  const raw = String(value ?? "")
+    .trim()
+    .toLowerCase();
+  if (!raw) return null;
+  if (["en", "english"].includes(raw)) return "en";
+  if (["es", "spanish", "español"].includes(raw)) return "es";
+  if (["pt", "portuguese", "português", "portugues"].includes(raw))
+    return "pt";
+  if (["nah", "nahuatl", "náhuatl"].includes(raw)) return "nah";
+  return null;
+};
+
+const displayLanguageName = (code, uiLang) => {
+  const dict = translations[uiLang] || translations.en || {};
+  const fallback = translations.en || {};
+  const langKey = toLangKey(code);
+  if (langKey) {
+    const key = `language_${langKey}`;
+    return dict[key] || fallback[key] || langKey;
+  }
+  const raw = String(code ?? "").trim();
+  return raw || LLM_LANG_NAME(code);
+};
+
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
   return (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
@@ -2071,8 +2096,8 @@ export default function JobScript() {
                     </Button>
                     <Spacer />
                     <Badge variant="subtle" colorScheme="cyan">
-                      {LLM_LANG_NAME(it.targetLang)} /{" "}
-                      {LLM_LANG_NAME(it.supportLang)}
+                      {displayLanguageName(it.targetLang, uiLang)} /{" "}
+                      {displayLanguageName(it.supportLang, uiLang)}
                     </Badge>
                   </HStack>
                 </CardBody>
