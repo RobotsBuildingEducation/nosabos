@@ -1,5 +1,11 @@
 // src/App.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Box,
   Drawer,
@@ -144,9 +150,7 @@ async function ensureOnboardingField(db, id, data) {
 
     if (shouldSetStep) {
       const existing = Number(onboardingPayload.currentStep);
-      onboardingPayload.currentStep = Number.isFinite(existing)
-        ? existing
-        : 1;
+      onboardingPayload.currentStep = Number.isFinite(existing) ? existing : 1;
     }
 
     await setDoc(
@@ -1071,7 +1075,9 @@ export default function App() {
     }
     try {
       const parsed = JSON.parse(raw);
-      const level = String(parsed?.level || "").trim().toUpperCase();
+      const level = String(parsed?.level || "")
+        .trim()
+        .toUpperCase();
       const explanation = String(parsed?.explanation || "").trim();
       if (CEFR_LEVELS.has(level) && explanation) {
         setCefrResult({
@@ -1503,126 +1509,132 @@ export default function App() {
     }
   };
 
-  const runCefrAnalysis = useCallback(async ({
-    dailyGoalXp: goal = 0,
-    dailyXp: earned = 0,
-  } = {}) => {
-    if (!activeNpub) {
-      const title =
-        t.app_cefr_need_account_title ||
-        (appLanguage === "es" ? "Cuenta requerida" : "Account required");
-      const description =
-        t.app_cefr_need_account ||
-        (appLanguage === "es"
-          ? "Conéctate para analizar tu nivel con la IA."
-          : "Connect your account to analyze your level.");
-      toast({ title, description, status: "info", duration: 2200 });
-      return;
-    }
+  const runCefrAnalysis = useCallback(
+    async ({ dailyGoalXp: goal = 0, dailyXp: earned = 0 } = {}) => {
+      if (!activeNpub) {
+        const title =
+          t.app_cefr_need_account_title ||
+          (appLanguage === "es" ? "Cuenta requerida" : "Account required");
+        const description =
+          t.app_cefr_need_account ||
+          (appLanguage === "es"
+            ? "Conéctate para analizar tu nivel con la IA."
+            : "Connect your account to analyze your level.");
+        toast({ title, description, status: "info", duration: 2200 });
+        return;
+      }
 
-    setCefrLoading(true);
-    setCefrError("");
+      setCefrLoading(true);
+      setCefrError("");
 
-    try {
-      const progress = user?.progress || {};
-      const xp = Number(user?.xp || 0);
-      const snapshot = {
-        xp,
-        xpLevel: Math.floor(xp / 100) + 1,
-        streak: Number(user?.streak || 0),
-        selectedDifficulty: progress.level || "beginner",
-        targetLang: progress.targetLang || "es",
-        supportLang: progress.supportLang || "en",
-        showTranslations: progress.showTranslations !== false,
-        dailyGoalXp: goal,
-        dailyXp: earned,
-        practicePronunciation: !!(
-          progress.practicePronunciation ?? user?.practicePronunciation
-        ),
-        helpRequest: progress.helpRequest || user?.helpRequest || "",
-        challenge: progress.challenge || null,
-        updatedAt: user?.updatedAt || null,
-      };
+      try {
+        const progress = user?.progress || {};
+        const xp = Number(user?.xp || 0);
+        const snapshot = {
+          xp,
+          xpLevel: Math.floor(xp / 100) + 1,
+          streak: Number(user?.streak || 0),
+          selectedDifficulty: progress.level || "beginner",
+          targetLang: progress.targetLang || "es",
+          supportLang: progress.supportLang || "en",
+          showTranslations: progress.showTranslations !== false,
+          dailyGoalXp: goal,
+          dailyXp: earned,
+          practicePronunciation: !!(
+            progress.practicePronunciation ?? user?.practicePronunciation
+          ),
+          helpRequest: progress.helpRequest || user?.helpRequest || "",
+          challenge: progress.challenge || null,
+          updatedAt: user?.updatedAt || null,
+        };
 
-      const localeName = appLanguage === "es" ? "Spanish" : "English";
-      const prompt = [
-        "You are an expert language placement coach.",
-        "Assign a CEFR level (A1, A2, B1, B2, C1, or C2) based on the learner metrics below.",
-        "Use XP as a rough progress indicator (0-200≈A1, 200-500≈A2, 500-1000≈B1, 1000-1600≈B2, 1600-2200≈C1, >2200≈C2) and adjust using streaks, goals, and translation reliance.",
-        "Respond ONLY with compact JSON: {\"level\":\"B1\",\"explanation\":\"...\"}.",
-        `Explanation must be <= 60 words, written in ${localeName}, and cite the strongest factors.`,
-        "Learner data:",
-        JSON.stringify(snapshot, null, 2),
-      ].join("\n");
+        const localeName = appLanguage === "es" ? "Spanish" : "English";
+        const prompt = [
+          "You are an expert language placement coach.",
+          "Assign a CEFR level (A1, A2, B1, B2, C1, or C2) based on the learner metrics below.",
+          "Use XP as a rough progress indicator (0-200≈A1, 200-500≈A2, 500-1000≈B1, 1000-1600≈B2, 1600-2200≈C1, >2200≈C2) and adjust using streaks, goals, and translation reliance.",
+          'Respond ONLY with compact JSON: {"level":"B1","explanation":"..."}.',
+          `Explanation must be <= 60 words, written in ${localeName}, and cite the strongest factors.`,
+          "Learner data:",
+          JSON.stringify(snapshot, null, 2),
+        ].join("\n");
 
-      let text = "";
-      if (simplemodel) {
-        try {
-          const resp = await simplemodel.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-          });
-          text =
-            (typeof resp?.response?.text === "function"
-              ? resp.response.text()
-              : resp?.response?.text) || "";
-        } catch (err) {
-          console.warn("CEFR simplemodel failed", err);
+        let text = "";
+        if (simplemodel) {
+          try {
+            const resp = await simplemodel.generateContent({
+              contents: [{ role: "user", parts: [{ text: prompt }] }],
+            });
+            text =
+              (typeof resp?.response?.text === "function"
+                ? resp.response.text()
+                : resp?.response?.text) || "";
+          } catch (err) {
+            console.warn("CEFR simplemodel failed", err);
+          }
         }
-      }
 
-      if (!text) {
-        text = await callResponses({
-          model: DEFAULT_RESPONSES_MODEL,
-          input: prompt,
+        if (!text) {
+          text = await callResponses({
+            model: DEFAULT_RESPONSES_MODEL,
+            input: prompt,
+          });
+        }
+
+        const parsed = parseCefrResponse(text);
+        if (!parsed) throw new Error("parse");
+
+        const explanation =
+          parsed.explanation.length > 420
+            ? `${parsed.explanation.slice(0, 417).trimEnd()}…`
+            : parsed.explanation;
+
+        const result = {
+          level: parsed.level,
+          explanation,
+          updatedAt: Date.now(),
+        };
+
+        setCefrResult(result);
+
+        const successTitle =
+          t.app_cefr_success_title ||
+          (appLanguage === "es" ? "Análisis completado" : "Analysis complete");
+        const successDescTemplate =
+          t.app_cefr_success_desc ||
+          (appLanguage === "es"
+            ? "Nivel asignado: {level}."
+            : "Assigned level: {level}.");
+
+        toast({
+          title: successTitle,
+          description: successDescTemplate.replace("{level}", result.level),
+          status: "success",
+          duration: 2600,
         });
+      } catch (err) {
+        console.error("CEFR analysis failed:", err);
+        const errorTitle =
+          t.app_cefr_error_title ||
+          (appLanguage === "es" ? "No se pudo analizar" : "Analysis failed");
+        const errorDesc =
+          t.app_cefr_error ||
+          (appLanguage === "es"
+            ? "Vuelve a intentarlo más tarde."
+            : "Please try again later.");
+        setCefrError(errorDesc);
+        toast({
+          title: errorTitle,
+          description: errorDesc,
+          status: "error",
+          duration: 2800,
+        });
+      } finally {
+        setCefrLoading(false);
       }
-
-      const parsed = parseCefrResponse(text);
-      if (!parsed) throw new Error("parse");
-
-      const explanation = parsed.explanation.length > 420
-        ? `${parsed.explanation.slice(0, 417).trimEnd()}…`
-        : parsed.explanation;
-
-      const result = {
-        level: parsed.level,
-        explanation,
-        updatedAt: Date.now(),
-      };
-
-      setCefrResult(result);
-
-      const successTitle =
-        t.app_cefr_success_title ||
-        (appLanguage === "es" ? "Análisis completado" : "Analysis complete");
-      const successDescTemplate =
-        t.app_cefr_success_desc ||
-        (appLanguage === "es"
-          ? "Nivel asignado: {level}."
-          : "Assigned level: {level}.");
-
-      toast({
-        title: successTitle,
-        description: successDescTemplate.replace("{level}", result.level),
-        status: "success",
-        duration: 2600,
-      });
-    } catch (err) {
-      console.error("CEFR analysis failed:", err);
-      const errorTitle =
-        t.app_cefr_error_title ||
-        (appLanguage === "es" ? "No se pudo analizar" : "Analysis failed");
-      const errorDesc =
-        t.app_cefr_error ||
-        (appLanguage === "es"
-          ? "Vuelve a intentarlo más tarde."
-          : "Please try again later.");
-      setCefrError(errorDesc);
-      toast({ title: errorTitle, description: errorDesc, status: "error", duration: 2800 });
-    } finally {
-      setCefrLoading(false);
-    }
-  }, [activeNpub, appLanguage, t, toast, user]);
+    },
+    [activeNpub, appLanguage, t, toast, user]
+  );
 
   /* -----------------------------------
      RANDOMIZE tab mechanics (no routing)
@@ -1700,6 +1712,7 @@ export default function App() {
         variant="outline"
         borderColor="gray.700"
         onClick={pickRandomFeature}
+        zIndex={10000}
       >
         {t?.random_shuffle ?? "Shuffle"}
       </Button>
