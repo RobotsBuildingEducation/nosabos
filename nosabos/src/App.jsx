@@ -85,6 +85,8 @@ import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
+import IdentityDrawer from "./components/IdentityDrawer";
+import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 
 /* ---------------------------
    Small helpers
@@ -779,168 +781,20 @@ function TopBar({
       </Drawer>
 
       {/* ---- Account Drawer ---- */}
-      <Drawer isOpen={accountOpen} placement="bottom" onClose={closeAccount}>
-        <DrawerOverlay bg="blackAlpha.600" />
-        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
-          <DrawerHeader pb={2}>{t.app_account_title || "Account"}</DrawerHeader>
-          <DrawerBody pb={6}>
-            <VStack align="stretch" spacing={3}>
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={1}>
-                  {t.app_your_id || "Your ID"}
-                </Text>
-                <InputGroup>
-                  <Input
-                    value={currentId || ""}
-                    readOnly
-                    bg="gray.700"
-                    placeholder={t.app_id_placeholder || "npub..."}
-                  />
-                  <InputRightElement width="4.5rem">
-                    <Button
-                      h="1.75rem"
-                      size="sm"
-                      onClick={() =>
-                        copy(currentId, t.toast_id_copied || "ID copied")
-                      }
-                      isDisabled={!currentId}
-                    >
-                      {t.app_copy || "Copy"}
-                    </Button>
-                  </InputRightElement>
-                </InputGroup>
-              </Box>
-
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={1}>
-                  {t.app_secret_key || "Secret key"}
-                </Text>
-                <InputGroup>
-                  <Input
-                    type="password"
-                    value={currentSecret ? "••••••••••••••••••••••••••••" : ""}
-                    readOnly
-                    bg="gray.700"
-                    placeholder={t.app_secret_placeholder || "nsec..."}
-                  />
-                  <InputRightElement width="6rem">
-                    <Button
-                      h="1.75rem"
-                      size="sm"
-                      colorScheme="orange"
-                      mr={0}
-                      onClick={() =>
-                        copy(
-                          currentSecret,
-                          t.toast_secret_copied || "Secret copied"
-                        )
-                      }
-                      isDisabled={!currentSecret}
-                    >
-                      {t.app_copy || "Copy"}
-                    </Button>
-                  </InputRightElement>
-                </InputGroup>
-                <Text fontSize="xs" opacity={0.75} mt={1}>
-                  {t.app_secret_note ||
-                    "Keep your secret safe. Anyone with it can access your account."}
-                </Text>
-              </Box>
-
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={2}>
-                  {t.app_switch_account || "Switch account"}
-                </Text>
-                <Input
-                  value={switchNsec}
-                  onChange={(e) => setSwitchNsec(e.target.value)}
-                  bg="gray.700"
-                  placeholder={
-                    t.app_nsec_placeholder || "Paste an nsec key to switch"
-                  }
-                />
-                <HStack mt={2} justify="flex-end">
-                  <Button
-                    isLoading={isSwitching}
-                    loadingText={t.app_switching || "Switching…"}
-                    onClick={switchAccountWithNsec}
-                    colorScheme="teal"
-                  >
-                    {t.app_switch || "Switch"}
-                  </Button>
-                </HStack>
-                <Text fontSize="xs" opacity={0.75} mt={1}>
-                  {t.app_switch_note ||
-                    "We’ll derive your public key (npub) from the secret and switch safely."}
-                </Text>
-              </Box>
-
-              <Box bg="gray.800" p={3} rounded="md">
-                <HStack justify="space-between" align="flex-start" mb={2}>
-                  <VStack align="flex-start" spacing={0} flex="1">
-                    <Text fontSize="sm" fontWeight="semibold">
-                      {t.app_cefr_heading || "CEFR insight"}
-                    </Text>
-                    <Text fontSize="xs" opacity={0.75}>
-                      {t.app_cefr_subtitle ||
-                        "Ask the AI to review your progress and assign a CEFR level."}
-                    </Text>
-                  </VStack>
-                  {cefrResult?.level ? (
-                    <Badge colorScheme="purple" fontSize="0.75rem">
-                      {t.app_cefr_level_label
-                        ? t.app_cefr_level_label.replace(
-                            "{level}",
-                            cefrResult.level
-                          )
-                        : `Level ${cefrResult.level}`}
-                    </Badge>
-                  ) : null}
-                </HStack>
-
-                <Text fontSize="sm" whiteSpace="pre-wrap">
-                  {cefrResult?.explanation
-                    ? cefrResult.explanation
-                    : t.app_cefr_empty ||
-                      "No analysis yet. Run the evaluator to see your level."}
-                </Text>
-
-                {cefrTimestamp ? (
-                  <Text fontSize="xs" opacity={0.65} mt={2}>
-                    {t.app_cefr_updated
-                      ? t.app_cefr_updated.replace("{timestamp}", cefrTimestamp)
-                      : `Last analyzed ${cefrTimestamp}`}
-                  </Text>
-                ) : null}
-
-                {cefrError ? (
-                  <Text fontSize="xs" color="red.300" mt={2}>
-                    {cefrError}
-                  </Text>
-                ) : null}
-
-                <Button
-                  mt={3}
-                  size="sm"
-                  variant="outline"
-                  colorScheme="purple"
-                  onClick={() =>
-                    onRunCefrAnalysis?.({
-                      dailyGoalXp,
-                      dailyXp,
-                    })
-                  }
-                  isLoading={cefrLoading}
-                  loadingText={t.app_cefr_loading || "Analyzing…"}
-                  isDisabled={!activeNpub || cefrLoading}
-                >
-                  {t.app_cefr_run || "Analyze level"}
-                </Button>
-              </Box>
-            </VStack>
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+      <IdentityDrawer
+        isOpen={accountOpen}
+        onClose={closeAccount}
+        t={t}
+        appLanguage={appLanguage}
+        activeNpub={currentId} // or props.activeNpub; both mirror each other
+        activeNsec={currentSecret} // or props.activeNsec
+        auth={auth}
+        onSwitchedAccount={onSwitchedAccount}
+        cefrResult={cefrResult}
+        cefrLoading={cefrLoading}
+        cefrError={cefrError}
+        onRunCefrAnalysis={() => onRunCefrAnalysis?.({ dailyGoalXp, dailyXp })}
+      />
 
       {/* ---- Install Modal ---- */}
       <Modal isOpen={installOpen} onClose={closeInstall} isCentered>
@@ -1009,6 +863,20 @@ export default function App() {
   // Zustand store
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
+
+  // const { sendOneSatToNpub, initWalletService, init, walletBalance } =
+  //   useNostrWalletStore((state) => ({
+  //     sendOneSatToNpub: state.sendOneSatToNpub, // renamed from cashTap
+  //     initWalletService: state.initWalletService, // renamed from loadWallet
+  //     init: state.init,
+  //     walletBalance: state.walletBalance,
+  //   }));
+  const init = useNostrWalletStore((s) => s.init);
+  const initWalletService = useNostrWalletStore((s) => s.initWalletService);
+  const walletBalance = useNostrWalletStore((s) => s.walletBalance);
+  const sendOneSatToNpub = useNostrWalletStore((s) => s.sendOneSatToNpub);
+
+  console.log("walletBalance", walletBalance);
 
   // DID / auth
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
@@ -1155,6 +1023,8 @@ export default function App() {
     try {
       let id = (localStorage.getItem("local_npub") || "").trim();
       let userDoc = null;
+      await init();
+      await initWalletService();
 
       if (id) {
         userDoc = await loadUserObjectFromDB(database, id);
@@ -1696,6 +1566,8 @@ export default function App() {
           isClosable: true,
           position: "top",
         });
+
+        sendOneSatToNpub();
 
         // Immediately pick the next randomized activity
         pickRandomFeature();
