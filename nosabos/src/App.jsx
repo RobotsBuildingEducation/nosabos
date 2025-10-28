@@ -63,7 +63,7 @@ import { MdOutlineFileUpload } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
 import { LuBadgeCheck, LuBookOpen, LuShuffle } from "react-icons/lu";
 
-import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
 import { Navigate, useLocation } from "react-router-dom";
@@ -94,7 +94,7 @@ import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
-const ONBOARDING_TOTAL_STEPS = 3;
+const ONBOARDING_TOTAL_STEPS = 4;
 
 function extractJsonBlock(text = "") {
   if (!text) return "";
@@ -206,6 +206,8 @@ function TopBar({
   installOpen,
   openInstall,
   closeInstall,
+  onSelectIdentity,
+  isIdentitySaving = false,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -794,6 +796,9 @@ function TopBar({
         cefrLoading={cefrLoading}
         cefrError={cefrError}
         onRunCefrAnalysis={() => onRunCefrAnalysis?.({ dailyGoalXp, dailyXp })}
+        user={user}
+        onSelectIdentity={onSelectIdentity}
+        isIdentitySaving={isIdentitySaving}
       />
 
       {/* ---- Install Modal ---- */}
@@ -863,6 +868,7 @@ export default function App() {
   // Zustand store
   const user = useUserStore((s) => s.user);
   const setUser = useUserStore((s) => s.setUser);
+  const patchUser = useUserStore((s) => s.patchUser);
 
   // const { sendOneSatToNpub, initWalletService, init, walletBalance } =
   //   useNostrWalletStore((state) => ({
@@ -875,6 +881,7 @@ export default function App() {
   const initWalletService = useNostrWalletStore((s) => s.initWalletService);
   const walletBalance = useNostrWalletStore((s) => s.walletBalance);
   const sendOneSatToNpub = useNostrWalletStore((s) => s.sendOneSatToNpub);
+  const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
 
   console.log("walletBalance", walletBalance);
 
@@ -909,6 +916,7 @@ export default function App() {
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);
   const [cefrError, setCefrError] = useState("");
+  const [isIdentitySaving, setIsIdentitySaving] = useState(false);
 
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
@@ -1037,6 +1045,7 @@ export default function App() {
               localStorage.getItem("appLanguage") === "es" ? "es" : "en",
             helpRequest: "",
             practicePronunciation: false,
+            identity: null,
           };
           await setDoc(doc(database, "users", id), base, { merge: true });
           userDoc = await loadUserObjectFromDB(database, id);
@@ -1052,6 +1061,7 @@ export default function App() {
             localStorage.getItem("appLanguage") === "es" ? "es" : "en",
           helpRequest: "",
           practicePronunciation: false,
+          identity: null,
         };
         await setDoc(doc(database, "users", id), base, { merge: true });
         userDoc = await loadUserObjectFromDB(database, id);
@@ -1365,6 +1375,7 @@ export default function App() {
           helpRequest: normalized.helpRequest,
           practicePronunciation: normalized.practicePronunciation,
           progress: { ...normalized },
+          identity: safe(payload.identity, user?.identity || null),
         },
         { merge: true }
       );
@@ -1517,13 +1528,41 @@ export default function App() {
   const [randomPick, setRandomPick] = useState(null);
   const prevXpRef = useRef(null);
 
-  const pickRandomFeature = () => {
+  const handleIdentitySelection = useCallback(
+    async (npub) => {
+      if (!npub) {
+        throw new Error("Identity selection is required.");
+      }
+      if (!activeNpub) {
+        throw new Error("No active account available.");
+      }
+      if (user?.identity === npub) {
+        return;
+      }
+
+      setIsIdentitySaving(true);
+      try {
+        await updateDoc(doc(database, "users", activeNpub), {
+          identity: npub,
+        });
+        patchUser?.({ identity: npub });
+      } catch (error) {
+        console.error("Failed to persist identity selection", error);
+        throw error;
+      } finally {
+        setIsIdentitySaving(false);
+      }
+    },
+    [activeNpub, patchUser, user?.identity]
+  );
+
+  const pickRandomFeature = useCallback(() => {
     const pool = RANDOM_POOL;
     if (!pool.length) return null;
     const choice = pool[Math.floor(Math.random() * pool.length)];
     setRandomPick(choice);
     return choice;
-  };
+  }, [RANDOM_POOL]);
 
   // When switching into Random tab, pick a feature
   useEffect(() => {
@@ -1531,7 +1570,7 @@ export default function App() {
       const first = pickRandomFeature();
       if (!first) setRandomPick("realtime");
     }
-  }, [currentTab]); // eslint-disable-line
+  }, [currentTab, pickRandomFeature]);
 
   // ✅ Listen to XP changes only while on Random; on gain -> toast + auto-pick next
   useEffect(() => {
@@ -1549,32 +1588,48 @@ export default function App() {
       const diff = newXp - prevXpRef.current;
       prevXpRef.current = newXp;
 
-      if (currentTab === "random" && diff > 0) {
-        const title =
-          t?.random_toast_title ??
-          (appLanguage === "es" ? "¡Buen trabajo!" : "Nice job!");
-        const descTpl =
-          t?.random_toast_desc ??
-          (appLanguage === "es" ? "Ganaste +{xp} XP." : "You earned +{xp} XP.");
-        const description = descTpl.replace("{xp}", String(diff));
+      if (diff > 0) {
+        if (cashuWallet && user?.identity) {
+          Promise.resolve(sendOneSatToNpub(user.identity)).catch((error) =>
+            console.error("Failed to send sat on XP update", error)
+          );
+        }
 
-        toast({
-          title,
-          description,
-          status: "success",
-          duration: 1800,
-          isClosable: true,
-          position: "top",
-        });
+        if (currentTab === "random") {
+          const title =
+            t?.random_toast_title ??
+            (appLanguage === "es" ? "¡Buen trabajo!" : "Nice job!");
+          const descTpl =
+            t?.random_toast_desc ??
+            (appLanguage === "es" ? "Ganaste +{xp} XP." : "You earned +{xp} XP.");
+          const description = descTpl.replace("{xp}", String(diff));
 
-        sendOneSatToNpub();
+          toast({
+            title,
+            description,
+            status: "success",
+            duration: 1800,
+            isClosable: true,
+            position: "top",
+          });
 
-        // Immediately pick the next randomized activity
-        pickRandomFeature();
+          // Immediately pick the next randomized activity
+          pickRandomFeature();
+        }
       }
     });
     return () => unsub();
-  }, [activeNpub, currentTab, t, toast, appLanguage]);
+  }, [
+    activeNpub,
+    currentTab,
+    t,
+    toast,
+    appLanguage,
+    cashuWallet,
+    sendOneSatToNpub,
+    user?.identity,
+    pickRandomFeature,
+  ]);
 
   const RandomHeader = (
     <HStack justify="flex-end" rounded="xl" mb={2}>
@@ -1713,6 +1768,9 @@ export default function App() {
           }}
           initialDraft={onboardingInitialDraft}
           onSaveDraft={handleOnboardingDraftSave}
+          walletIdentity={user?.identity || ""}
+          onWalletIdentityChange={handleIdentitySelection}
+          isWalletIdentitySaving={isIdentitySaving}
         />
       </Box>
     );
@@ -1759,6 +1817,8 @@ export default function App() {
         installOpen={installOpen}
         openInstall={() => setInstallOpen(true)}
         closeInstall={() => setInstallOpen(false)}
+        onSelectIdentity={handleIdentitySelection}
+        isIdentitySaving={isIdentitySaving}
       />
 
       <Box px={[2, 3, 4]} pt={[2, 3]} w="100%">

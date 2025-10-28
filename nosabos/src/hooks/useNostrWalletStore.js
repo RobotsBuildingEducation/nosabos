@@ -11,9 +11,11 @@ import { bech32 } from "bech32";
 
 import NDKWalletService, { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
 
+import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
+
 const defaultMint = "https://mint.minibits.cash/Bitcoin";
 const defaultRelays = ["wss://relay.damus.io", "wss://relay.primal.net"];
-const defaultReceiver =
+const defaultReceiver = BITCOIN_RECIPIENTS[0]?.npub ||
   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
 
 // using a global state with zustand.
@@ -323,6 +325,11 @@ export const useNostrWalletStore = create((set, get) => ({
     //safety check, if a wallet is never defined, just exit the function
     if (!cashuWallet) {
       console.error("Wallet not initialized or no balance.");
+      return;
+    }
+
+    if (!recipientNpub) {
+      console.warn("No recipient identity provided for sendOneSatToNpub.");
       return;
     }
 
