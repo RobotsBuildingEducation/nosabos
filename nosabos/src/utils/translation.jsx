@@ -142,6 +142,13 @@ export const translations = {
     onboarding_bitcoin_optional_title: "Optional Bitcoin deposits",
     onboarding_bitcoin_optional_desc:
       "Choose an identity to support with deposits, or skip this step for now.",
+    bitcoin_modal_title: "Support with Bitcoin",
+    bitcoin_modal_reload_note:
+      "Once your deposit is confirmed we'll reload the app to update your balance.",
+    bitcoin_modal_success:
+      "Deposit received! Reloading to refresh your balance…",
+    bitcoin_modal_skip: "Skip for now",
+    bitcoin_modal_close: "Close",
     app_install_aria: "Install",
     app_account_aria: "Account",
     app_lang_en: "EN",
@@ -597,6 +604,13 @@ export const translations = {
     onboarding_bitcoin_optional_title: "Depósitos opcionales en Bitcoin",
     onboarding_bitcoin_optional_desc:
       "Elige una identidad para apoyar con tus depósitos o sáltate este paso por ahora.",
+    bitcoin_modal_title: "Apoya con Bitcoin",
+    bitcoin_modal_reload_note:
+      "Cuando tu depósito se confirme, recargaremos la app para actualizar tu saldo.",
+    bitcoin_modal_success:
+      "¡Depósito recibido! Recargando para actualizar tu saldo…",
+    bitcoin_modal_skip: "Omitir por ahora",
+    bitcoin_modal_close: "Cerrar",
     ra_title: "No Sabo — Entrenador de {language}",
     ra_label_you: "Tú",
     ra_label_xp: "XP",
