@@ -882,6 +882,7 @@ export default function App() {
   const walletBalance = useNostrWalletStore((s) => s.walletBalance);
   const sendOneSatToNpub = useNostrWalletStore((s) => s.sendOneSatToNpub);
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
+  const rerunWallet = useNostrWalletStore((s) => s.rerunWallet);
 
   console.log("walletBalance", walletBalance);
 
@@ -1023,7 +1024,18 @@ export default function App() {
     practicePronunciation: false,
   };
 
-  /* -----------------------------------
+  const runWallet = async () => {
+    await init();
+    await initWalletService();
+  };
+  useEffect(() => {
+    if (rerunWallet) {
+      console.log("wallet run");
+      runWallet();
+    }
+  }, [rerunWallet]);
+
+  /* ----------------------------------
      Identity bootstrap + user doc ensure
   ----------------------------------- */
   const connectDID = async () => {
@@ -1031,8 +1043,6 @@ export default function App() {
     try {
       let id = (localStorage.getItem("local_npub") || "").trim();
       let userDoc = null;
-      await init();
-      await initWalletService();
 
       if (id) {
         userDoc = await loadUserObjectFromDB(database, id);
@@ -1089,6 +1099,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    console.log("RUNNING");
     if (initRef.current) return;
     initRef.current = true;
     connectDID();
@@ -1590,9 +1601,9 @@ export default function App() {
 
       if (diff > 0) {
         if (cashuWallet && user?.identity) {
-          Promise.resolve(sendOneSatToNpub(user.identity)).catch((error) =>
-            console.error("Failed to send sat on XP update", error)
-          );
+          // Promise.resolve(SatToNpub(user.identity)).catch((error) =>
+          //   console.error("Failed to send sat on XP update", error)
+          // );
         }
 
         if (currentTab === "random") {
@@ -1601,7 +1612,9 @@ export default function App() {
             (appLanguage === "es" ? "¡Buen trabajo!" : "Nice job!");
           const descTpl =
             t?.random_toast_desc ??
-            (appLanguage === "es" ? "Ganaste +{xp} XP." : "You earned +{xp} XP.");
+            (appLanguage === "es"
+              ? "Ganaste +{xp} XP."
+              : "You earned +{xp} XP.");
           const description = descTpl.replace("{xp}", String(diff));
 
           toast({
@@ -1612,6 +1625,7 @@ export default function App() {
             isClosable: true,
             position: "top",
           });
+          sendOneSatToNpub();
 
           // Immediately pick the next randomized activity
           pickRandomFeature();

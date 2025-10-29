@@ -11,11 +11,9 @@ import { bech32 } from "bech32";
 
 import NDKWalletService, { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
 
-import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
-
 const defaultMint = "https://mint.minibits.cash/Bitcoin";
 const defaultRelays = ["wss://relay.damus.io", "wss://relay.primal.net"];
-const defaultReceiver = BITCOIN_RECIPIENTS[0]?.npub ||
+const defaultReceiver =
   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
 
 // using a global state with zustand.
@@ -37,6 +35,7 @@ export const useNostrWalletStore = create((set, get) => ({
   cashuWallet: null,
   walletBalance: 0,
   invoice: "", //not used: needs to add ability to generate new QR/address (invoice) in case things expire
+  rerunWallet: false,
 
   isCreatingWallet: false,
   // functions to define state when the data gets created
@@ -328,11 +327,6 @@ export const useNostrWalletStore = create((set, get) => ({
       return;
     }
 
-    if (!recipientNpub) {
-      console.warn("No recipient identity provided for sendOneSatToNpub.");
-      return;
-    }
-
     try {
       const amount = 1000;
       const unit = "msat";
@@ -456,7 +450,10 @@ export const useNostrWalletStore = create((set, get) => ({
       const updatedBalance = await cashuWallet.balance();
 
       //updates balance state, probably triggers wallet listeners too
-      set({ walletBalance: updatedBalance || [] });
+      set({
+        walletBalance: updatedBalance || [],
+        rerunWallet: true,
+      });
 
       setInvoice("");
     });
@@ -482,5 +479,6 @@ export const useNostrWalletStore = create((set, get) => ({
       cashuWallet: null,
       walletBalance: 0,
       invoice: "",
+      rerunWallet: false,
     }),
 }));
