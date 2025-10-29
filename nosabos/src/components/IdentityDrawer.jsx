@@ -18,6 +18,8 @@ import {
   Text,
   VStack,
   useToast,
+  RadioGroup,
+  Radio,
 } from "@chakra-ui/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
@@ -27,6 +29,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
+import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 
 export default function IdentityDrawer({
   isOpen,
@@ -42,6 +45,9 @@ export default function IdentityDrawer({
   cefrError,
   onRunCefrAnalysis,
   enableWallet = true,
+  user,
+  onSelectIdentity,
+  isIdentitySaving = false,
 }) {
   const toast = useToast();
 
@@ -134,7 +140,12 @@ export default function IdentityDrawer({
           <VStack align="stretch" spacing={3}>
             {/* --- Wallet (inline, not hidden) --- */}
             {enableWallet && (
-              <BitcoinWalletSection userLanguage={appLanguage} />
+              <BitcoinWalletSection
+                userLanguage={appLanguage}
+                identity={user?.identity || ""}
+                onSelectIdentity={onSelectIdentity}
+                isIdentitySaving={isIdentitySaving}
+              />
             )}
 
             {/* Your ID */}
@@ -296,7 +307,12 @@ export default function IdentityDrawer({
 }
 
 /* ======================= Wallet sub-section (hydrates on mount) ======================= */
-function BitcoinWalletSection({ userLanguage = "en" }) {
+export function BitcoinWalletSection({
+  userLanguage = "en",
+  identity = "",
+  onSelectIdentity,
+  isIdentitySaving = false,
+}) {
   const toast = useToast();
 
   // Select each field independently (avoid new-object snapshots)
@@ -312,6 +328,7 @@ function BitcoinWalletSection({ userLanguage = "en" }) {
   const initWalletService = useNostrWalletStore((s) => s.initWalletService);
 
   const [hydrating, setHydrating] = useState(true);
+  const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -328,6 +345,10 @@ function BitcoinWalletSection({ userLanguage = "en" }) {
       alive = false;
     };
   }, [init, initWalletService]);
+
+  useEffect(() => {
+    setSelectedIdentity(identity || "");
+  }, [identity]);
 
   const totalBalance = useMemo(
     () =>
@@ -391,7 +412,29 @@ function BitcoinWalletSection({ userLanguage = "en" }) {
     }
   };
 
+  const ensureIdentitySelected = () => {
+    if (!selectedIdentity) {
+      const title =
+        userLanguage === "es"
+          ? "Selecciona una identidad"
+          : "Select an identity";
+      const description =
+        userLanguage === "es"
+          ? "Elige un destinatario para tus depósitos."
+          : "Choose who receives your deposits before continuing.";
+      toast({
+        title,
+        description,
+        status: "info",
+        duration: 2200,
+      });
+      return false;
+    }
+    return true;
+  };
+
   const handleInitiateDeposit = async () => {
+    if (!ensureIdentitySelected()) return;
     try {
       await initiateDeposit(100); // example amount
     } catch (err) {
@@ -407,6 +450,7 @@ function BitcoinWalletSection({ userLanguage = "en" }) {
   };
 
   const generateNewQR = async () => {
+    if (!ensureIdentitySelected()) return;
     try {
       await initiateDeposit(100);
     } catch (err) {
@@ -438,6 +482,39 @@ function BitcoinWalletSection({ userLanguage = "en" }) {
     } catch {}
   };
 
+  const handleIdentitySelect = async (nextIdentity) => {
+    const previousIdentity = selectedIdentity;
+    if (!nextIdentity || nextIdentity === previousIdentity) {
+      setSelectedIdentity(nextIdentity || "");
+      return;
+    }
+
+    try {
+      await Promise.resolve(onSelectIdentity?.(nextIdentity));
+      setSelectedIdentity(nextIdentity);
+      toast({
+        title:
+          userLanguage === "es"
+            ? "Identidad actualizada"
+            : "Identity updated",
+        status: "success",
+        duration: 1600,
+      });
+    } catch (error) {
+      console.error("Failed to set identity", error);
+      setSelectedIdentity(previousIdentity || "");
+      toast({
+        title:
+          userLanguage === "es"
+            ? "No se pudo actualizar"
+            : "Could not update identity",
+        description: error?.message || String(error),
+        status: "error",
+        duration: 2600,
+      });
+    }
+  };
+
   // ---------- Renders ----------
   return (
     <Box bg="gray.800" rounded="md" p={3} mx={1}>
@@ -446,6 +523,39 @@ function BitcoinWalletSection({ userLanguage = "en" }) {
           ? "Billetera Bitcoin (beta)"
           : "Bitcoin wallet (beta)"}
       </Text>
+
+      <Box bg="gray.900" p={3} rounded="md" mb={3}>
+        <Text fontSize="sm" mb={2}>
+          {userLanguage === "es"
+            ? "Elige a quién apoyar con tus depósitos:"
+            : "Choose who you’d like to support with your deposits:"}
+        </Text>
+        <RadioGroup
+          value={selectedIdentity}
+          onChange={handleIdentitySelect}
+          isDisabled={isIdentitySaving}
+        >
+          <VStack align="start">
+            {BITCOIN_RECIPIENTS.map((recipient) => (
+              <Radio
+                key={recipient.npub}
+                colorScheme="pink"
+                value={recipient.npub}
+                isDisabled={isIdentitySaving}
+              >
+                {recipient.label}
+              </Radio>
+            ))}
+          </VStack>
+        </RadioGroup>
+        {!selectedIdentity && (
+          <Text fontSize="xs" mt={2} color="orange.200">
+            {userLanguage === "es"
+              ? "Selecciona una opción para habilitar los depósitos."
+              : "Select an option to enable deposits."}
+          </Text>
+        )}
+      </Box>
 
       {/* Loading/hydration spinner (only after refresh / first mount) */}
       {hydrating && !cashuWallet && (
@@ -523,6 +633,7 @@ function BitcoinWalletSection({ userLanguage = "en" }) {
               <Button
                 mt={3}
                 onClick={handleInitiateDeposit}
+                isDisabled={!selectedIdentity || isIdentitySaving}
                 boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
               >
                 {W("deposit")}
@@ -566,6 +677,7 @@ function BitcoinWalletSection({ userLanguage = "en" }) {
               <Button
                 mt={2}
                 onClick={generateNewQR}
+                isDisabled={!selectedIdentity || isIdentitySaving}
                 leftIcon={<BsQrCode />}
                 boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
               >
