@@ -66,15 +66,16 @@ export default function BitcoinSupportModal({
   const scholarshipNote =
     ui.bitcoin_modal_scholarship_note ||
     (lang === "es"
-      ? "Tus depósitos nos ayudan a crear becas junto con Learning with RobotsBuildingEducation.com."
-      : "Your deposits help us create scholarships with Learning with RobotsBuildingEducation.com.");
+      ? "Tus depósitos nos ayudan a crear becas con aprendizaje con "
+      : "Your deposits help us create scholarships with learning with ");
   const successMessage =
     ui.bitcoin_modal_success ||
     (lang === "es"
       ? "¡Depósito recibido! Recargando para actualizar tu saldo…"
       : "Deposit received! Reloading to refresh your balance…");
   const skipLabel =
-    ui.bitcoin_modal_skip || (lang === "es" ? "Omitir por ahora" : "Skip for now");
+    ui.bitcoin_modal_skip ||
+    (lang === "es" ? "Omitir por ahora" : "Skip for now");
   const closeLabel =
     ui.bitcoin_modal_close || (lang === "es" ? "Cerrar" : "Close");
 
@@ -98,7 +99,12 @@ export default function BitcoinSupportModal({
         shadow="xl"
         overflow="hidden"
       >
-        <ModalHeader borderBottom="1px solid" borderColor="gray.800" px={6} py={5}>
+        <ModalHeader
+          borderBottom="1px solid"
+          borderColor="gray.800"
+          px={6}
+          py={5}
+        >
           <Text fontWeight="bold" fontSize="lg">
             {title}
           </Text>
@@ -112,23 +118,30 @@ export default function BitcoinSupportModal({
               <Text fontSize="xs" opacity={0.8}>
                 {reloadNote}
               </Text>
-              <Text fontSize="xs" opacity={0.9} mt={3}>
+              {/* <Text fontSize="xs" opacity={0.9} mt={3}>
                 {scholarshipNote}{" "}
                 <Link
-                  href="https://robotsbuildingeducation.com/learning"
+                  href="https://robotsbuildingeducation.com"
                   isExternal
                   color="teal.200"
                   textDecoration="underline"
                 >
-                  robotsbuildingeducation.com/learning
+                  RobotsBuildingEducation.com
                 </Link>
-              </Text>
+              </Text> */}
             </Box>
 
             {reloadScheduled && (
-              <Alert status="success" variant="left-accent" bg="green.900" color="green.100">
+              <Alert
+                status="success"
+                variant="left-accent"
+                bg="green.900"
+                color="green.100"
+              >
                 <AlertIcon />
-                <AlertDescription fontSize="sm">{successMessage}</AlertDescription>
+                <AlertDescription fontSize="sm">
+                  {successMessage}
+                </AlertDescription>
               </Alert>
             )}
 
@@ -141,10 +154,18 @@ export default function BitcoinSupportModal({
           </VStack>
         </ModalBody>
         <ModalFooter gap={3} px={{ base: 4, md: 6 }} py={4}>
-          <Button variant="ghost" onClick={onClose} isDisabled={reloadScheduled}>
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            isDisabled={reloadScheduled}
+          >
             {skipLabel}
           </Button>
-          <Button colorScheme="teal" onClick={onClose} isDisabled={reloadScheduled}>
+          <Button
+            colorScheme="teal"
+            onClick={onClose}
+            isDisabled={reloadScheduled}
+          >
             {closeLabel}
           </Button>
         </ModalFooter>

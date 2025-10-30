@@ -377,7 +377,7 @@ export function BitcoinWalletSection({
       balanceLabel: "Saldo",
       cardNameLabel: "Billetera",
       scholarshipNote:
-        "Tus depósitos ayudan a crear becas junto con Learning with RobotsBuildingEducation.com.",
+        "Tus depósitos ayudan a crear becas con aprendizaje con ",
     };
     const en = {
       createWallet: "Create wallet",
@@ -394,7 +394,7 @@ export function BitcoinWalletSection({
       balanceLabel: "Balance",
       cardNameLabel: "Wallet",
       scholarshipNote:
-        "Your deposits help us create scholarships with Learning with RobotsBuildingEducation.com.",
+        "Your deposits help us create scholarships with learning with ",
     };
     return (userLanguage === "es" ? es : en)[key] ?? key;
   };
@@ -523,18 +523,18 @@ export function BitcoinWalletSection({
     <Box bg="gray.800" rounded="md" p={3} mx={1}>
       <Text mb={2} fontSize="sm" fontWeight="bold">
         {userLanguage === "es"
-          ? "Billetera Bitcoin (beta)"
-          : "Bitcoin wallet (beta)"}
+          ? "Billetera Bitcoin (experimental)"
+          : "Bitcoin wallet (experimental)"}
       </Text>
 
       <Text fontSize="xs" color="teal.100" mb={3}>
         {W("scholarshipNote")}{" "}
         <Link
-          href="https://robotsbuildingeducation.com/learning"
+          href="https://robotsbuildingeducation.com"
           isExternal
           textDecoration="underline"
         >
-          robotsbuildingeducation.com/learning
+          RobotsBuildingEducation.com
         </Link>
       </Text>
 
