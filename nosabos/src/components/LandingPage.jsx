@@ -12,6 +12,7 @@ import {
   HStack,
   Icon,
   Input,
+  Link,
   SimpleGrid,
   Spinner,
   Stack,
@@ -189,7 +190,7 @@ const BUTTON_VARIANTS = {
 const landingTranslations = {
   en: extendWithFeatureAliases({
     language_en: "English",
-    language_es: "Spanish",
+    language_es: "Español",
     default_loading: "Setting up your study space...",
     toast_account_created_title: "Account created",
     toast_account_created_desc: "Save your secret key before you continue.",
@@ -230,6 +231,13 @@ const landingTranslations = {
     feature_random_title: "Random mode",
     feature_random_desc:
       "Mix up your routine with surprise prompts that blend speaking, reading, and listening challenges.",
+    wallet_section_title: "Create scholarships with Bitcoin",
+    wallet_section_description_prefix:
+      "Top up your in-app Bitcoin wallet to help us create scholarships with learning with",
+    wallet_section_description_suffix: ".",
+    wallet_section_note:
+      "Choose a community identity in the app so every satoshi you spend supports real people.",
+    wallet_section_link_label: "RobotsBuildingEducation.com",
     ready_title: "Ready to jump in?",
     ready_subtitle:
       "Create your secure profile in seconds, save your key, and unlock every mode you just explored.",
@@ -251,7 +259,7 @@ const landingTranslations = {
     created_back: "Go back",
   }),
   es: extendWithFeatureAliases({
-    language_en: "Inglés",
+    language_en: "English",
     language_es: "Español",
     default_loading: "Preparando tu espacio de estudio...",
     toast_account_created_title: "Cuenta creada",
@@ -294,6 +302,13 @@ const landingTranslations = {
     feature_random_title: "Modo aleatorio",
     feature_random_desc:
       "Varía tu rutina con retos sorpresa que combinan expresión oral, lectura y escucha.",
+    wallet_section_title: "Becas impulsadas con Bitcoin",
+    wallet_section_description_prefix:
+      "Recarga tu billetera de Bitcoin en la app para ayudarnos a crear becas con aprendizaje con",
+    wallet_section_description_suffix: ".",
+    wallet_section_note:
+      "Elige una identidad comunitaria en la app para dirigir tu apoyo a estudiantes reales.",
+    wallet_section_link_label: "RobotsBuildingEducation.com",
     ready_title: "¿Listo para empezar?",
     ready_subtitle:
       "Crea tu perfil seguro en segundos, guarda tu llave y desbloquea todos los modos que viste.",
@@ -636,7 +651,7 @@ const LandingPage = ({ onAuthenticated }) => {
               {copy.brand_name}
             </Text>
             <Text
-              fontSize={{ base: "3xl", md: "4xl" }}
+              fontSize={{ base: "xl", md: "xl" }}
               fontWeight="black"
               lineHeight="1.1"
             >
@@ -666,6 +681,8 @@ const LandingPage = ({ onAuthenticated }) => {
               isLoading={isCreatingAccount}
               isDisabled={!hasDisplayName}
               rightIcon={<ArrowForwardIcon />}
+              width="75%"
+              p={6}
               // w={{ base: "full", md: "auto" }}
             >
               {isCreatingAccount ? copy.create_loading : copy.create_button}
@@ -682,6 +699,8 @@ const LandingPage = ({ onAuthenticated }) => {
               setView("signIn");
             }}
             color="white"
+            width="75%"
+            p={6}
           >
             {copy.have_key_button}
           </ActionButton>
@@ -766,6 +785,34 @@ const LandingPage = ({ onAuthenticated }) => {
           </LandingSection>
 
           <LandingSection
+            bg="rgba(8, 26, 36, 0.9)"
+            borderRadius="3xl"
+            border="1px solid rgba(45, 212, 191, 0.3)"
+          >
+            <VStack spacing={5} align="center">
+              <Text fontSize="3xl" fontWeight="bold" textAlign="center">
+                {copy.wallet_section_title}
+              </Text>
+              <Text textAlign="center" color="cyan.100" maxW="3xl">
+                {copy.wallet_section_description_prefix}{" "}
+                <Link
+                  href="https://robotsbuildingeducation.com/learning"
+                  isExternal
+                  color="teal.200"
+                  textDecoration="underline"
+                >
+                  {copy.wallet_section_link_label ||
+                    landingTranslations.en.wallet_section_link_label}
+                </Link>
+                {copy.wallet_section_description_suffix}
+              </Text>
+              <Text textAlign="center" color="teal.100" maxW="2xl">
+                {copy.wallet_section_note}
+              </Text>
+            </VStack>
+          </LandingSection>
+
+          <LandingSection
             bg="rgba(6, 18, 30, 0.9)"
             borderRadius="3xl"
             border="1px solid rgba(45, 212, 191, 0.3)"
@@ -781,6 +828,9 @@ const LandingPage = ({ onAuthenticated }) => {
                 rightIcon={<ArrowForwardIcon />}
                 onClick={handleCreateAccount}
                 isDisabled={!hasDisplayName || isCreatingAccount}
+                width="75%"
+                maxWidth="300px"
+                p={6}
               >
                 {copy.ready_cta}
               </Button>
@@ -789,6 +839,9 @@ const LandingPage = ({ onAuthenticated }) => {
                 onClick={() => {
                   setView("signIn");
                 }}
+                width="75%"
+                maxWidth="300px"
+                p={6}
               >
                 {copy.have_key_button}
               </ActionButton>

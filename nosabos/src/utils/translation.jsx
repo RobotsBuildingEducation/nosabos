@@ -145,6 +145,8 @@ export const translations = {
     bitcoin_modal_title: "Support with Bitcoin",
     bitcoin_modal_reload_note:
       "Once your deposit is confirmed we'll reload the app to update your balance.",
+    bitcoin_modal_scholarship_note:
+      "Your deposits help us create scholarships with learning with ",
     bitcoin_modal_success:
       "Deposit received! Reloading to refresh your balance…",
     bitcoin_modal_skip: "Skip for now",
@@ -607,6 +609,8 @@ export const translations = {
     bitcoin_modal_title: "Apoya con Bitcoin",
     bitcoin_modal_reload_note:
       "Cuando tu depósito se confirme, recargaremos la app para actualizar tu saldo.",
+    bitcoin_modal_scholarship_note:
+      "Tus depósitos nos ayudan a crear becas junto con aprendizaje con ",
     bitcoin_modal_success:
       "¡Depósito recibido! Recargando para actualizar tu saldo…",
     bitcoin_modal_skip: "Omitir por ahora",
