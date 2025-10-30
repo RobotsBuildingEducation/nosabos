@@ -12,6 +12,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  ModalCloseButton,
   Text,
   VStack,
 } from "@chakra-ui/react";
@@ -98,17 +99,30 @@ export default function BitcoinSupportModal({
         rounded="2xl"
         shadow="xl"
         overflow="hidden"
+        maxH="100vh"
+        sx={{
+          "@supports (height: 100dvh)": {
+            maxHeight: "100dvh",
+          },
+        }}
       >
         <ModalHeader
           borderBottom="1px solid"
           borderColor="gray.800"
           px={6}
+          pr={12}
           py={5}
         >
           <Text fontWeight="bold" fontSize="lg">
             {title}
           </Text>
         </ModalHeader>
+        <ModalCloseButton
+          color="gray.400"
+          _hover={{ color: "gray.100" }}
+          top={4}
+          right={4}
+        />
         <ModalBody px={{ base: 4, md: 6 }} py={6}>
           <VStack align="stretch" spacing={5}>
             <Box bg="gray.800" p={3} rounded="md">

@@ -8,6 +8,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  DrawerCloseButton,
   HStack,
   Input,
   Select,
@@ -258,11 +259,36 @@ export default function Onboarding({
   ];
 
   return (
-    <Box minH="100vh" bg="gray.900" color="gray.100">
+    <Box
+      minH="100vh"
+      bg="gray.900"
+      color="gray.100"
+      sx={{
+        "@supports (height: 100dvh)": {
+          minHeight: "100dvh",
+        },
+      }}
+    >
       <Drawer isOpen={true} placement="bottom" onClose={() => {}}>
         <DrawerOverlay bg="blackAlpha.700" />
-        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
-          <DrawerHeader pb={4}>
+        <DrawerContent
+          bg="gray.900"
+          color="gray.100"
+          borderTopRadius="24px"
+          maxH="100vh"
+          sx={{
+            "@supports (height: 100dvh)": {
+              maxHeight: "100dvh",
+            },
+          }}
+        >
+          <DrawerCloseButton
+            color="gray.400"
+            _hover={{ color: "gray.100" }}
+            top={4}
+            right={4}
+          />
+          <DrawerHeader pb={4} pr={12}>
             <IconButton
               aria-label="Back"
               icon={<ArrowBackIcon />}

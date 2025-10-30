@@ -13,6 +13,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  ModalCloseButton,
   Progress,
   Slider,
   SliderFilledTrack,
@@ -160,12 +161,25 @@ export default function DailyGoalModal({
         rounded="2xl"
         shadow="xl"
         overflow="hidden"
+        maxH="100vh"
+        sx={{
+          "@supports (height: 100dvh)": {
+            maxHeight: "100dvh",
+          },
+        }}
       >
+        <ModalCloseButton
+          color="white"
+          _hover={{ color: "white" }}
+          top={4}
+          right={4}
+        />
         {/* Header */}
         <Box
           bgGradient="linear(to-r, teal.700, teal.500)"
           color="white"
           px={6}
+          pr={12}
           py={5}
         >
           <HStack spacing={3} align="center">

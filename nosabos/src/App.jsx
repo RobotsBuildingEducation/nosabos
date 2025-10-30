@@ -11,6 +11,7 @@ import {
   Drawer,
   DrawerBody,
   DrawerContent,
+  DrawerCloseButton,
   DrawerHeader,
   DrawerOverlay,
   DrawerFooter,
@@ -532,8 +533,24 @@ function TopBar({
       {/* ---- Settings Drawer ---- */}
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
         <DrawerOverlay bg="blackAlpha.600" />
-        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
-          <DrawerHeader pb={2}>
+        <DrawerContent
+          bg="gray.900"
+          color="gray.100"
+          borderTopRadius="24px"
+          maxH="100vh"
+          sx={{
+            "@supports (height: 100dvh)": {
+              maxHeight: "100dvh",
+            },
+          }}
+        >
+          <DrawerCloseButton
+            color="gray.400"
+            _hover={{ color: "gray.200" }}
+            top={4}
+            right={4}
+          />
+          <DrawerHeader pb={2} pr={12}>
             {t.ra_settings_title || "Conversation settings"}
           </DrawerHeader>
           <DrawerBody pb={2}>
@@ -2102,12 +2119,22 @@ export default function App() {
         isCentered
       >
         <ModalOverlay />
-        <ModalContent bg="gray.900" color="gray.100">
-          <ModalHeader>
+        <ModalContent
+          bg="gray.900"
+          color="gray.100"
+          maxH="100vh"
+          sx={{
+            "@supports (height: 100dvh)": {
+              maxHeight: "100dvh",
+            },
+          }}
+        >
+          <ModalHeader pr={12}>
             {appLanguage === "es"
               ? "¡Meta diaria lograda!"
               : "Daily goal reached!"}
           </ModalHeader>
+          <ModalCloseButton top={4} right={4} />
           <ModalBody>
             <Text>
               {appLanguage === "es"
