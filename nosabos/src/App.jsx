@@ -901,6 +901,11 @@ export default function App() {
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
 
+  const hasSpendableBalance = useMemo(
+    () => totalWalletBalance > 0 && Boolean(cashuWallet) && Boolean(user?.identity),
+    [totalWalletBalance, cashuWallet, user?.identity]
+  );
+
   // DID / auth
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
@@ -1556,6 +1561,7 @@ export default function App() {
   );
   const [randomPick, setRandomPick] = useState(null);
   const prevXpRef = useRef(null);
+  const lastLocalXpEventRef = useRef(0);
 
   const handleIdentitySelection = useCallback(
     async (npub) => {
@@ -1614,7 +1620,24 @@ export default function App() {
     }
   }, [currentTab, pickRandomFeature]);
 
-  // ✅ Listen to XP changes only while on Random; on gain -> toast + auto-pick next
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleLocalXpAward = () => {
+      if (!hasSpendableBalance) return;
+      const mark = Date.now();
+      lastLocalXpEventRef.current = mark;
+      Promise.resolve(sendOneSatToNpub()).catch((error) => {
+        console.error("Failed to send sat on local XP award", error);
+        if (lastLocalXpEventRef.current === mark) {
+          lastLocalXpEventRef.current = 0;
+        }
+      });
+    };
+    window.addEventListener("xp:awarded", handleLocalXpAward);
+    return () => window.removeEventListener("xp:awarded", handleLocalXpAward);
+  }, [hasSpendableBalance, sendOneSatToNpub]);
+
+  // ✅ Listen to XP changes; random tab adds toast + auto-pick next
   useEffect(() => {
     if (!activeNpub) return;
     const ref = doc(database, "users", activeNpub);
@@ -1631,13 +1654,19 @@ export default function App() {
       prevXpRef.current = newXp;
 
       if (diff > 0) {
-        const hasSpendableBalance =
-          totalWalletBalance > 0 && cashuWallet && user?.identity;
+        const recentlySent =
+          Date.now() - lastLocalXpEventRef.current <= 1500 &&
+          lastLocalXpEventRef.current !== 0;
 
-        if (hasSpendableBalance) {
-          Promise.resolve(sendOneSatToNpub()).catch((error) =>
-            console.error("Failed to send sat on XP update", error)
-          );
+        if (hasSpendableBalance && !recentlySent) {
+          const mark = Date.now();
+          lastLocalXpEventRef.current = mark;
+          Promise.resolve(sendOneSatToNpub()).catch((error) => {
+            console.error("Failed to send sat on XP update", error);
+            if (lastLocalXpEventRef.current === mark) {
+              lastLocalXpEventRef.current = 0;
+            }
+          });
         }
 
         if (currentTab === "random") {
@@ -1671,11 +1700,9 @@ export default function App() {
     t,
     toast,
     appLanguage,
-    cashuWallet,
+    hasSpendableBalance,
     sendOneSatToNpub,
-    user?.identity,
     pickRandomFeature,
-    totalWalletBalance,
   ]);
 
   const RandomHeader = (

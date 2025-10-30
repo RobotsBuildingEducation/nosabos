@@ -549,17 +549,34 @@ export function BitcoinWalletSection({
           onChange={handleIdentitySelect}
           isDisabled={isIdentitySaving}
         >
-          <VStack align="start">
-            {BITCOIN_RECIPIENTS.map((recipient) => (
-              <Radio
-                key={recipient.npub}
-                colorScheme="pink"
-                value={recipient.npub}
-                isDisabled={isIdentitySaving}
-              >
-                {recipient.label}
-              </Radio>
-            ))}
+          <VStack align="start" spacing={2} width="100%">
+            {BITCOIN_RECIPIENTS.map((recipient) => {
+              const isSelected = selectedIdentity === recipient.npub;
+              return (
+                <Box key={recipient.npub}>
+                  <Radio
+                    colorScheme="pink"
+                    value={recipient.npub}
+                    isDisabled={isIdentitySaving}
+                  >
+                    {recipient.label}
+                  </Radio>
+                  {isSelected && recipient.identityUrl ? (
+                    <Link
+                      href={recipient.identityUrl}
+                      isExternal
+                      fontSize="xs"
+                      color="teal.200"
+                      ml={6}
+                      display="inline-block"
+                      mt={1}
+                    >
+                      {userLanguage === "es" ? "Ver identidad" : "View identity"}
+                    </Link>
+                  ) : null}
+                </Box>
+              );
+            })}
           </VStack>
         </RadioGroup>
         {!selectedIdentity && (
