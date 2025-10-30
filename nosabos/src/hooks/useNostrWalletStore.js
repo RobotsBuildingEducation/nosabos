@@ -455,6 +455,12 @@ export const useNostrWalletStore = create((set, get) => ({
         rerunWallet: true,
       });
 
+      const timer = setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.reload();
+        }
+      }, 1600);
+
       setInvoice("");
     });
 

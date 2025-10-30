@@ -20,6 +20,7 @@ import {
   useToast,
   RadioGroup,
   Radio,
+  Center,
 } from "@chakra-ui/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
@@ -494,9 +495,7 @@ export function BitcoinWalletSection({
       setSelectedIdentity(nextIdentity);
       toast({
         title:
-          userLanguage === "es"
-            ? "Identidad actualizada"
-            : "Identity updated",
+          userLanguage === "es" ? "Identidad actualizada" : "Identity updated",
         status: "success",
         duration: 1600,
       });
@@ -614,7 +613,7 @@ export function BitcoinWalletSection({
       {cashuWallet && totalBalance <= 0 && (
         <>
           {!invoice && (
-            <>
+            <Box display="flex" flexDirection={"column"} alignItems={"center"}>
               <IdentityCard
                 number={cashuWallet.walletId}
                 name={
@@ -634,11 +633,13 @@ export function BitcoinWalletSection({
                 mt={3}
                 onClick={handleInitiateDeposit}
                 isDisabled={!selectedIdentity || isIdentitySaving}
-                boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
+                width="100%"
+                maxWidth="400px"
+                p={6}
               >
                 {W("deposit")}
               </Button>
-            </>
+            </Box>
           )}
 
           {invoice && (
