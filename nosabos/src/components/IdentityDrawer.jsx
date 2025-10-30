@@ -571,7 +571,7 @@ export function BitcoinWalletSection({
                       display="inline-block"
                       mt={1}
                     >
-                      {userLanguage === "es" ? "Ver identidad" : "View identity"}
+                      {userLanguage === "es" ? "Ver sitio" : "View site"}
                     </Link>
                   ) : null}
                 </Box>
