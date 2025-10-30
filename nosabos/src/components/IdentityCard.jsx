@@ -25,7 +25,7 @@ const numberChange = keyframes`
 const CardContainer = styled.div`
   text-shadow: 0px 0.25px 0px black;
   width: 100%;
-  max-width: 700px;
+  max-width: 400px;
   height: ${({ flip }) => (flip ? "525px" : "200px")};
   border-radius: 16px;
   perspective: 1000px;

@@ -28,14 +28,12 @@ import { ArrowBackIcon } from "@chakra-ui/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { WaveBar } from "./WaveBar";
-import { BitcoinWalletSection } from "./IdentityDrawer";
 import { translations } from "../utils/translation";
 
 const STEP_ROUTES = [
   { slug: "step-1" },
   { slug: "step-2" },
   { slug: "step-3" },
-  { slug: "step-4" },
 ];
 
 const BASE_PATH = "/onboarding";
@@ -46,9 +44,6 @@ export default function Onboarding({
   onAppLanguageChange = () => {},
   initialDraft = {},
   onSaveDraft = async () => {},
-  walletIdentity = "",
-  onWalletIdentityChange = async () => {},
-  isWalletIdentitySaving = false,
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -160,7 +155,6 @@ export default function Onboarding({
           showTranslations,
           pauseMs,
           challenge: { ...CHALLENGE },
-          identity: walletIdentity || null,
         },
         stepNumber
       );
@@ -205,7 +199,6 @@ export default function Onboarding({
         helpRequest,
         pauseMs,
         challenge: { ...CHALLENGE },
-        identity: walletIdentity || null,
       };
       await Promise.resolve(onComplete(payload));
     } finally {
@@ -262,10 +255,6 @@ export default function Onboarding({
     ui.onboarding_step1_title || ui.onboarding_section_difficulty_support,
     ui.onboarding_step2_title || ui.onboarding_section_voice_persona,
     ui.onboarding_step3_title || ui.onboarding_section_first_goal,
-    ui.onboarding_step4_title ||
-      (appLang === "es"
-        ? "Activa tu billetera (opcional)"
-        : "Activate your wallet (optional)"),
   ];
 
   return (
@@ -556,32 +545,6 @@ export default function Onboarding({
                       {translations.es.onboarding_challenge_default}
                     </Text>
                   </Box>
-                </VStack>
-              )}
-
-              {currentStepIndex === 3 && (
-                <VStack align="stretch" spacing={4}>
-                  <Box bg="gray.800" p={3} rounded="md">
-                    <Text fontSize="sm" mb={1}>
-                      {ui.onboarding_bitcoin_optional_title ||
-                        (appLang === "es"
-                          ? "Depósitos opcionales en Bitcoin"
-                          : "Optional Bitcoin deposits")}
-                    </Text>
-                    <Text fontSize="xs" opacity={0.8}>
-                      {ui.onboarding_bitcoin_optional_desc ||
-                        (appLang === "es"
-                          ? "Si quieres apoyar a una comunidad, elige una identidad y recarga tu billetera. Puedes omitir este paso."
-                          : "If you’d like to support a community, choose an identity and top up your wallet. You can skip this for now.")}
-                    </Text>
-                  </Box>
-
-                  <BitcoinWalletSection
-                    userLanguage={appLang}
-                    identity={walletIdentity || ""}
-                    onSelectIdentity={onWalletIdentityChange}
-                    isIdentitySaving={isWalletIdentitySaving}
-                  />
                 </VStack>
               )}
         </VStack>

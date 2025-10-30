@@ -84,6 +84,7 @@ import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
+import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
@@ -94,7 +95,7 @@ import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
-const ONBOARDING_TOTAL_STEPS = 4;
+const ONBOARDING_TOTAL_STEPS = 3;
 
 function extractJsonBlock(text = "") {
   if (!text) return "";
@@ -1133,6 +1134,8 @@ export default function App() {
      - Only open DailyGoalModal right after onboarding completes
   ----------------------------------- */
   const [dailyGoalOpen, setDailyGoalOpen] = useState(false);
+  const [bitcoinModalQueued, setBitcoinModalQueued] = useState(false);
+  const [bitcoinModalOpen, setBitcoinModalOpen] = useState(false);
   const [celebrateOpen, setCelebrateOpen] = useState(false);
 
   // Celebration listener (fired by awardXp when goal is reached)
@@ -1396,6 +1399,7 @@ export default function App() {
 
       // Prompt for daily goal right after onboarding
       setDailyGoalOpen(true);
+      setBitcoinModalQueued(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -1566,6 +1570,19 @@ export default function App() {
     },
     [activeNpub, patchUser, user?.identity]
   );
+
+  const handleDailyGoalClose = useCallback(() => {
+    setDailyGoalOpen(false);
+    if (bitcoinModalQueued) {
+      setBitcoinModalQueued(false);
+      setBitcoinModalOpen(true);
+    }
+  }, [bitcoinModalQueued]);
+
+  const handleBitcoinModalClose = useCallback(() => {
+    setBitcoinModalOpen(false);
+    setBitcoinModalQueued(false);
+  }, []);
 
   const pickRandomFeature = useCallback(() => {
     const pool = RANDOM_POOL;
@@ -1782,9 +1799,6 @@ export default function App() {
           }}
           initialDraft={onboardingInitialDraft}
           onSaveDraft={handleOnboardingDraftSave}
-          walletIdentity={user?.identity || ""}
-          onWalletIdentityChange={handleIdentitySelection}
-          isWalletIdentitySaving={isIdentitySaving}
         />
       </Box>
     );
@@ -2015,7 +2029,7 @@ export default function App() {
       {/* Daily Goal Setup — only opened right after onboarding completes */}
       <DailyGoalModal
         isOpen={dailyGoalOpen}
-        onClose={() => setDailyGoalOpen(false)}
+        onClose={handleDailyGoalClose}
         npub={activeNpub}
         ui={{
           title: appLanguage === "es" ? "Meta diaria de XP" : "Daily XP goal",
@@ -2027,6 +2041,15 @@ export default function App() {
           save: appLanguage === "es" ? "Guardar" : "Save",
           cancel: appLanguage === "es" ? "Cancelar" : "Cancel",
         }}
+      />
+
+      <BitcoinSupportModal
+        isOpen={bitcoinModalOpen}
+        onClose={handleBitcoinModalClose}
+        userLanguage={appLanguage}
+        identity={user?.identity || ""}
+        onSelectIdentity={handleIdentitySelection}
+        isIdentitySaving={isIdentitySaving}
       />
 
       {/* Daily celebration (once per day) */}
