@@ -8,7 +8,6 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
-  DrawerCloseButton,
   HStack,
   Input,
   Select,
@@ -282,13 +281,7 @@ export default function Onboarding({
             },
           }}
         >
-          <DrawerCloseButton
-            color="gray.400"
-            _hover={{ color: "gray.100" }}
-            top={4}
-            right={4}
-          />
-          <DrawerHeader pb={4} pr={12}>
+          <DrawerHeader pb={4}>
             <IconButton
               aria-label="Back"
               icon={<ArrowBackIcon />}
