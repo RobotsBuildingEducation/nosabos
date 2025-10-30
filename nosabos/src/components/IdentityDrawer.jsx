@@ -1,6 +1,9 @@
 // src/components/IdentityDrawer.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
   Badge,
   Box,
   Button,
@@ -32,6 +35,7 @@ import { database } from "../firebaseResources/firebaseResources";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
+import { translations } from "../utils/translation";
 
 export default function IdentityDrawer({
   isOpen,
@@ -52,6 +56,39 @@ export default function IdentityDrawer({
   isIdentitySaving = false,
 }) {
   const toast = useToast();
+
+  const rerunWallet = useNostrWalletStore((s) => s.rerunWallet);
+  const [reloadScheduled, setReloadScheduled] = useState(false);
+
+  const lang = appLanguage === "es" ? "es" : "en";
+  const ui = useMemo(() => translations[lang] || translations.en, [lang]);
+  const reloadNote =
+    ui.bitcoin_modal_reload_note ||
+    (lang === "es"
+      ? "Cuando tu depósito se confirme, recargaremos la app para actualizar tu saldo."
+      : "Once your deposit is confirmed we'll reload the app to update your balance.");
+  const successMessage =
+    ui.bitcoin_modal_success ||
+    (lang === "es"
+      ? "¡Depósito recibido! Recargando para actualizar tu saldo…"
+      : "Deposit received! Reloading to refresh your balance…");
+
+  useEffect(() => {
+    if (!isOpen || !enableWallet) {
+      setReloadScheduled(false);
+      return;
+    }
+    if (!rerunWallet || reloadScheduled) return;
+
+    setReloadScheduled(true);
+    const timer = setTimeout(() => {
+      if (typeof window !== "undefined") {
+        window.location.reload();
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [rerunWallet, isOpen, enableWallet, reloadScheduled]);
 
   // Mirror identity props for display
   const [currentId, setCurrentId] = useState(activeNpub || "");
@@ -134,7 +171,13 @@ export default function IdentityDrawer({
     );
 
   return (
-    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
+    <Drawer
+      isOpen={isOpen}
+      placement="bottom"
+      onClose={reloadScheduled ? () => {} : onClose}
+      closeOnEsc={!reloadScheduled}
+      closeOnOverlayClick={!reloadScheduled}
+    >
       <DrawerOverlay bg="blackAlpha.600" />
       <DrawerContent
         bg="gray.900"
@@ -160,12 +203,34 @@ export default function IdentityDrawer({
           <VStack align="stretch" spacing={3}>
             {/* --- Wallet (inline, not hidden) --- */}
             {enableWallet && (
-              <BitcoinWalletSection
-                userLanguage={appLanguage}
-                identity={user?.identity || ""}
-                onSelectIdentity={onSelectIdentity}
-                isIdentitySaving={isIdentitySaving}
-              />
+              <>
+                <BitcoinWalletSection
+                  userLanguage={appLanguage}
+                  identity={user?.identity || ""}
+                  onSelectIdentity={onSelectIdentity}
+                  isIdentitySaving={isIdentitySaving}
+                />
+
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="xs" opacity={0.8}>
+                    {reloadNote}
+                  </Text>
+                </Box>
+
+                {reloadScheduled && (
+                  <Alert
+                    status="success"
+                    variant="left-accent"
+                    bg="green.900"
+                    color="green.100"
+                  >
+                    <AlertIcon />
+                    <AlertDescription fontSize="sm">
+                      {successMessage}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </>
             )}
 
             {/* Your ID */}
