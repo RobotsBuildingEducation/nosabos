@@ -258,10 +258,29 @@ export default function Onboarding({
   ];
 
   return (
-    <Box minH="100vh" bg="gray.900" color="gray.100">
+    <Box
+      minH="100vh"
+      bg="gray.900"
+      color="gray.100"
+      sx={{
+        "@supports (height: 100dvh)": {
+          minHeight: "100dvh",
+        },
+      }}
+    >
       <Drawer isOpen={true} placement="bottom" onClose={() => {}}>
         <DrawerOverlay bg="blackAlpha.700" />
-        <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
+        <DrawerContent
+          bg="gray.900"
+          color="gray.100"
+          borderTopRadius="24px"
+          maxH="100vh"
+          sx={{
+            "@supports (height: 100dvh)": {
+              maxHeight: "100dvh",
+            },
+          }}
+        >
           <DrawerHeader pb={4}>
             <IconButton
               aria-label="Back"

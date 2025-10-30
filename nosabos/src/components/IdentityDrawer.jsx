@@ -9,6 +9,7 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  DrawerCloseButton,
   HStack,
   Input,
   InputGroup,
@@ -135,8 +136,26 @@ export default function IdentityDrawer({
   return (
     <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
       <DrawerOverlay bg="blackAlpha.600" />
-      <DrawerContent bg="gray.900" color="gray.100" borderTopRadius="24px">
-        <DrawerHeader pb={2}>{t?.app_account_title || "Account"}</DrawerHeader>
+      <DrawerContent
+        bg="gray.900"
+        color="gray.100"
+        borderTopRadius="24px"
+        maxH="100vh"
+        sx={{
+          "@supports (height: 100dvh)": {
+            maxHeight: "100dvh",
+          },
+        }}
+      >
+        <DrawerCloseButton
+          color="gray.400"
+          _hover={{ color: "gray.200" }}
+          top={4}
+          right={4}
+        />
+        <DrawerHeader pb={2} pr={12}>
+          {t?.app_account_title || "Account"}
+        </DrawerHeader>
         <DrawerBody pb={6}>
           <VStack align="stretch" spacing={3}>
             {/* --- Wallet (inline, not hidden) --- */}
