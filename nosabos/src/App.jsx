@@ -887,6 +887,20 @@ export default function App() {
 
   console.log("walletBalance", walletBalance);
 
+  const totalWalletBalance = useMemo(() => {
+    if (Array.isArray(walletBalance)) {
+      return walletBalance.reduce(
+        (sum, entry) => sum + (Number(entry?.amount) || 0),
+        0
+      );
+    }
+    if (walletBalance && typeof walletBalance === "object") {
+      return Number(walletBalance?.amount || 0) || 0;
+    }
+    const numeric = Number(walletBalance);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }, [walletBalance]);
+
   // DID / auth
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
@@ -1617,10 +1631,13 @@ export default function App() {
       prevXpRef.current = newXp;
 
       if (diff > 0) {
-        if (cashuWallet && user?.identity) {
-          // Promise.resolve(SatToNpub(user.identity)).catch((error) =>
-          //   console.error("Failed to send sat on XP update", error)
-          // );
+        const hasSpendableBalance =
+          totalWalletBalance > 0 && cashuWallet && user?.identity;
+
+        if (hasSpendableBalance) {
+          Promise.resolve(sendOneSatToNpub()).catch((error) =>
+            console.error("Failed to send sat on XP update", error)
+          );
         }
 
         if (currentTab === "random") {
@@ -1642,8 +1659,6 @@ export default function App() {
             isClosable: true,
             position: "top",
           });
-          sendOneSatToNpub();
-
           // Immediately pick the next randomized activity
           pickRandomFeature();
         }
@@ -1660,6 +1675,7 @@ export default function App() {
     sendOneSatToNpub,
     user?.identity,
     pickRandomFeature,
+    totalWalletBalance,
   ]);
 
   const RandomHeader = (

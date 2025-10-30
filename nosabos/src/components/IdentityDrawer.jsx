@@ -376,6 +376,8 @@ export function BitcoinWalletSection({
       generateNew: "Generar nuevo QR",
       balanceLabel: "Saldo",
       cardNameLabel: "Billetera",
+      scholarshipNote:
+        "Tus depósitos ayudan a crear becas junto con Learning with RobotsBuildingEducation.com.",
     };
     const en = {
       createWallet: "Create wallet",
@@ -391,6 +393,8 @@ export function BitcoinWalletSection({
       generateNew: "Generate New Address",
       balanceLabel: "Balance",
       cardNameLabel: "Wallet",
+      scholarshipNote:
+        "Your deposits help us create scholarships with Learning with RobotsBuildingEducation.com.",
     };
     return (userLanguage === "es" ? es : en)[key] ?? key;
   };
@@ -521,6 +525,17 @@ export function BitcoinWalletSection({
         {userLanguage === "es"
           ? "Billetera Bitcoin (beta)"
           : "Bitcoin wallet (beta)"}
+      </Text>
+
+      <Text fontSize="xs" color="teal.100" mb={3}>
+        {W("scholarshipNote")}{" "}
+        <Link
+          href="https://robotsbuildingeducation.com/learning"
+          isExternal
+          textDecoration="underline"
+        >
+          robotsbuildingeducation.com/learning
+        </Link>
       </Text>
 
       <Box bg="gray.900" p={3} rounded="md" mb={3}>

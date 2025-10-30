@@ -5,6 +5,7 @@ import {
   AlertIcon,
   Box,
   Button,
+  Link,
   Modal,
   ModalBody,
   ModalContent,
@@ -45,7 +46,7 @@ export default function BitcoinSupportModal({
       if (typeof window !== "undefined") {
         window.location.reload();
       }
-    }, 1600);
+    }, 2000);
     return () => clearTimeout(timer);
   }, [rerunWallet, isOpen, reloadScheduled]);
 
@@ -62,6 +63,11 @@ export default function BitcoinSupportModal({
     (lang === "es"
       ? "Cuando tu depósito se confirme, recargaremos la app para actualizar tu saldo."
       : "Once your deposit is confirmed we'll reload the app to update your balance.");
+  const scholarshipNote =
+    ui.bitcoin_modal_scholarship_note ||
+    (lang === "es"
+      ? "Tus depósitos nos ayudan a crear becas junto con Learning with RobotsBuildingEducation.com."
+      : "Your deposits help us create scholarships with Learning with RobotsBuildingEducation.com.");
   const successMessage =
     ui.bitcoin_modal_success ||
     (lang === "es"
@@ -105,6 +111,17 @@ export default function BitcoinSupportModal({
               </Text>
               <Text fontSize="xs" opacity={0.8}>
                 {reloadNote}
+              </Text>
+              <Text fontSize="xs" opacity={0.9} mt={3}>
+                {scholarshipNote}{" "}
+                <Link
+                  href="https://robotsbuildingeducation.com/learning"
+                  isExternal
+                  color="teal.200"
+                  textDecoration="underline"
+                >
+                  robotsbuildingeducation.com/learning
+                </Link>
               </Text>
             </Box>
 
