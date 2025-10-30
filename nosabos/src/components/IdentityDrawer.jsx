@@ -204,6 +204,13 @@ export default function IdentityDrawer({
             {/* --- Wallet (inline, not hidden) --- */}
             {enableWallet && (
               <>
+                <BitcoinWalletSection
+                  userLanguage={appLanguage}
+                  identity={user?.identity || ""}
+                  onSelectIdentity={onSelectIdentity}
+                  isIdentitySaving={isIdentitySaving}
+                />
+
                 <Box bg="gray.800" p={3} rounded="md">
                   <Text fontSize="xs" opacity={0.8}>
                     {reloadNote}
@@ -223,13 +230,6 @@ export default function IdentityDrawer({
                     </AlertDescription>
                   </Alert>
                 )}
-
-                <BitcoinWalletSection
-                  userLanguage={appLanguage}
-                  identity={user?.identity || ""}
-                  onSelectIdentity={onSelectIdentity}
-                  isIdentitySaving={isIdentitySaving}
-                />
               </>
             )}
 
