@@ -919,8 +919,8 @@ export default function App() {
   }, [walletBalance]);
 
   const hasSpendableBalance = useMemo(
-    () => totalWalletBalance > 0 && Boolean(cashuWallet) && Boolean(user?.identity),
-    [totalWalletBalance, cashuWallet, user?.identity]
+    () => totalWalletBalance > 0 && Boolean(cashuWallet),
+    [totalWalletBalance, cashuWallet]
   );
 
   // DID / auth
@@ -1643,7 +1643,11 @@ export default function App() {
       if (!hasSpendableBalance) return;
       const mark = Date.now();
       lastLocalXpEventRef.current = mark;
-      Promise.resolve(sendOneSatToNpub()).catch((error) => {
+      const recipientNpub =
+        typeof user?.identity === "string" && user.identity.trim()
+          ? user.identity.trim()
+          : undefined;
+      Promise.resolve(sendOneSatToNpub(recipientNpub)).catch((error) => {
         console.error("Failed to send sat on local XP award", error);
         if (lastLocalXpEventRef.current === mark) {
           lastLocalXpEventRef.current = 0;
@@ -1652,7 +1656,7 @@ export default function App() {
     };
     window.addEventListener("xp:awarded", handleLocalXpAward);
     return () => window.removeEventListener("xp:awarded", handleLocalXpAward);
-  }, [hasSpendableBalance, sendOneSatToNpub]);
+  }, [hasSpendableBalance, sendOneSatToNpub, user?.identity]);
 
   // ✅ Listen to XP changes; random tab adds toast + auto-pick next
   useEffect(() => {
@@ -1678,7 +1682,11 @@ export default function App() {
         if (hasSpendableBalance && !recentlySent) {
           const mark = Date.now();
           lastLocalXpEventRef.current = mark;
-          Promise.resolve(sendOneSatToNpub()).catch((error) => {
+          const recipientNpub =
+            typeof user?.identity === "string" && user.identity.trim()
+              ? user.identity.trim()
+              : undefined;
+          Promise.resolve(sendOneSatToNpub(recipientNpub)).catch((error) => {
             console.error("Failed to send sat on XP update", error);
             if (lastLocalXpEventRef.current === mark) {
               lastLocalXpEventRef.current = 0;
@@ -1720,6 +1728,7 @@ export default function App() {
     hasSpendableBalance,
     sendOneSatToNpub,
     pickRandomFeature,
+    user?.identity,
   ]);
 
   const RandomHeader = (
