@@ -1643,7 +1643,7 @@ export default function App() {
       if (!hasSpendableBalance) return;
       const mark = Date.now();
       lastLocalXpEventRef.current = mark;
-      Promise.resolve(sendOneSatToNpub()).catch((error) => {
+      Promise.resolve(sendOneSatToNpub(user?.identity)).catch((error) => {
         console.error("Failed to send sat on local XP award", error);
         if (lastLocalXpEventRef.current === mark) {
           lastLocalXpEventRef.current = 0;
@@ -1652,7 +1652,7 @@ export default function App() {
     };
     window.addEventListener("xp:awarded", handleLocalXpAward);
     return () => window.removeEventListener("xp:awarded", handleLocalXpAward);
-  }, [hasSpendableBalance, sendOneSatToNpub]);
+  }, [hasSpendableBalance, sendOneSatToNpub, user?.identity]);
 
   // ✅ Listen to XP changes; random tab adds toast + auto-pick next
   useEffect(() => {
@@ -1678,7 +1678,7 @@ export default function App() {
         if (hasSpendableBalance && !recentlySent) {
           const mark = Date.now();
           lastLocalXpEventRef.current = mark;
-          Promise.resolve(sendOneSatToNpub()).catch((error) => {
+          Promise.resolve(sendOneSatToNpub(user?.identity)).catch((error) => {
             console.error("Failed to send sat on XP update", error);
             if (lastLocalXpEventRef.current === mark) {
               lastLocalXpEventRef.current = 0;
@@ -1720,6 +1720,7 @@ export default function App() {
     hasSpendableBalance,
     sendOneSatToNpub,
     pickRandomFeature,
+    user?.identity,
   ]);
 
   const RandomHeader = (
