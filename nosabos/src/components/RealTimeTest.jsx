@@ -1484,6 +1484,12 @@ Return ONLY JSON:
     } else if (tLang === "pt") {
       strict =
         "Responda APENAS em português brasileiro. Não use espanhol ou inglês.";
+    } else if (tLang === "fr") {
+      strict =
+        "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
+    } else if (tLang === "it") {
+      strict =
+        "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
     } else {
       strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
     }
@@ -1624,6 +1630,10 @@ Return ONLY JSON:
           ? "Voz actualizada."
           : targetLangRef.current === "pt"
           ? "Voz atualizada."
+          : targetLangRef.current === "fr"
+          ? "Voix mise à jour."
+          : targetLangRef.current === "it"
+          ? "Voce aggiornata."
           : "Voice updated.";
       try {
         dcRef.current.send(
