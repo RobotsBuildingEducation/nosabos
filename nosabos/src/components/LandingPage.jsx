@@ -47,7 +47,7 @@ const FAQ_ITEMS = [
   {
     question: "Which languages can I practice?",
     answer:
-      "Start with Spanish, English, or Portuguese right away, then explore Nahuatl-inspired cultural modules and more advanced grammar labs as you progress.",
+      "Start with Spanish, English, Portuguese, French, or Italian right away, then explore Nahuatl-inspired cultural modules and more advanced grammar labs as you progress.",
   },
   {
     question: "Is there a cost?",
@@ -207,7 +207,7 @@ const landingTranslations = {
     error_signin_generic: "We couldn't sign you in. Try again.",
     brand_name: "No Sabos",
     hero_title: "A smart tool to help you practice your language skills.",
-    hero_languages: "English, Spanish, Portuguese or Nahuatl.",
+    hero_languages: "English, Spanish, Portuguese, French, Italian or Nahuatl.",
     display_name_placeholder: "Display name",
     create_button: "Create account",
     create_loading: "Creating",
@@ -278,7 +278,7 @@ const landingTranslations = {
     brand_name: "No Sabos",
     hero_title:
       "Una herramienta inteligente para practicar tus habilidades lingüísticas.",
-    hero_languages: "Inglés, español, portugués o náhuatl.",
+    hero_languages: "Inglés, español, portugués, francés, italiano o náhuatl.",
     display_name_placeholder: "Nombre para mostrar",
     create_button: "Crear cuenta",
     create_loading: "Creando",

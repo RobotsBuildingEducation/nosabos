@@ -152,9 +152,14 @@ async function normalizeLectureTexts({
    User / XP / Settings
 --------------------------- */
 const LANG_NAME = (code) =>
-  ({ en: "English", es: "Spanish", pt: "Brazilian Portuguese", nah: "Nahuatl" }[
-    code
-  ] || code);
+  ({
+    en: "English",
+    es: "Spanish",
+    pt: "Brazilian Portuguese",
+    fr: "French",
+    it: "Italian",
+    nah: "Nahuatl",
+  }[code] || code);
 
 const LANGUAGE_LABELS = {
   en: ["English", "Inglés"],
@@ -165,6 +170,8 @@ const LANGUAGE_LABELS = {
     "Brazilian Portuguese",
     "Portugués brasileño",
   ],
+  fr: ["French", "Francés"],
+  it: ["Italian", "Italiano"],
   nah: ["Nahuatl", "Náhuatl"],
 };
 
@@ -285,7 +292,9 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "pt", "en"].includes(p.targetLang)
+        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
+          p.targetLang
+        )
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
@@ -525,6 +534,8 @@ const BCP47 = {
   es: { tts: "es-ES" },
   en: { tts: "en-US" },
   pt: { tts: "pt-BR" },
+  fr: { tts: "fr-FR" },
+  it: { tts: "it-IT" },
   nah: { tts: "es-ES" },
 };
 
@@ -599,7 +610,9 @@ export default function History({ userLanguage = "en" }) {
 
   const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
 
-  const targetLang = ["en", "es", "pt", "nah"].includes(progress.targetLang)
+  const targetLang = ["en", "es", "pt", "nah", "fr", "it"].includes(
+    progress.targetLang
+  )
     ? progress.targetLang
     : "es";
   const supportLang =
@@ -615,6 +628,8 @@ export default function History({ userLanguage = "en" }) {
       en: t("language_en"),
       es: t("language_es"),
       pt: t("language_pt"),
+      fr: t("language_fr"),
+      it: t("language_it"),
       nah: t("language_nah"),
     }[code] || code);
 

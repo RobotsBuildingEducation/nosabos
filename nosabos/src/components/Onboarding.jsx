@@ -407,6 +407,12 @@ export default function Onboarding({
                           <option value="pt">
                             {ui.onboarding_practice_pt}
                           </option>
+                          <option value="fr">
+                            {ui.onboarding_practice_fr}
+                          </option>
+                          <option value="it">
+                            {ui.onboarding_practice_it}
+                          </option>
                           <option value="en">
                             {ui.onboarding_practice_en}
                           </option>

@@ -79,6 +79,9 @@ const LLM_LANG_NAME = (codeOrName) => {
   if (m === "es" || m === "spanish" || m === "español") return "Spanish";
   if (m === "pt" || m === "portuguese" || m === "português")
     return "Brazilian Portuguese";
+  if (m === "fr" || m === "french" || m === "francés" || m === "français")
+    return "French";
+  if (m === "it" || m === "italian" || m === "italiano") return "Italian";
   if (m === "nah" || m === "nahuatl") return "Nahuatl";
   return capName(m);
 };
@@ -95,6 +98,8 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "en") return "en-US";
   if (m === "es") return "es-ES";
   if (m === "pt") return "pt-BR";
+  if (m === "fr") return "fr-FR";
+  if (m === "it") return "it-IT";
   if (m === "nah") return "es-ES"; // fallback
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
@@ -110,6 +115,9 @@ const toLangKey = (value) => {
   if (["es", "spanish", "español"].includes(raw)) return "es";
   if (["pt", "portuguese", "português", "portugues"].includes(raw))
     return "pt";
+  if (["fr", "french", "francés", "francais", "français"].includes(raw))
+    return "fr";
+  if (["it", "italian", "italiano"].includes(raw)) return "it";
   if (["nah", "nahuatl", "náhuatl"].includes(raw)) return "nah";
   return null;
 };
