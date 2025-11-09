@@ -79,6 +79,8 @@ const LLM_LANG_NAME = (code) =>
     en: "English",
     es: "Spanish",
     pt: "Brazilian Portuguese",
+    fr: "French",
+    it: "Italian",
     nah: "Nahuatl",
   }[code] || code);
 
@@ -86,6 +88,8 @@ const BCP47 = {
   es: { stt: "es-ES", tts: "es-ES" },
   en: { stt: "en-US", tts: "en-US" },
   pt: { stt: "pt-BR", tts: "pt-BR" },
+  fr: { stt: "fr-FR", tts: "fr-FR" },
+  it: { stt: "it-IT", tts: "it-IT" },
   nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Nahuatl is unsupported by engines
 };
 
@@ -98,6 +102,9 @@ const toLangKey = (value) => {
   if (["es", "spanish", "español"].includes(raw)) return "es";
   if (["pt", "portuguese", "português", "portugues"].includes(raw))
     return "pt";
+  if (["fr", "french", "francés", "francais", "français"].includes(raw))
+    return "fr";
+  if (["it", "italian", "italiano"].includes(raw)) return "it";
   if (["nah", "nahuatl", "náhuatl"].includes(raw)) return "nah";
   return null;
 };
@@ -159,7 +166,9 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "pt", "en"].includes(p.targetLang)
+        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
+          p.targetLang
+        )
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)

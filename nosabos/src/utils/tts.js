@@ -4,6 +4,8 @@ export const TTS_LANG_TAG = {
   en: "en-US",
   es: "es-ES",
   pt: "pt-BR",
+  fr: "fr-FR",
+  it: "it-IT",
   nah: "es-ES",
 };
 
@@ -29,6 +31,8 @@ const TTS_NATIVE_VOICE = {
   en: "alloy",
   es: "marin",
   pt: "coral",
+  fr: "verse",
+  it: "ballad",
   nah: "marin",
 };
 
@@ -46,6 +50,8 @@ export function voiceForLang(lang, langTag) {
   if (normalizedTag.startsWith("es")) return sanitizeVoice(TTS_NATIVE_VOICE.es);
   if (normalizedTag.startsWith("en")) return sanitizeVoice(TTS_NATIVE_VOICE.en);
   if (normalizedTag.startsWith("pt")) return sanitizeVoice(TTS_NATIVE_VOICE.pt);
+  if (normalizedTag.startsWith("fr")) return sanitizeVoice(TTS_NATIVE_VOICE.fr);
+  if (normalizedTag.startsWith("it")) return sanitizeVoice(TTS_NATIVE_VOICE.it);
   return DEFAULT_TTS_VOICE;
 }
 

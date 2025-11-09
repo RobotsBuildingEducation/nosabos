@@ -9,6 +9,8 @@ const BCP47 = {
   es: "es-ES",
   en: "en-US",
   pt: "pt-BR",
+  fr: "fr-FR",
+  it: "it-IT",
   nah: "es-ES",
 };
 

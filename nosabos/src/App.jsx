@@ -644,6 +644,12 @@ function TopBar({
                   <option value="pt">
                     {translations[appLanguage].onboarding_practice_pt}
                   </option>
+                  <option value="fr">
+                    {translations[appLanguage].onboarding_practice_fr}
+                  </option>
+                  <option value="it">
+                    {translations[appLanguage].onboarding_practice_it}
+                  </option>
                   <option value="en">
                     {translations[appLanguage].onboarding_practice_en}
                   </option>
@@ -1263,7 +1269,7 @@ export default function App() {
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
         .slice(0, 240)
         .trim(),
-      targetLang: ["nah", "es", "pt", "en"].includes(
+      targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
         partial.targetLang ?? prev.targetLang
       )
         ? partial.targetLang ?? prev.targetLang
@@ -1383,7 +1389,9 @@ export default function App() {
           payload.voicePersona,
           translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "pt", "en"].includes(payload.targetLang)
+        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
+          payload.targetLang
+        )
           ? payload.targetLang
           : "es",
         showTranslations:
