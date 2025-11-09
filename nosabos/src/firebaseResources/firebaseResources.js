@@ -39,7 +39,12 @@ initMessaging();
 const simplemodel = getGenerativeModel(vertexAI, {
   // model: "gemini-1.5-flash",
   // model: "gemini-2.0-flash-001",
-  model: "gemini-2.0-flash",
+  // model: "gemini-2.0-flash",
+  // model: "gemini-1.5-flash",
+  model: "gemini-2.5-flash",
+  generationConfig: {
+    thinkingConfig: { thinkingBudget: 0 }, // disables thinking
+  },
 });
 
 export { database, vertexAI, messaging, Schema, analytics, simplemodel };
