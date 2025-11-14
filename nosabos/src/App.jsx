@@ -456,17 +456,17 @@ function TopBar({
           flex="1 1 auto"
           align="center"
         >
+          <Text fontSize="sm">
+            {translations[appLanguage]["dailyGoalProgress"]}
+          </Text>
           <Box w={{ base: "120px", sm: "150px", md: "180px" }}>
             <WaveBar value={dailyPct} />
           </Box>
           <HStack spacing={1} flexShrink={0}>
-            <Text fontSize="sm" opacity={0.9} noOfLines={1}>
-              {dailyGoalXp > 0 ? `${dailyPct}%` : "—"}
-            </Text>
             {dailyDone && (
               <CheckCircleIcon
                 boxSize={{ base: "16px", md: "18px" }}
-                color="green.400"
+                color="green.200"
               />
             )}
           </HStack>
@@ -1760,7 +1760,13 @@ export default function App() {
   ]);
 
   const RandomHeader = (
-    <Box top={{ base: "70px", md: "78px" }} right="0" width="100%">
+    <Box
+      position="sticky"
+      top={{ base: "70px", md: "78px" }}
+      right="0"
+      width="100%"
+      zIndex={10}
+    >
       <HStack justify="flex-end">
         <Button
           size="sm"

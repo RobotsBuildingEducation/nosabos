@@ -14,6 +14,12 @@ import {
   Flex,
   IconButton,
   Spinner,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
 import {
@@ -506,6 +512,8 @@ export default function RealTimeTest({
   const [volume] = useState(0);
   const [mood, setMood] = useState("neutral");
   const [pauseMs, setPauseMs] = useState(2000);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeletingConversation, setIsDeletingConversation] = useState(false);
 
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
@@ -2308,10 +2316,19 @@ Do not return the whole sentence as a single chunk.`;
   --------------------------- */
   async function deleteConversation() {
     const npub = strongNpub(user);
-    if (!npub) return;
-    const confirmed = window.confirm(ui.ra_delete_confirm);
-    if (!confirmed) return;
-
+    if (!npub) {
+      toast({
+        title: ui?.ra_toast_no_account_title || "No account",
+        description: ui?.ra_toast_no_account_desc || "User ID not found.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+      setIsDeleteModalOpen(false);
+      return;
+    }
+    setIsDeletingConversation(true);
     try {
       const colRef = collection(database, "users", npub, "turns");
       while (true) {
@@ -2322,8 +2339,25 @@ Do not return the whole sentence as a single chunk.`;
         await batch.commit();
       }
       setHistory([]);
+      toast({
+        title: ui?.ra_toast_delete_success || "Conversation deleted",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
     } catch (e) {
       console.error(e);
+      toast({
+        title: ui?.ra_toast_delete_failed_title || "Delete failed",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+    } finally {
+      setIsDeletingConversation(false);
+      setIsDeleteModalOpen(false);
     }
   }
 
@@ -2362,15 +2396,16 @@ Do not return the whole sentence as a single chunk.`;
     );
   }
   return (
-    <Box
-      minH="100vh"
-      // bg="gray.900"
-      color="gray.100"
-      position="relative"
-      pb="120px"
-      borderRadius="24px"
-      mt="-8"
-    >
+    <>
+      <Box
+        minH="100vh"
+        // bg="gray.900"
+        color="gray.100"
+        position="relative"
+        pb="120px"
+        borderRadius="24px"
+        mt="-8"
+      >
       <HStack
         spacing={2}
         display="flex"
@@ -2386,7 +2421,7 @@ Do not return the whole sentence as a single chunk.`;
           size="sm"
           colorScheme="red"
           variant="outline"
-          onClick={deleteConversation}
+          onClick={() => setIsDeleteModalOpen(true)}
           width="24px"
           height="24px"
         />
@@ -2550,35 +2585,30 @@ Do not return the whole sentence as a single chunk.`;
         px={4}
       >
         <HStack spacing={3} w="100%" maxW="560px" justify="center">
-          {status !== "connected" ? (
-            <Button
-              onClick={start}
-              size="lg"
-              height="64px"
-              px="8"
-              rounded="full"
-              colorScheme="cyan"
-              color="white"
-              textShadow="0px 0px 20px black"
-              mb={20}
-            >
-              <PiMicrophoneStageDuotone /> &nbsp;{" "}
-              {status === "connecting"
-                ? ui.ra_btn_connecting
-                : ui.ra_btn_connect}
-            </Button>
-          ) : (
-            <Button
-              onClick={stop}
-              size="lg"
-              height="64px"
-              px="8"
-              rounded="full"
-              colorScheme="red"
-            >
-              <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-            </Button>
-          )}
+          <Button
+            onClick={status === "connected" ? stop : start}
+            size="lg"
+            height="64px"
+            px="8"
+            rounded="full"
+            colorScheme={status === "connected" ? "red" : "cyan"}
+            color="white"
+            textShadow="0px 0px 20px black"
+            mb={20}
+          >
+            {status === "connected" ? (
+              <>
+                <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+              </>
+            ) : (
+              <>
+                <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                {status === "connecting"
+                  ? ui.ra_btn_connecting
+                  : ui.ra_btn_connect}
+              </>
+            )}
+          </Button>
         </HStack>
       </Center>
 
@@ -2599,9 +2629,43 @@ Do not return the whole sentence as a single chunk.`;
       )}
 
       {/* remote live audio sink */}
-      <audio ref={audioRef} />
-      {/* local playback for cached clips */}
-      <audio ref={playbackRef} />
-    </Box>
+        <audio ref={audioRef} />
+        {/* local playback for cached clips */}
+        <audio ref={playbackRef} />
+      </Box>
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          if (!isDeletingConversation) setIsDeleteModalOpen(false);
+        }}
+        isCentered
+      >
+        <ModalOverlay />
+        <ModalContent bg="gray.900" color="gray.50">
+          <ModalHeader>{ui?.ra_btn_delete_convo || "Delete conversation"}</ModalHeader>
+          <ModalBody>
+            <Text>{ui?.ra_delete_confirm}</Text>
+          </ModalBody>
+          <ModalFooter gap={3}>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                if (!isDeletingConversation) setIsDeleteModalOpen(false);
+              }}
+              isDisabled={isDeletingConversation}
+            >
+              {ui?.common_cancel || "Cancel"}
+            </Button>
+            <Button
+              colorScheme="red"
+              onClick={deleteConversation}
+              isLoading={isDeletingConversation}
+            >
+              {ui?.ra_btn_delete_convo || "Delete conversation"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   );
 }

@@ -14,6 +14,7 @@ export function t(lang = "en", key, vars = {}) {
 
 export const translations = {
   en: {
+    dailyGoalProgress: "Goal",
     try_again: "Try again",
     tabs_random: "Random",
     random_toast_title: "Nice job!",
@@ -91,6 +92,7 @@ export const translations = {
     DEFAULT_PERSONA: "A friendly and helpful assistant",
     common_id_label: "ID:",
     common_saving: "Saving",
+    common_cancel: "Cancel",
     language_en: "English",
     language_es: "Spanish",
     language_pt: "Portuguese",
@@ -333,6 +335,7 @@ export const translations = {
       "You have been banned and the passcode has been changed. Contact the application owner on Patreon if this is a mistake.",
   },
   es: {
+    dailyGoalProgress: "Meta",
     try_again: "Inténtalo de nuevo",
     tabs_random: "Aleatorio",
     random_toast_title: "¡Buen trabajo!",
@@ -565,6 +568,7 @@ export const translations = {
     DEFAULT_PERSONA: "Como una tóxica sarcástica y semi-amistosa",
     common_id_label: "ID:",
     common_saving: "Guardando",
+    common_cancel: "Cancelar",
     onboarding_voice_alloy: "Alloy",
     onboarding_voice_ash: "Ash",
     onboarding_voice_ballad: "Ballad",
