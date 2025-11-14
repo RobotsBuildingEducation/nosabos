@@ -45,12 +45,14 @@ import {
   Divider,
   Flex,
   Button,
+  ButtonGroup,
   Menu,
   MenuButton,
   MenuList,
   MenuItemOption,
   MenuOptionGroup,
   Badge,
+  Tooltip,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -62,7 +64,12 @@ import { CiUser, CiSquarePlus, CiEdit } from "react-icons/ci";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
-import { LuBadgeCheck, LuBookOpen, LuShuffle } from "react-icons/lu";
+import {
+  LuBadgeCheck,
+  LuBookOpen,
+  LuShuffle,
+  LuLanguages,
+} from "react-icons/lu";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -89,6 +96,7 @@ import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
+import { FaAddressCard } from "react-icons/fa";
 
 /* ---------------------------
    Small helpers
@@ -195,21 +203,23 @@ function TopBar({
   cefrResult,
   cefrLoading,
   cefrError,
-  onToggleAppLanguage,
   onPatchSettings,
   onSwitchedAccount,
   settingsOpen,
   openSettings,
   closeSettings,
   accountOpen,
-  openAccount,
   closeAccount,
   onRunCefrAnalysis,
   installOpen,
-  openInstall,
   closeInstall,
   onSelectIdentity,
   isIdentitySaving = false,
+  tabOrder = [],
+  tabLabels = {},
+  tabIcons = {},
+  currentTab = "realtime",
+  onSelectTab,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -262,18 +272,6 @@ function TopBar({
 
   useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
   useEffect(() => setCurrentSecret(activeNsec || ""), [activeNsec]);
-
-  const languageName = (code) =>
-    translations[appLanguage][`language_${code === "nah" ? "nah" : code}`] ||
-    code;
-
-  const toggleLabel =
-    translations[appLanguage].onboarding_translations_toggle?.replace(
-      "{language}",
-      languageName(
-        targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en"
-      )
-    ) || (appLanguage === "es" ? "Mostrar traducción" : "Show translation");
 
   const copy = async (text, msg = t.toast_copied || "Copied") => {
     try {
@@ -482,51 +480,41 @@ function TopBar({
           ml="auto"
           align="center"
         >
-          <IconButton
-            aria-label={t.app_settings_aria || "Settings"}
-            icon={<SettingsIcon size={20} />}
-            size={{ base: "sm", md: "md" }}
-            onClick={openSettings}
-            colorScheme="cyan"
-            color="white"
-          />
-          <IconButton
-            aria-label={t.app_install_aria || "Install"}
-            icon={<GoDownload size={20} />}
-            size={{ base: "sm", md: "md" }}
-            onClick={openInstall}
-            color="white"
-          />
-          <IconButton
-            aria-label={t.app_account_aria || "Account"}
-            icon={<CiUser size={20} />}
-            size={{ base: "sm", md: "md" }}
-            onClick={openAccount}
-            color="white"
-          />
-          {/* UI language toggle EN <-> ES */}
-          <HStack spacing={1} align="center" pl={{ base: 1, md: 2 }}>
-            <Text
-              display={{ base: "inline", sm: "inline" }}
-              fontSize="sm"
-              color={appLanguage === "en" ? "teal.300" : "gray.400"}
+          <Menu autoSelect={false} isLazy>
+            <MenuButton
+              as={Button}
+              rightIcon={<ChevronDownIcon />}
+              variant="outline"
+              size="sm"
+              borderColor="gray.700"
+              px={3}
+              py={1.5}
             >
-              EN
-            </Text>
-            <Switch
-              colorScheme="teal"
-              size={{ base: "sm", md: "md" }}
-              isChecked={appLanguage === "es"}
-              onChange={onToggleAppLanguage}
-            />
-            <Text
-              display={{ base: "inline", sm: "inline" }}
-              fontSize="sm"
-              color={appLanguage === "es" ? "teal.300" : "gray.400"}
-            >
-              ES
-            </Text>
-          </HStack>
+              <HStack spacing={2}>
+                {tabIcons?.[currentTab]}
+                <Text fontSize="sm" noOfLines={1}>
+                  {tabLabels?.[currentTab] || currentTab}
+                </Text>
+              </HStack>
+            </MenuButton>
+
+            <MenuList borderColor="gray.700" bg="gray.900">
+              <MenuOptionGroup
+                type="radio"
+                value={currentTab}
+                onChange={(value) => onSelectTab?.(String(value))}
+              >
+                {tabOrder.map((key) => (
+                  <MenuItemOption key={key} value={key}>
+                    <HStack spacing={2}>
+                      {tabIcons?.[key]}
+                      <Text>{tabLabels?.[key] || key}</Text>
+                    </HStack>
+                  </MenuItemOption>
+                ))}
+              </MenuOptionGroup>
+            </MenuList>
+          </Menu>
         </HStack>
       </HStack>
 
@@ -732,17 +720,6 @@ function TopBar({
                       : "Describe your goal or context (this guides the experience).")}
                 </Text>
               </Box>
-
-              {/* Translations toggle */}
-              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
-                <Text fontSize="sm" mr={2}>
-                  {toggleLabel}
-                </Text>
-                <Switch
-                  isChecked={showTranslations}
-                  onChange={(e) => setShowTranslations(e.target.checked)}
-                />
-              </HStack>
 
               {/* VAD slider */}
               <Box bg="gray.800" p={3} rounded="md">
@@ -1054,6 +1031,40 @@ export default function App() {
     random: <LuShuffle />,
   };
 
+  const showTranslationsEnabled = user?.progress?.showTranslations !== false;
+
+  const translationToggleLabel = useMemo(() => {
+    const fallback =
+      appLanguage === "es" ? "Mostrar traducción" : "Show translation";
+    const template = translations[appLanguage]?.onboarding_translations_toggle;
+    if (!template) return fallback;
+
+    const progress = user?.progress || {};
+    const supportLang = progress.supportLang || "en";
+    const targetLang = progress.targetLang || "es";
+    const languageName = (code) =>
+      translations[appLanguage]?.[
+        `language_${code === "nah" ? "nah" : code}`
+      ] || code;
+
+    const targetNameKey =
+      targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+
+    return template.replace("{language}", languageName(targetNameKey));
+  }, [appLanguage, user?.progress]);
+
+  const handleToggleTranslations = () => {
+    saveGlobalSettings({ showTranslations: !showTranslationsEnabled });
+  };
+
+  const handleSelectTab = useCallback((value) => {
+    const next = String(value || "realtime");
+    setCurrentTab(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentTab", next);
+    }
+  }, []);
+
   // Default progress (mirrors onboarding)
   const DEFAULT_PROGRESS = {
     level: "beginner",
@@ -1237,6 +1248,13 @@ export default function App() {
   };
 
   // Persist settings (used by TopBar Save button)
+  const handleSelectAppLanguage = (lang) => {
+    const next = lang === "es" ? "es" : "en";
+    if (next !== appLanguage) {
+      saveAppLanguage(next);
+    }
+  };
+
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
     if (!npub) return;
@@ -1740,18 +1758,30 @@ export default function App() {
   ]);
 
   const RandomHeader = (
-    <HStack justify="flex-end" rounded="xl" mb={2}>
-      <Button
-        size="sm"
-        leftIcon={<LuShuffle />}
-        variant="outline"
-        borderColor="gray.700"
-        onClick={pickRandomFeature}
-        zIndex={10000}
-      >
-        {t?.random_shuffle ?? "Shuffle"}
-      </Button>
-    </HStack>
+    <Box
+      position="sticky"
+      top={{ base: "70px", md: "78px" }}
+      zIndex={5}
+      bg="rgba(10, 13, 26, 0.95)"
+      borderBottom="1px solid"
+      borderColor="gray.800"
+      backdropFilter="blur(6px)"
+      mb={3}
+      px={2}
+      py={2}
+    >
+      <HStack justify="flex-end">
+        <Button
+          size="sm"
+          leftIcon={<LuShuffle />}
+          variant="outline"
+          borderColor="gray.700"
+          onClick={pickRandomFeature}
+        >
+          {t?.random_shuffle ?? "Shuffle"}
+        </Button>
+      </HStack>
+    </Box>
   );
 
   const renderRandomPanel = () => {
@@ -1908,125 +1938,47 @@ export default function App() {
           setActiveNsec(localStorage.getItem("local_nsec") || "");
         }}
         onPatchSettings={saveGlobalSettings}
-        onToggleAppLanguage={() =>
-          saveAppLanguage(appLanguage === "en" ? "es" : "en")
-        }
         // controlled drawers
         settingsOpen={settingsOpen}
         openSettings={() => setSettingsOpen(true)}
         closeSettings={() => setSettingsOpen(false)}
         accountOpen={accountOpen}
-        openAccount={() => setAccountOpen(true)}
         closeAccount={() => setAccountOpen(false)}
         onRunCefrAnalysis={runCefrAnalysis}
         installOpen={installOpen}
-        openInstall={() => setInstallOpen(true)}
         closeInstall={() => setInstallOpen(false)}
         onSelectIdentity={handleIdentitySelection}
         isIdentitySaving={isIdentitySaving}
+        tabOrder={TAB_KEYS}
+        tabLabels={TAB_LABELS}
+        tabIcons={TAB_ICONS}
+        currentTab={currentTab}
+        onSelectTab={handleSelectTab}
       />
 
-      <Box px={[2, 3, 4]} pt={[2, 3]} w="100%">
+      <BottomActionBar
+        t={t}
+        onOpenIdentity={() => setAccountOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenInstall={() => setInstallOpen(true)}
+        isIdentitySaving={isIdentitySaving}
+        showTranslations={showTranslationsEnabled}
+        onToggleTranslations={handleToggleTranslations}
+        translationLabel={translationToggleLabel}
+        appLanguage={appLanguage}
+        onSelectLanguage={handleSelectAppLanguage}
+      />
+
+      <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
         <Tabs
           index={tabIndex}
           onChange={(i) => {
             const key = indexToKey(i);
-            setCurrentTab(key);
-            localStorage.setItem("currentTab", key);
+            handleSelectTab(key);
           }}
           colorScheme="teal"
           isLazy
         >
-          {/* Top dropdown selector (replaces TabList) */}
-          <Box
-            borderColor="gray.700"
-            rounded="xl"
-            p="6px"
-            mb={[2, 3]}
-            width="100%"
-            display="flex"
-            justifyContent="center"
-          >
-            <Menu autoSelect={false} isLazy>
-              <MenuButton
-                as={Button}
-                rightIcon={<ChevronDownIcon />}
-                variant="outline"
-                size="sm"
-                borderColor="gray.700"
-                w={{ base: "100%", sm: "70%", md: "50%" }}
-                padding={6}
-              >
-                <HStack spacing={2} justify="center">
-                  {TAB_ICONS[currentTab]}
-                  <Text>{TAB_LABELS[currentTab]}</Text>
-                </HStack>
-              </MenuButton>
-
-              <MenuList borderColor="gray.700">
-                <MenuOptionGroup
-                  type="radio"
-                  value={currentTab}
-                  onChange={(value) => {
-                    const v = String(value);
-                    setCurrentTab(v);
-                    localStorage.setItem("currentTab", v);
-                  }}
-                >
-                  <MenuItemOption value="realtime">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.realtime}
-                      <Text>{TAB_LABELS.realtime}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="stories">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.stories}
-                      <Text>{TAB_LABELS.stories}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  {/* NEW: Job Script */}
-                  <MenuItemOption value="jobscript">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.jobscript}
-                      <Text>{TAB_LABELS.jobscript}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="history">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.history}
-                      <Text>{TAB_LABELS.history}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="grammar">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.grammar}
-                      <Text>{TAB_LABELS.grammar}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="vocabulary">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.vocabulary}
-                      <Text>{TAB_LABELS.vocabulary}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="random">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.random}
-                      <Text>{TAB_LABELS.random}</Text>
-                    </HStack>
-                  </MenuItemOption>
-                </MenuOptionGroup>
-              </MenuList>
-            </Menu>
-          </Box>
-
           <TabPanels mt={[2, 3]}>
             {/* Chat */}
             <TabPanel px={0}>
@@ -2166,6 +2118,119 @@ export default function App() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+    </Box>
+  );
+}
+
+function BottomActionBar({
+  t,
+  onOpenIdentity,
+  onOpenSettings,
+  onOpenInstall,
+  isIdentitySaving = false,
+  showTranslations = true,
+  onToggleTranslations,
+  translationLabel,
+  appLanguage = "en",
+  onSelectLanguage,
+}) {
+  const identityLabel = t?.app_account_aria || "Identity";
+  const settingsLabel =
+    t?.app_settings_aria || t?.ra_btn_settings || "Settings";
+  const installLabel = t?.app_install_aria || "Install";
+  const toggleLabel =
+    translationLabel || t?.ra_translations_toggle || "Translations";
+  const englishLabel = t?.language_en || t?.app_language_en || "English";
+  const spanishLabel = t?.language_es || t?.app_language_es || "Spanish";
+
+  const handleSelectLanguage = (lang) => {
+    if (typeof onSelectLanguage === "function") {
+      onSelectLanguage(lang);
+    }
+  };
+
+  return (
+    <Box
+      position="fixed"
+      bottom={0}
+      left={0}
+      right={0}
+      zIndex={80}
+      bg="rgba(6, 10, 24, 0.95)"
+      borderTop="1px solid"
+      borderColor="gray.800"
+      backdropFilter="blur(8px)"
+      py={3}
+      px={{ base: 3, md: 6 }}
+      width="fit-content"
+      margin="auto"
+      borderRadius="24"
+      paddingBottom={6}
+      paddingTop={4}
+    >
+      <HStack
+        maxW="500px"
+        mx="auto"
+        w="100%"
+        align="center"
+        justify="center"
+        flexWrap="wrap"
+        spacing={12}
+      >
+        <ButtonGroup
+          size="sm"
+          isAttached
+          variant="outline"
+          borderRadius="full"
+          bg="rgba(255, 255, 255, 0.04)"
+          border="1px solid"
+          borderColor="gray.700"
+        >
+          <Button
+            onClick={() => handleSelectLanguage("en")}
+            variant={appLanguage === "en" ? "solid" : "ghost"}
+            colorScheme="teal"
+            fontSize="xs"
+            fontWeight="bold"
+            aria-label={englishLabel}
+            px={3}
+          >
+            EN
+          </Button>
+          <Button
+            onClick={() => handleSelectLanguage("es")}
+            variant={appLanguage === "es" ? "solid" : "ghost"}
+            colorScheme="teal"
+            fontSize="xs"
+            fontWeight="bold"
+            aria-label={spanishLabel}
+            px={3}
+          >
+            ES
+          </Button>
+        </ButtonGroup>
+        <IconButton
+          icon={<GoDownload size={18} />}
+          onClick={onOpenInstall}
+          aria-label={installLabel}
+          rounded="xl"
+        />
+        <IconButton
+          icon={<FaAddressCard size={18} />}
+          onClick={onOpenIdentity}
+          aria-label={identityLabel}
+          isLoading={isIdentitySaving}
+          rounded="xl"
+        />
+
+        <IconButton
+          icon={<SettingsIcon boxSize={4} />}
+          color="gray.100"
+          onClick={onOpenSettings}
+          aria-label={settingsLabel}
+          rounded="xl"
+        />
+      </HStack>
     </Box>
   );
 }
