@@ -2585,35 +2585,30 @@ Do not return the whole sentence as a single chunk.`;
         px={4}
       >
         <HStack spacing={3} w="100%" maxW="560px" justify="center">
-          {status !== "connected" ? (
-            <Button
-              onClick={start}
-              size="lg"
-              height="64px"
-              px="8"
-              rounded="full"
-              colorScheme="cyan"
-              color="white"
-              textShadow="0px 0px 20px black"
-              mb={20}
-            >
-              <PiMicrophoneStageDuotone /> &nbsp;{" "}
-              {status === "connecting"
-                ? ui.ra_btn_connecting
-                : ui.ra_btn_connect}
-            </Button>
-          ) : (
-            <Button
-              onClick={stop}
-              size="lg"
-              height="64px"
-              px="8"
-              rounded="full"
-              colorScheme="red"
-            >
-              <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-            </Button>
-          )}
+          <Button
+            onClick={status === "connected" ? stop : start}
+            size="lg"
+            height="64px"
+            px="8"
+            rounded="full"
+            colorScheme={status === "connected" ? "red" : "cyan"}
+            color="white"
+            textShadow="0px 0px 20px black"
+            mb={20}
+          >
+            {status === "connected" ? (
+              <>
+                <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+              </>
+            ) : (
+              <>
+                <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                {status === "connecting"
+                  ? ui.ra_btn_connecting
+                  : ui.ra_btn_connect}
+              </>
+            )}
+          </Button>
         </HStack>
       </Center>
 
