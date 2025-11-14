@@ -202,7 +202,6 @@ function TopBar({
   openSettings,
   closeSettings,
   accountOpen,
-  openAccount,
   closeAccount,
   onRunCefrAnalysis,
   installOpen,
@@ -483,25 +482,10 @@ function TopBar({
           align="center"
         >
           <IconButton
-            aria-label={t.app_settings_aria || "Settings"}
-            icon={<SettingsIcon size={20} />}
-            size={{ base: "sm", md: "md" }}
-            onClick={openSettings}
-            colorScheme="cyan"
-            color="white"
-          />
-          <IconButton
             aria-label={t.app_install_aria || "Install"}
             icon={<GoDownload size={20} />}
             size={{ base: "sm", md: "md" }}
             onClick={openInstall}
-            color="white"
-          />
-          <IconButton
-            aria-label={t.app_account_aria || "Account"}
-            icon={<CiUser size={20} />}
-            size={{ base: "sm", md: "md" }}
-            onClick={openAccount}
             color="white"
           />
           {/* UI language toggle EN <-> ES */}
@@ -1740,18 +1724,30 @@ export default function App() {
   ]);
 
   const RandomHeader = (
-    <HStack justify="flex-end" rounded="xl" mb={2}>
-      <Button
-        size="sm"
-        leftIcon={<LuShuffle />}
-        variant="outline"
-        borderColor="gray.700"
-        onClick={pickRandomFeature}
-        zIndex={10000}
-      >
-        {t?.random_shuffle ?? "Shuffle"}
-      </Button>
-    </HStack>
+    <Box
+      position="sticky"
+      top={{ base: "70px", md: "78px" }}
+      zIndex={5}
+      bg="rgba(10, 13, 26, 0.95)"
+      borderBottom="1px solid"
+      borderColor="gray.800"
+      backdropFilter="blur(6px)"
+      mb={3}
+      px={2}
+      py={2}
+    >
+      <HStack justify="flex-end">
+        <Button
+          size="sm"
+          leftIcon={<LuShuffle />}
+          variant="outline"
+          borderColor="gray.700"
+          onClick={pickRandomFeature}
+        >
+          {t?.random_shuffle ?? "Shuffle"}
+        </Button>
+      </HStack>
+    </Box>
   );
 
   const renderRandomPanel = () => {
@@ -1916,7 +1912,6 @@ export default function App() {
         openSettings={() => setSettingsOpen(true)}
         closeSettings={() => setSettingsOpen(false)}
         accountOpen={accountOpen}
-        openAccount={() => setAccountOpen(true)}
         closeAccount={() => setAccountOpen(false)}
         onRunCefrAnalysis={runCefrAnalysis}
         installOpen={installOpen}
@@ -1926,7 +1921,14 @@ export default function App() {
         isIdentitySaving={isIdentitySaving}
       />
 
-      <Box px={[2, 3, 4]} pt={[2, 3]} w="100%">
+      <BottomActionBar
+        t={t}
+        onOpenIdentity={() => setAccountOpen(true)}
+        onOpenSettings={() => setSettingsOpen(true)}
+        isIdentitySaving={isIdentitySaving}
+      />
+
+      <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
         <Tabs
           index={tabIndex}
           onChange={(i) => {
@@ -2166,6 +2168,62 @@ export default function App() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+    </Box>
+  );
+}
+
+function BottomActionBar({
+  t,
+  onOpenIdentity,
+  onOpenSettings,
+  isIdentitySaving = false,
+}) {
+  const identityLabel = t?.app_account_aria || "Identity";
+  const settingsLabel =
+    t?.app_settings_aria || t?.ra_btn_settings || "Settings";
+
+  return (
+    <Box
+      position="fixed"
+      bottom={0}
+      left={0}
+      right={0}
+      zIndex={80}
+      bg="rgba(6, 10, 24, 0.95)"
+      borderTop="1px solid"
+      borderColor="gray.800"
+      backdropFilter="blur(8px)"
+      py={3}
+      px={{ base: 3, md: 6 }}
+    >
+      <HStack
+        spacing={3}
+        maxW="640px"
+        mx="auto"
+        w="100%"
+        align="center"
+      >
+        <Button
+          leftIcon={<CiUser size={18} />}
+          colorScheme="teal"
+          variant="solid"
+          flex={1}
+          onClick={onOpenIdentity}
+          aria-label={identityLabel}
+          isLoading={isIdentitySaving}
+        >
+          {identityLabel}
+        </Button>
+        <Button
+          leftIcon={<SettingsIcon boxSize={4} />}
+          variant="outline"
+          flex={1}
+          onClick={onOpenSettings}
+          aria-label={settingsLabel}
+        >
+          {settingsLabel}
+        </Button>
+      </HStack>
     </Box>
   );
 }
