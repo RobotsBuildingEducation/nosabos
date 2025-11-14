@@ -398,7 +398,7 @@ export default function HelpChatFab({
         <Tooltip label={appLanguage === "es" ? "Ayuda" : "Help"}>
           <IconButton
             aria-label="Open help chat"
-            icon={<MdOutlineSupportAgent size={22} />}
+            icon={<MdOutlineSupportAgent size={20} />}
             bg="white"
             color="blue"
             border="4px solid skyblue"

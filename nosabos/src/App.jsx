@@ -2154,9 +2154,7 @@ function BottomActionBar({
   const englishLabel = t?.language_en || t?.app_language_en || "English";
   const spanishLabel = t?.language_es || t?.app_language_es || "Spanish";
   const helpChatLabel =
-    helpLabel ||
-    t?.app_help_chat ||
-    (appLanguage === "es" ? "Ayuda" : "Help");
+    helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
 
   const handleSelectLanguage = (lang) => {
     if (typeof onSelectLanguage === "function") {
@@ -2239,19 +2237,25 @@ function BottomActionBar({
         />
 
         <IconButton
-          icon={<MdOutlineSupportAgent size={18} />}
-          onClick={onOpenHelpChat}
-          aria-label={helpChatLabel}
-          rounded="xl"
-          isDisabled={!onOpenHelpChat}
-        />
-
-        <IconButton
           icon={<SettingsIcon boxSize={4} />}
           color="gray.100"
           onClick={onOpenSettings}
           aria-label={settingsLabel}
           rounded="xl"
+        />
+
+        <IconButton
+          icon={<MdOutlineSupportAgent size={20} />}
+          onClick={onOpenHelpChat}
+          aria-label={helpChatLabel}
+          rounded="full"
+          isDisabled={!onOpenHelpChat}
+          bg="white"
+          color="blue"
+          border="4px solid skyblue"
+          size="lg"
+          zIndex={50}
+          boxShadow="lg"
         />
       </HStack>
     </Box>
