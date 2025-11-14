@@ -51,6 +51,7 @@ import {
   MenuItemOption,
   MenuOptionGroup,
   Badge,
+  Tooltip,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -62,7 +63,7 @@ import { CiUser, CiSquarePlus, CiEdit } from "react-icons/ci";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
-import { LuBadgeCheck, LuBookOpen, LuShuffle } from "react-icons/lu";
+import { LuBadgeCheck, LuBookOpen, LuShuffle, LuLanguages } from "react-icons/lu";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -208,6 +209,11 @@ function TopBar({
   closeInstall,
   onSelectIdentity,
   isIdentitySaving = false,
+  tabOrder = [],
+  tabLabels = {},
+  tabIcons = {},
+  currentTab = "realtime",
+  onSelectTab,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -260,18 +266,6 @@ function TopBar({
 
   useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
   useEffect(() => setCurrentSecret(activeNsec || ""), [activeNsec]);
-
-  const languageName = (code) =>
-    translations[appLanguage][`language_${code === "nah" ? "nah" : code}`] ||
-    code;
-
-  const toggleLabel =
-    translations[appLanguage].onboarding_translations_toggle?.replace(
-      "{language}",
-      languageName(
-        targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en"
-      )
-    ) || (appLanguage === "es" ? "Mostrar traducción" : "Show translation");
 
   const copy = async (text, msg = t.toast_copied || "Copied") => {
     try {
@@ -503,6 +497,42 @@ function TopBar({
               ES
             </Text>
           </HStack>
+
+          <Menu autoSelect={false} isLazy>
+            <MenuButton
+              as={Button}
+              rightIcon={<ChevronDownIcon />}
+              variant="outline"
+              size="sm"
+              borderColor="gray.700"
+              px={3}
+              py={1.5}
+            >
+              <HStack spacing={2}>
+                {tabIcons?.[currentTab]}
+                <Text fontSize="sm" noOfLines={1}>
+                  {tabLabels?.[currentTab] || currentTab}
+                </Text>
+              </HStack>
+            </MenuButton>
+
+            <MenuList borderColor="gray.700" bg="gray.900">
+              <MenuOptionGroup
+                type="radio"
+                value={currentTab}
+                onChange={(value) => onSelectTab?.(String(value))}
+              >
+                {tabOrder.map((key) => (
+                  <MenuItemOption key={key} value={key}>
+                    <HStack spacing={2}>
+                      {tabIcons?.[key]}
+                      <Text>{tabLabels?.[key] || key}</Text>
+                    </HStack>
+                  </MenuItemOption>
+                ))}
+              </MenuOptionGroup>
+            </MenuList>
+          </Menu>
         </HStack>
       </HStack>
 
@@ -708,17 +738,6 @@ function TopBar({
                       : "Describe your goal or context (this guides the experience).")}
                 </Text>
               </Box>
-
-              {/* Translations toggle */}
-              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
-                <Text fontSize="sm" mr={2}>
-                  {toggleLabel}
-                </Text>
-                <Switch
-                  isChecked={showTranslations}
-                  onChange={(e) => setShowTranslations(e.target.checked)}
-                />
-              </HStack>
 
               {/* VAD slider */}
               <Box bg="gray.800" p={3} rounded="md">
@@ -1029,6 +1048,39 @@ export default function App() {
     vocabulary: <CiEdit />,
     random: <LuShuffle />,
   };
+
+  const showTranslationsEnabled = user?.progress?.showTranslations !== false;
+
+  const translationToggleLabel = useMemo(() => {
+    const fallback =
+      appLanguage === "es" ? "Mostrar traducción" : "Show translation";
+    const template = translations[appLanguage]?.onboarding_translations_toggle;
+    if (!template) return fallback;
+
+    const progress = user?.progress || {};
+    const supportLang = progress.supportLang || "en";
+    const targetLang = progress.targetLang || "es";
+    const languageName = (code) =>
+      translations[appLanguage]?.[`language_${code === "nah" ? "nah" : code}`] ||
+      code;
+
+    const targetNameKey =
+      targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+
+    return template.replace("{language}", languageName(targetNameKey));
+  }, [appLanguage, user?.progress]);
+
+  const handleToggleTranslations = () => {
+    saveGlobalSettings({ showTranslations: !showTranslationsEnabled });
+  };
+
+  const handleSelectTab = useCallback((value) => {
+    const next = String(value || "realtime");
+    setCurrentTab(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentTab", next);
+    }
+  }, []);
 
   // Default progress (mirrors onboarding)
   const DEFAULT_PROGRESS = {
@@ -1910,6 +1962,11 @@ export default function App() {
         closeInstall={() => setInstallOpen(false)}
         onSelectIdentity={handleIdentitySelection}
         isIdentitySaving={isIdentitySaving}
+        tabOrder={TAB_KEYS}
+        tabLabels={TAB_LABELS}
+        tabIcons={TAB_ICONS}
+        currentTab={currentTab}
+        onSelectTab={handleSelectTab}
       />
 
       <BottomActionBar
@@ -1918,6 +1975,9 @@ export default function App() {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenInstall={() => setInstallOpen(true)}
         isIdentitySaving={isIdentitySaving}
+        showTranslations={showTranslationsEnabled}
+        onToggleTranslations={handleToggleTranslations}
+        translationLabel={translationToggleLabel}
       />
 
       <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
@@ -1925,102 +1985,11 @@ export default function App() {
           index={tabIndex}
           onChange={(i) => {
             const key = indexToKey(i);
-            setCurrentTab(key);
-            localStorage.setItem("currentTab", key);
+            handleSelectTab(key);
           }}
           colorScheme="teal"
           isLazy
         >
-          {/* Top dropdown selector (replaces TabList) */}
-          <Box
-            borderColor="gray.700"
-            rounded="xl"
-            p="6px"
-            mb={[2, 3]}
-            width="100%"
-            display="flex"
-            justifyContent="center"
-          >
-            <Menu autoSelect={false} isLazy>
-              <MenuButton
-                as={Button}
-                rightIcon={<ChevronDownIcon />}
-                variant="outline"
-                size="sm"
-                borderColor="gray.700"
-                w={{ base: "100%", sm: "70%", md: "50%" }}
-                padding={6}
-              >
-                <HStack spacing={2} justify="center">
-                  {TAB_ICONS[currentTab]}
-                  <Text>{TAB_LABELS[currentTab]}</Text>
-                </HStack>
-              </MenuButton>
-
-              <MenuList borderColor="gray.700">
-                <MenuOptionGroup
-                  type="radio"
-                  value={currentTab}
-                  onChange={(value) => {
-                    const v = String(value);
-                    setCurrentTab(v);
-                    localStorage.setItem("currentTab", v);
-                  }}
-                >
-                  <MenuItemOption value="realtime">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.realtime}
-                      <Text>{TAB_LABELS.realtime}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="stories">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.stories}
-                      <Text>{TAB_LABELS.stories}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  {/* NEW: Job Script */}
-                  <MenuItemOption value="jobscript">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.jobscript}
-                      <Text>{TAB_LABELS.jobscript}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="history">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.history}
-                      <Text>{TAB_LABELS.history}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="grammar">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.grammar}
-                      <Text>{TAB_LABELS.grammar}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="vocabulary">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.vocabulary}
-                      <Text>{TAB_LABELS.vocabulary}</Text>
-                    </HStack>
-                  </MenuItemOption>
-
-                  <MenuItemOption value="random">
-                    <HStack spacing={2}>
-                      {TAB_ICONS.random}
-                      <Text>{TAB_LABELS.random}</Text>
-                    </HStack>
-                  </MenuItemOption>
-                </MenuOptionGroup>
-              </MenuList>
-            </Menu>
-          </Box>
-
           <TabPanels mt={[2, 3]}>
             {/* Chat */}
             <TabPanel px={0}>
@@ -2170,11 +2139,16 @@ function BottomActionBar({
   onOpenSettings,
   onOpenInstall,
   isIdentitySaving = false,
+  showTranslations = true,
+  onToggleTranslations,
+  translationLabel,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
     t?.app_settings_aria || t?.ra_btn_settings || "Settings";
   const installLabel = t?.app_install_aria || "Install";
+  const toggleLabel =
+    translationLabel || t?.ra_translations_toggle || "Translations";
 
   return (
     <Box
@@ -2192,7 +2166,7 @@ function BottomActionBar({
     >
       <HStack
         spacing={3}
-        maxW="360px"
+        maxW="420px"
         mx="auto"
         w="100%"
         align="center"
@@ -2207,6 +2181,17 @@ function BottomActionBar({
           isLoading={isIdentitySaving}
           rounded="full"
         />
+        <Tooltip label={toggleLabel} hasArrow placement="top">
+          <IconButton
+            icon={<LuLanguages size={20} />}
+            onClick={onToggleTranslations}
+            aria-label={toggleLabel}
+            aria-pressed={showTranslations}
+            colorScheme="teal"
+            variant={showTranslations ? "solid" : "ghost"}
+            rounded="full"
+          />
+        </Tooltip>
         <IconButton
           icon={<GoDownload size={18} />}
           variant="solid"
