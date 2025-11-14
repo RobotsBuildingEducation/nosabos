@@ -154,8 +154,19 @@ function Markdown({ children }) {
  *   - progress: user's settings object (level, supportLang, targetLang, voicePersona, helpRequest, showTranslations, ...)
  *   - appLanguage: "en" | "es" (UI language fallback for 'bilingual' support setting)
  */
-export default function HelpChatFab({ progress, appLanguage = "en" }) {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+export default function HelpChatFab({
+  progress,
+  appLanguage = "en",
+  isOpen: controlledIsOpen,
+  onOpen: controlledOnOpen,
+  onClose: controlledOnClose,
+  showFloatingTrigger = true,
+}) {
+  const disclosure = useDisclosure();
+  const isControlled = typeof controlledIsOpen === "boolean";
+  const isOpen = isControlled ? controlledIsOpen : disclosure.isOpen;
+  const onOpen = controlledOnOpen || disclosure.onOpen;
+  const onClose = controlledOnClose || disclosure.onClose;
   const toast = useToast();
 
   const ui = translations[appLanguage] || translations.en;
@@ -383,23 +394,25 @@ export default function HelpChatFab({ progress, appLanguage = "en" }) {
   return (
     <>
       {/* Floating button */}
-      <Tooltip label={appLanguage === "es" ? "Ayuda" : "Help"}>
-        <IconButton
-          aria-label="Open help chat"
-          icon={<MdOutlineSupportAgent size={22} />}
-          bg="white"
-          color="blue"
-          border="4px solid skyblue"
-          rounded="full"
-          size="lg"
-          position="fixed"
-          bottom={{ base: "4", md: "4" }}
-          right="20px"
-          zIndex={50}
-          boxShadow="lg"
-          onClick={onOpen}
-        />
-      </Tooltip>
+      {showFloatingTrigger && (
+        <Tooltip label={appLanguage === "es" ? "Ayuda" : "Help"}>
+          <IconButton
+            aria-label="Open help chat"
+            icon={<MdOutlineSupportAgent size={20} />}
+            bg="white"
+            color="blue"
+            border="4px solid skyblue"
+            rounded="full"
+            size="lg"
+            position="fixed"
+            bottom={{ base: "4", md: "4" }}
+            right="20px"
+            zIndex={50}
+            boxShadow="lg"
+            onClick={onOpen}
+          />
+        </Tooltip>
+      )}
 
       {/* Modal chat */}
       <Modal

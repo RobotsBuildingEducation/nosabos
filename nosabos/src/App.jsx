@@ -53,6 +53,7 @@ import {
   MenuOptionGroup,
   Badge,
   Tooltip,
+  useDisclosure,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -62,7 +63,7 @@ import {
 import { GoDownload } from "react-icons/go";
 import { CiUser, CiSquarePlus, CiEdit } from "react-icons/ci";
 import { IoIosMore } from "react-icons/io";
-import { MdOutlineFileUpload } from "react-icons/md";
+import { MdOutlineFileUpload, MdOutlineSupportAgent } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
 import {
   LuBadgeCheck,
@@ -863,6 +864,7 @@ export default function App() {
   const toast = useToast();
   const initRef = useRef(false);
   const location = useLocation();
+  const helpChatDisclosure = useDisclosure();
 
   const [isLoadingApp, setIsLoadingApp] = useState(true);
 
@@ -1967,6 +1969,7 @@ export default function App() {
         translationLabel={translationToggleLabel}
         appLanguage={appLanguage}
         onSelectLanguage={handleSelectAppLanguage}
+        onOpenHelpChat={helpChatDisclosure.onOpen}
       />
 
       <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
@@ -2053,7 +2056,13 @@ export default function App() {
         </Tabs>
       </Box>
 
-      <HelpChatFab progress={user?.progress} appLanguage={appLanguage} />
+      <HelpChatFab
+        progress={user?.progress}
+        appLanguage={appLanguage}
+        isOpen={helpChatDisclosure.isOpen}
+        onClose={helpChatDisclosure.onClose}
+        showFloatingTrigger={false}
+      />
 
       {/* Daily Goal Setup — only opened right after onboarding completes */}
       <DailyGoalModal
@@ -2133,6 +2142,8 @@ function BottomActionBar({
   translationLabel,
   appLanguage = "en",
   onSelectLanguage,
+  onOpenHelpChat,
+  helpLabel,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -2142,6 +2153,8 @@ function BottomActionBar({
     translationLabel || t?.ra_translations_toggle || "Translations";
   const englishLabel = t?.language_en || t?.app_language_en || "English";
   const spanishLabel = t?.language_es || t?.app_language_es || "Spanish";
+  const helpChatLabel =
+    helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
 
   const handleSelectLanguage = (lang) => {
     if (typeof onSelectLanguage === "function") {
@@ -2229,6 +2242,20 @@ function BottomActionBar({
           onClick={onOpenSettings}
           aria-label={settingsLabel}
           rounded="xl"
+        />
+
+        <IconButton
+          icon={<MdOutlineSupportAgent size={20} />}
+          onClick={onOpenHelpChat}
+          aria-label={helpChatLabel}
+          rounded="full"
+          isDisabled={!onOpenHelpChat}
+          bg="white"
+          color="blue"
+          border="4px solid skyblue"
+          size="lg"
+          zIndex={50}
+          boxShadow="lg"
         />
       </HStack>
     </Box>
