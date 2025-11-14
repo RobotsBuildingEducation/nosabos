@@ -45,6 +45,7 @@ import {
   Divider,
   Flex,
   Button,
+  ButtonGroup,
   Menu,
   MenuButton,
   MenuList,
@@ -196,7 +197,6 @@ function TopBar({
   cefrResult,
   cefrLoading,
   cefrError,
-  onToggleAppLanguage,
   onPatchSettings,
   onSwitchedAccount,
   settingsOpen,
@@ -474,30 +474,6 @@ function TopBar({
           ml="auto"
           align="center"
         >
-          {/* UI language toggle EN <-> ES */}
-          <HStack spacing={1} align="center" pl={{ base: 1, md: 2 }}>
-            <Text
-              display={{ base: "inline", sm: "inline" }}
-              fontSize="sm"
-              color={appLanguage === "en" ? "teal.300" : "gray.400"}
-            >
-              EN
-            </Text>
-            <Switch
-              colorScheme="teal"
-              size={{ base: "sm", md: "md" }}
-              isChecked={appLanguage === "es"}
-              onChange={onToggleAppLanguage}
-            />
-            <Text
-              display={{ base: "inline", sm: "inline" }}
-              fontSize="sm"
-              color={appLanguage === "es" ? "teal.300" : "gray.400"}
-            >
-              ES
-            </Text>
-          </HStack>
-
           <Menu autoSelect={false} isLazy>
             <MenuButton
               as={Button}
@@ -1265,6 +1241,13 @@ export default function App() {
   };
 
   // Persist settings (used by TopBar Save button)
+  const handleSelectAppLanguage = (lang) => {
+    const next = lang === "es" ? "es" : "en";
+    if (next !== appLanguage) {
+      saveAppLanguage(next);
+    }
+  };
+
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
     if (!npub) return;
@@ -1948,9 +1931,6 @@ export default function App() {
           setActiveNsec(localStorage.getItem("local_nsec") || "");
         }}
         onPatchSettings={saveGlobalSettings}
-        onToggleAppLanguage={() =>
-          saveAppLanguage(appLanguage === "en" ? "es" : "en")
-        }
         // controlled drawers
         settingsOpen={settingsOpen}
         openSettings={() => setSettingsOpen(true)}
@@ -1978,6 +1958,8 @@ export default function App() {
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
         translationLabel={translationToggleLabel}
+        appLanguage={appLanguage}
+        onSelectLanguage={handleSelectAppLanguage}
       />
 
       <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
@@ -2142,6 +2124,8 @@ function BottomActionBar({
   showTranslations = true,
   onToggleTranslations,
   translationLabel,
+  appLanguage = "en",
+  onSelectLanguage,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -2149,6 +2133,16 @@ function BottomActionBar({
   const installLabel = t?.app_install_aria || "Install";
   const toggleLabel =
     translationLabel || t?.ra_translations_toggle || "Translations";
+  const englishLabel =
+    t?.language_en || t?.app_language_en || "English";
+  const spanishLabel =
+    t?.language_es || t?.app_language_es || "Spanish";
+
+  const handleSelectLanguage = (lang) => {
+    if (typeof onSelectLanguage === "function") {
+      onSelectLanguage(lang);
+    }
+  };
 
   return (
     <Box
@@ -2166,11 +2160,12 @@ function BottomActionBar({
     >
       <HStack
         spacing={3}
-        maxW="420px"
+        maxW="500px"
         mx="auto"
         w="100%"
         align="center"
         justify="space-between"
+        flexWrap="wrap"
       >
         <IconButton
           icon={<CiUser size={20} />}
@@ -2192,6 +2187,38 @@ function BottomActionBar({
             rounded="full"
           />
         </Tooltip>
+        <ButtonGroup
+          size="sm"
+          isAttached
+          variant="outline"
+          borderRadius="full"
+          bg="rgba(255, 255, 255, 0.04)"
+          border="1px solid"
+          borderColor="gray.700"
+        >
+          <Button
+            onClick={() => handleSelectLanguage("en")}
+            variant={appLanguage === "en" ? "solid" : "ghost"}
+            colorScheme="teal"
+            fontSize="xs"
+            fontWeight="bold"
+            aria-label={englishLabel}
+            px={3}
+          >
+            EN
+          </Button>
+          <Button
+            onClick={() => handleSelectLanguage("es")}
+            variant={appLanguage === "es" ? "solid" : "ghost"}
+            colorScheme="teal"
+            fontSize="xs"
+            fontWeight="bold"
+            aria-label={spanishLabel}
+            px={3}
+          >
+            ES
+          </Button>
+        </ButtonGroup>
         <IconButton
           icon={<GoDownload size={18} />}
           variant="solid"
