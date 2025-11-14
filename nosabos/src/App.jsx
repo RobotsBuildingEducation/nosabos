@@ -1760,7 +1760,13 @@ export default function App() {
   ]);
 
   const RandomHeader = (
-    <Box top={{ base: "70px", md: "78px" }} right="0" width="100%">
+    <Box
+      position="sticky"
+      top={{ base: "70px", md: "78px" }}
+      right="0"
+      width="100%"
+      zIndex={10}
+    >
       <HStack justify="flex-end">
         <Button
           size="sm"
