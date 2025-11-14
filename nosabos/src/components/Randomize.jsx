@@ -219,7 +219,15 @@ export default function Randomize() {
           <HStack spacing={2}>
             <Badge variant="subtle">{STR.level}</Badge>
             <Badge variant="subtle">{STR.xpBadge}</Badge>
-            <Button size="sm" variant="outline" onClick={surpriseMe}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={surpriseMe}
+              w="auto"
+              minW="unset"
+              flexShrink={0}
+              whiteSpace="nowrap"
+            >
               {STR.shuffle}
             </Button>
           </HStack>
