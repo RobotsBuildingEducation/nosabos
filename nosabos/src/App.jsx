@@ -205,7 +205,6 @@ function TopBar({
   closeAccount,
   onRunCefrAnalysis,
   installOpen,
-  openInstall,
   closeInstall,
   onSelectIdentity,
   isIdentitySaving = false,
@@ -481,13 +480,6 @@ function TopBar({
           ml="auto"
           align="center"
         >
-          <IconButton
-            aria-label={t.app_install_aria || "Install"}
-            icon={<GoDownload size={20} />}
-            size={{ base: "sm", md: "md" }}
-            onClick={openInstall}
-            color="white"
-          />
           {/* UI language toggle EN <-> ES */}
           <HStack spacing={1} align="center" pl={{ base: 1, md: 2 }}>
             <Text
@@ -1915,7 +1907,6 @@ export default function App() {
         closeAccount={() => setAccountOpen(false)}
         onRunCefrAnalysis={runCefrAnalysis}
         installOpen={installOpen}
-        openInstall={() => setInstallOpen(true)}
         closeInstall={() => setInstallOpen(false)}
         onSelectIdentity={handleIdentitySelection}
         isIdentitySaving={isIdentitySaving}
@@ -1925,6 +1916,7 @@ export default function App() {
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
+        onOpenInstall={() => setInstallOpen(true)}
         isIdentitySaving={isIdentitySaving}
       />
 
@@ -2176,11 +2168,13 @@ function BottomActionBar({
   t,
   onOpenIdentity,
   onOpenSettings,
+  onOpenInstall,
   isIdentitySaving = false,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
     t?.app_settings_aria || t?.ra_btn_settings || "Settings";
+  const installLabel = t?.app_install_aria || "Install";
 
   return (
     <Box
@@ -2198,31 +2192,37 @@ function BottomActionBar({
     >
       <HStack
         spacing={3}
-        maxW="640px"
+        maxW="360px"
         mx="auto"
         w="100%"
         align="center"
+        justify="space-between"
       >
-        <Button
-          leftIcon={<CiUser size={18} />}
+        <IconButton
+          icon={<CiUser size={20} />}
           colorScheme="teal"
           variant="solid"
-          flex={1}
           onClick={onOpenIdentity}
           aria-label={identityLabel}
           isLoading={isIdentitySaving}
-        >
-          {identityLabel}
-        </Button>
-        <Button
-          leftIcon={<SettingsIcon boxSize={4} />}
-          variant="outline"
-          flex={1}
+          rounded="full"
+        />
+        <IconButton
+          icon={<GoDownload size={18} />}
+          variant="solid"
+          colorScheme="teal"
+          onClick={onOpenInstall}
+          aria-label={installLabel}
+          rounded="full"
+        />
+        <IconButton
+          icon={<SettingsIcon boxSize={5} />}
+          variant="ghost"
+          color="gray.100"
           onClick={onOpenSettings}
           aria-label={settingsLabel}
-        >
-          {settingsLabel}
-        </Button>
+          rounded="full"
+        />
       </HStack>
     </Box>
   );
