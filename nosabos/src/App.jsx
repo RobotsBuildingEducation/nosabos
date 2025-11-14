@@ -64,7 +64,12 @@ import { CiUser, CiSquarePlus, CiEdit } from "react-icons/ci";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
-import { LuBadgeCheck, LuBookOpen, LuShuffle, LuLanguages } from "react-icons/lu";
+import {
+  LuBadgeCheck,
+  LuBookOpen,
+  LuShuffle,
+  LuLanguages,
+} from "react-icons/lu";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -91,6 +96,7 @@ import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
+import { FaAddressCard } from "react-icons/fa";
 
 /* ---------------------------
    Small helpers
@@ -1037,8 +1043,9 @@ export default function App() {
     const supportLang = progress.supportLang || "en";
     const targetLang = progress.targetLang || "es";
     const languageName = (code) =>
-      translations[appLanguage]?.[`language_${code === "nah" ? "nah" : code}`] ||
-      code;
+      translations[appLanguage]?.[
+        `language_${code === "nah" ? "nah" : code}`
+      ] || code;
 
     const targetNameKey =
       targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
@@ -2133,10 +2140,8 @@ function BottomActionBar({
   const installLabel = t?.app_install_aria || "Install";
   const toggleLabel =
     translationLabel || t?.ra_translations_toggle || "Translations";
-  const englishLabel =
-    t?.language_en || t?.app_language_en || "English";
-  const spanishLabel =
-    t?.language_es || t?.app_language_es || "Spanish";
+  const englishLabel = t?.language_en || t?.app_language_en || "English";
+  const spanishLabel = t?.language_es || t?.app_language_es || "Spanish";
 
   const handleSelectLanguage = (lang) => {
     if (typeof onSelectLanguage === "function") {
@@ -2157,36 +2162,21 @@ function BottomActionBar({
       backdropFilter="blur(8px)"
       py={3}
       px={{ base: 3, md: 6 }}
+      width="fit-content"
+      margin="auto"
+      borderRadius="24"
+      paddingBottom={6}
+      paddingTop={4}
     >
       <HStack
-        spacing={3}
         maxW="500px"
         mx="auto"
         w="100%"
         align="center"
-        justify="space-between"
+        justify="center"
         flexWrap="wrap"
+        spacing={12}
       >
-        <IconButton
-          icon={<CiUser size={20} />}
-          colorScheme="teal"
-          variant="solid"
-          onClick={onOpenIdentity}
-          aria-label={identityLabel}
-          isLoading={isIdentitySaving}
-          rounded="full"
-        />
-        <Tooltip label={toggleLabel} hasArrow placement="top">
-          <IconButton
-            icon={<LuLanguages size={20} />}
-            onClick={onToggleTranslations}
-            aria-label={toggleLabel}
-            aria-pressed={showTranslations}
-            colorScheme="teal"
-            variant={showTranslations ? "solid" : "ghost"}
-            rounded="full"
-          />
-        </Tooltip>
         <ButtonGroup
           size="sm"
           isAttached
@@ -2221,19 +2211,24 @@ function BottomActionBar({
         </ButtonGroup>
         <IconButton
           icon={<GoDownload size={18} />}
-          variant="solid"
-          colorScheme="teal"
           onClick={onOpenInstall}
           aria-label={installLabel}
-          rounded="full"
+          rounded="xl"
         />
         <IconButton
-          icon={<SettingsIcon boxSize={5} />}
-          variant="ghost"
+          icon={<FaAddressCard size={18} />}
+          onClick={onOpenIdentity}
+          aria-label={identityLabel}
+          isLoading={isIdentitySaving}
+          rounded="xl"
+        />
+
+        <IconButton
+          icon={<SettingsIcon boxSize={4} />}
           color="gray.100"
           onClick={onOpenSettings}
           aria-label={settingsLabel}
-          rounded="full"
+          rounded="xl"
         />
       </HStack>
     </Box>

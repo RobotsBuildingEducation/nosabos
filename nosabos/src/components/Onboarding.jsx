@@ -572,8 +572,8 @@ export default function Onboarding({
                   </Box>
                 </VStack>
               )}
-        </VStack>
-      </DrawerBody>
+            </VStack>
+          </DrawerBody>
 
           <Box
             px={6}

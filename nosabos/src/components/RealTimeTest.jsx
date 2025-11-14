@@ -1488,8 +1488,7 @@ Return ONLY JSON:
       strict =
         "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
     } else if (tLang === "it") {
-      strict =
-        "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
+      strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
     } else {
       strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
     }
@@ -2561,6 +2560,7 @@ Do not return the whole sentence as a single chunk.`;
               colorScheme="cyan"
               color="white"
               textShadow="0px 0px 20px black"
+              mb={20}
             >
               <PiMicrophoneStageDuotone /> &nbsp;{" "}
               {status === "connecting"
