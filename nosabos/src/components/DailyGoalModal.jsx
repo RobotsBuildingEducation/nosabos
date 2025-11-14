@@ -74,7 +74,6 @@ export default function DailyGoalModal({
     subtitle: "Each level = 100 XP. How many XP do you want to earn per day?",
     inputLabel: "XP per day",
     save: "Save",
-    cancel: "Cancel",
   },
 }) {
   const L = I18N[lang === "es" ? "es" : "en"];
@@ -168,12 +167,6 @@ export default function DailyGoalModal({
           },
         }}
       >
-        <ModalCloseButton
-          color="white"
-          _hover={{ color: "white" }}
-          top={4}
-          right={4}
-        />
         {/* Header */}
         <Box
           bgGradient="linear(to-r, teal.700, teal.500)"
@@ -194,7 +187,6 @@ export default function DailyGoalModal({
             </VStack>
           </HStack>
         </Box>
-
         {/* Body */}
         <ModalBody px={{ base: 4, md: 6 }} py={5}>
           <VStack align="stretch" spacing={5}>
@@ -298,7 +290,6 @@ export default function DailyGoalModal({
             </Box>
           </VStack>
         </ModalBody>
-
         {/* Footer */}
         <ModalFooter
           px={{ base: 4, md: 6 }}
@@ -307,9 +298,6 @@ export default function DailyGoalModal({
           borderColor="gray.800"
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
-            <Button variant="ghost" onClick={onClose}>
-              {ui.cancel}
-            </Button>
             <Button colorScheme="teal" onClick={save} isDisabled={!npub}>
               {ui.save}
             </Button>

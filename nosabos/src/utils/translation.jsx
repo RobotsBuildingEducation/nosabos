@@ -14,6 +14,7 @@ export function t(lang = "en", key, vars = {}) {
 
 export const translations = {
   en: {
+    dailyGoalProgress: "Goal",
     try_again: "Try again",
     tabs_random: "Random",
     random_toast_title: "Nice job!",
@@ -334,6 +335,7 @@ export const translations = {
       "You have been banned and the passcode has been changed. Contact the application owner on Patreon if this is a mistake.",
   },
   es: {
+    dailyGoalProgress: "Meta",
     try_again: "Inténtalo de nuevo",
     tabs_random: "Aleatorio",
     random_toast_title: "¡Buen trabajo!",
