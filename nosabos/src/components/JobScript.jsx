@@ -1923,8 +1923,10 @@ export default function JobScript() {
           // borderBottom="1px solid"
           borderColor="rgba(255, 255, 255, 0.1)"
           position="sticky"
-          top={0}
-          zIndex={100}
+          top={{ base: "60px", md: "70px" }}
+          zIndex={10}
+          bg="rgba(5, 8, 20, 0.85)"
+          boxShadow="0 8px 32px rgba(0, 0, 0, 0.35)"
         >
           <VStack align="start" spacing={0}>
             <Text fontSize="lg" fontWeight="700">
