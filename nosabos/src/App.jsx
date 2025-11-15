@@ -923,10 +923,11 @@ export default function App() {
   );
 
   // DID / auth
-  const { generateNostrKeys, auth, postNostrContent } = useDecentralizedIdentity(
-    typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
-    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
-  );
+  const { generateNostrKeys, auth, postNostrContent } =
+    useDecentralizedIdentity(
+      typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
+      typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
+    );
 
   // Active identity (npub/nsec)
   const [activeNpub, setActiveNpub] = useState(
@@ -946,7 +947,9 @@ export default function App() {
       return;
     }
     const unsubscribe = subscribeToTeamInvites(activeNpub, (invites = []) => {
-      const pendingCount = invites.filter((invite) => invite.status === "pending").length;
+      const pendingCount = invites.filter(
+        (invite) => invite.status === "pending"
+      ).length;
       setPendingTeamInviteCount(pendingCount);
     });
     return () => unsubscribe?.();
@@ -1728,7 +1731,9 @@ export default function App() {
 
   const maybePostNostrProgress = useCallback(
     async ({ totalXp }) => {
-      if (!allowPosts || typeof postNostrContent !== "function") return;
+      console.log("RUNNING", totalXp);
+      // if (!allowPosts) return;
+      console.log("RUNNINGXX", totalXp);
       const privateKey =
         activeNsec ||
         (typeof window !== "undefined"
@@ -1745,22 +1750,14 @@ export default function App() {
         translations.en?.[labelKey] ||
         TARGET_LANGUAGE_LABELS[langCode] ||
         langCode.toUpperCase();
-      const content = `I just reached ${totalXp} XP on No Sabos practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
+      const content = `I just reached ${totalXp} XP on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
       try {
         await postNostrContent(content, undefined, activeNpub, privateKey);
       } catch (error) {
         console.error("Failed to share XP update on Nostr", error);
       }
     },
-    [
-      allowPosts,
-      postNostrContent,
-      activeNsec,
-      user,
-      t,
-      appLanguage,
-      activeNpub,
-    ]
+    [allowPosts, postNostrContent, activeNsec, user, t, appLanguage, activeNpub]
   );
 
   useEffect(() => {

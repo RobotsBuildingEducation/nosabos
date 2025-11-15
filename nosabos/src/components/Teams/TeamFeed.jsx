@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import {
   Box,
   Button,
+  Divider,
   FormControl,
   FormLabel,
   HStack,
@@ -43,7 +44,8 @@ const lightenColor = (hex, percent) => {
 };
 
 const colorForQuestion = (questionNumber = 0) => {
-  const bucket = BUCKETS.find((entry) => questionNumber <= entry.max) || BUCKETS[0];
+  const bucket =
+    BUCKETS.find((entry) => questionNumber <= entry.max) || BUCKETS[0];
   return bucket;
 };
 
@@ -139,6 +141,7 @@ export default function TeamFeed({
     setError("");
     try {
       const data = await getGlobalNotesWithProfilesByHashtag(HASHTAG);
+      console.log("data", data);
       setProfiles(sanitizeProfiles(data || []));
     } catch (err) {
       console.error("TeamFeed load error", err);
@@ -213,61 +216,112 @@ export default function TeamFeed({
   };
 
   const renderPost = (profile, index) => {
+    // console.log("profile", profile.content);
     const questionNumber = extractQuestionNumber(profile.content || "");
     const hasScholarship = (profile.content || "")
       .toLowerCase()
       .includes("a new scholarship");
-    if (!questionNumber && !hasScholarship) return null;
+
+    const noSaboProgress = (profile.content || "")
+      .toLowerCase()
+      .includes("i just reached");
+
+    console.log("noSaboProgress", noSaboProgress);
+    if (!questionNumber && !hasScholarship && !noSaboProgress) return null;
 
     const bucket = colorForQuestion(questionNumber || 0);
     const progressValue = questionNumber
       ? Math.min(100, (questionNumber / TOTAL_FEED_STEPS) * 100)
       : 0;
 
-    return (
-      <Box
-        key={`${profile.id}-${index}`}
-        textAlign="left"
-        fontSize="sm"
-        p={4}
-        borderWidth="1px"
-        borderRadius="lg"
-        borderColor="whiteAlpha.200"
-        bg="gray.900"
-      >
-        <HStack align="center" spacing={3} mb={2}>
-          <Image
-            src={
-              profile.profile?.picture ||
-              "https://primal.b-cdn.net/media-cache?s=o&a=1&u=https%3A%2F%2Fm.primal.net%2FKBLq.png"
-            }
-            width={8}
-            height={8}
-            borderRadius="46%"
-            alt={profile.profile?.name || "Nostr friend"}
-          />
-          <Link
-            href={`https://primal.net/p/${profile.npub}`}
-            textDecoration="underline"
-            isExternal
-          >
-            {profile.profile?.name || "Nostr friend"}
-          </Link>
-        </HStack>
-        {questionNumber ? (
-          <Progress
-            value={progressValue}
-            mt={1}
-            colorScheme={bucket.scheme}
-            width="80%"
-            mb={4}
-            borderRadius="4px"
-            background={lightenColor(bucket.color, 0.85)}
-          />
-        ) : null}
-        <ReplaceHashtagWithLink text={profile.content} />
-      </Box>
-    );
+    if (questionNumber) {
+      return (
+        <Box
+          key={`${profile.id}-${index}`}
+          textAlign="left"
+          fontSize="sm"
+          p={4}
+          borderRadius="lg"
+          borderColor="whiteAlpha.200"
+          bg="gray.900"
+          width="100%"
+        >
+          <HStack align="center" spacing={3} mb={2}>
+            <Image
+              src={
+                profile.profile?.picture ||
+                "https://primal.b-cdn.net/media-cache?s=o&a=1&u=https%3A%2F%2Fm.primal.net%2FKBLq.png"
+              }
+              width={8}
+              height={8}
+              borderRadius="46%"
+              alt={profile.profile?.name || "Nostr friend"}
+            />
+            <Link
+              href={`https://primal.net/p/${profile.npub}`}
+              textDecoration="underline"
+              isExternal
+            >
+              {profile.profile?.name || "Nostr friend"}
+            </Link>
+          </HStack>
+          {questionNumber ? (
+            <Progress
+              value={progressValue}
+              mt={1}
+              colorScheme={bucket.scheme}
+              width="80%"
+              mb={4}
+              borderRadius="4px"
+              background={lightenColor(bucket.color, 0.85)}
+            />
+          ) : null}
+          <ReplaceHashtagWithLink text={profile.content} />
+          <br />
+          <br />
+          <Divider />
+        </Box>
+      );
+    }
+    if (noSaboProgress) {
+      return (
+        <Box
+          key={`${profile.id}-${index}`}
+          textAlign="left"
+          fontSize="sm"
+          p={4}
+          borderRadius="lg"
+          borderColor="whiteAlpha.200"
+          bg="gray.900"
+          width="100%"
+        >
+          <HStack align="center" spacing={3} mb={2}>
+            <Image
+              src={
+                profile.profile?.picture ||
+                "https://primal.b-cdn.net/media-cache?s=o&a=1&u=https%3A%2F%2Fm.primal.net%2FKBLq.png"
+              }
+              width={8}
+              height={8}
+              borderRadius="46%"
+              alt={profile.profile?.name || "Nostr friend"}
+            />
+            <Link
+              href={`https://primal.net/p/${profile.npub}`}
+              textDecoration="underline"
+              isExternal
+            >
+              {profile.profile?.name || "Nostr friend"}
+            </Link>
+          </HStack>
+
+          <ReplaceHashtagWithLink text={profile.content} />
+          <br />
+          <br />
+          <Divider />
+        </Box>
+      );
+    }
   };
 
   if (isLoading) {
@@ -327,7 +381,12 @@ export default function TeamFeed({
           </Button>
         </Box>
       ) : profiles.length === 0 ? (
-        <Box borderWidth="1px" borderRadius="md" p={4} borderColor="whiteAlpha.200">
+        <Box
+          borderWidth="1px"
+          borderRadius="md"
+          p={4}
+          borderColor="whiteAlpha.200"
+        >
           <Text fontSize="sm" color="gray.400">
             {localeStrings.empty}
           </Text>
