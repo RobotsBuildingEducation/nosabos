@@ -2170,20 +2170,28 @@ function BottomActionBar({
       backdropFilter="blur(8px)"
       py={3}
       px={{ base: 3, md: 6 }}
-      width="fit-content"
-      margin="auto"
+      width="100%"
+      maxW="640px"
+      margin="0 auto"
       borderRadius="24"
       paddingBottom={6}
       paddingTop={4}
     >
-      <HStack
-        maxW="500px"
+      <Flex
+        as="nav"
+        maxW="560px"
         mx="auto"
         w="100%"
         align="center"
         justify="center"
-        flexWrap="wrap"
-        spacing={12}
+        gap={{ base: 3, md: 6 }}
+        flexWrap={{ base: "nowrap", md: "wrap" }}
+        overflowX={{ base: "auto", md: "visible" }}
+        pb={{ base: 1, md: 0 }}
+        sx={{
+          "&::-webkit-scrollbar": { display: "none" },
+          scrollbarWidth: "none",
+        }}
       >
         <ButtonGroup
           size="sm"
@@ -2193,6 +2201,7 @@ function BottomActionBar({
           bg="rgba(255, 255, 255, 0.04)"
           border="1px solid"
           borderColor="gray.700"
+          flexShrink={0}
         >
           <Button
             onClick={() => handleSelectLanguage("en")}
@@ -2222,6 +2231,7 @@ function BottomActionBar({
           onClick={onOpenInstall}
           aria-label={installLabel}
           rounded="xl"
+          flexShrink={0}
         />
         <IconButton
           icon={<FaAddressCard size={18} />}
@@ -2229,6 +2239,7 @@ function BottomActionBar({
           aria-label={identityLabel}
           isLoading={isIdentitySaving}
           rounded="xl"
+          flexShrink={0}
         />
 
         <IconButton
@@ -2237,6 +2248,7 @@ function BottomActionBar({
           onClick={onOpenSettings}
           aria-label={settingsLabel}
           rounded="xl"
+          flexShrink={0}
         />
 
         <IconButton
@@ -2251,8 +2263,9 @@ function BottomActionBar({
           size="lg"
           zIndex={50}
           boxShadow="lg"
+          flexShrink={0}
         />
-      </HStack>
+      </Flex>
     </Box>
   );
 }
