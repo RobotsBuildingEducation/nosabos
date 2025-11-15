@@ -25,6 +25,8 @@ export default function TeamsDrawer({
   userLanguage,
   t: overrideTranslations,
   pendingInviteCount,
+  allowPosts,
+  onAllowPostsChange,
 }) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -68,7 +70,12 @@ export default function TeamsDrawer({
             </TabList>
             <TabPanels>
               <TabPanel px={0}>
-                <TeamFeed userLanguage={userLanguage} t={t} />
+                <TeamFeed
+                  userLanguage={userLanguage}
+                  t={t}
+                  allowPosts={allowPosts}
+                  onAllowPostsChange={onAllowPostsChange}
+                />
               </TabPanel>
               <TabPanel>
                 <TeamCreation userLanguage={userLanguage} onTeamCreated={handleTeamCreated} t={t} />

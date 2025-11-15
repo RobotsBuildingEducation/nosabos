@@ -3,10 +3,8 @@ import { NDKKind } from "@nostr-dev-kit/ndk";
 import { useDecentralizedIdentity } from "./useDecentralizedIdentity";
 
 export function useNOSTR(initialNpub, initialNsec) {
-  const { postNostrContent } = useDecentralizedIdentity(
-    initialNpub,
-    initialNsec
-  );
+  const { postNostrContent, getGlobalNotesWithProfilesByHashtag } =
+    useDecentralizedIdentity(initialNpub, initialNsec);
 
   const sendDirectMessage = useCallback(
     async (targetNpub, message) => {
@@ -21,8 +19,17 @@ export function useNOSTR(initialNpub, initialNsec) {
     [postNostrContent, initialNsec]
   );
 
+  const fetchNotesByHashtag = useCallback(
+    async (hashtag) => {
+      return getGlobalNotesWithProfilesByHashtag(hashtag);
+    },
+    [getGlobalNotesWithProfilesByHashtag]
+  );
+
   return {
     sendDirectMessage,
+    postNostrContent,
+    getGlobalNotesWithProfilesByHashtag: fetchNotesByHashtag,
   };
 }
 

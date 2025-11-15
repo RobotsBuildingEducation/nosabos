@@ -109,6 +109,15 @@ const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 3;
+const TARGET_LANGUAGE_LABELS = {
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  it: "Italian",
+  nah: "Nahuatl",
+};
+const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
 function extractJsonBlock(text = "") {
   if (!text) return "";
@@ -914,7 +923,7 @@ export default function App() {
   );
 
   // DID / auth
-  const { generateNostrKeys, auth } = useDecentralizedIdentity(
+  const { generateNostrKeys, auth, postNostrContent } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
   );
@@ -952,11 +961,16 @@ export default function App() {
       : "en"
   );
   const t = translations[appLanguage] || translations.en;
+  const [allowPosts, setAllowPosts] = useState(false);
 
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);
   const [cefrError, setCefrError] = useState("");
   const [isIdentitySaving, setIsIdentitySaving] = useState(false);
+
+  useEffect(() => {
+    setAllowPosts(Boolean(user?.allowPosts));
+  }, [user?.allowPosts]);
 
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
@@ -1273,6 +1287,36 @@ export default function App() {
       saveAppLanguage(next);
     }
   };
+
+  const handleAllowPostsChange = useCallback(
+    async (nextValue) => {
+      const normalized = Boolean(nextValue);
+      const previous = allowPosts;
+      if (normalized === previous && user?.allowPosts === normalized) {
+        return;
+      }
+      setAllowPosts(normalized);
+      const id = resolveNpub();
+      if (!id) {
+        setAllowPosts(previous);
+        const message =
+          appLanguage === "es"
+            ? "Conecta tu cuenta para usar esta función."
+            : "Connect your account to use this feature.";
+        throw new Error(message);
+      }
+      try {
+        await updateDoc(doc(database, "users", id), { allowPosts: normalized });
+        if (user) {
+          setUser?.({ ...user, allowPosts: normalized });
+        }
+      } catch (error) {
+        setAllowPosts(previous);
+        throw error;
+      }
+    },
+    [allowPosts, resolveNpub, appLanguage, user, setUser]
+  );
 
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
@@ -1682,6 +1726,43 @@ export default function App() {
     }
   }, [currentTab, pickRandomFeature]);
 
+  const maybePostNostrProgress = useCallback(
+    async ({ totalXp }) => {
+      if (!allowPosts || typeof postNostrContent !== "function") return;
+      const privateKey =
+        activeNsec ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("local_nsec")
+          : "");
+      if (!privateKey) return;
+      const langCode = String(
+        (user?.progress?.targetLang || user?.targetLang || "es").toLowerCase()
+      );
+      const labelKey = `language_${langCode}`;
+      const langLabel =
+        t?.[labelKey] ||
+        translations[appLanguage]?.[labelKey] ||
+        translations.en?.[labelKey] ||
+        TARGET_LANGUAGE_LABELS[langCode] ||
+        langCode.toUpperCase();
+      const content = `I just reached ${totalXp} XP on No Sabos practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
+      try {
+        await postNostrContent(content, undefined, activeNpub, privateKey);
+      } catch (error) {
+        console.error("Failed to share XP update on Nostr", error);
+      }
+    },
+    [
+      allowPosts,
+      postNostrContent,
+      activeNsec,
+      user,
+      t,
+      appLanguage,
+      activeNpub,
+    ]
+  );
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleLocalXpAward = () => {
@@ -1761,6 +1842,8 @@ export default function App() {
           // Immediately pick the next randomized activity
           pickRandomFeature();
         }
+
+        maybePostNostrProgress({ totalXp: newXp });
       }
     });
     return () => unsub();
@@ -1774,6 +1857,7 @@ export default function App() {
     sendOneSatToNpub,
     pickRandomFeature,
     user?.identity,
+    maybePostNostrProgress,
   ]);
 
   const RandomHeader = (
@@ -1976,6 +2060,8 @@ export default function App() {
         userLanguage={appLanguage}
         t={t}
         pendingInviteCount={pendingTeamInviteCount}
+        allowPosts={allowPosts}
+        onAllowPostsChange={handleAllowPostsChange}
       />
 
       <BottomActionBar
