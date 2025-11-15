@@ -53,17 +53,43 @@ export default function TeamsDrawer({
   return (
     <Drawer isOpen={isOpen} onClose={onClose} placement="right" size="lg">
       <DrawerOverlay />
-      <DrawerContent display="flex" flexDirection="column">
-        <DrawerCloseButton />
-        <DrawerHeader borderBottomWidth="1px">
+      <DrawerContent
+        display="flex"
+        flexDirection="column"
+        bg="gray.900"
+        color="white"
+        borderLeftWidth="1px"
+        borderColor="whiteAlpha.200"
+      >
+        <DrawerCloseButton color="white" />
+        <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
           {t?.teams_drawer_title || "Teams & Community"}
         </DrawerHeader>
-        <DrawerBody overflowY="auto" flex="1">
-          <Tabs index={selectedTab} onChange={handleTabChange} variant="enclosed" isFitted>
-            <TabList mb={4}>
-              <Tab>{t?.teams_tab_feed || "Global feed"}</Tab>
-              <Tab>{t?.teams_tab_create || "Create team"}</Tab>
-              <Tab>
+        <DrawerBody overflowY="auto" flex="1" bg="gray.900">
+          <Tabs
+            index={selectedTab}
+            onChange={handleTabChange}
+            variant="enclosed"
+            isFitted
+            colorScheme="pink"
+          >
+            <TabList mb={4} borderColor="whiteAlpha.200">
+              <Tab
+                color="gray.300"
+                _selected={{ color: "white", borderColor: "pink.400", bg: "whiteAlpha.200" }}
+              >
+                {t?.teams_tab_feed || "Global feed"}
+              </Tab>
+              <Tab
+                color="gray.300"
+                _selected={{ color: "white", borderColor: "pink.400", bg: "whiteAlpha.200" }}
+              >
+                {t?.teams_tab_create || "Create team"}
+              </Tab>
+              <Tab
+                color="gray.300"
+                _selected={{ color: "white", borderColor: "pink.400", bg: "whiteAlpha.200" }}
+              >
                 {t?.teams_tab_view || "View teams"}
                 {pendingInviteCount > 0 ? ` (${pendingInviteCount})` : ""}
               </Tab>
@@ -86,8 +112,10 @@ export default function TeamsDrawer({
             </TabPanels>
           </Tabs>
         </DrawerBody>
-        <DrawerFooter borderTopWidth="1px">
-          <Button onClick={onClose}>{t?.teams_drawer_close || "Close"}</Button>
+        <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
+          <Button colorScheme="pink" onClick={onClose}>
+            {t?.teams_drawer_close || "Close"}
+          </Button>
         </DrawerFooter>
       </DrawerContent>
     </Drawer>
