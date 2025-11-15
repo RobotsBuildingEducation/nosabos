@@ -833,6 +833,26 @@ export default function App() {
   const setUser = useUserStore((s) => s.setUser);
   const patchUser = useUserStore((s) => s.patchUser);
 
+  const dailyGoalTarget = useMemo(() => {
+    const rawGoal =
+      user?.dailyGoalXp ??
+      user?.progress?.dailyGoalXp ??
+      user?.stats?.dailyGoalXp ??
+      0;
+    const parsed = Number(rawGoal);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [user]);
+
+  const dailyXpToday = useMemo(() => {
+    const rawXp =
+      user?.dailyXp ??
+      user?.stats?.dailyXp ??
+      user?.progress?.dailyXp ??
+      0;
+    const parsed = Number(rawXp);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [user]);
+
   // const { sendOneSatToNpub, initWalletService, init, walletBalance } =
   //   useNostrWalletStore((state) => ({
   //     sendOneSatToNpub: state.sendOneSatToNpub, // renamed from cashTap
@@ -1686,8 +1706,8 @@ export default function App() {
           ? localStorage.getItem("local_nsec")
           : "");
       if (!privateKey) return;
-      const goalTarget = Number(dailyGoalXp || 0);
-      const earnedToday = Number(dailyXp || 0);
+      const goalTarget = Number(dailyGoalTarget || 0);
+      const earnedToday = Number(dailyXpToday || 0);
       const goalPercent =
         goalTarget > 0
           ? Math.min(100, Math.round((earnedToday / goalTarget) * 100))
@@ -1728,8 +1748,8 @@ export default function App() {
       t,
       appLanguage,
       activeNpub,
-      dailyGoalXp,
-      dailyXp,
+      dailyGoalTarget,
+      dailyXpToday,
     ]
   );
 
