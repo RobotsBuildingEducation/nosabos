@@ -2171,7 +2171,7 @@ function BottomActionBar({
       py={3}
       px={{ base: 3, md: 6 }}
       width="100%"
-      maxW="640px"
+      maxW="480px"
       margin="0 auto"
       borderRadius="24"
       paddingBottom={6}
@@ -2184,7 +2184,7 @@ function BottomActionBar({
         w="100%"
         align="center"
         justify="center"
-        gap={{ base: 3, md: 6 }}
+        gap={{ base: 6, md: 6 }}
         flexWrap={{ base: "nowrap", md: "wrap" }}
         overflowX={{ base: "auto", md: "visible" }}
         pb={{ base: 1, md: 0 }}
