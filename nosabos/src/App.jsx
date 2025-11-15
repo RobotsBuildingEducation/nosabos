@@ -71,6 +71,7 @@ import {
   LuShuffle,
   LuLanguages,
 } from "react-icons/lu";
+import { PiUsersThreeBold } from "react-icons/pi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -98,6 +99,8 @@ import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
+import TeamsDrawer from "./components/Teams/TeamsDrawer";
+import { subscribeToTeamInvites } from "./utils/teams";
 
 /* ---------------------------
    Small helpers
@@ -865,6 +868,8 @@ export default function App() {
   const initRef = useRef(false);
   const location = useLocation();
   const helpChatDisclosure = useDisclosure();
+  const [teamsOpen, setTeamsOpen] = useState(false);
+  const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
 
   const [isLoadingApp, setIsLoadingApp] = useState(true);
 
@@ -925,6 +930,18 @@ export default function App() {
       ? (localStorage.getItem("local_nsec") || "").trim()
       : ""
   );
+
+  useEffect(() => {
+    if (!activeNpub) {
+      setPendingTeamInviteCount(0);
+      return;
+    }
+    const unsubscribe = subscribeToTeamInvites(activeNpub, (invites = []) => {
+      const pendingCount = invites.filter((invite) => invite.status === "pending").length;
+      setPendingTeamInviteCount(pendingCount);
+    });
+    return () => unsubscribe?.();
+  }, [activeNpub]);
 
   // UI language for the *app UI*
   const [appLanguage, setAppLanguage] = useState(
@@ -1953,11 +1970,20 @@ export default function App() {
         onSelectTab={handleSelectTab}
       />
 
+      <TeamsDrawer
+        isOpen={teamsOpen}
+        onClose={() => setTeamsOpen(false)}
+        userLanguage={appLanguage}
+        t={t}
+        pendingInviteCount={pendingTeamInviteCount}
+      />
+
       <BottomActionBar
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenInstall={() => setInstallOpen(true)}
+        onOpenTeams={() => setTeamsOpen(true)}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -1965,6 +1991,7 @@ export default function App() {
         appLanguage={appLanguage}
         onSelectLanguage={handleSelectAppLanguage}
         onOpenHelpChat={helpChatDisclosure.onOpen}
+        hasPendingTeamInvite={pendingTeamInviteCount > 0}
       />
 
       <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
@@ -2131,6 +2158,7 @@ function BottomActionBar({
   onOpenIdentity,
   onOpenSettings,
   onOpenInstall,
+  onOpenTeams,
   isIdentitySaving = false,
   showTranslations = true,
   onToggleTranslations,
@@ -2139,6 +2167,7 @@ function BottomActionBar({
   onSelectLanguage,
   onOpenHelpChat,
   helpLabel,
+  hasPendingTeamInvite = false,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -2150,6 +2179,7 @@ function BottomActionBar({
   const spanishLabel = t?.language_es || t?.app_language_es || "Spanish";
   const helpChatLabel =
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
+  const teamsLabel = t?.teams_drawer_title || "Teams";
 
   const handleSelectLanguage = (lang) => {
     if (typeof onSelectLanguage === "function") {
@@ -2240,6 +2270,21 @@ function BottomActionBar({
           isLoading={isIdentitySaving}
           rounded="xl"
           flexShrink={0}
+        />
+
+        <IconButton
+          icon={<PiUsersThreeBold size={20} />}
+          onClick={onOpenTeams}
+          aria-label={teamsLabel}
+          rounded="xl"
+          flexShrink={0}
+          borderWidth={hasPendingTeamInvite ? "2px" : "1px"}
+          borderColor={hasPendingTeamInvite ? "pink.400" : "gray.700"}
+          boxShadow={
+            hasPendingTeamInvite
+              ? "0 0 0 2px rgba(236,72,153,0.35), 0 0 14px rgba(236,72,153,0.65)"
+              : undefined
+          }
         />
 
         <IconButton
