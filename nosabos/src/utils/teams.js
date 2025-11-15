@@ -217,42 +217,66 @@ export const getTeamMemberProgress = async (creatorNpub, teamId) => {
     })),
   ];
 
-  const progress = await Promise.all(
-    entries.map(async (entry) => {
-      const userData = await getUserData(entry.npub);
-      const progressInfo = userData?.progress || {};
-      const stats = userData?.stats || {};
-      const streak =
-        Number(progressInfo?.streak ?? progressInfo?.dailyStreak ?? stats?.streak ?? 0) || 0;
-      const answeredStepsCount =
-        Number(stats?.answeredStepsCount ?? progressInfo?.answeredStepsCount ?? 0) || 0;
-      const dailyProgress =
-        Number(progressInfo?.dailyProgress ?? stats?.dailyProgress ?? 0) || 0;
-      const percentSource =
-        progressInfo?.dailyGoalPercent ??
-        progressInfo?.dailyGoalPercentage ??
-        progressInfo?.dailyGoalProgress ??
-        dailyProgress;
-      const progressPercent = Math.max(
-        0,
-        Math.min(100, Number(percentSource) || 0)
+      const progress = await Promise.all(
+        entries.map(async (entry) => {
+          const userData = await getUserData(entry.npub);
+          const progressInfo = userData?.progress || {};
+          const stats = userData?.stats || {};
+          const totalXp =
+            Number(userData?.xp ?? progressInfo?.xp ?? stats?.xp ?? 0) || 0;
+          const dailyGoalXp =
+            Number(
+              userData?.dailyGoalXp ??
+                progressInfo?.dailyGoalXp ??
+                stats?.dailyGoalXp ??
+                0
+            ) || 0;
+          const dailyXp =
+            Number(
+              userData?.dailyXp ??
+                progressInfo?.dailyXp ??
+                stats?.dailyXp ??
+                0
+            ) || 0;
+          const streak =
+            Number(progressInfo?.streak ?? progressInfo?.dailyStreak ?? stats?.streak ?? 0) || 0;
+          const answeredStepsCount =
+            Number(stats?.answeredStepsCount ?? progressInfo?.answeredStepsCount ?? 0) || 0;
+          const dailyProgress =
+            Number(progressInfo?.dailyProgress ?? stats?.dailyProgress ?? 0) || 0;
+          const dailyGoalPercentFromGoal =
+            dailyGoalXp > 0
+              ? Math.min(100, Math.round((dailyXp / dailyGoalXp) * 100))
+              : null;
+          const percentSource =
+            dailyGoalPercentFromGoal ??
+            progressInfo?.dailyGoalPercent ??
+            progressInfo?.dailyGoalPercentage ??
+            progressInfo?.dailyGoalProgress ??
+            dailyProgress;
+          const progressPercent = Math.max(
+            0,
+            Math.min(100, Number(percentSource) || 0)
+          );
+          return {
+            npub: entry.npub,
+            name:
+              userData?.profile?.displayName ||
+              userData?.name ||
+              entry.name ||
+              "Learner",
+            level: progressInfo?.level || userData?.progress?.level || "—",
+            streak,
+            answeredStepsCount,
+            dailyProgress,
+            progressPercent,
+            totalXp,
+            dailyGoalXp,
+            dailyXp,
+            isCreator: entry.isCreator,
+          };
+        })
       );
-      return {
-        npub: entry.npub,
-        name:
-          userData?.profile?.displayName ||
-          userData?.name ||
-          entry.name ||
-          "Learner",
-        level: progressInfo?.level || userData?.progress?.level || "—",
-        streak,
-        answeredStepsCount,
-        dailyProgress,
-        progressPercent,
-        isCreator: entry.isCreator,
-      };
-    })
-  );
 
   return progress;
 };

@@ -833,6 +833,26 @@ export default function App() {
   const setUser = useUserStore((s) => s.setUser);
   const patchUser = useUserStore((s) => s.patchUser);
 
+  const dailyGoalTarget = useMemo(() => {
+    const rawGoal =
+      user?.dailyGoalXp ??
+      user?.progress?.dailyGoalXp ??
+      user?.stats?.dailyGoalXp ??
+      0;
+    const parsed = Number(rawGoal);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [user]);
+
+  const dailyXpToday = useMemo(() => {
+    const rawXp =
+      user?.dailyXp ??
+      user?.stats?.dailyXp ??
+      user?.progress?.dailyXp ??
+      0;
+    const parsed = Number(rawXp);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }, [user]);
+
   // const { sendOneSatToNpub, initWalletService, init, walletBalance } =
   //   useNostrWalletStore((state) => ({
   //     sendOneSatToNpub: state.sendOneSatToNpub, // renamed from cashTap
@@ -1686,6 +1706,12 @@ export default function App() {
           ? localStorage.getItem("local_nsec")
           : "");
       if (!privateKey) return;
+      const goalTarget = Number(dailyGoalTarget || 0);
+      const earnedToday = Number(dailyXpToday || 0);
+      const hasDailyGoal = goalTarget > 0;
+      const goalPercent = hasDailyGoal
+        ? Math.min(100, Math.round((earnedToday / goalTarget) * 100))
+        : null;
       const langCode = String(
         (user?.progress?.targetLang || user?.targetLang || "es").toLowerCase()
       );
@@ -1696,14 +1722,40 @@ export default function App() {
         translations.en?.[labelKey] ||
         TARGET_LANGUAGE_LABELS[langCode] ||
         langCode.toUpperCase();
-      const content = `I just reached ${totalXp} XP on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
+      const goalCopy = hasDailyGoal
+        ? `I'm ${goalPercent}% through today's ${goalTarget} XP goal (${earnedToday}/${goalTarget} XP)`
+        : null;
+      const content = hasDailyGoal
+        ? `${goalCopy} and now have ${totalXp} XP total on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`
+        : `I just reached ${totalXp} XP on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
+      const hashtagTag = NOSTR_PROGRESS_HASHTAG.replace("#", "").toLowerCase();
+      const tags = [
+        ["t", hashtagTag],
+        ["purpose", "nosaboProgress"],
+        ["total_xp", String(totalXp)],
+      ];
+      if (hasDailyGoal) {
+        tags.push(["daily_goal_percent", String(goalPercent)]);
+        tags.push(["daily_xp", String(earnedToday)]);
+        tags.push(["daily_goal_target", String(goalTarget)]);
+      }
       try {
-        await postNostrContent(content, undefined, activeNpub, privateKey);
+        await postNostrContent(content, undefined, activeNpub, privateKey, tags);
       } catch (error) {
         console.error("Failed to share XP update on Nostr", error);
       }
     },
-    [allowPosts, postNostrContent, activeNsec, user, t, appLanguage, activeNpub]
+    [
+      allowPosts,
+      postNostrContent,
+      activeNsec,
+      user,
+      t,
+      appLanguage,
+      activeNpub,
+      dailyGoalTarget,
+      dailyXpToday,
+    ]
   );
 
   useEffect(() => {
