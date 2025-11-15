@@ -1708,10 +1708,10 @@ export default function App() {
       if (!privateKey) return;
       const goalTarget = Number(dailyGoalTarget || 0);
       const earnedToday = Number(dailyXpToday || 0);
-      const goalPercent =
-        goalTarget > 0
-          ? Math.min(100, Math.round((earnedToday / goalTarget) * 100))
-          : 0;
+      const hasDailyGoal = goalTarget > 0;
+      const goalPercent = hasDailyGoal
+        ? Math.min(100, Math.round((earnedToday / goalTarget) * 100))
+        : null;
       const langCode = String(
         (user?.progress?.targetLang || user?.targetLang || "es").toLowerCase()
       );
@@ -1722,16 +1722,21 @@ export default function App() {
         translations.en?.[labelKey] ||
         TARGET_LANGUAGE_LABELS[langCode] ||
         langCode.toUpperCase();
-      const content = `I just reached ${totalXp} XP on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
+      const goalCopy = hasDailyGoal
+        ? `I'm ${goalPercent}% through today's ${goalTarget} XP goal (${earnedToday}/${goalTarget} XP)`
+        : null;
+      const content = hasDailyGoal
+        ? `${goalCopy} and now have ${totalXp} XP total on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`
+        : `I just reached ${totalXp} XP on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
       const hashtagTag = NOSTR_PROGRESS_HASHTAG.replace("#", "").toLowerCase();
       const tags = [
         ["t", hashtagTag],
         ["purpose", "nosaboProgress"],
         ["total_xp", String(totalXp)],
-        ["daily_goal_percent", String(goalPercent)],
-        ["daily_xp", String(earnedToday)],
       ];
-      if (goalTarget > 0) {
+      if (hasDailyGoal) {
+        tags.push(["daily_goal_percent", String(goalPercent)]);
+        tags.push(["daily_xp", String(earnedToday)]);
         tags.push(["daily_goal_target", String(goalTarget)]);
       }
       try {
