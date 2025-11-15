@@ -2296,15 +2296,12 @@ function BottomActionBar({
         mx="auto"
         w="100%"
         align="center"
-        justify="center"
-        gap={{ base: 6, md: 6 }}
-        flexWrap={{ base: "nowrap", md: "wrap" }}
-        overflowX={{ base: "auto", md: "visible" }}
-        pb={{ base: 1, md: 0 }}
-        sx={{
-          "&::-webkit-scrollbar": { display: "none" },
-          scrollbarWidth: "none",
-        }}
+        justify={{ base: "flex-start", md: "center" }}
+        gap={{ base: 3, md: 6 }}
+        flexWrap={{ base: "wrap", md: "wrap" }}
+        rowGap={{ base: 3, md: 4 }}
+        columnGap={{ base: 3, md: 6 }}
+        overflow="visible"
       >
         <ButtonGroup
           size="sm"
