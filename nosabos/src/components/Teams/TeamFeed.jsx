@@ -125,7 +125,7 @@ export default function TeamFeed({
       copyButton: "Copy secret key",
       copyTitle: "Keys copied",
       copyDescription: "Your key was copied to the clipboard.",
-      allowLabel: "Allow automatic posts",
+      allowLabel: "Allow posts",
       allowEnabled: "Automatic community posts enabled.",
       allowDisabled: "Automatic community posts disabled.",
       refresh: "Refresh",
@@ -340,18 +340,7 @@ export default function TeamFeed({
       <Text fontSize="sm" color="gray.300">
         {t?.learnwithnostr_instructions || localeStrings.instructions}
       </Text>
-      <Button
-        onClick={handleCopyKeys}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            handleCopyKeys();
-          }
-        }}
-        fontSize="sm"
-        alignSelf="flex-start"
-      >
-        🔑 {t?.learnwithnostr_copy_key || localeStrings.copyButton}
-      </Button>
+
       <FormControl display="flex" alignItems="center" mb={4}>
         <FormLabel htmlFor="allow-posts-switch" mb="0">
           {t?.learnwithnostr_allow_posts || localeStrings.allowLabel}
@@ -363,14 +352,7 @@ export default function TeamFeed({
           isDisabled={typeof onAllowPostsChange !== "function"}
         />
       </FormControl>
-      <HStack justify="space-between" mb={2}>
-        <Text fontSize="sm" color="gray.500">
-          {HASHTAG_LABEL}
-        </Text>
-        <Button size="sm" onClick={fetchFeed}>
-          {localeStrings.refresh}
-        </Button>
-      </HStack>
+
       {error ? (
         <Box borderWidth="1px" borderRadius="md" p={4} borderColor="red.400">
           <Text fontSize="sm" color="red.200" mb={2}>
@@ -392,7 +374,7 @@ export default function TeamFeed({
           </Text>
         </Box>
       ) : (
-        <VStack spacing={4} maxH="70vh" overflowY="auto">
+        <VStack spacing={4} maxH="70vh">
           {profiles.map((profile, index) => renderPost(profile, index))}
         </VStack>
       )}
