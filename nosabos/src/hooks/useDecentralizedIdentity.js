@@ -188,7 +188,8 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     content,
     kind = NDKKind.Text,
     npubRef = null,
-    nsecRef = null
+    nsecRef = null,
+    tags = []
   ) => {
     try {
       // If a nsecRef is provided, login with it
@@ -207,7 +208,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       // But it's generally not required since NDKEvent uses ndk.signer to determine the pubkey.
       const event = new NDKEvent(ndk, {
         kind,
-        tags: [],
+        tags: Array.isArray(tags) ? tags : [],
         content: content,
         created_at: Math.floor(Date.now() / 1000),
       });
