@@ -71,6 +71,7 @@ import {
   LuShuffle,
   LuLanguages,
 } from "react-icons/lu";
+import { PiUsersThreeBold } from "react-icons/pi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -98,6 +99,8 @@ import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
+import TeamsDrawer from "./components/Teams/TeamsDrawer";
+import { subscribeToTeamInvites } from "./utils/teams";
 
 /* ---------------------------
    Small helpers
@@ -106,6 +109,15 @@ const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 3;
+const TARGET_LANGUAGE_LABELS = {
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  it: "Italian",
+  nah: "Nahuatl",
+};
+const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
 function extractJsonBlock(text = "") {
   if (!text) return "";
@@ -865,6 +877,8 @@ export default function App() {
   const initRef = useRef(false);
   const location = useLocation();
   const helpChatDisclosure = useDisclosure();
+  const [teamsOpen, setTeamsOpen] = useState(false);
+  const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
 
   const [isLoadingApp, setIsLoadingApp] = useState(true);
 
@@ -909,10 +923,11 @@ export default function App() {
   );
 
   // DID / auth
-  const { generateNostrKeys, auth } = useDecentralizedIdentity(
-    typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
-    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
-  );
+  const { generateNostrKeys, auth, postNostrContent } =
+    useDecentralizedIdentity(
+      typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
+      typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
+    );
 
   // Active identity (npub/nsec)
   const [activeNpub, setActiveNpub] = useState(
@@ -926,6 +941,20 @@ export default function App() {
       : ""
   );
 
+  useEffect(() => {
+    if (!activeNpub) {
+      setPendingTeamInviteCount(0);
+      return;
+    }
+    const unsubscribe = subscribeToTeamInvites(activeNpub, (invites = []) => {
+      const pendingCount = invites.filter(
+        (invite) => invite.status === "pending"
+      ).length;
+      setPendingTeamInviteCount(pendingCount);
+    });
+    return () => unsubscribe?.();
+  }, [activeNpub]);
+
   // UI language for the *app UI*
   const [appLanguage, setAppLanguage] = useState(
     typeof window !== "undefined"
@@ -935,11 +964,16 @@ export default function App() {
       : "en"
   );
   const t = translations[appLanguage] || translations.en;
+  const [allowPosts, setAllowPosts] = useState(false);
 
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);
   const [cefrError, setCefrError] = useState("");
   const [isIdentitySaving, setIsIdentitySaving] = useState(false);
+
+  useEffect(() => {
+    setAllowPosts(Boolean(user?.allowPosts));
+  }, [user?.allowPosts]);
 
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
@@ -1256,6 +1290,36 @@ export default function App() {
       saveAppLanguage(next);
     }
   };
+
+  const handleAllowPostsChange = useCallback(
+    async (nextValue) => {
+      const normalized = Boolean(nextValue);
+      const previous = allowPosts;
+      if (normalized === previous && user?.allowPosts === normalized) {
+        return;
+      }
+      setAllowPosts(normalized);
+      const id = resolveNpub();
+      if (!id) {
+        setAllowPosts(previous);
+        const message =
+          appLanguage === "es"
+            ? "Conecta tu cuenta para usar esta función."
+            : "Connect your account to use this feature.";
+        throw new Error(message);
+      }
+      try {
+        await updateDoc(doc(database, "users", id), { allowPosts: normalized });
+        if (user) {
+          setUser?.({ ...user, allowPosts: normalized });
+        }
+      } catch (error) {
+        setAllowPosts(previous);
+        throw error;
+      }
+    },
+    [allowPosts, resolveNpub, appLanguage, user, setUser]
+  );
 
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
@@ -1665,6 +1729,37 @@ export default function App() {
     }
   }, [currentTab, pickRandomFeature]);
 
+  const maybePostNostrProgress = useCallback(
+    async ({ totalXp }) => {
+      console.log("RUNNING", totalXp);
+      // if (!allowPosts) return;
+      console.log("RUNNINGXX", totalXp);
+      const privateKey =
+        activeNsec ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("local_nsec")
+          : "");
+      if (!privateKey) return;
+      const langCode = String(
+        (user?.progress?.targetLang || user?.targetLang || "es").toLowerCase()
+      );
+      const labelKey = `language_${langCode}`;
+      const langLabel =
+        t?.[labelKey] ||
+        translations[appLanguage]?.[labelKey] ||
+        translations.en?.[labelKey] ||
+        TARGET_LANGUAGE_LABELS[langCode] ||
+        langCode.toUpperCase();
+      const content = `I just reached ${totalXp} XP on https://nosabos.app practicing ${langLabel}! ${NOSTR_PROGRESS_HASHTAG}`;
+      try {
+        await postNostrContent(content, undefined, activeNpub, privateKey);
+      } catch (error) {
+        console.error("Failed to share XP update on Nostr", error);
+      }
+    },
+    [allowPosts, postNostrContent, activeNsec, user, t, appLanguage, activeNpub]
+  );
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleLocalXpAward = () => {
@@ -1744,6 +1839,8 @@ export default function App() {
           // Immediately pick the next randomized activity
           pickRandomFeature();
         }
+
+        maybePostNostrProgress({ totalXp: newXp });
       }
     });
     return () => unsub();
@@ -1757,6 +1854,7 @@ export default function App() {
     sendOneSatToNpub,
     pickRandomFeature,
     user?.identity,
+    maybePostNostrProgress,
   ]);
 
   const RandomHeader = (
@@ -1953,11 +2051,22 @@ export default function App() {
         onSelectTab={handleSelectTab}
       />
 
+      <TeamsDrawer
+        isOpen={teamsOpen}
+        onClose={() => setTeamsOpen(false)}
+        userLanguage={appLanguage}
+        t={t}
+        pendingInviteCount={pendingTeamInviteCount}
+        allowPosts={allowPosts}
+        onAllowPostsChange={handleAllowPostsChange}
+      />
+
       <BottomActionBar
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenInstall={() => setInstallOpen(true)}
+        onOpenTeams={() => setTeamsOpen(true)}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -1965,6 +2074,7 @@ export default function App() {
         appLanguage={appLanguage}
         onSelectLanguage={handleSelectAppLanguage}
         onOpenHelpChat={helpChatDisclosure.onOpen}
+        hasPendingTeamInvite={pendingTeamInviteCount > 0}
       />
 
       <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
@@ -2131,6 +2241,7 @@ function BottomActionBar({
   onOpenIdentity,
   onOpenSettings,
   onOpenInstall,
+  onOpenTeams,
   isIdentitySaving = false,
   showTranslations = true,
   onToggleTranslations,
@@ -2139,6 +2250,7 @@ function BottomActionBar({
   onSelectLanguage,
   onOpenHelpChat,
   helpLabel,
+  hasPendingTeamInvite = false,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -2150,6 +2262,7 @@ function BottomActionBar({
   const spanishLabel = t?.language_es || t?.app_language_es || "Spanish";
   const helpChatLabel =
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
+  const teamsLabel = t?.teams_drawer_title || "Teams";
 
   const handleSelectLanguage = (lang) => {
     if (typeof onSelectLanguage === "function") {
@@ -2240,6 +2353,21 @@ function BottomActionBar({
           isLoading={isIdentitySaving}
           rounded="xl"
           flexShrink={0}
+        />
+
+        <IconButton
+          icon={<PiUsersThreeBold size={20} />}
+          onClick={onOpenTeams}
+          aria-label={teamsLabel}
+          rounded="xl"
+          flexShrink={0}
+          borderWidth={hasPendingTeamInvite ? "2px" : "1px"}
+          borderColor={hasPendingTeamInvite ? "pink.400" : "gray.700"}
+          boxShadow={
+            hasPendingTeamInvite
+              ? "0 0 0 2px rgba(236,72,153,0.35), 0 0 14px rgba(236,72,153,0.65)"
+              : undefined
+          }
         />
 
         <IconButton

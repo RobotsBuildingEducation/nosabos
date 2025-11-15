@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
@@ -112,48 +112,51 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     return { npub: publicKey, nsec: encodedNsec };
   };
 
-  const connectToNostr = async (npubRef = null, nsecRef = null) => {
-    const defaultNsec = import.meta.env.VITE_GLOBAL_NOSTR_NSEC;
-    const defaultNpub =
-      "npub1mgt5c7qh6dm9rg57mrp89rqtzn64958nj5w9g2d2h9dng27hmp0sww7u2v";
+  const connectToNostr = useCallback(
+    async (npubRef = null, nsecRef = null) => {
+      const defaultNsec = import.meta.env.VITE_GLOBAL_NOSTR_NSEC;
+      const defaultNpub =
+        "npub1mgt5c7qh6dm9rg57mrp89rqtzn64958nj5w9g2d2h9dng27hmp0sww7u2v";
 
-    const nsec =
-      nsecRef ||
-      localStorage.getItem("local_nsec") ||
-      nostrPrivKey ||
-      defaultNsec;
-    const npub =
-      npubRef ||
-      localStorage.getItem("local_npub") ||
-      nostrPubKey ||
-      defaultNpub;
+      const nsec =
+        nsecRef ||
+        localStorage.getItem("local_nsec") ||
+        nostrPrivKey ||
+        defaultNsec;
+      const npub =
+        npubRef ||
+        localStorage.getItem("local_npub") ||
+        nostrPubKey ||
+        defaultNpub;
 
-    try {
-      // Decode the nsec from Bech32
-      const { words: nsecWords } = bech32.decode(nsec);
-      const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
+      try {
+        // Decode the nsec from Bech32
+        const { words: nsecWords } = bech32.decode(nsec);
+        const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
 
-      // Decode the npub from Bech32
-      const { words: npubWords } = bech32.decode(npub);
-      const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
+        // Decode the npub from Bech32
+        const { words: npubWords } = bech32.decode(npub);
+        const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
 
-      // Create a new NDK instance
-      const ndkInstance = new NDK({
-        explicitRelayUrls: ["wss://relay.damus.io", "wss://relay.primal.net"],
-      });
+        // Create a new NDK instance
+        const ndkInstance = new NDK({
+          explicitRelayUrls: ["wss://relay.damus.io", "wss://relay.primal.net"],
+        });
 
-      await ndkInstance.connect();
+        await ndkInstance.connect();
 
-      setIsConnected(true);
+        setIsConnected(true);
 
-      // Return the connected NDK instance and signer
-      return { ndkInstance, hexNpub, signer: new NDKPrivateKeySigner(hexNsec) };
-    } catch (err) {
-      console.error("Error connecting to Nostr:", err);
-      setErrorMessage(err.message);
-      return null;
-    }
-  };
+        // Return the connected NDK instance and signer
+        return { ndkInstance, hexNpub, signer: new NDKPrivateKeySigner(hexNsec) };
+      } catch (err) {
+        console.error("Error connecting to Nostr:", err);
+        setErrorMessage(err.message);
+        return null;
+      }
+    },
+    [nostrPrivKey, nostrPubKey]
+  );
 
   const auth = async (nsec) => {
     try {
@@ -470,86 +473,87 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       return [];
     }
   };
-  const getGlobalNotesWithProfilesByHashtag = async (
-    hashtag = "LearnWithNostr"
-  ) => {
-    try {
-      const connection = await connectToNostr();
-      if (!connection) return [];
+  const getGlobalNotesWithProfilesByHashtag = useCallback(
+    async (hashtag = "LearnWithNostr") => {
+      try {
+        const connection = await connectToNostr();
+        if (!connection) return [];
 
-      const { ndkInstance } = connection;
+        const { ndkInstance } = connection;
 
-      // Step 1: Fetch notes with the hashtag
-      const notesFilter = {
-        kinds: [NDKKind.Text], // Kind 1 for text notes
-        "#t": [hashtag], // Filter for the hashtag
-        limit: 50, // Adjust the limit as needed
-      };
-
-      const notesSubscription = ndkInstance.subscribe(notesFilter, {
-        closeOnEose: true,
-      });
-
-      const notes = [];
-      const pubkeys = new Set(); // To store unique pubkeys
-
-      notesSubscription.on("event", (event) => {
-        notes.push({
-          content: event.content,
-          createdAt: event.created_at,
-          tags: event.tags,
-          id: event.id,
-          pubkey: event.pubkey, // Store the pubkey for later use
-          npub: bech32.encode(
-            "npub",
-            bech32.toWords(Buffer.from(event.pubkey, "hex"))
-          ),
-          profile: null, // Placeholder for profile data
-        });
-        pubkeys.add(event.pubkey); // Add the author's pubkey to the set
-      });
-
-      await new Promise((resolve) => notesSubscription.on("eose", resolve));
-
-      // Step 2: Fetch profiles for all unique pubkeys
-      const profilesFilter = {
-        kinds: [NDKKind.Metadata], // Kind 0 for metadata
-        authors: Array.from(pubkeys), // Batch query for all pubkeys
-      };
-
-      const profilesSubscription = ndkInstance.subscribe(profilesFilter, {
-        closeOnEose: true,
-      });
-
-      const profilesMap = new Map(); // Map to store profiles by pubkey
-
-      profilesSubscription.on("event", (event) => {
-        const metadata = JSON.parse(event.content);
-        profilesMap.set(event.pubkey, {
-          name: metadata.name || "New Private User",
-          about: metadata.about || "",
-          picture: metadata.picture || "",
-        });
-      });
-
-      await new Promise((resolve) => profilesSubscription.on("eose", resolve));
-
-      // Step 3: Merge notes with profiles
-      const notesWithProfiles = notes.map((note) => {
-        note.profile = profilesMap.get(note.pubkey) || {
-          name: "New Private User",
-          about: "",
-          picture: "",
+        // Step 1: Fetch notes with the hashtag
+        const notesFilter = {
+          kinds: [NDKKind.Text], // Kind 1 for text notes
+          "#t": [hashtag], // Filter for the hashtag
+          limit: 50, // Adjust the limit as needed
         };
-        return note;
-      });
 
-      return notesWithProfiles;
-    } catch (error) {
-      console.error("Error fetching notes with profiles:", error);
-      return [];
-    }
-  };
+        const notesSubscription = ndkInstance.subscribe(notesFilter, {
+          closeOnEose: true,
+        });
+
+        const notes = [];
+        const pubkeys = new Set(); // To store unique pubkeys
+
+        notesSubscription.on("event", (event) => {
+          notes.push({
+            content: event.content,
+            createdAt: event.created_at,
+            tags: event.tags,
+            id: event.id,
+            pubkey: event.pubkey, // Store the pubkey for later use
+            npub: bech32.encode(
+              "npub",
+              bech32.toWords(Buffer.from(event.pubkey, "hex"))
+            ),
+            profile: null, // Placeholder for profile data
+          });
+          pubkeys.add(event.pubkey); // Add the author's pubkey to the set
+        });
+
+        await new Promise((resolve) => notesSubscription.on("eose", resolve));
+
+        // Step 2: Fetch profiles for all unique pubkeys
+        const profilesFilter = {
+          kinds: [NDKKind.Metadata], // Kind 0 for metadata
+          authors: Array.from(pubkeys), // Batch query for all pubkeys
+        };
+
+        const profilesSubscription = ndkInstance.subscribe(profilesFilter, {
+          closeOnEose: true,
+        });
+
+        const profilesMap = new Map(); // Map to store profiles by pubkey
+
+        profilesSubscription.on("event", (event) => {
+          const metadata = JSON.parse(event.content);
+          profilesMap.set(event.pubkey, {
+            name: metadata.name || "New Private User",
+            about: metadata.about || "",
+            picture: metadata.picture || "",
+          });
+        });
+
+        await new Promise((resolve) => profilesSubscription.on("eose", resolve));
+
+        // Step 3: Merge notes with profiles
+        const notesWithProfiles = notes.map((note) => {
+          note.profile = profilesMap.get(note.pubkey) || {
+            name: "New Private User",
+            about: "",
+            picture: "",
+          };
+          return note;
+        });
+
+        return notesWithProfiles;
+      } catch (error) {
+        console.error("Error fetching notes with profiles:", error);
+        return [];
+      }
+    },
+    [connectToNostr]
+  );
 
   return {
     isConnected,
