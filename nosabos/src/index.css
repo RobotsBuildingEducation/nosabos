@@ -43,6 +43,17 @@ body {
   min-height: 100dvh;
 }
 
+/* Hide scrollbars that Chakra adds to modal bodies so the dialogs stay clean */
+.chakra-modal__body {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.chakra-modal__body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;

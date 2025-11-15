@@ -245,11 +245,15 @@ export default function IdentityDrawer({
                   rounded="md"
                   px={4}
                   py={3}
+                  w="fit-content"
+                  alignSelf="flex-start"
+                  minW={0}
+                  gap={2}
                 >
-                  <Box flex="1" textAlign="left" fontWeight="semibold">
+                  <Text fontWeight="semibold">
                     {t?.app_install_title || "Install as app"}
-                  </Box>
-                  <AccordionIcon />
+                  </Text>
+                  <AccordionIcon flexShrink={0} />
                 </AccordionButton>
                 <AccordionPanel
                   bg="gray.900"
