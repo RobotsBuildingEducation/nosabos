@@ -1,34 +1,45 @@
 // src/components/IdentityDrawer.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Alert,
   AlertDescription,
   AlertIcon,
   Badge,
   Box,
   Button,
+  Center,
+  Divider,
   Drawer,
   DrawerBody,
+  DrawerCloseButton,
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
-  DrawerCloseButton,
+  Flex,
   HStack,
   Input,
   InputGroup,
   InputRightElement,
   Link,
+  Radio,
+  RadioGroup,
   Spinner,
   Text,
   VStack,
   useToast,
-  RadioGroup,
-  Radio,
-  Center,
 } from "@chakra-ui/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp } from "react-icons/si";
+import { IoIosMore } from "react-icons/io";
+import { MdOutlineFileUpload } from "react-icons/md";
+import { CiSquarePlus } from "react-icons/ci";
+import { LuBadgeCheck } from "react-icons/lu";
 import { doc, updateDoc } from "firebase/firestore";
 
 import { database } from "../firebaseResources/firebaseResources";
@@ -169,6 +180,31 @@ export default function IdentityDrawer({
     new Date(cefrResult.updatedAt).toLocaleString(
       appLanguage === "es" ? "es" : "en-US"
     );
+  const installSteps = useMemo(
+    () => [
+      {
+        id: "step1",
+        icon: <IoIosMore size={28} />,
+        text: t?.app_install_step1 || "Open the browser menu.",
+      },
+      {
+        id: "step2",
+        icon: <MdOutlineFileUpload size={28} />,
+        text: t?.app_install_step2 || "Choose 'Share' or 'Install'.",
+      },
+      {
+        id: "step3",
+        icon: <CiSquarePlus size={28} />,
+        text: t?.app_install_step3 || "Add to Home Screen.",
+      },
+      {
+        id: "step4",
+        icon: <LuBadgeCheck size={28} />,
+        text: t?.app_install_step4 || "Launch from your Home Screen.",
+      },
+    ],
+    [t]
+  );
 
   return (
     <Drawer
@@ -201,6 +237,44 @@ export default function IdentityDrawer({
         </DrawerHeader>
         <DrawerBody pb={6}>
           <VStack align="stretch" spacing={3}>
+            <Accordion allowToggle reduceMotion>
+              <AccordionItem border="none">
+                <AccordionButton
+                  bg="gray.800"
+                  _hover={{ bg: "gray.700" }}
+                  rounded="md"
+                  px={4}
+                  py={3}
+                >
+                  <Box flex="1" textAlign="left" fontWeight="semibold">
+                    {t?.app_install_title || "Install as app"}
+                  </Box>
+                  <AccordionIcon />
+                </AccordionButton>
+                <AccordionPanel
+                  bg="gray.900"
+                  border="1px solid"
+                  borderColor="gray.800"
+                  rounded="md"
+                  mt={2}
+                  px={4}
+                  py={3}
+                >
+                  {installSteps.map((step, idx) => (
+                    <Box key={step.id} py={2}>
+                      <Flex align="center" gap={3}>
+                        <Box color="teal.200">{step.icon}</Box>
+                        <Text fontSize="sm">{step.text}</Text>
+                      </Flex>
+                      {idx < installSteps.length - 1 && (
+                        <Divider my={3} borderColor="gray.700" />
+                      )}
+                    </Box>
+                  ))}
+                </AccordionPanel>
+              </AccordionItem>
+            </Accordion>
+
             {/* --- Wallet (inline, not hidden) --- */}
             {enableWallet && (
               <>

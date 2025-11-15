@@ -60,10 +60,8 @@ import {
   ChevronDownIcon,
   CheckCircleIcon,
 } from "@chakra-ui/icons";
-import { GoDownload } from "react-icons/go";
-import { CiUser, CiSquarePlus, CiEdit } from "react-icons/ci";
-import { IoIosMore } from "react-icons/io";
-import { MdOutlineFileUpload, MdOutlineSupportAgent } from "react-icons/md";
+import { CiUser, CiEdit } from "react-icons/ci";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
 import {
   LuBadgeCheck,
@@ -224,8 +222,6 @@ function TopBar({
   accountOpen,
   closeAccount,
   onRunCefrAnalysis,
-  installOpen,
-  closeInstall,
   onSelectIdentity,
   isIdentitySaving = false,
   tabOrder = [],
@@ -815,56 +811,6 @@ function TopBar({
         isIdentitySaving={isIdentitySaving}
       />
 
-      {/* ---- Install Modal ---- */}
-      <Modal isOpen={installOpen} onClose={closeInstall} isCentered>
-        <ModalOverlay />
-        <ModalContent bg="gray.900" color="gray.100">
-          <ModalHeader>{t.app_install_title || "Install as app"}</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Flex direction="column" pb={0}>
-              <IoIosMore size={32} />
-              <Text mt={2}>
-                {t.app_install_step1 || "Open the browser menu."}
-              </Text>
-            </Flex>
-            <Divider my={6} />
-
-            <Flex direction="column" pb={0}>
-              <MdOutlineFileUpload size={32} />
-              <Text mt={2}>
-                {t.app_install_step2 || "Choose 'Share' or 'Install'."}
-              </Text>
-            </Flex>
-            <Divider my={6} />
-
-            <Flex direction="column" pb={0}>
-              <CiSquarePlus size={32} />
-              <Text mt={2}>{t.app_install_step3 || "Add to Home Screen."}</Text>
-            </Flex>
-            <Divider my={6} />
-
-            <Flex direction="column" pb={0}>
-              <LuBadgeCheck size={32} />
-              <Text mt={2}>
-                {t.app_install_step4 || "Launch from your Home Screen."}
-              </Text>
-            </Flex>
-          </ModalBody>
-
-          <ModalFooter>
-            <Button
-              variant="ghost"
-              onMouseDown={closeInstall}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") closeInstall();
-              }}
-            >
-              {t.app_close || "Close"}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </>
   );
 }
@@ -1958,7 +1904,6 @@ export default function App() {
   ----------------------------------- */
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [installOpen, setInstallOpen] = useState(false);
 
   /* -----------------------------------
      Loading / Onboarding gates
@@ -2040,8 +1985,6 @@ export default function App() {
         accountOpen={accountOpen}
         closeAccount={() => setAccountOpen(false)}
         onRunCefrAnalysis={runCefrAnalysis}
-        installOpen={installOpen}
-        closeInstall={() => setInstallOpen(false)}
         onSelectIdentity={handleIdentitySelection}
         isIdentitySaving={isIdentitySaving}
         tabOrder={TAB_KEYS}
@@ -2065,7 +2008,6 @@ export default function App() {
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
-        onOpenInstall={() => setInstallOpen(true)}
         onOpenTeams={() => setTeamsOpen(true)}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
@@ -2240,7 +2182,6 @@ function BottomActionBar({
   t,
   onOpenIdentity,
   onOpenSettings,
-  onOpenInstall,
   onOpenTeams,
   isIdentitySaving = false,
   showTranslations = true,
@@ -2255,7 +2196,6 @@ function BottomActionBar({
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
     t?.app_settings_aria || t?.ra_btn_settings || "Settings";
-  const installLabel = t?.app_install_aria || "Install";
   const toggleLabel =
     translationLabel || t?.ra_translations_toggle || "Translations";
   const englishLabel = t?.language_en || t?.app_language_en || "English";
@@ -2336,13 +2276,6 @@ function BottomActionBar({
             ES
           </Button>
         </ButtonGroup>
-        <IconButton
-          icon={<GoDownload size={18} />}
-          onClick={onOpenInstall}
-          aria-label={installLabel}
-          rounded="xl"
-          flexShrink={0}
-        />
         <IconButton
           icon={<FaAddressCard size={18} />}
           onClick={onOpenIdentity}
