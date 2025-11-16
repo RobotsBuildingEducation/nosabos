@@ -162,9 +162,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
-          p.targetLang
-        )
+        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
@@ -469,7 +467,9 @@ function buildSpeakGrammarStreamPrompt({
     wantTranslation
       ? `- Include a ${SUPPORT} translation of the sentence.`
       : `- Use empty translation "".`,
-    `- Consider recent grammar successes: ${JSON.stringify(recentGood.slice(-3))}.`,
+    `- Consider recent grammar successes: ${JSON.stringify(
+      recentGood.slice(-3)
+    )}.`,
     "",
     "Stream as NDJSON:",
     `{"type":"grammar_speak","phase":"prompt","target":"<${TARGET} sentence>","prompt":"<instruction in ${TARGET}>"}`,
@@ -685,9 +685,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
-    const runner = modeLocked
-      ? generatorFor(mode)
-      : generateRandomRef.current;
+    const runner = modeLocked ? generatorFor(mode) : generateRandomRef.current;
     if (typeof runner === "function") {
       runner();
     }
@@ -839,7 +837,11 @@ export default function GrammarBook({ userLanguage = "en" }) {
     const signature = `${mcQ}||${mcChoices.join("|")}`;
     if (mcKeyRef.current === signature) return;
     mcKeyRef.current = signature;
-    const useDrag = shouldUseDragVariant(mcQ, mcChoices, [mcAnswer].filter(Boolean));
+    const useDrag = shouldUseDragVariant(
+      mcQ,
+      mcChoices,
+      [mcAnswer].filter(Boolean)
+    );
     setMcLayout(useDrag ? "drag" : "buttons");
     setMcSlotIndex(null);
     setMcBankOrder(useDrag ? mcChoices.map((_, idx) => idx) : []);
@@ -875,7 +877,10 @@ export default function GrammarBook({ userLanguage = "en" }) {
       )
         return;
 
-      if (source.droppableId === "mc-bank" && destination.droppableId === "mc-bank") {
+      if (
+        source.droppableId === "mc-bank" &&
+        destination.droppableId === "mc-bank"
+      ) {
         const updated = Array.from(mcBankOrder);
         const [removed] = updated.splice(source.index, 1);
         updated.splice(destination.index, 0, removed);
@@ -883,7 +888,10 @@ export default function GrammarBook({ userLanguage = "en" }) {
         return;
       }
 
-      if (source.droppableId === "mc-bank" && destination.droppableId === "mc-slot") {
+      if (
+        source.droppableId === "mc-bank" &&
+        destination.droppableId === "mc-slot"
+      ) {
         const updated = Array.from(mcBankOrder);
         const [removed] = updated.splice(source.index, 1);
         if (mcSlotIndex != null) {
@@ -895,7 +903,10 @@ export default function GrammarBook({ userLanguage = "en" }) {
         return;
       }
 
-      if (source.droppableId === "mc-slot" && destination.droppableId === "mc-bank") {
+      if (
+        source.droppableId === "mc-slot" &&
+        destination.droppableId === "mc-bank"
+      ) {
         if (mcSlotIndex == null) return;
         const updated = Array.from(mcBankOrder);
         updated.splice(destination.index, 0, mcSlotIndex);
@@ -918,11 +929,16 @@ export default function GrammarBook({ userLanguage = "en" }) {
         return;
 
       const parseSlot = (id) =>
-        id.startsWith("ma-slot-") ? parseInt(id.replace("ma-slot-", ""), 10) : null;
+        id.startsWith("ma-slot-")
+          ? parseInt(id.replace("ma-slot-", ""), 10)
+          : null;
       const sourceSlot = parseSlot(source.droppableId);
       const destSlot = parseSlot(destination.droppableId);
 
-      if (source.droppableId === "ma-bank" && destination.droppableId === "ma-bank") {
+      if (
+        source.droppableId === "ma-bank" &&
+        destination.droppableId === "ma-bank"
+      ) {
         const updated = Array.from(maBankOrder);
         const [removed] = updated.splice(source.index, 1);
         updated.splice(destination.index, 0, removed);
@@ -969,6 +985,54 @@ export default function GrammarBook({ userLanguage = "en" }) {
           return next;
         });
       }
+    },
+    [maLayout, maBankOrder, maSlots]
+  );
+
+  // Auto-drag handlers for click-to-place functionality
+  const handleMcAnswerClick = useCallback(
+    (choiceIdx, position) => {
+      if (mcLayout !== "drag") return;
+
+      // Move answer from bank to slot
+      const updated = Array.from(mcBankOrder);
+      updated.splice(position, 1);
+
+      // If there's already an answer in the slot, return it to the bank
+      if (mcSlotIndex != null) {
+        updated.splice(position, 0, mcSlotIndex);
+      }
+
+      setMcBankOrder(updated);
+      setMcSlotIndex(choiceIdx);
+      setMcPick(mcChoices[choiceIdx] || "");
+    },
+    [mcLayout, mcBankOrder, mcSlotIndex, mcChoices]
+  );
+
+  const handleMaAnswerClick = useCallback(
+    (choiceIdx, position) => {
+      if (maLayout !== "drag") return;
+
+      // Find first empty slot
+      const firstEmptySlot = maSlots.findIndex((slot) => slot == null);
+
+      if (firstEmptySlot === -1) {
+        // No empty slots available
+        return;
+      }
+
+      // Remove from bank
+      const updated = Array.from(maBankOrder);
+      updated.splice(position, 1);
+      setMaBankOrder(updated);
+
+      // Place in first empty slot
+      setMaSlots((prev) => {
+        const next = [...prev];
+        next[firstEmptySlot] = choiceIdx;
+        return next;
+      });
     },
     [maLayout, maBankOrder, maSlots]
   );
@@ -1278,7 +1342,9 @@ Create ONE multiple-choice ${LANG_NAME(
     resolveSupportLang(supportLang, userLanguage)
   )}>",
   "choices": ["<choice1>","<choice2>","<choice3>","<choice4>"],
-  "notes": "Replace <choiceN> with real ${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} options.",
+  "notes": "Replace <choiceN> with real ${LANG_NAME(
+    resolveSupportLang(supportLang, userLanguage)
+  )} options.",
   "answer": "<exact correct choice>",
   "translation": "${showTranslations ? "<translation>" : ""}"
 }
@@ -1553,10 +1619,6 @@ Create ONE multiple-answer ${LANG_NAME(
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
-    setSPrompt("");
-    setSTarget("");
-    setSHint("");
-    setSTranslation("");
     setSRecognized("");
     setSEval(null);
 
@@ -1594,10 +1656,7 @@ Create ONE multiple-answer ${LANG_NAME(
               if (typeof obj.prompt === "string") setSPrompt(obj.prompt.trim());
               if (typeof obj.target === "string") setSTarget(obj.target.trim());
               got = true;
-            } else if (
-              obj?.type === "grammar_speak" &&
-              obj.phase === "meta"
-            ) {
+            } else if (obj?.type === "grammar_speak" && obj.phase === "meta") {
               if (typeof obj.hint === "string") setSHint(obj.hint);
               if (typeof obj.translation === "string")
                 setSTranslation(obj.translation);
@@ -1612,16 +1671,24 @@ Create ONE multiple-answer ${LANG_NAME(
       const text = await callResponses({
         model: MODEL,
         input: `
-Create ONE ${LANG_NAME(targetLang)} sentence for pronunciation practice. Return JSON ONLY:
+Create ONE ${LANG_NAME(
+          targetLang
+        )} sentence for pronunciation practice. Return JSON ONLY:
 {
   "target":"<${LANG_NAME(targetLang)} sentence with a grammar focus>",
-  "prompt":"<${LANG_NAME(targetLang)} instruction telling the learner to say it aloud>",
-  "hint":"<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} grammar hint>",
+  "prompt":"<${LANG_NAME(
+    targetLang
+  )} instruction telling the learner to say it aloud>",
+  "hint":"<${LANG_NAME(
+    resolveSupportLang(supportLang, userLanguage)
+  )} grammar hint>",
   "translation":"${
-          showTranslations
-            ? `<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} translation>`
-            : ""
-        }"
+    showTranslations
+      ? `<${LANG_NAME(
+          resolveSupportLang(supportLang, userLanguage)
+        )} translation>`
+      : ""
+  }"
 }`.trim(),
       });
 
@@ -2052,9 +2119,7 @@ Return JSON ONLY:
       if (error) {
         toast({
           title:
-            userLanguage === "es"
-              ? "No se pudo evaluar"
-              : "Could not evaluate",
+            userLanguage === "es" ? "No se pudo evaluar" : "Could not evaluate",
           description:
             userLanguage === "es"
               ? "Revisa permisos de micrófono e inténtalo otra vez."
@@ -2300,8 +2365,7 @@ Return JSON ONLY:
   const speakListenLabel =
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
   const speakVariantLabel =
-    t("grammar_btn_speak") ||
-    (userLanguage === "es" ? "Pronunciar" : "Speak");
+    t("grammar_btn_speak") || (userLanguage === "es" ? "Pronunciar" : "Speak");
 
   const handleToggleSpeakPlayback = useCallback(async () => {
     const text = (sTarget || "").trim();
@@ -2357,9 +2421,7 @@ Return JSON ONLY:
             ? "No se pudo reproducir el audio"
             : "Audio playback failed",
         description:
-          userLanguage === "es"
-            ? "Inténtalo de nuevo."
-            : "Please try again.",
+          userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
         status: "error",
         duration: 2600,
       });
@@ -2390,9 +2452,7 @@ Return JSON ONLY:
       if (idx < segments.length - 1) {
         if (blankPlaced) {
           nodes.push(
-            <React.Fragment key={`grammar-mc-gap-${idx}`}>
-              ___
-            </React.Fragment>
+            <React.Fragment key={`grammar-mc-gap-${idx}`}>___</React.Fragment>
           );
           return;
         }
@@ -2498,9 +2558,7 @@ Return JSON ONLY:
         slotNumber += 1;
         if (currentSlot >= maSlots.length) {
           nodes.push(
-            <React.Fragment key={`grammar-ma-gap-${idx}`}>
-              ___
-            </React.Fragment>
+            <React.Fragment key={`grammar-ma-gap-${idx}`}>___</React.Fragment>
           );
           return;
         }
@@ -2629,7 +2687,7 @@ Return JSON ONLY:
               </Text>
             ) : null}
             {hint ? (
-              <Text fontSize="sm" opacity={0.85}>
+              <Text fontSize="xs" opacity={0.85}>
                 💡 {hint}
               </Text>
             ) : null}
@@ -2647,14 +2705,6 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitFill}
-                isDisabled={loadingG || !input.trim() || !question}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQ || loadingG}
@@ -2662,9 +2712,19 @@ Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitFill}
+                isDisabled={loadingG || !input.trim() || !question}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -2701,15 +2761,15 @@ Return JSON ONLY:
                     </Text>
                   ) : null}
                   {mcHint ? (
-                    <Text fontSize="sm" opacity={0.85}>
+                    <Text fontSize="xs" opacity={0.85}>
                       💡 {mcHint}
                     </Text>
                   ) : null}
-                  <Text fontSize="sm" opacity={0.75}>
+                  <Text fontSize="xs" opacity={0.75}>
                     {t("practice_drag_drop_instruction") ||
                       (userLanguage === "es"
-                        ? "Arrastra la respuesta correcta al espacio en la frase."
-                        : "Drag the correct answer into the blank in the sentence.")}
+                        ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
+                        : "Drag or select the correct answer into the blank in the sentence.")}
                   </Text>
                   <Droppable droppableId="mc-bank" direction="horizontal">
                     {(provided) => (
@@ -2733,7 +2793,7 @@ Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 style={{
-                                  cursor: "grab",
+                                  cursor: "pointer",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
                                 px={3}
@@ -2752,6 +2812,14 @@ Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                onClick={() =>
+                                  handleMcAnswerClick(idx, position)
+                                }
+                                _hover={{
+                                  bg: "rgba(128,90,213,0.12)",
+                                  borderColor: "purple.200",
+                                }}
+                                transition="all 0.15s ease"
                               >
                                 {mcChoices[idx]}
                               </Box>
@@ -2782,7 +2850,7 @@ Return JSON ONLY:
                   </Text>
                 ) : null}
                 {mcHint ? (
-                  <Text fontSize="sm" opacity={0.85}>
+                  <Text fontSize="xs" opacity={0.85}>
                     💡 {mcHint}
                   </Text>
                 ) : null}
@@ -2802,9 +2870,7 @@ Return JSON ONLY:
                       rounded="lg"
                       borderWidth="2px"
                       borderColor={
-                        mcPick === c
-                          ? "purple.400"
-                          : "rgba(255,255,255,0.15)"
+                        mcPick === c ? "purple.400" : "rgba(255,255,255,0.15)"
                       }
                       bg={
                         mcPick === c
@@ -2815,10 +2881,14 @@ Return JSON ONLY:
                       _hover={
                         mcChoices.length
                           ? {
-                              borderColor: mcPick === c ? "purple.300" : "rgba(255,255,255,0.3)",
-                              bg: mcPick === c
-                                ? "linear-gradient(135deg, rgba(128,90,213,0.3) 0%, rgba(159,122,234,0.2) 100%)"
-                                : "rgba(255,255,255,0.06)",
+                              borderColor:
+                                mcPick === c
+                                  ? "purple.300"
+                                  : "rgba(255,255,255,0.3)",
+                              bg:
+                                mcPick === c
+                                  ? "linear-gradient(135deg, rgba(128,90,213,0.3) 0%, rgba(159,122,234,0.2) 100%)"
+                                  : "rgba(255,255,255,0.06)",
                               transform: "translateY(-2px)",
                               shadow: "md",
                             }
@@ -2833,7 +2903,11 @@ Return JSON ONLY:
                           h="20px"
                           rounded="full"
                           borderWidth="2px"
-                          borderColor={mcPick === c ? "purple.400" : "rgba(255,255,255,0.3)"}
+                          borderColor={
+                            mcPick === c
+                              ? "purple.400"
+                              : "rgba(255,255,255,0.3)"
+                          }
                           bg={mcPick === c ? "purple.500" : "transparent"}
                           display="flex"
                           alignItems="center"
@@ -2861,14 +2935,6 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMC}
-                isDisabled={loadingMCG || !mcPick || !mcChoices.length}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMCQ || loadingMCG}
@@ -2876,9 +2942,19 @@ Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMC}
+                isDisabled={loadingMCG || !mcPick || !mcChoices.length}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -2914,18 +2990,18 @@ Return JSON ONLY:
                     </Text>
                   ) : null}
                   {maHint ? (
-                    <Text fontSize="sm" opacity={0.85}>
+                    <Text fontSize="xs" opacity={0.85}>
                       💡 {maHint}
                     </Text>
                   ) : null}
                   <Text fontSize="xs" opacity={0.7}>
                     {t("grammar_select_all_apply")}
                   </Text>
-                  <Text fontSize="sm" opacity={0.75}>
+                  <Text fontSize="xs" opacity={0.75}>
                     {t("practice_drag_drop_multi_instruction") ||
                       (userLanguage === "es"
-                        ? "Arrastra cada respuesta correcta a su espacio en la frase."
-                        : "Drag each correct answer into its place in the sentence.")}
+                        ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
+                        : "Drag or select each correct answer into its place in the sentence.")}
                   </Text>
                   <Droppable droppableId="ma-bank" direction="horizontal">
                     {(provided) => (
@@ -2949,7 +3025,7 @@ Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 style={{
-                                  cursor: "grab",
+                                  cursor: "pointer",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
                                 px={3}
@@ -2968,6 +3044,14 @@ Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                onClick={() =>
+                                  handleMaAnswerClick(idx, position)
+                                }
+                                _hover={{
+                                  bg: "rgba(128,90,213,0.12)",
+                                  borderColor: "purple.200",
+                                }}
+                                transition="all 0.15s ease"
                               >
                                 {maChoices[idx]}
                               </Box>
@@ -2998,7 +3082,7 @@ Return JSON ONLY:
                   </Text>
                 ) : null}
                 {maHint ? (
-                  <Text fontSize="sm" opacity={0.85}>
+                  <Text fontSize="xs" opacity={0.85}>
                     💡 {maHint}
                   </Text>
                 ) : null}
@@ -3030,9 +3114,7 @@ Return JSON ONLY:
                         rounded="lg"
                         borderWidth="2px"
                         borderColor={
-                          isSelected
-                            ? "teal.400"
-                            : "rgba(255,255,255,0.15)"
+                          isSelected ? "teal.400" : "rgba(255,255,255,0.15)"
                         }
                         bg={
                           isSelected
@@ -3043,7 +3125,9 @@ Return JSON ONLY:
                         _hover={
                           maChoices.length
                             ? {
-                                borderColor: isSelected ? "teal.300" : "rgba(255,255,255,0.3)",
+                                borderColor: isSelected
+                                  ? "teal.300"
+                                  : "rgba(255,255,255,0.3)",
                                 bg: isSelected
                                   ? "linear-gradient(135deg, rgba(56,178,172,0.3) 0%, rgba(77,201,195,0.2) 100%)"
                                   : "rgba(255,255,255,0.06)",
@@ -3061,7 +3145,9 @@ Return JSON ONLY:
                             h="20px"
                             rounded="md"
                             borderWidth="2px"
-                            borderColor={isSelected ? "teal.400" : "rgba(255,255,255,0.3)"}
+                            borderColor={
+                              isSelected ? "teal.400" : "rgba(255,255,255,0.3)"
+                            }
                             bg={isSelected ? "teal.500" : "transparent"}
                             display="flex"
                             alignItems="center"
@@ -3070,7 +3156,11 @@ Return JSON ONLY:
                             flexShrink={0}
                           >
                             {isSelected && (
-                              <Text color="white" fontSize="xs" fontWeight="bold">
+                              <Text
+                                color="white"
+                                fontSize="xs"
+                                fontWeight="bold"
+                              >
                                 ✓
                               </Text>
                             )}
@@ -3092,14 +3182,6 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMA}
-                isDisabled={loadingMAG || !maChoices.length || !maReady}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMAQ || loadingMAG}
@@ -3107,9 +3189,19 @@ Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMA}
+                isDisabled={loadingMAG || !maChoices.length || !maReady}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3179,7 +3271,9 @@ Return JSON ONLY:
               <Text fontSize="sm" mt={3}>
                 <Text as="span" fontWeight="600">
                   {t("grammar_speak_hint_label") ||
-                    (userLanguage === "es" ? "Pista gramatical" : "Grammar hint")}
+                    (userLanguage === "es"
+                      ? "Pista gramatical"
+                      : "Grammar hint")}
                   :
                 </Text>{" "}
                 {sHint}
@@ -3214,6 +3308,14 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
               mt={4}
             >
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingSpeakQ || isSpeakRecording}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {skipLabel}
+              </Button>
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
                 w={{ base: "100%", md: "auto" }}
@@ -3267,9 +3369,9 @@ Return JSON ONLY:
                         duration: 2500,
                       });
                     }
-                }
-              }}
-              isDisabled={!supportsSpeak || loadingSpeakQ || !sTarget}
+                  }
+                }}
+                isDisabled={!supportsSpeak || loadingSpeakQ || !sTarget}
               >
                 {isSpeakRecording
                   ? t("grammar_speak_stop") ||
@@ -3279,17 +3381,11 @@ Return JSON ONLY:
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
               </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingSpeakQ || isSpeakRecording}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3338,7 +3434,7 @@ Return JSON ONLY:
               </Text>
             </HStack>
             {!!mHint && (
-              <Text fontSize="sm" opacity={0.85}>
+              <Text fontSize="xs" opacity={0.85}>
                 💡 {mHint}
               </Text>
             )}
@@ -3381,7 +3477,10 @@ Return JSON ONLY:
                                       )
                                     }
                                     onKeyDown={(event) => {
-                                      if (event.key === "Enter" || event.key === " ") {
+                                      if (
+                                        event.key === "Enter" ||
+                                        event.key === " "
+                                      ) {
                                         event.preventDefault();
                                         handleMatchAutoMove(
                                           mSlots[i],
@@ -3395,11 +3494,13 @@ Return JSON ONLY:
                                       cursor: "pointer",
                                       transition:
                                         "transform 0.18s ease, box-shadow 0.18s ease",
-                                      ...(dragProvided.draggableProps.style || {}),
+                                      ...(dragProvided.draggableProps.style ||
+                                        {}),
                                     }}
                                     _hover={{ transform: "translateY(-2px)" }}
                                     _focusVisible={{
-                                      boxShadow: "0 0 0 2px rgba(255,255,255,0.35)",
+                                      boxShadow:
+                                        "0 0 0 2px rgba(255,255,255,0.35)",
                                       transform: "translateY(-2px)",
                                     }}
                                     px={3}
@@ -3455,9 +3556,14 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  onClick={() => handleMatchAutoMove(ri, "bank")}
+                                  onClick={() =>
+                                    handleMatchAutoMove(ri, "bank")
+                                  }
                                   onKeyDown={(event) => {
-                                    if (event.key === "Enter" || event.key === " ") {
+                                    if (
+                                      event.key === "Enter" ||
+                                      event.key === " "
+                                    ) {
                                       event.preventDefault();
                                       handleMatchAutoMove(ri, "bank");
                                     }
@@ -3468,11 +3574,13 @@ Return JSON ONLY:
                                     cursor: "pointer",
                                     transition:
                                       "transform 0.18s ease, box-shadow 0.18s ease",
-                                    ...(dragProvided.draggableProps.style || {}),
+                                    ...(dragProvided.draggableProps.style ||
+                                      {}),
                                   }}
                                   _hover={{ transform: "translateY(-2px)" }}
                                   _focusVisible={{
-                                    boxShadow: "0 0 0 2px rgba(255,255,255,0.35)",
+                                    boxShadow:
+                                      "0 0 0 2px rgba(255,255,255,0.35)",
                                     transform: "translateY(-2px)",
                                   }}
                                   px={3}
@@ -3510,14 +3618,6 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
@@ -3525,9 +3625,19 @@ Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMatch}
+                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >

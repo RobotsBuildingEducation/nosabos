@@ -1,5 +1,11 @@
 // components/Vocabulary.jsx
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   Box,
   Badge,
@@ -163,9 +169,7 @@ function useSharedProgress() {
       const p = data?.progress || {};
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
-          p.targetLang
-        )
+        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(p.targetLang)
           ? p.targetLang
           : "es",
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
@@ -765,7 +769,9 @@ export default function Vocabulary({ userLanguage = "en" }) {
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
-    const runner = lockedType ? generatorFor(lockedType) : generateRandomRef.current;
+    const runner = lockedType
+      ? generatorFor(lockedType)
+      : generateRandomRef.current;
     if (typeof runner === "function") {
       runner();
     }
@@ -911,7 +917,11 @@ export default function Vocabulary({ userLanguage = "en" }) {
     const signature = `${qMC}||${choicesMC.join("|")}`;
     if (mcKeyRef.current === signature) return;
     mcKeyRef.current = signature;
-    const useDrag = shouldUseDragVariant(qMC, choicesMC, [answerMC].filter(Boolean));
+    const useDrag = shouldUseDragVariant(
+      qMC,
+      choicesMC,
+      [answerMC].filter(Boolean)
+    );
     setMcLayout(useDrag ? "drag" : "buttons");
     setMcSlotIndex(null);
     setPickMC("");
@@ -947,7 +957,10 @@ export default function Vocabulary({ userLanguage = "en" }) {
       )
         return;
 
-      if (source.droppableId === "mc-bank" && destination.droppableId === "mc-bank") {
+      if (
+        source.droppableId === "mc-bank" &&
+        destination.droppableId === "mc-bank"
+      ) {
         const updated = Array.from(mcBankOrder);
         const [removed] = updated.splice(source.index, 1);
         updated.splice(destination.index, 0, removed);
@@ -955,7 +968,10 @@ export default function Vocabulary({ userLanguage = "en" }) {
         return;
       }
 
-      if (source.droppableId === "mc-bank" && destination.droppableId === "mc-slot") {
+      if (
+        source.droppableId === "mc-bank" &&
+        destination.droppableId === "mc-slot"
+      ) {
         const updated = Array.from(mcBankOrder);
         const [removed] = updated.splice(source.index, 1);
         if (mcSlotIndex != null) {
@@ -967,7 +983,10 @@ export default function Vocabulary({ userLanguage = "en" }) {
         return;
       }
 
-      if (source.droppableId === "mc-slot" && destination.droppableId === "mc-bank") {
+      if (
+        source.droppableId === "mc-slot" &&
+        destination.droppableId === "mc-bank"
+      ) {
         if (mcSlotIndex == null) return;
         const updated = Array.from(mcBankOrder);
         updated.splice(destination.index, 0, mcSlotIndex);
@@ -990,11 +1009,16 @@ export default function Vocabulary({ userLanguage = "en" }) {
         return;
 
       const parseSlot = (id) =>
-        id.startsWith("ma-slot-") ? parseInt(id.replace("ma-slot-", ""), 10) : null;
+        id.startsWith("ma-slot-")
+          ? parseInt(id.replace("ma-slot-", ""), 10)
+          : null;
       const sourceSlot = parseSlot(source.droppableId);
       const destSlot = parseSlot(destination.droppableId);
 
-      if (source.droppableId === "ma-bank" && destination.droppableId === "ma-bank") {
+      if (
+        source.droppableId === "ma-bank" &&
+        destination.droppableId === "ma-bank"
+      ) {
         const updated = Array.from(maBankOrder);
         const [removed] = updated.splice(source.index, 1);
         updated.splice(destination.index, 0, removed);
@@ -1041,6 +1065,54 @@ export default function Vocabulary({ userLanguage = "en" }) {
           return next;
         });
       }
+    },
+    [maLayout, maBankOrder, maSlots]
+  );
+
+  // Auto-drag handlers for click-to-place functionality
+  const handleMcAnswerClick = useCallback(
+    (choiceIdx, position) => {
+      if (mcLayout !== "drag") return;
+
+      // Move answer from bank to slot
+      const updated = Array.from(mcBankOrder);
+      updated.splice(position, 1);
+
+      // If there's already an answer in the slot, return it to the bank
+      if (mcSlotIndex != null) {
+        updated.splice(position, 0, mcSlotIndex);
+      }
+
+      setMcBankOrder(updated);
+      setMcSlotIndex(choiceIdx);
+      setPickMC(choicesMC[choiceIdx] || "");
+    },
+    [mcLayout, mcBankOrder, mcSlotIndex, choicesMC]
+  );
+
+  const handleMaAnswerClick = useCallback(
+    (choiceIdx, position) => {
+      if (maLayout !== "drag") return;
+
+      // Find first empty slot
+      const firstEmptySlot = maSlots.findIndex((slot) => slot == null);
+
+      if (firstEmptySlot === -1) {
+        // No empty slots available
+        return;
+      }
+
+      // Remove from bank
+      const updated = Array.from(maBankOrder);
+      updated.splice(position, 1);
+      setMaBankOrder(updated);
+
+      // Place in first empty slot
+      setMaSlots((prev) => {
+        const next = [...prev];
+        next[firstEmptySlot] = choiceIdx;
+        return next;
+      });
     },
     [maLayout, maBankOrder, maSlots]
   );
@@ -1398,7 +1470,9 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     resolveSupportLang(supportLang, userLanguage)
   )}>",
   "choices":["<choice1>","<choice2>","<choice3>","<choice4>"],
-  "notes":"Replace <choiceN> placeholders with actual ${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} options.",
+  "notes":"Replace <choiceN> placeholders with actual ${LANG_NAME(
+    resolveSupportLang(supportLang, userLanguage)
+  )} options.",
   "answer":"<exact correct choice>",
   "translation":"${showTranslations ? "<translation>" : ""}"
 }
@@ -1772,12 +1846,6 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
-    setSPrompt("");
-    setSTarget("");
-    setSStimulus("");
-    setSVariant("repeat");
-    setSHint("");
-    setSTranslation("");
     setSRecognized("");
     setSEval(null);
 
@@ -1866,13 +1934,20 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
       const text = await callResponses({
         model: MODEL,
         input: `
-Create ONE ${LANG_NAME(targetLang)} speaking drill. Randomly choose VARIANT from:
-- repeat: show the ${LANG_NAME(targetLang)} word/phrase and have them repeat it aloud.
-- translate: show a ${LANG_NAME(resolveSupportLang(
-          supportLang,
-          userLanguage
-        ))} word and have them speak the ${LANG_NAME(targetLang)} translation aloud.
-- complete: show a ${LANG_NAME(targetLang)} sentence with ___ and have them speak the completed sentence aloud.
+Create ONE ${LANG_NAME(
+          targetLang
+        )} speaking drill. Randomly choose VARIANT from:
+- repeat: show the ${LANG_NAME(
+          targetLang
+        )} word/phrase and have them repeat it aloud.
+- translate: show a ${LANG_NAME(
+          resolveSupportLang(supportLang, userLanguage)
+        )} word and have them speak the ${LANG_NAME(
+          targetLang
+        )} translation aloud.
+- complete: show a ${LANG_NAME(
+          targetLang
+        )} sentence with ___ and have them speak the completed sentence aloud.
 
 Return JSON ONLY:
 {
@@ -1882,10 +1957,12 @@ Return JSON ONLY:
   "target":"<${LANG_NAME(targetLang)} text they must say>",
   "hint":"<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} hint>",
   "translation":"${
-          showTranslations
-            ? `<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} translation or context>`
-            : ""
-        }"
+    showTranslations
+      ? `<${LANG_NAME(
+          resolveSupportLang(supportLang, userLanguage)
+        )} translation or context>`
+      : ""
+  }"
 }`.trim(),
       });
 
@@ -1928,11 +2005,7 @@ Return JSON ONLY:
               : "Say it in the target language"
           );
           setSTranslation(
-            showTranslations
-              ? supportCode === "es"
-                ? "bosque"
-                : "forest"
-              : ""
+            showTranslations ? (supportCode === "es" ? "bosque" : "forest") : ""
           );
         } else if (fallbackVariant === "complete") {
           const cloze =
@@ -2229,9 +2302,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       if (error) {
         toast({
           title:
-            userLanguage === "es"
-              ? "No se pudo evaluar"
-              : "Could not evaluate",
+            userLanguage === "es" ? "No se pudo evaluar" : "Could not evaluate",
           description:
             userLanguage === "es"
               ? "Vuelve a intentarlo con una conexión estable."
@@ -2437,9 +2508,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       default:
         return (
           t("vocab_speak_variant_repeat") ||
-          (userLanguage === "es"
-            ? "Pronuncia la palabra"
-            : "Speak the word")
+          (userLanguage === "es" ? "Pronuncia la palabra" : "Speak the word")
         );
     }
   }, [sVariant, t, userLanguage]);
@@ -2784,9 +2853,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ? "No se pudo reproducir el audio"
             : "Audio playback failed",
         description:
-          userLanguage === "es"
-            ? "Inténtalo de nuevo."
-            : "Please try again.",
+          userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
         status: "error",
         duration: 2600,
       });
@@ -2843,7 +2910,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             ) : null}
             {hFill ? (
-              <Text fontSize="sm" opacity={0.85}>
+              <Text fontSize="xs" opacity={0.85}>
                 💡 {hFill}
               </Text>
             ) : null}
@@ -2861,14 +2928,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitFill}
-                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQFill || loadingGFill}
@@ -2876,9 +2935,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitFill}
+                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -2911,15 +2980,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     </Text>
                   ) : null}
                   {hMC ? (
-                    <Text fontSize="sm" opacity={0.85}>
+                    <Text fontSize="xs" opacity={0.85}>
                       💡 {hMC}
                     </Text>
                   ) : null}
-                  <Text fontSize="sm" opacity={0.75}>
+                  <Text fontSize="xs" opacity={0.75}>
                     {t("practice_drag_drop_instruction") ||
                       (userLanguage === "es"
-                        ? "Arrastra la respuesta correcta al espacio en la frase."
-                        : "Drag the correct answer into the blank in the sentence.")}
+                        ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
+                        : "Drag or select the correct answer into the blank in the sentence.")}
                   </Text>
                   <Droppable droppableId="mc-bank" direction="horizontal">
                     {(provided) => (
@@ -2943,7 +3012,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 style={{
-                                  cursor: "grab",
+                                  cursor: "pointer",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
                                 px={3}
@@ -2962,6 +3031,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                onClick={() =>
+                                  handleMcAnswerClick(idx, position)
+                                }
+                                _hover={{
+                                  bg: "rgba(128,90,213,0.12)",
+                                  borderColor: "purple.200",
+                                }}
+                                transition="all 0.15s ease"
                               >
                                 {choicesMC[idx]}
                               </Box>
@@ -2988,7 +3065,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   </Text>
                 ) : null}
                 {hMC ? (
-                  <Text fontSize="sm" opacity={0.85}>
+                  <Text fontSize="xs" opacity={0.85}>
                     💡 {hMC}
                   </Text>
                 ) : null}
@@ -3008,9 +3085,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       rounded="lg"
                       borderWidth="2px"
                       borderColor={
-                        pickMC === c
-                          ? "purple.400"
-                          : "rgba(255,255,255,0.15)"
+                        pickMC === c ? "purple.400" : "rgba(255,255,255,0.15)"
                       }
                       bg={
                         pickMC === c
@@ -3021,10 +3096,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       _hover={
                         choicesMC.length
                           ? {
-                              borderColor: pickMC === c ? "purple.300" : "rgba(255,255,255,0.3)",
-                              bg: pickMC === c
-                                ? "linear-gradient(135deg, rgba(128,90,213,0.3) 0%, rgba(159,122,234,0.2) 100%)"
-                                : "rgba(255,255,255,0.06)",
+                              borderColor:
+                                pickMC === c
+                                  ? "purple.300"
+                                  : "rgba(255,255,255,0.3)",
+                              bg:
+                                pickMC === c
+                                  ? "linear-gradient(135deg, rgba(128,90,213,0.3) 0%, rgba(159,122,234,0.2) 100%)"
+                                  : "rgba(255,255,255,0.06)",
                               transform: "translateY(-2px)",
                               shadow: "md",
                             }
@@ -3039,7 +3118,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           h="20px"
                           rounded="full"
                           borderWidth="2px"
-                          borderColor={pickMC === c ? "purple.400" : "rgba(255,255,255,0.3)"}
+                          borderColor={
+                            pickMC === c
+                              ? "purple.400"
+                              : "rgba(255,255,255,0.3)"
+                          }
                           bg={pickMC === c ? "purple.500" : "transparent"}
                           display="flex"
                           alignItems="center"
@@ -3067,14 +3150,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMC}
-                isDisabled={loadingGMC || !pickMC || !choicesMC.length}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQMC || loadingGMC}
@@ -3082,9 +3157,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMC}
+                isDisabled={loadingGMC || !pickMC || !choicesMC.length}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3117,18 +3202,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     </Text>
                   ) : null}
                   {hMA ? (
-                    <Text fontSize="sm" opacity={0.85}>
+                    <Text fontSize="xs" opacity={0.85}>
                       💡 {hMA}
                     </Text>
                   ) : null}
                   <Text fontSize="xs" opacity={0.7}>
                     {t("vocab_select_all_apply")}
                   </Text>
-                  <Text fontSize="sm" opacity={0.75}>
+                  <Text fontSize="xs" opacity={0.75}>
                     {t("practice_drag_drop_multi_instruction") ||
                       (userLanguage === "es"
-                        ? "Arrastra cada respuesta correcta a su espacio en la frase."
-                        : "Drag each correct answer into its place in the sentence.")}
+                        ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
+                        : "Drag or select each correct answer into its place in the sentence.")}
                   </Text>
                   <Droppable droppableId="ma-bank" direction="horizontal">
                     {(provided) => (
@@ -3152,7 +3237,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 style={{
-                                  cursor: "grab",
+                                  cursor: "pointer",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
                                 px={3}
@@ -3171,6 +3256,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                onClick={() =>
+                                  handleMaAnswerClick(idx, position)
+                                }
+                                _hover={{
+                                  bg: "rgba(128,90,213,0.12)",
+                                  borderColor: "purple.200",
+                                }}
+                                transition="all 0.15s ease"
                               >
                                 {choicesMA[idx]}
                               </Box>
@@ -3197,7 +3290,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   </Text>
                 ) : null}
                 {hMA ? (
-                  <Text fontSize="sm" opacity={0.85}>
+                  <Text fontSize="xs" opacity={0.85}>
                     💡 {hMA}
                   </Text>
                 ) : null}
@@ -3229,9 +3322,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         rounded="lg"
                         borderWidth="2px"
                         borderColor={
-                          isSelected
-                            ? "teal.400"
-                            : "rgba(255,255,255,0.15)"
+                          isSelected ? "teal.400" : "rgba(255,255,255,0.15)"
                         }
                         bg={
                           isSelected
@@ -3242,7 +3333,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         _hover={
                           choicesMA.length
                             ? {
-                                borderColor: isSelected ? "teal.300" : "rgba(255,255,255,0.3)",
+                                borderColor: isSelected
+                                  ? "teal.300"
+                                  : "rgba(255,255,255,0.3)",
                                 bg: isSelected
                                   ? "linear-gradient(135deg, rgba(56,178,172,0.3) 0%, rgba(77,201,195,0.2) 100%)"
                                   : "rgba(255,255,255,0.06)",
@@ -3260,7 +3353,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             h="20px"
                             rounded="md"
                             borderWidth="2px"
-                            borderColor={isSelected ? "teal.400" : "rgba(255,255,255,0.3)"}
+                            borderColor={
+                              isSelected ? "teal.400" : "rgba(255,255,255,0.3)"
+                            }
                             bg={isSelected ? "teal.500" : "transparent"}
                             display="flex"
                             alignItems="center"
@@ -3269,7 +3364,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             flexShrink={0}
                           >
                             {isSelected && (
-                              <Text color="white" fontSize="xs" fontWeight="bold">
+                              <Text
+                                color="white"
+                                fontSize="xs"
+                                fontWeight="bold"
+                              >
                                 ✓
                               </Text>
                             )}
@@ -3291,14 +3390,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMA}
-                isDisabled={loadingGMA || !choicesMA.length || !maReady}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQMA || loadingGMA}
@@ -3306,9 +3397,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMA}
+                isDisabled={loadingGMA || !choicesMA.length || !maReady}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3417,6 +3518,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               mt={4}
             >
               <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQSpeak || isSpeakRecording}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {skipLabel}
+              </Button>
+              <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
                 w={{ base: "100%", md: "auto" }}
                 onClick={async () => {
@@ -3469,9 +3578,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         duration: 2500,
                       });
                     }
-                }
-              }}
-              isDisabled={!supportsSpeak || loadingQSpeak || !sTarget}
+                  }
+                }}
+                isDisabled={!supportsSpeak || loadingQSpeak || !sTarget}
               >
                 {isSpeakRecording
                   ? t("vocab_speak_stop") ||
@@ -3481,17 +3590,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
               </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQSpeak || isSpeakRecording}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3540,7 +3643,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             </HStack>
             {!!mHint && (
-              <Text fontSize="sm" opacity={0.85}>
+              <Text fontSize="xs" opacity={0.85}>
                 💡 {mHint}
               </Text>
             )}
@@ -3577,10 +3680,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
                                     onClick={() =>
-                                      handleMatchAutoMove(mSlots[i], `slot-${i}`)
+                                      handleMatchAutoMove(
+                                        mSlots[i],
+                                        `slot-${i}`
+                                      )
                                     }
                                     onKeyDown={(event) => {
-                                      if (event.key === "Enter" || event.key === " ") {
+                                      if (
+                                        event.key === "Enter" ||
+                                        event.key === " "
+                                      ) {
                                         event.preventDefault();
                                         handleMatchAutoMove(
                                           mSlots[i],
@@ -3594,11 +3703,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                       cursor: "pointer",
                                       transition:
                                         "transform 0.18s ease, box-shadow 0.18s ease",
-                                      ...(dragProvided.draggableProps.style || {}),
+                                      ...(dragProvided.draggableProps.style ||
+                                        {}),
                                     }}
                                     _hover={{ transform: "translateY(-2px)" }}
                                     _focusVisible={{
-                                      boxShadow: "0 0 0 2px rgba(255,255,255,0.35)",
+                                      boxShadow:
+                                        "0 0 0 2px rgba(255,255,255,0.35)",
                                       transform: "translateY(-2px)",
                                     }}
                                     px={3}
@@ -3654,9 +3765,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  onClick={() => handleMatchAutoMove(ri, "bank")}
+                                  onClick={() =>
+                                    handleMatchAutoMove(ri, "bank")
+                                  }
                                   onKeyDown={(event) => {
-                                    if (event.key === "Enter" || event.key === " ") {
+                                    if (
+                                      event.key === "Enter" ||
+                                      event.key === " "
+                                    ) {
                                       event.preventDefault();
                                       handleMatchAutoMove(ri, "bank");
                                     }
@@ -3667,11 +3783,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     cursor: "pointer",
                                     transition:
                                       "transform 0.18s ease, box-shadow 0.18s ease",
-                                    ...(dragProvided.draggableProps.style || {}),
+                                    ...(dragProvided.draggableProps.style ||
+                                      {}),
                                   }}
                                   _hover={{ transform: "translateY(-2px)" }}
                                   _focusVisible={{
-                                    boxShadow: "0 0 0 2px rgba(255,255,255,0.35)",
+                                    boxShadow:
+                                      "0 0 0 2px rgba(255,255,255,0.35)",
                                     transform: "translateY(-2px)",
                                   }}
                                   px={3}
@@ -3709,14 +3827,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
@@ -3724,9 +3834,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMatch}
+                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
