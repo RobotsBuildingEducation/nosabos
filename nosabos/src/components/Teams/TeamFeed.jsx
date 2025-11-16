@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import {
+  Badge,
   Box,
   Button,
   Divider,
@@ -23,8 +24,8 @@ const HASHTAG_LABEL = "#LearnWithNostr";
 
 const BUCKETS = [
   { max: 15, scheme: "gray", color: "#808080" },
-  { max: 30, scheme: "pink", color: "#ff69b4" },
-  { max: 45, scheme: "pink", color: "#ec4899" },
+  { max: 30, scheme: "cyan", color: "#22d3ee" },
+  { max: 45, scheme: "purple", color: "#a855f7" },
   { max: 65, scheme: "cyan", color: "#06b6d4" },
   { max: 85, scheme: "blue", color: "#3b82f6" },
   { max: 110, scheme: "teal", color: "#0d9488" },
@@ -222,9 +223,13 @@ export default function TeamFeed({
       .toLowerCase()
       .includes("a new scholarship");
 
-    const noSaboProgress = (profile.content || "")
+    const noSaboProgressTagged = profile.tags?.some(
+      (tag) => tag?.[0] === "purpose" && tag?.[1] === "nosaboProgress"
+    );
+    const noSaboProgressContent = (profile.content || "")
       .toLowerCase()
       .includes("i just reached");
+    const noSaboProgress = noSaboProgressTagged || noSaboProgressContent;
 
     console.log("noSaboProgress", noSaboProgress);
     if (!questionNumber && !hasScholarship && !noSaboProgress) return null;
@@ -273,6 +278,7 @@ export default function TeamFeed({
               width="80%"
               mb={4}
               borderRadius="4px"
+              height={3}
               background={lightenColor(bucket.color, 0.85)}
             />
           ) : null}
@@ -284,6 +290,15 @@ export default function TeamFeed({
       );
     }
     if (noSaboProgress) {
+      const tagValue = (key) =>
+        profile.tags?.find((entry) => entry?.[0] === key)?.[1] ?? null;
+      const totalXp = Number(tagValue("total_xp"));
+      const percentValue = Number(tagValue("daily_goal_percent"));
+      const dailyGoalPercent = Number.isFinite(percentValue)
+        ? Math.max(0, Math.min(100, percentValue))
+        : null;
+      const dailyGoalTarget = Number(tagValue("daily_goal_target"));
+      const dailyXp = Number(tagValue("daily_xp"));
       return (
         <Box
           key={`${profile.id}-${index}`}
@@ -314,7 +329,40 @@ export default function TeamFeed({
               {profile.profile?.name || "Nostr friend"}
             </Link>
           </HStack>
-
+          <HStack spacing={2} mb={dailyGoalPercent != null ? 2 : 4}>
+            <Badge colorScheme="blue">
+              {`${t?.teams_feed_total_xp || "Total XP"}: ${
+                Number.isFinite(totalXp)
+                  ? totalXp
+                  : questionNumber || questionNumber === 0
+                  ? questionNumber
+                  : "—"
+              }`}
+            </Badge>
+          </HStack>
+          {dailyGoalPercent != null && (
+            <>
+              <Progress
+                value={dailyGoalPercent}
+                colorScheme="teal"
+                size="sm"
+                borderRadius="4px"
+                width="80%"
+                height={3}
+                mb={2}
+              />
+              <Text fontSize="xs" color="gray.300" mb={2}>
+                {`${
+                  t?.teams_feed_goal_completion || "Goal completion"
+                }: ${dailyGoalPercent}%`}
+                {` · ${t?.teams_feed_daily_goal || "Today's goal"}: ${
+                  Number.isFinite(dailyXp) ? dailyXp : "—"
+                }${
+                  Number.isFinite(dailyGoalTarget) ? `/${dailyGoalTarget}` : ""
+                } XP`}
+              </Text>
+            </>
+          )}
           <ReplaceHashtagWithLink text={profile.content} />
           <br />
           <br />

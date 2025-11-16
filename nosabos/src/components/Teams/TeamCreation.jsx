@@ -224,7 +224,7 @@ export default function TeamCreation({ userLanguage, onTeamCreated, t }) {
           </Box>
         )}
         <Button
-          colorScheme="pink"
+          colorScheme="teal"
           onClick={handleCreateTeam}
           isLoading={isCreating}
           loadingText={t?.teams_create_creating || "Creating"}

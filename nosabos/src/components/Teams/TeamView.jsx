@@ -328,25 +328,38 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                                     </Badge>
                                   )}
                                 </HStack>
-                                <HStack spacing={2}>
-                                  <Badge colorScheme="orange">
-                                    {`${member.streak} ${t?.teams_view_streak || "day streak"}`}
-                                  </Badge>
-                                  <Badge colorScheme="green">
-                                    {`${member.answeredStepsCount || 0} ${
-                                      t?.teams_view_questions || "questions"
-                                    }`}
-                                  </Badge>
-                                </HStack>
+                                <Badge colorScheme="blue">
+                                  {`${t?.teams_view_total_xp || "Total XP"}: ${
+                                    member.totalXp ?? 0
+                                  }`}
+                                </Badge>
                               </HStack>
                               <Progress
                                 value={member.progressPercent}
                                 size="sm"
+                                h="14px"
+                                w="80%"
                                 borderRadius="md"
-                                colorScheme={member.isCreator ? "pink" : "teal"}
+                                colorScheme={member.isCreator ? "purple" : "teal"}
                               />
                               <Text fontSize="xs" color="gray.400" mt={1}>
-                                {t?.teams_view_level || "Level"}: {member.level || "—"}
+                                {`${
+                                  t?.teams_view_goal_completion || "Daily goal completion"
+                                }: ${Math.round(member.progressPercent) || 0}%`}
+                                {member.dailyGoalXp ? (
+                                  <>
+                                    {` · ${
+                                      t?.teams_view_daily_goal || "Today's goal"
+                                    }: ${member.dailyXp || 0}/${member.dailyGoalXp} XP`}
+                                  </>
+                                ) : (
+                                  ` · ${t?.teams_view_daily_xp || "Daily XP"}: ${
+                                    member.dailyXp || 0
+                                  }`
+                                )}
+                                {` · ${t?.teams_view_level || "Level"}: ${
+                                  member.level || "—"
+                                }`}
                               </Text>
                             </Box>
                           ))}
