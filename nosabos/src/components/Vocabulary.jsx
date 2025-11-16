@@ -2992,20 +2992,72 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     💡 {hMC}
                   </Text>
                 ) : null}
-                <RadioGroup value={pickMC} onChange={setPickMC}>
-                  <Stack spacing={2} align="stretch">
-                    {(choicesMC.length
-                      ? choicesMC
-                      : loadingQMC
-                      ? ["…", "…", "…", "…"]
-                      : []
-                    ).map((c, i) => (
-                      <Radio value={c} key={i} isDisabled={!choicesMC.length}>
-                        {c}
-                      </Radio>
-                    ))}
-                  </Stack>
-                </RadioGroup>
+                <Stack spacing={3} align="stretch">
+                  {(choicesMC.length
+                    ? choicesMC
+                    : loadingQMC
+                    ? ["…", "…", "…", "…"]
+                    : []
+                  ).map((c, i) => (
+                    <Box
+                      key={i}
+                      onClick={() => choicesMC.length && setPickMC(c)}
+                      cursor={choicesMC.length ? "pointer" : "not-allowed"}
+                      px={4}
+                      py={3}
+                      rounded="lg"
+                      borderWidth="2px"
+                      borderColor={
+                        pickMC === c
+                          ? "purple.400"
+                          : "rgba(255,255,255,0.15)"
+                      }
+                      bg={
+                        pickMC === c
+                          ? "linear-gradient(135deg, rgba(128,90,213,0.25) 0%, rgba(159,122,234,0.15) 100%)"
+                          : "rgba(255,255,255,0.03)"
+                      }
+                      transition="all 0.2s ease"
+                      _hover={
+                        choicesMC.length
+                          ? {
+                              borderColor: pickMC === c ? "purple.300" : "rgba(255,255,255,0.3)",
+                              bg: pickMC === c
+                                ? "linear-gradient(135deg, rgba(128,90,213,0.3) 0%, rgba(159,122,234,0.2) 100%)"
+                                : "rgba(255,255,255,0.06)",
+                              transform: "translateY(-2px)",
+                              shadow: "md",
+                            }
+                          : {}
+                      }
+                      position="relative"
+                      opacity={choicesMC.length ? 1 : 0.5}
+                    >
+                      <HStack spacing={3}>
+                        <Box
+                          w="20px"
+                          h="20px"
+                          rounded="full"
+                          borderWidth="2px"
+                          borderColor={pickMC === c ? "purple.400" : "rgba(255,255,255,0.3)"}
+                          bg={pickMC === c ? "purple.500" : "transparent"}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          transition="all 0.2s ease"
+                          flexShrink={0}
+                        >
+                          {pickMC === c && (
+                            <Box w="8px" h="8px" rounded="full" bg="white" />
+                          )}
+                        </Box>
+                        <Text flex="1" fontSize="md">
+                          {c}
+                        </Text>
+                      </HStack>
+                    </Box>
+                  ))}
+                </Stack>
               </>
             )}
 
@@ -3152,20 +3204,84 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <Text fontSize="xs" opacity={0.7}>
                   {t("vocab_select_all_apply")}
                 </Text>
-                <CheckboxGroup value={picksMA} onChange={setPicksMA}>
-                  <Stack spacing={2} align="stretch">
-                    {(choicesMA.length
-                      ? choicesMA
-                      : loadingQMA
-                      ? ["…", "…", "…", "…", "…"]
-                      : []
-                    ).map((c, i) => (
-                      <Checkbox value={c} key={i} isDisabled={!choicesMA.length}>
-                        {c}
-                      </Checkbox>
-                    ))}
-                  </Stack>
-                </CheckboxGroup>
+                <Stack spacing={3} align="stretch">
+                  {(choicesMA.length
+                    ? choicesMA
+                    : loadingQMA
+                    ? ["…", "…", "…", "…", "…"]
+                    : []
+                  ).map((c, i) => {
+                    const isSelected = picksMA.includes(c);
+                    return (
+                      <Box
+                        key={i}
+                        onClick={() => {
+                          if (!choicesMA.length) return;
+                          if (isSelected) {
+                            setPicksMA(picksMA.filter((p) => p !== c));
+                          } else {
+                            setPicksMA([...picksMA, c]);
+                          }
+                        }}
+                        cursor={choicesMA.length ? "pointer" : "not-allowed"}
+                        px={4}
+                        py={3}
+                        rounded="lg"
+                        borderWidth="2px"
+                        borderColor={
+                          isSelected
+                            ? "teal.400"
+                            : "rgba(255,255,255,0.15)"
+                        }
+                        bg={
+                          isSelected
+                            ? "linear-gradient(135deg, rgba(56,178,172,0.25) 0%, rgba(77,201,195,0.15) 100%)"
+                            : "rgba(255,255,255,0.03)"
+                        }
+                        transition="all 0.2s ease"
+                        _hover={
+                          choicesMA.length
+                            ? {
+                                borderColor: isSelected ? "teal.300" : "rgba(255,255,255,0.3)",
+                                bg: isSelected
+                                  ? "linear-gradient(135deg, rgba(56,178,172,0.3) 0%, rgba(77,201,195,0.2) 100%)"
+                                  : "rgba(255,255,255,0.06)",
+                                transform: "translateY(-2px)",
+                                shadow: "md",
+                              }
+                            : {}
+                        }
+                        position="relative"
+                        opacity={choicesMA.length ? 1 : 0.5}
+                      >
+                        <HStack spacing={3}>
+                          <Box
+                            w="20px"
+                            h="20px"
+                            rounded="md"
+                            borderWidth="2px"
+                            borderColor={isSelected ? "teal.400" : "rgba(255,255,255,0.3)"}
+                            bg={isSelected ? "teal.500" : "transparent"}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            transition="all 0.2s ease"
+                            flexShrink={0}
+                          >
+                            {isSelected && (
+                              <Text color="white" fontSize="xs" fontWeight="bold">
+                                ✓
+                              </Text>
+                            )}
+                          </Box>
+                          <Text flex="1" fontSize="md">
+                            {c}
+                          </Text>
+                        </HStack>
+                      </Box>
+                    );
+                  })}
+                </Stack>
               </>
             )}
 

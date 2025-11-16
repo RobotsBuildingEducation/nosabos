@@ -2786,20 +2786,72 @@ Return JSON ONLY:
                     💡 {mcHint}
                   </Text>
                 ) : null}
-                <RadioGroup value={mcPick} onChange={setMcPick}>
-                  <Stack spacing={2} align="stretch">
-                    {(mcChoices.length
-                      ? mcChoices
-                      : loadingMCQ
-                      ? ["…", "…", "…", "…"]
-                      : []
-                    ).map((c, i) => (
-                      <Radio value={c} key={i} isDisabled={!mcChoices.length}>
-                        {c}
-                      </Radio>
-                    ))}
-                  </Stack>
-                </RadioGroup>
+                <Stack spacing={3} align="stretch">
+                  {(mcChoices.length
+                    ? mcChoices
+                    : loadingMCQ
+                    ? ["…", "…", "…", "…"]
+                    : []
+                  ).map((c, i) => (
+                    <Box
+                      key={i}
+                      onClick={() => mcChoices.length && setMcPick(c)}
+                      cursor={mcChoices.length ? "pointer" : "not-allowed"}
+                      px={4}
+                      py={3}
+                      rounded="lg"
+                      borderWidth="2px"
+                      borderColor={
+                        mcPick === c
+                          ? "purple.400"
+                          : "rgba(255,255,255,0.15)"
+                      }
+                      bg={
+                        mcPick === c
+                          ? "linear-gradient(135deg, rgba(128,90,213,0.25) 0%, rgba(159,122,234,0.15) 100%)"
+                          : "rgba(255,255,255,0.03)"
+                      }
+                      transition="all 0.2s ease"
+                      _hover={
+                        mcChoices.length
+                          ? {
+                              borderColor: mcPick === c ? "purple.300" : "rgba(255,255,255,0.3)",
+                              bg: mcPick === c
+                                ? "linear-gradient(135deg, rgba(128,90,213,0.3) 0%, rgba(159,122,234,0.2) 100%)"
+                                : "rgba(255,255,255,0.06)",
+                              transform: "translateY(-2px)",
+                              shadow: "md",
+                            }
+                          : {}
+                      }
+                      position="relative"
+                      opacity={mcChoices.length ? 1 : 0.5}
+                    >
+                      <HStack spacing={3}>
+                        <Box
+                          w="20px"
+                          h="20px"
+                          rounded="full"
+                          borderWidth="2px"
+                          borderColor={mcPick === c ? "purple.400" : "rgba(255,255,255,0.3)"}
+                          bg={mcPick === c ? "purple.500" : "transparent"}
+                          display="flex"
+                          alignItems="center"
+                          justifyContent="center"
+                          transition="all 0.2s ease"
+                          flexShrink={0}
+                        >
+                          {mcPick === c && (
+                            <Box w="8px" h="8px" rounded="full" bg="white" />
+                          )}
+                        </Box>
+                        <Text flex="1" fontSize="md">
+                          {c}
+                        </Text>
+                      </HStack>
+                    </Box>
+                  ))}
+                </Stack>
               </>
             )}
 
@@ -2953,20 +3005,84 @@ Return JSON ONLY:
                 <Text fontSize="xs" opacity={0.7}>
                   {t("grammar_select_all_apply")}
                 </Text>
-                <CheckboxGroup value={maPicks} onChange={setMaPicks}>
-                  <Stack spacing={2} align="stretch">
-                    {(maChoices.length
-                      ? maChoices
-                      : loadingMAQ
-                      ? ["…", "…", "…", "…", "…"]
-                      : []
-                    ).map((c, i) => (
-                      <Checkbox value={c} key={i} isDisabled={!maChoices.length}>
-                        {c}
-                      </Checkbox>
-                    ))}
-                  </Stack>
-                </CheckboxGroup>
+                <Stack spacing={3} align="stretch">
+                  {(maChoices.length
+                    ? maChoices
+                    : loadingMAQ
+                    ? ["…", "…", "…", "…", "…"]
+                    : []
+                  ).map((c, i) => {
+                    const isSelected = maPicks.includes(c);
+                    return (
+                      <Box
+                        key={i}
+                        onClick={() => {
+                          if (!maChoices.length) return;
+                          if (isSelected) {
+                            setMaPicks(maPicks.filter((p) => p !== c));
+                          } else {
+                            setMaPicks([...maPicks, c]);
+                          }
+                        }}
+                        cursor={maChoices.length ? "pointer" : "not-allowed"}
+                        px={4}
+                        py={3}
+                        rounded="lg"
+                        borderWidth="2px"
+                        borderColor={
+                          isSelected
+                            ? "teal.400"
+                            : "rgba(255,255,255,0.15)"
+                        }
+                        bg={
+                          isSelected
+                            ? "linear-gradient(135deg, rgba(56,178,172,0.25) 0%, rgba(77,201,195,0.15) 100%)"
+                            : "rgba(255,255,255,0.03)"
+                        }
+                        transition="all 0.2s ease"
+                        _hover={
+                          maChoices.length
+                            ? {
+                                borderColor: isSelected ? "teal.300" : "rgba(255,255,255,0.3)",
+                                bg: isSelected
+                                  ? "linear-gradient(135deg, rgba(56,178,172,0.3) 0%, rgba(77,201,195,0.2) 100%)"
+                                  : "rgba(255,255,255,0.06)",
+                                transform: "translateY(-2px)",
+                                shadow: "md",
+                              }
+                            : {}
+                        }
+                        position="relative"
+                        opacity={maChoices.length ? 1 : 0.5}
+                      >
+                        <HStack spacing={3}>
+                          <Box
+                            w="20px"
+                            h="20px"
+                            rounded="md"
+                            borderWidth="2px"
+                            borderColor={isSelected ? "teal.400" : "rgba(255,255,255,0.3)"}
+                            bg={isSelected ? "teal.500" : "transparent"}
+                            display="flex"
+                            alignItems="center"
+                            justifyContent="center"
+                            transition="all 0.2s ease"
+                            flexShrink={0}
+                          >
+                            {isSelected && (
+                              <Text color="white" fontSize="xs" fontWeight="bold">
+                                ✓
+                              </Text>
+                            )}
+                          </Box>
+                          <Text flex="1" fontSize="md">
+                            {c}
+                          </Text>
+                        </HStack>
+                      </Box>
+                    );
+                  })}
+                </Stack>
               </>
             )}
 
