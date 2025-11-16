@@ -2290,7 +2290,7 @@ function BottomActionBar({
         mx="auto"
         w="100%"
         align="center"
-        justify={{ base: "flex-start", md: "center" }}
+        justify={{ base: "center", md: "center" }}
         gap={{ base: 3, md: 6 }}
         flexWrap={{ base: "wrap", md: "wrap" }}
         rowGap={{ base: 3, md: 4 }}
@@ -2345,7 +2345,7 @@ function BottomActionBar({
           aria-label={teamsLabel}
           rounded="xl"
           flexShrink={0}
-          borderWidth={hasPendingTeamInvite ? "2px" : "1px"}
+          borderWidth={hasPendingTeamInvite ? "2px" : "0px"}
           borderColor={hasPendingTeamInvite ? "purple.400" : "gray.700"}
           boxShadow={
             hasPendingTeamInvite
