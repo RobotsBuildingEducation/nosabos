@@ -71,24 +71,24 @@ export default function TeamsDrawer({
             onChange={handleTabChange}
             variant="enclosed"
             isFitted
-            colorScheme="pink"
+            colorScheme="purple"
           >
             <TabList mb={4} borderColor="whiteAlpha.200">
               <Tab
                 color="gray.300"
-                _selected={{ color: "white", borderColor: "pink.400", bg: "whiteAlpha.200" }}
+                _selected={{ color: "white", borderColor: "purple.400", bg: "whiteAlpha.200" }}
               >
                 {t?.teams_tab_feed || "Global feed"}
               </Tab>
               <Tab
                 color="gray.300"
-                _selected={{ color: "white", borderColor: "pink.400", bg: "whiteAlpha.200" }}
+                _selected={{ color: "white", borderColor: "purple.400", bg: "whiteAlpha.200" }}
               >
                 {t?.teams_tab_create || "Create team"}
               </Tab>
               <Tab
                 color="gray.300"
-                _selected={{ color: "white", borderColor: "pink.400", bg: "whiteAlpha.200" }}
+                _selected={{ color: "white", borderColor: "purple.400", bg: "whiteAlpha.200" }}
               >
                 {t?.teams_tab_view || "View teams"}
                 {pendingInviteCount > 0 ? ` (${pendingInviteCount})` : ""}
@@ -113,7 +113,7 @@ export default function TeamsDrawer({
           </Tabs>
         </DrawerBody>
         <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
-          <Button colorScheme="pink" onClick={onClose}>
+          <Button colorScheme="purple" onClick={onClose}>
             {t?.teams_drawer_close || "Close"}
           </Button>
         </DrawerFooter>

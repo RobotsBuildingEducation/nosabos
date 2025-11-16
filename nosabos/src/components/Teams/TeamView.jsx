@@ -338,7 +338,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                                 value={member.progressPercent}
                                 size="sm"
                                 borderRadius="md"
-                                colorScheme={member.isCreator ? "pink" : "teal"}
+                                colorScheme={member.isCreator ? "purple" : "teal"}
                               />
                               <Text fontSize="xs" color="gray.400" mt={1}>
                                 {`${

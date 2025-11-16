@@ -717,7 +717,7 @@ export function BitcoinWalletSection({
               return (
                 <Box key={recipient.npub}>
                   <Radio
-                    colorScheme="pink"
+                    colorScheme="purple"
                     value={recipient.npub}
                     isDisabled={isIdentitySaving}
                   >

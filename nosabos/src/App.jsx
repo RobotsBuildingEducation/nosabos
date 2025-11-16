@@ -2344,10 +2344,10 @@ function BottomActionBar({
           rounded="xl"
           flexShrink={0}
           borderWidth={hasPendingTeamInvite ? "2px" : "1px"}
-          borderColor={hasPendingTeamInvite ? "pink.400" : "gray.700"}
+          borderColor={hasPendingTeamInvite ? "purple.400" : "gray.700"}
           boxShadow={
             hasPendingTeamInvite
-              ? "0 0 0 2px rgba(236,72,153,0.35), 0 0 14px rgba(236,72,153,0.65)"
+              ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
               : undefined
           }
         />

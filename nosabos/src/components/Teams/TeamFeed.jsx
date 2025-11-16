@@ -24,8 +24,8 @@ const HASHTAG_LABEL = "#LearnWithNostr";
 
 const BUCKETS = [
   { max: 15, scheme: "gray", color: "#808080" },
-  { max: 30, scheme: "pink", color: "#ff69b4" },
-  { max: 45, scheme: "pink", color: "#ec4899" },
+  { max: 30, scheme: "cyan", color: "#22d3ee" },
+  { max: 45, scheme: "purple", color: "#a855f7" },
   { max: 65, scheme: "cyan", color: "#06b6d4" },
   { max: 85, scheme: "blue", color: "#3b82f6" },
   { max: 110, scheme: "teal", color: "#0d9488" },
