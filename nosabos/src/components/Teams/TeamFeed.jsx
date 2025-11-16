@@ -278,6 +278,7 @@ export default function TeamFeed({
               width="80%"
               mb={4}
               borderRadius="4px"
+              height={3}
               background={lightenColor(bucket.color, 0.85)}
             />
           ) : null}
@@ -346,13 +347,19 @@ export default function TeamFeed({
                 colorScheme="teal"
                 size="sm"
                 borderRadius="4px"
+                width="80%"
+                height={3}
                 mb={2}
               />
               <Text fontSize="xs" color="gray.300" mb={2}>
-                {`${t?.teams_feed_goal_completion || "Goal completion"}: ${dailyGoalPercent}%`}
+                {`${
+                  t?.teams_feed_goal_completion || "Goal completion"
+                }: ${dailyGoalPercent}%`}
                 {` · ${t?.teams_feed_daily_goal || "Today's goal"}: ${
                   Number.isFinite(dailyXp) ? dailyXp : "—"
-                }${Number.isFinite(dailyGoalTarget) ? `/${dailyGoalTarget}` : ""} XP`}
+                }${
+                  Number.isFinite(dailyGoalTarget) ? `/${dailyGoalTarget}` : ""
+                } XP`}
               </Text>
             </>
           )}

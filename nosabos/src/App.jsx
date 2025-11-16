@@ -810,7 +810,6 @@ function TopBar({
         onSelectIdentity={onSelectIdentity}
         isIdentitySaving={isIdentitySaving}
       />
-
     </>
   );
 }
@@ -845,10 +844,7 @@ export default function App() {
 
   const dailyXpToday = useMemo(() => {
     const rawXp =
-      user?.dailyXp ??
-      user?.stats?.dailyXp ??
-      user?.progress?.dailyXp ??
-      0;
+      user?.dailyXp ?? user?.stats?.dailyXp ?? user?.progress?.dailyXp ?? 0;
     const parsed = Number(rawXp);
     return Number.isFinite(parsed) ? parsed : 0;
   }, [user]);
@@ -1740,7 +1736,13 @@ export default function App() {
         tags.push(["daily_goal_target", String(goalTarget)]);
       }
       try {
-        await postNostrContent(content, undefined, activeNpub, privateKey, tags);
+        await postNostrContent(
+          content,
+          undefined,
+          activeNpub,
+          privateKey,
+          tags
+        );
       } catch (error) {
         console.error("Failed to share XP update on Nostr", error);
       }
