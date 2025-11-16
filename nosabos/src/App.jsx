@@ -69,7 +69,7 @@ import {
   LuShuffle,
   LuLanguages,
 } from "react-icons/lu";
-import { PiUsersThreeBold } from "react-icons/pi";
+import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -2340,7 +2340,7 @@ function BottomActionBar({
         />
 
         <IconButton
-          icon={<PiUsersThreeBold size={20} />}
+          icon={<PiUsersBold size={20} />}
           onClick={onOpenTeams}
           aria-label={teamsLabel}
           rounded="xl"
