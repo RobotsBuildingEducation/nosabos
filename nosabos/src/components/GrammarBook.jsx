@@ -1601,10 +1601,6 @@ Create ONE multiple-answer ${LANG_NAME(
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
-    setSPrompt("");
-    setSTarget("");
-    setSHint("");
-    setSTranslation("");
     setSRecognized("");
     setSEval(null);
 
@@ -2695,14 +2691,6 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitFill}
-                isDisabled={loadingG || !input.trim() || !question}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQ || loadingG}
@@ -2710,9 +2698,19 @@ Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitFill}
+                isDisabled={loadingG || !input.trim() || !question}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -2756,8 +2754,8 @@ Return JSON ONLY:
                   <Text fontSize="sm" opacity={0.75}>
                     {t("practice_drag_drop_instruction") ||
                       (userLanguage === "es"
-                        ? "Arrastra la respuesta correcta al espacio en la frase."
-                        : "Drag the correct answer into the blank in the sentence.")}
+                        ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
+                        : "Drag or select the correct answer into the blank in the sentence.")}
                   </Text>
                   <Droppable droppableId="mc-bank" direction="horizontal">
                     {(provided) => (
@@ -2915,14 +2913,6 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMC}
-                isDisabled={loadingMCG || !mcPick || !mcChoices.length}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMCQ || loadingMCG}
@@ -2930,9 +2920,19 @@ Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMC}
+                isDisabled={loadingMCG || !mcPick || !mcChoices.length}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -2978,8 +2978,8 @@ Return JSON ONLY:
                   <Text fontSize="sm" opacity={0.75}>
                     {t("practice_drag_drop_multi_instruction") ||
                       (userLanguage === "es"
-                        ? "Arrastra cada respuesta correcta a su espacio en la frase."
-                        : "Drag each correct answer into its place in the sentence.")}
+                        ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
+                        : "Drag or select each correct answer into its place in the sentence.")}
                   </Text>
                   <Droppable droppableId="ma-bank" direction="horizontal">
                     {(provided) => (
@@ -3152,14 +3152,6 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMA}
-                isDisabled={loadingMAG || !maChoices.length || !maReady}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMAQ || loadingMAG}
@@ -3167,9 +3159,19 @@ Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMA}
+                isDisabled={loadingMAG || !maChoices.length || !maReady}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3275,6 +3277,14 @@ Return JSON ONLY:
               mt={4}
             >
               <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingSpeakQ || isSpeakRecording}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {skipLabel}
+              </Button>
+              <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
                 w={{ base: "100%", md: "auto" }}
                 onClick={async () => {
@@ -3339,17 +3349,11 @@ Return JSON ONLY:
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
               </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingSpeakQ || isSpeakRecording}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3570,14 +3574,6 @@ Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
@@ -3585,9 +3581,19 @@ Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMatch}
+                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >

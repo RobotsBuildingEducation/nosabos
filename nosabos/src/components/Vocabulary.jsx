@@ -1820,12 +1820,6 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
-    setSPrompt("");
-    setSTarget("");
-    setSStimulus("");
-    setSVariant("repeat");
-    setSHint("");
-    setSTranslation("");
     setSRecognized("");
     setSEval(null);
 
@@ -2909,14 +2903,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitFill}
-                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQFill || loadingGFill}
@@ -2924,9 +2910,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitFill}
+                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -2966,8 +2962,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <Text fontSize="sm" opacity={0.75}>
                     {t("practice_drag_drop_instruction") ||
                       (userLanguage === "es"
-                        ? "Arrastra la respuesta correcta al espacio en la frase."
-                        : "Drag the correct answer into the blank in the sentence.")}
+                        ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
+                        : "Drag or select the correct answer into the blank in the sentence.")}
                   </Text>
                   <Droppable droppableId="mc-bank" direction="horizontal">
                     {(provided) => (
@@ -3121,14 +3117,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMC}
-                isDisabled={loadingGMC || !pickMC || !choicesMC.length}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQMC || loadingGMC}
@@ -3136,9 +3124,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMC}
+                isDisabled={loadingGMC || !pickMC || !choicesMC.length}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3181,8 +3179,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <Text fontSize="sm" opacity={0.75}>
                     {t("practice_drag_drop_multi_instruction") ||
                       (userLanguage === "es"
-                        ? "Arrastra cada respuesta correcta a su espacio en la frase."
-                        : "Drag each correct answer into its place in the sentence.")}
+                        ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
+                        : "Drag or select each correct answer into its place in the sentence.")}
                   </Text>
                   <Droppable droppableId="ma-bank" direction="horizontal">
                     {(provided) => (
@@ -3351,14 +3349,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMA}
-                isDisabled={loadingGMA || !choicesMA.length || !maReady}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQMA || loadingGMA}
@@ -3366,9 +3356,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMA}
+                isDisabled={loadingGMA || !choicesMA.length || !maReady}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3477,6 +3477,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               mt={4}
             >
               <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingQSpeak || isSpeakRecording}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {skipLabel}
+              </Button>
+              <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
                 w={{ base: "100%", md: "auto" }}
                 onClick={async () => {
@@ -3541,17 +3549,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
               </Button>
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQSpeak || isSpeakRecording}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
@@ -3769,14 +3771,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
             >
               <Button
-                colorScheme="purple"
-                onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
-              </Button>
-              <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
@@ -3784,9 +3778,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               >
                 {skipLabel}
               </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitMatch}
+                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
+              </Button>
               {lastOk === true && nextAction ? (
                 <Button
                   variant="outline"
+                  borderColor="cyan.500"
+                  borderWidth="2px"
                   onClick={handleNext}
                   w={{ base: "100%", md: "auto" }}
                 >
