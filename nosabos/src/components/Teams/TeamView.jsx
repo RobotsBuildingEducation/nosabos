@@ -43,7 +43,8 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
   const [loading, setLoading] = useState(true);
   const [processingInvite, setProcessingInvite] = useState(null);
   const userNpub = useMemo(
-    () => (typeof window !== "undefined" ? localStorage.getItem("local_npub") : ""),
+    () =>
+      typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
     []
   );
 
@@ -98,22 +99,26 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
     if (!myTeams.length || !userNpub) return () => {};
     const unsubscribers = myTeams.map((team) => {
       const creatorNpub = team.isCreator ? userNpub : team.createdBy;
-      return subscribeToTeamUpdates(creatorNpub, team.id, async (updatedTeam) => {
-        if (!updatedTeam) return;
-        setMyTeams((prev) =>
-          prev.map((entry) =>
-            entry.id === updatedTeam.id && entry.createdBy === creatorNpub
-              ? { ...entry, ...updatedTeam }
-              : entry
-          )
-        );
-        try {
-          const progress = await getTeamMemberProgress(creatorNpub, team.id);
-          setTeamMemberProgress((prev) => ({ ...prev, [team.id]: progress }));
-        } catch (error) {
-          console.error("refresh progress error", error);
+      return subscribeToTeamUpdates(
+        creatorNpub,
+        team.id,
+        async (updatedTeam) => {
+          if (!updatedTeam) return;
+          setMyTeams((prev) =>
+            prev.map((entry) =>
+              entry.id === updatedTeam.id && entry.createdBy === creatorNpub
+                ? { ...entry, ...updatedTeam }
+                : entry
+            )
+          );
+          try {
+            const progress = await getTeamMemberProgress(creatorNpub, team.id);
+            setTeamMemberProgress((prev) => ({ ...prev, [team.id]: progress }));
+          } catch (error) {
+            console.error("refresh progress error", error);
+          }
         }
-      });
+      );
     });
     return () => {
       unsubscribers.forEach((fn) => fn && fn());
@@ -210,7 +215,9 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
     }
   };
 
-  const pendingInvites = teamInvites.filter((invite) => invite.status === "pending");
+  const pendingInvites = teamInvites.filter(
+    (invite) => invite.status === "pending"
+  );
 
   if (loading) {
     return (
@@ -232,10 +239,17 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
           </Text>
           <VStack spacing={3} align="stretch">
             {pendingInvites.map((invite) => (
-              <Box key={invite.id} p={4} borderWidth="1px" borderRadius="md" bg="yellow.50">
+              <Box
+                key={invite.id}
+                p={4}
+                borderWidth="1px"
+                borderRadius="md"
+                bg="yellow.50"
+              >
                 <Text fontWeight="bold">{invite.teamName}</Text>
                 <Text fontSize="sm" color="gray.600">
-                  {t?.teams_view_invited_by || "Invited by"}: {invite.invitedByName || invite.invitedBy}
+                  {t?.teams_view_invited_by || "Invited by"}:{" "}
+                  {invite.invitedByName || invite.invitedBy}
                 </Text>
                 <HStack spacing={2} mt={3}>
                   <Button
@@ -269,7 +283,8 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
         {!myTeams.length ? (
           <Alert status="info">
             <AlertIcon />
-            {t?.teams_view_empty || "Create a team to start tracking progress together."}
+            {t?.teams_view_empty ||
+              "Create a team to start tracking progress together."}
           </Alert>
         ) : (
           <Accordion allowMultiple>
@@ -287,7 +302,10 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                 t?.teams_view_member_many || "members"
               );
               return (
-                <AccordionItem key={`${team.id}-${team.createdBy}`}>
+                <AccordionItem
+                  key={`${team.id}-${team.createdBy}`}
+                  border="0px solid transparent"
+                >
                   <h2>
                     <AccordionButton>
                       <Box flex="1" textAlign="left">
@@ -340,22 +358,27 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                                 h="14px"
                                 w="80%"
                                 borderRadius="md"
-                                colorScheme={member.isCreator ? "purple" : "teal"}
+                                colorScheme={
+                                  member.isCreator ? "purple" : "teal"
+                                }
                               />
                               <Text fontSize="xs" color="gray.400" mt={1}>
                                 {`${
-                                  t?.teams_view_goal_completion || "Daily goal completion"
+                                  t?.teams_view_goal_completion ||
+                                  "Daily goal completion"
                                 }: ${Math.round(member.progressPercent) || 0}%`}
                                 {member.dailyGoalXp ? (
                                   <>
                                     {` · ${
                                       t?.teams_view_daily_goal || "Today's goal"
-                                    }: ${member.dailyXp || 0}/${member.dailyGoalXp} XP`}
+                                    }: ${member.dailyXp || 0}/${
+                                      member.dailyGoalXp
+                                    } XP`}
                                   </>
                                 ) : (
-                                  ` · ${t?.teams_view_daily_xp || "Daily XP"}: ${
-                                    member.dailyXp || 0
-                                  }`
+                                  ` · ${
+                                    t?.teams_view_daily_xp || "Daily XP"
+                                  }: ${member.dailyXp || 0}`
                                 )}
                                 {` · ${t?.teams_view_level || "Level"}: ${
                                   member.level || "—"
@@ -366,7 +389,8 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                         </Box>
                       ) : (
                         <Text fontSize="sm" color="gray.500">
-                          {t?.teams_view_no_members || "No accepted members yet."}
+                          {t?.teams_view_no_members ||
+                            "No accepted members yet."}
                         </Text>
                       )}
 
@@ -376,14 +400,18 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
                             {t?.teams_view_pending_members || "Invites waiting"}
                           </Text>
                           {pendingMembers.map((member) => (
-                            <Text key={member.npub} fontSize="xs" color="gray.500">
+                            <Text
+                              key={member.npub}
+                              fontSize="xs"
+                              color="gray.500"
+                            >
                               {member.npub}
                             </Text>
                           ))}
                         </Box>
                       )}
 
-                      <Divider />
+                      {/* <Divider /> */}
                       {team.isCreator ? (
                         <Button
                           size="sm"
