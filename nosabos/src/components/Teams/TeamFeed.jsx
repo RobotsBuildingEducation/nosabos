@@ -278,7 +278,6 @@ export default function TeamFeed({
               width="80%"
               mb={4}
               borderRadius="4px"
-              height={3}
               background={lightenColor(bucket.color, 0.85)}
             />
           ) : null}
@@ -348,7 +347,7 @@ export default function TeamFeed({
                 size="sm"
                 borderRadius="4px"
                 width="80%"
-                height={3}
+                height={4}
                 mb={2}
               />
               <Text fontSize="xs" color="gray.300" mb={2}>
