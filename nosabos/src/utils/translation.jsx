@@ -31,10 +31,11 @@ export const translations = {
     practice_speak_banner_you_said: "You said",
     practice_speak_banner_translation: "Meaning",
     practice_speak_banner_xp: "+{xp} XP",
-    practice_drag_drop_instruction: "Drag the correct answer into the blank.",
+    practice_drag_drop_instruction:
+      "Drag or select the correct answer into the blank.",
     practice_drag_drop_slot_placeholder: "Drop the answer here",
     practice_drag_drop_multi_instruction:
-      "Drag each correct answer into the matching blank.",
+      "Drag or select each correct answer into the matching blank.",
     practice_drag_blank_label: "Blank {index}",
     quiz_correct: "Correct",
     quiz_try_again: "Try again",
