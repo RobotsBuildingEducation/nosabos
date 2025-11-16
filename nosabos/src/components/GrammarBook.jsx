@@ -973,6 +973,54 @@ export default function GrammarBook({ userLanguage = "en" }) {
     [maLayout, maBankOrder, maSlots]
   );
 
+  // Auto-drag handlers for click-to-place functionality
+  const handleMcAnswerClick = useCallback(
+    (choiceIdx, position) => {
+      if (mcLayout !== "drag") return;
+
+      // Move answer from bank to slot
+      const updated = Array.from(mcBankOrder);
+      updated.splice(position, 1);
+
+      // If there's already an answer in the slot, return it to the bank
+      if (mcSlotIndex != null) {
+        updated.splice(position, 0, mcSlotIndex);
+      }
+
+      setMcBankOrder(updated);
+      setMcSlotIndex(choiceIdx);
+      setMcPick(mcChoices[choiceIdx] || "");
+    },
+    [mcLayout, mcBankOrder, mcSlotIndex, mcChoices]
+  );
+
+  const handleMaAnswerClick = useCallback(
+    (choiceIdx, position) => {
+      if (maLayout !== "drag") return;
+
+      // Find first empty slot
+      const firstEmptySlot = maSlots.findIndex((slot) => slot == null);
+
+      if (firstEmptySlot === -1) {
+        // No empty slots available
+        return;
+      }
+
+      // Remove from bank
+      const updated = Array.from(maBankOrder);
+      updated.splice(position, 1);
+      setMaBankOrder(updated);
+
+      // Place in first empty slot
+      setMaSlots((prev) => {
+        const next = [...prev];
+        next[firstEmptySlot] = choiceIdx;
+        return next;
+      });
+    },
+    [maLayout, maBankOrder, maSlots]
+  );
+
   useEffect(() => {
     if (maLayout !== "drag") return;
     setMaPicks((prev) => {
@@ -2733,7 +2781,7 @@ Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 style={{
-                                  cursor: "grab",
+                                  cursor: "pointer",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
                                 px={3}
@@ -2752,6 +2800,12 @@ Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                onClick={() => handleMcAnswerClick(idx, position)}
+                                _hover={{
+                                  bg: "rgba(128,90,213,0.12)",
+                                  borderColor: "purple.200",
+                                }}
+                                transition="all 0.15s ease"
                               >
                                 {mcChoices[idx]}
                               </Box>
@@ -2949,7 +3003,7 @@ Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 style={{
-                                  cursor: "grab",
+                                  cursor: "pointer",
                                   ...(dragProvided.draggableProps.style || {}),
                                 }}
                                 px={3}
@@ -2968,6 +3022,12 @@ Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
+                                onClick={() => handleMaAnswerClick(idx, position)}
+                                _hover={{
+                                  bg: "rgba(128,90,213,0.12)",
+                                  borderColor: "purple.200",
+                                }}
+                                transition="all 0.15s ease"
                               >
                                 {maChoices[idx]}
                               </Box>
