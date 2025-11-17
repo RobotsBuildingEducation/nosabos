@@ -979,6 +979,33 @@ export default function App() {
   // Track XP at lesson start for completion detection
   const [lessonStartXp, setLessonStartXp] = useState(null);
   const lessonCompletionTriggeredRef = useRef(false);
+  const previousXpRef = useRef(null);
+
+  // Random mode switcher for lessons
+  const switchToRandomLessonMode = useCallback(() => {
+    if (viewMode !== "lesson" || !activeLesson?.modes?.length) return;
+
+    const availableModes = activeLesson.modes;
+    if (availableModes.length <= 1) return; // No switching needed if only one mode
+
+    // Filter out current mode to ensure we switch to a different one
+    const otherModes = availableModes.filter(mode => mode !== currentTab);
+    if (otherModes.length === 0) return;
+
+    // Pick random mode from other modes
+    const randomMode = otherModes[Math.floor(Math.random() * otherModes.length)];
+
+    console.log('[Random Mode Switch]', {
+      from: currentTab,
+      to: randomMode,
+      availableModes,
+    });
+
+    setCurrentTab(randomMode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentTab", randomMode);
+    }
+  }, [viewMode, activeLesson, currentTab]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1614,65 +1641,69 @@ export default function App() {
     }
   }, [viewMode, activeLesson, currentTab]);
 
-  // Detect lesson completion and auto-return to skill tree
+  // Detect XP changes and trigger random mode switch + check completion
   useEffect(() => {
-    if (!activeLesson || lessonStartXp === null || viewMode !== "lesson") {
-      console.log('[Lesson Completion] Skipping check:', {
-        hasLesson: !!activeLesson,
-        hasStartXp: lessonStartXp !== null,
-        viewMode,
-      });
-      return;
-    }
+    if (viewMode !== "lesson" || !activeLesson || lessonStartXp === null) return;
 
     const currentXp = user?.progress?.totalXp || user?.xp || 0;
-    const xpEarned = currentXp - lessonStartXp;
 
-    console.log('[Lesson Completion] Checking:', {
-      lessonStartXp,
-      currentXp,
-      xpEarned,
-      xpRequired: activeLesson.xpReward,
-      shouldComplete: xpEarned >= activeLesson.xpReward,
-      userProgressTotalXp: user?.progress?.totalXp,
-      userXp: user?.xp,
-    });
+    // Check if XP increased (exercise completed)
+    if (previousXpRef.current !== null && currentXp > previousXpRef.current) {
+      const xpGained = currentXp - previousXpRef.current;
+      const totalXpEarned = currentXp - lessonStartXp;
 
-    if (xpEarned >= activeLesson.xpReward && !lessonCompletionTriggeredRef.current) {
-      console.log('[Lesson Completion] XP goal reached! Completing lesson...');
-      lessonCompletionTriggeredRef.current = true; // Prevent duplicate triggers
+      console.log('[XP Change Detected]', {
+        previous: previousXpRef.current,
+        current: currentXp,
+        gainedThisExercise: xpGained,
+        lessonStartXp,
+        totalEarnedInLesson: totalXpEarned,
+        lessonGoal: activeLesson.xpReward,
+        shouldComplete: totalXpEarned >= activeLesson.xpReward,
+      });
 
-      // Complete the lesson
-      const npub = resolveNpub();
-      if (npub) {
-        completeLesson(npub, activeLesson.id, activeLesson.xpReward)
-          .then(async () => {
-            // Refresh user data
-            const fresh = await loadUserObjectFromDB(database, npub);
-            if (fresh) setUser?.(fresh);
+      // Check for lesson completion
+      if (totalXpEarned >= activeLesson.xpReward && !lessonCompletionTriggeredRef.current) {
+        console.log('[Lesson Completion] XP goal reached! Completing lesson...');
+        lessonCompletionTriggeredRef.current = true;
 
-            // Show celebration
-            toast({
-              title: appLanguage === "es" ? "¡Lección completada!" : "Lesson Complete!",
-              description: activeLesson.title[appLanguage] || activeLesson.title.en,
-              status: "success",
-              duration: 3000,
+        const npub = resolveNpub();
+        if (npub) {
+          completeLesson(npub, activeLesson.id, activeLesson.xpReward)
+            .then(async () => {
+              const fresh = await loadUserObjectFromDB(database, npub);
+              if (fresh) setUser?.(fresh);
+
+              toast({
+                title: appLanguage === "es" ? "¡Lección completada!" : "Lesson Complete!",
+                description: activeLesson.title[appLanguage] || activeLesson.title.en,
+                status: "success",
+                duration: 3000,
+              });
+
+              setTimeout(() => {
+                handleReturnToSkillTree();
+                setActiveLesson(null);
+                setLessonStartXp(null);
+                previousXpRef.current = null;
+                localStorage.removeItem("activeLesson");
+              }, 1500);
+            })
+            .catch((err) => {
+              console.error("Failed to complete lesson:", err);
+              lessonCompletionTriggeredRef.current = false; // Reset on error
             });
-
-            // Return to skill tree after a brief delay
-            setTimeout(() => {
-              handleReturnToSkillTree();
-              setActiveLesson(null);
-              setLessonStartXp(null);
-              localStorage.removeItem("activeLesson");
-            }, 1500);
-          })
-          .catch((err) => {
-            console.error("Failed to complete lesson:", err);
-          });
+        }
+      } else {
+        // Not complete yet - switch to random mode
+        setTimeout(() => {
+          switchToRandomLessonMode();
+        }, 1000);
       }
     }
-  }, [user?.progress?.totalXp, user?.xp, activeLesson, lessonStartXp, viewMode, appLanguage]);
+
+    previousXpRef.current = currentXp;
+  }, [user?.progress?.totalXp, user?.xp, viewMode, activeLesson, lessonStartXp, switchToRandomLessonMode, appLanguage]);
 
   const runCefrAnalysis = useCallback(
     async ({ dailyGoalXp: goal = 0, dailyXp: earned = 0 } = {}) => {
