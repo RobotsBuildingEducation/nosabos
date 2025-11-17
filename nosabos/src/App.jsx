@@ -983,22 +983,39 @@ export default function App() {
 
   // Random mode switcher for lessons
   const switchToRandomLessonMode = useCallback(() => {
-    if (viewMode !== "lesson" || !activeLesson?.modes?.length) return;
+    console.log('[switchToRandomLessonMode] Called', {
+      viewMode,
+      hasActiveLesson: !!activeLesson,
+      activeLessonModes: activeLesson?.modes,
+      currentTab,
+    });
+
+    if (viewMode !== "lesson" || !activeLesson?.modes?.length) {
+      console.log('[switchToRandomLessonMode] Exiting early - conditions not met');
+      return;
+    }
 
     const availableModes = activeLesson.modes;
-    if (availableModes.length <= 1) return; // No switching needed if only one mode
+    if (availableModes.length <= 1) {
+      console.log('[switchToRandomLessonMode] Only one mode available, not switching');
+      return;
+    }
 
     // Filter out current mode to ensure we switch to a different one
     const otherModes = availableModes.filter(mode => mode !== currentTab);
-    if (otherModes.length === 0) return;
+    if (otherModes.length === 0) {
+      console.log('[switchToRandomLessonMode] No other modes to switch to');
+      return;
+    }
 
     // Pick random mode from other modes
     const randomMode = otherModes[Math.floor(Math.random() * otherModes.length)];
 
-    console.log('[Random Mode Switch]', {
+    console.log('[Random Mode Switch] Switching modes', {
       from: currentTab,
       to: randomMode,
       availableModes,
+      otherModes,
     });
 
     setCurrentTab(randomMode);
@@ -2034,7 +2051,9 @@ export default function App() {
             }
           } else if (totalXpEarned < activeLesson.xpReward) {
             // Not complete yet - switch to random mode
+            console.log('[Lesson XP Check] Lesson not complete yet, scheduling mode switch in 1s');
             setTimeout(() => {
+              console.log('[Lesson XP Check] Executing scheduled mode switch now');
               switchToRandomLessonMode();
             }, 1000);
           }
