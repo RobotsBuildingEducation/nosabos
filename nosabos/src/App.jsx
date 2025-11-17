@@ -99,7 +99,7 @@ import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { subscribeToTeamInvites } from "./utils/teams";
-import EmbeddedSkillTreePanel from "./components/EmbeddedSkillTreePanel";
+import EmbeddedSkillTree from "./components/EmbeddedSkillTree";
 import { getLearningPath } from "./data/skillTreeData";
 import { startLesson, completeLesson } from "./utils/progressTracking";
 import { RiMapLine, RiCloseLine } from "react-icons/ri";
@@ -948,8 +948,7 @@ export default function App() {
       : "realtime"
   );
 
-  // Skill Tree embedded panel state
-  const [skillTreeExpanded, setSkillTreeExpanded] = useState(false);
+  // Active lesson tracking
   const [activeLesson, setActiveLesson] = useState(
     typeof window !== "undefined" && localStorage.getItem("activeLesson")
       ? JSON.parse(localStorage.getItem("activeLesson"))
@@ -1502,9 +1501,6 @@ export default function App() {
       // Prompt for daily goal right after onboarding
       setDailyGoalOpen(true);
       setBitcoinModalQueued(true);
-
-      // Show skill tree after onboarding
-      setSkillTreeExpanded(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -1539,9 +1535,6 @@ export default function App() {
           localStorage.setItem("currentTab", firstMode);
         }
       }
-
-      // Collapse skill tree panel
-      setSkillTreeExpanded(false);
 
       toast({
         title: appLanguage === "es" ? "Lección iniciada" : "Lesson started",
@@ -2133,25 +2126,11 @@ export default function App() {
         onAllowPostsChange={handleAllowPostsChange}
       />
 
-      {/* Embedded Skill Tree Panel */}
-      <EmbeddedSkillTreePanel
-        isExpanded={skillTreeExpanded}
-        onToggle={() => setSkillTreeExpanded(!skillTreeExpanded)}
-        targetLang={targetLang}
-        level={level}
-        userProgress={userProgress}
-        activeLesson={activeLesson}
-        onStartLesson={handleStartLesson}
-        appLanguage={appLanguage}
-      />
-
       <BottomActionBar
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenTeams={() => setTeamsOpen(true)}
-        onToggleSkillTree={() => setSkillTreeExpanded(!skillTreeExpanded)}
-        skillTreeExpanded={skillTreeExpanded}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -2163,6 +2142,16 @@ export default function App() {
       />
 
       <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+        {/* Embedded Skill Tree - Always Visible */}
+        <EmbeddedSkillTree
+          targetLang={targetLang}
+          level={level}
+          userProgress={userProgress}
+          activeLesson={activeLesson}
+          onStartLesson={handleStartLesson}
+          appLanguage={appLanguage}
+        />
+
         <Tabs
           index={tabIndex}
           onChange={(i) => {
@@ -2188,6 +2177,7 @@ export default function App() {
                 pauseMs={user?.progress?.pauseMs}
                 helpRequest={user?.progress?.helpRequest}
                 practicePronunciation={user?.progress?.practicePronunciation}
+                lessonContent={activeLesson?.content?.realtime}
                 onSwitchedAccount={async (id, sec) => {
                   if (id) localStorage.setItem("local_npub", id);
                   if (typeof sec === "string")
@@ -2205,6 +2195,7 @@ export default function App() {
                 userLanguage={appLanguage}
                 activeNpub={activeNpub}
                 activeNsec={activeNsec}
+                lessonContent={activeLesson?.content?.stories}
               />
             </TabPanel>
 
@@ -2214,12 +2205,16 @@ export default function App() {
                 userLanguage={appLanguage}
                 activeNpub={activeNpub}
                 activeNsec={activeNsec}
+                lessonContent={activeLesson?.content?.jobscript}
               />
             </TabPanel>
 
             {/* History (reading) */}
             <TabPanel px={0}>
-              <History userLanguage={appLanguage} />
+              <History
+                userLanguage={appLanguage}
+                lessonContent={activeLesson?.content?.history}
+              />
             </TabPanel>
 
             {/* Grammar */}
@@ -2228,6 +2223,7 @@ export default function App() {
                 userLanguage={appLanguage}
                 activeNpub={activeNpub}
                 activeNsec={activeNsec}
+                lessonContent={activeLesson?.content?.grammar}
               />
             </TabPanel>
 
@@ -2237,6 +2233,7 @@ export default function App() {
                 userLanguage={appLanguage}
                 activeNpub={activeNpub}
                 activeNsec={activeNsec}
+                lessonContent={activeLesson?.content?.vocabulary}
               />
             </TabPanel>
 
@@ -2326,8 +2323,6 @@ function BottomActionBar({
   onOpenIdentity,
   onOpenSettings,
   onOpenTeams,
-  onToggleSkillTree,
-  skillTreeExpanded,
   isIdentitySaving = false,
   showTranslations = true,
   onToggleTranslations,
@@ -2348,7 +2343,6 @@ function BottomActionBar({
   const helpChatLabel =
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
   const teamsLabel = t?.teams_drawer_title || "Teams";
-  const skillTreeLabel = appLanguage === "es" ? "Mapa" : "Map";
 
   const handleSelectLanguage = (lang) => {
     if (typeof onSelectLanguage === "function") {
@@ -2445,19 +2439,6 @@ function BottomActionBar({
               : undefined
           }
         />
-
-        <Tooltip label={skillTreeLabel} placement="top">
-          <IconButton
-            icon={<RiMapLine size={20} />}
-            onClick={onToggleSkillTree}
-            aria-label={skillTreeLabel}
-            rounded="xl"
-            flexShrink={0}
-            colorScheme="teal"
-            variant={skillTreeExpanded ? "solid" : "outline"}
-            borderWidth={skillTreeExpanded ? "0px" : "2px"}
-          />
-        </Tooltip>
 
         <IconButton
           icon={<SettingsIcon boxSize={4} />}
