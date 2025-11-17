@@ -1641,87 +1641,6 @@ export default function App() {
     }
   }, [viewMode, activeLesson, currentTab]);
 
-  // Detect XP changes and trigger random mode switch + check completion
-  useEffect(() => {
-    console.log('[Completion Detection] useEffect triggered', {
-      viewMode,
-      hasActiveLesson: !!activeLesson,
-      lessonStartXp,
-      userProgressXp: user?.progress?.totalXp,
-      userXp: user?.xp,
-      previousXp: previousXpRef.current,
-    });
-
-    if (viewMode !== "lesson" || !activeLesson || lessonStartXp === null) {
-      console.log('[Completion Detection] Skipping - conditions not met');
-      return;
-    }
-
-    const currentXp = user?.progress?.totalXp || user?.xp || 0;
-
-    console.log('[Completion Detection] Checking XP', {
-      currentXp,
-      previousXp: previousXpRef.current,
-      willCheckCompletion: previousXpRef.current !== null && currentXp > previousXpRef.current,
-    });
-
-    // Check if XP increased (exercise completed)
-    if (previousXpRef.current !== null && currentXp > previousXpRef.current) {
-      const xpGained = currentXp - previousXpRef.current;
-      const totalXpEarned = currentXp - lessonStartXp;
-
-      console.log('[XP Change Detected]', {
-        previous: previousXpRef.current,
-        current: currentXp,
-        gainedThisExercise: xpGained,
-        lessonStartXp,
-        totalEarnedInLesson: totalXpEarned,
-        lessonGoal: activeLesson.xpReward,
-        shouldComplete: totalXpEarned >= activeLesson.xpReward,
-      });
-
-      // Check for lesson completion
-      if (totalXpEarned >= activeLesson.xpReward && !lessonCompletionTriggeredRef.current) {
-        console.log('[Lesson Completion] XP goal reached! Completing lesson...');
-        lessonCompletionTriggeredRef.current = true;
-
-        const npub = resolveNpub();
-        if (npub) {
-          completeLesson(npub, activeLesson.id, activeLesson.xpReward)
-            .then(async () => {
-              const fresh = await loadUserObjectFromDB(database, npub);
-              if (fresh) setUser?.(fresh);
-
-              toast({
-                title: appLanguage === "es" ? "¡Lección completada!" : "Lesson Complete!",
-                description: activeLesson.title[appLanguage] || activeLesson.title.en,
-                status: "success",
-                duration: 3000,
-              });
-
-              setTimeout(() => {
-                handleReturnToSkillTree();
-                setActiveLesson(null);
-                setLessonStartXp(null);
-                previousXpRef.current = null;
-                localStorage.removeItem("activeLesson");
-              }, 1500);
-            })
-            .catch((err) => {
-              console.error("Failed to complete lesson:", err);
-              lessonCompletionTriggeredRef.current = false; // Reset on error
-            });
-        }
-      } else {
-        // Not complete yet - switch to random mode
-        setTimeout(() => {
-          switchToRandomLessonMode();
-        }, 1000);
-      }
-    }
-
-    previousXpRef.current = currentXp;
-  }, [user?.progress?.totalXp, user?.xp, viewMode, activeLesson, lessonStartXp, switchToRandomLessonMode, appLanguage]);
 
   const runCefrAnalysis = useCallback(
     async ({ dailyGoalXp: goal = 0, dailyXp: earned = 0 } = {}) => {
@@ -2068,6 +1987,59 @@ export default function App() {
           pickRandomFeature();
         }
 
+        // Check for lesson completion
+        if (viewMode === "lesson" && activeLesson && lessonStartXp !== null) {
+          const totalXpEarned = newXp - lessonStartXp;
+
+          console.log('[Lesson XP Check]', {
+            newXp,
+            lessonStartXp,
+            totalXpEarned,
+            lessonGoal: activeLesson.xpReward,
+            shouldComplete: totalXpEarned >= activeLesson.xpReward,
+          });
+
+          // Check if lesson goal reached
+          if (totalXpEarned >= activeLesson.xpReward && !lessonCompletionTriggeredRef.current) {
+            console.log('[Lesson Completion] XP goal reached! Completing lesson...');
+            lessonCompletionTriggeredRef.current = true;
+
+            const npub = resolveNpub();
+            if (npub) {
+              completeLesson(npub, activeLesson.id, activeLesson.xpReward)
+                .then(async () => {
+                  const fresh = await loadUserObjectFromDB(database, npub);
+                  if (fresh) setUser?.(fresh);
+
+                  toast({
+                    title: appLanguage === "es" ? "¡Lección completada!" : "Lesson Complete!",
+                    description: activeLesson.title[appLanguage] || activeLesson.title.en,
+                    status: "success",
+                    duration: 3000,
+                  });
+
+                  setTimeout(() => {
+                    handleReturnToSkillTree();
+                    setActiveLesson(null);
+                    setLessonStartXp(null);
+                    previousXpRef.current = null;
+                    lessonCompletionTriggeredRef.current = false;
+                    localStorage.removeItem("activeLesson");
+                  }, 1500);
+                })
+                .catch((err) => {
+                  console.error("Failed to complete lesson:", err);
+                  lessonCompletionTriggeredRef.current = false;
+                });
+            }
+          } else if (totalXpEarned < activeLesson.xpReward) {
+            // Not complete yet - switch to random mode
+            setTimeout(() => {
+              switchToRandomLessonMode();
+            }, 1000);
+          }
+        }
+
         maybePostNostrProgress({ totalXp: newXp });
       }
     });
@@ -2083,6 +2055,14 @@ export default function App() {
     pickRandomFeature,
     user?.identity,
     maybePostNostrProgress,
+    viewMode,
+    activeLesson,
+    lessonStartXp,
+    switchToRandomLessonMode,
+    handleReturnToSkillTree,
+    setActiveLesson,
+    setLessonStartXp,
+    setUser,
   ]);
 
   const RandomHeader = (
@@ -2298,8 +2278,6 @@ export default function App() {
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenTeams={() => setTeamsOpen(true)}
-        onReturnToSkillTree={handleReturnToSkillTree}
-        showBackButton={viewMode === "lesson"}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -2513,8 +2491,6 @@ function BottomActionBar({
   onOpenIdentity,
   onOpenSettings,
   onOpenTeams,
-  onReturnToSkillTree,
-  showBackButton = false,
   isIdentitySaving = false,
   showTranslations = true,
   onToggleTranslations,
@@ -2575,18 +2551,6 @@ function BottomActionBar({
         columnGap={{ base: 3, md: 6 }}
         overflow="visible"
       >
-        {showBackButton && (
-          <IconButton
-            icon={<RiArrowLeftLine size={20} />}
-            onClick={onReturnToSkillTree}
-            aria-label={appLanguage === "es" ? "Volver al mapa" : "Back to map"}
-            rounded="xl"
-            flexShrink={0}
-            colorScheme="teal"
-            variant="solid"
-          />
-        )}
-
         <ButtonGroup
           size="sm"
           isAttached
