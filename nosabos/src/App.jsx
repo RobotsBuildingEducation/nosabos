@@ -99,10 +99,10 @@ import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { subscribeToTeamInvites } from "./utils/teams";
-import EmbeddedSkillTree from "./components/EmbeddedSkillTree";
+import SkillTree from "./components/SkillTree";
 import { getLearningPath } from "./data/skillTreeData";
 import { startLesson, completeLesson } from "./utils/progressTracking";
-import { RiMapLine, RiCloseLine } from "react-icons/ri";
+import { RiArrowLeftLine } from "react-icons/ri";
 
 /* ---------------------------
    Small helpers
@@ -948,7 +948,12 @@ export default function App() {
       : "realtime"
   );
 
-  // Active lesson tracking
+  // Active lesson tracking and view mode
+  const [viewMode, setViewMode] = useState(
+    typeof window !== "undefined" && localStorage.getItem("viewMode")
+      ? localStorage.getItem("viewMode")
+      : "skillTree" // Default to skill tree view
+  );
   const [activeLesson, setActiveLesson] = useState(
     typeof window !== "undefined" && localStorage.getItem("activeLesson")
       ? JSON.parse(localStorage.getItem("activeLesson"))
@@ -1527,6 +1532,12 @@ export default function App() {
         localStorage.setItem("activeLesson", JSON.stringify(lesson));
       }
 
+      // Switch to lesson view mode
+      setViewMode("lesson");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("viewMode", "lesson");
+      }
+
       // Switch to the first mode in the lesson
       const firstMode = lesson.modes?.[0];
       if (firstMode && TAB_KEYS.includes(firstMode)) {
@@ -1553,6 +1564,14 @@ export default function App() {
         status: "error",
         duration: 3000,
       });
+    }
+  };
+
+  // Handle returning to skill tree
+  const handleReturnToSkillTree = () => {
+    setViewMode("skillTree");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("viewMode", "skillTree");
     }
   };
 
@@ -2131,6 +2150,8 @@ export default function App() {
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenTeams={() => setTeamsOpen(true)}
+        onReturnToSkillTree={handleReturnToSkillTree}
+        showBackButton={viewMode === "lesson"}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -2141,26 +2162,30 @@ export default function App() {
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
       />
 
-      <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
-        {/* Embedded Skill Tree - Always Visible */}
-        <EmbeddedSkillTree
-          targetLang={targetLang}
-          level={level}
-          userProgress={userProgress}
-          activeLesson={activeLesson}
-          onStartLesson={handleStartLesson}
-          appLanguage={appLanguage}
-        />
+      {/* Skill Tree Scene - Full Screen */}
+      {viewMode === "skillTree" && (
+        <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+          <SkillTree
+            targetLang={targetLang}
+            level={level}
+            userProgress={userProgress}
+            onStartLesson={handleStartLesson}
+          />
+        </Box>
+      )}
 
-        <Tabs
-          index={tabIndex}
-          onChange={(i) => {
-            const key = indexToKey(i);
-            handleSelectTab(key);
-          }}
-          colorScheme="teal"
-          isLazy
-        >
+      {/* Learning Modules Scene */}
+      {viewMode === "lesson" && (
+        <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+          <Tabs
+            index={tabIndex}
+            onChange={(i) => {
+              const key = indexToKey(i);
+              handleSelectTab(key);
+            }}
+            colorScheme="teal"
+            isLazy
+          >
           <TabPanels mt={[2, 3]}>
             {/* Chat */}
             <TabPanel px={0}>
@@ -2323,6 +2348,8 @@ function BottomActionBar({
   onOpenIdentity,
   onOpenSettings,
   onOpenTeams,
+  onReturnToSkillTree,
+  showBackButton = false,
   isIdentitySaving = false,
   showTranslations = true,
   onToggleTranslations,
@@ -2383,6 +2410,18 @@ function BottomActionBar({
         columnGap={{ base: 3, md: 6 }}
         overflow="visible"
       >
+        {showBackButton && (
+          <IconButton
+            icon={<RiArrowLeftLine size={20} />}
+            onClick={onReturnToSkillTree}
+            aria-label={appLanguage === "es" ? "Volver al mapa" : "Back to map"}
+            rounded="xl"
+            flexShrink={0}
+            colorScheme="teal"
+            variant="solid"
+          />
+        )}
+
         <ButtonGroup
           size="sm"
           isAttached
