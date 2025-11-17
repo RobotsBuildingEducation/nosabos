@@ -978,6 +978,7 @@ export default function App() {
 
   // Track XP at lesson start for completion detection
   const [lessonStartXp, setLessonStartXp] = useState(null);
+  const lessonCompletionTriggeredRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1543,6 +1544,15 @@ export default function App() {
       // Record starting XP for this lesson
       const currentXp = user?.progress?.totalXp || user?.xp || 0;
       setLessonStartXp(currentXp);
+      lessonCompletionTriggeredRef.current = false; // Reset completion flag
+      console.log('[Lesson Start] Recording starting XP:', {
+        lessonId: lesson.id,
+        lessonTitle: lesson.title.en,
+        startXp: currentXp,
+        xpRequired: lesson.xpReward,
+        userProgressTotalXp: user?.progress?.totalXp,
+        userXp: user?.xp,
+      });
 
       // Switch to the first mode in the lesson BEFORE switching view mode
       const firstMode = lesson.modes?.[0];
@@ -1606,12 +1616,31 @@ export default function App() {
 
   // Detect lesson completion and auto-return to skill tree
   useEffect(() => {
-    if (!activeLesson || lessonStartXp === null || viewMode !== "lesson") return;
+    if (!activeLesson || lessonStartXp === null || viewMode !== "lesson") {
+      console.log('[Lesson Completion] Skipping check:', {
+        hasLesson: !!activeLesson,
+        hasStartXp: lessonStartXp !== null,
+        viewMode,
+      });
+      return;
+    }
 
     const currentXp = user?.progress?.totalXp || user?.xp || 0;
     const xpEarned = currentXp - lessonStartXp;
 
-    if (xpEarned >= activeLesson.xpReward) {
+    console.log('[Lesson Completion] Checking:', {
+      lessonStartXp,
+      currentXp,
+      xpEarned,
+      xpRequired: activeLesson.xpReward,
+      shouldComplete: xpEarned >= activeLesson.xpReward,
+      userProgressTotalXp: user?.progress?.totalXp,
+      userXp: user?.xp,
+    });
+
+    if (xpEarned >= activeLesson.xpReward && !lessonCompletionTriggeredRef.current) {
+      console.log('[Lesson Completion] XP goal reached! Completing lesson...');
+      lessonCompletionTriggeredRef.current = true; // Prevent duplicate triggers
 
       // Complete the lesson
       const npub = resolveNpub();
