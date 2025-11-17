@@ -99,7 +99,7 @@ import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { subscribeToTeamInvites } from "./utils/teams";
-import SkillTree from "./components/SkillTree";
+import EmbeddedSkillTreePanel from "./components/EmbeddedSkillTreePanel";
 import { getLearningPath } from "./data/skillTreeData";
 import { startLesson, completeLesson } from "./utils/progressTracking";
 import { RiMapLine, RiCloseLine } from "react-icons/ri";
@@ -948,9 +948,13 @@ export default function App() {
       : "realtime"
   );
 
-  // Skill Tree drawer state
-  const [skillTreeOpen, setSkillTreeOpen] = useState(false);
-  const [activeLesson, setActiveLesson] = useState(null);
+  // Skill Tree embedded panel state
+  const [skillTreeExpanded, setSkillTreeExpanded] = useState(false);
+  const [activeLesson, setActiveLesson] = useState(
+    typeof window !== "undefined" && localStorage.getItem("activeLesson")
+      ? JSON.parse(localStorage.getItem("activeLesson"))
+      : null
+  );
 
   // Helper mapping for keys/index
   const TAB_KEYS = [
@@ -1500,7 +1504,7 @@ export default function App() {
       setBitcoinModalQueued(true);
 
       // Show skill tree after onboarding
-      setSkillTreeOpen(true);
+      setSkillTreeExpanded(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -1521,8 +1525,11 @@ export default function App() {
         if (fresh) setUser?.(fresh);
       }
 
-      // Set active lesson
+      // Set active lesson and persist it
       setActiveLesson(lesson);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("activeLesson", JSON.stringify(lesson));
+      }
 
       // Switch to the first mode in the lesson
       const firstMode = lesson.modes?.[0];
@@ -1533,8 +1540,8 @@ export default function App() {
         }
       }
 
-      // Close skill tree drawer
-      setSkillTreeOpen(false);
+      // Collapse skill tree panel
+      setSkillTreeExpanded(false);
 
       toast({
         title: appLanguage === "es" ? "Lección iniciada" : "Lesson started",
@@ -2126,36 +2133,25 @@ export default function App() {
         onAllowPostsChange={handleAllowPostsChange}
       />
 
-      {/* Skill Tree Drawer */}
-      <Drawer
-        isOpen={skillTreeOpen}
-        onClose={() => setSkillTreeOpen(false)}
-        placement="bottom"
-        size="full"
-      >
-        <DrawerOverlay />
-        <DrawerContent bg="gray.950">
-          <DrawerCloseButton color="gray.100" />
-          <DrawerHeader color="gray.100">
-            {appLanguage === "es" ? "Tu Camino de Aprendizaje" : "Your Learning Path"}
-          </DrawerHeader>
-          <DrawerBody>
-            <SkillTree
-              targetLang={targetLang}
-              level={level}
-              userProgress={userProgress}
-              onStartLesson={handleStartLesson}
-            />
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+      {/* Embedded Skill Tree Panel */}
+      <EmbeddedSkillTreePanel
+        isExpanded={skillTreeExpanded}
+        onToggle={() => setSkillTreeExpanded(!skillTreeExpanded)}
+        targetLang={targetLang}
+        level={level}
+        userProgress={userProgress}
+        activeLesson={activeLesson}
+        onStartLesson={handleStartLesson}
+        appLanguage={appLanguage}
+      />
 
       <BottomActionBar
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenTeams={() => setTeamsOpen(true)}
-        onOpenSkillTree={() => setSkillTreeOpen(true)}
+        onToggleSkillTree={() => setSkillTreeExpanded(!skillTreeExpanded)}
+        skillTreeExpanded={skillTreeExpanded}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -2330,7 +2326,8 @@ function BottomActionBar({
   onOpenIdentity,
   onOpenSettings,
   onOpenTeams,
-  onOpenSkillTree,
+  onToggleSkillTree,
+  skillTreeExpanded,
   isIdentitySaving = false,
   showTranslations = true,
   onToggleTranslations,
@@ -2452,12 +2449,13 @@ function BottomActionBar({
         <Tooltip label={skillTreeLabel} placement="top">
           <IconButton
             icon={<RiMapLine size={20} />}
-            onClick={onOpenSkillTree}
+            onClick={onToggleSkillTree}
             aria-label={skillTreeLabel}
             rounded="xl"
             flexShrink={0}
             colorScheme="teal"
-            variant="solid"
+            variant={skillTreeExpanded ? "solid" : "outline"}
+            borderWidth={skillTreeExpanded ? "0px" : "2px"}
           />
         </Tooltip>
 
