@@ -971,6 +971,14 @@ export default function App() {
     "random",
   ];
 
+  // Filter tabs based on active lesson modes
+  const activeTabs = viewMode === "lesson" && activeLesson?.modes?.length > 0
+    ? TAB_KEYS.filter(key => activeLesson.modes.includes(key))
+    : TAB_KEYS;
+
+  // Track XP at lesson start for completion detection
+  const [lessonStartXp, setLessonStartXp] = useState(null);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!activeNpub) {
@@ -1022,8 +1030,8 @@ export default function App() {
       localStorage.removeItem(`cefrResult:${activeNpub}`);
     }
   }, [activeNpub, cefrResult]);
-  const keyToIndex = (k) => Math.max(0, TAB_KEYS.indexOf(k));
-  const indexToKey = (i) => TAB_KEYS[i] ?? "realtime";
+  const keyToIndex = (k) => Math.max(0, activeTabs.indexOf(k));
+  const indexToKey = (i) => activeTabs[i] ?? (activeTabs[0] || "realtime");
   const tabIndex = keyToIndex(currentTab);
 
   const TAB_LABELS = {
@@ -1532,6 +1540,11 @@ export default function App() {
         localStorage.setItem("activeLesson", JSON.stringify(lesson));
       }
 
+      // Record starting XP for this lesson
+      const currentXp = user?.progress?.totalXp || user?.xp || 0;
+      setLessonStartXp(currentXp);
+      console.log('[Lesson Start] Starting XP:', currentXp, 'Goal:', lesson.xpReward);
+
       // Switch to lesson view mode
       setViewMode("lesson");
       if (typeof window !== "undefined") {
@@ -1574,6 +1587,64 @@ export default function App() {
       localStorage.setItem("viewMode", "skillTree");
     }
   };
+
+  // Ensure current tab is valid for the active lesson
+  useEffect(() => {
+    if (viewMode === "lesson" && activeLesson?.modes?.length > 0) {
+      // If current tab is not in lesson modes, switch to first available mode
+      if (!activeLesson.modes.includes(currentTab)) {
+        const firstMode = activeLesson.modes[0];
+        setCurrentTab(firstMode);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("currentTab", firstMode);
+        }
+      }
+    }
+  }, [viewMode, activeLesson, currentTab]);
+
+  // Detect lesson completion and auto-return to skill tree
+  useEffect(() => {
+    if (!activeLesson || lessonStartXp === null || viewMode !== "lesson") return;
+
+    const currentXp = user?.progress?.totalXp || user?.xp || 0;
+    const xpEarned = currentXp - lessonStartXp;
+
+    console.log('[Lesson Progress] Start XP:', lessonStartXp, 'Current XP:', currentXp, 'Earned:', xpEarned, 'Goal:', activeLesson.xpReward);
+
+    if (xpEarned >= activeLesson.xpReward) {
+      console.log('[Lesson Complete] XP goal reached!');
+
+      // Complete the lesson
+      const npub = resolveNpub();
+      if (npub) {
+        completeLesson(npub, activeLesson.id, activeLesson.xpReward)
+          .then(async () => {
+            // Refresh user data
+            const fresh = await loadUserObjectFromDB(database, npub);
+            if (fresh) setUser?.(fresh);
+
+            // Show celebration
+            toast({
+              title: appLanguage === "es" ? "¡Lección completada!" : "Lesson Complete!",
+              description: `+${activeLesson.xpReward} XP`,
+              status: "success",
+              duration: 3000,
+            });
+
+            // Return to skill tree after a brief delay
+            setTimeout(() => {
+              handleReturnToSkillTree();
+              setActiveLesson(null);
+              setLessonStartXp(null);
+              localStorage.removeItem("activeLesson");
+            }, 1500);
+          })
+          .catch((err) => {
+            console.error("Failed to complete lesson:", err);
+          });
+      }
+    }
+  }, [user?.progress?.totalXp, user?.xp, activeLesson, lessonStartXp, viewMode, appLanguage]);
 
   const runCefrAnalysis = useCallback(
     async ({ dailyGoalXp: goal = 0, dailyXp: earned = 0 } = {}) => {
@@ -2128,7 +2199,7 @@ export default function App() {
         onRunCefrAnalysis={runCefrAnalysis}
         onSelectIdentity={handleIdentitySelection}
         isIdentitySaving={isIdentitySaving}
-        tabOrder={TAB_KEYS}
+        tabOrder={activeTabs}
         tabLabels={TAB_LABELS}
         tabIcons={TAB_ICONS}
         currentTab={currentTab}
