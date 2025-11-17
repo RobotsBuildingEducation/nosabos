@@ -58,9 +58,9 @@ const MODE_ICONS = {
  * Represents a single lesson in the skill tree
  */
 function LessonNode({ lesson, unit, status, onClick, isNext }) {
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const lockedColor = useColorModeValue('gray.400', 'gray.600');
+  const bgColor = 'gray.800';
+  const borderColor = 'gray.700';
+  const lockedColor = 'gray.600';
 
   const getNodeColor = () => {
     if (status === SKILL_STATUS.COMPLETED) return unit.color;
@@ -126,21 +126,21 @@ function LessonNode({ lesson, unit, status, onClick, isNext }) {
               w="80px"
               h="80px"
               borderRadius="full"
-              bg={status === SKILL_STATUS.LOCKED ? 'gray.200' : getNodeColor()}
+              bg={status === SKILL_STATUS.LOCKED ? 'gray.700' : getNodeColor()}
               border="4px solid"
-              borderColor={status === SKILL_STATUS.COMPLETED ? getNodeColor() : borderColor}
+              borderColor={status === SKILL_STATUS.COMPLETED ? getNodeColor() : 'gray.600'}
               display="flex"
               alignItems="center"
               justifyContent="center"
               position="relative"
-              boxShadow={status !== SKILL_STATUS.LOCKED ? 'lg' : 'none'}
-              opacity={status === SKILL_STATUS.LOCKED ? 0.5 : 1}
+              boxShadow={status !== SKILL_STATUS.LOCKED ? 'dark-lg' : 'none'}
+              opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
               transition="all 0.3s"
               _hover={
                 isClickable
                   ? {
                       transform: 'translateY(-4px)',
-                      boxShadow: 'xl',
+                      boxShadow: 'dark-lg',
                     }
                   : {}
               }
@@ -178,7 +178,7 @@ function LessonNode({ lesson, unit, status, onClick, isNext }) {
               fontWeight="bold"
               textAlign="center"
               maxW="120px"
-              color={status === SKILL_STATUS.LOCKED ? 'gray.500' : 'inherit'}
+              color={status === SKILL_STATUS.LOCKED ? 'gray.600' : 'gray.100'}
             >
               {lesson.title.en}
             </Text>
@@ -202,8 +202,8 @@ function LessonNode({ lesson, unit, status, onClick, isNext }) {
  * Represents a unit containing multiple lessons
  */
 function UnitSection({ unit, userProgress, onLessonClick, index }) {
-  const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.700');
+  const bgColor = 'gray.800';
+  const borderColor = 'gray.700';
 
   const unitProgressPercent = getUnitProgress(unit, userProgress);
   const completedCount = unit.lessons.filter(
@@ -238,7 +238,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
                 />
                 <Heading size="md">{unit.title.en}</Heading>
               </HStack>
-              <Text fontSize="sm" color="gray.600">
+              <Text fontSize="sm" color="gray.400">
                 {unit.description.en}
               </Text>
             </VStack>
@@ -257,7 +257,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
             colorScheme="teal"
             borderRadius="full"
             size="sm"
-            bg="gray.200"
+            bg="gray.700"
           />
         </Box>
 
@@ -291,7 +291,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
                     transform="translateX(-50%)"
                     w="4px"
                     h="40px"
-                    bg={status === SKILL_STATUS.COMPLETED ? unit.color : 'gray.300'}
+                    bg={status === SKILL_STATUS.COMPLETED ? unit.color : 'gray.700'}
                     zIndex={0}
                   />
                 )}
@@ -331,7 +331,7 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
               <Box w={3} h={3} borderRadius="full" bg={unit.color} />
               <Text>{lesson.title.en}</Text>
             </HStack>
-            <Text fontSize="sm" fontWeight="normal" color="gray.600">
+            <Text fontSize="sm" fontWeight="normal" color="gray.400">
               {unit.title.en}
             </Text>
           </VStack>
@@ -371,15 +371,15 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
             {/* XP Reward */}
             <HStack
               p={4}
-              bg="yellow.50"
+              bg="gray.700"
               borderRadius="lg"
               justify="space-between"
             >
               <HStack>
                 <RiStarFill color="gold" size={24} />
-                <Text fontWeight="bold">Complete to earn:</Text>
+                <Text fontWeight="bold" color="gray.100">Complete to earn:</Text>
               </HStack>
-              <Badge colorScheme="yellow" fontSize="md" px={3} py={1}>
+              <Badge colorScheme="yellow" fontSize="md" px={3} py={1} color="gray.900">
                 +{lesson.xpReward} XP
               </Badge>
             </HStack>
@@ -417,7 +417,7 @@ export default function SkillTree({
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const units = getLearningPath(targetLang, level);
-  const bgColor = useColorModeValue('gray.50', 'gray.900');
+  const bgColor = 'gray.950';
 
   const handleLessonClick = (lesson, unit, status) => {
     if (status === SKILL_STATUS.AVAILABLE || status === SKILL_STATUS.IN_PROGRESS) {
@@ -446,20 +446,20 @@ export default function SkillTree({
   const overallProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
 
   return (
-    <Box bg={bgColor} minH="100vh" py={8}>
+    <Box bg={bgColor} py={8}>
       <Container maxW="container.md">
         {/* Header */}
         <VStack spacing={6} mb={8}>
-          <Heading size="xl">Your Learning Path</Heading>
+          <Heading size="xl" color="gray.100">Your Learning Path</Heading>
 
           {/* Overall Progress */}
-          <Box w="full" bg="white" p={6} borderRadius="xl" boxShadow="md">
+          <Box w="full" bg="gray.800" p={6} borderRadius="xl" boxShadow="dark-lg" borderWidth="1px" borderColor="gray.700">
             <VStack spacing={3}>
               <HStack w="full" justify="space-between">
-                <Text fontWeight="bold">Overall Progress</Text>
+                <Text fontWeight="bold" color="gray.100">Overall Progress</Text>
                 <HStack>
                   <RiTrophyLine size={20} color="gold" />
-                  <Text fontWeight="bold" fontSize="lg">
+                  <Text fontWeight="bold" fontSize="lg" color="gray.100">
                     {userProgress.totalXp || 0} XP
                   </Text>
                 </HStack>
@@ -471,9 +471,10 @@ export default function SkillTree({
                 borderRadius="full"
                 size="lg"
                 w="full"
+                bg="gray.700"
               />
 
-              <Text fontSize="sm" color="gray.600">
+              <Text fontSize="sm" color="gray.400">
                 {completedLessons} of {totalLessons} lessons completed
               </Text>
             </VStack>
@@ -494,10 +495,10 @@ export default function SkillTree({
             ))
           ) : (
             <Box textAlign="center" py={12}>
-              <Text fontSize="lg" color="gray.500">
+              <Text fontSize="lg" color="gray.400">
                 No learning path available for this language yet.
               </Text>
-              <Text fontSize="sm" color="gray.400" mt={2}>
+              <Text fontSize="sm" color="gray.500" mt={2}>
                 Check back soon for structured lessons!
               </Text>
             </Box>

@@ -5,7 +5,7 @@
  */
 
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
-import { db } from '../firebaseResources/firebaseResources';
+import { database } from '../firebaseResources/firebaseResources';
 import { SKILL_STATUS } from '../data/skillTreeData';
 
 /**
@@ -28,7 +28,7 @@ export function initializeProgress() {
 export async function startLesson(npub, lessonId) {
   if (!npub || !lessonId) return;
 
-  const userRef = doc(db, 'users', npub);
+  const userRef = doc(database, 'users', npub);
 
   try {
     await updateDoc(userRef, {
@@ -49,7 +49,7 @@ export async function startLesson(npub, lessonId) {
 export async function completeLesson(npub, lessonId, xpReward) {
   if (!npub || !lessonId || !xpReward) return;
 
-  const userRef = doc(db, 'users', npub);
+  const userRef = doc(database, 'users', npub);
 
   try {
     await updateDoc(userRef, {
@@ -90,7 +90,7 @@ export async function completeLesson(npub, lessonId, xpReward) {
 export async function trackLessonAttempt(npub, lessonId) {
   if (!npub || !lessonId) return;
 
-  const userRef = doc(db, 'users', npub);
+  const userRef = doc(database, 'users', npub);
 
   try {
     await updateDoc(userRef, {
@@ -186,7 +186,7 @@ export function findNextLesson(units, userProgress) {
 export async function awardMilestoneBonus(npub, milestoneType, bonusXp) {
   if (!npub || !bonusXp) return;
 
-  const userRef = doc(db, 'users', npub);
+  const userRef = doc(database, 'users', npub);
 
   try {
     await updateDoc(userRef, {
@@ -216,7 +216,7 @@ export async function awardMilestoneBonus(npub, milestoneType, bonusXp) {
 export async function abandonLesson(npub, lessonId) {
   if (!npub || !lessonId) return;
 
-  const userRef = doc(db, 'users', npub);
+  const userRef = doc(database, 'users', npub);
 
   try {
     await updateDoc(userRef, {

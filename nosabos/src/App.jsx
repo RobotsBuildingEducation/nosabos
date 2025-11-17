@@ -948,12 +948,8 @@ export default function App() {
       : "realtime"
   );
 
-  // Skill Tree view state - show by default after onboarding
-  const [viewMode, setViewMode] = useState(
-    typeof window !== "undefined"
-      ? localStorage.getItem("viewMode") || "skillTree"
-      : "skillTree"
-  );
+  // Skill Tree drawer state
+  const [skillTreeOpen, setSkillTreeOpen] = useState(false);
   const [activeLesson, setActiveLesson] = useState(null);
 
   // Helper mapping for keys/index
@@ -1504,10 +1500,7 @@ export default function App() {
       setBitcoinModalQueued(true);
 
       // Show skill tree after onboarding
-      setViewMode("skillTree");
-      if (typeof window !== "undefined") {
-        localStorage.setItem("viewMode", "skillTree");
-      }
+      setSkillTreeOpen(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -1540,11 +1533,8 @@ export default function App() {
         }
       }
 
-      // Switch to learning view
-      setViewMode("learning");
-      if (typeof window !== "undefined") {
-        localStorage.setItem("viewMode", "learning");
-      }
+      // Close skill tree drawer
+      setSkillTreeOpen(false);
 
       toast({
         title: appLanguage === "es" ? "Lección iniciada" : "Lesson started",
@@ -1563,15 +1553,6 @@ export default function App() {
         status: "error",
         duration: 3000,
       });
-    }
-  };
-
-  // Handle returning to skill tree
-  const handleReturnToSkillTree = () => {
-    setViewMode("skillTree");
-    setActiveLesson(null);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("viewMode", "skillTree");
     }
   };
 
@@ -2093,118 +2074,13 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
-  // Show Skill Tree View
-  if (viewMode === "skillTree") {
-    const targetLang = user?.progress?.targetLang || "es";
-    const level = user?.progress?.level || "beginner";
-    const userProgress = {
-      totalXp: user?.progress?.totalXp || user?.xp || 0,
-      lessons: user?.progress?.lessons || {},
-    };
+  const targetLang = user?.progress?.targetLang || "es";
+  const level = user?.progress?.level || "beginner";
+  const userProgress = {
+    totalXp: user?.progress?.totalXp || user?.xp || 0,
+    lessons: user?.progress?.lessons || {},
+  };
 
-    return (
-      <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
-        <TopBar
-          appLanguage={appLanguage}
-          user={user}
-          activeNpub={activeNpub}
-          activeNsec={activeNsec}
-          auth={auth}
-          cefrResult={cefrResult}
-          cefrLoading={cefrLoading}
-          cefrError={cefrError}
-          onSwitchedAccount={async (id, sec) => {
-            if (id) localStorage.setItem("local_npub", id);
-            if (typeof sec === "string") localStorage.setItem("local_nsec", sec);
-            await connectDID();
-            setActiveNpub(localStorage.getItem("local_npub") || "");
-            setActiveNsec(localStorage.getItem("local_nsec") || "");
-          }}
-          onPatchSettings={saveGlobalSettings}
-          settingsOpen={settingsOpen}
-          openSettings={() => setSettingsOpen(true)}
-          closeSettings={() => setSettingsOpen(false)}
-          accountOpen={accountOpen}
-          closeAccount={() => setAccountOpen(false)}
-          onRunCefrAnalysis={runCefrAnalysis}
-          onSelectIdentity={handleIdentitySelection}
-          isIdentitySaving={isIdentitySaving}
-          tabOrder={TAB_KEYS}
-          tabLabels={TAB_LABELS}
-          tabIcons={TAB_ICONS}
-          currentTab={currentTab}
-          onSelectTab={handleSelectTab}
-        />
-
-        <TeamsDrawer
-          isOpen={teamsOpen}
-          onClose={() => setTeamsOpen(false)}
-          userLanguage={appLanguage}
-          t={t}
-          pendingInviteCount={pendingTeamInviteCount}
-          allowPosts={allowPosts}
-          onAllowPostsChange={handleAllowPostsChange}
-        />
-
-        <BottomActionBar
-          t={t}
-          onOpenIdentity={() => setAccountOpen(true)}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenTeams={() => setTeamsOpen(true)}
-          isIdentitySaving={isIdentitySaving}
-          showTranslations={showTranslationsEnabled}
-          onToggleTranslations={handleToggleTranslations}
-          translationLabel={translationToggleLabel}
-          appLanguage={appLanguage}
-          onSelectLanguage={handleSelectAppLanguage}
-          onOpenHelpChat={helpChatDisclosure.onOpen}
-          hasPendingTeamInvite={pendingTeamInviteCount > 0}
-        />
-
-        <SkillTree
-          targetLang={targetLang}
-          level={level}
-          userProgress={userProgress}
-          onStartLesson={handleStartLesson}
-        />
-
-        <HelpChatFab
-          progress={user?.progress}
-          appLanguage={appLanguage}
-          isOpen={helpChatDisclosure.isOpen}
-          onClose={helpChatDisclosure.onClose}
-          showFloatingTrigger={false}
-        />
-
-        <DailyGoalModal
-          isOpen={dailyGoalOpen}
-          onClose={handleDailyGoalClose}
-          npub={activeNpub}
-          ui={{
-            title: appLanguage === "es" ? "Meta diaria de XP" : "Daily XP goal",
-            subtitle:
-              appLanguage === "es"
-                ? "Cada nivel = 100 XP. ¿Cuántos XP quieres ganar al día?"
-                : "Each level = 100 XP. How many XP do you want to earn per day?",
-            inputLabel: appLanguage === "es" ? "XP por día" : "XP per day",
-            save: appLanguage === "es" ? "Guardar" : "Save",
-            cancel: appLanguage === "es" ? "Cancelar" : "Cancel",
-          }}
-        />
-
-        <BitcoinSupportModal
-          isOpen={bitcoinModalOpen}
-          onClose={handleBitcoinModalClose}
-          userLanguage={appLanguage}
-          identity={user?.identity || ""}
-          onSelectIdentity={handleIdentitySelection}
-          isIdentitySaving={isIdentitySaving}
-        />
-      </Box>
-    );
-  }
-
-  // Show Learning View (Tabs)
   return (
     <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
       <TopBar
@@ -2250,11 +2126,36 @@ export default function App() {
         onAllowPostsChange={handleAllowPostsChange}
       />
 
+      {/* Skill Tree Drawer */}
+      <Drawer
+        isOpen={skillTreeOpen}
+        onClose={() => setSkillTreeOpen(false)}
+        placement="bottom"
+        size="full"
+      >
+        <DrawerOverlay />
+        <DrawerContent bg="gray.950">
+          <DrawerCloseButton color="gray.100" />
+          <DrawerHeader color="gray.100">
+            {appLanguage === "es" ? "Tu Camino de Aprendizaje" : "Your Learning Path"}
+          </DrawerHeader>
+          <DrawerBody>
+            <SkillTree
+              targetLang={targetLang}
+              level={level}
+              userProgress={userProgress}
+              onStartLesson={handleStartLesson}
+            />
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
+
       <BottomActionBar
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenTeams={() => setTeamsOpen(true)}
+        onOpenSkillTree={() => setSkillTreeOpen(true)}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -2263,8 +2164,6 @@ export default function App() {
         onSelectLanguage={handleSelectAppLanguage}
         onOpenHelpChat={helpChatDisclosure.onOpen}
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
-        onReturnToSkillTree={handleReturnToSkillTree}
-        showSkillTreeButton={true}
       />
 
       <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
@@ -2431,6 +2330,7 @@ function BottomActionBar({
   onOpenIdentity,
   onOpenSettings,
   onOpenTeams,
+  onOpenSkillTree,
   isIdentitySaving = false,
   showTranslations = true,
   onToggleTranslations,
@@ -2440,8 +2340,6 @@ function BottomActionBar({
   onOpenHelpChat,
   helpLabel,
   hasPendingTeamInvite = false,
-  onReturnToSkillTree,
-  showSkillTreeButton = false,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -2551,19 +2449,17 @@ function BottomActionBar({
           }
         />
 
-        {showSkillTreeButton && (
-          <Tooltip label={skillTreeLabel} placement="top">
-            <IconButton
-              icon={<RiMapLine size={20} />}
-              onClick={onReturnToSkillTree}
-              aria-label={skillTreeLabel}
-              rounded="xl"
-              flexShrink={0}
-              colorScheme="teal"
-              variant="solid"
-            />
-          </Tooltip>
-        )}
+        <Tooltip label={skillTreeLabel} placement="top">
+          <IconButton
+            icon={<RiMapLine size={20} />}
+            onClick={onOpenSkillTree}
+            aria-label={skillTreeLabel}
+            rounded="xl"
+            flexShrink={0}
+            colorScheme="teal"
+            variant="solid"
+          />
+        </Tooltip>
 
         <IconButton
           icon={<SettingsIcon boxSize={4} />}
