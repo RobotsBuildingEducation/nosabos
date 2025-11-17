@@ -919,7 +919,7 @@ function micErrorToMessage(err, uiLang) {
 /* ================================
    Component
 =================================== */
-export default function JobScript() {
+export default function JobScript({ userLanguage = "en", lessonContent = null }) {
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 

@@ -340,13 +340,17 @@ function difficultyHint(level, xp) {
 }
 
 // Seed: FIRST lecture must be Bering migration
-function buildSeedLecturePrompt({ targetLang, supportLang, level, xp }) {
+function buildSeedLecturePrompt({ targetLang, supportLang, level, xp, lessonContent = null }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
   const diff = difficultyHint(level, xp);
 
+  const topicText = lessonContent?.topic || lessonContent?.scenario
+    ? lessonContent.topic || lessonContent.scenario
+    : "the **initial migration from Siberia across the Bering Strait (Beringia)** into the Americas";
+
   return `
-Write ONE short lecture in ${TARGET} (≈180–260 words) about the **initial migration from Siberia across the Bering Strait (Beringia)** into the Americas. Suitable for a ${level} learner. Difficulty: ${diff}.
+Write ONE short lecture in ${TARGET} (≈180–260 words) about ${topicText}. Suitable for a ${level} learner. Difficulty: ${diff}.
 
 Requirements:
 - Mention approximate time frames (e.g., Late Pleistocene), changing climates/sea levels, and possible inland/coastal routes.
@@ -601,7 +605,7 @@ function buildStreamingPrompt({
 /* ---------------------------
    Component
 --------------------------- */
-export default function History({ userLanguage = "en" }) {
+export default function History({ userLanguage = "en", lessonContent = null }) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
@@ -747,6 +751,7 @@ export default function History({ userLanguage = "en" }) {
           supportLang,
           level: progress.level || "beginner",
           xp,
+          lessonContent,
         })
       : buildLecturePrompt({
           previousTitles,
