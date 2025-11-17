@@ -324,26 +324,26 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
-      <ModalContent>
-        <ModalHeader>
+      <ModalContent bg="gray.900" color="gray.100">
+        <ModalHeader borderBottomWidth="1px" borderColor="gray.700">
           <VStack align="start" spacing={2}>
             <HStack>
               <Box w={3} h={3} borderRadius="full" bg={unit.color} />
-              <Text>{lesson.title.en}</Text>
+              <Text color="gray.100">{lesson.title.en}</Text>
             </HStack>
             <Text fontSize="sm" fontWeight="normal" color="gray.400">
               {unit.title.en}
             </Text>
           </VStack>
         </ModalHeader>
-        <ModalCloseButton />
+        <ModalCloseButton color="gray.400" _hover={{ color: "gray.100" }} />
         <ModalBody pb={6}>
           <VStack align="stretch" spacing={4}>
-            <Text>{lesson.description.en}</Text>
+            <Text color="gray.300">{lesson.description.en}</Text>
 
             {/* Lesson modes */}
             <Box>
-              <Text fontWeight="bold" mb={2}>
+              <Text fontWeight="bold" mb={2} color="gray.100">
                 Learning Activities:
               </Text>
               <HStack spacing={2} flexWrap="wrap">
@@ -359,6 +359,8 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
                       display="flex"
                       alignItems="center"
                       gap={1}
+                      bg="teal.600"
+                      color="gray.100"
                     >
                       <Icon size={14} />
                       <Text textTransform="capitalize">{mode}</Text>
@@ -371,15 +373,17 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
             {/* XP Reward */}
             <HStack
               p={4}
-              bg="gray.700"
+              bg="gray.800"
               borderRadius="lg"
               justify="space-between"
+              borderWidth="1px"
+              borderColor="gray.700"
             >
               <HStack>
                 <RiStarFill color="gold" size={24} />
                 <Text fontWeight="bold" color="gray.100">Complete to earn:</Text>
               </HStack>
-              <Badge colorScheme="yellow" fontSize="md" px={3} py={1} color="gray.900">
+              <Badge colorScheme="yellow" fontSize="md" px={3} py={1} bg="yellow.500" color="gray.900">
                 +{lesson.xpReward} XP
               </Badge>
             </HStack>

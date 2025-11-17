@@ -264,11 +264,14 @@ function buildFillVocabStreamPrompt({
   const diff = vocabDifficulty(level, xp);
 
   // If lesson content is provided, use specific vocabulary/topic
+  console.log('[buildFillVocabStreamPrompt] lessonContent:', lessonContent);
   const topicDirective = lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
       ? `- IMPORTANT: Use ONLY these vocabulary words: ${JSON.stringify(lessonContent.words)}. The blank should test one of these specific words.`
       : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+
+  console.log('[buildFillVocabStreamPrompt] topicDirective:', topicDirective);
 
   return [
     `Create ONE short ${TARGET} VOCABULARY sentence with a single blank "___" that targets word choice (not grammar). Difficulty: ${diff}`,
@@ -661,6 +664,9 @@ export default function Vocabulary({ userLanguage = "en", lessonContent = null }
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+
+  // Debug: Log lesson content
+  console.log('[Vocabulary] lessonContent received:', lessonContent);
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
