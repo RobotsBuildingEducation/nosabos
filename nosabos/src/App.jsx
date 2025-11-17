@@ -2257,83 +2257,99 @@ export default function App() {
             isLazy
           >
           <TabPanels mt={[2, 3]}>
-            {/* Chat */}
-            <TabPanel px={0}>
-              <RealTimeTest
-                auth={auth}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-                level={user?.progress?.level}
-                supportLang={user?.progress?.supportLang}
-                voice={user?.progress?.voice}
-                voicePersona={user?.progress?.voicePersona}
-                targetLang={user?.progress?.targetLang}
-                showTranslations={user?.progress?.showTranslations}
-                pauseMs={user?.progress?.pauseMs}
-                helpRequest={user?.progress?.helpRequest}
-                practicePronunciation={user?.progress?.practicePronunciation}
-                lessonContent={activeLesson?.content?.realtime}
-                onSwitchedAccount={async (id, sec) => {
-                  if (id) localStorage.setItem("local_npub", id);
-                  if (typeof sec === "string")
-                    localStorage.setItem("local_nsec", sec);
-                  await connectDID();
-                  setActiveNpub(localStorage.getItem("local_npub") || "");
-                  setActiveNsec(localStorage.getItem("local_nsec") || "");
-                }}
-              />
-            </TabPanel>
-
-            {/* Stories */}
-            <TabPanel px={0}>
-              <StoryMode
-                userLanguage={appLanguage}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-                lessonContent={activeLesson?.content?.stories}
-              />
-            </TabPanel>
-
-            {/* Job Script (existing component) */}
-            <TabPanel px={0}>
-              <JobScript
-                userLanguage={appLanguage}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-                lessonContent={activeLesson?.content?.jobscript}
-              />
-            </TabPanel>
-
-            {/* History (reading) */}
-            <TabPanel px={0}>
-              <History
-                userLanguage={appLanguage}
-                lessonContent={activeLesson?.content?.history}
-              />
-            </TabPanel>
-
-            {/* Grammar */}
-            <TabPanel px={0}>
-              <GrammarBook
-                userLanguage={appLanguage}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-                lessonContent={activeLesson?.content?.grammar}
-              />
-            </TabPanel>
-
-            {/* Vocabulary */}
-            <TabPanel px={0}>
-              <Vocabulary
-                userLanguage={appLanguage}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-                lessonContent={activeLesson?.content?.vocabulary}
-              />
-            </TabPanel>
-
-            {/* Randomize (not route-based) */}
-            <TabPanel px={0}>{renderRandomPanel()}</TabPanel>
+            {activeTabs.map((tabKey) => {
+              switch (tabKey) {
+                case "realtime":
+                  return (
+                    <TabPanel key="realtime" px={0}>
+                      <RealTimeTest
+                        auth={auth}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        level={user?.progress?.level}
+                        supportLang={user?.progress?.supportLang}
+                        voice={user?.progress?.voice}
+                        voicePersona={user?.progress?.voicePersona}
+                        targetLang={user?.progress?.targetLang}
+                        showTranslations={user?.progress?.showTranslations}
+                        pauseMs={user?.progress?.pauseMs}
+                        helpRequest={user?.progress?.helpRequest}
+                        practicePronunciation={user?.progress?.practicePronunciation}
+                        lessonContent={activeLesson?.content?.realtime}
+                        onSwitchedAccount={async (id, sec) => {
+                          if (id) localStorage.setItem("local_npub", id);
+                          if (typeof sec === "string")
+                            localStorage.setItem("local_nsec", sec);
+                          await connectDID();
+                          setActiveNpub(localStorage.getItem("local_npub") || "");
+                          setActiveNsec(localStorage.getItem("local_nsec") || "");
+                        }}
+                      />
+                    </TabPanel>
+                  );
+                case "stories":
+                  return (
+                    <TabPanel key="stories" px={0}>
+                      <StoryMode
+                        userLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        lessonContent={activeLesson?.content?.stories}
+                      />
+                    </TabPanel>
+                  );
+                case "jobscript":
+                  return (
+                    <TabPanel key="jobscript" px={0}>
+                      <JobScript
+                        userLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        lessonContent={activeLesson?.content?.jobscript}
+                      />
+                    </TabPanel>
+                  );
+                case "history":
+                  return (
+                    <TabPanel key="history" px={0}>
+                      <History
+                        userLanguage={appLanguage}
+                        lessonContent={activeLesson?.content?.history}
+                      />
+                    </TabPanel>
+                  );
+                case "grammar":
+                  return (
+                    <TabPanel key="grammar" px={0}>
+                      <GrammarBook
+                        userLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        lessonContent={activeLesson?.content?.grammar}
+                      />
+                    </TabPanel>
+                  );
+                case "vocabulary":
+                  return (
+                    <TabPanel key="vocabulary" px={0}>
+                      <Vocabulary
+                        userLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        lessonContent={activeLesson?.content?.vocabulary}
+                      />
+                    </TabPanel>
+                  );
+                case "random":
+                  return (
+                    <TabPanel key="random" px={0}>
+                      {renderRandomPanel()}
+                    </TabPanel>
+                  );
+                default:
+                  return null;
+              }
+            })}
           </TabPanels>
         </Tabs>
       </Box>
