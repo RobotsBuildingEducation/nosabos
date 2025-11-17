@@ -370,7 +370,7 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
               </HStack>
             </Box>
 
-            {/* XP Reward */}
+            {/* XP Goal */}
             <HStack
               p={4}
               bg="gray.800"
@@ -381,10 +381,10 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
             >
               <HStack>
                 <RiStarFill color="gold" size={24} />
-                <Text fontWeight="bold" color="gray.100">Complete to earn:</Text>
+                <Text fontWeight="bold" color="gray.100">XP to complete:</Text>
               </HStack>
               <Badge colorScheme="yellow" fontSize="md" px={3} py={1} bg="yellow.500" color="gray.900">
-                +{lesson.xpReward} XP
+                {lesson.xpReward} XP
               </Badge>
             </HStack>
 

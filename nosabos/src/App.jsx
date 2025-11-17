@@ -1544,19 +1544,20 @@ export default function App() {
       const currentXp = user?.progress?.totalXp || user?.xp || 0;
       setLessonStartXp(currentXp);
 
-      // Switch to lesson view mode
-      setViewMode("lesson");
-      if (typeof window !== "undefined") {
-        localStorage.setItem("viewMode", "lesson");
-      }
-
-      // Switch to the first mode in the lesson
+      // Switch to the first mode in the lesson BEFORE switching view mode
       const firstMode = lesson.modes?.[0];
-      if (firstMode && TAB_KEYS.includes(firstMode)) {
+      console.log('[Lesson Start] Lesson modes:', lesson.modes, 'First mode:', firstMode);
+      if (firstMode) {
         setCurrentTab(firstMode);
         if (typeof window !== "undefined") {
           localStorage.setItem("currentTab", firstMode);
         }
+      }
+
+      // Switch to lesson view mode
+      setViewMode("lesson");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("viewMode", "lesson");
       }
 
       toast({
@@ -1590,9 +1591,11 @@ export default function App() {
   // Ensure current tab is valid for the active lesson
   useEffect(() => {
     if (viewMode === "lesson" && activeLesson?.modes?.length > 0) {
+      console.log('[Tab Validation] Current tab:', currentTab, 'Lesson modes:', activeLesson.modes);
       // If current tab is not in lesson modes, switch to first available mode
       if (!activeLesson.modes.includes(currentTab)) {
         const firstMode = activeLesson.modes[0];
+        console.log('[Tab Validation] Current tab not in lesson modes, switching to:', firstMode);
         setCurrentTab(firstMode);
         if (typeof window !== "undefined") {
           localStorage.setItem("currentTab", firstMode);
@@ -1622,7 +1625,7 @@ export default function App() {
             // Show celebration
             toast({
               title: appLanguage === "es" ? "¡Lección completada!" : "Lesson Complete!",
-              description: `+${activeLesson.xpReward} XP`,
+              description: activeLesson.title[appLanguage] || activeLesson.title.en,
               status: "success",
               duration: 3000,
             });
