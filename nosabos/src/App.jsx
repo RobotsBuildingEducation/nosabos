@@ -1543,7 +1543,6 @@ export default function App() {
       // Record starting XP for this lesson
       const currentXp = user?.progress?.totalXp || user?.xp || 0;
       setLessonStartXp(currentXp);
-      console.log('[Lesson Start] Starting XP:', currentXp, 'Goal:', lesson.xpReward);
 
       // Switch to lesson view mode
       setViewMode("lesson");
@@ -1609,10 +1608,7 @@ export default function App() {
     const currentXp = user?.progress?.totalXp || user?.xp || 0;
     const xpEarned = currentXp - lessonStartXp;
 
-    console.log('[Lesson Progress] Start XP:', lessonStartXp, 'Current XP:', currentXp, 'Earned:', xpEarned, 'Goal:', activeLesson.xpReward);
-
     if (xpEarned >= activeLesson.xpReward) {
-      console.log('[Lesson Complete] XP goal reached!');
 
       // Complete the lesson
       const npub = resolveNpub();
