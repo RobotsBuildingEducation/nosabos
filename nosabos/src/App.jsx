@@ -2267,6 +2267,7 @@ export default function App() {
           </TabPanels>
         </Tabs>
       </Box>
+      )}
 
       <HelpChatFab
         progress={user?.progress}
