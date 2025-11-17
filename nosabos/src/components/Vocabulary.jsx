@@ -266,7 +266,7 @@ function buildFillVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective = lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
-      ? `- IMPORTANT: Use ONLY these vocabulary words: ${JSON.stringify(lessonContent.words)}. The blank should test one of these specific words.`
+      ? `- CRITICAL REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is mandatory.`
       : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
@@ -317,7 +317,7 @@ function buildMCVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective = lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
-      ? `- IMPORTANT: Use ONLY these vocabulary words: ${JSON.stringify(lessonContent.words)}. The correct answer should be one of these words, and distractors should be plausible alternatives.`
+      ? `- CRITICAL REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(lessonContent.words)}. The question must test one of these specific words. This is mandatory.`
       : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
@@ -368,7 +368,7 @@ function buildMAVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective = lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
-      ? `- IMPORTANT: Use ONLY these vocabulary words: ${JSON.stringify(lessonContent.words)}. The correct answers should come from these words.`
+      ? `- CRITICAL REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is mandatory.`
       : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
@@ -452,21 +452,27 @@ function buildMatchVocabStreamPrompt({
   level,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
   const diff = vocabDifficulty(level, xp);
 
+  // If lesson content is provided, use specific vocabulary/topic
+  const topicDirective = lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- CRITICAL REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. Select 3-6 words from this list ONLY.`
+      : `- IMPORTANT: All words must be related to: ${lessonContent.topic}`
+    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+
   return [
     `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${diff}`,
+    topicDirective,
     `- Left column: ${TARGET} words (3–6 items, unique).`,
     `- Right column: ${SUPPORT} short definitions (unique).`,
     `- Clear 1:1 mapping; ≤ 4 words per item.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
-    `- Consider learner recent corrects: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}`,
     "",
     "Emit exactly TWO NDJSON lines:",
     `{"type":"vocab_match","stem":"<${TARGET} stem>","left":["<word>", "..."],"right":["<short ${SUPPORT} definition>", "..."],"hint":"<${SUPPORT} hint>"}`,
@@ -661,6 +667,12 @@ export default function Vocabulary({ userLanguage = "en", lessonContent = null }
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+
+  // Debug: Log lesson content to verify it's passed correctly
+  console.log('[Vocabulary Component] lessonContent:', lessonContent);
+  if (lessonContent?.words) {
+    console.log('[Vocabulary Component] Specific words:', lessonContent.words);
+  }
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
@@ -2121,6 +2133,7 @@ Return JSON ONLY:
       level,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let okPayload = false;
