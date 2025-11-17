@@ -1643,9 +1643,27 @@ export default function App() {
 
   // Detect XP changes and trigger random mode switch + check completion
   useEffect(() => {
-    if (viewMode !== "lesson" || !activeLesson || lessonStartXp === null) return;
+    console.log('[Completion Detection] useEffect triggered', {
+      viewMode,
+      hasActiveLesson: !!activeLesson,
+      lessonStartXp,
+      userProgressXp: user?.progress?.totalXp,
+      userXp: user?.xp,
+      previousXp: previousXpRef.current,
+    });
+
+    if (viewMode !== "lesson" || !activeLesson || lessonStartXp === null) {
+      console.log('[Completion Detection] Skipping - conditions not met');
+      return;
+    }
 
     const currentXp = user?.progress?.totalXp || user?.xp || 0;
+
+    console.log('[Completion Detection] Checking XP', {
+      currentXp,
+      previousXp: previousXpRef.current,
+      willCheckCompletion: previousXpRef.current !== null && currentXp > previousXpRef.current,
+    });
 
     // Check if XP increased (exercise completed)
     if (previousXpRef.current !== null && currentXp > previousXpRef.current) {
