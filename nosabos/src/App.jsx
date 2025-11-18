@@ -1571,11 +1571,12 @@ export default function App() {
     try {
       // Mark lesson as in progress in Firestore
       const npub = resolveNpub();
+      let fresh = null;
       if (npub) {
         await startLesson(npub, lesson.id);
 
         // Refresh user data to get updated progress
-        const fresh = await loadUserObjectFromDB(database, npub);
+        fresh = await loadUserObjectFromDB(database, npub);
         if (fresh) setUser?.(fresh);
       }
 
