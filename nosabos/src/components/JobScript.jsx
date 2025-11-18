@@ -1480,7 +1480,7 @@ export default function JobScript({ userLanguage = "en", lessonContent = null })
     });
     const npubLive = strongNpub(useUserStore.getState().user);
 
-    const delta = 15;
+    const delta = 5; // ✅ normalized to 4-7 XP range
     setSessionXp((p) => p + delta);
 
     saveStoryTurn(npubLive, {

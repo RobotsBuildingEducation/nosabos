@@ -1962,7 +1962,7 @@ Return JSON ONLY:
       }),
     });
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 12 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,
@@ -2011,7 +2011,7 @@ Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,
@@ -2055,7 +2055,7 @@ Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,

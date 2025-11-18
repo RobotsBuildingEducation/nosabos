@@ -1197,15 +1197,18 @@ export default function RealTimeTest({
     await addDoc(collection(database, "users", npub, "goals"), payload);
   }
 
-  // XP helpers
+  // XP helpers - normalized to 4-7 XP range
   function computeXpDelta({ met, conf, attempts, pron }) {
-    const BASE = 5;
-    const confScore = Math.round(conf * 20);
-    const effortPenalty = Math.max(0, attempts - 1) * 2;
-    const metBonus = met ? 20 + Math.max(0, 10 - (attempts - 1) * 3) : 0;
-    const pronBonus = pron ? 3 : 0;
-    let delta = BASE + confScore + metBonus + pronBonus - effortPenalty;
-    return Math.max(1, Math.min(60, delta));
+    // Simplified XP: award 6 XP for meeting goal, less for partial attempts
+    if (met) {
+      // Small bonus for pronunciation practice
+      const pronBonus = pron ? 1 : 0;
+      // Penalty for multiple attempts
+      const effortPenalty = Math.max(0, attempts - 1) * 0.5;
+      return Math.max(4, Math.min(7, 6 + pronBonus - effortPenalty));
+    }
+    // Didn't meet goal - award based on confidence
+    return Math.max(0, Math.min(4, Math.round(conf * 4)));
   }
   // async function awardXp(delta) {
   //   const amt = Math.round(delta || 0);

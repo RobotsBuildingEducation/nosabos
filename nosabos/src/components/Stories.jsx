@@ -1521,7 +1521,7 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
     }
 
     // Passed — accumulate XP and advance (no award yet)
-    const delta = 15; // XP per passed sentence
+    const delta = 5; // ✅ normalized to 4-7 XP range
     setSessionXp((p) => p + delta);
     setPassedCount((c) => c + 1);
 
