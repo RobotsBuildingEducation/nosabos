@@ -2101,7 +2101,7 @@ Return JSON ONLY:
       ok = false;
     }
 
-    const delta = ok ? 12 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     setMResult(ok ? "correct" : "try_again"); // for logs only
 
@@ -2159,7 +2159,7 @@ Return JSON ONLY:
       setSEval(evaluation);
 
       const ok = evaluation.pass;
-      const delta = ok ? 14 : 0;
+      const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
       await saveAttempt(npub, {
         ok,
