@@ -466,6 +466,7 @@ export default function RealTimeTest({
   activeNpub = "",
   activeNsec = "",
   onSwitchedAccount,
+  lessonContent = null,
 }) {
   const toast = useToast();
   const aliveRef = useRef(false);
