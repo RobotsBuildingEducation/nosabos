@@ -99,6 +99,10 @@ import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { subscribeToTeamInvites } from "./utils/teams";
+import SkillTree from "./components/SkillTree";
+import { getLearningPath } from "./data/skillTreeData";
+import { startLesson, completeLesson } from "./utils/progressTracking";
+import { RiArrowLeftLine } from "react-icons/ri";
 
 /* ---------------------------
    Small helpers
@@ -944,6 +948,18 @@ export default function App() {
       : "realtime"
   );
 
+  // Active lesson tracking and view mode
+  const [viewMode, setViewMode] = useState(
+    typeof window !== "undefined" && localStorage.getItem("viewMode")
+      ? localStorage.getItem("viewMode")
+      : "skillTree" // Default to skill tree view
+  );
+  const [activeLesson, setActiveLesson] = useState(
+    typeof window !== "undefined" && localStorage.getItem("activeLesson")
+      ? JSON.parse(localStorage.getItem("activeLesson"))
+      : null
+  );
+
   // Helper mapping for keys/index
   const TAB_KEYS = [
     "realtime",
@@ -954,6 +970,59 @@ export default function App() {
     "vocabulary",
     "random",
   ];
+
+  // Filter tabs based on active lesson modes
+  const activeTabs = viewMode === "lesson" && activeLesson?.modes?.length > 0
+    ? TAB_KEYS.filter(key => activeLesson.modes.includes(key))
+    : TAB_KEYS;
+
+  // Track XP at lesson start for completion detection
+  const [lessonStartXp, setLessonStartXp] = useState(null);
+  const lessonCompletionTriggeredRef = useRef(false);
+  const previousXpRef = useRef(null);
+
+  // Random mode switcher for lessons
+  const switchToRandomLessonMode = useCallback(() => {
+    console.log('[switchToRandomLessonMode] Called', {
+      viewMode,
+      hasActiveLesson: !!activeLesson,
+      activeLessonModes: activeLesson?.modes,
+      currentTab,
+    });
+
+    if (viewMode !== "lesson" || !activeLesson?.modes?.length) {
+      console.log('[switchToRandomLessonMode] Exiting early - conditions not met');
+      return;
+    }
+
+    const availableModes = activeLesson.modes;
+    if (availableModes.length <= 1) {
+      console.log('[switchToRandomLessonMode] Only one mode available, not switching');
+      return;
+    }
+
+    // Filter out current mode to ensure we switch to a different one
+    const otherModes = availableModes.filter(mode => mode !== currentTab);
+    if (otherModes.length === 0) {
+      console.log('[switchToRandomLessonMode] No other modes to switch to');
+      return;
+    }
+
+    // Pick random mode from other modes
+    const randomMode = otherModes[Math.floor(Math.random() * otherModes.length)];
+
+    console.log('[Random Mode Switch] Switching modes', {
+      from: currentTab,
+      to: randomMode,
+      availableModes,
+      otherModes,
+    });
+
+    setCurrentTab(randomMode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentTab", randomMode);
+    }
+  }, [viewMode, activeLesson, currentTab]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -1006,8 +1075,8 @@ export default function App() {
       localStorage.removeItem(`cefrResult:${activeNpub}`);
     }
   }, [activeNpub, cefrResult]);
-  const keyToIndex = (k) => Math.max(0, TAB_KEYS.indexOf(k));
-  const indexToKey = (i) => TAB_KEYS[i] ?? "realtime";
+  const keyToIndex = (k) => Math.max(0, activeTabs.indexOf(k));
+  const indexToKey = (i) => activeTabs[i] ?? (activeTabs[0] || "realtime");
   const tabIndex = keyToIndex(currentTab);
 
   const TAB_LABELS = {
@@ -1495,6 +1564,101 @@ export default function App() {
     }
   };
 
+  // Handle starting a lesson from the skill tree
+  const handleStartLesson = async (lesson) => {
+    if (!lesson) return;
+
+    try {
+      // Mark lesson as in progress in Firestore
+      const npub = resolveNpub();
+      if (npub) {
+        await startLesson(npub, lesson.id);
+
+        // Refresh user data to get updated progress
+        const fresh = await loadUserObjectFromDB(database, npub);
+        if (fresh) setUser?.(fresh);
+      }
+
+      // Set active lesson and persist it
+      setActiveLesson(lesson);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("activeLesson", JSON.stringify(lesson));
+      }
+
+      // Record starting XP for this lesson
+      const currentXp = user?.progress?.totalXp || user?.xp || 0;
+      setLessonStartXp(currentXp);
+      lessonCompletionTriggeredRef.current = false; // Reset completion flag
+      console.log('[Lesson Start] Recording starting XP:', {
+        lessonId: lesson.id,
+        lessonTitle: lesson.title.en,
+        startXp: currentXp,
+        xpRequired: lesson.xpReward,
+        userProgressTotalXp: user?.progress?.totalXp,
+        userXp: user?.xp,
+      });
+
+      // Switch to the first mode in the lesson BEFORE switching view mode
+      const firstMode = lesson.modes?.[0];
+      console.log('[Lesson Start] Lesson modes:', lesson.modes, 'First mode:', firstMode);
+      if (firstMode) {
+        setCurrentTab(firstMode);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("currentTab", firstMode);
+        }
+      }
+
+      // Switch to lesson view mode
+      setViewMode("lesson");
+      if (typeof window !== "undefined") {
+        localStorage.setItem("viewMode", "lesson");
+      }
+
+      toast({
+        title: appLanguage === "es" ? "Lección iniciada" : "Lesson started",
+        description: lesson.title[appLanguage] || lesson.title.en,
+        status: "success",
+        duration: 2000,
+      });
+    } catch (e) {
+      console.error("Failed to start lesson:", e);
+      toast({
+        title: appLanguage === "es" ? "Error" : "Error",
+        description:
+          appLanguage === "es"
+            ? "No se pudo iniciar la lección"
+            : "Failed to start lesson",
+        status: "error",
+        duration: 3000,
+      });
+    }
+  };
+
+  // Handle returning to skill tree
+  const handleReturnToSkillTree = () => {
+    setViewMode("skillTree");
+    if (typeof window !== "undefined") {
+      localStorage.setItem("viewMode", "skillTree");
+    }
+  };
+
+  // Ensure current tab is valid for the active lesson
+  useEffect(() => {
+    if (viewMode === "lesson" && activeLesson?.modes?.length > 0) {
+      console.log('[Tab Validation] Current tab:', currentTab, 'Lesson modes:', activeLesson.modes);
+      // If current tab is not in lesson modes, switch to first available mode
+      if (!activeLesson.modes.includes(currentTab)) {
+        const firstMode = activeLesson.modes[0];
+        console.log('[Tab Validation] Current tab not in lesson modes, switching to:', firstMode);
+        setCurrentTab(firstMode);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("currentTab", firstMode);
+        }
+      }
+    }
+  }, [viewMode, activeLesson, currentTab]);
+
+
   const runCefrAnalysis = useCallback(
     async ({ dailyGoalXp: goal = 0, dailyXp: earned = 0 } = {}) => {
       if (!activeNpub) {
@@ -1840,6 +2004,61 @@ export default function App() {
           pickRandomFeature();
         }
 
+        // Check for lesson completion
+        if (viewMode === "lesson" && activeLesson && lessonStartXp !== null) {
+          const totalXpEarned = newXp - lessonStartXp;
+
+          console.log('[Lesson XP Check]', {
+            newXp,
+            lessonStartXp,
+            totalXpEarned,
+            lessonGoal: activeLesson.xpReward,
+            shouldComplete: totalXpEarned >= activeLesson.xpReward,
+          });
+
+          // Check if lesson goal reached
+          if (totalXpEarned >= activeLesson.xpReward && !lessonCompletionTriggeredRef.current) {
+            console.log('[Lesson Completion] XP goal reached! Completing lesson...');
+            lessonCompletionTriggeredRef.current = true;
+
+            const npub = resolveNpub();
+            if (npub) {
+              completeLesson(npub, activeLesson.id, activeLesson.xpReward)
+                .then(async () => {
+                  const fresh = await loadUserObjectFromDB(database, npub);
+                  if (fresh) setUser?.(fresh);
+
+                  toast({
+                    title: appLanguage === "es" ? "¡Lección completada!" : "Lesson Complete!",
+                    description: activeLesson.title[appLanguage] || activeLesson.title.en,
+                    status: "success",
+                    duration: 3000,
+                  });
+
+                  setTimeout(() => {
+                    handleReturnToSkillTree();
+                    setActiveLesson(null);
+                    setLessonStartXp(null);
+                    previousXpRef.current = null;
+                    lessonCompletionTriggeredRef.current = false;
+                    localStorage.removeItem("activeLesson");
+                  }, 1500);
+                })
+                .catch((err) => {
+                  console.error("Failed to complete lesson:", err);
+                  lessonCompletionTriggeredRef.current = false;
+                });
+            }
+          } else if (totalXpEarned < activeLesson.xpReward) {
+            // Not complete yet - switch to random mode
+            console.log('[Lesson XP Check] Lesson not complete yet, scheduling mode switch in 1s');
+            setTimeout(() => {
+              console.log('[Lesson XP Check] Executing scheduled mode switch now');
+              switchToRandomLessonMode();
+            }, 1000);
+          }
+        }
+
         maybePostNostrProgress({ totalXp: newXp });
       }
     });
@@ -1855,6 +2074,14 @@ export default function App() {
     pickRandomFeature,
     user?.identity,
     maybePostNostrProgress,
+    viewMode,
+    activeLesson,
+    lessonStartXp,
+    switchToRandomLessonMode,
+    handleReturnToSkillTree,
+    setActiveLesson,
+    setLessonStartXp,
+    setUser,
   ]);
 
   const RandomHeader = (
@@ -2013,6 +2240,13 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
+  const targetLang = user?.progress?.targetLang || "es";
+  const level = user?.progress?.level || "beginner";
+  const userProgress = {
+    totalXp: user?.progress?.totalXp || user?.xp || 0,
+    lessons: user?.progress?.lessons || {},
+  };
+
   return (
     <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
       <TopBar
@@ -2041,7 +2275,7 @@ export default function App() {
         onRunCefrAnalysis={runCefrAnalysis}
         onSelectIdentity={handleIdentitySelection}
         isIdentitySaving={isIdentitySaving}
-        tabOrder={TAB_KEYS}
+        tabOrder={activeTabs}
         tabLabels={TAB_LABELS}
         tabIcons={TAB_ICONS}
         currentTab={currentTab}
@@ -2073,89 +2307,128 @@ export default function App() {
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
       />
 
-      <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
-        <Tabs
-          index={tabIndex}
-          onChange={(i) => {
-            const key = indexToKey(i);
-            handleSelectTab(key);
-          }}
-          colorScheme="teal"
-          isLazy
-        >
+      {/* Skill Tree Scene - Full Screen */}
+      {viewMode === "skillTree" && (
+        <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+          <SkillTree
+            targetLang={targetLang}
+            level={level}
+            userProgress={userProgress}
+            onStartLesson={handleStartLesson}
+          />
+        </Box>
+      )}
+
+      {/* Learning Modules Scene */}
+      {viewMode === "lesson" && (
+        <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+          <Tabs
+            index={tabIndex}
+            onChange={(i) => {
+              const key = indexToKey(i);
+              handleSelectTab(key);
+            }}
+            colorScheme="teal"
+            isLazy
+          >
           <TabPanels mt={[2, 3]}>
-            {/* Chat */}
-            <TabPanel px={0}>
-              <RealTimeTest
-                auth={auth}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-                level={user?.progress?.level}
-                supportLang={user?.progress?.supportLang}
-                voice={user?.progress?.voice}
-                voicePersona={user?.progress?.voicePersona}
-                targetLang={user?.progress?.targetLang}
-                showTranslations={user?.progress?.showTranslations}
-                pauseMs={user?.progress?.pauseMs}
-                helpRequest={user?.progress?.helpRequest}
-                practicePronunciation={user?.progress?.practicePronunciation}
-                onSwitchedAccount={async (id, sec) => {
-                  if (id) localStorage.setItem("local_npub", id);
-                  if (typeof sec === "string")
-                    localStorage.setItem("local_nsec", sec);
-                  await connectDID();
-                  setActiveNpub(localStorage.getItem("local_npub") || "");
-                  setActiveNsec(localStorage.getItem("local_nsec") || "");
-                }}
-              />
-            </TabPanel>
-
-            {/* Stories */}
-            <TabPanel px={0}>
-              <StoryMode
-                userLanguage={appLanguage}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-              />
-            </TabPanel>
-
-            {/* Job Script (existing component) */}
-            <TabPanel px={0}>
-              <JobScript
-                userLanguage={appLanguage}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-              />
-            </TabPanel>
-
-            {/* History (reading) */}
-            <TabPanel px={0}>
-              <History userLanguage={appLanguage} />
-            </TabPanel>
-
-            {/* Grammar */}
-            <TabPanel px={0}>
-              <GrammarBook
-                userLanguage={appLanguage}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-              />
-            </TabPanel>
-
-            {/* Vocabulary */}
-            <TabPanel px={0}>
-              <Vocabulary
-                userLanguage={appLanguage}
-                activeNpub={activeNpub}
-                activeNsec={activeNsec}
-              />
-            </TabPanel>
-
-            {/* Randomize (not route-based) */}
-            <TabPanel px={0}>{renderRandomPanel()}</TabPanel>
+            {activeTabs.map((tabKey) => {
+              switch (tabKey) {
+                case "realtime":
+                  return (
+                    <TabPanel key="realtime" px={0}>
+                      <RealTimeTest
+                        auth={auth}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        level={user?.progress?.level}
+                        supportLang={user?.progress?.supportLang}
+                        voice={user?.progress?.voice}
+                        voicePersona={user?.progress?.voicePersona}
+                        targetLang={user?.progress?.targetLang}
+                        showTranslations={user?.progress?.showTranslations}
+                        pauseMs={user?.progress?.pauseMs}
+                        helpRequest={user?.progress?.helpRequest}
+                        practicePronunciation={user?.progress?.practicePronunciation}
+                        lessonContent={activeLesson?.content?.realtime}
+                        onSwitchedAccount={async (id, sec) => {
+                          if (id) localStorage.setItem("local_npub", id);
+                          if (typeof sec === "string")
+                            localStorage.setItem("local_nsec", sec);
+                          await connectDID();
+                          setActiveNpub(localStorage.getItem("local_npub") || "");
+                          setActiveNsec(localStorage.getItem("local_nsec") || "");
+                        }}
+                      />
+                    </TabPanel>
+                  );
+                case "stories":
+                  return (
+                    <TabPanel key="stories" px={0}>
+                      <StoryMode
+                        userLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        lessonContent={activeLesson?.content?.stories}
+                      />
+                    </TabPanel>
+                  );
+                case "jobscript":
+                  return (
+                    <TabPanel key="jobscript" px={0}>
+                      <JobScript
+                        userLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        lessonContent={activeLesson?.content?.jobscript}
+                      />
+                    </TabPanel>
+                  );
+                case "history":
+                  return (
+                    <TabPanel key="history" px={0}>
+                      <History
+                        userLanguage={appLanguage}
+                        lessonContent={activeLesson?.content?.history}
+                      />
+                    </TabPanel>
+                  );
+                case "grammar":
+                  return (
+                    <TabPanel key="grammar" px={0}>
+                      <GrammarBook
+                        userLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        lessonContent={activeLesson?.content?.grammar}
+                      />
+                    </TabPanel>
+                  );
+                case "vocabulary":
+                  return (
+                    <TabPanel key="vocabulary" px={0}>
+                      <Vocabulary
+                        userLanguage={appLanguage}
+                        activeNpub={activeNpub}
+                        activeNsec={activeNsec}
+                        lessonContent={activeLesson?.content?.vocabulary}
+                      />
+                    </TabPanel>
+                  );
+                case "random":
+                  return (
+                    <TabPanel key="random" px={0}>
+                      {renderRandomPanel()}
+                    </TabPanel>
+                  );
+                default:
+                  return null;
+              }
+            })}
           </TabPanels>
         </Tabs>
       </Box>
+      )}
 
       <HelpChatFab
         progress={user?.progress}

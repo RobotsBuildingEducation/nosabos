@@ -228,6 +228,7 @@ function buildFillStreamPrompt({
   appUILang,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
@@ -237,12 +238,18 @@ function buildFillStreamPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = difficultyHint(level, xp);
 
+  // If lesson content is provided, use specific grammar topic/focus
+  const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic ? `- IMPORTANT: Focus on grammar topic: ${lessonContent.topic}` : null,
+        lessonContent.focusPoints ? `- IMPORTANT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}` : null,
+      ].filter(Boolean).join('\n')
+    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+
   return [
     `Create ONE short ${TARGET} grammar fill-in-the-blank with a single blank "___". Difficulty: ${diff}`,
     `- No meta like "(to go)" in the stem; ≤120 chars.`,
-    `- Consider learner recent corrects: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}`,
+    topicDirective,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
       ? `- Provide a ${SUPPORT} translation.`
@@ -340,6 +347,7 @@ function buildMCStreamPrompt({
   appUILang,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
@@ -353,6 +361,14 @@ function buildMCStreamPrompt({
     ? `- Stem short (≤120 chars) and MUST include a blank "___" in the sentence.`
     : `- Stem short (≤120 chars); may include a blank "___" or pose a concise grammar question.`;
 
+  // If lesson content is provided, use specific grammar topic/focus
+  const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic ? `- IMPORTANT: Focus on grammar topic: ${lessonContent.topic}` : null,
+        lessonContent.focusPoints ? `- IMPORTANT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}` : null,
+      ].filter(Boolean).join('\n')
+    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+
   return [
     `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${diff}`,
     stemDirective,
@@ -361,9 +377,7 @@ function buildMCStreamPrompt({
     wantTranslation
       ? `- ${SUPPORT} translation of stem.`
       : `- Empty translation "".`,
-    `- Consider learner recent corrects: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}`,
+    topicDirective,
     "",
     "Stream as NDJSON:",
     `{"type":"mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
@@ -410,6 +424,7 @@ function buildMAStreamPrompt({
   appUILang,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
@@ -423,6 +438,14 @@ function buildMAStreamPrompt({
     ? `- Stem short (≤120 chars) and MUST include at least one blank "___".`
     : `- Stem short (≤120 chars), may include "___".`;
 
+  // If lesson content is provided, use specific grammar topic/focus
+  const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic ? `- IMPORTANT: Focus on grammar topic: ${lessonContent.topic}` : null,
+        lessonContent.focusPoints ? `- IMPORTANT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}` : null,
+      ].filter(Boolean).join('\n')
+    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+
   return [
     `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
     stemDirective,
@@ -431,9 +454,7 @@ function buildMAStreamPrompt({
     wantTranslation
       ? `- ${SUPPORT} translation of stem.`
       : `- Empty translation "".`,
-    `- Consider learner recent corrects: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}`,
+    topicDirective,
     "",
     "Stream as NDJSON:",
     `{"type":"ma","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
@@ -555,7 +576,7 @@ function normalizeMap(map, len) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function GrammarBook({ userLanguage = "en" }) {
+export default function GrammarBook({ userLanguage = "en", lessonContent = null }) {
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
@@ -1086,6 +1107,7 @@ export default function GrammarBook({ userLanguage = "en" }) {
       appUILang: userLanguage,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let gotSomething = false;
@@ -1221,6 +1243,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
       appUILang: userLanguage,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let got = false;
@@ -1449,6 +1472,7 @@ Create ONE multiple-choice ${LANG_NAME(
       appUILang: userLanguage,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let got = false;
@@ -1938,7 +1962,7 @@ Return JSON ONLY:
       }),
     });
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 12 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,
@@ -1987,7 +2011,7 @@ Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,
@@ -2031,7 +2055,7 @@ Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,

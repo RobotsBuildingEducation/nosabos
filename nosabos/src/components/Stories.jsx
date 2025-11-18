@@ -293,7 +293,7 @@ function useUIText(uiLang, level, translationsObj) {
 /* ================================
    Main Component
 =================================== */
-export default function StoryMode() {
+export default function StoryMode({ userLanguage = "en", lessonContent = null }) {
   const navigate = useNavigate();
   const toast = useToast();
   const user = useUserStore((s) => s.user);
@@ -780,10 +780,17 @@ export default function StoryMode() {
         const sName = LLM_LANG_NAME(sLang);
 
         // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
+        const scenarioDirective = lessonContent?.scenario || lessonContent?.topic
+          ? lessonContent.scenario
+            ? `IMPORTANT: The scenario must be about: ${lessonContent.scenario}.`
+            : `IMPORTANT: The story should focus on the topic: ${lessonContent.topic}.`
+          : "";
+
         const prompt = [
           "You are a language tutor. Generate a short, engaging role play scenario",
           `for a ${lvl} learner who is role playing as ${roleFocus}. Target language: ${tName} (${tLang}).`,
           `Also provide a brief support translation in ${sName} (${sLang}).`,
+          scenarioDirective,
           "",
           "Constraints:",
           "- 8 to 10 sentences total.",
@@ -1514,7 +1521,7 @@ export default function StoryMode() {
     }
 
     // Passed — accumulate XP and advance (no award yet)
-    const delta = 15; // XP per passed sentence
+    const delta = 5; // ✅ normalized to 4-7 XP range
     setSessionXp((p) => p + delta);
     setPassedCount((c) => c + 1);
 

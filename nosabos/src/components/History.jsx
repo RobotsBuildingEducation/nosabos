@@ -340,13 +340,17 @@ function difficultyHint(level, xp) {
 }
 
 // Seed: FIRST lecture must be Bering migration
-function buildSeedLecturePrompt({ targetLang, supportLang, level, xp }) {
+function buildSeedLecturePrompt({ targetLang, supportLang, level, xp, lessonContent = null }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
   const diff = difficultyHint(level, xp);
 
+  const topicText = lessonContent?.topic || lessonContent?.scenario
+    ? lessonContent.topic || lessonContent.scenario
+    : "the **initial migration from Siberia across the Bering Strait (Beringia)** into the Americas";
+
   return `
-Write ONE short lecture in ${TARGET} (≈180–260 words) about the **initial migration from Siberia across the Bering Strait (Beringia)** into the Americas. Suitable for a ${level} learner. Difficulty: ${diff}.
+Write ONE short lecture in ${TARGET} (≈180–260 words) about ${topicText}. Suitable for a ${level} learner. Difficulty: ${diff}.
 
 Requirements:
 - Mention approximate time frames (e.g., Late Pleistocene), changing climates/sea levels, and possible inland/coastal routes.
@@ -478,8 +482,8 @@ async function computeAdaptiveXp({
   currentXp,
   hoursSinceLastLecture,
 }) {
-  const MIN = 20;
-  const MAX = 35;
+  const MIN = 4;
+  const MAX = 7;
 
   try {
     const prompt = buildXpPrompt({
@@ -507,21 +511,21 @@ async function computeAdaptiveXp({
     if (xp !== null) return { xp, reason };
   } catch {}
 
-  // Heuristic fallback (kept inside 20–35)
-  let score = 28; // center
-  // Nudge by density
-  score += target.length > 230 ? 3 : target.length < 170 ? -2 : 0;
+  // Heuristic fallback (kept inside 4–7) - normalized to 4-7 XP range
+  let score = 5; // center
+  // Nudge by density (smaller increments for 4-7 range)
+  score += target.length > 230 ? 1 : target.length < 170 ? -1 : 0;
   // Novelty vs previous titles
   const looksRepeated = previousTitles?.some((t) =>
     String(t || "")
       .toLowerCase()
       .includes(String(title || "").toLowerCase())
   );
-  score += looksRepeated ? -2 : 2;
+  score += looksRepeated ? -1 : 1;
   // Streak bonus
-  score += hoursSinceLastLecture != null && hoursSinceLastLecture <= 48 ? 2 : 0;
+  score += hoursSinceLastLecture != null && hoursSinceLastLecture <= 48 ? 1 : 0;
   // Level tweak
-  score += level === "advanced" ? 3 : level === "intermediate" ? 1 : 0;
+  score += level === "advanced" ? 1 : level === "intermediate" ? 0.5 : 0;
 
   const xp = Math.max(MIN, Math.min(MAX, score));
   return { xp, reason: "Heuristic fallback scoring." };
@@ -601,7 +605,7 @@ function buildStreamingPrompt({
 /* ---------------------------
    Component
 --------------------------- */
-export default function History({ userLanguage = "en" }) {
+export default function History({ userLanguage = "en", lessonContent = null }) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
@@ -747,6 +751,7 @@ export default function History({ userLanguage = "en" }) {
           supportLang,
           level: progress.level || "beginner",
           xp,
+          lessonContent,
         })
       : buildLecturePrompt({
           previousTitles,

@@ -253,6 +253,7 @@ function buildFillVocabStreamPrompt({
   appUILang,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
@@ -262,12 +263,17 @@ function buildFillVocabStreamPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(level, xp);
 
+  // If lesson content is provided, use specific vocabulary/topic
+  const topicDirective = lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- CRITICAL REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is mandatory.`
+      : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
+    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+
   return [
     `Create ONE short ${TARGET} VOCABULARY sentence with a single blank "___" that targets word choice (not grammar). Difficulty: ${diff}`,
     `- ≤ 120 chars; natural context that cues the target word.`,
-    `- Consider learner recent corrects: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}`,
+    topicDirective,
     `- Hint in ${SUPPORT} (≤ 8 words), covering meaning/synonym/topic.`,
     wantTR
       ? `- ${SUPPORT} translation of the full sentence.`
@@ -294,6 +300,7 @@ function buildMCVocabStreamPrompt({
   appUILang,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
@@ -307,15 +314,20 @@ function buildMCVocabStreamPrompt({
     ? `- Stem ≤120 chars and MUST contain a blank "___" inside a natural sentence.`
     : `- Stem ≤120 chars with a blank "___" OR a short definition asking for a word.`;
 
+  // If lesson content is provided, use specific vocabulary/topic
+  const topicDirective = lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- CRITICAL REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(lessonContent.words)}. The question must test one of these specific words. This is mandatory.`
+      : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
+    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+
   return [
     `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${diff}`,
     stemDirective,
     `- 4 distinct word choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
-    `- Consider learner recent corrects: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}`,
+    topicDirective,
     "",
     "Stream as NDJSON:",
     `{"type":"vocab_mc","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
@@ -339,6 +351,7 @@ function buildMAVocabStreamPrompt({
   appUILang,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
@@ -350,7 +363,14 @@ function buildMAVocabStreamPrompt({
   const preferBlank = Math.random() < 0.6;
   const stemDirective = preferBlank
     ? `- Stem ≤120 chars and MUST include at least one blank "___" within context.`
-    : `- Stem ≤120 chars with context (e.g., “Which words fit the sentence?” or “Select all synonyms for ___”).`;
+    : `- Stem ≤120 chars with context (e.g., "Which words fit the sentence?" or "Select all synonyms for ___").`;
+
+  // If lesson content is provided, use specific vocabulary/topic
+  const topicDirective = lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- CRITICAL REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is mandatory.`
+      : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
+    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
   return [
     `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
@@ -358,9 +378,7 @@ function buildMAVocabStreamPrompt({
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
-    `- Consider learner recent corrects: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}`,
+    topicDirective,
     "",
     "Stream as NDJSON:",
     `{"type":"vocab_ma","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
@@ -434,21 +452,27 @@ function buildMatchVocabStreamPrompt({
   level,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
   const diff = vocabDifficulty(level, xp);
 
+  // If lesson content is provided, use specific vocabulary/topic
+  const topicDirective = lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- CRITICAL REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. Select 3-6 words from this list ONLY.`
+      : `- IMPORTANT: All words must be related to: ${lessonContent.topic}`
+    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+
   return [
     `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${diff}`,
+    topicDirective,
     `- Left column: ${TARGET} words (3–6 items, unique).`,
     `- Right column: ${SUPPORT} short definitions (unique).`,
     `- Clear 1:1 mapping; ≤ 4 words per item.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
-    `- Consider learner recent corrects: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}`,
     "",
     "Emit exactly TWO NDJSON lines:",
     `{"type":"vocab_match","stem":"<${TARGET} stem>","left":["<word>", "..."],"right":["<short ${SUPPORT} definition>", "..."],"hint":"<${SUPPORT} hint>"}`,
@@ -639,10 +663,16 @@ function norm(s) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function Vocabulary({ userLanguage = "en" }) {
+export default function Vocabulary({ userLanguage = "en", lessonContent = null }) {
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+
+  // Debug: Log lesson content to verify it's passed correctly
+  console.log('[Vocabulary Component] lessonContent:', lessonContent);
+  if (lessonContent?.words) {
+    console.log('[Vocabulary Component] Specific words:', lessonContent.words);
+  }
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
@@ -1159,6 +1189,7 @@ export default function Vocabulary({ userLanguage = "en" }) {
       appUILang: userLanguage,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let gotSomething = false;
@@ -1279,7 +1310,7 @@ Return EXACTLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,
@@ -1345,6 +1376,7 @@ Return EXACTLY:
       appUILang: userLanguage,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let got = false;
@@ -1527,7 +1559,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 8 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,
@@ -1631,6 +1663,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       appUILang: userLanguage,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let got = false;
@@ -1801,7 +1834,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 10 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,
@@ -2100,6 +2133,7 @@ Return JSON ONLY:
       level,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let okPayload = false;
@@ -2262,7 +2296,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 12 : 0; // ✅ no XP for wrong answers
+    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     await saveAttempt(npub, {
       ok,
