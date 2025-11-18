@@ -782,8 +782,8 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
         // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
         const scenarioDirective = lessonContent?.scenario || lessonContent?.topic
           ? lessonContent.scenario
-            ? `IMPORTANT: The scenario must be about: ${lessonContent.scenario}.`
-            : `IMPORTANT: The story should focus on the topic: ${lessonContent.topic}.`
+            ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
+            : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
           : "";
 
         const prompt = [

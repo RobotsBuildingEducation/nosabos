@@ -241,8 +241,8 @@ function buildFillStreamPrompt({
   // If lesson content is provided, use specific grammar topic/focus
   const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
     ? [
-        lessonContent.topic ? `- IMPORTANT: Focus on grammar topic: ${lessonContent.topic}` : null,
-        lessonContent.focusPoints ? `- IMPORTANT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}` : null,
+        lessonContent.topic ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.` : null,
+        lessonContent.focusPoints ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}. These are mandatory lesson objectives.` : null,
       ].filter(Boolean).join('\n')
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
@@ -364,8 +364,8 @@ function buildMCStreamPrompt({
   // If lesson content is provided, use specific grammar topic/focus
   const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
     ? [
-        lessonContent.topic ? `- IMPORTANT: Focus on grammar topic: ${lessonContent.topic}` : null,
-        lessonContent.focusPoints ? `- IMPORTANT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}` : null,
+        lessonContent.topic ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.` : null,
+        lessonContent.focusPoints ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}. These are mandatory lesson objectives.` : null,
       ].filter(Boolean).join('\n')
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
@@ -441,8 +441,8 @@ function buildMAStreamPrompt({
   // If lesson content is provided, use specific grammar topic/focus
   const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
     ? [
-        lessonContent.topic ? `- IMPORTANT: Focus on grammar topic: ${lessonContent.topic}` : null,
-        lessonContent.focusPoints ? `- IMPORTANT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}` : null,
+        lessonContent.topic ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.` : null,
+        lessonContent.focusPoints ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}. These are mandatory lesson objectives.` : null,
       ].filter(Boolean).join('\n')
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 

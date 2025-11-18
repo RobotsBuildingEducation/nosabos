@@ -266,8 +266,8 @@ function buildFillVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective = lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
-      ? `- CRITICAL REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is mandatory.`
-      : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
+      ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
   return [
@@ -317,8 +317,8 @@ function buildMCVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective = lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
-      ? `- CRITICAL REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(lessonContent.words)}. The question must test one of these specific words. This is mandatory.`
-      : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
+      ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(lessonContent.words)}. The question must test one of these specific words. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
   return [
@@ -368,8 +368,8 @@ function buildMAVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective = lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
-      ? `- CRITICAL REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is mandatory.`
-      : `- IMPORTANT: Focus on vocabulary related to: ${lessonContent.topic}`
+      ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
   return [
@@ -462,8 +462,8 @@ function buildMatchVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective = lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
-      ? `- CRITICAL REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. Select 3-6 words from this list ONLY.`
-      : `- IMPORTANT: All words must be related to: ${lessonContent.topic}`
+      ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
     : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
 
   return [
