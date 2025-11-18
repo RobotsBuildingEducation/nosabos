@@ -1586,7 +1586,7 @@ export default function App() {
       }
 
       // Record starting XP for this lesson
-      const currentXp = user?.progress?.totalXp || user?.xp || 0;
+      const currentXp = fresh?.xp || user?.xp || 0;
       setLessonStartXp(currentXp);
       lessonCompletionTriggeredRef.current = false; // Reset completion flag
       console.log('[Lesson Start] Recording starting XP:', {
@@ -1594,7 +1594,7 @@ export default function App() {
         lessonTitle: lesson.title.en,
         startXp: currentXp,
         xpRequired: lesson.xpReward,
-        userProgressTotalXp: user?.progress?.totalXp,
+        freshXp: fresh?.xp,
         userXp: user?.xp,
       });
 
