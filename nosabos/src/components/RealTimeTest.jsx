@@ -2628,22 +2628,20 @@ Do not return the whole sentence as a single chunk.`;
         px={4}
       >
         <HStack spacing={3} w="100%" maxW="560px" justify="center">
-          {status === "connected" && (
-            <Button
-              onClick={skipGoal}
-              size="md"
-              height="48px"
-              px="6"
-              rounded="full"
-              colorScheme="orange"
-              variant="outline"
-              color="white"
-              textShadow="0px 0px 20px black"
-              mb={20}
-            >
-              {uiLang === "es" ? "Saltar" : "Skip"}
-            </Button>
-          )}
+          <Button
+            onClick={skipGoal}
+            size="md"
+            height="48px"
+            px="6"
+            rounded="full"
+            colorScheme="orange"
+            variant="outline"
+            color="white"
+            textShadow="0px 0px 20px black"
+            mb={20}
+          >
+            {uiLang === "es" ? "Saltar" : "Skip"}
+          </Button>
           <Button
             onClick={status === "connected" ? stop : start}
             size="lg"
