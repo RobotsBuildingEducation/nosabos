@@ -33,6 +33,7 @@ import useUserStore from "../hooks/useUserStore";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
+import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
@@ -472,6 +473,7 @@ function buildSpeakGrammarStreamPrompt({
   appUILang,
   xp,
   recentGood,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
@@ -481,6 +483,14 @@ function buildSpeakGrammarStreamPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = difficultyHint(level, xp);
 
+  // If lesson content is provided, use specific grammar topic/focus
+  const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.` : null,
+        lessonContent.focusPoints ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}. These are mandatory lesson objectives.` : null,
+      ].filter(Boolean).join('\n')
+    : `- Consider recent grammar successes: ${JSON.stringify(recentGood.slice(-3))}`;
+
   return [
     `Craft ONE short ${TARGET} sentence (≤8 words) that showcases a grammar feature. Difficulty: ${diff}`,
     `- Provide an instruction line in ${TARGET} telling the learner to say it aloud (≤100 chars).`,
@@ -488,9 +498,7 @@ function buildSpeakGrammarStreamPrompt({
     wantTranslation
       ? `- Include a ${SUPPORT} translation of the sentence.`
       : `- Use empty translation "".`,
-    `- Consider recent grammar successes: ${JSON.stringify(
-      recentGood.slice(-3)
-    )}.`,
+    topicDirective,
     "",
     "Stream as NDJSON:",
     `{"type":"grammar_speak","phase":"prompt","target":"<${TARGET} sentence>","prompt":"<instruction in ${TARGET}>"}`,
@@ -1654,6 +1662,7 @@ Create ONE multiple-answer ${LANG_NAME(
       appUILang: userLanguage,
       xp,
       recentGood: recentCorrectRef.current,
+      lessonContent,
     });
 
     let got = false;
@@ -3242,54 +3251,65 @@ Return JSON ONLY:
         {/* ---- SPEAK UI ---- */}
         {mode === "speak" && (sTarget || loadingSpeakQ) ? (
           <>
-            <HStack align="flex-start" spacing={2} mb={2}>
-              <CopyAllBtn
-                q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
-                h={sHint}
-                tr={sTranslation}
-              />
-              <VStack align="flex-start" spacing={1} flex="1">
-                <Text fontSize="sm" opacity={0.85}>
-                  {t("grammar_speak_instruction_label") ||
-                    (userLanguage === "es"
-                      ? "Pronuncia la oración para practicar la gramática."
-                      : "Say the sentence aloud to practice the grammar point.")}
+            {loadingSpeakQ ? (
+              <Box textAlign="center" py={12}>
+                <RobotBuddyPro palette="ocean" variant="abstract" />
+                <Text mt={4} fontSize="sm" opacity={0.7}>
+                  {userLanguage === "es" ? "Generando pregunta..." : "Generating question..."}
                 </Text>
-                <Text fontWeight="600" fontSize="md">
-                  {loadingSpeakQ ? "…" : sPrompt || ""}
-                </Text>
-              </VStack>
-            </HStack>
+              </Box>
+            ) : (
+              <>
+                <HStack align="flex-start" spacing={2} mb={2}>
+                  <CopyAllBtn
+                    q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
+                    h={sHint}
+                    tr={sTranslation}
+                  />
+                  <VStack align="flex-start" spacing={1} flex="1">
+                    <Text fontSize="sm" opacity={0.85}>
+                      {t("grammar_speak_instruction_label") ||
+                        (userLanguage === "es"
+                          ? "Pronuncia la oración para practicar la gramática."
+                          : "Say the sentence aloud to practice the grammar point.")}
+                    </Text>
+                    <Text fontWeight="600" fontSize="md">
+                      {sPrompt || ""}
+                    </Text>
+                  </VStack>
+                </HStack>
 
-            <Box
-              border="1px solid rgba(255,255,255,0.18)"
-              rounded="xl"
-              p={6}
-              textAlign="center"
-              bg="rgba(255,255,255,0.04)"
-              position="relative"
-            >
-              <Tooltip label={speakListenLabel} placement="top">
-                <IconButton
-                  aria-label={speakListenLabel}
-                  icon={<PiSpeakerHighDuotone />}
-                  size="sm"
-                  variant="ghost"
-                  colorScheme={isSpeakPlaying ? "teal" : "purple"}
-                  position="absolute"
-                  top="3"
-                  right="3"
-                  onClick={handleToggleSpeakPlayback}
-                  isDisabled={loadingSpeakQ || !sTarget}
-                />
-              </Tooltip>
-              <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
-                {speakVariantLabel}
-              </Badge>
-              <Text fontSize="3xl" fontWeight="700">
-                {loadingSpeakQ ? "…" : sTarget || "…"}
-              </Text>
-            </Box>
+                <Box
+                  border="1px solid rgba(255,255,255,0.18)"
+                  rounded="xl"
+                  p={6}
+                  textAlign="center"
+                  bg="rgba(255,255,255,0.04)"
+                  position="relative"
+                >
+                  <Tooltip label={speakListenLabel} placement="top">
+                    <IconButton
+                      aria-label={speakListenLabel}
+                      icon={<PiSpeakerHighDuotone />}
+                      size="sm"
+                      variant="ghost"
+                      colorScheme={isSpeakPlaying ? "teal" : "purple"}
+                      position="absolute"
+                      top="3"
+                      right="3"
+                      onClick={handleToggleSpeakPlayback}
+                      isDisabled={!sTarget}
+                    />
+                  </Tooltip>
+                  <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
+                    {speakVariantLabel}
+                  </Badge>
+                  <Text fontSize="3xl" fontWeight="700">
+                    {sTarget || "…"}
+                  </Text>
+                </Box>
+              </>
+            )}
 
             {sHint ? (
               <Text fontSize="sm" mt={3}>
