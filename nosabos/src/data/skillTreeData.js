@@ -685,8 +685,6 @@ export const LEARNING_PATHS = {
           },
         ],
       },
-    ],
-    intermediate: [
       {
         id: 'unit-8',
         title: {
@@ -1146,8 +1144,6 @@ export const LEARNING_PATHS = {
           },
         ],
       },
-    ],
-    advanced: [
       {
         id: 'unit-13',
         title: {
@@ -1596,6 +1592,8 @@ export const LEARNING_PATHS = {
         ],
       },
     ],
+    intermediate: [],
+    advanced: [],
   },
   // Template for other languages - can be expanded
   en: { // English (for Spanish speakers)
