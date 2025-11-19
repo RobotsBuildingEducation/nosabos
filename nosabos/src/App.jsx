@@ -924,9 +924,11 @@ export default function App() {
   // UI language for the *app UI*
   const [appLanguage, setAppLanguage] = useState(
     typeof window !== "undefined"
-      ? localStorage.getItem("appLanguage") === "es"
-        ? "es"
-        : "en"
+      ? (() => {
+          const stored = localStorage.getItem("appLanguage");
+          const validLanguages = ["en", "es", "nah", "pt", "it", "fr"];
+          return validLanguages.includes(stored) ? stored : "en";
+        })()
       : "en"
   );
   const t = translations[appLanguage] || translations.en;
@@ -1291,7 +1293,8 @@ export default function App() {
 
   const saveAppLanguage = async (lang = "en") => {
     const id = resolveNpub();
-    const norm = lang === "es" ? "es" : "en";
+    const validLanguages = ["en", "es", "nah", "pt", "it", "fr"];
+    const norm = validLanguages.includes(lang) ? lang : "en";
     setAppLanguage(norm);
     try {
       localStorage.setItem("appLanguage", norm);
@@ -1320,7 +1323,8 @@ export default function App() {
 
   // Persist settings (used by TopBar Save button)
   const handleSelectAppLanguage = (lang) => {
-    const next = lang === "es" ? "es" : "en";
+    const validLanguages = ["en", "es", "nah", "pt", "it", "fr"];
+    const next = validLanguages.includes(lang) ? lang : "en";
     if (next !== appLanguage) {
       saveAppLanguage(next);
     }
@@ -2682,8 +2686,8 @@ function BottomActionBar({
             colorScheme="teal"
             fontSize="xs"
             fontWeight="bold"
-            aria-label={englishLabel}
-            px={3}
+            aria-label="English"
+            px={2}
           >
             EN
           </Button>
@@ -2693,10 +2697,54 @@ function BottomActionBar({
             colorScheme="teal"
             fontSize="xs"
             fontWeight="bold"
-            aria-label={spanishLabel}
-            px={3}
+            aria-label="Spanish"
+            px={2}
           >
             ES
+          </Button>
+          <Button
+            onClick={() => handleSelectLanguage("nah")}
+            variant={appLanguage === "nah" ? "solid" : "ghost"}
+            colorScheme="teal"
+            fontSize="xs"
+            fontWeight="bold"
+            aria-label="Nahuatl"
+            px={2}
+          >
+            NAH
+          </Button>
+          <Button
+            onClick={() => handleSelectLanguage("pt")}
+            variant={appLanguage === "pt" ? "solid" : "ghost"}
+            colorScheme="teal"
+            fontSize="xs"
+            fontWeight="bold"
+            aria-label="Portuguese"
+            px={2}
+          >
+            PT
+          </Button>
+          <Button
+            onClick={() => handleSelectLanguage("it")}
+            variant={appLanguage === "it" ? "solid" : "ghost"}
+            colorScheme="teal"
+            fontSize="xs"
+            fontWeight="bold"
+            aria-label="Italian"
+            px={2}
+          >
+            IT
+          </Button>
+          <Button
+            onClick={() => handleSelectLanguage("fr")}
+            variant={appLanguage === "fr" ? "solid" : "ghost"}
+            colorScheme="teal"
+            fontSize="xs"
+            fontWeight="bold"
+            aria-label="French"
+            px={2}
+          >
+            FR
           </Button>
         </ButtonGroup>
         <IconButton

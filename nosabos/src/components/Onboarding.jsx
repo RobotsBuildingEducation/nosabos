@@ -48,7 +48,10 @@ export default function Onboarding({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [appLang, setAppLang] = useState(userLanguage === "es" ? "es" : "en");
+  const [appLang, setAppLang] = useState(() => {
+    const validLanguages = ["en", "es", "nah", "pt", "it", "fr"];
+    return validLanguages.includes(userLanguage) ? userLanguage : "en";
+  });
   const ui = translations[appLang] || translations.en;
 
   const defaults = useMemo(() => {
@@ -121,7 +124,8 @@ export default function Onboarding({
   const progressValue = ((currentStepIndex + 1) / totalSteps) * 100;
 
   const persistAppLanguage = (lang) => {
-    const norm = lang === "es" ? "es" : "en";
+    const validLanguages = ["en", "es", "nah", "pt", "it", "fr"];
+    const norm = validLanguages.includes(lang) ? lang : "en";
     setAppLang(norm);
     try {
       localStorage.setItem("appLanguage", norm);
@@ -302,27 +306,26 @@ export default function Onboarding({
                   </Text>
                 </VStack>
                 <Spacer />
-                <HStack spacing={2} align="center">
-                  <Text
-                    fontSize="sm"
-                    color={appLang === "en" ? "teal.300" : "gray.400"}
-                  >
-                    EN
-                  </Text>
-                  <Switch
-                    colorScheme="teal"
-                    isChecked={appLang === "es"}
-                    onChange={() =>
-                      persistAppLanguage(appLang === "en" ? "es" : "en")
-                    }
-                  />
-                  <Text
-                    fontSize="sm"
-                    color={appLang === "es" ? "teal.300" : "gray.400"}
-                  >
-                    ES
-                  </Text>
-                </HStack>
+                <Select
+                  value={appLang}
+                  onChange={(e) => persistAppLanguage(e.target.value)}
+                  size="sm"
+                  width="auto"
+                  bg="rgba(255, 255, 255, 0.04)"
+                  borderColor="gray.700"
+                  _hover={{ borderColor: "teal.400" }}
+                  _focus={{ borderColor: "teal.400", boxShadow: "0 0 0 1px teal" }}
+                  color="teal.300"
+                  fontWeight="bold"
+                  fontSize="xs"
+                >
+                  <option value="en" style={{ backgroundColor: "#1a202c" }}>EN - English</option>
+                  <option value="es" style={{ backgroundColor: "#1a202c" }}>ES - Español</option>
+                  <option value="nah" style={{ backgroundColor: "#1a202c" }}>NAH - Náhuatl</option>
+                  <option value="pt" style={{ backgroundColor: "#1a202c" }}>PT - Português</option>
+                  <option value="it" style={{ backgroundColor: "#1a202c" }}>IT - Italiano</option>
+                  <option value="fr" style={{ backgroundColor: "#1a202c" }}>FR - Français</option>
+                </Select>
               </HStack>
 
               <VStack align="stretch" spacing={2}>
