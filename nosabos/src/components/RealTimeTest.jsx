@@ -1217,25 +1217,33 @@ export default function RealTimeTest({
 
   async function skipGoal() {
     const npub = strongNpub(user);
-    if (!npub || !currentGoal) return;
+    if (!npub || !currentGoal || goalBusyRef.current) return;
 
-    // Record the skipped goal
-    await addDoc(collection(database, "users", npub, "goals"), {
-      ...currentGoal,
-      status: "skipped",
-      skippedAt: isoNow(),
-    });
+    goalBusyRef.current = true;
+    try {
+      // Record the skipped goal
+      await addDoc(collection(database, "users", npub, "goals"), {
+        ...currentGoal,
+        status: "skipped",
+        skippedAt: isoNow(),
+      });
 
-    // Generate a new goal
-    const newGoal = await ensureCurrentGoalSeed(npub, null);
-    setCurrentGoal(newGoal);
-    goalRef.current = newGoal;
-    setGoalFeedback("");
-    setGoalCompleted(false);
+      // Generate a completely new goal (not just a seed)
+      const newGoal = await generateNextGoal(currentGoal);
+      setCurrentGoal(newGoal);
+      goalRef.current = newGoal;
+      await persistCurrentGoal(newGoal);
+      setGoalFeedback("");
+      setGoalCompleted(false);
 
-    // Update session with new goal if connected
-    if (status === "connected") {
-      scheduleSessionUpdate();
+      // Update session with new goal if connected
+      if (status === "connected") {
+        scheduleSessionUpdate();
+      }
+    } catch (error) {
+      console.warn("Failed to skip goal:", error);
+    } finally {
+      goalBusyRef.current = false;
     }
   }
 
