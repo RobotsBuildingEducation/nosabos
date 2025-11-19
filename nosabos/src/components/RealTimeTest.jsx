@@ -471,6 +471,12 @@ export default function RealTimeTest({
   const toast = useToast();
   const aliveRef = useRef(false);
 
+  // Lesson content ref
+  const lessonContentRef = useRef(lessonContent);
+  useEffect(() => {
+    lessonContentRef.current = lessonContent;
+  }, [lessonContent]);
+
   // User id
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
@@ -1115,20 +1121,30 @@ export default function RealTimeTest({
   async function ensureCurrentGoalSeed(npub, userData) {
     const ref = doc(database, "users", npub);
     const data = userData || (await getDoc(ref)).data() || {};
+
+    // Check if lesson content provides a specific goal/scenario
+    const lesson = lessonContentRef.current;
+    const lessonScenario = lesson?.scenario || lesson?.prompt;
+
+    // If we have a lesson-specific goal that matches current content, use it
     if (
       data.currentGoal &&
       data.currentGoal.title_en &&
-      data.currentGoal.title_es
+      data.currentGoal.title_es &&
+      (!lessonScenario || data.currentGoal.lessonScenario === lessonScenario)
     ) {
       return { ...data.currentGoal, attempts: data.currentGoal.attempts || 0 };
     }
+
+    // Generate goal based on lesson content or use default
     const seedTitles = goalTitlesSeed();
     const seed = {
       id: `goal_${Date.now()}`,
-      title_en: seedTitles.en,
-      title_es: seedTitles.es,
-      rubric_en: "Say a greeting",
-      rubric_es: "Di un saludo",
+      title_en: lessonScenario || seedTitles.en,
+      title_es: lessonScenario || seedTitles.es,
+      rubric_en: lessonScenario ? `Practice: ${lessonScenario}` : "Say a greeting",
+      rubric_es: lessonScenario ? `Practica: ${lessonScenario}` : "Di un saludo",
+      lessonScenario: lessonScenario || null,
       attempts: 0,
       status: "active",
       createdAt: isoNow(),
@@ -1196,6 +1212,29 @@ export default function RealTimeTest({
       confidence,
     };
     await addDoc(collection(database, "users", npub, "goals"), payload);
+  }
+
+  async function skipGoal() {
+    const npub = strongNpub(user);
+    if (!npub || !currentGoal) return;
+
+    // Record the skipped goal
+    await addDoc(collection(database, "users", npub, "goals"), {
+      ...currentGoal,
+      status: "skipped",
+      skippedAt: isoNow(),
+    });
+
+    // Generate a new goal
+    const newGoal = await ensureCurrentGoalSeed(npub, null);
+    setCurrentGoal(newGoal);
+    goalRef.current = newGoal;
+    setGoalFeedback("");
+
+    // Update session with new goal if connected
+    if (status === "connected") {
+      scheduleSessionUpdate();
+    }
   }
 
   // XP helpers - normalized to 4-7 XP range
@@ -2589,6 +2628,22 @@ Do not return the whole sentence as a single chunk.`;
         px={4}
       >
         <HStack spacing={3} w="100%" maxW="560px" justify="center">
+          {status === "connected" && (
+            <Button
+              onClick={skipGoal}
+              size="md"
+              height="48px"
+              px="6"
+              rounded="full"
+              colorScheme="orange"
+              variant="outline"
+              color="white"
+              textShadow="0px 0px 20px black"
+              mb={20}
+            >
+              {uiLang === "es" ? "Saltar" : "Skip"}
+            </Button>
+          )}
           <Button
             onClick={status === "connected" ? stop : start}
             size="lg"
