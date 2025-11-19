@@ -21,9 +21,8 @@ export const SKILL_STATUS = {
  * Learning path structure for each language
  * Organized by proficiency level (beginner, intermediate, advanced)
  */
-export const LEARNING_PATHS = {
-  es: { // Spanish
-    beginner: [
+const baseLearningPath = {
+  beginner: [
       {
         id: 'unit-1',
         title: {
@@ -1591,36 +1590,20 @@ export const LEARNING_PATHS = {
           },
         ],
       },
-    ],
-    intermediate: [],
-    advanced: [],
-  },
-  // Template for other languages - can be expanded
-  en: { // English (for Spanish speakers)
-    beginner: [], // Would mirror Spanish structure
-    intermediate: [],
-    advanced: [],
-  },
-  pt: { // Portuguese
-    beginner: [],
-    intermediate: [],
-    advanced: [],
-  },
-  fr: { // French
-    beginner: [],
-    intermediate: [],
-    advanced: [],
-  },
-  it: { // Italian
-    beginner: [],
-    intermediate: [],
-    advanced: [],
-  },
-  nah: { // Nahuatl
-    beginner: [],
-    intermediate: [],
-    advanced: [],
-  },
+  ],
+  intermediate: [],
+  advanced: [],
+};
+
+const cloneLearningPath = () => JSON.parse(JSON.stringify(baseLearningPath));
+
+export const LEARNING_PATHS = {
+  es: cloneLearningPath(), // Spanish
+  en: cloneLearningPath(), // English
+  pt: cloneLearningPath(), // Portuguese
+  fr: cloneLearningPath(), // French
+  it: cloneLearningPath(), // Italian
+  nah: cloneLearningPath(), // Nahuatl
 };
 
 /**
