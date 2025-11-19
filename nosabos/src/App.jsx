@@ -960,6 +960,10 @@ export default function App() {
       : null
   );
 
+  // Lesson completion celebration modal
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [completedLessonData, setCompletedLessonData] = useState(null);
+
   // Helper mapping for keys/index
   const TAB_KEYS = [
     "realtime",
@@ -1571,11 +1575,12 @@ export default function App() {
     try {
       // Mark lesson as in progress in Firestore
       const npub = resolveNpub();
+      let fresh = null;
       if (npub) {
         await startLesson(npub, lesson.id);
 
         // Refresh user data to get updated progress
-        const fresh = await loadUserObjectFromDB(database, npub);
+        fresh = await loadUserObjectFromDB(database, npub);
         if (fresh) setUser?.(fresh);
       }
 
@@ -1586,7 +1591,7 @@ export default function App() {
       }
 
       // Record starting XP for this lesson
-      const currentXp = user?.progress?.totalXp || user?.xp || 0;
+      const currentXp = fresh?.xp || user?.xp || 0;
       setLessonStartXp(currentXp);
       lessonCompletionTriggeredRef.current = false; // Reset completion flag
       console.log('[Lesson Start] Recording starting XP:', {
@@ -1594,7 +1599,7 @@ export default function App() {
         lessonTitle: lesson.title.en,
         startXp: currentXp,
         xpRequired: lesson.xpReward,
-        userProgressTotalXp: user?.progress?.totalXp,
+        freshXp: fresh?.xp,
         userXp: user?.xp,
       });
 
@@ -1640,6 +1645,20 @@ export default function App() {
     if (typeof window !== "undefined") {
       localStorage.setItem("viewMode", "skillTree");
     }
+  };
+
+  // Handle closing the completion modal and returning to skill tree
+  const handleCloseCompletionModal = () => {
+    setShowCompletionModal(false);
+    setCompletedLessonData(null);
+
+    // Return to skill tree
+    handleReturnToSkillTree();
+    setActiveLesson(null);
+    setLessonStartXp(null);
+    previousXpRef.current = null;
+    lessonCompletionTriggeredRef.current = false;
+    localStorage.removeItem("activeLesson");
   };
 
   // Ensure current tab is valid for the active lesson
@@ -2028,21 +2047,13 @@ export default function App() {
                   const fresh = await loadUserObjectFromDB(database, npub);
                   if (fresh) setUser?.(fresh);
 
-                  toast({
-                    title: appLanguage === "es" ? "¡Lección completada!" : "Lesson Complete!",
-                    description: activeLesson.title[appLanguage] || activeLesson.title.en,
-                    status: "success",
-                    duration: 3000,
+                  // Show celebration modal
+                  setCompletedLessonData({
+                    title: activeLesson.title,
+                    xpEarned: activeLesson.xpReward,
+                    lessonId: activeLesson.id,
                   });
-
-                  setTimeout(() => {
-                    handleReturnToSkillTree();
-                    setActiveLesson(null);
-                    setLessonStartXp(null);
-                    previousXpRef.current = null;
-                    lessonCompletionTriggeredRef.current = false;
-                    localStorage.removeItem("activeLesson");
-                  }, 1500);
+                  setShowCompletionModal(true);
                 })
                 .catch((err) => {
                   console.error("Failed to complete lesson:", err);
@@ -2351,6 +2362,7 @@ export default function App() {
                         helpRequest={user?.progress?.helpRequest}
                         practicePronunciation={user?.progress?.practicePronunciation}
                         lessonContent={activeLesson?.content?.realtime}
+                        onSkip={switchToRandomLessonMode}
                         onSwitchedAccount={async (id, sec) => {
                           if (id) localStorage.setItem("local_npub", id);
                           if (typeof sec === "string")
@@ -2499,6 +2511,90 @@ export default function App() {
               {appLanguage === "es" ? "Seguir" : "Keep going"}
             </Button>
           </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Lesson Completion Celebration Modal */}
+      <Modal
+        isOpen={showCompletionModal}
+        onClose={handleCloseCompletionModal}
+        isCentered
+        size="lg"
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          maxW={{ base: "90%", sm: "md" }}
+        >
+          <ModalBody py={12} px={8}>
+            <VStack spacing={6} textAlign="center">
+              {/* Celebration Icon */}
+              <Box
+                fontSize="6xl"
+                animation="bounce 1s ease-in-out infinite"
+                sx={{
+                  "@keyframes bounce": {
+                    "0%, 100%": { transform: "translateY(0)" },
+                    "50%": { transform: "translateY(-20px)" },
+                  },
+                }}
+              >
+                🎉
+              </Box>
+
+              {/* Title */}
+              <VStack spacing={2}>
+                <Text fontSize="3xl" fontWeight="bold">
+                  {appLanguage === "es" ? "¡Lección Completada!" : "Lesson Complete!"}
+                </Text>
+                <Text fontSize="lg" opacity={0.9}>
+                  {completedLessonData?.title?.[appLanguage] || completedLessonData?.title?.en}
+                </Text>
+              </VStack>
+
+              {/* XP Award Display */}
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="xl"
+                py={6}
+                px={8}
+                width="100%"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+              >
+                <VStack spacing={2}>
+                  <Text fontSize="sm" textTransform="uppercase" letterSpacing="wide" opacity={0.8}>
+                    {appLanguage === "es" ? "XP Ganado" : "XP Earned"}
+                  </Text>
+                  <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
+                    +{completedLessonData?.xpEarned || 0}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.8}>
+                    {appLanguage === "es" ? "Puntos de Experiencia" : "Experience Points"}
+                  </Text>
+                </VStack>
+              </Box>
+
+              {/* Continue Button */}
+              <Button
+                size="lg"
+                width="100%"
+                bg="white"
+                color="purple.600"
+                _hover={{ bg: "gray.100" }}
+                _active={{ bg: "gray.200" }}
+                onClick={handleCloseCompletionModal}
+                fontWeight="bold"
+                fontSize="lg"
+                py={6}
+              >
+                {appLanguage === "es" ? "Continuar" : "Continue"}
+              </Button>
+            </VStack>
+          </ModalBody>
         </ModalContent>
       </Modal>
     </Box>

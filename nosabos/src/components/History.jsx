@@ -349,8 +349,12 @@ function buildSeedLecturePrompt({ targetLang, supportLang, level, xp, lessonCont
     ? lessonContent.topic || lessonContent.scenario
     : "the **initial migration from Siberia across the Bering Strait (Beringia)** into the Americas";
 
+  const strictDirective = lessonContent?.topic || lessonContent?.scenario
+    ? `\nSTRICT REQUIREMENT: The lecture MUST be about ${topicText}. Do NOT write about other topics. This is lesson-specific content and you MUST NOT diverge.`
+    : "";
+
   return `
-Write ONE short lecture in ${TARGET} (≈180–260 words) about ${topicText}. Suitable for a ${level} learner. Difficulty: ${diff}.
+Write ONE short lecture in ${TARGET} (≈180–260 words) about ${topicText}. Suitable for a ${level} learner. Difficulty: ${diff}.${strictDirective}
 
 Requirements:
 - Mention approximate time frames (e.g., Late Pleistocene), changing climates/sea levels, and possible inland/coastal routes.

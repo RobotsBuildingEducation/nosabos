@@ -28,7 +28,7 @@ import { FiTarget, FiZap, FiClock } from "react-icons/fi";
 import { database } from "../firebaseResources/firebaseResources";
 
 const MS_24H = 24 * 60 * 60 * 1000;
-const PRESETS = [50, 100, 150, 200, 300];
+const PRESETS = [25, 50, 75, 100, 150];
 
 const I18N = {
   en: {
@@ -68,7 +68,7 @@ export default function DailyGoalModal({
   onClose,
   npub,
   lang = "en",
-  defaultGoal = 200,
+  defaultGoal = 50,
   ui = {
     title: "Daily XP goal",
     subtitle: "Each level = 100 XP. How many XP do you want to earn per day?",

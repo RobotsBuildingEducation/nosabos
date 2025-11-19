@@ -466,9 +466,17 @@ export default function RealTimeTest({
   activeNpub = "",
   activeNsec = "",
   onSwitchedAccount,
+  lessonContent = null,
+  onSkip = null,
 }) {
   const toast = useToast();
   const aliveRef = useRef(false);
+
+  // Lesson content ref
+  const lessonContentRef = useRef(lessonContent);
+  useEffect(() => {
+    lessonContentRef.current = lessonContent;
+  }, [lessonContent]);
 
   // User id
   const user = useUserStore((s) => s.user);
@@ -577,6 +585,7 @@ export default function RealTimeTest({
   const goalRef = useRef(null);
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalBusyRef = useRef(false);
+  const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
@@ -1114,20 +1123,30 @@ export default function RealTimeTest({
   async function ensureCurrentGoalSeed(npub, userData) {
     const ref = doc(database, "users", npub);
     const data = userData || (await getDoc(ref)).data() || {};
+
+    // Check if lesson content provides a specific goal/scenario
+    const lesson = lessonContentRef.current;
+    const lessonScenario = lesson?.scenario || lesson?.prompt;
+
+    // If we have a lesson-specific goal that matches current content, use it
     if (
       data.currentGoal &&
       data.currentGoal.title_en &&
-      data.currentGoal.title_es
+      data.currentGoal.title_es &&
+      (!lessonScenario || data.currentGoal.lessonScenario === lessonScenario)
     ) {
       return { ...data.currentGoal, attempts: data.currentGoal.attempts || 0 };
     }
+
+    // Generate goal based on lesson content or use default
     const seedTitles = goalTitlesSeed();
     const seed = {
       id: `goal_${Date.now()}`,
-      title_en: seedTitles.en,
-      title_es: seedTitles.es,
-      rubric_en: "Say a greeting",
-      rubric_es: "Di un saludo",
+      title_en: lessonScenario || seedTitles.en,
+      title_es: lessonScenario || seedTitles.es,
+      rubric_en: lessonScenario ? `Practice: ${lessonScenario}` : "Say a greeting",
+      rubric_es: lessonScenario ? `Practica: ${lessonScenario}` : "Di un saludo",
+      lessonScenario: lessonScenario || null,
       attempts: 0,
       status: "active",
       createdAt: isoNow(),
@@ -1195,6 +1214,49 @@ export default function RealTimeTest({
       confidence,
     };
     await addDoc(collection(database, "users", npub, "goals"), payload);
+  }
+
+  function skipGoal() {
+    // If in lesson mode, call onSkip to switch to next random module type
+    if (onSkip && typeof onSkip === 'function') {
+      console.log('[RealTimeTest] Skipping to next lesson module');
+      onSkip();
+      return;
+    }
+
+    // Not in lesson mode - show a message
+    toast({
+      title: uiLang === "es" ? "Modo de práctica libre" : "Free practice mode",
+      description: uiLang === "es"
+        ? "En modo libre, usa el botón Conectar para practicar conversación."
+        : "In free mode, use the Connect button to practice conversation.",
+      status: "info",
+      duration: 2000,
+    });
+  }
+
+  async function handleNextGoal() {
+    if (!currentGoal || goalBusyRef.current) return;
+
+    goalBusyRef.current = true;
+    try {
+      // Generate next goal based on conversation history
+      const nextGoal = await generateNextGoal(currentGoal);
+      setCurrentGoal(nextGoal);
+      goalRef.current = nextGoal;
+      await persistCurrentGoal(nextGoal);
+      setGoalFeedback("");
+      setGoalCompleted(false);
+
+      // Update session with new goal if connected
+      if (status === "connected") {
+        scheduleSessionUpdate();
+      }
+    } catch (error) {
+      console.warn("Failed to generate next goal:", error);
+    } finally {
+      goalBusyRef.current = false;
+    }
   }
 
   // XP helpers - normalized to 4-7 XP range
@@ -1455,14 +1517,8 @@ Return ONLY JSON:
       }
 
       if (met) {
-        goalBusyRef.current = true;
         await recordGoalCompletion(goal, conf);
-        const nextGoal = await generateNextGoal(goal);
-        setCurrentGoal(nextGoal);
-        goalRef.current = nextGoal;
-        await persistCurrentGoal(nextGoal);
-        scheduleSessionUpdate();
-        goalBusyRef.current = false;
+        setGoalCompleted(true); // Mark goal as completed, wait for user to click "Next Goal"
       }
     } catch (e) {
       console.warn("Goal eval failed:", e?.message || e);
@@ -2588,30 +2644,62 @@ Do not return the whole sentence as a single chunk.`;
         px={4}
       >
         <HStack spacing={3} w="100%" maxW="560px" justify="center">
-          <Button
-            onClick={status === "connected" ? stop : start}
-            size="lg"
-            height="64px"
-            px="8"
-            rounded="full"
-            colorScheme={status === "connected" ? "red" : "cyan"}
-            color="white"
-            textShadow="0px 0px 20px black"
-            mb={20}
-          >
-            {status === "connected" ? (
-              <>
-                <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-              </>
-            ) : (
-              <>
-                <PiMicrophoneStageDuotone /> &nbsp;{" "}
-                {status === "connecting"
-                  ? ui.ra_btn_connecting
-                  : ui.ra_btn_connect}
-              </>
-            )}
-          </Button>
+          {goalCompleted ? (
+            <Button
+              onClick={handleNextGoal}
+              size="lg"
+              height="64px"
+              px="8"
+              rounded="full"
+              colorScheme="green"
+              color="white"
+              textShadow="0px 0px 20px black"
+              mb={20}
+            >
+              {uiLang === "es" ? "Siguiente Meta" : "Next Goal"}
+            </Button>
+          ) : (
+            <>
+              <Button
+                onClick={skipGoal}
+                size="md"
+                height="48px"
+                px="6"
+                rounded="full"
+                colorScheme="orange"
+                variant="outline"
+                color="white"
+                textShadow="0px 0px 20px black"
+                mb={20}
+              >
+                {uiLang === "es" ? "Saltar" : "Skip"}
+              </Button>
+              <Button
+                onClick={status === "connected" ? stop : start}
+                size="lg"
+                height="64px"
+                px="8"
+                rounded="full"
+                colorScheme={status === "connected" ? "red" : "cyan"}
+                color="white"
+                textShadow="0px 0px 20px black"
+                mb={20}
+              >
+                {status === "connected" ? (
+                  <>
+                    <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                  </>
+                ) : (
+                  <>
+                    <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                    {status === "connecting"
+                      ? ui.ra_btn_connecting
+                      : ui.ra_btn_connect}
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </HStack>
       </Center>
 
