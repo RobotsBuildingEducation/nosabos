@@ -1144,8 +1144,12 @@ export default function RealTimeTest({
       id: `goal_${Date.now()}`,
       title_en: lessonScenario || seedTitles.en,
       title_es: lessonScenario || seedTitles.es,
-      rubric_en: lessonScenario ? `Practice: ${lessonScenario}` : "Say a greeting",
-      rubric_es: lessonScenario ? `Practica: ${lessonScenario}` : "Di un saludo",
+      rubric_en: lessonScenario
+        ? `Practice: ${lessonScenario}`
+        : "Say a greeting",
+      rubric_es: lessonScenario
+        ? `Practica: ${lessonScenario}`
+        : "Di un saludo",
       lessonScenario: lessonScenario || null,
       attempts: 0,
       status: "active",
@@ -1218,8 +1222,8 @@ export default function RealTimeTest({
 
   function skipGoal() {
     // If in lesson mode, call onSkip to switch to next random module type
-    if (onSkip && typeof onSkip === 'function') {
-      console.log('[RealTimeTest] Skipping to next lesson module');
+    if (onSkip && typeof onSkip === "function") {
+      console.log("[RealTimeTest] Skipping to next lesson module");
       onSkip();
       return;
     }
@@ -1227,9 +1231,10 @@ export default function RealTimeTest({
     // Not in lesson mode - show a message
     toast({
       title: uiLang === "es" ? "Modo de práctica libre" : "Free practice mode",
-      description: uiLang === "es"
-        ? "En modo libre, usa el botón Conectar para practicar conversación."
-        : "In free mode, use the Connect button to practice conversation.",
+      description:
+        uiLang === "es"
+          ? "En modo libre, usa el botón Conectar para practicar conversación."
+          : "In free mode, use the Connect button to practice conversation.",
       status: "info",
       duration: 2000,
     });
@@ -2465,28 +2470,28 @@ Do not return the whole sentence as a single chunk.`;
         borderRadius="24px"
         mt="-8"
       >
-      <HStack
-        spacing={2}
-        display="flex"
-        justifyContent={"center"}
-        mt={6}
-        position={"absolute"}
-        right={5}
-        top={"8"}
-      >
-        <IconButton
-          aria-label={ui.ra_btn_delete_convo}
-          icon={<DeleteIcon />}
-          size="sm"
-          colorScheme="red"
-          variant="outline"
-          onClick={() => setIsDeleteModalOpen(true)}
-          width="24px"
-          height="24px"
-        />
-      </HStack>
-      {/* Header */}
-      {/* <Text
+        <HStack
+          spacing={2}
+          display="flex"
+          justifyContent={"center"}
+          mt={6}
+          position={"absolute"}
+          right={5}
+          top={"8"}
+        >
+          <IconButton
+            aria-label={ui.ra_btn_delete_convo}
+            icon={<DeleteIcon />}
+            size="sm"
+            colorScheme="red"
+            variant="outline"
+            onClick={() => setIsDeleteModalOpen(true)}
+            width="24px"
+            height="24px"
+          />
+        </HStack>
+        {/* Header */}
+        {/* <Text
         fontSize={["md", "lg"]}
         fontWeight="bold"
         noOfLines={1}
@@ -2498,228 +2503,235 @@ Do not return the whole sentence as a single chunk.`;
         {appTitle} (BETA)
       </Text> */}
 
-      <Flex px={4} pt={2} align="center" justify="space-between" gap={2}></Flex>
+        <Flex
+          px={4}
+          pt={2}
+          align="center"
+          justify="space-between"
+          gap={2}
+        ></Flex>
 
-      {/* Robot */}
-      <VStack align="stretch" spacing={3} px={4} mt={0}>
-        <RobotBuddyPro
-          state={uiState}
-          loudness={uiState === "listening" ? volume : 0}
-          mood={mood}
-          variant="abstract"
-        />
-      </VStack>
+        {/* Robot */}
+        <VStack align="stretch" spacing={3} px={4} mt={0}>
+          <RobotBuddyPro
+            state={uiState}
+            loudness={uiState === "listening" ? volume : 0}
+            mood={mood}
+            variant="abstract"
+          />
+        </VStack>
 
-      {/* Only Delete (settings moved to top bar) */}
+        {/* Only Delete (settings moved to top bar) */}
 
-      {/* 🎯 Active goal display */}
-      <Box px={4} mt={3} display="flex" justifyContent="center">
-        <Box
-          bg="gray.800"
-          p={3}
-          rounded="2xl"
-          border="1px solid rgba(255,255,255,0.06)"
-          width="100%"
-          maxWidth="400px"
-        >
-          <HStack justify="space-between" align="center" mb={1}>
-            <HStack>
-              <Badge colorScheme="yellow" variant="subtle" fontSize={"10px"}>
-                {tGoalLabel}
-              </Badge>
-              <Text fontSize="xs" opacity={0.9}>
-                {goalTitleForUI(currentGoal) || "—"}
+        {/* 🎯 Active goal display */}
+        <Box px={4} mt={3} display="flex" justifyContent="center">
+          <Box
+            bg="gray.800"
+            p={3}
+            rounded="2xl"
+            border="1px solid rgba(255,255,255,0.06)"
+            width="100%"
+            maxWidth="400px"
+          >
+            <HStack justify="space-between" align="center" mb={1}>
+              <HStack>
+                <Badge colorScheme="yellow" variant="subtle" fontSize={"10px"}>
+                  {tGoalLabel}
+                </Badge>
+                <Text fontSize="xs" opacity={0.9}>
+                  {goalTitleForUI(currentGoal) || "—"}
+                </Text>
+              </HStack>
+              <HStack></HStack>
+            </HStack>
+            {!!currentGoal && (
+              <Text fontSize="xs" opacity={0.8}>
+                <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
+                {goalRubricForUI(currentGoal)}
               </Text>
-            </HStack>
-            <HStack></HStack>
-          </HStack>
-          {!!currentGoal && (
-            <Text fontSize="xs" opacity={0.8}>
-              <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
-              {goalRubricForUI(currentGoal)}
-            </Text>
-          )}
-          {goalFeedback ? (
-            <Text fontSize="xs" mt={2} opacity={0.9}>
-              💡 {goalFeedback}
-            </Text>
-          ) : null}
+            )}
+            {goalFeedback ? (
+              <Text fontSize="xs" mt={2} opacity={0.9}>
+                💡 {goalFeedback}
+              </Text>
+            ) : null}
 
-          {/* Level progress bar under goal UI */}
-          <Box mt={4}>
-            <HStack justifyContent="space-between" mb={1}>
-              <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-              </Badge>
-              <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                {ui.ra_label_xp} {xp}
-              </Badge>
-            </HStack>
-            <WaveBar value={progressPct} />
+            {/* Level progress bar under goal UI */}
+            <Box mt={4}>
+              <HStack justifyContent="space-between" mb={1}>
+                <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+                  {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
+                </Badge>
+                <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                  {ui.ra_label_xp} {xp}
+                </Badge>
+              </HStack>
+              <WaveBar value={progressPct} />
+            </Box>
           </Box>
         </Box>
-      </Box>
 
-      {/* Timeline — newest first */}
-      <VStack align="stretch" spacing={3} px={4} mt={3}>
-        {timeline.map((m) => {
-          const isUser = m.role === "user";
-          if (isUser) {
+        {/* Timeline — newest first */}
+        <VStack align="stretch" spacing={3} px={4} mt={3}>
+          {timeline.map((m) => {
+            const isUser = m.role === "user";
+            if (isUser) {
+              return (
+                <RowRight key={m.id}>
+                  <UserBubble label={ui.ra_label_you} text={m.textFinal} />
+                </RowRight>
+              );
+            }
+
+            const primaryText = (m.textFinal || "") + (m.textStream || "");
+            const lang = m.lang || targetLang || "es";
+            const primaryLabel = languageNameFor(lang);
+
+            const secondaryText =
+              m.source === "hist"
+                ? (secondaryPref === "es" ? m.trans_es : m.trans_en) || ""
+                : m.translation || "";
+
+            const secondaryLabel =
+              lang === "es"
+                ? translations[uiLang].language_en
+                : translations[uiLang][`language_${secondaryPref}`];
+
+            const isTranslating =
+              !secondaryText && !!m.textStream && showTranslations;
+
+            if (!primaryText.trim()) return null;
+
+            const hasCached =
+              audioCacheIndexRef.current.has(m.id) || !!m.hasAudio;
+            const canReplay = hasCached || status === "connected";
+
             return (
-              <RowRight key={m.id}>
-                <UserBubble label={ui.ra_label_you} text={m.textFinal} />
-              </RowRight>
+              <RowLeft key={m.id}>
+                <Box position="relative">
+                  <AlignedBubble
+                    primaryLabel={primaryLabel}
+                    secondaryLabel={secondaryLabel}
+                    primaryText={primaryText}
+                    secondaryText={showTranslations ? secondaryText : ""}
+                    pairs={m.pairs || []}
+                    showSecondary={showTranslations}
+                    isTranslating={isTranslating}
+                  />
+                  <IconButton
+                    aria-label={tRepeat}
+                    title={tRepeat}
+                    icon={<PiArrowsClockwiseDuotone />}
+                    size="xs"
+                    variant="outline"
+                    top="6px"
+                    color="white"
+                    right="6px"
+                    opacity={0.9}
+                    isDisabled={!canReplay}
+                    isLoading={replayingMid === m.id}
+                    onClick={() =>
+                      replayMessageAudio(
+                        m.id,
+                        (m.textFinal || "").trim() ||
+                          (m.textStream || "").trim()
+                      )
+                    }
+                    height="36px"
+                    width="36px"
+                  />
+                </Box>
+              </RowLeft>
             );
-          }
+          })}
+        </VStack>
 
-          const primaryText = (m.textFinal || "") + (m.textStream || "");
-          const lang = m.lang || targetLang || "es";
-          const primaryLabel = languageNameFor(lang);
-
-          const secondaryText =
-            m.source === "hist"
-              ? (secondaryPref === "es" ? m.trans_es : m.trans_en) || ""
-              : m.translation || "";
-
-          const secondaryLabel =
-            lang === "es"
-              ? translations[uiLang].language_en
-              : translations[uiLang][`language_${secondaryPref}`];
-
-          const isTranslating =
-            !secondaryText && !!m.textStream && showTranslations;
-
-          if (!primaryText.trim()) return null;
-
-          const hasCached =
-            audioCacheIndexRef.current.has(m.id) || !!m.hasAudio;
-          const canReplay = hasCached || status === "connected";
-
-          return (
-            <RowLeft key={m.id}>
-              <Box position="relative">
-                <AlignedBubble
-                  primaryLabel={primaryLabel}
-                  secondaryLabel={secondaryLabel}
-                  primaryText={primaryText}
-                  secondaryText={showTranslations ? secondaryText : ""}
-                  pairs={m.pairs || []}
-                  showSecondary={showTranslations}
-                  isTranslating={isTranslating}
-                />
-                <IconButton
-                  aria-label={tRepeat}
-                  title={tRepeat}
-                  icon={<PiArrowsClockwiseDuotone />}
-                  size="xs"
-                  variant="outline"
-                  top="6px"
-                  color="white"
-                  right="6px"
-                  opacity={0.9}
-                  isDisabled={!canReplay}
-                  isLoading={replayingMid === m.id}
-                  onClick={() =>
-                    replayMessageAudio(
-                      m.id,
-                      (m.textFinal || "").trim() || (m.textStream || "").trim()
-                    )
-                  }
-                  height="36px"
-                  width="36px"
-                />
-              </Box>
-            </RowLeft>
-          );
-        })}
-      </VStack>
-
-      {/* Bottom dock */}
-      <Center
-        position="fixed"
-        bottom="22px"
-        left="0"
-        right="0"
-        zIndex={30}
-        px={4}
-      >
-        <HStack spacing={3} w="100%" maxW="560px" justify="center">
-          {goalCompleted ? (
-            <Button
-              onClick={handleNextGoal}
-              size="lg"
-              height="64px"
-              px="8"
-              rounded="full"
-              colorScheme="green"
-              color="white"
-              textShadow="0px 0px 20px black"
-              mb={20}
-            >
-              {uiLang === "es" ? "Siguiente Meta" : "Next Goal"}
-            </Button>
-          ) : (
-            <>
+        {/* Bottom dock */}
+        <Center
+          position="fixed"
+          bottom="22px"
+          left="0"
+          right="0"
+          zIndex={30}
+          px={4}
+        >
+          <HStack spacing={3} w="100%" maxW="560px" justify="center">
+            {goalCompleted ? (
               <Button
-                onClick={skipGoal}
-                size="md"
-                height="48px"
-                px="6"
-                rounded="full"
-                colorScheme="orange"
-                variant="outline"
-                color="white"
-                textShadow="0px 0px 20px black"
-                mb={20}
-              >
-                {uiLang === "es" ? "Saltar" : "Skip"}
-              </Button>
-              <Button
-                onClick={status === "connected" ? stop : start}
+                onClick={handleNextGoal}
                 size="lg"
                 height="64px"
                 px="8"
                 rounded="full"
-                colorScheme={status === "connected" ? "red" : "cyan"}
+                colorScheme="green"
                 color="white"
                 textShadow="0px 0px 20px black"
                 mb={20}
               >
-                {status === "connected" ? (
-                  <>
-                    <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-                  </>
-                ) : (
-                  <>
-                    <PiMicrophoneStageDuotone /> &nbsp;{" "}
-                    {status === "connecting"
-                      ? ui.ra_btn_connecting
-                      : ui.ra_btn_connect}
-                  </>
-                )}
+                {uiLang === "es" ? "Siguiente Meta" : "Next Goal"}
               </Button>
-            </>
-          )}
-        </HStack>
-      </Center>
+            ) : (
+              <>
+                <Button
+                  onClick={skipGoal}
+                  size="md"
+                  height="48px"
+                  px="6"
+                  rounded="full"
+                  colorScheme="orange"
+                  variant="outline"
+                  color="white"
+                  textShadow="0px 0px 20px black"
+                  mb={20}
+                >
+                  {uiLang === "es" ? "Saltar" : "Skip"}
+                </Button>
+                <Button
+                  onClick={status === "connected" ? stop : start}
+                  size="lg"
+                  height="64px"
+                  px="8"
+                  rounded="full"
+                  colorScheme={status === "connected" ? "red" : "cyan"}
+                  color="white"
+                  textShadow="0px 0px 20px black"
+                  mb={20}
+                >
+                  {status === "connected" ? (
+                    <>
+                      <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                    </>
+                  ) : (
+                    <>
+                      <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                      {status === "connecting"
+                        ? ui.ra_btn_connecting
+                        : ui.ra_btn_connect}
+                    </>
+                  )}
+                </Button>
+              </>
+            )}
+          </HStack>
+        </Center>
 
-      {err && (
-        <Box px={4} pt={2}>
-          <Box
-            as="pre"
-            bg="rgba(255,255,255,0.06)"
-            border="1px solid rgba(255,255,255,0.12)"
-            p={3}
-            borderRadius={8}
-            whiteSpace="pre-wrap"
-            color="#fee2e2"
-          >
-            {err}
+        {err && (
+          <Box px={4} pt={2}>
+            <Box
+              as="pre"
+              bg="rgba(255,255,255,0.06)"
+              border="1px solid rgba(255,255,255,0.12)"
+              p={3}
+              borderRadius={8}
+              whiteSpace="pre-wrap"
+              color="#fee2e2"
+            >
+              {err}
+            </Box>
           </Box>
-        </Box>
-      )}
+        )}
 
-      {/* remote live audio sink */}
+        {/* remote live audio sink */}
         <audio ref={audioRef} />
         {/* local playback for cached clips */}
         <audio ref={playbackRef} />
@@ -2733,7 +2745,9 @@ Do not return the whole sentence as a single chunk.`;
       >
         <ModalOverlay />
         <ModalContent bg="gray.900" color="gray.50">
-          <ModalHeader>{ui?.ra_btn_delete_convo || "Delete conversation"}</ModalHeader>
+          <ModalHeader>
+            {ui?.ra_btn_delete_convo || "Delete conversation"}
+          </ModalHeader>
           <ModalBody>
             <Text>{ui?.ra_delete_confirm}</Text>
           </ModalBody>
