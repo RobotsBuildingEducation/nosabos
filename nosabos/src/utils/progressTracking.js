@@ -14,6 +14,7 @@ import { SKILL_STATUS } from '../data/skillTreeData';
 export function initializeProgress() {
   return {
     totalXp: 0,
+    languageXp: {},
     currentUnit: null,
     currentLesson: null,
     lessons: {}, // { lessonId: { status, completedAt, xpEarned, attempts } }
@@ -46,8 +47,16 @@ export async function startLesson(npub, lessonId) {
 /**
  * Complete a lesson and award XP
  */
-export async function completeLesson(npub, lessonId, xpReward) {
+export async function completeLesson(
+  npub,
+  lessonId,
+  xpReward,
+  targetLang = 'es'
+) {
   if (!npub || !lessonId || !xpReward) return;
+
+  const languageKey = targetLang || 'es';
+  const languageXpField = `progress.languageXp.${languageKey}`;
 
   const userRef = doc(database, 'users', npub);
 
@@ -61,6 +70,7 @@ export async function completeLesson(npub, lessonId, xpReward) {
       // Award XP
       'progress.totalXp': increment(xpReward),
       xp: increment(xpReward), // Also update global XP
+      [languageXpField]: increment(xpReward),
 
       // Update daily XP (for daily goals)
       dailyXp: increment(xpReward),
@@ -82,6 +92,25 @@ export async function completeLesson(npub, lessonId, xpReward) {
     console.error('Error completing lesson:', error);
     throw error;
   }
+}
+
+/**
+ * Safely get XP for a specific language from stored progress
+ */
+export function getLanguageXp(progress, targetLang) {
+  if (!progress) return 0;
+  const lang = targetLang || progress?.targetLang || 'es';
+  const xpMap = progress.languageXp;
+
+  if (xpMap && typeof xpMap[lang] === 'number') {
+    return xpMap[lang];
+  }
+
+  if (typeof progress.totalXp === 'number') {
+    return progress.totalXp;
+  }
+
+  return 0;
 }
 
 /**
