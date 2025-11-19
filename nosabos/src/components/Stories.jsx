@@ -340,6 +340,7 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
 
   // accumulate this session, but award only at end
   const [sessionXp, setSessionXp] = useState(0);
@@ -1547,30 +1548,35 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
       duration: 2200,
     });
 
-    setTimeout(() => {
-      const isLast =
-        currentSentenceIndex >= (storyData?.sentences?.length || 0) - 1;
+    // Mark sentence as completed, wait for user to click "Next"
+    setSentenceCompleted(true);
+    setIsRecording(false);
+  };
 
-      if (!isLast) {
-        setCurrentSentenceIndex((p) => p + 1);
-      } else {
-        const totalSessionXp = sessionXp + delta;
-        finalizePracticeSession(totalSessionXp).finally(() => {
-          toast({
-            title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
-            description:
-              uiLang === "es"
-                ? `¡Completaste el juego de roles! Ganaste ${totalSessionXp} ${uiText.xp} en esta sesión.`
-                : `Role play completed! You earned ${totalSessionXp} ${uiText.xp} this session.`,
-            status: "success",
-            duration: 3000,
-          });
-          setShowFullStory(true);
-          setCurrentSentenceIndex(0);
-        });
-      }
-      setIsRecording(false);
-    }, 800);
+  // Handle manual advancement to next sentence
+  const handleNextSentence = async () => {
+    const isLast =
+      currentSentenceIndex >= (storyData?.sentences?.length || 0) - 1;
+
+    if (!isLast) {
+      setCurrentSentenceIndex((p) => p + 1);
+      setSentenceCompleted(false);
+    } else {
+      const totalSessionXp = sessionXp;
+      await finalizePracticeSession(totalSessionXp);
+      toast({
+        title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
+        description:
+          uiLang === "es"
+            ? `¡Completaste el juego de roles! Ganaste ${totalSessionXp} ${uiText.xp} en esta sesión.`
+            : `Role play completed! You earned ${totalSessionXp} ${uiText.xp} this session.`,
+        status: "success",
+        duration: 3000,
+      });
+      setShowFullStory(true);
+      setCurrentSentenceIndex(0);
+      setSentenceCompleted(false);
+    }
   };
 
   /* ----------------------------- Mount / Cleanup ----------------------------- */
@@ -2071,35 +2077,63 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
 
                   <VStack spacing={4}>
                     <Center>
-                      <Button
-                        onClick={() => {
-                          if (isRecording) return stopRecording();
-                          return startRecording();
-                        }}
-                        size="lg"
-                        height="60px"
-                        px={8}
-                        rounded="full"
-                        bg={
-                          isRecording
-                            ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
-                            : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
-                        }
-                        color="white"
-                        fontWeight="600"
-                        fontSize="lg"
-                        leftIcon={<PiMicrophoneStageDuotone />}
-                        _hover={{
-                          bg: isRecording
-                            ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
-                            : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
-                          transform: "translateY(-2px)",
-                        }}
-                        _active={{ transform: "translateY(0)" }}
-                        transition="all 0.2s ease"
-                      >
-                        {isRecording ? uiText.stopRecording : uiText.record}
-                      </Button>
+                      {sentenceCompleted ? (
+                        <Button
+                          onClick={handleNextSentence}
+                          size="lg"
+                          height="60px"
+                          px={8}
+                          rounded="full"
+                          bg="linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                          color="white"
+                          fontWeight="600"
+                          fontSize="lg"
+                          _hover={{
+                            bg: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                            transform: "translateY(-2px)",
+                          }}
+                          _active={{ transform: "translateY(0)" }}
+                          transition="all 0.2s ease"
+                        >
+                          {currentSentenceIndex < storyData.sentences.length - 1
+                            ? uiLang === "es"
+                              ? "Siguiente Oración"
+                              : "Next Sentence"
+                            : uiLang === "es"
+                            ? "Terminar"
+                            : "Finish"}
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => {
+                            if (isRecording) return stopRecording();
+                            return startRecording();
+                          }}
+                          size="lg"
+                          height="60px"
+                          px={8}
+                          rounded="full"
+                          bg={
+                            isRecording
+                              ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                              : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
+                          }
+                          color="white"
+                          fontWeight="600"
+                          fontSize="lg"
+                          leftIcon={<PiMicrophoneStageDuotone />}
+                          _hover={{
+                            bg: isRecording
+                              ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+                              : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
+                            transform: "translateY(-2px)",
+                          }}
+                          _active={{ transform: "translateY(0)" }}
+                          transition="all 0.2s ease"
+                        >
+                          {isRecording ? uiText.stopRecording : uiText.record}
+                        </Button>
+                      )}
                     </Center>
                     <HStack spacing={3} justify="center">
                       <Button
@@ -2115,6 +2149,7 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
                       </Button>
                       <Button
                         onClick={() => {
+                          setSentenceCompleted(false); // Reset completion state when skipping
                           if (
                             currentSentenceIndex <
                             storyData.sentences.length - 1

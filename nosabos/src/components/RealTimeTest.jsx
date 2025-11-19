@@ -584,6 +584,7 @@ export default function RealTimeTest({
   const goalRef = useRef(null);
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalBusyRef = useRef(false);
+  const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
@@ -1230,10 +1231,35 @@ export default function RealTimeTest({
     setCurrentGoal(newGoal);
     goalRef.current = newGoal;
     setGoalFeedback("");
+    setGoalCompleted(false);
 
     // Update session with new goal if connected
     if (status === "connected") {
       scheduleSessionUpdate();
+    }
+  }
+
+  async function handleNextGoal() {
+    if (!currentGoal || goalBusyRef.current) return;
+
+    goalBusyRef.current = true;
+    try {
+      // Generate next goal based on conversation history
+      const nextGoal = await generateNextGoal(currentGoal);
+      setCurrentGoal(nextGoal);
+      goalRef.current = nextGoal;
+      await persistCurrentGoal(nextGoal);
+      setGoalFeedback("");
+      setGoalCompleted(false);
+
+      // Update session with new goal if connected
+      if (status === "connected") {
+        scheduleSessionUpdate();
+      }
+    } catch (error) {
+      console.warn("Failed to generate next goal:", error);
+    } finally {
+      goalBusyRef.current = false;
     }
   }
 
@@ -1495,14 +1521,8 @@ Return ONLY JSON:
       }
 
       if (met) {
-        goalBusyRef.current = true;
         await recordGoalCompletion(goal, conf);
-        const nextGoal = await generateNextGoal(goal);
-        setCurrentGoal(nextGoal);
-        goalRef.current = nextGoal;
-        await persistCurrentGoal(nextGoal);
-        scheduleSessionUpdate();
-        goalBusyRef.current = false;
+        setGoalCompleted(true); // Mark goal as completed, wait for user to click "Next Goal"
       }
     } catch (e) {
       console.warn("Goal eval failed:", e?.message || e);
@@ -2628,44 +2648,62 @@ Do not return the whole sentence as a single chunk.`;
         px={4}
       >
         <HStack spacing={3} w="100%" maxW="560px" justify="center">
-          <Button
-            onClick={skipGoal}
-            size="md"
-            height="48px"
-            px="6"
-            rounded="full"
-            colorScheme="orange"
-            variant="outline"
-            color="white"
-            textShadow="0px 0px 20px black"
-            mb={20}
-          >
-            {uiLang === "es" ? "Saltar" : "Skip"}
-          </Button>
-          <Button
-            onClick={status === "connected" ? stop : start}
-            size="lg"
-            height="64px"
-            px="8"
-            rounded="full"
-            colorScheme={status === "connected" ? "red" : "cyan"}
-            color="white"
-            textShadow="0px 0px 20px black"
-            mb={20}
-          >
-            {status === "connected" ? (
-              <>
-                <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-              </>
-            ) : (
-              <>
-                <PiMicrophoneStageDuotone /> &nbsp;{" "}
-                {status === "connecting"
-                  ? ui.ra_btn_connecting
-                  : ui.ra_btn_connect}
-              </>
-            )}
-          </Button>
+          {goalCompleted ? (
+            <Button
+              onClick={handleNextGoal}
+              size="lg"
+              height="64px"
+              px="8"
+              rounded="full"
+              colorScheme="green"
+              color="white"
+              textShadow="0px 0px 20px black"
+              mb={20}
+            >
+              {uiLang === "es" ? "Siguiente Meta" : "Next Goal"}
+            </Button>
+          ) : (
+            <>
+              <Button
+                onClick={skipGoal}
+                size="md"
+                height="48px"
+                px="6"
+                rounded="full"
+                colorScheme="orange"
+                variant="outline"
+                color="white"
+                textShadow="0px 0px 20px black"
+                mb={20}
+              >
+                {uiLang === "es" ? "Saltar" : "Skip"}
+              </Button>
+              <Button
+                onClick={status === "connected" ? stop : start}
+                size="lg"
+                height="64px"
+                px="8"
+                rounded="full"
+                colorScheme={status === "connected" ? "red" : "cyan"}
+                color="white"
+                textShadow="0px 0px 20px black"
+                mb={20}
+              >
+                {status === "connected" ? (
+                  <>
+                    <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                  </>
+                ) : (
+                  <>
+                    <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                    {status === "connecting"
+                      ? ui.ra_btn_connecting
+                      : ui.ra_btn_connect}
+                  </>
+                )}
+              </Button>
+            </>
+          )}
         </HStack>
       </Center>
 
