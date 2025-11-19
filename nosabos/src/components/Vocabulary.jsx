@@ -3528,19 +3528,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {sStimulus || sTarget || "…"}
                   </Text>
                 </Box>
+
+                {sHint ? (
+                  <Text fontSize="sm" mt={3}>
+                    <Text as="span" fontWeight="600">
+                      {t("vocab_speak_hint_label") ||
+                        (userLanguage === "es" ? "Pista" : "Hint")}
+                      :
+                    </Text>{" "}
+                    {sHint}
+                  </Text>
+                ) : null}
               </>
             )}
-
-            {sHint ? (
-              <Text fontSize="sm" mt={3}>
-                <Text as="span" fontWeight="600">
-                  {t("vocab_speak_hint_label") ||
-                    (userLanguage === "es" ? "Pista" : "Hint")}
-                  :
-                </Text>{" "}
-                {sHint}
-              </Text>
-            ) : null}
 
             {showTRSpeak ? (
               <Text fontSize="sm" mt={1} opacity={0.85}>

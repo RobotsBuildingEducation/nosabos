@@ -63,13 +63,7 @@ import {
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
-import {
-  LuBadgeCheck,
-  LuBookOpen,
-  LuShuffle,
-  LuLanguages,
-  LuArrowRight,
-} from "react-icons/lu";
+import { LuBadgeCheck, LuBookOpen, LuShuffle, LuLanguages } from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -2324,27 +2318,6 @@ export default function App() {
       {/* Learning Modules Scene */}
       {viewMode === "lesson" && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
-          <Flex justify="flex-end" mb={3}>
-            <Tooltip
-              label={
-                appLanguage === "es"
-                  ? "Cambia manualmente al siguiente módulo de la lección"
-                  : "Manually jump to the next lesson module"
-              }
-              isDisabled={!activeLesson?.modes || activeLesson.modes.length <= 1}
-            >
-              <Button
-                size="sm"
-                variant="outline"
-                colorScheme="teal"
-                rightIcon={<LuArrowRight />}
-                onClick={switchToRandomLessonMode}
-                isDisabled={!activeLesson?.modes || activeLesson.modes.length <= 1}
-              >
-                {appLanguage === "es" ? "Siguiente actividad" : "Next activity"}
-              </Button>
-            </Tooltip>
-          </Flex>
           <Tabs
             index={tabIndex}
             onChange={(i) => {
