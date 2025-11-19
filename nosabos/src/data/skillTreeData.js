@@ -1595,6 +1595,333 @@ const baseLearningPath = {
   advanced: [],
 };
 
+const SUPPORTED_TARGET_LANGS = new Set(['en', 'es', 'pt', 'fr', 'it', 'nah']);
+const DEFAULT_TARGET_LANG = 'es';
+
+const VOCABULARY_LIBRARY = {
+  greetings: {
+    en: ['hello', 'goodbye', 'good morning', 'good afternoon', 'good night'],
+    es: ['hola', 'adiós', 'buenos días', 'buenas tardes', 'buenas noches'],
+    fr: ['bonjour', 'salut', 'bonsoir', 'bonne nuit', 'à bientôt'],
+    pt: ['olá', 'tchau', 'bom dia', 'boa tarde', 'boa noite'],
+    it: ['ciao', 'arrivederci', 'buongiorno', 'buon pomeriggio', 'buonanotte'],
+    nah: ['niltze', 'motlazotla', 'tlaneci', 'tlahco tonalli', 'yohualli'],
+  },
+  'question words': {
+    en: ['who', 'what', 'where', 'when', 'why'],
+    es: ['¿quién?', '¿qué?', '¿dónde?', '¿cuándo?', '¿por qué?'],
+    fr: ['qui', 'quoi', 'où', 'quand', 'pourquoi'],
+    pt: ['quem', 'o que', 'onde', 'quando', 'por quê'],
+    it: ['chi', 'che cosa', 'dove', 'quando', 'perché'],
+    nah: ['aqueni', 'tlen', 'canin', 'quema', 'tleca'],
+  },
+  preferences: {
+    en: ['I like', "I don't like", 'I love', 'I prefer', 'I dislike'],
+    es: ['me gusta', 'no me gusta', 'me encanta', 'prefiero', 'me desagrada'],
+    fr: ["j'aime", "je n'aime pas", "j'adore", 'je préfère', 'je déteste'],
+    pt: ['eu gosto', 'eu não gosto', 'eu adoro', 'eu prefiro', 'eu detesto'],
+    it: ['mi piace', 'non mi piace', 'adoro', 'preferisco', 'detesto'],
+    nah: ['nicniqui', 'axnicniqui', 'nicmotetzopelia', 'nicnequi', 'axniquilia'],
+  },
+  numbers: {
+    en: ['one', 'two', 'three', 'ten', 'twenty'],
+    es: ['uno', 'dos', 'tres', 'diez', 'veinte'],
+    fr: ['un', 'deux', 'trois', 'dix', 'vingt'],
+    pt: ['um', 'dois', 'três', 'dez', 'vinte'],
+    it: ['uno', 'due', 'tre', 'dieci', 'venti'],
+    nah: ['ce', 'ome', 'eyi', 'mahtlactli', 'cempualli'],
+  },
+  'food and drinks': {
+    en: ['water', 'coffee', 'bread', 'rice', 'chicken'],
+    es: ['agua', 'café', 'pan', 'arroz', 'pollo'],
+    fr: ['eau', 'café', 'pain', 'riz', 'poulet'],
+    pt: ['água', 'café', 'pão', 'arroz', 'frango'],
+    it: ['acqua', 'caffè', 'pane', 'riso', 'pollo'],
+    nah: ['atl', 'cafeto', 'pantli', 'ollohtli', 'totolin'],
+  },
+  time: {
+    en: ['morning', 'afternoon', 'night', "o'clock", 'minute'],
+    es: ['mañana', 'tarde', 'noche', 'en punto', 'minuto'],
+    fr: ['matin', 'après-midi', 'nuit', 'heure pile', 'minute'],
+    pt: ['manhã', 'tarde', 'noite', 'em ponto', 'minuto'],
+    it: ['mattina', 'pomeriggio', 'notte', "in punto", 'minuto'],
+    nah: ['tlaneci', 'tlahco', 'yohualli', 'ce hora', 'momimi'],
+  },
+  'daily activities': {
+    en: ['wake up', 'eat breakfast', 'work', 'study', 'sleep'],
+    es: ['despertar', 'desayunar', 'trabajar', 'estudiar', 'dormir'],
+    fr: ['se réveiller', 'prendre le petit-déj', 'travailler', 'étudier', 'dormir'],
+    pt: ['acordar', 'tomar café', 'trabalhar', 'estudar', 'dormir'],
+    it: ['svegliarsi', 'fare colazione', 'lavorare', 'studiare', 'dormire'],
+  },
+  family: {
+    en: ['mother', 'father', 'brother', 'sister', 'grandmother'],
+    es: ['madre', 'padre', 'hermano', 'hermana', 'abuela'],
+    fr: ['mère', 'père', 'frère', 'sœur', 'grand-mère'],
+    pt: ['mãe', 'pai', 'irmão', 'irmã', 'avó'],
+    it: ['madre', 'padre', 'fratello', 'sorella', 'nonna'],
+  },
+  places: {
+    en: ['home', 'school', 'office', 'park', 'store'],
+    es: ['casa', 'escuela', 'oficina', 'parque', 'tienda'],
+    fr: ['maison', 'école', 'bureau', 'parc', 'magasin'],
+    pt: ['casa', 'escola', 'escritório', 'parque', 'loja'],
+    it: ['casa', 'scuola', 'ufficio', 'parco', 'negozio'],
+  },
+  directions: {
+    en: ['left', 'right', 'straight', 'north', 'south'],
+    es: ['izquierda', 'derecha', 'recto', 'norte', 'sur'],
+    fr: ['gauche', 'droite', 'tout droit', 'nord', 'sud'],
+    pt: ['esquerda', 'direita', 'em frente', 'norte', 'sul'],
+    it: ['sinistra', 'destra', 'dritto', 'nord', 'sud'],
+  },
+  transportation: {
+    en: ['bus', 'train', 'plane', 'ticket', 'station'],
+    es: ['autobús', 'tren', 'avión', 'boleto', 'estación'],
+    fr: ['bus', 'train', 'avion', 'billet', 'gare'],
+    pt: ['ônibus', 'trem', 'avião', 'bilhete', 'estação'],
+    it: ['autobus', 'treno', 'aereo', 'biglietto', 'stazione'],
+  },
+  shopping: {
+    en: ['price', 'money', 'sale', 'cashier', 'receipt'],
+    es: ['precio', 'dinero', 'oferta', 'cajero', 'recibo'],
+    fr: ['prix', 'argent', 'promotion', 'caissier', 'reçu'],
+    pt: ['preço', 'dinheiro', 'promoção', 'caixa', 'recibo'],
+    it: ['prezzo', 'denaro', 'offerta', 'cassiere', 'scontrino'],
+  },
+  clothing: {
+    en: ['shirt', 'pants', 'dress', 'shoes', 'jacket'],
+    es: ['camisa', 'pantalón', 'vestido', 'zapatos', 'chaqueta'],
+    fr: ['chemise', 'pantalon', 'robe', 'chaussures', 'veste'],
+    pt: ['camisa', 'calça', 'vestido', 'sapatos', 'jaqueta'],
+    it: ['camicia', 'pantaloni', 'abito', 'scarpe', 'giacca'],
+  },
+  colors: {
+    en: ['red', 'blue', 'green', 'yellow', 'black'],
+    es: ['rojo', 'azul', 'verde', 'amarillo', 'negro'],
+    fr: ['rouge', 'bleu', 'vert', 'jaune', 'noir'],
+    pt: ['vermelho', 'azul', 'verde', 'amarelo', 'preto'],
+    it: ['rosso', 'blu', 'verde', 'giallo', 'nero'],
+  },
+  'physical descriptions': {
+    en: ['tall', 'short', 'young', 'old', 'strong'],
+    es: ['alto', 'bajo', 'joven', 'viejo', 'fuerte'],
+    fr: ['grand', 'petit', 'jeune', 'vieux', 'fort'],
+    pt: ['alto', 'baixo', 'jovem', 'velho', 'forte'],
+    it: ['alto', 'basso', 'giovane', 'anziano', 'forte'],
+  },
+  personality: {
+    en: ['kind', 'funny', 'serious', 'friendly', 'shy'],
+    es: ['amable', 'gracioso', 'serio', 'amistoso', 'tímido'],
+    fr: ['gentil', 'drôle', 'sérieux', 'amical', 'timide'],
+    pt: ['amável', 'engraçado', 'sério', 'amigável', 'tímido'],
+    it: ['gentile', 'divertente', 'serio', 'amichevole', 'timido'],
+  },
+  sports: {
+    en: ['soccer', 'basketball', 'tennis', 'swimming', 'running'],
+    es: ['fútbol', 'baloncesto', 'tenis', 'natación', 'correr'],
+    fr: ['football', 'basket', 'tennis', 'natation', 'course'],
+    pt: ['futebol', 'basquete', 'tênis', 'natação', 'corrida'],
+    it: ['calcio', 'basket', 'tennis', 'nuoto', 'corsa'],
+  },
+  entertainment: {
+    en: ['music', 'movie', 'concert', 'series', 'game'],
+    es: ['música', 'película', 'concierto', 'serie', 'juego'],
+    fr: ['musique', 'film', 'concert', 'série', 'jeu'],
+    pt: ['música', 'filme', 'show', 'série', 'jogo'],
+    it: ['musica', 'film', 'concerto', 'serie', 'gioco'],
+  },
+  'arts and reading': {
+    en: ['book', 'author', 'painting', 'poem', 'chapter'],
+    es: ['libro', 'autor', 'pintura', 'poema', 'capítulo'],
+    fr: ['livre', 'auteur', 'peinture', 'poème', 'chapitre'],
+    pt: ['livro', 'autor', 'pintura', 'poema', 'capítulo'],
+    it: ['libro', 'autore', 'dipinto', 'poesia', 'capitolo'],
+  },
+  'time expressions': {
+    en: ['always', 'often', 'sometimes', 'rarely', 'never'],
+    es: ['siempre', 'a menudo', 'a veces', 'raramente', 'nunca'],
+    fr: ['toujours', 'souvent', 'parfois', 'rarement', 'jamais'],
+    pt: ['sempre', 'frequentemente', 'às vezes', 'raramente', 'nunca'],
+    it: ['sempre', 'spesso', 'a volte', 'raramente', 'mai'],
+  },
+  travel: {
+    en: ['passport', 'flight', 'hotel', 'reservation', 'luggage'],
+    es: ['pasaporte', 'vuelo', 'hotel', 'reserva', 'equipaje'],
+    fr: ['passeport', 'vol', 'hôtel', 'réservation', 'bagage'],
+    pt: ['passaporte', 'voo', 'hotel', 'reserva', 'bagagem'],
+    it: ['passaporto', 'volo', 'hotel', 'prenotazione', 'bagaglio'],
+  },
+  weather: {
+    en: ['sunny', 'rainy', 'cloudy', 'windy', 'storm'],
+    es: ['soleado', 'lluvioso', 'nublado', 'ventoso', 'tormenta'],
+    fr: ['ensoleillé', 'pluvieux', 'nuageux', 'venteux', 'tempête'],
+    pt: ['ensolarado', 'chuvoso', 'nublado', 'ventoso', 'tempestade'],
+    it: ['soleggiato', 'piovoso', 'nuvoloso', 'ventoso', 'tempesta'],
+  },
+  careers: {
+    en: ['engineer', 'doctor', 'teacher', 'artist', 'entrepreneur'],
+    es: ['ingeniero', 'médico', 'maestro', 'artista', 'emprendedor'],
+    fr: ['ingénieur', 'médecin', 'professeur', 'artiste', 'entrepreneur'],
+    pt: ['engenheiro', 'médico', 'professor', 'artista', 'empreendedor'],
+    it: ['ingegnere', 'medico', 'insegnante', 'artista', 'imprenditore'],
+  },
+  'body parts': {
+    en: ['head', 'hand', 'arm', 'leg', 'heart'],
+    es: ['cabeza', 'mano', 'brazo', 'pierna', 'corazón'],
+    fr: ['tête', 'main', 'bras', 'jambe', 'cœur'],
+    pt: ['cabeça', 'mão', 'braço', 'perna', 'coração'],
+    it: ['testa', 'mano', 'braccio', 'gamba', 'cuore'],
+  },
+  health: {
+    en: ['doctor', 'medicine', 'appointment', 'pain', 'healthy'],
+    es: ['doctor', 'medicina', 'cita', 'dolor', 'saludable'],
+    fr: ['médecin', 'médicament', 'rendez-vous', 'douleur', 'sain'],
+    pt: ['médico', 'medicamento', 'consulta', 'dor', 'saudável'],
+    it: ['medico', 'medicina', 'appuntamento', 'dolore', 'sano'],
+  },
+  wellness: {
+    en: ['exercise', 'sleep', 'hydrate', 'relax', 'balance'],
+    es: ['ejercicio', 'dormir', 'hidratarse', 'relajarse', 'equilibrio'],
+    fr: ['exercice', 'sommeil', "s'hydrater", 'se détendre', 'équilibre'],
+    pt: ['exercício', 'dormir', 'hidratar', 'relaxar', 'equilíbrio'],
+    it: ['esercizio', 'dormire', 'idratare', 'rilassarsi', 'equilibrio'],
+  },
+  nature: {
+    en: ['forest', 'river', 'mountain', 'tree', 'flower'],
+    es: ['bosque', 'río', 'montaña', 'árbol', 'flor'],
+    fr: ['forêt', 'rivière', 'montagne', 'arbre', 'fleur'],
+    pt: ['floresta', 'rio', 'montanha', 'árvore', 'flor'],
+    it: ['foresta', 'fiume', 'montagna', 'albero', 'fiore'],
+  },
+  environment: {
+    en: ['recycle', 'pollution', 'energy', 'climate', 'conservation'],
+    es: ['reciclar', 'contaminación', 'energía', 'clima', 'conservación'],
+    fr: ['recycler', 'pollution', 'énergie', 'climat', 'conservation'],
+    pt: ['reciclar', 'poluição', 'energia', 'clima', 'conservação'],
+    it: ['riciclare', 'inquinamento', 'energia', 'clima', 'conservazione'],
+  },
+  geography: {
+    en: ['continent', 'country', 'city', 'coast', 'desert'],
+    es: ['continente', 'país', 'ciudad', 'costa', 'desierto'],
+    fr: ['continent', 'pays', 'ville', 'côte', 'désert'],
+    pt: ['continente', 'país', 'cidade', 'costa', 'deserto'],
+    it: ['continente', 'paese', 'città', 'costa', 'deserto'],
+  },
+  debate: {
+    en: ['argument', 'evidence', 'counterpoint', 'rebuttal', 'stance'],
+    es: ['argumento', 'evidencia', 'contrapunto', 'réplica', 'postura'],
+    fr: ['argument', 'preuve', 'contrepoint', 'réfutation', 'position'],
+    pt: ['argumento', 'prova', 'contraponto', 'réplica', 'posição'],
+    it: ['argomento', 'prova', 'controparte', 'confutazione', 'posizione'],
+  },
+  'current events': {
+    en: ['headline', 'election', 'policy', 'protest', 'update'],
+    es: ['titular', 'elección', 'política', 'protesta', 'actualización'],
+    fr: ['titre', 'élection', 'politique', 'manifestation', 'actualité'],
+    pt: ['manchete', 'eleição', 'política', 'protesto', 'atualização'],
+    it: ['titolo', 'elezione', 'politica', 'protesta', 'aggiornamento'],
+  },
+  professional: {
+    en: ['meeting', 'deadline', 'proposal', 'client', 'team'],
+    es: ['reunión', 'plazo', 'propuesta', 'cliente', 'equipo'],
+    fr: ['réunion', 'échéance', 'proposition', 'client', 'équipe'],
+    pt: ['reunião', 'prazo', 'proposta', 'cliente', 'equipe'],
+    it: ['riunione', 'scadenza', 'proposta', 'cliente', 'squadra'],
+  },
+  literature: {
+    en: ['novel', 'character', 'plot', 'metaphor', 'theme'],
+    es: ['novela', 'personaje', 'trama', 'metáfora', 'tema'],
+    fr: ['roman', 'personnage', 'intrigue', 'métaphore', 'thème'],
+    pt: ['romance', 'personagem', 'enredo', 'metáfora', 'tema'],
+    it: ['romanzo', 'personaggio', 'trama', 'metafora', 'tema'],
+  },
+  'visual arts': {
+    en: ['canvas', 'brush', 'gallery', 'sculpture', 'exhibit'],
+    es: ['lienzo', 'pincel', 'galería', 'escultura', 'exposición'],
+    fr: ['toile', 'pinceau', 'galerie', 'sculpture', 'exposition'],
+    pt: ['tela', 'pincel', 'galeria', 'escultura', 'exposição'],
+    it: ['tela', 'pennello', 'galleria', 'scultura', 'mostra'],
+  },
+  cinema: {
+    en: ['director', 'scene', 'script', 'actor', 'premiere'],
+    es: ['director', 'escena', 'guion', 'actor', 'estreno'],
+    fr: ['réalisateur', 'scène', 'scénario', 'acteur', 'première'],
+    pt: ['diretor', 'cena', 'roteiro', 'ator', 'estreia'],
+    it: ['regista', 'scena', 'copione', 'attore', 'prima'],
+  },
+  'digital communication': {
+    en: ['message', 'emoji', 'video call', 'notification', 'link'],
+    es: ['mensaje', 'emoji', 'videollamada', 'notificación', 'enlace'],
+    fr: ['message', 'emoji', 'appel vidéo', 'notification', 'lien'],
+    pt: ['mensagem', 'emoji', 'chamada de vídeo', 'notificação', 'link'],
+    it: ['messaggio', 'emoji', 'videochiamata', 'notifica', 'link'],
+  },
+  science: {
+    en: ['experiment', 'laboratory', 'hypothesis', 'data', 'discovery'],
+    es: ['experimento', 'laboratorio', 'hipótesis', 'datos', 'descubrimiento'],
+    fr: ['expérience', 'laboratoire', 'hypothèse', 'données', 'découverte'],
+    pt: ['experimento', 'laboratório', 'hipótese', 'dados', 'descoberta'],
+    it: ['esperimento', 'laboratorio', 'ipotesi', 'dati', 'scoperta'],
+  },
+  'digital economy': {
+    en: ['startup', 'platform', 'subscription', 'analytics', 'cryptocurrency'],
+    es: ['startup', 'plataforma', 'suscripción', 'analítica', 'criptomoneda'],
+    fr: ['startup', 'plateforme', 'abonnement', 'analyse', 'cryptomonnaie'],
+    pt: ['startup', 'plataforma', 'assinatura', 'analítica', 'criptomoeda'],
+    it: ['startup', 'piattaforma', 'abbonamento', 'analitica', 'criptovaluta'],
+  },
+  'social justice': {
+    en: ['equality', 'rights', 'inclusion', 'advocacy', 'community'],
+    es: ['igualdad', 'derechos', 'inclusión', 'defensa', 'comunidad'],
+    fr: ['égalité', 'droits', 'inclusion', 'plaidoyer', 'communauté'],
+    pt: ['igualdade', 'direitos', 'inclusão', 'advocacia', 'comunidade'],
+    it: ['uguaglianza', 'diritti', 'inclusione', 'advocacy', 'comunità'],
+  },
+  'global issues': {
+    en: ['climate', 'migration', 'cooperation', 'sustainability', 'development'],
+    es: ['clima', 'migración', 'cooperación', 'sostenibilidad', 'desarrollo'],
+    fr: ['climat', 'migration', 'coopération', 'durabilité', 'développement'],
+    pt: ['clima', 'migração', 'cooperação', 'sustentabilidade', 'desenvolvimento'],
+    it: ['clima', 'migrazione', 'cooperazione', 'sostenibilità', 'sviluppo'],
+  },
+};
+
+function normalizeTopicKey(topic = '') {
+  return topic.trim().toLowerCase();
+}
+
+function resolveVocabularyWords(topic, targetLang) {
+  if (!topic) return null;
+  const entry = VOCABULARY_LIBRARY[normalizeTopicKey(topic)];
+  if (!entry) return null;
+  return (
+    entry[targetLang] ||
+    entry[DEFAULT_TARGET_LANG] ||
+    entry.en ||
+    Object.values(entry)[0]
+  );
+}
+
+function localizeLearningPath(units, targetLang) {
+  const lang = SUPPORTED_TARGET_LANGS.has(targetLang)
+    ? targetLang
+    : DEFAULT_TARGET_LANG;
+  const cloned = JSON.parse(JSON.stringify(units));
+  cloned.forEach((unit) => {
+    unit.lessons.forEach((lesson) => {
+      const vocab = lesson.content?.vocabulary;
+      if (vocab?.topic) {
+        const words = resolveVocabularyWords(vocab.topic, lang);
+        if (Array.isArray(words) && words.length) {
+          vocab.words = words;
+        }
+      }
+    });
+  });
+  return cloned;
+}
+
 const cloneLearningPath = () => JSON.parse(JSON.stringify(baseLearningPath));
 
 export const LEARNING_PATHS = {
@@ -1610,7 +1937,11 @@ export const LEARNING_PATHS = {
  * Get the learning path for a specific language and level
  */
 export function getLearningPath(targetLang, level) {
-  return LEARNING_PATHS[targetLang]?.[level] || [];
+  const lang = SUPPORTED_TARGET_LANGS.has(targetLang)
+    ? targetLang
+    : DEFAULT_TARGET_LANG;
+  const units = LEARNING_PATHS[lang]?.[level] || [];
+  return localizeLearningPath(units, lang);
 }
 
 /**

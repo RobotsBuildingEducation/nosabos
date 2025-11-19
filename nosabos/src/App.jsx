@@ -63,12 +63,7 @@ import {
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
-import {
-  LuBadgeCheck,
-  LuBookOpen,
-  LuShuffle,
-  LuLanguages,
-} from "react-icons/lu";
+import { LuBadgeCheck, LuBookOpen, LuShuffle, LuLanguages } from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -100,7 +95,6 @@ import { FaAddressCard } from "react-icons/fa";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
-import { getLearningPath } from "./data/skillTreeData";
 import { startLesson, completeLesson } from "./utils/progressTracking";
 import { RiArrowLeftLine } from "react-icons/ri";
 
@@ -2060,13 +2054,6 @@ export default function App() {
                   lessonCompletionTriggeredRef.current = false;
                 });
             }
-          } else if (totalXpEarned < activeLesson.xpReward) {
-            // Not complete yet - switch to random mode
-            console.log('[Lesson XP Check] Lesson not complete yet, scheduling mode switch in 1s');
-            setTimeout(() => {
-              console.log('[Lesson XP Check] Executing scheduled mode switch now');
-              switchToRandomLessonMode();
-            }, 1000);
           }
         }
 
@@ -2088,10 +2075,6 @@ export default function App() {
     viewMode,
     activeLesson,
     lessonStartXp,
-    switchToRandomLessonMode,
-    handleReturnToSkillTree,
-    setActiveLesson,
-    setLessonStartXp,
     setUser,
   ]);
 
@@ -2252,6 +2235,7 @@ export default function App() {
   ----------------------------------- */
 
   const targetLang = user?.progress?.targetLang || "es";
+  const supportLang = user?.progress?.supportLang || "en";
   const level = user?.progress?.level || "beginner";
   const userProgress = {
     totalXp: user?.progress?.totalXp || user?.xp || 0,
@@ -2324,6 +2308,7 @@ export default function App() {
           <SkillTree
             targetLang={targetLang}
             level={level}
+            supportLang={supportLang}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
           />
