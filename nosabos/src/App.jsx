@@ -2362,6 +2362,7 @@ export default function App() {
                         helpRequest={user?.progress?.helpRequest}
                         practicePronunciation={user?.progress?.practicePronunciation}
                         lessonContent={activeLesson?.content?.realtime}
+                        onSkip={switchToRandomLessonMode}
                         onSwitchedAccount={async (id, sec) => {
                           if (id) localStorage.setItem("local_npub", id);
                           if (typeof sec === "string")

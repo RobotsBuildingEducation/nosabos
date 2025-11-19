@@ -467,6 +467,7 @@ export default function RealTimeTest({
   activeNsec = "",
   onSwitchedAccount,
   lessonContent = null,
+  onSkip = null,
 }) {
   const toast = useToast();
   const aliveRef = useRef(false);
@@ -1215,36 +1216,23 @@ export default function RealTimeTest({
     await addDoc(collection(database, "users", npub, "goals"), payload);
   }
 
-  async function skipGoal() {
-    const npub = strongNpub(user);
-    if (!npub || !currentGoal || goalBusyRef.current) return;
-
-    goalBusyRef.current = true;
-    try {
-      // Record the skipped goal
-      await addDoc(collection(database, "users", npub, "goals"), {
-        ...currentGoal,
-        status: "skipped",
-        skippedAt: isoNow(),
-      });
-
-      // Generate a completely new goal (not just a seed)
-      const newGoal = await generateNextGoal(currentGoal);
-      setCurrentGoal(newGoal);
-      goalRef.current = newGoal;
-      await persistCurrentGoal(newGoal);
-      setGoalFeedback("");
-      setGoalCompleted(false);
-
-      // Update session with new goal if connected
-      if (status === "connected") {
-        scheduleSessionUpdate();
-      }
-    } catch (error) {
-      console.warn("Failed to skip goal:", error);
-    } finally {
-      goalBusyRef.current = false;
+  function skipGoal() {
+    // If in lesson mode, call onSkip to switch to next random module type
+    if (onSkip && typeof onSkip === 'function') {
+      console.log('[RealTimeTest] Skipping to next lesson module');
+      onSkip();
+      return;
     }
+
+    // Not in lesson mode - show a message
+    toast({
+      title: uiLang === "es" ? "Modo de práctica libre" : "Free practice mode",
+      description: uiLang === "es"
+        ? "En modo libre, usa el botón Conectar para practicar conversación."
+        : "In free mode, use the Connect button to practice conversation.",
+      status: "info",
+      duration: 2000,
+    });
   }
 
   async function handleNextGoal() {
