@@ -57,7 +57,7 @@ const MODE_ICONS = {
  * Individual Lesson Node Component
  * Represents a single lesson in the skill tree
  */
-function LessonNode({ lesson, unit, status, onClick, isNext }) {
+function LessonNode({ lesson, unit, status, onClick }) {
   const bgColor = 'gray.800';
   const borderColor = 'gray.700';
   const lockedColor = 'gray.600';
@@ -91,31 +91,6 @@ function LessonNode({ lesson, unit, status, onClick, isNext }) {
         placement="right"
       >
         <Box position="relative">
-          {isNext && (
-            <MotionBox
-              position="absolute"
-              top="-4px"
-              right="-4px"
-              animate={{
-                scale: [1, 1.2, 1],
-                rotate: [0, 10, -10, 0],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-              }}
-            >
-              <Badge
-                colorScheme="yellow"
-                borderRadius="full"
-                px={2}
-                fontSize="xs"
-              >
-                Next!
-              </Badge>
-            </MotionBox>
-          )}
-
           <VStack
             spacing={2}
             cursor={isClickable ? 'pointer' : 'not-allowed'}
@@ -276,10 +251,6 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
               status = SKILL_STATUS.AVAILABLE;
             }
 
-            // Check if this is the next recommended lesson
-            const nextLesson = getNextLesson([unit], userProgress);
-            const isNext = nextLesson?.lesson?.id === lesson.id;
-
             return (
               <Box key={lesson.id} position="relative">
                 {/* Connecting line to next lesson */}
@@ -301,7 +272,6 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
                     lesson={lesson}
                     unit={unit}
                     status={status}
-                    isNext={isNext}
                     onClick={() => onLessonClick(lesson, unit, status)}
                   />
                 </Box>
