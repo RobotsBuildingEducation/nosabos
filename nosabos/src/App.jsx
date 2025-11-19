@@ -68,6 +68,7 @@ import {
   LuBookOpen,
   LuShuffle,
   LuLanguages,
+  LuArrowRight,
 } from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
 
@@ -100,7 +101,6 @@ import { FaAddressCard } from "react-icons/fa";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
-import { getLearningPath } from "./data/skillTreeData";
 import { startLesson, completeLesson } from "./utils/progressTracking";
 import { RiArrowLeftLine } from "react-icons/ri";
 
@@ -2060,13 +2060,6 @@ export default function App() {
                   lessonCompletionTriggeredRef.current = false;
                 });
             }
-          } else if (totalXpEarned < activeLesson.xpReward) {
-            // Not complete yet - switch to random mode
-            console.log('[Lesson XP Check] Lesson not complete yet, scheduling mode switch in 1s');
-            setTimeout(() => {
-              console.log('[Lesson XP Check] Executing scheduled mode switch now');
-              switchToRandomLessonMode();
-            }, 1000);
           }
         }
 
@@ -2088,10 +2081,6 @@ export default function App() {
     viewMode,
     activeLesson,
     lessonStartXp,
-    switchToRandomLessonMode,
-    handleReturnToSkillTree,
-    setActiveLesson,
-    setLessonStartXp,
     setUser,
   ]);
 
@@ -2252,6 +2241,7 @@ export default function App() {
   ----------------------------------- */
 
   const targetLang = user?.progress?.targetLang || "es";
+  const supportLang = user?.progress?.supportLang || "en";
   const level = user?.progress?.level || "beginner";
   const userProgress = {
     totalXp: user?.progress?.totalXp || user?.xp || 0,
@@ -2324,6 +2314,7 @@ export default function App() {
           <SkillTree
             targetLang={targetLang}
             level={level}
+            supportLang={supportLang}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
           />
@@ -2333,6 +2324,27 @@ export default function App() {
       {/* Learning Modules Scene */}
       {viewMode === "lesson" && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+          <Flex justify="flex-end" mb={3}>
+            <Tooltip
+              label={
+                appLanguage === "es"
+                  ? "Cambia manualmente al siguiente módulo de la lección"
+                  : "Manually jump to the next lesson module"
+              }
+              isDisabled={!activeLesson?.modes || activeLesson.modes.length <= 1}
+            >
+              <Button
+                size="sm"
+                variant="outline"
+                colorScheme="teal"
+                rightIcon={<LuArrowRight />}
+                onClick={switchToRandomLessonMode}
+                isDisabled={!activeLesson?.modes || activeLesson.modes.length <= 1}
+              >
+                {appLanguage === "es" ? "Siguiente actividad" : "Next activity"}
+              </Button>
+            </Tooltip>
+          </Flex>
           <Tabs
             index={tabIndex}
             onChange={(i) => {

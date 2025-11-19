@@ -43,6 +43,21 @@ import {
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
 
+const getDisplayText = (textObj, supportLang = 'en') => {
+  if (!textObj) return '';
+  if (typeof textObj === 'string') return textObj;
+  const fallback = textObj.en || textObj.es || Object.values(textObj)[0] || '';
+  if (supportLang === 'bilingual') {
+    const en = textObj.en || '';
+    const es = textObj.es || '';
+    if (en && es && en !== es) {
+      return `${en} / ${es}`;
+    }
+    return en || es || fallback;
+  }
+  return textObj[supportLang] || fallback;
+};
+
 // Icon mapping for different learning modes
 const MODE_ICONS = {
   vocabulary: RiBookOpenLine,
@@ -57,10 +72,13 @@ const MODE_ICONS = {
  * Individual Lesson Node Component
  * Represents a single lesson in the skill tree
  */
-function LessonNode({ lesson, unit, status, onClick }) {
+function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   const bgColor = 'gray.800';
   const borderColor = 'gray.700';
   const lockedColor = 'gray.600';
+
+  const lessonTitle = getDisplayText(lesson.title, supportLang);
+  const lessonDescription = getDisplayText(lesson.description, supportLang);
 
   const getNodeColor = () => {
     if (status === SKILL_STATUS.COMPLETED) return unit.color;
@@ -87,7 +105,11 @@ function LessonNode({ lesson, unit, status, onClick }) {
       transition={{ duration: 0.3 }}
     >
       <Tooltip
-        label={status === SKILL_STATUS.LOCKED ? `Unlock at ${lesson.xpRequired} XP` : lesson.description.en}
+        label={
+          status === SKILL_STATUS.LOCKED
+            ? `Unlock at ${lesson.xpRequired} XP`
+            : lessonDescription
+        }
         placement="right"
       >
         <Box position="relative">
@@ -155,7 +177,7 @@ function LessonNode({ lesson, unit, status, onClick }) {
               maxW="120px"
               color={status === SKILL_STATUS.LOCKED ? 'gray.600' : 'gray.100'}
             >
-              {lesson.title.en}
+              {lessonTitle}
             </Text>
 
             {/* XP Badge */}
@@ -176,7 +198,7 @@ function LessonNode({ lesson, unit, status, onClick }) {
  * Unit Component
  * Represents a unit containing multiple lessons
  */
-function UnitSection({ unit, userProgress, onLessonClick, index }) {
+function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) {
   const bgColor = 'gray.800';
   const borderColor = 'gray.700';
 
@@ -184,6 +206,9 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
   const completedCount = unit.lessons.filter(
     lesson => userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
   ).length;
+
+  const unitTitle = getDisplayText(unit.title, supportLang);
+  const unitDescription = getDisplayText(unit.description, supportLang);
 
   return (
     <MotionBox
@@ -211,10 +236,10 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
                   borderRadius="full"
                   bg={unit.color}
                 />
-                <Heading size="md">{unit.title.en}</Heading>
+                <Heading size="md">{unitTitle}</Heading>
               </HStack>
               <Text fontSize="sm" color="gray.400">
-                {unit.description.en}
+                {unitDescription}
               </Text>
             </VStack>
 
@@ -273,6 +298,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
                     unit={unit}
                     status={status}
                     onClick={() => onLessonClick(lesson, unit, status)}
+                    supportLang={supportLang}
                   />
                 </Box>
               </Box>
@@ -288,8 +314,19 @@ function UnitSection({ unit, userProgress, onLessonClick, index }) {
  * Lesson Detail Modal
  * Shows detailed information about a lesson
  */
-function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
+function LessonDetailModal({
+  isOpen,
+  onClose,
+  lesson,
+  unit,
+  onStartLesson,
+  supportLang,
+}) {
   if (!lesson) return null;
+
+  const lessonTitle = getDisplayText(lesson.title, supportLang);
+  const unitTitle = getDisplayText(unit.title, supportLang);
+  const lessonDescription = getDisplayText(lesson.description, supportLang);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
@@ -299,17 +336,17 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
           <VStack align="start" spacing={2}>
             <HStack>
               <Box w={3} h={3} borderRadius="full" bg={unit.color} />
-              <Text color="gray.100">{lesson.title.en}</Text>
+              <Text color="gray.100">{lessonTitle}</Text>
             </HStack>
             <Text fontSize="sm" fontWeight="normal" color="gray.400">
-              {unit.title.en}
+              {unitTitle}
             </Text>
           </VStack>
         </ModalHeader>
         <ModalCloseButton color="gray.400" _hover={{ color: "gray.100" }} />
         <ModalBody pb={6}>
           <VStack align="stretch" spacing={4}>
-            <Text color="gray.300">{lesson.description.en}</Text>
+            <Text color="gray.300">{lessonDescription}</Text>
 
             {/* Lesson modes */}
             <Box>
@@ -383,6 +420,7 @@ function LessonDetailModal({ isOpen, onClose, lesson, unit, onStartLesson }) {
 export default function SkillTree({
   targetLang = 'es',
   level = 'beginner',
+  supportLang = 'en',
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
 }) {
@@ -465,6 +503,7 @@ export default function SkillTree({
                 userProgress={userProgress}
                 onLessonClick={handleLessonClick}
                 index={index}
+                supportLang={supportLang}
               />
             ))
           ) : (
@@ -481,14 +520,15 @@ export default function SkillTree({
 
         {/* Lesson Detail Modal */}
         {selectedLesson && selectedUnit && (
-          <LessonDetailModal
-            isOpen={isOpen}
-            onClose={onClose}
-            lesson={selectedLesson}
-            unit={selectedUnit}
-            onStartLesson={handleStartLesson}
-          />
-        )}
+            <LessonDetailModal
+              isOpen={isOpen}
+              onClose={onClose}
+              lesson={selectedLesson}
+              unit={selectedUnit}
+              onStartLesson={handleStartLesson}
+              supportLang={supportLang}
+            />
+          )}
       </Container>
     </Box>
   );
