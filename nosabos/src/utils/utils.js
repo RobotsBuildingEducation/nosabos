@@ -1,5 +1,5 @@
 // src/utils/xp.js
-import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, updateDoc, increment } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 
 export async function awardXp(npub, amount, targetLang = null) {
@@ -34,30 +34,31 @@ export async function awardXp(npub, amount, targetLang = null) {
     const goal = data.dailyGoalXp || 0;
     const reached = goal > 0 && nextDaily >= goal && !data.dailyHasCelebrated;
 
+    // Build base update object
+    const updates = {
+      ...base,
+      xp: nextTotal,
+      dailyXp: nextDaily,
+      updatedAt: now.toISOString(),
+      ...(reached
+        ? { dailyHasCelebrated: true, lastDailyGoalHitAt: serverTimestamp() }
+        : {}),
+    };
+
     // Update language-specific XP if targetLang is provided
-    const languageXpUpdates = {};
+    // Use dot notation for nested fields - tx.update handles this correctly
     if (targetLang) {
       const progress = data.progress || {};
       const languageXp = progress.languageXp || {};
       const currentLangXp = languageXp[targetLang] || 0;
-      languageXpUpdates[`progress.languageXp.${targetLang}`] = currentLangXp + delta;
-      languageXpUpdates['progress.totalXp'] = (progress.totalXp || 0) + delta;
+      const totalXp = progress.totalXp || 0;
+
+      updates[`progress.languageXp.${targetLang}`] = currentLangXp + delta;
+      updates['progress.totalXp'] = totalXp + delta;
     }
 
-    tx.set(
-      ref,
-      {
-        ...base,
-        xp: nextTotal,
-        dailyXp: nextDaily,
-        updatedAt: now.toISOString(),
-        ...languageXpUpdates,
-        ...(reached
-          ? { dailyHasCelebrated: true, lastDailyGoalHitAt: serverTimestamp() }
-          : {}),
-      },
-      { merge: true }
-    );
+    // Use update instead of set for dot-notation nested fields
+    tx.update(ref, updates);
   });
 
   // Optional UI ping
