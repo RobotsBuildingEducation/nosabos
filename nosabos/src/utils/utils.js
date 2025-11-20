@@ -2,7 +2,7 @@
 import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 
-export async function awardXp(npub, amount) {
+export async function awardXp(npub, amount, targetLang = null) {
   if (!npub || !amount) return;
   const ref = doc(database, "users", npub);
   const delta = Math.max(1, Math.round(amount));
@@ -34,6 +34,16 @@ export async function awardXp(npub, amount) {
     const goal = data.dailyGoalXp || 0;
     const reached = goal > 0 && nextDaily >= goal && !data.dailyHasCelebrated;
 
+    // Update language-specific XP if targetLang is provided
+    const languageXpUpdates = {};
+    if (targetLang) {
+      const progress = data.progress || {};
+      const languageXp = progress.languageXp || {};
+      const currentLangXp = languageXp[targetLang] || 0;
+      languageXpUpdates[`progress.languageXp.${targetLang}`] = currentLangXp + delta;
+      languageXpUpdates['progress.totalXp'] = (progress.totalXp || 0) + delta;
+    }
+
     tx.set(
       ref,
       {
@@ -41,6 +51,7 @@ export async function awardXp(npub, amount) {
         xp: nextTotal,
         dailyXp: nextDaily,
         updatedAt: now.toISOString(),
+        ...languageXpUpdates,
         ...(reached
           ? { dailyHasCelebrated: true, lastDailyGoalHitAt: serverTimestamp() }
           : {}),

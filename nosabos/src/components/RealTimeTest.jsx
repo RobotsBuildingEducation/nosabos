@@ -53,6 +53,7 @@ import { PasscodePage } from "./PasscodePage";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
+import { getLanguageXp } from "../utils/progressTracking";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -686,11 +687,16 @@ export default function RealTimeTest({
         const snap = await getDoc(ref);
         if (snap.exists()) {
           const data = snap.data() || {};
-          if (Number.isFinite(data?.xp)) setXp(data.xp);
-          if (Number.isFinite(data?.streak)) setStreak(data.streak);
           const p = data?.progress || {};
-          // Prime all local states from saved progress
+          // Prime all local states from saved progress (including targetLang)
           primeRefsFromPrefs(p);
+
+          // Load language-specific XP after targetLang is set
+          const currentTargetLang = p.targetLang || targetLangRef.current || 'es';
+          const languageXp = getLanguageXp(p, currentTargetLang);
+          setXp(languageXp);
+
+          if (Number.isFinite(data?.streak)) setStreak(data.streak);
           // helpRequest
           const hr = (p.helpRequest ?? data.helpRequest ?? "").trim();
           if (hr && hr !== helpRequestRef.current) setHelpRequest(hr);
@@ -786,7 +792,12 @@ export default function RealTimeTest({
     applyLanguagePolicyNow();
     if (!hydrated) return;
     scheduleProfileSave();
-  }, [targetLang, hydrated]);
+
+    // Update displayed XP when target language changes
+    const progress = user?.progress || {};
+    const languageXp = getLanguageXp(progress, targetLang);
+    setXp(languageXp);
+  }, [targetLang, hydrated, user?.progress]);
 
   const DEBOUNCE_MS = 350;
   const respToMsg = useRef(new Map());
@@ -1518,7 +1529,7 @@ Return ONLY JSON:
           pron: !!practicePronunciationRef.current,
         });
         setXp((v) => v + xpGain);
-        await awardXp(currentNpub, xpGain);
+        await awardXp(currentNpub, xpGain, targetLangRef.current);
       }
 
       if (met) {
