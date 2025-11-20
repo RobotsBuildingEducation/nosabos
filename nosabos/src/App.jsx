@@ -2084,6 +2084,7 @@ export default function App() {
                     lessonId: activeLesson.id,
                   });
                   setShowCompletionModal(true);
+                  handleReturnToSkillTree();
                 })
                 .catch((err) => {
                   console.error("Failed to complete lesson:", err);
@@ -2272,11 +2273,7 @@ export default function App() {
   ----------------------------------- */
 
   const languageXpMap = user?.progress?.languageXp || {};
-  const skillTreeXp =
-    languageXpMap[resolvedTargetLang] ??
-    user?.progress?.totalXp ??
-    user?.xp ??
-    0;
+  const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
   const userProgress = {
     totalXp: skillTreeXp,
     lessons: user?.progress?.lessons || {},

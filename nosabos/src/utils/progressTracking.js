@@ -102,8 +102,15 @@ export function getLanguageXp(progress, targetLang) {
   const lang = targetLang || progress?.targetLang || 'es';
   const xpMap = progress.languageXp;
 
-  if (xpMap && typeof xpMap[lang] === 'number') {
-    return xpMap[lang];
+  if (xpMap && typeof xpMap === 'object') {
+    if (typeof xpMap[lang] === 'number') {
+      return xpMap[lang];
+    }
+
+    // If we have per-language XP data but no entry for this language, treat as zero
+    if (Object.keys(xpMap).length > 0) {
+      return 0;
+    }
   }
 
   if (typeof progress.totalXp === 'number') {
