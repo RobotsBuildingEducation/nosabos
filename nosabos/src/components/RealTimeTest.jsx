@@ -52,6 +52,7 @@ import { translations } from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
+import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
 
 const REALTIME_MODEL =
@@ -686,7 +687,9 @@ export default function RealTimeTest({
         const snap = await getDoc(ref);
         if (snap.exists()) {
           const data = snap.data() || {};
-          if (Number.isFinite(data?.xp)) setXp(data.xp);
+          const currentLang = targetLangRef.current || targetLang;
+          const languageXp = getLanguageXp(data?.progress || {}, currentLang);
+          if (Number.isFinite(languageXp)) setXp(languageXp);
           if (Number.isFinite(data?.streak)) setStreak(data.streak);
           const p = data?.progress || {};
           // Prime all local states from saved progress
@@ -787,6 +790,15 @@ export default function RealTimeTest({
     if (!hydrated) return;
     scheduleProfileSave();
   }, [targetLang, hydrated]);
+
+  // Keep XP in sync with the active practice language
+  useEffect(() => {
+    if (!hydrated) return;
+    const langXp = getLanguageXp(user?.progress || {}, targetLangRef.current);
+    if (Number.isFinite(langXp)) {
+      setXp(langXp);
+    }
+  }, [hydrated, targetLang, user?.progress]);
 
   const DEBOUNCE_MS = 350;
   const respToMsg = useRef(new Map());
@@ -1518,7 +1530,7 @@ Return ONLY JSON:
           pron: !!practicePronunciationRef.current,
         });
         setXp((v) => v + xpGain);
-        await awardXp(currentNpub, xpGain);
+        await awardXp(currentNpub, xpGain, targetLangRef.current);
       }
 
       if (met) {
