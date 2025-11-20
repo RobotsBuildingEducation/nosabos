@@ -102,17 +102,18 @@ export function getLanguageXp(progress, targetLang) {
   const lang = targetLang || progress?.targetLang || 'es';
   const xpMap = progress.languageXp;
 
+  // If we have a per-language XP map, prefer it exclusively so each language
+  // tracks its own progress independently. Missing entries should resolve to 0
+  // instead of falling back to total XP so that switching languages shows the
+  // correct, isolated progress.
   if (xpMap && typeof xpMap === 'object') {
-    if (typeof xpMap[lang] === 'number') {
-      return xpMap[lang];
-    }
-
-    // If we have per-language XP data but no entry for this language, treat as zero
-    if (Object.keys(xpMap).length > 0) {
-      return 0;
-    }
+    const langXp = xpMap[lang];
+    return typeof langXp === 'number' ? langXp : 0;
   }
 
+  // Legacy fallback: before per-language tracking existed, totalXp was the only
+  // source of truth. If no language map is present, treat totalXp as the
+  // language's XP so existing users retain their progress.
   if (typeof progress.totalXp === 'number') {
     return progress.totalXp;
   }
