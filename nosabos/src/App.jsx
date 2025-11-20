@@ -95,7 +95,11 @@ import { FaAddressCard } from "react-icons/fa";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
-import { startLesson, completeLesson } from "./utils/progressTracking";
+import {
+  startLesson,
+  completeLesson,
+  getLanguageXp,
+} from "./utils/progressTracking";
 import { RiArrowLeftLine } from "react-icons/ri";
 
 /* ---------------------------
@@ -830,6 +834,10 @@ export default function App() {
   const setUser = useUserStore((s) => s.setUser);
   const patchUser = useUserStore((s) => s.patchUser);
 
+  const resolvedTargetLang = user?.progress?.targetLang || "es";
+  const resolvedSupportLang = user?.progress?.supportLang || "en";
+  const resolvedLevel = user?.progress?.level || "beginner";
+
   const dailyGoalTarget = useMemo(() => {
     const rawGoal =
       user?.dailyGoalXp ??
@@ -978,6 +986,8 @@ export default function App() {
   const [lessonStartXp, setLessonStartXp] = useState(null);
   const lessonCompletionTriggeredRef = useRef(false);
   const previousXpRef = useRef(null);
+  const activeLessonLanguageRef = useRef(resolvedTargetLang);
+  const lastTargetLangRef = useRef(resolvedTargetLang);
 
   // Random mode switcher for lessons
   const switchToRandomLessonMode = useCallback(() => {
@@ -1584,13 +1594,19 @@ export default function App() {
         localStorage.setItem("activeLesson", JSON.stringify(lesson));
       }
 
-      // Record starting XP for this lesson
-      const currentXp = fresh?.xp || user?.xp || 0;
+      // Record starting XP for this lesson (language-specific)
+      const lessonLang = resolvedTargetLang;
+      activeLessonLanguageRef.current = lessonLang;
+      const fallbackTotalXp = Number(fresh?.xp ?? user?.xp ?? 0) || 0;
+      const progressSource =
+        fresh?.progress || user?.progress || { totalXp: fallbackTotalXp };
+      const currentXp = getLanguageXp(progressSource, lessonLang);
       setLessonStartXp(currentXp);
       lessonCompletionTriggeredRef.current = false; // Reset completion flag
       console.log('[Lesson Start] Recording starting XP:', {
         lessonId: lesson.id,
         lessonTitle: lesson.title.en,
+        lessonLang,
         startXp: currentXp,
         xpRequired: lesson.xpReward,
         freshXp: fresh?.xp,
@@ -1634,12 +1650,18 @@ export default function App() {
   };
 
   // Handle returning to skill tree
-  const handleReturnToSkillTree = () => {
+  const handleReturnToSkillTree = useCallback(() => {
     setViewMode("skillTree");
+    setActiveLesson(null);
+    setLessonStartXp(null);
+    previousXpRef.current = null;
+    lessonCompletionTriggeredRef.current = false;
+    activeLessonLanguageRef.current = resolvedTargetLang;
     if (typeof window !== "undefined") {
       localStorage.setItem("viewMode", "skillTree");
+      localStorage.removeItem("activeLesson");
     }
-  };
+  }, [resolvedTargetLang]);
 
   // Handle closing the completion modal and returning to skill tree
   const handleCloseCompletionModal = () => {
@@ -1648,12 +1670,16 @@ export default function App() {
 
     // Return to skill tree
     handleReturnToSkillTree();
-    setActiveLesson(null);
-    setLessonStartXp(null);
-    previousXpRef.current = null;
-    lessonCompletionTriggeredRef.current = false;
-    localStorage.removeItem("activeLesson");
   };
+
+  // When the user switches practice languages, return them to the skill tree
+  useEffect(() => {
+    if (lastTargetLangRef.current !== resolvedTargetLang) {
+      handleReturnToSkillTree();
+      activeLessonLanguageRef.current = resolvedTargetLang;
+    }
+    lastTargetLangRef.current = resolvedTargetLang;
+  }, [resolvedTargetLang, handleReturnToSkillTree]);
 
   // Ensure current tab is valid for the active lesson
   useEffect(() => {
@@ -1965,6 +1991,9 @@ export default function App() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const newXp = Number(data?.xp || 0);
+      const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
+      const progressPayload = data?.progress || { totalXp: newXp };
+      const newLessonLanguageXp = getLanguageXp(progressPayload, lessonLang);
 
       if (prevXpRef.current == null) {
         prevXpRef.current = newXp;
@@ -2019,10 +2048,12 @@ export default function App() {
 
         // Check for lesson completion
         if (viewMode === "lesson" && activeLesson && lessonStartXp !== null) {
-          const totalXpEarned = newXp - lessonStartXp;
+          const totalXpEarned = newLessonLanguageXp - lessonStartXp;
 
           console.log('[Lesson XP Check]', {
             newXp,
+            lessonLang,
+            newLessonLanguageXp,
             lessonStartXp,
             totalXpEarned,
             lessonGoal: activeLesson.xpReward,
@@ -2036,7 +2067,12 @@ export default function App() {
 
             const npub = resolveNpub();
             if (npub) {
-              completeLesson(npub, activeLesson.id, activeLesson.xpReward)
+              completeLesson(
+                npub,
+                activeLesson.id,
+                activeLesson.xpReward,
+                lessonLang
+              )
                 .then(async () => {
                   const fresh = await loadUserObjectFromDB(database, npub);
                   if (fresh) setUser?.(fresh);
@@ -2048,6 +2084,7 @@ export default function App() {
                     lessonId: activeLesson.id,
                   });
                   setShowCompletionModal(true);
+                  handleReturnToSkillTree();
                 })
                 .catch((err) => {
                   console.error("Failed to complete lesson:", err);
@@ -2076,6 +2113,7 @@ export default function App() {
     activeLesson,
     lessonStartXp,
     setUser,
+    resolvedTargetLang,
   ]);
 
   const RandomHeader = (
@@ -2234,12 +2272,12 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
-  const targetLang = user?.progress?.targetLang || "es";
-  const supportLang = user?.progress?.supportLang || "en";
-  const level = user?.progress?.level || "beginner";
+  const languageXpMap = user?.progress?.languageXp || {};
+  const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
   const userProgress = {
-    totalXp: user?.progress?.totalXp || user?.xp || 0,
+    totalXp: skillTreeXp,
     lessons: user?.progress?.lessons || {},
+    languageXp: languageXpMap,
   };
 
   return (
@@ -2306,9 +2344,9 @@ export default function App() {
       {viewMode === "skillTree" && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
           <SkillTree
-            targetLang={targetLang}
-            level={level}
-            supportLang={supportLang}
+            targetLang={resolvedTargetLang}
+            level={resolvedLevel}
+            supportLang={resolvedSupportLang}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
           />
