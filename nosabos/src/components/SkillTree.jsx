@@ -39,6 +39,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from '../data/skillTreeData';
+import { getLanguageXp } from '../utils/progressTracking';
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -198,7 +199,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
  * Unit Component
  * Represents a unit containing multiple lessons
  */
-function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) {
+function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, targetLang }) {
   const bgColor = 'gray.800';
   const borderColor = 'gray.700';
 
@@ -209,6 +210,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) 
 
   const unitTitle = getDisplayText(unit.title, supportLang);
   const unitDescription = getDisplayText(unit.description, supportLang);
+  const languageXp = getLanguageXp(userProgress, targetLang);
 
   return (
     <MotionBox
@@ -272,7 +274,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) 
               status = SKILL_STATUS.COMPLETED;
             } else if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
               status = SKILL_STATUS.IN_PROGRESS;
-            } else if (userProgress.totalXp >= lesson.xpRequired) {
+            } else if (languageXp >= lesson.xpRequired) {
               status = SKILL_STATUS.AVAILABLE;
             }
 
@@ -456,6 +458,7 @@ export default function SkillTree({
     0
   );
   const overallProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+  const languageXp = getLanguageXp(userProgress, targetLang);
 
   return (
     <Box bg={bgColor} py={8}>
@@ -472,7 +475,7 @@ export default function SkillTree({
                 <HStack>
                   <RiTrophyLine size={20} color="gold" />
                   <Text fontWeight="bold" fontSize="lg" color="gray.100">
-                    {userProgress.totalXp || 0} XP
+                    {languageXp} XP
                   </Text>
                 </HStack>
               </HStack>
@@ -504,6 +507,7 @@ export default function SkillTree({
                 onLessonClick={handleLessonClick}
                 index={index}
                 supportLang={supportLang}
+                targetLang={targetLang}
               />
             ))
           ) : (

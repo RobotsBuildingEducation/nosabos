@@ -2084,7 +2084,7 @@ export default function App() {
                     lessonId: activeLesson.id,
                   });
                   setShowCompletionModal(true);
-                  handleReturnToSkillTree();
+                  // Navigation to skill tree happens when user clicks "Continue" in modal
                 })
                 .catch((err) => {
                   console.error("Failed to complete lesson:", err);
