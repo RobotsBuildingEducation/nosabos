@@ -299,7 +299,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
  * Unit Component
  * Represents a unit containing multiple lessons
  */
-function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) {
+function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, hasNextUnit }) {
   const bgColor = 'gray.800';
   const borderColor = 'gray.700';
 
@@ -441,8 +441,37 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) 
           </Box>
         </Box>
 
-        {/* Lessons in this unit */}
-        <VStack spacing={8} position="relative" py={4}>
+        {/* Connector from unit header to first lesson */}
+        <Box
+          as="svg"
+          position="absolute"
+          top="0"
+          left="50%"
+          transform="translateX(-50%)"
+          width="200px"
+          height="80px"
+          overflow="visible"
+          zIndex={0}
+          pointerEvents="none"
+        >
+          <defs>
+            <linearGradient id={`unit-start-${unit.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={unit.color} stopOpacity={0.3} />
+              <stop offset="100%" stopColor={unit.color} stopOpacity={0.6} />
+            </linearGradient>
+          </defs>
+          <path
+            d="M 100 0 Q 100 40, 100 60"
+            stroke={`url(#unit-start-${unit.id})`}
+            strokeWidth="4"
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray="8 4"
+          />
+        </Box>
+
+        {/* Lessons in this unit - Game-like zigzag layout */}
+        <Box position="relative" py={4} minH="200px">
           {unit.lessons.map((lesson, lessonIndex) => {
             const lessonProgress = userProgress.lessons?.[lesson.id];
             let status = SKILL_STATUS.LOCKED;
@@ -456,33 +485,76 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) 
               status = SKILL_STATUS.AVAILABLE;
             }
 
+            // Create zigzag pattern - alternating positions
+            const isEven = lessonIndex % 2 === 0;
+            const offset = isEven ? 0 : 180; // Horizontal offset for zigzag
+            const yPosition = lessonIndex * 140; // Vertical spacing
+
+            // Calculate connection path
+            const nextIsEven = (lessonIndex + 1) % 2 === 0;
+            const nextOffset = nextIsEven ? 0 : 180;
+
             return (
-              <Box key={lesson.id} position="relative">
-                {/* Enhanced Connecting line to next lesson */}
+              <Box key={lesson.id}>
+                {/* SVG Path connecting to next lesson */}
                 {lessonIndex < unit.lessons.length - 1 && (
                   <Box
+                    as="svg"
                     position="absolute"
-                    top="90px"
+                    top={`${yPosition + 45}px`}
                     left="50%"
                     transform="translateX(-50%)"
-                    w="4px"
-                    h="50px"
-                    bgGradient={
-                      status === SKILL_STATUS.COMPLETED
-                        ? `linear(to-b, ${unit.color}, ${unit.color}80)`
-                        : 'linear(to-b, gray.700, gray.800)'
-                    }
-                    boxShadow={
-                      status === SKILL_STATUS.COMPLETED
-                        ? `0 0 10px ${unit.color}60`
-                        : 'none'
-                    }
-                    borderRadius="full"
+                    width="300px"
+                    height="140px"
+                    overflow="visible"
                     zIndex={0}
-                  />
+                    pointerEvents="none"
+                  >
+                    <defs>
+                      <linearGradient id={`gradient-${lesson.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop
+                          offset="0%"
+                          stopColor={status === SKILL_STATUS.COMPLETED ? unit.color : '#374151'}
+                          stopOpacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor={status === SKILL_STATUS.COMPLETED ? unit.color : '#374151'}
+                          stopOpacity={status === SKILL_STATUS.COMPLETED ? 0.4 : 0.3}
+                        />
+                      </linearGradient>
+                      {status === SKILL_STATUS.COMPLETED && (
+                        <filter id={`glow-${lesson.id}`}>
+                          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      )}
+                    </defs>
+                    <path
+                      d={`M ${150 + offset - nextOffset} 0 Q ${150 + (offset - nextOffset) / 2} 70, ${150} 95`}
+                      stroke={`url(#gradient-${lesson.id})`}
+                      strokeWidth="4"
+                      fill="none"
+                      strokeLinecap="round"
+                      filter={status === SKILL_STATUS.COMPLETED ? `url(#glow-${lesson.id})` : 'none'}
+                      style={{
+                        transition: 'all 0.3s ease',
+                      }}
+                    />
+                  </Box>
                 )}
 
-                <Box position="relative" zIndex={1}>
+                {/* Lesson Node */}
+                <Box
+                  position="absolute"
+                  top={`${yPosition}px`}
+                  left="50%"
+                  transform={`translateX(calc(-50% + ${offset}px))`}
+                  zIndex={1}
+                >
                   <LessonNode
                     lesson={lesson}
                     unit={unit}
@@ -494,7 +566,63 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) 
               </Box>
             );
           })}
-        </VStack>
+          {/* Spacer to ensure container height accommodates all lessons */}
+          <Box h={`${unit.lessons.length * 140}px`} />
+        </Box>
+
+        {/* Connector from last lesson to next unit */}
+        {hasNextUnit && (
+          <Box
+            as="svg"
+            position="relative"
+            left="50%"
+            transform="translateX(-50%)"
+            width="200px"
+            height="100px"
+            overflow="visible"
+            zIndex={0}
+            pointerEvents="none"
+            mt={-4}
+          >
+            <defs>
+              <linearGradient id={`unit-end-${unit.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={unit.color} stopOpacity={0.6} />
+                <stop offset="100%" stopColor={unit.color} stopOpacity={0.2} />
+              </linearGradient>
+            </defs>
+            <path
+              d="M 100 0 Q 100 50, 100 100"
+              stroke={`url(#unit-end-${unit.id})`}
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray="8 4"
+            />
+            {/* Animated arrow */}
+            <circle
+              cx="100"
+              cy="0"
+              r="4"
+              fill={unit.color}
+              opacity="0.8"
+            >
+              <animate
+                attributeName="cy"
+                from="0"
+                to="100"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                from="0.8"
+                to="0"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </circle>
+          </Box>
+        )}
       </VStack>
     </MotionBox>
   );
@@ -814,117 +942,73 @@ export default function SkillTree({
         }}
       />
 
-      <Container maxW="container.md" py={8} position="relative" zIndex={1}>
-        {/* Header */}
+      <Container maxW="container.lg" py={6} position="relative" zIndex={1}>
+        {/* Minimal Progress Header */}
         <MotionBox
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
+          transition={{ duration: 0.4 }}
+          mb={8}
         >
-          <VStack spacing={6} mb={10}>
-            <Heading
-              size="2xl"
-              bgGradient="linear(to-r, teal.300, blue.300, purple.300)"
-              bgClip="text"
-              fontWeight="extrabold"
-              textAlign="center"
-              letterSpacing="tight"
-            >
-              Your Learning Path
-            </Heading>
-
-            {/* Overall Progress Card with glassmorphism */}
-            <Box
-              w="full"
-              bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
-              backdropFilter="blur(20px)"
-              p={8}
-              borderRadius="2xl"
-              boxShadow="0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)"
-              border="1px solid"
-              borderColor="whiteAlpha.200"
-              position="relative"
-              overflow="hidden"
-            >
-              {/* Decorative gradient orb */}
+          <HStack
+            justify="space-between"
+            bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
+            backdropFilter="blur(10px)"
+            px={6}
+            py={3}
+            borderRadius="full"
+            border="1px solid"
+            borderColor="whiteAlpha.200"
+            boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
+          >
+            <HStack spacing={3}>
               <Box
-                position="absolute"
-                top="-50%"
-                right="-20%"
-                w="200px"
-                h="200px"
-                bgGradient="radial(circle, teal.400, transparent 70%)"
-                filter="blur(40px)"
-                opacity={0.3}
-              />
-
-              <VStack spacing={4} position="relative">
-                <HStack w="full" justify="space-between">
-                  <Text fontWeight="bold" fontSize="lg" color="white" textShadow="0 2px 10px rgba(0,0,0,0.3)">
-                    Overall Progress
-                  </Text>
-                  <HStack spacing={2}>
-                    <Box
-                      p={2}
-                      borderRadius="lg"
-                      bgGradient="linear(135deg, yellow.400, orange.400)"
-                      boxShadow="0 4px 15px rgba(251, 191, 36, 0.4)"
-                    >
-                      <RiTrophyLine size={24} color="white" />
-                    </Box>
-                    <VStack spacing={0} align="start">
-                      <Text fontSize="2xl" fontWeight="black" color="white" lineHeight="1">
-                        {userProgress.totalXp || 0}
-                      </Text>
-                      <Text fontSize="xs" color="gray.300" fontWeight="semibold">
-                        XP
-                      </Text>
-                    </VStack>
-                  </HStack>
-                </HStack>
-
-                <Box w="full" position="relative">
-                  <Progress
-                    value={overallProgress}
-                    borderRadius="full"
-                    size="lg"
-                    bg="whiteAlpha.200"
-                    sx={{
-                      '& > div': {
-                        bgGradient: 'linear(to-r, teal.400, blue.400, purple.400)',
-                        boxShadow: '0 0 20px rgba(56, 178, 172, 0.6)',
-                      },
-                    }}
-                  />
-                  <Text
-                    position="absolute"
-                    right={4}
-                    top="50%"
-                    transform="translateY(-50%)"
-                    fontSize="sm"
-                    fontWeight="black"
-                    color="white"
-                    textShadow="0 1px 3px rgba(0,0,0,0.5)"
-                  >
-                    {Math.round(overallProgress)}%
-                  </Text>
-                </Box>
-
-                <HStack w="full" justify="space-between" fontSize="sm" color="gray.300">
-                  <Text fontWeight="semibold">
-                    {completedLessons} of {totalLessons} lessons
-                  </Text>
-                  <Text fontWeight="semibold">
-                    {totalLessons - completedLessons} remaining
-                  </Text>
-                </HStack>
+                p={1.5}
+                borderRadius="lg"
+                bgGradient="linear(135deg, yellow.400, orange.400)"
+                boxShadow="0 2px 8px rgba(251, 191, 36, 0.3)"
+              >
+                <RiTrophyLine size={18} color="white" />
+              </Box>
+              <VStack spacing={0} align="start">
+                <Text fontSize="lg" fontWeight="black" color="white" lineHeight="1">
+                  {userProgress.totalXp || 0} XP
+                </Text>
+                <Text fontSize="xs" color="gray.400" fontWeight="medium">
+                  Level {Math.floor((userProgress.totalXp || 0) / 100) + 1}
+                </Text>
               </VStack>
-            </Box>
-          </VStack>
+            </HStack>
+
+            <HStack spacing={4}>
+              <VStack spacing={0} align="end">
+                <Text fontSize="sm" fontWeight="bold" color="white">
+                  {Math.round(overallProgress)}%
+                </Text>
+                <Text fontSize="xs" color="gray.400">
+                  {completedLessons}/{totalLessons}
+                </Text>
+              </VStack>
+              <Box w="120px">
+                <Progress
+                  value={overallProgress}
+                  borderRadius="full"
+                  size="sm"
+                  bg="whiteAlpha.200"
+                  sx={{
+                    '& > div': {
+                      bgGradient: 'linear(to-r, teal.400, blue.400, purple.400)',
+                      boxShadow: '0 0 10px rgba(56, 178, 172, 0.5)',
+                    },
+                  }}
+                />
+              </Box>
+            </HStack>
+          </HStack>
         </MotionBox>
 
         {/* Skill Tree Units */}
-        <VStack spacing={12} align="stretch">
+        <VStack spacing={8} align="stretch">
           {units.length > 0 ? (
             units.map((unit, index) => (
               <UnitSection
@@ -934,6 +1018,7 @@ export default function SkillTree({
                 onLessonClick={handleLessonClick}
                 index={index}
                 supportLang={supportLang}
+                hasNextUnit={index < units.length - 1}
               />
             ))
           ) : (
