@@ -477,14 +477,24 @@ function TopBar({
           <Box w={{ base: "120px", sm: "150px", md: "180px" }}>
             <WaveBar value={dailyPct} />
           </Box>
-          <HStack spacing={1} flexShrink={0}>
+          <Box flexShrink={0} display="flex" alignItems="center" justifyContent="center">
             {dailyDone && (
-              <CheckCircleIcon
-                boxSize={{ base: "16px", md: "18px" }}
-                color="green.200"
-              />
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                bg="green.200"
+                borderRadius="full"
+                w={{ base: "24px", md: "28px" }}
+                h={{ base: "24px", md: "28px" }}
+              >
+                <CheckCircleIcon
+                  boxSize={{ base: "20px", md: "24px" }}
+                  color="gray.900"
+                />
+              </Box>
             )}
-          </HStack>
+          </Box>
         </HStack>
 
         <Spacer display={{ base: "none", md: "block" }} />
