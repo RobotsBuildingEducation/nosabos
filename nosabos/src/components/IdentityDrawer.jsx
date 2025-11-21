@@ -249,6 +249,8 @@ export default function IdentityDrawer({
                   alignSelf="flex-start"
                   minW={0}
                   gap={2}
+                  border="2px solid"
+                  borderColor="cyan.400"
                 >
                   <Text fontWeight="semibold">
                     {t?.app_install_title || "Install as app"}
