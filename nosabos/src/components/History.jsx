@@ -31,6 +31,7 @@ import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
+import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 
 /* ---------------------------
@@ -288,15 +289,18 @@ function useSharedProgress() {
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
-      setXp(Number.isFinite(data?.xp) ? data.xp : 0);
       const p = data?.progress || {};
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it"].includes(
+        p.targetLang
+      )
+        ? p.targetLang
+        : "es";
+      const langXp = getLanguageXp(p, targetLang);
+
+      setXp(Number.isFinite(langXp) ? langXp : 0);
       setProgress({
         level: p.level || "beginner",
-        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
-          p.targetLang
-        )
-          ? p.targetLang
-          : "es",
+        targetLang,
         supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
           ? p.supportLang
           : "en",
