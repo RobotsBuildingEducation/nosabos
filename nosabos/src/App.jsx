@@ -2596,17 +2596,108 @@ export default function App() {
           <ModalBody py={12} px={8}>
             <VStack spacing={6} textAlign="center">
               {/* Celebration Icon */}
-              <Box
-                fontSize="6xl"
-                animation="bounce 1s ease-in-out infinite"
-                sx={{
-                  "@keyframes bounce": {
-                    "0%, 100%": { transform: "translateY(0)" },
-                    "50%": { transform: "translateY(-20px)" },
-                  },
-                }}
-              >
-                🎉
+              <Box position="relative" w="120px" h="120px">
+                {/* Central Trophy/Star */}
+                <Box
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  w="80px"
+                  h="80px"
+                  borderRadius="full"
+                  bgGradient="linear(135deg, yellow.300, yellow.400, orange.400)"
+                  boxShadow="0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  animation="pulse 2s ease-in-out infinite"
+                  sx={{
+                    "@keyframes pulse": {
+                      "0%, 100%": {
+                        transform: "translate(-50%, -50%) scale(1)",
+                        boxShadow: "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+                      },
+                      "50%": {
+                        transform: "translate(-50%, -50%) scale(1.1)",
+                        boxShadow: "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)"
+                      },
+                    },
+                  }}
+                >
+                  <Box
+                    fontSize="3xl"
+                    color="white"
+                    fontWeight="black"
+                    textShadow="0 2px 4px rgba(0,0,0,0.3)"
+                  >
+                    ★
+                  </Box>
+                </Box>
+
+                {/* Orbiting sparkles */}
+                {[0, 60, 120, 180, 240, 300].map((angle, idx) => (
+                  <Box
+                    key={idx}
+                    position="absolute"
+                    top="50%"
+                    left="50%"
+                    w="12px"
+                    h="12px"
+                    animation={`orbit${idx} 3s linear infinite`}
+                    sx={{
+                      [`@keyframes orbit${idx}`]: {
+                        "0%": {
+                          transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(50px) rotate(-${angle}deg)`,
+                          opacity: 0.4,
+                        },
+                        "50%": {
+                          opacity: 1,
+                        },
+                        "100%": {
+                          transform: `translate(-50%, -50%) rotate(${angle + 360}deg) translateX(50px) rotate(-${angle - 360}deg)`,
+                          opacity: 0.4,
+                        },
+                      },
+                    }}
+                  >
+                    <Box
+                      w="100%"
+                      h="100%"
+                      bgGradient="linear(to-br, yellow.200, yellow.400)"
+                      borderRadius="full"
+                      boxShadow="0 0 10px rgba(251, 191, 36, 0.8)"
+                    />
+                  </Box>
+                ))}
+
+                {/* Floating particles */}
+                {[...Array(8)].map((_, i) => (
+                  <Box
+                    key={`particle-${i}`}
+                    position="absolute"
+                    top="50%"
+                    left="50%"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="white"
+                    opacity={0.8}
+                    animation={`float${i} ${2 + i * 0.3}s ease-in-out infinite`}
+                    sx={{
+                      [`@keyframes float${i}`]: {
+                        "0%, 100%": {
+                          transform: `translate(-50%, -50%) translate(${Math.cos(i * 45 * Math.PI / 180) * 30}px, ${Math.sin(i * 45 * Math.PI / 180) * 30}px)`,
+                          opacity: 0,
+                        },
+                        "50%": {
+                          transform: `translate(-50%, -50%) translate(${Math.cos(i * 45 * Math.PI / 180) * 60}px, ${Math.sin(i * 45 * Math.PI / 180) * 60}px)`,
+                          opacity: 0.8,
+                        },
+                      },
+                    }}
+                  />
+                ))}
               </Box>
 
               {/* Title */}
