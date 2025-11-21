@@ -14,6 +14,7 @@ import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
+import { getLanguageXp } from "../utils/progressTracking";
 
 // Lazy-load modules
 const StoryMode = React.lazy(() => import("./Stories"));
@@ -80,6 +81,7 @@ export default function Randomize() {
 
   // watch XP to detect “earned XP”
   const xpBaselineRef = useRef(0);
+  const targetLangRef = useRef("es");
 
   // Mode labels from translations
   const modeLabels = useMemo(
@@ -99,7 +101,17 @@ export default function Randomize() {
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
-      const newXp = Number.isFinite(data?.xp) ? data.xp : 0;
+      const p = data?.progress || {};
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it"].includes(
+        p.targetLang
+      )
+        ? p.targetLang
+        : "es";
+      const langXp = getLanguageXp(p, targetLang);
+      const newXp = Number.isFinite(langXp) ? langXp : 0;
+      const languageChanged = targetLangRef.current !== targetLang;
+
+      targetLangRef.current = targetLang;
       setXp(newXp);
       setProgressPct(Math.min(100, newXp % 100));
 
@@ -109,6 +121,16 @@ export default function Randomize() {
         const pick = keys[Math.floor(Math.random() * keys.length)];
         setCurrentModeKey(pick);
         setInitializing(false);
+        return;
+      }
+
+      if (languageChanged) {
+        xpBaselineRef.current = newXp;
+        return;
+      }
+
+      if (newXp < xpBaselineRef.current) {
+        xpBaselineRef.current = newXp;
         return;
       }
 

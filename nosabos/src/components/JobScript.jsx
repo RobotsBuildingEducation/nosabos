@@ -39,6 +39,7 @@ import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
+import { getLanguageXp } from "../utils/progressTracking";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -160,11 +161,18 @@ function useSharedProgress() {
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
-      setXp(Number.isFinite(data?.xp) ? data.xp : 0);
       const p = data?.progress || {};
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it"].includes(
+        p.targetLang
+      )
+        ? p.targetLang
+        : "es";
+      const langXp = getLanguageXp(p, targetLang);
+
+      setXp(Number.isFinite(langXp) ? langXp : 0);
       setProgress({
         level: p.level || "beginner",
-        targetLang: p.targetLang || "es",
+        targetLang,
         supportLang: p.supportLang || "en",
         voice: p.voice || "alloy",
       });
