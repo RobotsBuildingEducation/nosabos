@@ -1644,13 +1644,6 @@ export default function App() {
       if (typeof window !== "undefined") {
         localStorage.setItem("viewMode", "lesson");
       }
-
-      toast({
-        title: appLanguage === "es" ? "Lección iniciada" : "Lesson started",
-        description: lesson.title[appLanguage] || lesson.title.en,
-        status: "success",
-        duration: 2000,
-      });
     } catch (e) {
       console.error("Failed to start lesson:", e);
       toast({
