@@ -15,6 +15,7 @@ export function initializeProgress() {
   return {
     totalXp: 0,
     languageXp: {},
+    languageLessons: {},
     currentUnit: null,
     currentLesson: null,
     lessons: {}, // { lessonId: { status, completedAt, xpEarned, attempts } }
@@ -26,9 +27,11 @@ export function initializeProgress() {
 /**
  * Start a lesson - mark it as in progress
  */
-export async function startLesson(npub, lessonId) {
+export async function startLesson(npub, lessonId, targetLang = 'es') {
   if (!npub || !lessonId) return;
 
+  const languageKey = (targetLang || 'es').toLowerCase();
+  const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
   const userRef = doc(database, 'users', npub);
 
   try {
@@ -36,6 +39,8 @@ export async function startLesson(npub, lessonId) {
       [`progress.currentLesson`]: lessonId,
       [`progress.lessons.${lessonId}.status`]: SKILL_STATUS.IN_PROGRESS,
       [`progress.lessons.${lessonId}.startedAt`]: serverTimestamp(),
+      [`${languageLessonBase}.status`]: SKILL_STATUS.IN_PROGRESS,
+      [`${languageLessonBase}.startedAt`]: serverTimestamp(),
       'progress.lastActiveAt': serverTimestamp(),
     });
   } catch (error) {
@@ -55,8 +60,9 @@ export async function completeLesson(
 ) {
   if (!npub || !lessonId || !xpReward) return;
 
-  const languageKey = targetLang || 'es';
+  const languageKey = (targetLang || 'es').toLowerCase();
   const languageXpField = `progress.languageXp.${languageKey}`;
+  const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
 
   const userRef = doc(database, 'users', npub);
 
@@ -66,6 +72,9 @@ export async function completeLesson(
       [`progress.lessons.${lessonId}.status`]: SKILL_STATUS.COMPLETED,
       [`progress.lessons.${lessonId}.completedAt`]: serverTimestamp(),
       [`progress.lessons.${lessonId}.xpEarned`]: xpReward,
+      [`${languageLessonBase}.status`]: SKILL_STATUS.COMPLETED,
+      [`${languageLessonBase}.completedAt`]: serverTimestamp(),
+      [`${languageLessonBase}.xpEarned`]: xpReward,
 
       // Award XP
       'progress.totalXp': increment(xpReward),
@@ -124,15 +133,19 @@ export function getLanguageXp(progress, targetLang) {
 /**
  * Track lesson attempt (for analytics)
  */
-export async function trackLessonAttempt(npub, lessonId) {
+export async function trackLessonAttempt(npub, lessonId, targetLang = 'es') {
   if (!npub || !lessonId) return;
 
+  const languageKey = (targetLang || 'es').toLowerCase();
+  const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
   const userRef = doc(database, 'users', npub);
 
   try {
     await updateDoc(userRef, {
       [`progress.lessons.${lessonId}.attempts`]: increment(1),
       [`progress.lessons.${lessonId}.lastAttemptAt`]: serverTimestamp(),
+      [`${languageLessonBase}.attempts`]: increment(1),
+      [`${languageLessonBase}.lastAttemptAt`]: serverTimestamp(),
     });
   } catch (error) {
     console.error('Error tracking lesson attempt:', error);
@@ -142,8 +155,11 @@ export async function trackLessonAttempt(npub, lessonId) {
 /**
  * Get lesson status from user progress
  */
-export function getLessonStatus(userProgress, lesson) {
-  const lessonProgress = userProgress?.lessons?.[lesson.id];
+export function getLessonStatus(userProgress, lesson, targetLang) {
+  const lang = targetLang || userProgress?.targetLang || userProgress?.language || 'es';
+  const lessonProgress =
+    userProgress?.languageLessons?.[lang]?.[lesson.id] ||
+    userProgress?.lessons?.[lesson.id];
 
   if (lessonProgress?.status === SKILL_STATUS.COMPLETED) {
     return SKILL_STATUS.COMPLETED;
@@ -153,7 +169,8 @@ export function getLessonStatus(userProgress, lesson) {
     return SKILL_STATUS.IN_PROGRESS;
   }
 
-  if ((userProgress?.totalXp || 0) >= lesson.xpRequired) {
+  const langXp = getLanguageXp(userProgress, lang);
+  if (langXp >= lesson.xpRequired) {
     return SKILL_STATUS.AVAILABLE;
   }
 
@@ -199,10 +216,10 @@ export function calculateLevelCompletion(units, userProgress) {
 /**
  * Find the next recommended lesson for the user
  */
-export function findNextLesson(units, userProgress) {
+export function findNextLesson(units, userProgress, targetLang) {
   for (const unit of units) {
     for (const lesson of unit.lessons) {
-      const status = getLessonStatus(userProgress, lesson);
+      const status = getLessonStatus(userProgress, lesson, targetLang);
 
       if (status === SKILL_STATUS.IN_PROGRESS) {
         return { lesson, unit, status };
@@ -250,14 +267,17 @@ export async function awardMilestoneBonus(npub, milestoneType, bonusXp) {
 /**
  * Reset current lesson if user abandons it
  */
-export async function abandonLesson(npub, lessonId) {
+export async function abandonLesson(npub, lessonId, targetLang = 'es') {
   if (!npub || !lessonId) return;
 
+  const languageKey = (targetLang || 'es').toLowerCase();
+  const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
   const userRef = doc(database, 'users', npub);
 
   try {
     await updateDoc(userRef, {
       [`progress.lessons.${lessonId}.status`]: SKILL_STATUS.AVAILABLE,
+      [`${languageLessonBase}.status`]: SKILL_STATUS.AVAILABLE,
       'progress.currentLesson': null,
     });
   } catch (error) {

@@ -1581,7 +1581,7 @@ export default function App() {
       const npub = resolveNpub();
       let fresh = null;
       if (npub) {
-        await startLesson(npub, lesson.id);
+        await startLesson(npub, lesson.id, resolvedTargetLang);
 
         // Refresh user data to get updated progress
         fresh = await loadUserObjectFromDB(database, npub);
@@ -2273,11 +2273,18 @@ export default function App() {
   ----------------------------------- */
 
   const languageXpMap = user?.progress?.languageXp || {};
+  const languageLessons = user?.progress?.languageLessons;
+  const hasLanguageLessons = languageLessons && typeof languageLessons === "object";
+  const lessonsForLanguage = hasLanguageLessons
+    ? languageLessons?.[resolvedTargetLang] || {}
+    : user?.progress?.lessons || {};
   const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
   const userProgress = {
     totalXp: skillTreeXp,
-    lessons: user?.progress?.lessons || {},
+    lessons: lessonsForLanguage,
     languageXp: languageXpMap,
+    languageLessons: hasLanguageLessons ? languageLessons : undefined,
+    targetLang: resolvedTargetLang,
   };
 
   return (
