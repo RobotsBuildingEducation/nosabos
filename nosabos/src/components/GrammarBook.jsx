@@ -3314,32 +3314,32 @@ Return JSON ONLY:
                     {sTarget || "…"}
                   </Text>
                 </Box>
+
+                {sHint ? (
+                  <Text fontSize="sm" mt={3}>
+                    <Text as="span" fontWeight="600">
+                      {t("grammar_speak_hint_label") ||
+                        (userLanguage === "es"
+                          ? "Pista gramatical"
+                          : "Grammar hint")}
+                      :
+                    </Text>{" "}
+                    {sHint}
+                  </Text>
+                ) : null}
+
+                {showTRSpeak ? (
+                  <Text fontSize="sm" mt={1} opacity={0.85}>
+                    <Text as="span" fontWeight="600">
+                      {t("grammar_speak_translation_label") ||
+                        (userLanguage === "es" ? "Traducción" : "Translation")}
+                      :
+                    </Text>{" "}
+                    {sTranslation}
+                  </Text>
+                ) : null}
               </>
             )}
-
-            {sHint ? (
-              <Text fontSize="sm" mt={3}>
-                <Text as="span" fontWeight="600">
-                  {t("grammar_speak_hint_label") ||
-                    (userLanguage === "es"
-                      ? "Pista gramatical"
-                      : "Grammar hint")}
-                  :
-                </Text>{" "}
-                {sHint}
-              </Text>
-            ) : null}
-
-            {showTRSpeak ? (
-              <Text fontSize="sm" mt={1} opacity={0.85}>
-                <Text as="span" fontWeight="600">
-                  {t("grammar_speak_translation_label") ||
-                    (userLanguage === "es" ? "Traducción" : "Translation")}
-                  :
-                </Text>{" "}
-                {sTranslation}
-              </Text>
-            ) : null}
 
             {sRecognized && lastOk !== true ? (
               <Text fontSize="sm" mt={3} color="teal.200">
