@@ -98,8 +98,8 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
 
   return (
     <MotionBox
-      whileHover={isClickable ? { scale: 1.05, y: -2 } : {}}
-      whileTap={isClickable ? { scale: 0.98 } : {}}
+      whileHover={isClickable ? { scale: 1.02, y: -1 } : {}}
+      whileTap={isClickable ? { scale: 0.99 } : {}}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
@@ -182,8 +182,8 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               _hover={
                 isClickable
                   ? {
-                      boxShadow: `0 0 35px ${unit.color}77, 0 10px 20px rgba(0,0,0,0.4)`,
-                      borderColor: `${unit.color}dd`,
+                      boxShadow: `0 0 32px ${unit.color}60, 0 8px 18px rgba(0,0,0,0.35)`,
+                      borderColor: `${unit.color}cc`,
                     }
                   : {}
               }
@@ -468,10 +468,6 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
             strokeLinecap="round"
             strokeDasharray="8 4"
           />
-          {/* Add dots along the path for better connectivity */}
-          <circle cx="100" cy="0" r="3" fill={unit.color} opacity="0.5" />
-          <circle cx="100" cy="30" r="2.5" fill={unit.color} opacity="0.5" />
-          <circle cx="100" cy="60" r="3" fill={unit.color} opacity="0.6" />
         </Box>
 
         {/* Lessons in this unit - Game-like zigzag layout */}
@@ -540,7 +536,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
                     <path
                       d={`M ${150 + offset - nextOffset} 0 Q ${150 + (offset - nextOffset) / 2} 70, ${150} 95`}
                       stroke={`url(#gradient-${lesson.id})`}
-                      strokeWidth={lessonIndex === 0 ? "6" : "4"}
+                      strokeWidth="5"
                       fill="none"
                       strokeLinecap="round"
                       filter={status === SKILL_STATUS.COMPLETED ? `url(#glow-${lesson.id})` : 'none'}
@@ -548,32 +544,6 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
                         transition: 'all 0.3s ease',
                       }}
                     />
-                    {/* Enhanced connector for first lesson - add dots/markers */}
-                    {lessonIndex === 0 && (
-                      <>
-                        <circle
-                          cx={150 + offset - nextOffset}
-                          cy="0"
-                          r="3"
-                          fill={unit.color}
-                          opacity="0.6"
-                        />
-                        <circle
-                          cx={150 + (offset - nextOffset) / 2}
-                          cy="70"
-                          r="3"
-                          fill={unit.color}
-                          opacity="0.6"
-                        />
-                        <circle
-                          cx={150}
-                          cy="95"
-                          r="3"
-                          fill={unit.color}
-                          opacity="0.6"
-                        />
-                      </>
-                    )}
                   </Box>
                 )}
 
