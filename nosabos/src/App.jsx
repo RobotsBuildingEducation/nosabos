@@ -63,7 +63,12 @@ import {
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { RiSpeakLine } from "react-icons/ri";
-import { LuBadgeCheck, LuBookOpen, LuShuffle, LuLanguages } from "react-icons/lu";
+import {
+  LuBadgeCheck,
+  LuBookOpen,
+  LuShuffle,
+  LuLanguages,
+} from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -978,9 +983,10 @@ export default function App() {
   ];
 
   // Filter tabs based on active lesson modes
-  const activeTabs = viewMode === "lesson" && activeLesson?.modes?.length > 0
-    ? TAB_KEYS.filter(key => activeLesson.modes.includes(key))
-    : TAB_KEYS;
+  const activeTabs =
+    viewMode === "lesson" && activeLesson?.modes?.length > 0
+      ? TAB_KEYS.filter((key) => activeLesson.modes.includes(key))
+      : TAB_KEYS;
 
   // Track XP at lesson start for completion detection
   const [lessonStartXp, setLessonStartXp] = useState(null);
@@ -991,7 +997,7 @@ export default function App() {
 
   // Random mode switcher for lessons
   const switchToRandomLessonMode = useCallback(() => {
-    console.log('[switchToRandomLessonMode] Called', {
+    console.log("[switchToRandomLessonMode] Called", {
       viewMode,
       hasActiveLesson: !!activeLesson,
       activeLessonModes: activeLesson?.modes,
@@ -999,27 +1005,32 @@ export default function App() {
     });
 
     if (viewMode !== "lesson" || !activeLesson?.modes?.length) {
-      console.log('[switchToRandomLessonMode] Exiting early - conditions not met');
+      console.log(
+        "[switchToRandomLessonMode] Exiting early - conditions not met"
+      );
       return;
     }
 
     const availableModes = activeLesson.modes;
     if (availableModes.length <= 1) {
-      console.log('[switchToRandomLessonMode] Only one mode available, not switching');
+      console.log(
+        "[switchToRandomLessonMode] Only one mode available, not switching"
+      );
       return;
     }
 
     // Filter out current mode to ensure we switch to a different one
-    const otherModes = availableModes.filter(mode => mode !== currentTab);
+    const otherModes = availableModes.filter((mode) => mode !== currentTab);
     if (otherModes.length === 0) {
-      console.log('[switchToRandomLessonMode] No other modes to switch to');
+      console.log("[switchToRandomLessonMode] No other modes to switch to");
       return;
     }
 
     // Pick random mode from other modes
-    const randomMode = otherModes[Math.floor(Math.random() * otherModes.length)];
+    const randomMode =
+      otherModes[Math.floor(Math.random() * otherModes.length)];
 
-    console.log('[Random Mode Switch] Switching modes', {
+    console.log("[Random Mode Switch] Switching modes", {
       from: currentTab,
       to: randomMode,
       availableModes,
@@ -1598,12 +1609,12 @@ export default function App() {
       const lessonLang = resolvedTargetLang;
       activeLessonLanguageRef.current = lessonLang;
       const fallbackTotalXp = Number(fresh?.xp ?? user?.xp ?? 0) || 0;
-      const progressSource =
-        fresh?.progress || user?.progress || { totalXp: fallbackTotalXp };
+      const progressSource = fresh?.progress ||
+        user?.progress || { totalXp: fallbackTotalXp };
       const currentXp = getLanguageXp(progressSource, lessonLang);
       setLessonStartXp(currentXp);
       lessonCompletionTriggeredRef.current = false; // Reset completion flag
-      console.log('[Lesson Start] Recording starting XP:', {
+      console.log("[Lesson Start] Recording starting XP:", {
         lessonId: lesson.id,
         lessonTitle: lesson.title.en,
         lessonLang,
@@ -1615,7 +1626,12 @@ export default function App() {
 
       // Switch to the first mode in the lesson BEFORE switching view mode
       const firstMode = lesson.modes?.[0];
-      console.log('[Lesson Start] Lesson modes:', lesson.modes, 'First mode:', firstMode);
+      console.log(
+        "[Lesson Start] Lesson modes:",
+        lesson.modes,
+        "First mode:",
+        firstMode
+      );
       if (firstMode) {
         setCurrentTab(firstMode);
         if (typeof window !== "undefined") {
@@ -1684,11 +1700,19 @@ export default function App() {
   // Ensure current tab is valid for the active lesson
   useEffect(() => {
     if (viewMode === "lesson" && activeLesson?.modes?.length > 0) {
-      console.log('[Tab Validation] Current tab:', currentTab, 'Lesson modes:', activeLesson.modes);
+      console.log(
+        "[Tab Validation] Current tab:",
+        currentTab,
+        "Lesson modes:",
+        activeLesson.modes
+      );
       // If current tab is not in lesson modes, switch to first available mode
       if (!activeLesson.modes.includes(currentTab)) {
         const firstMode = activeLesson.modes[0];
-        console.log('[Tab Validation] Current tab not in lesson modes, switching to:', firstMode);
+        console.log(
+          "[Tab Validation] Current tab not in lesson modes, switching to:",
+          firstMode
+        );
         setCurrentTab(firstMode);
         if (typeof window !== "undefined") {
           localStorage.setItem("currentTab", firstMode);
@@ -1696,7 +1720,6 @@ export default function App() {
       }
     }
   }, [viewMode, activeLesson, currentTab]);
-
 
   const runCefrAnalysis = useCallback(
     async ({ dailyGoalXp: goal = 0, dailyXp: earned = 0 } = {}) => {
@@ -2050,7 +2073,7 @@ export default function App() {
         if (viewMode === "lesson" && activeLesson && lessonStartXp !== null) {
           const totalXpEarned = newLessonLanguageXp - lessonStartXp;
 
-          console.log('[Lesson XP Check]', {
+          console.log("[Lesson XP Check]", {
             newXp,
             lessonLang,
             newLessonLanguageXp,
@@ -2061,8 +2084,13 @@ export default function App() {
           });
 
           // Check if lesson goal reached
-          if (totalXpEarned >= activeLesson.xpReward && !lessonCompletionTriggeredRef.current) {
-            console.log('[Lesson Completion] XP goal reached! Completing lesson...');
+          if (
+            totalXpEarned >= activeLesson.xpReward &&
+            !lessonCompletionTriggeredRef.current
+          ) {
+            console.log(
+              "[Lesson Completion] XP goal reached! Completing lesson..."
+            );
             lessonCompletionTriggeredRef.current = true;
 
             const npub = resolveNpub();
@@ -2274,7 +2302,8 @@ export default function App() {
 
   const languageXpMap = user?.progress?.languageXp || {};
   const languageLessons = user?.progress?.languageLessons;
-  const hasLanguageLessons = languageLessons && typeof languageLessons === "object";
+  const hasLanguageLessons =
+    languageLessons && typeof languageLessons === "object";
   const lessonsForLanguage = hasLanguageLessons
     ? languageLessons?.[resolvedTargetLang] || {}
     : user?.progress?.lessons || {};
@@ -2372,104 +2401,110 @@ export default function App() {
             colorScheme="teal"
             isLazy
           >
-          <TabPanels mt={[2, 3]}>
-            {activeTabs.map((tabKey) => {
-              switch (tabKey) {
-                case "realtime":
-                  return (
-                    <TabPanel key="realtime" px={0}>
-                      <RealTimeTest
-                        auth={auth}
-                        activeNpub={activeNpub}
-                        activeNsec={activeNsec}
-                        level={user?.progress?.level}
-                        supportLang={user?.progress?.supportLang}
-                        voice={user?.progress?.voice}
-                        voicePersona={user?.progress?.voicePersona}
-                        targetLang={user?.progress?.targetLang}
-                        showTranslations={user?.progress?.showTranslations}
-                        pauseMs={user?.progress?.pauseMs}
-                        helpRequest={user?.progress?.helpRequest}
-                        practicePronunciation={user?.progress?.practicePronunciation}
-                        lessonContent={activeLesson?.content?.realtime}
-                        onSkip={switchToRandomLessonMode}
-                        onSwitchedAccount={async (id, sec) => {
-                          if (id) localStorage.setItem("local_npub", id);
-                          if (typeof sec === "string")
-                            localStorage.setItem("local_nsec", sec);
-                          await connectDID();
-                          setActiveNpub(localStorage.getItem("local_npub") || "");
-                          setActiveNsec(localStorage.getItem("local_nsec") || "");
-                        }}
-                      />
-                    </TabPanel>
-                  );
-                case "stories":
-                  return (
-                    <TabPanel key="stories" px={0}>
-                      <StoryMode
-                        userLanguage={appLanguage}
-                        activeNpub={activeNpub}
-                        activeNsec={activeNsec}
-                        lessonContent={activeLesson?.content?.stories}
-                      />
-                    </TabPanel>
-                  );
-                case "jobscript":
-                  return (
-                    <TabPanel key="jobscript" px={0}>
-                      <JobScript
-                        userLanguage={appLanguage}
-                        activeNpub={activeNpub}
-                        activeNsec={activeNsec}
-                        lessonContent={activeLesson?.content?.jobscript}
-                      />
-                    </TabPanel>
-                  );
-                case "history":
-                  return (
-                    <TabPanel key="history" px={0}>
-                      <History
-                        userLanguage={appLanguage}
-                        lessonContent={activeLesson?.content?.history}
-                      />
-                    </TabPanel>
-                  );
-                case "grammar":
-                  return (
-                    <TabPanel key="grammar" px={0}>
-                      <GrammarBook
-                        userLanguage={appLanguage}
-                        activeNpub={activeNpub}
-                        activeNsec={activeNsec}
-                        lessonContent={activeLesson?.content?.grammar}
-                      />
-                    </TabPanel>
-                  );
-                case "vocabulary":
-                  return (
-                    <TabPanel key="vocabulary" px={0}>
-                      <Vocabulary
-                        userLanguage={appLanguage}
-                        activeNpub={activeNpub}
-                        activeNsec={activeNsec}
-                        lessonContent={activeLesson?.content?.vocabulary}
-                      />
-                    </TabPanel>
-                  );
-                case "random":
-                  return (
-                    <TabPanel key="random" px={0}>
-                      {renderRandomPanel()}
-                    </TabPanel>
-                  );
-                default:
-                  return null;
-              }
-            })}
-          </TabPanels>
-        </Tabs>
-      </Box>
+            <TabPanels mt={[2, 3]}>
+              {activeTabs.map((tabKey) => {
+                switch (tabKey) {
+                  case "realtime":
+                    return (
+                      <TabPanel key="realtime" px={0}>
+                        <RealTimeTest
+                          auth={auth}
+                          activeNpub={activeNpub}
+                          activeNsec={activeNsec}
+                          level={user?.progress?.level}
+                          supportLang={user?.progress?.supportLang}
+                          voice={user?.progress?.voice}
+                          voicePersona={user?.progress?.voicePersona}
+                          targetLang={user?.progress?.targetLang}
+                          showTranslations={user?.progress?.showTranslations}
+                          pauseMs={user?.progress?.pauseMs}
+                          helpRequest={user?.progress?.helpRequest}
+                          practicePronunciation={
+                            user?.progress?.practicePronunciation
+                          }
+                          lessonContent={activeLesson?.content?.realtime}
+                          onSkip={switchToRandomLessonMode}
+                          onSwitchedAccount={async (id, sec) => {
+                            if (id) localStorage.setItem("local_npub", id);
+                            if (typeof sec === "string")
+                              localStorage.setItem("local_nsec", sec);
+                            await connectDID();
+                            setActiveNpub(
+                              localStorage.getItem("local_npub") || ""
+                            );
+                            setActiveNsec(
+                              localStorage.getItem("local_nsec") || ""
+                            );
+                          }}
+                        />
+                      </TabPanel>
+                    );
+                  case "stories":
+                    return (
+                      <TabPanel key="stories" px={0}>
+                        <StoryMode
+                          userLanguage={appLanguage}
+                          activeNpub={activeNpub}
+                          activeNsec={activeNsec}
+                          lessonContent={activeLesson?.content?.stories}
+                        />
+                      </TabPanel>
+                    );
+                  case "jobscript":
+                    return (
+                      <TabPanel key="jobscript" px={0}>
+                        <JobScript
+                          userLanguage={appLanguage}
+                          activeNpub={activeNpub}
+                          activeNsec={activeNsec}
+                          lessonContent={activeLesson?.content?.jobscript}
+                        />
+                      </TabPanel>
+                    );
+                  case "history":
+                    return (
+                      <TabPanel key="history" px={0}>
+                        <History
+                          userLanguage={appLanguage}
+                          lessonContent={activeLesson?.content?.history}
+                        />
+                      </TabPanel>
+                    );
+                  case "grammar":
+                    return (
+                      <TabPanel key="grammar" px={0}>
+                        <GrammarBook
+                          userLanguage={appLanguage}
+                          activeNpub={activeNpub}
+                          activeNsec={activeNsec}
+                          lessonContent={activeLesson?.content?.grammar}
+                        />
+                      </TabPanel>
+                    );
+                  case "vocabulary":
+                    return (
+                      <TabPanel key="vocabulary" px={0}>
+                        <Vocabulary
+                          userLanguage={appLanguage}
+                          activeNpub={activeNpub}
+                          activeNsec={activeNsec}
+                          lessonContent={activeLesson?.content?.vocabulary}
+                        />
+                      </TabPanel>
+                    );
+                  case "random":
+                    return (
+                      <TabPanel key="random" px={0}>
+                        {renderRandomPanel()}
+                      </TabPanel>
+                    );
+                  default:
+                    return null;
+                }
+              })}
+            </TabPanels>
+          </Tabs>
+        </Box>
       )}
 
       <HelpChatFab
@@ -2578,10 +2613,13 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es" ? "¡Lección Completada!" : "Lesson Complete!"}
+                  {appLanguage === "es"
+                    ? "¡Lección Completada!"
+                    : "Lesson Complete!"}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
-                  {completedLessonData?.title?.[appLanguage] || completedLessonData?.title?.en}
+                  {completedLessonData?.title?.[appLanguage] ||
+                    completedLessonData?.title?.en}
                 </Text>
               </VStack>
 
@@ -2596,14 +2634,21 @@ export default function App() {
                 borderColor="whiteAlpha.400"
               >
                 <VStack spacing={2}>
-                  <Text fontSize="sm" textTransform="uppercase" letterSpacing="wide" opacity={0.8}>
+                  <Text
+                    fontSize="sm"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                    opacity={0.8}
+                  >
                     {appLanguage === "es" ? "XP Ganado" : "XP Earned"}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
                     +{completedLessonData?.xpEarned || 0}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {appLanguage === "es" ? "Puntos de Experiencia" : "Experience Points"}
+                    {appLanguage === "es"
+                      ? "Puntos de Experiencia"
+                      : "Experience Points"}
                   </Text>
                 </VStack>
               </Box>
