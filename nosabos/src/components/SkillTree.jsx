@@ -98,11 +98,11 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
 
   return (
     <MotionBox
-      whileHover={isClickable ? { scale: 1.1 } : {}}
-      whileTap={isClickable ? { scale: 0.95 } : {}}
+      whileHover={isClickable ? { scale: 1.02, y: -1 } : {}}
+      whileTap={isClickable ? { scale: 0.99 } : {}}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
     >
       <Tooltip
         label={
@@ -111,6 +111,12 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
             : lessonDescription
         }
         placement="right"
+        hasArrow
+        bg="gray.700"
+        color="white"
+        fontSize="sm"
+        p={3}
+        borderRadius="lg"
       >
         <Box position="relative">
           <VStack
@@ -118,47 +124,90 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
             cursor={isClickable ? 'pointer' : 'not-allowed'}
             onClick={isClickable ? onClick : undefined}
           >
+            {/* Glow Effect for active lessons */}
+            {status !== SKILL_STATUS.LOCKED && (
+              <Box
+                position="absolute"
+                top="50%"
+                left="50%"
+                transform="translate(-50%, -50%)"
+                w="100px"
+                h="100px"
+                borderRadius="full"
+                bgGradient={`radial(${unit.color}40, transparent 70%)`}
+                filter="blur(20px)"
+                opacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
+                animation={status === SKILL_STATUS.IN_PROGRESS ? "pulse 2s ease-in-out infinite" : "none"}
+                sx={{
+                  '@keyframes pulse': {
+                    '0%, 100%': { opacity: 0.5, transform: 'translate(-50%, -50%) scale(1)' },
+                    '50%': { opacity: 0.8, transform: 'translate(-50%, -50%) scale(1.1)' },
+                  },
+                }}
+                pointerEvents="none"
+              />
+            )}
+
             {/* Lesson Circle */}
             <Box
-              w="80px"
-              h="80px"
+              w="90px"
+              h="90px"
               borderRadius="full"
-              bg={status === SKILL_STATUS.LOCKED ? 'gray.700' : getNodeColor()}
+              bgGradient={
+                status === SKILL_STATUS.LOCKED
+                  ? 'linear(to-br, gray.700, gray.800)'
+                  : status === SKILL_STATUS.COMPLETED
+                  ? `linear(135deg, ${unit.color}, ${unit.color}dd)`
+                  : `linear(135deg, ${unit.color}dd, ${unit.color})`
+              }
               border="4px solid"
-              borderColor={status === SKILL_STATUS.COMPLETED ? getNodeColor() : 'gray.600'}
+              borderColor={
+                status === SKILL_STATUS.COMPLETED
+                  ? `${unit.color}`
+                  : status === SKILL_STATUS.LOCKED
+                  ? 'gray.600'
+                  : `${unit.color}88`
+              }
               display="flex"
               alignItems="center"
               justifyContent="center"
               position="relative"
-              boxShadow={status !== SKILL_STATUS.LOCKED ? 'dark-lg' : 'none'}
+              boxShadow={
+                status !== SKILL_STATUS.LOCKED
+                  ? `0 0 30px ${unit.color}66, 0 8px 16px rgba(0,0,0,0.4)`
+                  : 'none'
+              }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
-              transition="all 0.3s"
+              transition="all 0.3s ease"
               _hover={
                 isClickable
                   ? {
-                      transform: 'translateY(-4px)',
-                      boxShadow: 'dark-lg',
+                      boxShadow: `0 0 32px ${unit.color}60, 0 8px 18px rgba(0,0,0,0.35)`,
+                      borderColor: `${unit.color}cc`,
                     }
                   : {}
               }
             >
               <Icon
-                size={32}
+                size={36}
                 color={status === SKILL_STATUS.LOCKED ? 'gray' : 'white'}
+                style={{
+                  filter: status !== SKILL_STATUS.LOCKED ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' : 'none'
+                }}
               />
 
               {/* Progress ring for in-progress lessons */}
               {status === SKILL_STATUS.IN_PROGRESS && (
                 <Box
                   position="absolute"
-                  top="-4px"
-                  left="-4px"
-                  right="-4px"
-                  bottom="-4px"
+                  top="-6px"
+                  left="-6px"
+                  right="-6px"
+                  bottom="-6px"
                   borderRadius="full"
                   border="3px dashed"
-                  borderColor={getNodeColor()}
-                  animation="spin 3s linear infinite"
+                  borderColor={unit.color}
+                  animation="spin 4s linear infinite"
                   sx={{
                     '@keyframes spin': {
                       '0%': { transform: 'rotate(0deg)' },
@@ -167,6 +216,46 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                   }}
                 />
               )}
+
+              {/* Sparkle effect for completed lessons */}
+              {status === SKILL_STATUS.COMPLETED && (
+                <>
+                  <Box
+                    position="absolute"
+                    top="10%"
+                    right="15%"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 10px white"
+                    animation="sparkle 3s ease-in-out infinite"
+                    sx={{
+                      '@keyframes sparkle': {
+                        '0%, 100%': { opacity: 0, transform: 'scale(0)' },
+                        '50%': { opacity: 1, transform: 'scale(1)' },
+                      },
+                    }}
+                  />
+                  <Box
+                    position="absolute"
+                    bottom="15%"
+                    left="10%"
+                    w="4px"
+                    h="4px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 8px white"
+                    animation="sparkle 3s ease-in-out infinite 1.5s"
+                    sx={{
+                      '@keyframes sparkle': {
+                        '0%, 100%': { opacity: 0, transform: 'scale(0)' },
+                        '50%': { opacity: 1, transform: 'scale(1)' },
+                      },
+                    }}
+                  />
+                </>
+              )}
             </Box>
 
             {/* Lesson Title */}
@@ -174,8 +263,9 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               fontSize="sm"
               fontWeight="bold"
               textAlign="center"
-              maxW="120px"
-              color={status === SKILL_STATUS.LOCKED ? 'gray.600' : 'gray.100'}
+              maxW="140px"
+              color={status === SKILL_STATUS.LOCKED ? 'gray.600' : 'white'}
+              textShadow={status !== SKILL_STATUS.LOCKED ? '0 2px 8px rgba(0,0,0,0.5)' : 'none'}
             >
               {lessonTitle}
             </Text>
@@ -184,6 +274,17 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
             <Badge
               colorScheme={status === SKILL_STATUS.COMPLETED ? 'green' : 'gray'}
               fontSize="xs"
+              px={3}
+              py={1}
+              borderRadius="full"
+              bgGradient={
+                status === SKILL_STATUS.COMPLETED
+                  ? 'linear(to-r, green.400, green.500)'
+                  : 'linear(to-r, gray.600, gray.700)'
+              }
+              color="white"
+              fontWeight="bold"
+              boxShadow={status === SKILL_STATUS.COMPLETED ? '0 2px 8px rgba(72, 187, 120, 0.4)' : 'sm'}
             >
               {status === SKILL_STATUS.COMPLETED ? `+${lesson.xpReward} XP` : `${lesson.xpReward} XP`}
             </Badge>
@@ -198,7 +299,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
  * Unit Component
  * Represents a unit containing multiple lessons
  */
-function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) {
+function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, hasNextUnit }) {
   const bgColor = 'gray.800';
   const borderColor = 'gray.700';
 
@@ -214,55 +315,163 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) 
     <MotionBox
       initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+      transition={{ duration: 0.5, delay: index * 0.1, type: "spring" }}
       mb={8}
+      position="relative"
     >
-      <VStack spacing={4} align="stretch">
-        {/* Unit Header */}
+      {/* Decorative gradient orb behind unit */}
+      <Box
+        position="absolute"
+        top="0"
+        left="50%"
+        transform="translateX(-50%)"
+        w="300px"
+        h="300px"
+        bgGradient={`radial(${unit.color}15, transparent 70%)`}
+        filter="blur(60px)"
+        opacity={0.6}
+        pointerEvents="none"
+        zIndex={0}
+      />
+
+      <VStack spacing={4} align="stretch" position="relative" zIndex={1}>
+        {/* Unit Header with glassmorphism */}
         <Box
-          bg={bgColor}
-          borderRadius="xl"
+          bgGradient={`linear(135deg, ${unit.color}15, ${unit.color}08)`}
+          backdropFilter="blur(10px)"
+          borderRadius="2xl"
           p={6}
           border="2px solid"
-          borderColor={borderColor}
-          boxShadow="md"
+          borderColor={`${unit.color}40`}
+          boxShadow={`0 8px 32px ${unit.color}20, 0 4px 16px rgba(0,0,0,0.3)`}
+          position="relative"
+          overflow="hidden"
+          _hover={{
+            borderColor: `${unit.color}60`,
+            boxShadow: `0 12px 40px ${unit.color}30, 0 6px 20px rgba(0,0,0,0.4)`,
+          }}
+          transition="all 0.3s ease"
         >
-          <HStack justify="space-between" mb={3}>
-            <VStack align="start" spacing={1}>
-              <HStack>
+          {/* Subtle pattern overlay */}
+          <Box
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            opacity={0.03}
+            bgImage="radial-gradient(circle at 1px 1px, white 1px, transparent 1px)"
+            bgSize="24px 24px"
+            pointerEvents="none"
+          />
+
+          <HStack justify="space-between" mb={4} position="relative">
+            <VStack align="start" spacing={2}>
+              <HStack spacing={3}>
                 <Box
-                  w={4}
-                  h={4}
+                  w={5}
+                  h={5}
                   borderRadius="full"
                   bg={unit.color}
+                  boxShadow={`0 0 20px ${unit.color}80`}
+                  animation="pulse 3s ease-in-out infinite"
+                  sx={{
+                    '@keyframes pulse': {
+                      '0%, 100%': { boxShadow: `0 0 20px ${unit.color}80` },
+                      '50%': { boxShadow: `0 0 30px ${unit.color}cc` },
+                    },
+                  }}
                 />
-                <Heading size="md">{unitTitle}</Heading>
+                <Heading
+                  size="md"
+                  bgGradient={`linear(to-r, white, gray.200)`}
+                  bgClip="text"
+                  fontWeight="bold"
+                >
+                  {unitTitle}
+                </Heading>
               </HStack>
-              <Text fontSize="sm" color="gray.400">
+              <Text fontSize="sm" color="gray.300" ml={8}>
                 {unitDescription}
               </Text>
             </VStack>
 
             <VStack spacing={1}>
-              <RiTrophyLine size={24} color={unit.color} />
-              <Text fontSize="sm" fontWeight="bold">
+              <Box
+                p={2}
+                borderRadius="xl"
+                bgGradient={`linear(135deg, ${unit.color}30, ${unit.color}20)`}
+                border="1px solid"
+                borderColor={`${unit.color}40`}
+              >
+                <RiTrophyLine size={28} color={unit.color} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+              </Box>
+              <Text fontSize="sm" fontWeight="bold" color="white">
                 {completedCount}/{unit.lessons.length}
               </Text>
             </VStack>
           </HStack>
 
-          {/* Unit Progress Bar */}
-          <Progress
-            value={unitProgressPercent}
-            colorScheme="teal"
-            borderRadius="full"
-            size="sm"
-            bg="gray.700"
+          {/* Enhanced Unit Progress Bar */}
+          <Box position="relative">
+            <Progress
+              value={unitProgressPercent}
+              borderRadius="full"
+              size="sm"
+              bg="whiteAlpha.100"
+              sx={{
+                '& > div': {
+                  bgGradient: `linear(to-r, ${unit.color}, ${unit.color}dd)`,
+                  boxShadow: `0 0 10px ${unit.color}80`,
+                },
+              }}
+            />
+            <Text
+              position="absolute"
+              right={2}
+              top="50%"
+              transform="translateY(-50%)"
+              fontSize="xs"
+              fontWeight="bold"
+              color="white"
+              textShadow="0 1px 2px rgba(0,0,0,0.5)"
+            >
+              {Math.round(unitProgressPercent)}%
+            </Text>
+          </Box>
+        </Box>
+
+        {/* Connector from unit header to first lesson */}
+        <Box
+          as="svg"
+          position="absolute"
+          top="0"
+          left="50%"
+          transform="translateX(-50%)"
+          width="200px"
+          height="80px"
+          overflow="visible"
+          zIndex={0}
+          pointerEvents="none"
+        >
+          <defs>
+            <linearGradient id={`unit-start-${unit.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={unit.color} stopOpacity={0.4} />
+              <stop offset="100%" stopColor={unit.color} stopOpacity={0.7} />
+            </linearGradient>
+          </defs>
+          <path
+            d="M 100 0 Q 100 40, 100 60"
+            stroke={`url(#unit-start-${unit.id})`}
+            strokeWidth="5"
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray="8 4"
           />
         </Box>
 
-        {/* Lessons in this unit */}
-        <VStack spacing={8} position="relative">
+        {/* Lessons in this unit - Game-like zigzag layout */}
+        <Box position="relative" py={4} minH="200px">
           {unit.lessons.map((lesson, lessonIndex) => {
             const lessonProgress = userProgress.lessons?.[lesson.id];
             let status = SKILL_STATUS.LOCKED;
@@ -276,23 +485,76 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) 
               status = SKILL_STATUS.AVAILABLE;
             }
 
+            // Create zigzag pattern - alternating positions
+            const isEven = lessonIndex % 2 === 0;
+            const offset = isEven ? 0 : 180; // Horizontal offset for zigzag
+            const yPosition = lessonIndex * 140; // Vertical spacing
+
+            // Calculate connection path
+            const nextIsEven = (lessonIndex + 1) % 2 === 0;
+            const nextOffset = nextIsEven ? 0 : 180;
+
             return (
-              <Box key={lesson.id} position="relative">
-                {/* Connecting line to next lesson */}
+              <Box key={lesson.id}>
+                {/* SVG Path connecting to next lesson */}
                 {lessonIndex < unit.lessons.length - 1 && (
                   <Box
+                    as="svg"
                     position="absolute"
-                    top="80px"
+                    top={`${yPosition + 45}px`}
                     left="50%"
                     transform="translateX(-50%)"
-                    w="4px"
-                    h="40px"
-                    bg={status === SKILL_STATUS.COMPLETED ? unit.color : 'gray.700'}
+                    width="300px"
+                    height="140px"
+                    overflow="visible"
                     zIndex={0}
-                  />
+                    pointerEvents="none"
+                  >
+                    <defs>
+                      <linearGradient id={`gradient-${lesson.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop
+                          offset="0%"
+                          stopColor={status === SKILL_STATUS.COMPLETED ? unit.color : '#374151'}
+                          stopOpacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor={status === SKILL_STATUS.COMPLETED ? unit.color : '#374151'}
+                          stopOpacity={status === SKILL_STATUS.COMPLETED ? 0.4 : 0.3}
+                        />
+                      </linearGradient>
+                      {status === SKILL_STATUS.COMPLETED && (
+                        <filter id={`glow-${lesson.id}`}>
+                          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                          <feMerge>
+                            <feMergeNode in="coloredBlur"/>
+                            <feMergeNode in="SourceGraphic"/>
+                          </feMerge>
+                        </filter>
+                      )}
+                    </defs>
+                    <path
+                      d={`M ${150 + offset - nextOffset} 0 Q ${150 + (offset - nextOffset) / 2} 70, ${150} 95`}
+                      stroke={`url(#gradient-${lesson.id})`}
+                      strokeWidth="5"
+                      fill="none"
+                      strokeLinecap="round"
+                      filter={status === SKILL_STATUS.COMPLETED ? `url(#glow-${lesson.id})` : 'none'}
+                      style={{
+                        transition: 'all 0.3s ease',
+                      }}
+                    />
+                  </Box>
                 )}
 
-                <Box position="relative" zIndex={1}>
+                {/* Lesson Node */}
+                <Box
+                  position="absolute"
+                  top={`${yPosition}px`}
+                  left="50%"
+                  transform={`translateX(calc(-50% + ${offset}px))`}
+                  zIndex={1}
+                >
                   <LessonNode
                     lesson={lesson}
                     unit={unit}
@@ -304,7 +566,63 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang }) 
               </Box>
             );
           })}
-        </VStack>
+          {/* Spacer to ensure container height accommodates all lessons */}
+          <Box h={`${unit.lessons.length * 140}px`} />
+        </Box>
+
+        {/* Connector from last lesson to next unit */}
+        {hasNextUnit && (
+          <Box
+            as="svg"
+            position="relative"
+            left="50%"
+            transform="translateX(-50%)"
+            width="200px"
+            height="100px"
+            overflow="visible"
+            zIndex={0}
+            pointerEvents="none"
+            mt={-4}
+          >
+            <defs>
+              <linearGradient id={`unit-end-${unit.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor={unit.color} stopOpacity={0.6} />
+                <stop offset="100%" stopColor={unit.color} stopOpacity={0.2} />
+              </linearGradient>
+            </defs>
+            <path
+              d="M 100 0 Q 100 50, 100 100"
+              stroke={`url(#unit-end-${unit.id})`}
+              strokeWidth="4"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray="8 4"
+            />
+            {/* Animated arrow */}
+            <circle
+              cx="100"
+              cy="0"
+              r="4"
+              fill={unit.color}
+              opacity="0.8"
+            >
+              <animate
+                attributeName="cy"
+                from="0"
+                to="100"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                from="0.8"
+                to="0"
+                dur="2s"
+                repeatCount="indefinite"
+              />
+            </circle>
+          </Box>
+        )}
       </VStack>
     </MotionBox>
   );
@@ -329,81 +647,185 @@ function LessonDetailModal({
   const lessonDescription = getDisplayText(lesson.description, supportLang);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
-      <ModalOverlay />
-      <ModalContent bg="gray.900" color="gray.100">
-        <ModalHeader borderBottomWidth="1px" borderColor="gray.700">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
+      <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
+      <ModalContent
+        bg="gray.900"
+        color="gray.100"
+        borderRadius="2xl"
+        overflow="hidden"
+        boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`}
+        border="1px solid"
+        borderColor={`${unit.color}30`}
+      >
+        {/* Decorative gradient background */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          h="200px"
+          bgGradient={`linear(135deg, ${unit.color}20, transparent)`}
+          opacity={0.5}
+          pointerEvents="none"
+        />
+
+        <ModalHeader
+          borderBottomWidth="1px"
+          borderColor="whiteAlpha.200"
+          position="relative"
+          pt={6}
+          pb={4}
+        >
           <VStack align="start" spacing={2}>
-            <HStack>
-              <Box w={3} h={3} borderRadius="full" bg={unit.color} />
-              <Text color="gray.100">{lessonTitle}</Text>
+            <HStack spacing={3}>
+              <Box
+                w={4}
+                h={4}
+                borderRadius="full"
+                bg={unit.color}
+                boxShadow={`0 0 15px ${unit.color}80`}
+              />
+              <Text
+                fontSize="2xl"
+                fontWeight="bold"
+                bgGradient={`linear(to-r, white, gray.200)`}
+                bgClip="text"
+              >
+                {lessonTitle}
+              </Text>
             </HStack>
-            <Text fontSize="sm" fontWeight="normal" color="gray.400">
+            <Text fontSize="sm" fontWeight="normal" color="gray.400" ml={7}>
               {unitTitle}
             </Text>
           </VStack>
         </ModalHeader>
-        <ModalCloseButton color="gray.400" _hover={{ color: "gray.100" }} />
-        <ModalBody pb={6}>
-          <VStack align="stretch" spacing={4}>
-            <Text color="gray.300">{lessonDescription}</Text>
+        <ModalCloseButton
+          color="gray.400"
+          _hover={{ color: "white", bg: "whiteAlpha.200" }}
+          borderRadius="lg"
+          top={4}
+          right={4}
+        />
+        <ModalBody pb={6} pt={6} position="relative">
+          <VStack align="stretch" spacing={6}>
+            <Text color="gray.300" fontSize="md" lineHeight="tall">
+              {lessonDescription}
+            </Text>
 
             {/* Lesson modes */}
-            <Box>
-              <Text fontWeight="bold" mb={2} color="gray.100">
+            <Box
+              bg="whiteAlpha.50"
+              p={5}
+              borderRadius="xl"
+              border="1px solid"
+              borderColor="whiteAlpha.100"
+            >
+              <Text fontWeight="bold" mb={3} color="white" fontSize="sm">
                 Learning Activities:
               </Text>
-              <HStack spacing={2} flexWrap="wrap">
+              <Flex gap={2} flexWrap="wrap">
                 {lesson.modes.map((mode) => {
                   const Icon = MODE_ICONS[mode] || RiStarLine;
                   return (
                     <Badge
                       key={mode}
-                      colorScheme="teal"
-                      px={3}
-                      py={1}
+                      px={4}
+                      py={2}
                       borderRadius="full"
                       display="flex"
                       alignItems="center"
-                      gap={1}
-                      bg="teal.600"
-                      color="gray.100"
+                      gap={2}
+                      bgGradient={`linear(135deg, ${unit.color}50, ${unit.color}40)`}
+                      color="white"
+                      fontWeight="semibold"
+                      fontSize="sm"
+                      border="1px solid"
+                      borderColor={`${unit.color}30`}
+                      boxShadow={`0 2px 10px ${unit.color}20`}
                     >
-                      <Icon size={14} />
+                      <Icon size={16} />
                       <Text textTransform="capitalize">{mode}</Text>
                     </Badge>
                   );
                 })}
-              </HStack>
+              </Flex>
             </Box>
 
             {/* XP Goal */}
-            <HStack
-              p={4}
-              bg="gray.800"
-              borderRadius="lg"
-              justify="space-between"
-              borderWidth="1px"
-              borderColor="gray.700"
+            <Box
+              p={5}
+              bgGradient="linear(135deg, yellow.900, orange.900)"
+              borderRadius="xl"
+              position="relative"
+              overflow="hidden"
+              border="1px solid"
+              borderColor="yellow.600"
+              boxShadow="0 4px 20px rgba(251, 191, 36, 0.2)"
             >
-              <HStack>
-                <RiStarFill color="gold" size={24} />
-                <Text fontWeight="bold" color="gray.100">XP to complete:</Text>
+              <Box
+                position="absolute"
+                top="-50%"
+                right="-20%"
+                w="150px"
+                h="150px"
+                bgGradient="radial(circle, yellow.400, transparent 70%)"
+                filter="blur(40px)"
+                opacity={0.3}
+              />
+              <HStack justify="space-between" position="relative">
+                <HStack spacing={3}>
+                  <Box
+                    p={2}
+                    borderRadius="lg"
+                    bgGradient="linear(135deg, yellow.400, orange.400)"
+                    boxShadow="0 2px 10px rgba(251, 191, 36, 0.4)"
+                  >
+                    <RiStarFill color="white" size={24} />
+                  </Box>
+                  <Text fontWeight="bold" color="white" fontSize="md">
+                    XP Reward:
+                  </Text>
+                </HStack>
+                <Badge
+                  bgGradient="linear(to-r, yellow.400, orange.400)"
+                  color="gray.900"
+                  fontSize="xl"
+                  px={5}
+                  py={2}
+                  borderRadius="full"
+                  fontWeight="black"
+                  boxShadow="0 4px 15px rgba(251, 191, 36, 0.5)"
+                >
+                  +{lesson.xpReward} XP
+                </Badge>
               </HStack>
-              <Badge colorScheme="yellow" fontSize="md" px={3} py={1} bg="yellow.500" color="gray.900">
-                {lesson.xpReward} XP
-              </Badge>
-            </HStack>
+            </Box>
 
             {/* Start button */}
             <Button
-              colorScheme="teal"
               size="lg"
+              h="60px"
               onClick={() => {
                 onStartLesson(lesson);
                 onClose();
               }}
-              leftIcon={<RiStarLine />}
+              leftIcon={<RiStarLine size={24} />}
+              bgGradient={`linear(135deg, ${unit.color}, ${unit.color}dd)`}
+              color="white"
+              fontSize="lg"
+              fontWeight="bold"
+              borderRadius="xl"
+              boxShadow={`0 8px 25px ${unit.color}40`}
+              _hover={{
+                bgGradient: `linear(135deg, ${unit.color}dd, ${unit.color})`,
+                boxShadow: `0 12px 35px ${unit.color}60`,
+                transform: 'translateY(-2px)',
+              }}
+              _active={{
+                transform: 'translateY(0)',
+              }}
+              transition="all 0.2s"
             >
               Start Lesson
             </Button>
@@ -458,43 +880,135 @@ export default function SkillTree({
   const overallProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
 
   return (
-    <Box bg={bgColor} py={8}>
-      <Container maxW="container.md">
-        {/* Header */}
-        <VStack spacing={6} mb={8}>
-          <Heading size="xl" color="gray.100">Your Learning Path</Heading>
+    <Box
+      bg={bgColor}
+      minH="100vh"
+      position="relative"
+      overflow="hidden"
+    >
+      {/* Animated Background Gradients */}
+      <Box
+        position="absolute"
+        top="-20%"
+        left="-10%"
+        w="600px"
+        h="600px"
+        bgGradient="radial(circle, teal.500, transparent 70%)"
+        filter="blur(80px)"
+        opacity={0.15}
+        animation="float 20s ease-in-out infinite"
+        sx={{
+          '@keyframes float': {
+            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+            '33%': { transform: 'translate(50px, -30px) scale(1.1)' },
+            '66%': { transform: 'translate(-30px, 50px) scale(0.9)' },
+          },
+        }}
+      />
+      <Box
+        position="absolute"
+        top="30%"
+        right="-10%"
+        w="500px"
+        h="500px"
+        bgGradient="radial(circle, purple.500, transparent 70%)"
+        filter="blur(80px)"
+        opacity={0.12}
+        animation="float 25s ease-in-out infinite 5s"
+        sx={{
+          '@keyframes float': {
+            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+            '33%': { transform: 'translate(-40px, 40px) scale(1.1)' },
+            '66%': { transform: 'translate(40px, -40px) scale(0.9)' },
+          },
+        }}
+      />
+      <Box
+        position="absolute"
+        bottom="10%"
+        left="20%"
+        w="400px"
+        h="400px"
+        bgGradient="radial(circle, blue.500, transparent 70%)"
+        filter="blur(80px)"
+        opacity={0.1}
+        animation="float 30s ease-in-out infinite 10s"
+        sx={{
+          '@keyframes float': {
+            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+            '33%': { transform: 'translate(30px, -50px) scale(1.2)' },
+            '66%': { transform: 'translate(-50px, 30px) scale(0.8)' },
+          },
+        }}
+      />
 
-          {/* Overall Progress */}
-          <Box w="full" bg="gray.800" p={6} borderRadius="xl" boxShadow="dark-lg" borderWidth="1px" borderColor="gray.700">
-            <VStack spacing={3}>
-              <HStack w="full" justify="space-between">
-                <Text fontWeight="bold" color="gray.100">Overall Progress</Text>
-                <HStack>
-                  <RiTrophyLine size={20} color="gold" />
-                  <Text fontWeight="bold" fontSize="lg" color="gray.100">
-                    {userProgress.totalXp || 0} XP
-                  </Text>
-                </HStack>
-              </HStack>
+      <Container maxW="container.lg" py={6} position="relative" zIndex={1}>
+        {/* Minimal Progress Header */}
+        <MotionBox
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          mb={8}
+        >
+          <HStack
+            justify="space-between"
+            bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
+            backdropFilter="blur(10px)"
+            px={6}
+            py={3}
+            borderRadius="full"
+            border="1px solid"
+            borderColor="whiteAlpha.200"
+            boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
+          >
+            <HStack spacing={3}>
+              <Box
+                p={1.5}
+                borderRadius="lg"
+                bgGradient="linear(135deg, yellow.400, orange.400)"
+                boxShadow="0 2px 8px rgba(251, 191, 36, 0.3)"
+              >
+                <RiTrophyLine size={18} color="white" />
+              </Box>
+              <VStack spacing={0} align="start">
+                <Text fontSize="lg" fontWeight="black" color="white" lineHeight="1">
+                  {userProgress.totalXp || 0} XP
+                </Text>
+                <Text fontSize="xs" color="gray.400" fontWeight="medium">
+                  Level {Math.floor((userProgress.totalXp || 0) / 100) + 1}
+                </Text>
+              </VStack>
+            </HStack>
 
-              <Progress
-                value={overallProgress}
-                colorScheme="teal"
-                borderRadius="full"
-                size="lg"
-                w="full"
-                bg="gray.700"
-              />
-
-              <Text fontSize="sm" color="gray.400">
-                {completedLessons} of {totalLessons} lessons completed
-              </Text>
-            </VStack>
-          </Box>
-        </VStack>
+            <HStack spacing={4}>
+              <VStack spacing={0} align="end">
+                <Text fontSize="sm" fontWeight="bold" color="white">
+                  {Math.round(overallProgress)}%
+                </Text>
+                <Text fontSize="xs" color="gray.400">
+                  {completedLessons}/{totalLessons}
+                </Text>
+              </VStack>
+              <Box w="120px">
+                <Progress
+                  value={overallProgress}
+                  borderRadius="full"
+                  size="sm"
+                  bg="whiteAlpha.200"
+                  sx={{
+                    '& > div': {
+                      bgGradient: 'linear(to-r, teal.400, blue.400, purple.400)',
+                      boxShadow: '0 0 10px rgba(56, 178, 172, 0.5)',
+                    },
+                  }}
+                />
+              </Box>
+            </HStack>
+          </HStack>
+        </MotionBox>
 
         {/* Skill Tree Units */}
-        <VStack spacing={12} align="stretch">
+        <VStack spacing={8} align="stretch">
           {units.length > 0 ? (
             units.map((unit, index) => (
               <UnitSection
@@ -504,6 +1018,7 @@ export default function SkillTree({
                 onLessonClick={handleLessonClick}
                 index={index}
                 supportLang={supportLang}
+                hasNextUnit={index < units.length - 1}
               />
             ))
           ) : (
