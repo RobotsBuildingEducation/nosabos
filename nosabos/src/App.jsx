@@ -424,11 +424,6 @@ function TopBar({
           { merge: true }
         );
       }
-      toast({
-        status: "success",
-        title:
-          appLanguage === "es" ? "Configuración guardada" : "Settings saved",
-      });
       closeSettings?.();
     } catch (e) {
       toast({
@@ -1403,6 +1398,7 @@ export default function App() {
     };
 
     const next = {
+      ...prev, // Preserve all existing progress data including XP
       level: partial.level ?? prev.level ?? "beginner",
       supportLang: ["en", "es", "bilingual"].includes(
         partial.supportLang ?? prev.supportLang
