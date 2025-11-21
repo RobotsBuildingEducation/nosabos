@@ -98,8 +98,8 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
 
   return (
     <MotionBox
-      whileHover={isClickable ? { scale: 1.15, y: -8 } : {}}
-      whileTap={isClickable ? { scale: 0.95 } : {}}
+      whileHover={isClickable ? { scale: 1.05, y: -2 } : {}}
+      whileTap={isClickable ? { scale: 0.98 } : {}}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
@@ -182,8 +182,8 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               _hover={
                 isClickable
                   ? {
-                      boxShadow: `0 0 40px ${unit.color}99, 0 12px 24px rgba(0,0,0,0.5)`,
-                      borderColor: unit.color,
+                      boxShadow: `0 0 35px ${unit.color}77, 0 10px 20px rgba(0,0,0,0.4)`,
+                      borderColor: `${unit.color}dd`,
                     }
                   : {}
               }
@@ -456,18 +456,22 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
         >
           <defs>
             <linearGradient id={`unit-start-${unit.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={unit.color} stopOpacity={0.3} />
-              <stop offset="100%" stopColor={unit.color} stopOpacity={0.6} />
+              <stop offset="0%" stopColor={unit.color} stopOpacity={0.4} />
+              <stop offset="100%" stopColor={unit.color} stopOpacity={0.7} />
             </linearGradient>
           </defs>
           <path
             d="M 100 0 Q 100 40, 100 60"
             stroke={`url(#unit-start-${unit.id})`}
-            strokeWidth="4"
+            strokeWidth="5"
             fill="none"
             strokeLinecap="round"
             strokeDasharray="8 4"
           />
+          {/* Add dots along the path for better connectivity */}
+          <circle cx="100" cy="0" r="3" fill={unit.color} opacity="0.5" />
+          <circle cx="100" cy="30" r="2.5" fill={unit.color} opacity="0.5" />
+          <circle cx="100" cy="60" r="3" fill={unit.color} opacity="0.6" />
         </Box>
 
         {/* Lessons in this unit - Game-like zigzag layout */}
@@ -536,7 +540,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
                     <path
                       d={`M ${150 + offset - nextOffset} 0 Q ${150 + (offset - nextOffset) / 2} 70, ${150} 95`}
                       stroke={`url(#gradient-${lesson.id})`}
-                      strokeWidth="4"
+                      strokeWidth={lessonIndex === 0 ? "6" : "4"}
                       fill="none"
                       strokeLinecap="round"
                       filter={status === SKILL_STATUS.COMPLETED ? `url(#glow-${lesson.id})` : 'none'}
@@ -544,6 +548,32 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
                         transition: 'all 0.3s ease',
                       }}
                     />
+                    {/* Enhanced connector for first lesson - add dots/markers */}
+                    {lessonIndex === 0 && (
+                      <>
+                        <circle
+                          cx={150 + offset - nextOffset}
+                          cy="0"
+                          r="3"
+                          fill={unit.color}
+                          opacity="0.6"
+                        />
+                        <circle
+                          cx={150 + (offset - nextOffset) / 2}
+                          cy="70"
+                          r="3"
+                          fill={unit.color}
+                          opacity="0.6"
+                        />
+                        <circle
+                          cx={150}
+                          cy="95"
+                          r="3"
+                          fill={unit.color}
+                          opacity="0.6"
+                        />
+                      </>
+                    )}
                   </Box>
                 )}
 
@@ -736,13 +766,13 @@ function LessonDetailModal({
                       display="flex"
                       alignItems="center"
                       gap={2}
-                      bgGradient={`linear(135deg, ${unit.color}80, ${unit.color}60)`}
+                      bgGradient={`linear(135deg, ${unit.color}50, ${unit.color}40)`}
                       color="white"
                       fontWeight="semibold"
                       fontSize="sm"
                       border="1px solid"
-                      borderColor={`${unit.color}40`}
-                      boxShadow={`0 2px 10px ${unit.color}30`}
+                      borderColor={`${unit.color}30`}
+                      boxShadow={`0 2px 10px ${unit.color}20`}
                     >
                       <Icon size={16} />
                       <Text textTransform="capitalize">{mode}</Text>
