@@ -2393,6 +2393,7 @@ export default function App() {
             supportLang={resolvedSupportLang}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
+            activeNsec={activeNsec}
           />
         </Box>
       )}

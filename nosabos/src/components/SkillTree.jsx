@@ -333,6 +333,7 @@ function UnitSection({
   index,
   supportLang,
   hasNextUnit,
+  activeNsec = null,
 }) {
   const bgColor = "gray.800";
   const borderColor = "gray.700";
@@ -542,7 +543,10 @@ function UnitSection({
               status = SKILL_STATUS.COMPLETED;
             } else if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
               status = SKILL_STATUS.IN_PROGRESS;
-            } else if (userProgress.totalXp >= lesson.xpRequired) {
+            } else if (
+              activeNsec === 'nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv' ||
+              userProgress.totalXp >= lesson.xpRequired
+            ) {
               status = SKILL_STATUS.AVAILABLE;
             }
 
@@ -933,6 +937,7 @@ export default function SkillTree({
   supportLang = "en",
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
+  activeNsec = null,
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -1123,6 +1128,7 @@ export default function SkillTree({
                 index={index}
                 supportLang={supportLang}
                 hasNextUnit={index < units.length - 1}
+                activeNsec={activeNsec}
               />
             ))
           ) : (

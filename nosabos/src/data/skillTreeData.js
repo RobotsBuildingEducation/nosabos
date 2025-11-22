@@ -3075,12 +3075,15 @@ export function getUnitTotalXP(unit) {
 /**
  * Get the next available lesson for a user based on their current XP
  */
-export function getNextLesson(units, userProgress) {
+export function getNextLesson(units, userProgress, activeNsec = null) {
+  // Special admin key - first incomplete lesson is available
+  const hasAdminKey = activeNsec === 'nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv';
+
   for (const unit of units) {
     for (const lesson of unit.lessons) {
       const lessonProgress = userProgress.lessons?.[lesson.id];
       if (!lessonProgress || lessonProgress.status !== SKILL_STATUS.COMPLETED) {
-        if (userProgress.totalXp >= lesson.xpRequired) {
+        if (hasAdminKey || userProgress.totalXp >= lesson.xpRequired) {
           return { unit, lesson };
         }
         return null; // Next lesson is still locked
