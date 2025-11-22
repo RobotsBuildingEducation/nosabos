@@ -20,6 +20,7 @@ import {
   ModalCloseButton,
   useDisclosure,
   Flex,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -336,6 +337,22 @@ function UnitSection({
   const bgColor = "gray.800";
   const borderColor = "gray.700";
 
+  // Responsive horizontal offset for zigzag pattern
+  const zigzagOffset = useBreakpointValue({
+    base: 60,    // Mobile devices
+    sm: 80,      // Small tablets
+    md: 120,     // Medium tablets
+    lg: 180,     // Desktop
+  }) || 60; // Fallback to mobile size
+
+  // Responsive SVG container width
+  const svgWidth = useBreakpointValue({
+    base: 200,
+    sm: 240,
+    md: 280,
+    lg: 300,
+  }) || 200;
+
   const unitProgressPercent = getUnitProgress(unit, userProgress);
   const completedCount = unit.lessons.filter(
     (lesson) =>
@@ -531,12 +548,12 @@ function UnitSection({
 
             // Create zigzag pattern - alternating positions
             const isEven = lessonIndex % 2 === 0;
-            const offset = isEven ? 0 : 180; // Horizontal offset for zigzag
+            const offset = isEven ? 0 : zigzagOffset; // Horizontal offset for zigzag (responsive)
             const yPosition = lessonIndex * 140; // Vertical spacing
 
             // Calculate connection path
             const nextIsEven = (lessonIndex + 1) % 2 === 0;
-            const nextOffset = nextIsEven ? 0 : 180;
+            const nextOffset = nextIsEven ? 0 : zigzagOffset;
 
             return (
               <Box key={lesson.id}>
@@ -548,7 +565,7 @@ function UnitSection({
                     top={`${yPosition + 45}px`}
                     left="50%"
                     transform="translateX(-50%)"
-                    width="300px"
+                    width={`${svgWidth}px`}
                     height="140px"
                     overflow="visible"
                     zIndex={0}
@@ -599,9 +616,9 @@ function UnitSection({
                       )}
                     </defs>
                     <path
-                      d={`M ${150 + offset - nextOffset} 0 Q ${
-                        150 + (offset - nextOffset) / 2
-                      } 70, ${150} 95`}
+                      d={`M ${svgWidth / 2 + offset - nextOffset} 0 Q ${
+                        svgWidth / 2 + (offset - nextOffset) / 2
+                      } 70, ${svgWidth / 2} 95`}
                       stroke={`url(#gradient-${lesson.id})`}
                       strokeWidth="5"
                       fill="none"
@@ -1017,7 +1034,13 @@ export default function SkillTree({
         }}
       />
 
-      <Container maxW="container.lg" py={6} position="relative" zIndex={1}>
+      <Container
+        maxW="container.lg"
+        py={6}
+        px={{ base: 3, sm: 4, md: 6 }}
+        position="relative"
+        zIndex={1}
+      >
         {/* Minimal Progress Header */}
         <MotionBox
           initial={{ opacity: 0, y: -10 }}
