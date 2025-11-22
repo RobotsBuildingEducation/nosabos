@@ -39,13 +39,13 @@ function useT(uiLang = "en") {
 /**
  * Quiz Component
  *
- * Displays a fixed number of questions from a quiz pool.
- * Requires 80% score to pass.
+ * Displays 10 questions from a quiz pool.
+ * Requires 8 out of 10 correct answers (80%) to pass.
  * Does NOT award XP.
  *
  * Props:
- * - questions: Array of question objects
- * - onComplete: Callback when quiz is finished (passed: boolean, score: number)
+ * - questions: Array of question objects (should be 10)
+ * - onComplete: Callback when quiz is finished (passed: boolean, score: number, correctCount: number)
  * - uiLang: UI language
  * - lessonTitle: Title of the lesson for display
  */
@@ -60,20 +60,20 @@ export default function Quiz({
   const [answers, setAnswers] = useState([]);
   const [finished, setFinished] = useState(false);
 
-  // Shuffle questions once on mount
+  // Use exactly 10 questions (shuffle and take first 10)
   const shuffledQuestions = useMemo(
-    () => shuffle(questions).slice(0, questions.length),
+    () => shuffle(questions).slice(0, 10),
     [questions]
   );
 
-  const totalQuestions = shuffledQuestions.length;
+  const totalQuestions = 10;
+  const requiredCorrect = 8;
   const currentQuestion = shuffledQuestions[currentIndex];
   const progress = ((currentIndex + 1) / totalQuestions) * 100;
 
   // Calculate score and pass status
   const correctAnswers = answers.filter((a) => a?.correct).length;
-  const score = totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
-  const passed = score >= 80;
+  const passed = correctAnswers >= requiredCorrect;
 
   function handleSubmit(payload) {
     // Store the answer
@@ -92,9 +92,8 @@ export default function Quiz({
         setFinished(true);
         // Calculate final results
         const finalCorrect = [...answers, payload].filter((a) => a?.correct).length;
-        const finalScore = (finalCorrect / totalQuestions) * 100;
-        const finalPassed = finalScore >= 80;
-        onComplete?.(finalPassed, finalScore);
+        const finalPassed = finalCorrect >= requiredCorrect;
+        onComplete?.(finalPassed, (finalCorrect / totalQuestions) * 100, finalCorrect);
       }
     }, 1500);
   }
@@ -155,15 +154,15 @@ export default function Quiz({
 
               <HStack justify="space-between" w="100%">
                 <Text fontSize="lg">{t("quiz_correct_answers") || "Correct Answers"}:</Text>
-                <Text fontSize="xl" fontWeight="bold">
+                <Text fontSize="xl" fontWeight="bold" color={correctAnswers >= requiredCorrect ? "green.400" : "orange.400"}>
                   {correctAnswers} / {totalQuestions}
                 </Text>
               </HStack>
 
               <HStack justify="space-between" w="100%">
-                <Text fontSize="lg">{t("quiz_passing_score") || "Passing Score"}:</Text>
+                <Text fontSize="lg">Required to Pass:</Text>
                 <Text fontSize="xl" fontWeight="bold">
-                  80%
+                  {requiredCorrect}/{totalQuestions} ({Math.round((requiredCorrect / totalQuestions) * 100)}%)
                 </Text>
               </HStack>
             </VStack>
@@ -193,7 +192,7 @@ export default function Quiz({
                 </AlertTitle>
                 <AlertDescription>
                   {t("quiz_failed_message") ||
-                    "You need at least 80% to pass. Review the material and try again!"}
+                    `You need at least ${requiredCorrect} out of ${totalQuestions} correct to pass. Review the material and try again!`}
                 </AlertDescription>
               </Box>
             </Alert>
@@ -227,8 +226,8 @@ export default function Quiz({
             <Text fontSize="sm" color="gray.400">
               {t("quiz_question") || "Question"} {currentIndex + 1} / {totalQuestions}
             </Text>
-            <Badge colorScheme="purple" fontSize="sm">
-              {t("quiz_passing_required") || "80% to pass"}
+            <Badge colorScheme="purple" fontSize="sm" px={3} py={1}>
+              Need {requiredCorrect}/{totalQuestions} correct to pass
             </Badge>
           </HStack>
           <Progress
