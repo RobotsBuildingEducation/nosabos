@@ -223,6 +223,7 @@ function TopBar({
   cefrLoading,
   cefrError,
   onPatchSettings,
+  onSelectLanguage,
   onSwitchedAccount,
   settingsOpen,
   openSettings,
@@ -811,7 +812,7 @@ function TopBar({
         onClose={closeAccount}
         t={t}
         appLanguage={appLanguage}
-        onSelectLanguage={handleSelectAppLanguage}
+        onSelectLanguage={onSelectLanguage}
         activeNpub={currentId} // or props.activeNpub; both mirror each other
         activeNsec={currentSecret} // or props.activeNsec
         auth={auth}
@@ -2336,6 +2337,7 @@ export default function App() {
           setActiveNsec(localStorage.getItem("local_nsec") || "");
         }}
         onPatchSettings={saveGlobalSettings}
+        onSelectLanguage={handleSelectAppLanguage}
         // controlled drawers
         settingsOpen={settingsOpen}
         openSettings={() => setSettingsOpen(true)}
