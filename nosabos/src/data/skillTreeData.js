@@ -112,6 +112,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-1-quiz',
+            title: {
+              en: 'Unit 1 Quiz',
+              es: 'Examen de Unidad 1',
+            },
+            description: {
+              en: 'Test your knowledge from Basics 1',
+              es: 'Pon a prueba tus conocimientos de Básicos 1',
+            },
+            xpRequired: 70, // After completing all lessons in unit
+            xpReward: 50, // Bonus XP for passing
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-1',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['hola', 'adiós', 'buenos días', 'buenas tardes', 'buenas noches'],
+                    topic: 'greetings',
+                  },
+                  {
+                    topic: 'introductions',
+                    focusPoints: ['me llamo', 'soy de', 'verb ser'],
+                  },
+                  {
+                    words: ['¿cómo?', '¿qué?', '¿dónde?', '¿cuándo?', '¿por qué?'],
+                    topic: 'question words',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -204,6 +239,41 @@ const baseLearningPath = {
               stories: {
                 topic: 'dining',
                 prompt: 'Read a story about a meal',
+              },
+            },
+          },
+          {
+            id: 'lesson-2-quiz',
+            title: {
+              en: 'Unit 2 Quiz',
+              es: 'Examen de Unidad 2',
+            },
+            description: {
+              en: 'Test your knowledge from Basics 2',
+              es: 'Pon a prueba tus conocimientos de Básicos 2',
+            },
+            xpRequired: 165,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-2',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['me gusta', 'no me gusta', 'me encanta', 'odio', 'prefiero'],
+                    topic: 'preferences',
+                  },
+                  {
+                    words: ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'diez', 'veinte'],
+                    topic: 'numbers',
+                  },
+                  {
+                    words: ['agua', 'café', 'pan', 'arroz', 'pollo', 'fruta'],
+                    topic: 'food and drinks',
+                  },
+                ],
               },
             },
           },
@@ -302,6 +372,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-3-quiz',
+            title: {
+              en: 'Unit 3 Quiz',
+              es: 'Examen de Unidad 3',
+            },
+            description: {
+              en: 'Test your knowledge from Daily Life',
+              es: 'Pon a prueba tus conocimientos de Vida Diaria',
+            },
+            xpRequired: 280,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-3',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['hora', 'minuto', 'mañana', 'tarde', 'noche'],
+                    topic: 'time',
+                  },
+                  {
+                    words: ['despertarse', 'levantarse', 'ducharse', 'desayunar', 'trabajar'],
+                    topic: 'daily activities',
+                  },
+                  {
+                    words: ['madre', 'padre', 'hermano', 'hermana', 'familia'],
+                    topic: 'family',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -397,6 +502,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-4-quiz',
+            title: {
+              en: 'Unit 4 Quiz',
+              es: 'Examen de Unidad 4',
+            },
+            description: {
+              en: 'Test your knowledge from Getting Around',
+              es: 'Pon a prueba tus conocimientos de Moviéndose',
+            },
+            xpRequired: 410,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-4',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['banco', 'supermercado', 'hospital', 'escuela', 'parque'],
+                    topic: 'places',
+                  },
+                  {
+                    words: ['derecha', 'izquierda', 'recto', 'cerca', 'lejos'],
+                    topic: 'directions',
+                  },
+                  {
+                    words: ['autobús', 'metro', 'taxi', 'bicicleta', 'caminar'],
+                    topic: 'transportation',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -485,6 +625,41 @@ const baseLearningPath = {
               stories: {
                 topic: 'clothing',
                 prompt: 'Read about fashion and clothing',
+              },
+            },
+          },
+          {
+            id: 'lesson-5-quiz',
+            title: {
+              en: 'Unit 5 Quiz',
+              es: 'Examen de Unidad 5',
+            },
+            description: {
+              en: 'Test your knowledge from Shopping & Money',
+              es: 'Pon a prueba tus conocimientos de Compras y Dinero',
+            },
+            xpRequired: 560,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-5',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['comprar', 'vender', 'precio', 'barato', 'caro'],
+                    topic: 'shopping',
+                  },
+                  {
+                    words: ['treinta', 'cuarenta', 'cincuenta', 'cien'],
+                    topic: 'numbers',
+                  },
+                  {
+                    words: ['camisa', 'pantalón', 'zapatos', 'vestido', 'llevar'],
+                    topic: 'clothing',
+                  },
+                ],
               },
             },
           },
@@ -580,6 +755,41 @@ const baseLearningPath = {
               stories: {
                 topic: 'character descriptions',
                 prompt: 'Read stories with diverse characters',
+              },
+            },
+          },
+          {
+            id: 'lesson-6-quiz',
+            title: {
+              en: 'Unit 6 Quiz',
+              es: 'Examen de Unidad 6',
+            },
+            description: {
+              en: 'Test your knowledge from Colors & Descriptions',
+              es: 'Pon a prueba tus conocimientos de Colores y Descripciones',
+            },
+            xpRequired: 720,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-6',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['rojo', 'azul', 'verde', 'amarillo', 'negro', 'blanco'],
+                    topic: 'colors',
+                  },
+                  {
+                    words: ['alto', 'bajo', 'delgado', 'fuerte', 'pelo', 'ojos'],
+                    topic: 'physical descriptions',
+                  },
+                  {
+                    words: ['simpático', 'amable', 'inteligente', 'divertido', 'serio'],
+                    topic: 'personality',
+                  },
+                ],
               },
             },
           },
@@ -682,6 +892,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-7-quiz',
+            title: {
+              en: 'Unit 7 Quiz',
+              es: 'Examen de Unidad 7',
+            },
+            description: {
+              en: 'Test your knowledge from Hobbies & Free Time',
+              es: 'Pon a prueba tus conocimientos de Pasatiempos y Tiempo Libre',
+            },
+            xpRequired: 895,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-7',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['fútbol', 'nadar', 'correr', 'jugar', 'practicar'],
+                    topic: 'sports',
+                  },
+                  {
+                    words: ['música', 'canción', 'película', 'concierto', 'bailar'],
+                    topic: 'entertainment',
+                  },
+                  {
+                    words: ['libro', 'leer', 'escribir', 'dibujar', 'pintar'],
+                    topic: 'arts and reading',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -777,6 +1022,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-8-quiz',
+            title: {
+              en: 'Unit 8 Quiz',
+              es: 'Examen de Unidad 8',
+            },
+            description: {
+              en: 'Test your knowledge from Past Experiences',
+              es: 'Pon a prueba tus conocimientos de Experiencias Pasadas',
+            },
+            xpRequired: 1080,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-8',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['ayer', 'anoche', 'la semana pasada'],
+                    topic: 'time expressions',
+                  },
+                  {
+                    topic: 'preterite tense',
+                    focusPoints: ['regular -ar verbs', 'regular -er/-ir verbs', 'past actions'],
+                  },
+                  {
+                    words: ['viajar', 'visitar', 'conocer', 'descubrir'],
+                    topic: 'travel',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -864,6 +1144,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-9-quiz',
+            title: {
+              en: 'Unit 9 Quiz',
+              es: 'Examen de Unidad 9',
+            },
+            description: {
+              en: 'Test your knowledge from Ongoing Past',
+              es: 'Pon a prueba tus conocimientos de Pasado Continuo',
+            },
+            xpRequired: 1285,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-9',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    topic: 'imperfect tense',
+                    focusPoints: ['formation', 'uses vs preterite', 'habitual actions'],
+                  },
+                  {
+                    topic: 'childhood memories',
+                    focusPoints: ['childhood', 'past descriptions'],
+                  },
+                  {
+                    words: ['llover', 'nevar', 'hacer calor', 'hacer frío', 'primavera'],
+                    topic: 'weather',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -948,6 +1263,41 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'career planning',
                 prompt: 'Talk about your professional future',
+              },
+            },
+          },
+          {
+            id: 'lesson-10-quiz',
+            title: {
+              en: 'Unit 10 Quiz',
+              es: 'Examen de Unidad 10',
+            },
+            description: {
+              en: 'Test your knowledge from Future Plans',
+              es: 'Pon a prueba tus conocimientos de Planes Futuros',
+            },
+            xpRequired: 1515,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-10',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    topic: 'ir a + infinitive',
+                    focusPoints: ['formation', 'time expressions', 'near future'],
+                  },
+                  {
+                    topic: 'simple future',
+                    focusPoints: ['regular endings', 'irregular verbs'],
+                  },
+                  {
+                    words: ['carrera', 'trabajo', 'meta', 'aspiración', 'futuro'],
+                    topic: 'careers',
+                  },
+                ],
               },
             },
           },
@@ -1046,6 +1396,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-11-quiz',
+            title: {
+              en: 'Unit 11 Quiz',
+              es: 'Examen de Unidad 11',
+            },
+            description: {
+              en: 'Test your knowledge from Health & Body',
+              es: 'Pon a prueba tus conocimientos de Salud y Cuerpo',
+            },
+            xpRequired: 1735,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-11',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['cabeza', 'brazo', 'pierna', 'mano', 'pie', 'ojo'],
+                    topic: 'body parts',
+                  },
+                  {
+                    words: ['dolor', 'fiebre', 'médico', 'enfermedad', 'medicina'],
+                    topic: 'health',
+                  },
+                  {
+                    words: ['ejercicio', 'saludable', 'dieta', 'descansar', 'energía'],
+                    topic: 'wellness',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -1141,6 +1526,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-12-quiz',
+            title: {
+              en: 'Unit 12 Quiz',
+              es: 'Examen de Unidad 12',
+            },
+            description: {
+              en: 'Test your knowledge from Environment & Nature',
+              es: 'Pon a prueba tus conocimientos de Medio Ambiente y Naturaleza',
+            },
+            xpRequired: 1970,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-12',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['animal', 'perro', 'gato', 'árbol', 'flor', 'bosque'],
+                    topic: 'nature',
+                  },
+                  {
+                    words: ['contaminación', 'reciclar', 'clima', 'proteger', 'naturaleza'],
+                    topic: 'environment',
+                  },
+                  {
+                    words: ['montaña', 'río', 'mar', 'playa', 'desierto', 'valle'],
+                    topic: 'geography',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -1217,6 +1637,41 @@ const baseLearningPath = {
               grammar: {
                 topic: 'subjunctive with doubt',
                 focusPoints: ['dudar, no creer, negar'],
+              },
+            },
+          },
+          {
+            id: 'lesson-13-quiz',
+            title: {
+              en: 'Unit 13 Quiz',
+              es: 'Examen de Unidad 13',
+            },
+            description: {
+              en: 'Test your knowledge from Subjunctive Mood',
+              es: 'Pon a prueba tus conocimientos de Modo Subjuntivo',
+            },
+            xpRequired: 2245,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-13',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    topic: 'present subjunctive',
+                    focusPoints: ['formation', 'trigger phrases'],
+                  },
+                  {
+                    topic: 'subjunctive with wishes',
+                    focusPoints: ['querer, esperar', 'wishes', 'desires', 'hope'],
+                  },
+                  {
+                    topic: 'subjunctive with doubt',
+                    focusPoints: ['dudar, no creer, negar', 'uncertainty'],
+                  },
+                ],
               },
             },
           },
@@ -1319,6 +1774,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-14-quiz',
+            title: {
+              en: 'Unit 14 Quiz',
+              es: 'Examen de Unidad 14',
+            },
+            description: {
+              en: 'Test your knowledge from Complex Conversations',
+              es: 'Pon a prueba tus conocimientos de Conversaciones Complejas',
+            },
+            xpRequired: 2555,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-14',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['argumentar', 'convencer', 'debatir', 'persuadir'],
+                    topic: 'debate',
+                  },
+                  {
+                    words: ['noticia', 'evento', 'actualidad', 'política'],
+                    topic: 'current events',
+                  },
+                  {
+                    words: ['reunión', 'presentación', 'informe', 'negociar'],
+                    topic: 'professional',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -1415,6 +1905,41 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'film discussion',
                 prompt: 'Discuss movies and performances',
+              },
+            },
+          },
+          {
+            id: 'lesson-15-quiz',
+            title: {
+              en: 'Unit 15 Quiz',
+              es: 'Examen de Unidad 15',
+            },
+            description: {
+              en: 'Test your knowledge from Literature & Arts',
+              es: 'Pon a prueba tus conocimientos de Literatura y Artes',
+            },
+            xpRequired: 2865,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-15',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['poeta', 'verso', 'metáfora', 'narrativa', 'estilo'],
+                    topic: 'literature',
+                  },
+                  {
+                    words: ['pintura', 'escultura', 'artista', 'galería', 'obra'],
+                    topic: 'visual arts',
+                  },
+                  {
+                    words: ['película', 'director', 'actor', 'escena', 'guion'],
+                    topic: 'cinema',
+                  },
+                ],
               },
             },
           },
@@ -1517,6 +2042,41 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-16-quiz',
+            title: {
+              en: 'Unit 16 Quiz',
+              es: 'Examen de Unidad 16',
+            },
+            description: {
+              en: 'Test your knowledge from Technology & Innovation',
+              es: 'Pon a prueba tus conocimientos de Tecnología e Innovación',
+            },
+            xpRequired: 3190,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-16',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['internet', 'correo', 'mensaje', 'aplicación', 'red social'],
+                    topic: 'digital communication',
+                  },
+                  {
+                    words: ['investigación', 'descubrimiento', 'tecnología', 'innovar', 'futuro'],
+                    topic: 'science',
+                  },
+                  {
+                    words: ['emprendedor', 'startup', 'digital', 'comercio', 'plataforma'],
+                    topic: 'digital economy',
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -1585,6 +2145,37 @@ const baseLearningPath = {
               grammar: {
                 topic: 'advanced expressions',
                 focusPoints: ['complex conditionals', 'hypothetical situations'],
+              },
+            },
+          },
+          {
+            id: 'lesson-17-quiz',
+            title: {
+              en: 'Unit 17 Quiz',
+              es: 'Examen de Unidad 17',
+            },
+            description: {
+              en: 'Test your knowledge from Social Issues & Ethics',
+              es: 'Pon a prueba tus conocimientos de Problemas Sociales y Ética',
+            },
+            xpRequired: 3425,
+            xpReward: 50,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                unitId: 'unit-17',
+                passScore: 8,
+                totalQuestions: 10,
+                lessonContent: [
+                  {
+                    words: ['justicia', 'igualdad', 'derechos', 'diversidad', 'inclusión'],
+                    topic: 'social justice',
+                  },
+                  {
+                    words: ['global', 'crisis', 'solución', 'cooperación', 'sostenibilidad'],
+                    topic: 'global issues',
+                  },
+                ],
               },
             },
           },
