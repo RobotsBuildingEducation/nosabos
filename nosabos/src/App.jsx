@@ -88,6 +88,7 @@ import RealTimeTest from "./components/RealTimeTest";
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
+import LessonGroupQuiz from "./components/LessonGroupQuiz";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
@@ -987,6 +988,7 @@ export default function App() {
     "history",
     "grammar",
     "vocabulary",
+    "quiz",
     "random",
   ];
 
@@ -1113,6 +1115,7 @@ export default function App() {
     history: t?.tabs_history ?? "History",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
+    quiz: t?.tabs_quiz ?? (appLanguage === "es" ? "Examen" : "Quiz"),
     random: t?.tabs_random ?? "Random",
   };
   const TAB_ICONS = {
@@ -1122,6 +1125,7 @@ export default function App() {
     history: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <CiEdit />,
+    quiz: <CiEdit />,
     random: <LuShuffle />,
   };
 
@@ -2493,6 +2497,28 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           lessonContent={activeLesson?.content?.vocabulary}
+                        />
+                      </TabPanel>
+                    );
+                  case "quiz":
+                    return (
+                      <TabPanel key="quiz" px={0}>
+                        <LessonGroupQuiz
+                          userLanguage={appLanguage}
+                          activeNpub={activeNpub}
+                          activeNsec={activeNsec}
+                          lessonContent={activeLesson?.content?.quiz?.lessonContent}
+                          lessonId={activeLesson?.id}
+                          xpReward={activeLesson?.xpReward || 50}
+                          onComplete={(result) => {
+                            if (result.passed) {
+                              // Quiz passed, lesson will be marked complete automatically
+                              console.log("Quiz passed!", result);
+                            } else {
+                              // Quiz failed, user can retry
+                              console.log("Quiz failed, retry available", result);
+                            }
+                          }}
                         />
                       </TabPanel>
                     );

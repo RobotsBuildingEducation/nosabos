@@ -21,6 +21,7 @@ const StoryMode = React.lazy(() => import("./Stories"));
 const GrammarBook = React.lazy(() => import("./GrammarBook"));
 const Vocabulary = React.lazy(() => import("./Vocabulary"));
 const History = React.lazy(() => import("./History"));
+const LessonGroupQuiz = React.lazy(() => import("./LessonGroupQuiz"));
 
 /* ---------------------------
    Minimal i18n helper
@@ -44,6 +45,7 @@ const MODES = [
   { key: "grammar" },
   { key: "vocab" },
   { key: "history" },
+  { key: "quiz" },
 ];
 
 function strongNpub(user) {
@@ -91,6 +93,7 @@ export default function Randomize() {
       vocab:
         t("tabs_vocab") || (uiLang === "es" ? "Vocabulario" : "Vocabulary"),
       history: t("tabs_history") || (uiLang === "es" ? "Historia" : "History"),
+      quiz: t("tabs_quiz") || (uiLang === "es" ? "Examen" : "Quiz"),
     }),
     [t, uiLang]
   );
@@ -289,6 +292,12 @@ export default function Randomize() {
             />
           ) : currentMode.key === "vocab" ? (
             <Vocabulary
+              userLanguage={uiLang}
+              activeNpub={npub}
+              activeNsec={nsec}
+            />
+          ) : currentMode.key === "quiz" ? (
+            <LessonGroupQuiz
               userLanguage={uiLang}
               activeNpub={npub}
               activeNsec={nsec}
