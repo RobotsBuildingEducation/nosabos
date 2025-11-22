@@ -1922,6 +1922,61 @@ function localizeLearningPath(units, targetLang) {
   return cloned;
 }
 
+// ----------------------
+// Quiz lesson generators
+// ----------------------
+function buildQuizLesson(unit) {
+  const lastLesson = unit.lessons[unit.lessons.length - 1] || {};
+  const xpRequired = (lastLesson.xpRequired || 0) + (lastLesson.xpReward || 20);
+  const xpReward = Math.max(30, lastLesson.xpReward || 20);
+
+  const subjects = unit.lessons.map((lesson) => ({
+    id: lesson.id,
+    title: lesson.title,
+    vocabularyTopic: lesson.content?.vocabulary?.topic || null,
+    grammarTopic: lesson.content?.grammar?.topic || null,
+    scenario:
+      lesson.content?.realtime?.scenario ||
+      lesson.content?.stories?.topic ||
+      lesson.content?.jobscript?.prompt ||
+      null,
+  }));
+
+  return {
+    id: `${unit.id}-quiz`,
+    title: {
+      en: `${unit.title.en} Quiz`,
+      es: `${unit.title.es} Quiz`,
+    },
+    description: {
+      en: "AI-generated review quiz to master this unit.",
+      es: "Quiz de repaso generado con IA para dominar la unidad.",
+    },
+    xpRequired,
+    xpReward,
+    modes: ["quiz"],
+    content: {
+      quiz: {
+        unitTitle: unit.title,
+        subjects,
+      },
+    },
+  };
+}
+
+function attachQuizLessons(path) {
+  Object.values(path).forEach((units) => {
+    units.forEach((unit) => {
+      const quizId = `${unit.id}-quiz`;
+      const alreadyHasQuiz = unit.lessons.some((lesson) => lesson.id === quizId);
+      if (alreadyHasQuiz) return;
+      unit.lessons.push(buildQuizLesson(unit));
+    });
+  });
+}
+
+attachQuizLessons(baseLearningPath);
+
 const cloneLearningPath = () => JSON.parse(JSON.stringify(baseLearningPath));
 
 export const LEARNING_PATHS = {
