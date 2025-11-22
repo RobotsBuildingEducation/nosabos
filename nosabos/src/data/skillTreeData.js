@@ -119,62 +119,32 @@ const baseLearningPath = {
               es: 'Examen de Unidad 1',
             },
             description: {
-              en: 'Test your knowledge of greetings and introductions (80% required to pass)',
-              es: 'Prueba tus conocimientos de saludos y presentaciones (se requiere 80% para aprobar)',
+              en: 'Test your knowledge of greetings and introductions',
+              es: 'Prueba tus conocimientos de saludos y presentaciones',
             },
             xpRequired: 70,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "Hello" en español?',
-                    options: [
-                      { id: '1', label: 'Hola', correct: true },
-                      { id: '2', label: 'Adiós', correct: false },
-                      { id: '3', label: 'Gracias', correct: false },
-                      { id: '4', label: 'Por favor', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cuál es el saludo correcto por la mañana?',
-                    options: [
-                      { id: '1', label: 'Buenas noches', correct: false },
-                      { id: '2', label: 'Buenos días', correct: true },
-                      { id: '3', label: 'Buenas tardes', correct: false },
-                      { id: '4', label: 'Hasta luego', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "Goodbye" en español? (una palabra)',
-                    answer: { acceptable: ['adiós', 'adios'] },
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son palabras de pregunta? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: '¿Cómo?', correct: true },
-                      { id: '2', label: 'Hola', correct: false },
-                      { id: '3', label: '¿Qué?', correct: true },
-                      { id: '4', label: '¿Dónde?', correct: true },
-                      { id: '5', label: 'Adiós', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué frase usas para decir tu nombre?',
-                    options: [
-                      { id: '1', label: 'Soy de...', correct: false },
-                      { id: '2', label: 'Me llamo...', correct: true },
-                      { id: '3', label: '¿Cómo estás?', correct: false },
-                      { id: '4', label: 'Mucho gusto', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['hola', 'adiós', 'buenos días', 'buenas tardes', 'buenas noches', 'me llamo', '¿cómo?', '¿qué?', '¿dónde?'],
+                topic: 'Unit 1 Review: greetings and questions',
+              },
+              grammar: {
+                topic: 'Unit 1 Review',
+                focusPoints: ['greetings', 'introductions', 'question words', 'verb ser'],
+              },
+              realtime: {
+                scenario: 'comprehensive introduction',
+                prompt: 'Have a complete conversation: greet someone, introduce yourself, and ask them questions',
+              },
+              stories: {
+                topic: 'meeting someone new',
+                prompt: 'Tell a story about meeting someone for the first time using greetings and introductions',
+              },
+              history: {
+                topic: 'Spanish greetings and cultural context',
+                prompt: 'Learn about the cultural significance of greetings in Spanish-speaking countries',
               },
             },
           },
@@ -285,51 +255,27 @@ const baseLearningPath = {
             },
             xpRequired: 165,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "I like" en español?',
-                    options: [
-                      { id: '1', label: 'Me gusta', correct: true },
-                      { id: '2', label: 'No me gusta', correct: false },
-                      { id: '3', label: 'Me encanta', correct: false },
-                      { id: '4', label: 'Odio', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cuánto es 3 en español?',
-                    answer: { acceptable: ['tres'] },
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son bebidas? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Agua', correct: true },
-                      { id: '2', label: 'Café', correct: true },
-                      { id: '3', label: 'Pan', correct: false },
-                      { id: '4', label: 'Arroz', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué significa "me encanta"?',
-                    options: [
-                      { id: '1', label: 'I hate it', correct: false },
-                      { id: '2', label: 'I love it', correct: true },
-                      { id: '3', label: 'I like it', correct: false },
-                      { id: '4', label: 'I prefer it', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "ten" en español?',
-                    answer: { acceptable: ['diez'] },
-                  },
-                ],
+              vocabulary: {
+                words: ['me gusta', 'no me gusta', 'me encanta', 'odio', 'prefiero', 'uno', 'dos', 'tres', 'cuatro', 'cinco', 'diez', 'veinte', 'agua', 'café', 'pan', 'arroz', 'pollo', 'fruta'],
+                topic: 'Unit 2 Review: Likes, Numbers, and Food',
+              },
+              grammar: {
+                topic: 'Unit 2 Review',
+                focusPoints: ['gustar verb with indirect object pronouns', 'singular vs plural forms', 'numbers 1-20 in sentences', 'food vocabulary usage'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation where you express your food preferences using me gusta/no me gusta, count items, and order food at a restaurant',
+              },
+              stories: {
+                topic: 'dining and preferences',
+                prompt: 'Write a story about visiting a restaurant, ordering food, and expressing what you like and don\'t like about different dishes',
+              },
+              history: {
+                topic: 'Latin American cuisine',
+                prompt: 'Learn about the diversity of food traditions across Spanish-speaking countries and how they reflect cultural heritage',
               },
             },
           },
@@ -440,57 +386,27 @@ const baseLearningPath = {
             },
             xpRequired: 280,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se pregunta la hora en español?',
-                    options: [
-                      { id: '1', label: '¿Qué hora es?', correct: true },
-                      { id: '2', label: '¿Cuánto tiempo?', correct: false },
-                      { id: '3', label: '¿Qué día es?', correct: false },
-                      { id: '4', label: '¿Cuándo es?', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son verbos reflexivos de la rutina diaria? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Despertarse', correct: true },
-                      { id: '2', label: 'Trabajar', correct: false },
-                      { id: '3', label: 'Ducharse', correct: true },
-                      { id: '4', label: 'Levantarse', correct: true },
-                      { id: '5', label: 'Comer', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "mother" en español?',
-                    answer: { acceptable: ['madre'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra usas para decir "my brother"?',
-                    options: [
-                      { id: '1', label: 'Tu hermano', correct: false },
-                      { id: '2', label: 'Mi hermano', correct: true },
-                      { id: '3', label: 'Su hermano', correct: false },
-                      { id: '4', label: 'Nuestro hermano', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: 'Si son las 3:15, ¿cómo se dice en español?',
-                    options: [
-                      { id: '1', label: 'Son las tres y cuarto', correct: true },
-                      { id: '2', label: 'Es la tres y quince', correct: false },
-                      { id: '3', label: 'Son las cuatro menos cuarto', correct: false },
-                      { id: '4', label: 'Es las tres y media', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['hora', 'minuto', 'mañana', 'tarde', 'noche', 'despertarse', 'levantarse', 'ducharse', 'desayunar', 'trabajar', 'madre', 'padre', 'hermano', 'hermana', 'familia'],
+                topic: 'Unit 3 Review: Time, Daily Routines, and Family',
+              },
+              grammar: {
+                topic: 'Unit 3 Review',
+                focusPoints: ['telling time (es la / son las)', 'reflexive verbs (me/te/se)', 'possessive adjectives (mi/tu/su)', 'daily routine conjugations'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation where you ask and tell the time, describe your daily routine using reflexive verbs, and introduce your family members',
+              },
+              stories: {
+                topic: 'daily life and family',
+                prompt: 'Write a story about a typical day in your family, including what time different activities happen and who does what',
+              },
+              history: {
+                topic: 'family structure in Hispanic culture',
+                prompt: 'Learn about the importance of extended family in Spanish-speaking cultures and traditional family values',
               },
             },
           },
@@ -601,57 +517,27 @@ const baseLearningPath = {
             },
             xpRequired: 410,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "right" (dirección) en español?',
-                    answer: { acceptable: ['derecha'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué preposición usas para decir "I\'m going to the park"?',
-                    options: [
-                      { id: '1', label: 'Voy a el parque', correct: false },
-                      { id: '2', label: 'Voy al parque', correct: true },
-                      { id: '3', label: 'Voy en el parque', correct: false },
-                      { id: '4', label: 'Voy del parque', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son formas de transporte? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Autobús', correct: true },
-                      { id: '2', label: 'Escuela', correct: false },
-                      { id: '3', label: 'Metro', correct: true },
-                      { id: '4', label: 'Bicicleta', correct: true },
-                      { id: '5', label: 'Parque', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "straight ahead" en español?',
-                    options: [
-                      { id: '1', label: 'A la derecha', correct: false },
-                      { id: '2', label: 'A la izquierda', correct: false },
-                      { id: '3', label: 'Todo recto', correct: true },
-                      { id: '4', label: 'Atrás', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué lugar visitas para comprar comida?',
-                    options: [
-                      { id: '1', label: 'El hospital', correct: false },
-                      { id: '2', label: 'El banco', correct: false },
-                      { id: '3', label: 'El supermercado', correct: true },
-                      { id: '4', label: 'La escuela', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['banco', 'supermercado', 'hospital', 'escuela', 'parque', 'derecha', 'izquierda', 'recto', 'cerca', 'lejos', 'autobús', 'metro', 'taxi', 'bicicleta', 'caminar'],
+                topic: 'Unit 4 Review: Places, Directions, and Transportation',
+              },
+              grammar: {
+                topic: 'Unit 4 Review',
+                focusPoints: ['location prepositions (en, al, del)', 'estar with locations', 'imperative mood for directions', 'ir + a for going places'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation where you ask for directions to different places in town, explain how to get somewhere, and discuss different transportation options',
+              },
+              stories: {
+                topic: 'navigating the city',
+                prompt: 'Write a story about exploring a new city, visiting different places, and using various forms of transportation to get around',
+              },
+              history: {
+                topic: 'urban development in Latin America',
+                prompt: 'Learn about the evolution of cities in Spanish-speaking countries and their unique transportation systems like Mexico City\'s Metro',
               },
             },
           },
@@ -758,57 +644,27 @@ const baseLearningPath = {
             },
             xpRequired: 560,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "expensive" en español?',
-                    options: [
-                      { id: '1', label: 'Barato', correct: false },
-                      { id: '2', label: 'Caro', correct: true },
-                      { id: '3', label: 'Precio', correct: false },
-                      { id: '4', label: 'Gratis', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cuánto es cincuenta en números? (escribe el número)',
-                    answer: { acceptable: ['50'] },
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son prendas de ropa? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Camisa', correct: true },
-                      { id: '2', label: 'Precio', correct: false },
-                      { id: '3', label: 'Pantalón', correct: true },
-                      { id: '4', label: 'Zapatos', correct: true },
-                      { id: '5', label: 'Tienda', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué verbo usas para decir "to buy"?',
-                    options: [
-                      { id: '1', label: 'Vender', correct: false },
-                      { id: '2', label: 'Comprar', correct: true },
-                      { id: '3', label: 'Llevar', correct: false },
-                      { id: '4', label: 'Tener', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "forty" en español?',
-                    options: [
-                      { id: '1', label: 'Catorce', correct: false },
-                      { id: '2', label: 'Cuarenta', correct: true },
-                      { id: '3', label: 'Cuatro', correct: false },
-                      { id: '4', label: 'Cincuenta', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['comprar', 'vender', 'precio', 'barato', 'caro', 'treinta', 'cuarenta', 'cincuenta', 'cien', 'camisa', 'pantalón', 'zapatos', 'vestido', 'llevar'],
+                topic: 'Unit 5 Review: Shopping, Money, and Clothing',
+              },
+              grammar: {
+                topic: 'Unit 5 Review',
+                focusPoints: ['large numbers (30-100)', 'currency and prices', 'adjective agreement with clothing', 'shopping verb conjugations'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation at a clothing store where you ask about prices, discuss sizes and colors, and negotiate purchases using larger numbers',
+              },
+              stories: {
+                topic: 'shopping experience',
+                prompt: 'Write a story about a shopping trip where you buy clothes, compare prices, and describe what you purchased',
+              },
+              history: {
+                topic: 'traditional markets in Latin America',
+                prompt: 'Learn about the history and cultural significance of mercados and tianguis in Spanish-speaking countries',
               },
             },
           },
@@ -919,57 +775,27 @@ const baseLearningPath = {
             },
             xpRequired: 720,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "blue" en español?',
-                    answer: { acceptable: ['azul'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué verbo usas para descripciones físicas permanentes?',
-                    options: [
-                      { id: '1', label: 'Estar', correct: false },
-                      { id: '2', label: 'Ser', correct: true },
-                      { id: '3', label: 'Tener', correct: false },
-                      { id: '4', label: 'Hacer', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son rasgos de personalidad positivos? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Simpático', correct: true },
-                      { id: '2', label: 'Amable', correct: true },
-                      { id: '3', label: 'Alto', correct: false },
-                      { id: '4', label: 'Divertido', correct: true },
-                      { id: '5', label: 'Rojo', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "short" (height) en español?',
-                    options: [
-                      { id: '1', label: 'Alto', correct: false },
-                      { id: '2', label: 'Bajo', correct: true },
-                      { id: '3', label: 'Delgado', correct: false },
-                      { id: '4', label: 'Fuerte', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra describe el color de la naturaleza?',
-                    options: [
-                      { id: '1', label: 'Rojo', correct: false },
-                      { id: '2', label: 'Amarillo', correct: false },
-                      { id: '3', label: 'Verde', correct: true },
-                      { id: '4', label: 'Negro', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['rojo', 'azul', 'verde', 'amarillo', 'negro', 'blanco', 'alto', 'bajo', 'delgado', 'fuerte', 'pelo', 'ojos', 'simpático', 'amable', 'inteligente', 'divertido', 'serio'],
+                topic: 'Unit 6 Review: Colors, Descriptions, and Personality',
+              },
+              grammar: {
+                topic: 'Unit 6 Review',
+                focusPoints: ['color adjective agreement', 'ser vs estar for descriptions', 'permanent vs temporary traits', 'personality adjectives'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation where you describe people using colors, physical characteristics, and personality traits, explaining what they look like and what they are like as people',
+              },
+              stories: {
+                topic: 'character descriptions',
+                prompt: 'Write a story introducing different characters, describing their physical appearance, clothing colors, and personality traits',
+              },
+              history: {
+                topic: 'diversity in the Spanish-speaking world',
+                prompt: 'Learn about the rich ethnic and cultural diversity across Latin America and Spain, and how different regions celebrate their unique characteristics',
               },
             },
           },
@@ -1084,57 +910,27 @@ const baseLearningPath = {
             },
             xpRequired: 895,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué verbo usas con deportes como el fútbol?',
-                    options: [
-                      { id: '1', label: 'Hacer', correct: false },
-                      { id: '2', label: 'Jugar', correct: true },
-                      { id: '3', label: 'Tocar', correct: false },
-                      { id: '4', label: 'Ver', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son actividades artísticas? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Dibujar', correct: true },
-                      { id: '2', label: 'Correr', correct: false },
-                      { id: '3', label: 'Pintar', correct: true },
-                      { id: '4', label: 'Escribir', correct: true },
-                      { id: '5', label: 'Nadar', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "to read" en español?',
-                    answer: { acceptable: ['leer'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "I am running" (presente progresivo)?',
-                    options: [
-                      { id: '1', label: 'Yo corro', correct: false },
-                      { id: '2', label: 'Estoy corriendo', correct: true },
-                      { id: '3', label: 'He corrido', correct: false },
-                      { id: '4', label: 'Voy a correr', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra describe una representación musical en vivo?',
-                    options: [
-                      { id: '1', label: 'Película', correct: false },
-                      { id: '2', label: 'Libro', correct: false },
-                      { id: '3', label: 'Concierto', correct: true },
-                      { id: '4', label: 'Juego', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['fútbol', 'nadar', 'correr', 'jugar', 'practicar', 'música', 'canción', 'película', 'concierto', 'bailar', 'libro', 'leer', 'escribir', 'dibujar', 'pintar'],
+                topic: 'Unit 7 Review: Hobbies, Sports, and Entertainment',
+              },
+              grammar: {
+                topic: 'Unit 7 Review',
+                focusPoints: ['jugar vs practicar with sports', 'frequency expressions', 'present progressive (estar + gerund)', 'ongoing activities'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation about your hobbies and interests, discussing sports you play, music and movies you enjoy, and creative activities you do in your free time',
+              },
+              stories: {
+                topic: 'hobbies and free time',
+                prompt: 'Write a story about a weekend full of activities including sports, entertainment, and creative pursuits',
+              },
+              history: {
+                topic: 'sports and arts in Hispanic culture',
+                prompt: 'Learn about the cultural importance of soccer in Latin America, famous Hispanic artists like Frida Kahlo and Diego Rivera, and traditional music genres',
               },
             },
           },
@@ -1245,57 +1041,27 @@ const baseLearningPath = {
             },
             xpRequired: 1080,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cuál es la palabra correcta para "yesterday"?',
-                    options: [
-                      { id: '1', label: 'Mañana', correct: false },
-                      { id: '2', label: 'Ayer', correct: true },
-                      { id: '3', label: 'Hoy', correct: false },
-                      { id: '4', label: 'Ahora', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "I visited" en español (pretérito)?',
-                    options: [
-                      { id: '1', label: 'Visito', correct: false },
-                      { id: '2', label: 'Visitaba', correct: false },
-                      { id: '3', label: 'Visité', correct: true },
-                      { id: '4', label: 'Visitaré', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son marcadores de tiempo pasado? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Ayer', correct: true },
-                      { id: '2', label: 'Mañana', correct: false },
-                      { id: '3', label: 'Anoche', correct: true },
-                      { id: '4', label: 'La semana pasada', correct: true },
-                      { id: '5', label: 'El próximo año', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "to travel" en español?',
-                    answer: { acceptable: ['viajar'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué tiempo verbal usas para acciones completadas en el pasado?',
-                    options: [
-                      { id: '1', label: 'Presente', correct: false },
-                      { id: '2', label: 'Pretérito', correct: true },
-                      { id: '3', label: 'Futuro', correct: false },
-                      { id: '4', label: 'Presente progresivo', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['ayer', 'anoche', 'la semana pasada', 'viajar', 'visitar', 'conocer', 'descubrir'],
+                topic: 'Unit 8 Review: Past Experiences and Travel',
+              },
+              grammar: {
+                topic: 'Unit 8 Review',
+                focusPoints: ['preterite tense regular -ar verbs', 'preterite -er/-ir verbs', 'past time markers', 'completed past actions'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation about what you did last weekend or on a recent trip, using preterite tense to describe completed actions',
+              },
+              stories: {
+                topic: 'past experiences',
+                prompt: 'Write a story about a memorable trip or weekend experience, describing what you did, where you visited, and what you discovered',
+              },
+              history: {
+                topic: 'historical travels and explorers',
+                prompt: 'Learn about famous Spanish explorers and their journeys, and the history of travel in the Spanish-speaking world',
               },
             },
           },
@@ -1398,57 +1164,27 @@ const baseLearningPath = {
             },
             xpRequired: 1285,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué tiempo verbal usas para describir acciones habituales en el pasado?',
-                    options: [
-                      { id: '1', label: 'Pretérito', correct: false },
-                      { id: '2', label: 'Imperfecto', correct: true },
-                      { id: '3', label: 'Presente', correct: false },
-                      { id: '4', label: 'Futuro', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "it was raining" (imperfecto)?',
-                    options: [
-                      { id: '1', label: 'Llovió', correct: false },
-                      { id: '2', label: 'Llovía', correct: true },
-                      { id: '3', label: 'Llueve', correct: false },
-                      { id: '4', label: 'Lloverá', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son expresiones del clima? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Hacer calor', correct: true },
-                      { id: '2', label: 'Hacer ejercicio', correct: false },
-                      { id: '3', label: 'Nevar', correct: true },
-                      { id: '4', label: 'Hacer frío', correct: true },
-                      { id: '5', label: 'Hacer la tarea', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cuál es una estación del año que empieza con "P"?',
-                    answer: { acceptable: ['primavera'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cuál es la diferencia entre pretérito e imperfecto?',
-                    options: [
-                      { id: '1', label: 'No hay diferencia', correct: false },
-                      { id: '2', label: 'Pretérito es para acciones completadas, imperfecto para acciones habituales o descriptivas', correct: true },
-                      { id: '3', label: 'Imperfecto es futuro', correct: false },
-                      { id: '4', label: 'Pretérito es presente', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['llover', 'nevar', 'hacer calor', 'hacer frío', 'primavera'],
+                topic: 'Unit 9 Review: Imperfect Tense, Childhood, and Weather',
+              },
+              grammar: {
+                topic: 'Unit 9 Review',
+                focusPoints: ['imperfect tense formation', 'imperfect vs preterite', 'habitual past actions', 'weather expressions (hacer, estar, hay)'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation about your childhood, describing what you used to do, what the weather was like where you grew up, and your habits when you were young',
+              },
+              stories: {
+                topic: 'childhood memories',
+                prompt: 'Write a story about your childhood, describing typical activities, the weather in different seasons, and how things were different back then',
+              },
+              history: {
+                topic: 'climate diversity in the Spanish-speaking world',
+                prompt: 'Learn about the varied climates across Latin America and Spain, from tropical to desert to alpine regions',
               },
             },
           },
@@ -1551,57 +1287,27 @@ const baseLearningPath = {
             },
             xpRequired: 1515,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "I am going to study" usando ir + a?',
-                    options: [
-                      { id: '1', label: 'Voy a estudiar', correct: true },
-                      { id: '2', label: 'Estudiaré', correct: false },
-                      { id: '3', label: 'Estudio', correct: false },
-                      { id: '4', label: 'Estudié', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cuál es el futuro simple de "hablar" para "yo"?',
-                    options: [
-                      { id: '1', label: 'Hablo', correct: false },
-                      { id: '2', label: 'Hablé', correct: false },
-                      { id: '3', label: 'Hablaré', correct: true },
-                      { id: '4', label: 'Voy a hablar', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son palabras relacionadas con carreras? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Trabajo', correct: true },
-                      { id: '2', label: 'Mesa', correct: false },
-                      { id: '3', label: 'Meta', correct: true },
-                      { id: '4', label: 'Carrera', correct: true },
-                      { id: '5', label: 'Clima', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "future" en español?',
-                    answer: { acceptable: ['futuro'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué estructura usas para hablar del futuro cercano?',
-                    options: [
-                      { id: '1', label: 'Pretérito', correct: false },
-                      { id: '2', label: 'Ir + a + infinitivo', correct: true },
-                      { id: '3', label: 'Estar + gerundio', correct: false },
-                      { id: '4', label: 'Ser + adjetivo', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['carrera', 'trabajo', 'meta', 'aspiración', 'futuro'],
+                topic: 'Unit 10 Review: Future Plans and Careers',
+              },
+              grammar: {
+                topic: 'Unit 10 Review',
+                focusPoints: ['ir + a + infinitive for near future', 'simple future tense regular endings', 'irregular future verbs', 'future time expressions'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation about your future plans, discussing what you are going to do tomorrow and your long-term career goals and aspirations',
+              },
+              stories: {
+                topic: 'future dreams and goals',
+                prompt: 'Write a story about your future, describing your career aspirations, where you will live, and what you hope to achieve',
+              },
+              history: {
+                topic: 'education and careers in Latin America',
+                prompt: 'Learn about educational systems and career opportunities in Spanish-speaking countries, and how they are evolving',
               },
             },
           },
@@ -1712,57 +1418,27 @@ const baseLearningPath = {
             },
             xpRequired: 1735,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "head" en español?',
-                    answer: { acceptable: ['cabeza'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "my leg hurts"?',
-                    options: [
-                      { id: '1', label: 'Me duele la pierna', correct: true },
-                      { id: '2', label: 'Me duelen las piernas', correct: false },
-                      { id: '3', label: 'Tengo pierna', correct: false },
-                      { id: '4', label: 'Estoy pierna', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son partes del cuerpo? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Brazo', correct: true },
-                      { id: '2', label: 'Médico', correct: false },
-                      { id: '3', label: 'Mano', correct: true },
-                      { id: '4', label: 'Pie', correct: true },
-                      { id: '5', label: 'Hospital', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra describe actividad física para la salud?',
-                    options: [
-                      { id: '1', label: 'Dolor', correct: false },
-                      { id: '2', label: 'Fiebre', correct: false },
-                      { id: '3', label: 'Ejercicio', correct: true },
-                      { id: '4', label: 'Enfermedad', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué verbo usas para expresar dolor?',
-                    options: [
-                      { id: '1', label: 'Ser', correct: false },
-                      { id: '2', label: 'Estar', correct: false },
-                      { id: '3', label: 'Doler', correct: true },
-                      { id: '4', label: 'Tener', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['cabeza', 'brazo', 'pierna', 'mano', 'pie', 'ojo', 'dolor', 'fiebre', 'médico', 'enfermedad', 'medicina', 'ejercicio', 'saludable', 'dieta', 'descansar', 'energía'],
+                topic: 'Unit 11 Review: Health, Body, and Wellness',
+              },
+              grammar: {
+                topic: 'Unit 11 Review',
+                focusPoints: ['reflexive verbs with body parts', 'doler conjugation (me duele/me duelen)', 'informal commands for health advice', 'body-related actions'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation at a doctor\'s office where you describe symptoms, explain what hurts, and discuss healthy habits and wellness practices',
+              },
+              stories: {
+                topic: 'health and wellness',
+                prompt: 'Write a story about someone\'s journey to better health, including visiting a doctor, changing their habits, and improving their lifestyle',
+              },
+              history: {
+                topic: 'traditional medicine in Latin America',
+                prompt: 'Learn about traditional healing practices and remedies in Spanish-speaking cultures, and how they complement modern medicine',
               },
             },
           },
@@ -1873,57 +1549,27 @@ const baseLearningPath = {
             },
             xpRequired: 1970,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "to recycle" en español?',
-                    answer: { acceptable: ['reciclar'] },
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son características geográficas naturales? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Montaña', correct: true },
-                      { id: '2', label: 'Ciudad', correct: false },
-                      { id: '3', label: 'Río', correct: true },
-                      { id: '4', label: 'Mar', correct: true },
-                      { id: '5', label: 'Edificio', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra describe el problema del aire sucio?',
-                    options: [
-                      { id: '1', label: 'Contaminación', correct: true },
-                      { id: '2', label: 'Reciclaje', correct: false },
-                      { id: '3', label: 'Naturaleza', correct: false },
-                      { id: '4', label: 'Bosque', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "tree" en español?',
-                    options: [
-                      { id: '1', label: 'Flor', correct: false },
-                      { id: '2', label: 'Árbol', correct: true },
-                      { id: '3', label: 'Animal', correct: false },
-                      { id: '4', label: 'Planta', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué verbo significa "to protect"?',
-                    options: [
-                      { id: '1', label: 'Contaminar', correct: false },
-                      { id: '2', label: 'Destruir', correct: false },
-                      { id: '3', label: 'Proteger', correct: true },
-                      { id: '4', label: 'Olvidar', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['animal', 'perro', 'gato', 'árbol', 'flor', 'bosque', 'contaminación', 'reciclar', 'clima', 'proteger', 'naturaleza', 'montaña', 'río', 'mar', 'playa', 'desierto', 'valle'],
+                topic: 'Unit 12 Review: Environment, Nature, and Geography',
+              },
+              grammar: {
+                topic: 'Unit 12 Review',
+                focusPoints: ['geographic descriptions', 'estar with locations', 'environmental vocabulary usage', 'descriptive language for nature'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation about environmental issues, discussing ways to protect nature, describing geographic features, and talking about plants and animals in your region',
+              },
+              stories: {
+                topic: 'environment and nature',
+                prompt: 'Write a story about exploring a natural landscape, encountering wildlife, and learning about environmental conservation',
+              },
+              history: {
+                topic: 'biodiversity and conservation in Latin America',
+                prompt: 'Learn about the Amazon rainforest, Galapagos Islands, and other unique ecosystems in Spanish-speaking regions, and conservation efforts to protect them',
               },
             },
           },
@@ -2018,62 +1664,27 @@ const baseLearningPath = {
             },
             xpRequired: 2245,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cuándo se usa el subjuntivo?',
-                    options: [
-                      { id: '1', label: 'Para hechos objetivos', correct: false },
-                      { id: '2', label: 'Para deseos, dudas y emociones', correct: true },
-                      { id: '3', label: 'Para el pasado simple', correct: false },
-                      { id: '4', label: 'Para el futuro simple', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cuál es correcto? "Espero que tú..."',
-                    options: [
-                      { id: '1', label: 'vienes', correct: false },
-                      { id: '2', label: 'vengas', correct: true },
-                      { id: '3', label: 'viniste', correct: false },
-                      { id: '4', label: 'vendrás', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles frases requieren subjuntivo? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Quiero que...', correct: true },
-                      { id: '2', label: 'Sé que...', correct: false },
-                      { id: '3', label: 'Dudo que...', correct: true },
-                      { id: '4', label: 'Espero que...', correct: true },
-                      { id: '5', label: 'Es verdad que...', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cuál es el subjuntivo de "ser" para "yo"?',
-                    options: [
-                      { id: '1', label: 'soy', correct: false },
-                      { id: '2', label: 'sea', correct: true },
-                      { id: '3', label: 'fui', correct: false },
-                      { id: '4', label: 'seré', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué frase usa subjuntivo correctamente?',
-                    options: [
-                      { id: '1', label: 'No creo que es verdad', correct: false },
-                      { id: '2', label: 'No creo que sea verdad', correct: true },
-                      { id: '3', label: 'No creo que será verdad', correct: false },
-                      { id: '4', label: 'No creo que fue verdad', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['querer', 'esperar', 'dudar', 'negar', 'desear', 'temer', 'alegrarse'],
+                topic: 'Unit 13 Review: Subjunctive Mood and Trigger Verbs',
+              },
+              grammar: {
+                topic: 'Unit 13 Review',
+                focusPoints: ['present subjunctive formation', 'trigger phrases for subjunctive', 'subjunctive with wishes (querer, esperar)', 'subjunctive with doubt (dudar, no creer)', 'irregular subjunctive forms'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation expressing your wishes, hopes, doubts, and emotions about various topics using the subjunctive mood',
+              },
+              stories: {
+                topic: 'wishes and emotions',
+                prompt: 'Write a story about characters expressing their hopes, fears, doubts, and desires for the future using subjunctive constructions',
+              },
+              history: {
+                topic: 'expressions of emotion in Hispanic culture',
+                prompt: 'Learn about how Spanish-speaking cultures express emotions, wishes, and hopes, and the cultural importance of these expressions',
               },
             },
           },
@@ -2188,57 +1799,27 @@ const baseLearningPath = {
             },
             xpRequired: 2555,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "to argue/debate" en español?',
-                    options: [
-                      { id: '1', label: 'Discutir', correct: false },
-                      { id: '2', label: 'Debatir', correct: true },
-                      { id: '3', label: 'Hablar', correct: false },
-                      { id: '4', label: 'Gritar', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son palabras relacionadas con la comunicación profesional? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Reunión', correct: true },
-                      { id: '2', label: 'Fiesta', correct: false },
-                      { id: '3', label: 'Presentación', correct: true },
-                      { id: '4', label: 'Informe', correct: true },
-                      { id: '5', label: 'Juego', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "news" en español?',
-                    answer: { acceptable: ['noticia', 'noticias'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué verbo significa "to convince"?',
-                    options: [
-                      { id: '1', label: 'Olvidar', correct: false },
-                      { id: '2', label: 'Convencer', correct: true },
-                      { id: '3', label: 'Escuchar', correct: false },
-                      { id: '4', label: 'Mirar', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra se usa para eventos actuales?',
-                    options: [
-                      { id: '1', label: 'Historia', correct: false },
-                      { id: '2', label: 'Actualidad', correct: true },
-                      { id: '3', label: 'Pasado', correct: false },
-                      { id: '4', label: 'Leyenda', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['argumentar', 'convencer', 'debatir', 'persuadir', 'noticia', 'evento', 'actualidad', 'política', 'reunión', 'presentación', 'informe', 'negociar'],
+                topic: 'Unit 14 Review: Complex Conversations and Professional Communication',
+              },
+              grammar: {
+                topic: 'Unit 14 Review',
+                focusPoints: ['advanced persuasive language', 'formal vs informal registers', 'professional communication structures', 'debate and argumentation techniques'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Participate in a professional meeting where you present ideas, debate different viewpoints, discuss current events, and persuade colleagues',
+              },
+              stories: {
+                topic: 'professional life',
+                prompt: 'Write a story about a professional situation involving debates, presentations, and navigating complex workplace dynamics',
+              },
+              history: {
+                topic: 'media and politics in the Hispanic world',
+                prompt: 'Learn about important current events, media landscape, and political systems in Spanish-speaking countries',
               },
             },
           },
@@ -2353,57 +1934,27 @@ const baseLearningPath = {
             },
             xpRequired: 2865,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "poet" en español?',
-                    answer: { acceptable: ['poeta'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra se refiere a una figura literaria?',
-                    options: [
-                      { id: '1', label: 'Metáfora', correct: true },
-                      { id: '2', label: 'Mesa', correct: false },
-                      { id: '3', label: 'Música', correct: false },
-                      { id: '4', label: 'Medicina', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son formas de arte visual? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Pintura', correct: true },
-                      { id: '2', label: 'Poema', correct: false },
-                      { id: '3', label: 'Escultura', correct: true },
-                      { id: '4', label: 'Novela', correct: false },
-                      { id: '5', label: 'Galería', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "movie" en español?',
-                    options: [
-                      { id: '1', label: 'Libro', correct: false },
-                      { id: '2', label: 'Película', correct: true },
-                      { id: '3', label: 'Canción', correct: false },
-                      { id: '4', label: 'Pintura', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra describe el texto de una película?',
-                    options: [
-                      { id: '1', label: 'Actor', correct: false },
-                      { id: '2', label: 'Director', correct: false },
-                      { id: '3', label: 'Guion', correct: true },
-                      { id: '4', label: 'Escena', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['poeta', 'verso', 'metáfora', 'narrativa', 'estilo', 'pintura', 'escultura', 'artista', 'galería', 'obra', 'película', 'director', 'actor', 'escena', 'guion'],
+                topic: 'Unit 15 Review: Literature, Visual Arts, and Cinema',
+              },
+              grammar: {
+                topic: 'Unit 15 Review',
+                focusPoints: ['literary analysis vocabulary', 'artistic descriptions', 'cultural discussion structures', 'advanced adjectives for art'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation about Hispanic culture, discussing literature, visual arts, and cinema, analyzing works and expressing artistic opinions',
+              },
+              stories: {
+                topic: 'arts and culture',
+                prompt: 'Write a story about visiting museums and theaters, experiencing Hispanic arts and culture, and being inspired by famous works',
+              },
+              history: {
+                topic: 'Hispanic cultural movements',
+                prompt: 'Learn about major literary movements, famous Hispanic artists like Frida Kahlo and Pablo Picasso, and influential films from Spanish-speaking countries',
               },
             },
           },
@@ -2518,57 +2069,27 @@ const baseLearningPath = {
             },
             xpRequired: 3190,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "internet" en español?',
-                    options: [
-                      { id: '1', label: 'Internet', correct: true },
-                      { id: '2', label: 'Red', correct: false },
-                      { id: '3', label: 'Computadora', correct: false },
-                      { id: '4', label: 'Teléfono', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son conceptos de la economía digital? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Startup', correct: true },
-                      { id: '2', label: 'Bosque', correct: false },
-                      { id: '3', label: 'Plataforma', correct: true },
-                      { id: '4', label: 'Emprendedor', correct: true },
-                      { id: '5', label: 'Montaña', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "to innovate" en español?',
-                    answer: { acceptable: ['innovar'] },
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra se refiere a una nueva empresa tecnológica?',
-                    options: [
-                      { id: '1', label: 'Hospital', correct: false },
-                      { id: '2', label: 'Startup', correct: true },
-                      { id: '3', label: 'Escuela', correct: false },
-                      { id: '4', label: 'Parque', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "research" en español?',
-                    options: [
-                      { id: '1', label: 'Buscar', correct: false },
-                      { id: '2', label: 'Investigación', correct: true },
-                      { id: '3', label: 'Mensaje', correct: false },
-                      { id: '4', label: 'Aplicación', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['internet', 'correo', 'mensaje', 'aplicación', 'red social', 'investigación', 'descubrimiento', 'tecnología', 'innovar', 'futuro', 'emprendedor', 'startup', 'digital', 'comercio', 'plataforma'],
+                topic: 'Unit 16 Review: Technology, Innovation, and Digital Economy',
+              },
+              grammar: {
+                topic: 'Unit 16 Review',
+                focusPoints: ['technology-related verbs', 'modern terminology', 'digital communication expressions', 'business and innovation vocabulary'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation about technology and innovation, discussing digital communication, scientific discoveries, and entrepreneurial ideas in the digital economy',
+              },
+              stories: {
+                topic: 'technology and innovation',
+                prompt: 'Write a story about launching a tech startup, making scientific discoveries, or how technology has transformed modern life',
+              },
+              history: {
+                topic: 'Hispanic contributions to science and technology',
+                prompt: 'Learn about important Hispanic scientists, inventors, and entrepreneurs who have shaped modern technology and innovation',
               },
             },
           },
@@ -2655,57 +2176,27 @@ const baseLearningPath = {
             },
             xpRequired: 3425,
             xpReward: 0,
-            modes: ['quiz'],
+            modes: ['vocabulary', 'grammar', 'realtime', 'stories', 'history'],
             content: {
-              quiz: {
-                questions: [
-                  {
-                    type: 'oneword',
-                    stem: '¿Cómo se dice "equality" en español?',
-                    answer: { acceptable: ['igualdad'] },
-                  },
-                  {
-                    type: 'multi',
-                    stem: '¿Cuáles son conceptos de justicia social? (Selecciona todas)',
-                    options: [
-                      { id: '1', label: 'Igualdad', correct: true },
-                      { id: '2', label: 'Comida', correct: false },
-                      { id: '3', label: 'Derechos', correct: true },
-                      { id: '4', label: 'Inclusión', correct: true },
-                      { id: '5', label: 'Película', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra significa "sustainability"?',
-                    options: [
-                      { id: '1', label: 'Crisis', correct: false },
-                      { id: '2', label: 'Sostenibilidad', correct: true },
-                      { id: '3', label: 'Problema', correct: false },
-                      { id: '4', label: 'Diversión', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Cómo se dice "rights" en español?',
-                    options: [
-                      { id: '1', label: 'Izquierda', correct: false },
-                      { id: '2', label: 'Derecha', correct: false },
-                      { id: '3', label: 'Derechos', correct: true },
-                      { id: '4', label: 'Deberes', correct: false },
-                    ],
-                  },
-                  {
-                    type: 'mcq',
-                    stem: '¿Qué palabra describe trabajar juntos internacionalmente?',
-                    options: [
-                      { id: '1', label: 'Separación', correct: false },
-                      { id: '2', label: 'Cooperación', correct: true },
-                      { id: '3', label: 'Competencia', correct: false },
-                      { id: '4', label: 'Conflicto', correct: false },
-                    ],
-                  },
-                ],
+              vocabulary: {
+                words: ['justicia', 'igualdad', 'derechos', 'diversidad', 'inclusión', 'global', 'crisis', 'solución', 'cooperación', 'sostenibilidad'],
+                topic: 'Unit 17 Review: Social Issues, Ethics, and Global Challenges',
+              },
+              grammar: {
+                topic: 'Unit 17 Review',
+                focusPoints: ['advanced discourse markers', 'persuasive language for social topics', 'subjunctive for expressing hopes and concerns', 'complex sentence structures'],
+              },
+              realtime: {
+                scenario: 'comprehensive review',
+                prompt: 'Have a conversation about social justice, global challenges, and ethical issues, discussing equality, rights, sustainability, and international cooperation',
+              },
+              stories: {
+                topic: 'social change and ethics',
+                prompt: 'Write a story about addressing a social issue, working toward justice and equality, or solving a global challenge through cooperation',
+              },
+              history: {
+                topic: 'social movements in Latin America',
+                prompt: 'Learn about important social justice movements, civil rights leaders, and ethical debates in Spanish-speaking countries throughout history',
               },
             },
           },
