@@ -2482,6 +2482,8 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           lessonContent={activeLesson?.content?.grammar}
+                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                          quizConfig={activeLesson?.quizConfig || { questionsRequired: 10, passingScore: 8 }}
                         />
                       </TabPanel>
                     );
@@ -2493,6 +2495,8 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           lessonContent={activeLesson?.content?.vocabulary}
+                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                          quizConfig={activeLesson?.quizConfig || { questionsRequired: 10, passingScore: 8 }}
                         />
                       </TabPanel>
                     );

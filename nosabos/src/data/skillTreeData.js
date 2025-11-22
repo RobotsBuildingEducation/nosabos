@@ -112,6 +112,35 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-1-quiz',
+            title: {
+              en: 'Unit 1 Quiz',
+              es: 'Prueba de Unidad 1',
+            },
+            description: {
+              en: 'Test your knowledge of greetings, introductions, and basic questions',
+              es: 'Pon a prueba tus conocimientos de saludos, presentaciones y preguntas básicas',
+            },
+            xpRequired: 70,
+            xpReward: 50,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                words: ['hola', 'adiós', 'buenos días', 'buenas tardes', 'buenas noches', '¿cómo?', '¿qué?', '¿dónde?', '¿cuándo?', '¿por qué?'],
+                topics: ['greetings', 'question words'],
+              },
+              grammar: {
+                topics: ['basic greetings', 'introductions', 'question formation'],
+                focusPoints: ['formal vs informal', 'time-based greetings', 'me llamo', 'soy de', 'verb ser', 'question words', 'intonation', 'word order'],
+              },
+            },
+          },
         ],
       },
       {

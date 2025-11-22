@@ -676,7 +676,12 @@ function norm(s) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function Vocabulary({ userLanguage = "en", lessonContent = null }) {
+export default function Vocabulary({
+  userLanguage = "en",
+  lessonContent = null,
+  isFinalQuiz = false,
+  quizConfig = { questionsRequired: 10, passingScore: 8 }
+}) {
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
@@ -686,6 +691,12 @@ export default function Vocabulary({ userLanguage = "en", lessonContent = null }
   if (lessonContent?.words) {
     console.log('[Vocabulary Component] Specific words:', lessonContent.words);
   }
+
+  // Quiz mode state
+  const [quizQuestionsAnswered, setQuizQuestionsAnswered] = useState(0);
+  const [quizCorrectAnswers, setQuizCorrectAnswers] = useState(0);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [quizPassed, setQuizPassed] = useState(false);
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
@@ -793,6 +804,38 @@ export default function Vocabulary({ userLanguage = "en", lessonContent = null }
     }
   }
 
+  // Quiz mode helper function
+  function handleQuizAnswer(isCorrect) {
+    const newQuestionsAnswered = quizQuestionsAnswered + 1;
+    const newCorrectAnswers = isCorrect ? quizCorrectAnswers + 1 : quizCorrectAnswers;
+
+    setQuizQuestionsAnswered(newQuestionsAnswered);
+    setQuizCorrectAnswers(newCorrectAnswers);
+
+    // Check if quiz is complete
+    if (newQuestionsAnswered >= quizConfig.questionsRequired) {
+      const passed = newCorrectAnswers >= quizConfig.passingScore;
+      setQuizCompleted(true);
+      setQuizPassed(passed);
+
+      toast({
+        title: passed
+          ? (userLanguage === "es" ? "¡Prueba Aprobada!" : "Quiz Passed!")
+          : (userLanguage === "es" ? "Prueba Fallada" : "Quiz Failed"),
+        description: passed
+          ? (userLanguage === "es"
+              ? `¡Felicitaciones! Obtuviste ${newCorrectAnswers}/${quizConfig.questionsRequired} correctas.`
+              : `Congratulations! You got ${newCorrectAnswers}/${quizConfig.questionsRequired} correct.`)
+          : (userLanguage === "es"
+              ? `Obtuviste ${newCorrectAnswers}/${quizConfig.questionsRequired}. Necesitas ${quizConfig.passingScore} para aprobar.`
+              : `You got ${newCorrectAnswers}/${quizConfig.questionsRequired}. You need ${quizConfig.passingScore} to pass.`),
+        status: passed ? "success" : "error",
+        duration: 8000,
+        isClosable: true,
+      });
+    }
+  }
+
   function handleNext() {
     if (typeof nextAction === "function") {
       setLastOk(null);
@@ -804,6 +847,9 @@ export default function Vocabulary({ userLanguage = "en", lessonContent = null }
   }
 
   function handleSkip() {
+    // Skip button is disabled in quiz mode
+    if (isFinalQuiz) return;
+
     if (isSpeakRecording) {
       try {
         stopSpeakRecording();
@@ -1325,20 +1371,28 @@ Return EXACTLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "vocab_fill",
-      question: qFill,
-      hint: hFill,
-      translation: trFill,
-      user_input: ansFill,
-      award_xp: delta,
-    }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    // Handle quiz mode differently
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setResFill(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0); // No XP in quiz mode
+    } else {
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_fill",
+        question: qFill,
+        hint: hFill,
+        translation: trFill,
+        user_input: ansFill,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-    setResFill(ok ? "correct" : "try_again"); // log only
-    setLastOk(ok);
-    setRecentXp(delta);
+      setResFill(ok ? "correct" : "try_again"); // log only
+      setLastOk(ok);
+      setRecentXp(delta);
+    }
 
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
     const nextFn = ok
@@ -1574,22 +1628,30 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "vocab_mc",
-      question: qMC,
-      hint: hMC,
-      translation: trMC,
-      choices: choicesMC,
-      author_answer: answerMC,
-      user_choice: pickMC,
-      award_xp: delta,
-    }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    // Handle quiz mode differently
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setResMC(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0); // No XP in quiz mode
+    } else {
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_mc",
+        question: qMC,
+        hint: hMC,
+        translation: trMC,
+        choices: choicesMC,
+        author_answer: answerMC,
+        user_choice: pickMC,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-    setResMC(ok ? "correct" : "try_again"); // log only
-    setLastOk(ok);
-    setRecentXp(delta);
+      setResMC(ok ? "correct" : "try_again"); // log only
+      setLastOk(ok);
+      setRecentXp(delta);
+    }
 
     const nextFn = ok
       ? lockedType
@@ -2975,14 +3037,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQFill || loadingGFill}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQFill || loadingGFill}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitFill}

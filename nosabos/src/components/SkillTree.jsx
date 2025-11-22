@@ -537,12 +537,16 @@ function UnitSection({
             const lessonProgress = userProgress.lessons?.[lesson.id];
             let status = SKILL_STATUS.LOCKED;
 
+            // Testing unlock: check for specific nsec in local storage
+            const testNsec = typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
+            const isTestUnlocked = testNsec === "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+
             // Determine lesson status
             if (lessonProgress?.status === SKILL_STATUS.COMPLETED) {
               status = SKILL_STATUS.COMPLETED;
             } else if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
               status = SKILL_STATUS.IN_PROGRESS;
-            } else if (userProgress.totalXp >= lesson.xpRequired) {
+            } else if (isTestUnlocked || userProgress.totalXp >= lesson.xpRequired) {
               status = SKILL_STATUS.AVAILABLE;
             }
 
