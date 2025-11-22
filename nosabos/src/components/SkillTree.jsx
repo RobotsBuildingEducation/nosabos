@@ -94,7 +94,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   };
 
   const Icon = getNodeIcon();
-  const isClickable = status === SKILL_STATUS.AVAILABLE || status === SKILL_STATUS.IN_PROGRESS;
+  const isClickable = status === SKILL_STATUS.AVAILABLE || status === SKILL_STATUS.IN_PROGRESS || status === SKILL_STATUS.COMPLETED;
 
   return (
     <MotionBox
@@ -736,13 +736,13 @@ function LessonDetailModal({
                       display="flex"
                       alignItems="center"
                       gap={2}
-                      bgGradient={`linear(135deg, ${unit.color}50, ${unit.color}40)`}
+                      bg={unit.color}
                       color="white"
-                      fontWeight="semibold"
+                      fontWeight="bold"
                       fontSize="sm"
-                      border="1px solid"
-                      borderColor={`${unit.color}30`}
-                      boxShadow={`0 2px 10px ${unit.color}20`}
+                      border="2px solid"
+                      borderColor="whiteAlpha.300"
+                      boxShadow="0 2px 8px rgba(0, 0, 0, 0.3)"
                     >
                       <Icon size={16} />
                       <Text textTransform="capitalize">{mode}</Text>
@@ -854,7 +854,7 @@ export default function SkillTree({
   const bgColor = 'gray.950';
 
   const handleLessonClick = (lesson, unit, status) => {
-    if (status === SKILL_STATUS.AVAILABLE || status === SKILL_STATUS.IN_PROGRESS) {
+    if (status === SKILL_STATUS.AVAILABLE || status === SKILL_STATUS.IN_PROGRESS || status === SKILL_STATUS.COMPLETED) {
       setSelectedLesson(lesson);
       setSelectedUnit(unit);
       onOpen();
