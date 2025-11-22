@@ -339,19 +339,19 @@ function UnitSection({
 
   // Responsive horizontal offset for zigzag pattern
   const zigzagOffset = useBreakpointValue({
-    base: 60,    // Mobile devices
-    sm: 80,      // Small tablets
-    md: 120,     // Medium tablets
+    base: 90,    // Mobile devices
+    sm: 110,     // Small tablets
+    md: 140,     // Medium tablets
     lg: 180,     // Desktop
-  }) || 60; // Fallback to mobile size
+  }) || 90; // Fallback to mobile size
 
   // Responsive SVG container width
   const svgWidth = useBreakpointValue({
-    base: 200,
-    sm: 240,
-    md: 280,
-    lg: 300,
-  }) || 200;
+    base: 240,
+    sm: 260,
+    md: 300,
+    lg: 320,
+  }) || 240;
 
   const unitProgressPercent = getUnitProgress(unit, userProgress);
   const completedCount = unit.lessons.filter(
