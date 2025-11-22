@@ -59,6 +59,7 @@ import {
   SettingsIcon,
   ChevronDownIcon,
   CheckCircleIcon,
+  ArrowBackIcon,
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
@@ -222,6 +223,7 @@ function TopBar({
   cefrLoading,
   cefrError,
   onPatchSettings,
+  onSelectLanguage,
   onSwitchedAccount,
   settingsOpen,
   openSettings,
@@ -810,6 +812,7 @@ function TopBar({
         onClose={closeAccount}
         t={t}
         appLanguage={appLanguage}
+        onSelectLanguage={onSelectLanguage}
         activeNpub={currentId} // or props.activeNpub; both mirror each other
         activeNsec={currentSecret} // or props.activeNsec
         auth={auth}
@@ -2334,6 +2337,7 @@ export default function App() {
           setActiveNsec(localStorage.getItem("local_nsec") || "");
         }}
         onPatchSettings={saveGlobalSettings}
+        onSelectLanguage={handleSelectAppLanguage}
         // controlled drawers
         settingsOpen={settingsOpen}
         openSettings={() => setSettingsOpen(true)}
@@ -2370,7 +2374,8 @@ export default function App() {
         onToggleTranslations={handleToggleTranslations}
         translationLabel={translationToggleLabel}
         appLanguage={appLanguage}
-        onSelectLanguage={handleSelectAppLanguage}
+        viewMode={viewMode}
+        onNavigateToSkillTree={() => setViewMode("skillTree")}
         onOpenHelpChat={helpChatDisclosure.onOpen}
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
       />
@@ -2776,7 +2781,8 @@ function BottomActionBar({
   onToggleTranslations,
   translationLabel,
   appLanguage = "en",
-  onSelectLanguage,
+  onNavigateToSkillTree,
+  viewMode,
   onOpenHelpChat,
   helpLabel,
   hasPendingTeamInvite = false,
@@ -2786,17 +2792,10 @@ function BottomActionBar({
     t?.app_settings_aria || t?.ra_btn_settings || "Settings";
   const toggleLabel =
     translationLabel || t?.ra_translations_toggle || "Translations";
-  const englishLabel = t?.language_en || t?.app_language_en || "English";
-  const spanishLabel = t?.language_es || t?.app_language_es || "Spanish";
   const helpChatLabel =
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
   const teamsLabel = t?.teams_drawer_title || "Teams";
-
-  const handleSelectLanguage = (lang) => {
-    if (typeof onSelectLanguage === "function") {
-      onSelectLanguage(lang);
-    }
-  };
+  const backLabel = appLanguage === "es" ? "Volver" : "Go back";
 
   return (
     <Box
@@ -2831,39 +2830,19 @@ function BottomActionBar({
         columnGap={{ base: 3, md: 6 }}
         overflow="visible"
       >
-        <ButtonGroup
-          size="sm"
-          isAttached
-          variant="outline"
-          borderRadius="full"
-          bg="rgba(255, 255, 255, 0.04)"
-          border="1px solid"
-          borderColor="gray.700"
-          flexShrink={0}
-        >
-          <Button
-            onClick={() => handleSelectLanguage("en")}
-            variant={appLanguage === "en" ? "solid" : "ghost"}
+        {/* Back button - only show when not in skill tree */}
+        {viewMode !== "skillTree" && (
+          <IconButton
+            icon={<ArrowBackIcon boxSize={5} />}
+            onClick={onNavigateToSkillTree}
+            aria-label={backLabel}
+            rounded="xl"
+            flexShrink={0}
             colorScheme="teal"
-            fontSize="xs"
-            fontWeight="bold"
-            aria-label={englishLabel}
-            px={3}
-          >
-            EN
-          </Button>
-          <Button
-            onClick={() => handleSelectLanguage("es")}
-            variant={appLanguage === "es" ? "solid" : "ghost"}
-            colorScheme="teal"
-            fontSize="xs"
-            fontWeight="bold"
-            aria-label={spanishLabel}
-            px={3}
-          >
-            ES
-          </Button>
-        </ButtonGroup>
+            variant="outline"
+            size="md"
+          />
+        )}
         <IconButton
           icon={<FaAddressCard size={18} />}
           onClick={onOpenIdentity}

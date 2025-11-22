@@ -12,6 +12,7 @@ import {
   Badge,
   Box,
   Button,
+  ButtonGroup,
   Center,
   Divider,
   Drawer,
@@ -53,6 +54,7 @@ export default function IdentityDrawer({
   onClose,
   t,
   appLanguage = "en",
+  onSelectLanguage,
   activeNpub,
   activeNsec,
   auth,
@@ -237,6 +239,46 @@ export default function IdentityDrawer({
         </DrawerHeader>
         <DrawerBody pb={6}>
           <VStack align="stretch" spacing={3}>
+            {/* Language Switcher */}
+            <Box>
+              <Text fontSize="sm" mb={2} fontWeight="semibold">
+                {t?.app_language_label || (appLanguage === "es" ? "Idioma de la aplicación" : "App Language")}
+              </Text>
+              <ButtonGroup
+                size="sm"
+                isAttached
+                variant="outline"
+                borderRadius="md"
+                bg="rgba(255, 255, 255, 0.04)"
+                border="1px solid"
+                borderColor="gray.700"
+                width="100%"
+              >
+                <Button
+                  onClick={() => onSelectLanguage?.("en")}
+                  variant={appLanguage === "en" ? "solid" : "ghost"}
+                  colorScheme="teal"
+                  fontSize="sm"
+                  fontWeight="bold"
+                  aria-label={t?.language_en || t?.app_language_en || "English"}
+                  flex={1}
+                >
+                  English (EN)
+                </Button>
+                <Button
+                  onClick={() => onSelectLanguage?.("es")}
+                  variant={appLanguage === "es" ? "solid" : "ghost"}
+                  colorScheme="teal"
+                  fontSize="sm"
+                  fontWeight="bold"
+                  aria-label={t?.language_es || t?.app_language_es || "Spanish"}
+                  flex={1}
+                >
+                  Español (ES)
+                </Button>
+              </ButtonGroup>
+            </Box>
+
             <Accordion allowToggle reduceMotion>
               <AccordionItem border="none">
                 <AccordionButton
