@@ -17,6 +17,20 @@ export const SKILL_STATUS = {
   COMPLETED: 'completed',
 };
 
+export const TEST_UNLOCK_NSEC =
+  "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+
+export function isTestUnlockEnabled() {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    const stored = (localStorage.getItem('local_nsec') || '').trim();
+    return stored === TEST_UNLOCK_NSEC;
+  } catch (err) {
+    console.warn('Unable to read test unlock key', err);
+    return false;
+  }
+}
+
 /**
  * Learning path structure for each language
  * Organized by proficiency level (beginner, intermediate, advanced)
@@ -1922,6 +1936,61 @@ function localizeLearningPath(units, targetLang) {
   return cloned;
 }
 
+// ----------------------
+// Quiz lesson generators
+// ----------------------
+function buildQuizLesson(unit) {
+  const lastLesson = unit.lessons[unit.lessons.length - 1] || {};
+  const xpRequired = (lastLesson.xpRequired || 0) + (lastLesson.xpReward || 20);
+  const xpReward = Math.max(30, lastLesson.xpReward || 20);
+
+  const subjects = unit.lessons.map((lesson) => ({
+    id: lesson.id,
+    title: lesson.title,
+    vocabularyTopic: lesson.content?.vocabulary?.topic || null,
+    grammarTopic: lesson.content?.grammar?.topic || null,
+    scenario:
+      lesson.content?.realtime?.scenario ||
+      lesson.content?.stories?.topic ||
+      lesson.content?.jobscript?.prompt ||
+      null,
+  }));
+
+  return {
+    id: `${unit.id}-quiz`,
+    title: {
+      en: `${unit.title.en} Quiz`,
+      es: `${unit.title.es} Quiz`,
+    },
+    description: {
+      en: "AI-generated review quiz to master this unit.",
+      es: "Quiz de repaso generado con IA para dominar la unidad.",
+    },
+    xpRequired,
+    xpReward,
+    modes: ["quiz"],
+    content: {
+      quiz: {
+        unitTitle: unit.title,
+        subjects,
+      },
+    },
+  };
+}
+
+function attachQuizLessons(path) {
+  Object.values(path).forEach((units) => {
+    units.forEach((unit) => {
+      const quizId = `${unit.id}-quiz`;
+      const alreadyHasQuiz = unit.lessons.some((lesson) => lesson.id === quizId);
+      if (alreadyHasQuiz) return;
+      unit.lessons.push(buildQuizLesson(unit));
+    });
+  });
+}
+
+attachQuizLessons(baseLearningPath);
+
 const cloneLearningPath = () => JSON.parse(JSON.stringify(baseLearningPath));
 
 export const LEARNING_PATHS = {
@@ -1955,11 +2024,13 @@ export function getUnitTotalXP(unit) {
  * Get the next available lesson for a user based on their current XP
  */
 export function getNextLesson(units, userProgress) {
+  const unlockAllLessons = isTestUnlockEnabled();
+
   for (const unit of units) {
     for (const lesson of unit.lessons) {
       const lessonProgress = userProgress.lessons?.[lesson.id];
       if (!lessonProgress || lessonProgress.status !== SKILL_STATUS.COMPLETED) {
-        if (userProgress.totalXp >= lesson.xpRequired) {
+        if (unlockAllLessons || userProgress.totalXp >= lesson.xpRequired) {
           return { unit, lesson };
         }
         return null; // Next lesson is still locked

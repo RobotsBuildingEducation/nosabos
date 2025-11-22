@@ -95,6 +95,7 @@ import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
+import LessonQuiz from "./components/LessonQuiz";
 import IdentityDrawer from "./components/IdentityDrawer";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
@@ -956,7 +957,7 @@ export default function App() {
     setAllowPosts(Boolean(user?.allowPosts));
   }, [user?.allowPosts]);
 
-  // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
+  // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Quiz, Random)
   const [currentTab, setCurrentTab] = useState(
     typeof window !== "undefined"
       ? localStorage.getItem("currentTab") || "realtime"
@@ -987,6 +988,7 @@ export default function App() {
     "history",
     "grammar",
     "vocabulary",
+    "quiz",
     "random",
   ];
 
@@ -1113,6 +1115,7 @@ export default function App() {
     history: t?.tabs_history ?? "History",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
+    quiz: t?.tabs_quiz ?? "Quiz",
     random: t?.tabs_random ?? "Random",
   };
   const TAB_ICONS = {
@@ -1122,6 +1125,7 @@ export default function App() {
     history: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <CiEdit />,
+    quiz: <LuBadgeCheck />,
     random: <LuShuffle />,
   };
 
@@ -2493,6 +2497,16 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           lessonContent={activeLesson?.content?.vocabulary}
+                        />
+                      </TabPanel>
+                    );
+                  case "quiz":
+                    return (
+                      <TabPanel key="quiz" px={0}>
+                        <LessonQuiz
+                          userLanguage={appLanguage}
+                          lessonContent={activeLesson?.content?.quiz}
+                          xpReward={activeLesson?.xpReward}
                         />
                       </TabPanel>
                     );

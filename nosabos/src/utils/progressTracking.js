@@ -6,7 +6,7 @@
 
 import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { database } from '../firebaseResources/firebaseResources';
-import { SKILL_STATUS } from '../data/skillTreeData';
+import { SKILL_STATUS, isTestUnlockEnabled } from '../data/skillTreeData';
 
 /**
  * Initialize progress structure for a new user
@@ -167,6 +167,10 @@ export function getLessonStatus(userProgress, lesson, targetLang) {
 
   if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
     return SKILL_STATUS.IN_PROGRESS;
+  }
+
+  if (isTestUnlockEnabled()) {
+    return SKILL_STATUS.AVAILABLE;
   }
 
   const langXp = getLanguageXp(userProgress, lang);
