@@ -2510,6 +2510,7 @@ export default function App() {
                             console.log(`Quiz ${passed ? 'passed' : 'failed'} with ${correctCount}/10 correct (${Math.round(score)}%)`);
                           }}
                           uiLang={appLanguage}
+                          targetLang={resolvedTargetLang}
                           lessonTitle={activeLesson?.title?.[appLanguage] || activeLesson?.title?.en || "Quiz"}
                         />
                       </TabPanel>

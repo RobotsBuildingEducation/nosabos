@@ -47,12 +47,14 @@ function useT(uiLang = "en") {
  * - questions: Array of question objects (should be 10)
  * - onComplete: Callback when quiz is finished (passed: boolean, score: number, correctCount: number)
  * - uiLang: UI language
+ * - targetLang: Language being practiced/tested (for question content)
  * - lessonTitle: Title of the lesson for display
  */
 export default function Quiz({
   questions = [],
   onComplete,
   uiLang = "en",
+  targetLang = "es",
   lessonTitle = "",
 }) {
   const t = useT(uiLang);
@@ -60,10 +62,29 @@ export default function Quiz({
   const [answers, setAnswers] = useState([]);
   const [finished, setFinished] = useState(false);
 
+  // Helper to get text in target language with fallback
+  const getLocalizedText = (textObj) => {
+    if (typeof textObj === 'string') return textObj;
+    if (!textObj) return '';
+    return textObj[targetLang] || textObj.es || textObj.en || Object.values(textObj)[0] || '';
+  };
+
+  // Localize questions to target language
+  const localizedQuestions = useMemo(() => {
+    return questions.map((q) => ({
+      ...q,
+      stem: getLocalizedText(q.stem),
+      options: q.options?.map((opt) => ({
+        ...opt,
+        label: getLocalizedText(opt.label),
+      })),
+    }));
+  }, [questions, targetLang]);
+
   // Use exactly 10 questions (shuffle and take first 10)
   const shuffledQuestions = useMemo(
-    () => shuffle(questions).slice(0, 10),
-    [questions]
+    () => shuffle(localizedQuestions).slice(0, 10),
+    [localizedQuestions]
   );
 
   const totalQuestions = 10;
