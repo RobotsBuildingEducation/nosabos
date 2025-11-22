@@ -155,7 +155,7 @@ export async function trackLessonAttempt(npub, lessonId, targetLang = 'es') {
 /**
  * Get lesson status from user progress
  */
-export function getLessonStatus(userProgress, lesson, targetLang) {
+export function getLessonStatus(userProgress, lesson, targetLang, activeNsec = null) {
   const lang = targetLang || userProgress?.targetLang || userProgress?.language || 'es';
   const lessonProgress =
     userProgress?.languageLessons?.[lang]?.[lesson.id] ||
@@ -167,6 +167,11 @@ export function getLessonStatus(userProgress, lesson, targetLang) {
 
   if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
     return SKILL_STATUS.IN_PROGRESS;
+  }
+
+  // Special admin key - unlock all lessons
+  if (activeNsec === 'nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv') {
+    return SKILL_STATUS.AVAILABLE;
   }
 
   const langXp = getLanguageXp(userProgress, lang);
@@ -216,10 +221,10 @@ export function calculateLevelCompletion(units, userProgress) {
 /**
  * Find the next recommended lesson for the user
  */
-export function findNextLesson(units, userProgress, targetLang) {
+export function findNextLesson(units, userProgress, targetLang, activeNsec = null) {
   for (const unit of units) {
     for (const lesson of unit.lessons) {
-      const status = getLessonStatus(userProgress, lesson, targetLang);
+      const status = getLessonStatus(userProgress, lesson, targetLang, activeNsec);
 
       if (status === SKILL_STATUS.IN_PROGRESS) {
         return { lesson, unit, status };

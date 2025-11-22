@@ -95,6 +95,7 @@ import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
+import Quiz from "./components/Quiz";
 import IdentityDrawer from "./components/IdentityDrawer";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
@@ -987,6 +988,7 @@ export default function App() {
     "history",
     "grammar",
     "vocabulary",
+    "quiz",
     "random",
   ];
 
@@ -1113,6 +1115,7 @@ export default function App() {
     history: t?.tabs_history ?? "History",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
+    quiz: t?.tabs_quiz ?? "Quiz",
     random: t?.tabs_random ?? "Random",
   };
   const TAB_ICONS = {
@@ -1122,6 +1125,7 @@ export default function App() {
     history: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <CiEdit />,
+    quiz: <LuBadgeCheck />,
     random: <LuShuffle />,
   };
 
@@ -2389,6 +2393,7 @@ export default function App() {
             supportLang={resolvedSupportLang}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
+            activeNsec={activeNsec}
           />
         </Box>
       )}
@@ -2493,6 +2498,20 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           lessonContent={activeLesson?.content?.vocabulary}
+                        />
+                      </TabPanel>
+                    );
+                  case "quiz":
+                    return (
+                      <TabPanel key="quiz" px={0}>
+                        <Quiz
+                          questions={activeLesson?.content?.quiz?.questions || []}
+                          onComplete={(passed, score, correctCount) => {
+                            console.log(`Quiz ${passed ? 'passed' : 'failed'} with ${correctCount}/10 correct (${Math.round(score)}%)`);
+                          }}
+                          uiLang={appLanguage}
+                          targetLang={resolvedTargetLang}
+                          lessonTitle={activeLesson?.title?.[appLanguage] || activeLesson?.title?.en || "Quiz"}
                         />
                       </TabPanel>
                     );
