@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   VStack,
@@ -20,8 +20,8 @@ import {
   ModalCloseButton,
   useDisclosure,
   Flex,
-} from '@chakra-ui/react';
-import { motion, AnimatePresence } from 'framer-motion';
+} from "@chakra-ui/react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   RiLockLine,
   RiCheckLine,
@@ -32,24 +32,24 @@ import {
   RiSpeakLine,
   RiPencilLine,
   RiHistoryLine,
-} from 'react-icons/ri';
+} from "react-icons/ri";
 import {
   getLearningPath,
   getUnitProgress,
   getNextLesson,
   SKILL_STATUS,
-} from '../data/skillTreeData';
+} from "../data/skillTreeData";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
 
-const getDisplayText = (textObj, supportLang = 'en') => {
-  if (!textObj) return '';
-  if (typeof textObj === 'string') return textObj;
-  const fallback = textObj.en || textObj.es || Object.values(textObj)[0] || '';
-  if (supportLang === 'bilingual') {
-    const en = textObj.en || '';
-    const es = textObj.es || '';
+const getDisplayText = (textObj, supportLang = "en") => {
+  if (!textObj) return "";
+  if (typeof textObj === "string") return textObj;
+  const fallback = textObj.en || textObj.es || Object.values(textObj)[0] || "";
+  if (supportLang === "bilingual") {
+    const en = textObj.en || "";
+    const es = textObj.es || "";
     if (en && es && en !== es) {
       return `${en} / ${es}`;
     }
@@ -73,9 +73,9 @@ const MODE_ICONS = {
  * Represents a single lesson in the skill tree
  */
 function LessonNode({ lesson, unit, status, onClick, supportLang }) {
-  const bgColor = 'gray.800';
-  const borderColor = 'gray.700';
-  const lockedColor = 'gray.600';
+  const bgColor = "gray.800";
+  const borderColor = "gray.700";
+  const lockedColor = "gray.600";
 
   const lessonTitle = getDisplayText(lesson.title, supportLang);
   const lessonDescription = getDisplayText(lesson.description, supportLang);
@@ -94,7 +94,10 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   };
 
   const Icon = getNodeIcon();
-  const isClickable = status === SKILL_STATUS.AVAILABLE || status === SKILL_STATUS.IN_PROGRESS || status === SKILL_STATUS.COMPLETED;
+  const isClickable =
+    status === SKILL_STATUS.AVAILABLE ||
+    status === SKILL_STATUS.IN_PROGRESS ||
+    status === SKILL_STATUS.COMPLETED;
 
   return (
     <MotionBox
@@ -121,7 +124,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
         <Box position="relative">
           <VStack
             spacing={2}
-            cursor={isClickable ? 'pointer' : 'not-allowed'}
+            cursor={isClickable ? "pointer" : "not-allowed"}
             onClick={isClickable ? onClick : undefined}
           >
             {/* Glow Effect for active lessons */}
@@ -137,11 +140,21 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 bgGradient={`radial(${unit.color}40, transparent 70%)`}
                 filter="blur(20px)"
                 opacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
-                animation={status === SKILL_STATUS.IN_PROGRESS ? "pulse 2s ease-in-out infinite" : "none"}
+                animation={
+                  status === SKILL_STATUS.IN_PROGRESS
+                    ? "pulse 2s ease-in-out infinite"
+                    : "none"
+                }
                 sx={{
-                  '@keyframes pulse': {
-                    '0%, 100%': { opacity: 0.5, transform: 'translate(-50%, -50%) scale(1)' },
-                    '50%': { opacity: 0.8, transform: 'translate(-50%, -50%) scale(1.1)' },
+                  "@keyframes pulse": {
+                    "0%, 100%": {
+                      opacity: 0.5,
+                      transform: "translate(-50%, -50%) scale(1)",
+                    },
+                    "50%": {
+                      opacity: 0.8,
+                      transform: "translate(-50%, -50%) scale(1.1)",
+                    },
                   },
                 }}
                 pointerEvents="none"
@@ -155,7 +168,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               borderRadius="full"
               bgGradient={
                 status === SKILL_STATUS.LOCKED
-                  ? 'linear(to-br, gray.700, gray.800)'
+                  ? "linear(to-br, gray.700, gray.800)"
                   : status === SKILL_STATUS.COMPLETED
                   ? `linear(135deg, ${unit.color}, ${unit.color}dd)`
                   : `linear(135deg, ${unit.color}dd, ${unit.color})`
@@ -165,7 +178,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 status === SKILL_STATUS.COMPLETED
                   ? `${unit.color}`
                   : status === SKILL_STATUS.LOCKED
-                  ? 'gray.600'
+                  ? "gray.600"
                   : `${unit.color}88`
               }
               display="flex"
@@ -175,7 +188,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               boxShadow={
                 status !== SKILL_STATUS.LOCKED
                   ? `0 0 30px ${unit.color}66, 0 8px 16px rgba(0,0,0,0.4)`
-                  : 'none'
+                  : "none"
               }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
               transition="all 0.3s ease"
@@ -190,9 +203,12 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
             >
               <Icon
                 size={36}
-                color={status === SKILL_STATUS.LOCKED ? 'gray' : 'white'}
+                color={status === SKILL_STATUS.LOCKED ? "gray" : "white"}
                 style={{
-                  filter: status !== SKILL_STATUS.LOCKED ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' : 'none'
+                  filter:
+                    status !== SKILL_STATUS.LOCKED
+                      ? "drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+                      : "none",
                 }}
               />
 
@@ -209,9 +225,9 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                   borderColor={unit.color}
                   animation="spin 4s linear infinite"
                   sx={{
-                    '@keyframes spin': {
-                      '0%': { transform: 'rotate(0deg)' },
-                      '100%': { transform: 'rotate(360deg)' },
+                    "@keyframes spin": {
+                      "0%": { transform: "rotate(0deg)" },
+                      "100%": { transform: "rotate(360deg)" },
                     },
                   }}
                 />
@@ -231,9 +247,9 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     boxShadow="0 0 10px white"
                     animation="sparkle 3s ease-in-out infinite"
                     sx={{
-                      '@keyframes sparkle': {
-                        '0%, 100%': { opacity: 0, transform: 'scale(0)' },
-                        '50%': { opacity: 1, transform: 'scale(1)' },
+                      "@keyframes sparkle": {
+                        "0%, 100%": { opacity: 0, transform: "scale(0)" },
+                        "50%": { opacity: 1, transform: "scale(1)" },
                       },
                     }}
                   />
@@ -248,9 +264,9 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     boxShadow="0 0 8px white"
                     animation="sparkle 3s ease-in-out infinite 1.5s"
                     sx={{
-                      '@keyframes sparkle': {
-                        '0%, 100%': { opacity: 0, transform: 'scale(0)' },
-                        '50%': { opacity: 1, transform: 'scale(1)' },
+                      "@keyframes sparkle": {
+                        "0%, 100%": { opacity: 0, transform: "scale(0)" },
+                        "50%": { opacity: 1, transform: "scale(1)" },
                       },
                     }}
                   />
@@ -264,29 +280,39 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               fontWeight="bold"
               textAlign="center"
               maxW="140px"
-              color={status === SKILL_STATUS.LOCKED ? 'gray.600' : 'white'}
-              textShadow={status !== SKILL_STATUS.LOCKED ? '0 2px 8px rgba(0,0,0,0.5)' : 'none'}
+              color={status === SKILL_STATUS.LOCKED ? "gray.600" : "white"}
+              textShadow={
+                status !== SKILL_STATUS.LOCKED
+                  ? "0 2px 8px rgba(0,0,0,0.5)"
+                  : "none"
+              }
             >
               {lessonTitle}
             </Text>
 
             {/* XP Badge */}
             <Badge
-              colorScheme={status === SKILL_STATUS.COMPLETED ? 'green' : 'gray'}
+              colorScheme={status === SKILL_STATUS.COMPLETED ? "green" : "gray"}
               fontSize="xs"
               px={3}
               py={1}
               borderRadius="full"
               bgGradient={
                 status === SKILL_STATUS.COMPLETED
-                  ? 'linear(to-r, green.400, green.500)'
-                  : 'linear(to-r, gray.600, gray.700)'
+                  ? "linear(to-r, green.400, green.500)"
+                  : "linear(to-r, gray.600, gray.700)"
               }
               color="white"
               fontWeight="bold"
-              boxShadow={status === SKILL_STATUS.COMPLETED ? '0 2px 8px rgba(72, 187, 120, 0.4)' : 'sm'}
+              boxShadow={
+                status === SKILL_STATUS.COMPLETED
+                  ? "0 2px 8px rgba(72, 187, 120, 0.4)"
+                  : "sm"
+              }
             >
-              {status === SKILL_STATUS.COMPLETED ? `+${lesson.xpReward} XP` : `${lesson.xpReward} XP`}
+              {status === SKILL_STATUS.COMPLETED
+                ? `+${lesson.xpReward} XP`
+                : `${lesson.xpReward} XP`}
             </Badge>
           </VStack>
         </Box>
@@ -299,13 +325,21 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
  * Unit Component
  * Represents a unit containing multiple lessons
  */
-function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, hasNextUnit }) {
-  const bgColor = 'gray.800';
-  const borderColor = 'gray.700';
+function UnitSection({
+  unit,
+  userProgress,
+  onLessonClick,
+  index,
+  supportLang,
+  hasNextUnit,
+}) {
+  const bgColor = "gray.800";
+  const borderColor = "gray.700";
 
   const unitProgressPercent = getUnitProgress(unit, userProgress);
   const completedCount = unit.lessons.filter(
-    lesson => userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
+    (lesson) =>
+      userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
   ).length;
 
   const unitTitle = getDisplayText(unit.title, supportLang);
@@ -376,9 +410,9 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
                   boxShadow={`0 0 20px ${unit.color}80`}
                   animation="pulse 3s ease-in-out infinite"
                   sx={{
-                    '@keyframes pulse': {
-                      '0%, 100%': { boxShadow: `0 0 20px ${unit.color}80` },
-                      '50%': { boxShadow: `0 0 30px ${unit.color}cc` },
+                    "@keyframes pulse": {
+                      "0%, 100%": { boxShadow: `0 0 20px ${unit.color}80` },
+                      "50%": { boxShadow: `0 0 30px ${unit.color}cc` },
                     },
                   }}
                 />
@@ -404,7 +438,11 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
                 border="1px solid"
                 borderColor={`${unit.color}40`}
               >
-                <RiTrophyLine size={28} color={unit.color} style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }} />
+                <RiTrophyLine
+                  size={28}
+                  color={unit.color}
+                  style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}
+                />
               </Box>
               <Text fontSize="sm" fontWeight="bold" color="white">
                 {completedCount}/{unit.lessons.length}
@@ -420,7 +458,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
               size="sm"
               bg="whiteAlpha.100"
               sx={{
-                '& > div': {
+                "& > div": {
                   bgGradient: `linear(to-r, ${unit.color}, ${unit.color}dd)`,
                   boxShadow: `0 0 10px ${unit.color}80`,
                 },
@@ -455,7 +493,13 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
           pointerEvents="none"
         >
           <defs>
-            <linearGradient id={`unit-start-${unit.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <linearGradient
+              id={`unit-start-${unit.id}`}
+              x1="0%"
+              y1="0%"
+              x2="0%"
+              y2="100%"
+            >
               <stop offset="0%" stopColor={unit.color} stopOpacity={0.4} />
               <stop offset="100%" stopColor={unit.color} stopOpacity={0.7} />
             </linearGradient>
@@ -511,37 +555,64 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
                     pointerEvents="none"
                   >
                     <defs>
-                      <linearGradient id={`gradient-${lesson.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                      <linearGradient
+                        id={`gradient-${lesson.id}`}
+                        x1="0%"
+                        y1="0%"
+                        x2="0%"
+                        y2="100%"
+                      >
                         <stop
                           offset="0%"
-                          stopColor={status === SKILL_STATUS.COMPLETED ? unit.color : '#374151'}
-                          stopOpacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
+                          stopColor={
+                            status === SKILL_STATUS.COMPLETED
+                              ? unit.color
+                              : "#374151"
+                          }
+                          stopOpacity={
+                            status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5
+                          }
                         />
                         <stop
                           offset="100%"
-                          stopColor={status === SKILL_STATUS.COMPLETED ? unit.color : '#374151'}
-                          stopOpacity={status === SKILL_STATUS.COMPLETED ? 0.4 : 0.3}
+                          stopColor={
+                            status === SKILL_STATUS.COMPLETED
+                              ? unit.color
+                              : "#374151"
+                          }
+                          stopOpacity={
+                            status === SKILL_STATUS.COMPLETED ? 0.4 : 0.3
+                          }
                         />
                       </linearGradient>
                       {status === SKILL_STATUS.COMPLETED && (
                         <filter id={`glow-${lesson.id}`}>
-                          <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                          <feGaussianBlur
+                            stdDeviation="3"
+                            result="coloredBlur"
+                          />
                           <feMerge>
-                            <feMergeNode in="coloredBlur"/>
-                            <feMergeNode in="SourceGraphic"/>
+                            <feMergeNode in="coloredBlur" />
+                            <feMergeNode in="SourceGraphic" />
                           </feMerge>
                         </filter>
                       )}
                     </defs>
                     <path
-                      d={`M ${150 + offset - nextOffset} 0 Q ${150 + (offset - nextOffset) / 2} 70, ${150} 95`}
+                      d={`M ${150 + offset - nextOffset} 0 Q ${
+                        150 + (offset - nextOffset) / 2
+                      } 70, ${150} 95`}
                       stroke={`url(#gradient-${lesson.id})`}
                       strokeWidth="5"
                       fill="none"
                       strokeLinecap="round"
-                      filter={status === SKILL_STATUS.COMPLETED ? `url(#glow-${lesson.id})` : 'none'}
+                      filter={
+                        status === SKILL_STATUS.COMPLETED
+                          ? `url(#glow-${lesson.id})`
+                          : "none"
+                      }
                       style={{
-                        transition: 'all 0.3s ease',
+                        transition: "all 0.3s ease",
                       }}
                     />
                   </Box>
@@ -585,7 +656,13 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
             mt={-4}
           >
             <defs>
-              <linearGradient id={`unit-end-${unit.id}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <linearGradient
+                id={`unit-end-${unit.id}`}
+                x1="0%"
+                y1="0%"
+                x2="0%"
+                y2="100%"
+              >
                 <stop offset="0%" stopColor={unit.color} stopOpacity={0.6} />
                 <stop offset="100%" stopColor={unit.color} stopOpacity={0.2} />
               </linearGradient>
@@ -599,13 +676,7 @@ function UnitSection({ unit, userProgress, onLessonClick, index, supportLang, ha
               strokeDasharray="8 4"
             />
             {/* Animated arrow */}
-            <circle
-              cx="100"
-              cy="0"
-              r="4"
-              fill={unit.color}
-              opacity="0.8"
-            >
+            <circle cx="100" cy="0" r="4" fill={unit.color} opacity="0.8">
               <animate
                 attributeName="cy"
                 from="0"
@@ -820,10 +891,10 @@ function LessonDetailModal({
               _hover={{
                 bgGradient: `linear(135deg, ${unit.color}dd, ${unit.color})`,
                 boxShadow: `0 12px 35px ${unit.color}60`,
-                transform: 'translateY(-2px)',
+                transform: "translateY(-2px)",
               }}
               _active={{
-                transform: 'translateY(0)',
+                transform: "translateY(0)",
               }}
               transition="all 0.2s"
             >
@@ -840,9 +911,9 @@ function LessonDetailModal({
  * Main SkillTree Component
  */
 export default function SkillTree({
-  targetLang = 'es',
-  level = 'beginner',
-  supportLang = 'en',
+  targetLang = "es",
+  level = "beginner",
+  supportLang = "en",
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
 }) {
@@ -851,10 +922,14 @@ export default function SkillTree({
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   const units = getLearningPath(targetLang, level);
-  const bgColor = 'gray.950';
+  const bgColor = "gray.950";
 
   const handleLessonClick = (lesson, unit, status) => {
-    if (status === SKILL_STATUS.AVAILABLE || status === SKILL_STATUS.IN_PROGRESS || status === SKILL_STATUS.COMPLETED) {
+    if (
+      status === SKILL_STATUS.AVAILABLE ||
+      status === SKILL_STATUS.IN_PROGRESS ||
+      status === SKILL_STATUS.COMPLETED
+    ) {
       setSelectedLesson(lesson);
       setSelectedUnit(unit);
       onOpen();
@@ -868,24 +943,24 @@ export default function SkillTree({
   };
 
   // Calculate overall progress
-  const totalLessons = units.reduce((sum, unit) => sum + unit.lessons.length, 0);
+  const totalLessons = units.reduce(
+    (sum, unit) => sum + unit.lessons.length,
+    0
+  );
   const completedLessons = units.reduce(
     (sum, unit) =>
       sum +
       unit.lessons.filter(
-        (lesson) => userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
+        (lesson) =>
+          userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
       ).length,
     0
   );
-  const overallProgress = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+  const overallProgress =
+    totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
 
   return (
-    <Box
-      bg={bgColor}
-      minH="100vh"
-      position="relative"
-      overflow="hidden"
-    >
+    <Box bg={bgColor} minH="100vh" position="relative" overflow="hidden">
       {/* Animated Background Gradients */}
       <Box
         position="absolute"
@@ -898,10 +973,10 @@ export default function SkillTree({
         opacity={0.15}
         animation="float 20s ease-in-out infinite"
         sx={{
-          '@keyframes float': {
-            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
-            '33%': { transform: 'translate(50px, -30px) scale(1.1)' },
-            '66%': { transform: 'translate(-30px, 50px) scale(0.9)' },
+          "@keyframes float": {
+            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+            "33%": { transform: "translate(50px, -30px) scale(1.1)" },
+            "66%": { transform: "translate(-30px, 50px) scale(0.9)" },
           },
         }}
       />
@@ -916,10 +991,10 @@ export default function SkillTree({
         opacity={0.12}
         animation="float 25s ease-in-out infinite 5s"
         sx={{
-          '@keyframes float': {
-            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
-            '33%': { transform: 'translate(-40px, 40px) scale(1.1)' },
-            '66%': { transform: 'translate(40px, -40px) scale(0.9)' },
+          "@keyframes float": {
+            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+            "33%": { transform: "translate(-40px, 40px) scale(1.1)" },
+            "66%": { transform: "translate(40px, -40px) scale(0.9)" },
           },
         }}
       />
@@ -934,10 +1009,10 @@ export default function SkillTree({
         opacity={0.1}
         animation="float 30s ease-in-out infinite 10s"
         sx={{
-          '@keyframes float': {
-            '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
-            '33%': { transform: 'translate(30px, -50px) scale(1.2)' },
-            '66%': { transform: 'translate(-50px, 30px) scale(0.8)' },
+          "@keyframes float": {
+            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+            "33%": { transform: "translate(30px, -50px) scale(1.2)" },
+            "66%": { transform: "translate(-50px, 30px) scale(0.8)" },
           },
         }}
       />
@@ -971,7 +1046,12 @@ export default function SkillTree({
                 <RiTrophyLine size={18} color="white" />
               </Box>
               <VStack spacing={0} align="start">
-                <Text fontSize="lg" fontWeight="black" color="white" lineHeight="1">
+                <Text
+                  fontSize="lg"
+                  fontWeight="black"
+                  color="white"
+                  lineHeight="1"
+                >
                   {userProgress.totalXp || 0} XP
                 </Text>
                 <Text fontSize="xs" color="gray.400" fontWeight="medium">
@@ -996,9 +1076,10 @@ export default function SkillTree({
                   size="sm"
                   bg="whiteAlpha.200"
                   sx={{
-                    '& > div': {
-                      bgGradient: 'linear(to-r, teal.400, blue.400, purple.400)',
-                      boxShadow: '0 0 10px rgba(56, 178, 172, 0.5)',
+                    "& > div": {
+                      bgGradient:
+                        "linear(to-r, teal.400, blue.400, purple.400)",
+                      boxShadow: "0 0 10px rgba(56, 178, 172, 0.5)",
                     },
                   }}
                 />
@@ -1035,15 +1116,15 @@ export default function SkillTree({
 
         {/* Lesson Detail Modal */}
         {selectedLesson && selectedUnit && (
-            <LessonDetailModal
-              isOpen={isOpen}
-              onClose={onClose}
-              lesson={selectedLesson}
-              unit={selectedUnit}
-              onStartLesson={handleStartLesson}
-              supportLang={supportLang}
-            />
-          )}
+          <LessonDetailModal
+            isOpen={isOpen}
+            onClose={onClose}
+            lesson={selectedLesson}
+            unit={selectedUnit}
+            onStartLesson={handleStartLesson}
+            supportLang={supportLang}
+          />
+        )}
       </Container>
     </Box>
   );
