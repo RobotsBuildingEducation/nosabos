@@ -40,6 +40,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import { getLessonStatus } from "../utils/progressTracking";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -534,17 +535,7 @@ function UnitSection({
         {/* Lessons in this unit - Game-like zigzag layout */}
         <Box position="relative" py={4} minH="200px">
           {unit.lessons.map((lesson, lessonIndex) => {
-            const lessonProgress = userProgress.lessons?.[lesson.id];
-            let status = SKILL_STATUS.LOCKED;
-
-            // Determine lesson status
-            if (lessonProgress?.status === SKILL_STATUS.COMPLETED) {
-              status = SKILL_STATUS.COMPLETED;
-            } else if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
-              status = SKILL_STATUS.IN_PROGRESS;
-            } else if (userProgress.totalXp >= lesson.xpRequired) {
-              status = SKILL_STATUS.AVAILABLE;
-            }
+            const status = getLessonStatus(userProgress, lesson, targetLang);
 
             // Create zigzag pattern - alternating positions
             const isEven = lessonIndex % 2 === 0;

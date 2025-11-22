@@ -17,6 +17,20 @@ export const SKILL_STATUS = {
   COMPLETED: 'completed',
 };
 
+export const TEST_UNLOCK_NSEC =
+  "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+
+export function isTestUnlockEnabled() {
+  if (typeof localStorage === 'undefined') return false;
+  try {
+    const stored = (localStorage.getItem('local_nsec') || '').trim();
+    return stored === TEST_UNLOCK_NSEC;
+  } catch (err) {
+    console.warn('Unable to read test unlock key', err);
+    return false;
+  }
+}
+
 /**
  * Learning path structure for each language
  * Organized by proficiency level (beginner, intermediate, advanced)
@@ -2010,11 +2024,13 @@ export function getUnitTotalXP(unit) {
  * Get the next available lesson for a user based on their current XP
  */
 export function getNextLesson(units, userProgress) {
+  const unlockAllLessons = isTestUnlockEnabled();
+
   for (const unit of units) {
     for (const lesson of unit.lessons) {
       const lessonProgress = userProgress.lessons?.[lesson.id];
       if (!lessonProgress || lessonProgress.status !== SKILL_STATUS.COMPLETED) {
-        if (userProgress.totalXp >= lesson.xpRequired) {
+        if (unlockAllLessons || userProgress.totalXp >= lesson.xpRequired) {
           return { unit, lesson };
         }
         return null; // Next lesson is still locked
