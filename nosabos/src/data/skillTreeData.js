@@ -112,6 +112,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-1-quiz',
+            title: {
+              en: 'Unit 1 Quiz',
+              es: 'Examen de Unidad 1',
+            },
+            description: {
+              en: 'Test your knowledge of greetings and introductions (80% required to pass)',
+              es: 'Prueba tus conocimientos de saludos y presentaciones (se requiere 80% para aprobar)',
+            },
+            xpRequired: 70,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "Hello" en español?',
+                    options: [
+                      { id: '1', label: 'Hola', correct: true },
+                      { id: '2', label: 'Adiós', correct: false },
+                      { id: '3', label: 'Gracias', correct: false },
+                      { id: '4', label: 'Por favor', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cuál es el saludo correcto por la mañana?',
+                    options: [
+                      { id: '1', label: 'Buenas noches', correct: false },
+                      { id: '2', label: 'Buenos días', correct: true },
+                      { id: '3', label: 'Buenas tardes', correct: false },
+                      { id: '4', label: 'Hasta luego', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "Goodbye" en español? (una palabra)',
+                    answer: { acceptable: ['adiós', 'adios'] },
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son palabras de pregunta? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: '¿Cómo?', correct: true },
+                      { id: '2', label: 'Hola', correct: false },
+                      { id: '3', label: '¿Qué?', correct: true },
+                      { id: '4', label: '¿Dónde?', correct: true },
+                      { id: '5', label: 'Adiós', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué frase usas para decir tu nombre?',
+                    options: [
+                      { id: '1', label: 'Soy de...', correct: false },
+                      { id: '2', label: 'Me llamo...', correct: true },
+                      { id: '3', label: '¿Cómo estás?', correct: false },
+                      { id: '4', label: 'Mucho gusto', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -204,6 +270,66 @@ const baseLearningPath = {
               stories: {
                 topic: 'dining',
                 prompt: 'Read a story about a meal',
+              },
+            },
+          },
+          {
+            id: 'lesson-2-quiz',
+            title: {
+              en: 'Unit 2 Quiz',
+              es: 'Examen de Unidad 2',
+            },
+            description: {
+              en: 'Test your knowledge of likes, numbers, and food (80% required to pass)',
+              es: 'Prueba tus conocimientos de gustos, números y comida (se requiere 80% para aprobar)',
+            },
+            xpRequired: 165,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "I like" en español?',
+                    options: [
+                      { id: '1', label: 'Me gusta', correct: true },
+                      { id: '2', label: 'No me gusta', correct: false },
+                      { id: '3', label: 'Me encanta', correct: false },
+                      { id: '4', label: 'Odio', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cuánto es 3 en español?',
+                    answer: { acceptable: ['tres'] },
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son bebidas? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Agua', correct: true },
+                      { id: '2', label: 'Café', correct: true },
+                      { id: '3', label: 'Pan', correct: false },
+                      { id: '4', label: 'Arroz', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué significa "me encanta"?',
+                    options: [
+                      { id: '1', label: 'I hate it', correct: false },
+                      { id: '2', label: 'I love it', correct: true },
+                      { id: '3', label: 'I like it', correct: false },
+                      { id: '4', label: 'I prefer it', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "ten" en español?',
+                    answer: { acceptable: ['diez'] },
+                  },
+                ],
               },
             },
           },
@@ -302,6 +428,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-3-quiz',
+            title: {
+              en: 'Unit 3 Quiz',
+              es: 'Examen de Unidad 3',
+            },
+            description: {
+              en: 'Test your knowledge of time, daily routines, and family (80% required to pass)',
+              es: 'Prueba tus conocimientos de la hora, rutinas diarias y familia (se requiere 80% para aprobar)',
+            },
+            xpRequired: 280,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se pregunta la hora en español?',
+                    options: [
+                      { id: '1', label: '¿Qué hora es?', correct: true },
+                      { id: '2', label: '¿Cuánto tiempo?', correct: false },
+                      { id: '3', label: '¿Qué día es?', correct: false },
+                      { id: '4', label: '¿Cuándo es?', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son verbos reflexivos de la rutina diaria? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Despertarse', correct: true },
+                      { id: '2', label: 'Trabajar', correct: false },
+                      { id: '3', label: 'Ducharse', correct: true },
+                      { id: '4', label: 'Levantarse', correct: true },
+                      { id: '5', label: 'Comer', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "mother" en español?',
+                    answer: { acceptable: ['madre'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra usas para decir "my brother"?',
+                    options: [
+                      { id: '1', label: 'Tu hermano', correct: false },
+                      { id: '2', label: 'Mi hermano', correct: true },
+                      { id: '3', label: 'Su hermano', correct: false },
+                      { id: '4', label: 'Nuestro hermano', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: 'Si son las 3:15, ¿cómo se dice en español?',
+                    options: [
+                      { id: '1', label: 'Son las tres y cuarto', correct: true },
+                      { id: '2', label: 'Es la tres y quince', correct: false },
+                      { id: '3', label: 'Son las cuatro menos cuarto', correct: false },
+                      { id: '4', label: 'Es las tres y media', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -397,6 +589,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-4-quiz',
+            title: {
+              en: 'Unit 4 Quiz',
+              es: 'Examen de Unidad 4',
+            },
+            description: {
+              en: 'Test your knowledge of places, directions, and transportation (80% required to pass)',
+              es: 'Prueba tus conocimientos de lugares, direcciones y transporte (se requiere 80% para aprobar)',
+            },
+            xpRequired: 410,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "right" (dirección) en español?',
+                    answer: { acceptable: ['derecha'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué preposición usas para decir "I\'m going to the park"?',
+                    options: [
+                      { id: '1', label: 'Voy a el parque', correct: false },
+                      { id: '2', label: 'Voy al parque', correct: true },
+                      { id: '3', label: 'Voy en el parque', correct: false },
+                      { id: '4', label: 'Voy del parque', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son formas de transporte? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Autobús', correct: true },
+                      { id: '2', label: 'Escuela', correct: false },
+                      { id: '3', label: 'Metro', correct: true },
+                      { id: '4', label: 'Bicicleta', correct: true },
+                      { id: '5', label: 'Parque', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "straight ahead" en español?',
+                    options: [
+                      { id: '1', label: 'A la derecha', correct: false },
+                      { id: '2', label: 'A la izquierda', correct: false },
+                      { id: '3', label: 'Todo recto', correct: true },
+                      { id: '4', label: 'Atrás', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué lugar visitas para comprar comida?',
+                    options: [
+                      { id: '1', label: 'El hospital', correct: false },
+                      { id: '2', label: 'El banco', correct: false },
+                      { id: '3', label: 'El supermercado', correct: true },
+                      { id: '4', label: 'La escuela', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -485,6 +743,72 @@ const baseLearningPath = {
               stories: {
                 topic: 'clothing',
                 prompt: 'Read about fashion and clothing',
+              },
+            },
+          },
+          {
+            id: 'lesson-5-quiz',
+            title: {
+              en: 'Unit 5 Quiz',
+              es: 'Examen de Unidad 5',
+            },
+            description: {
+              en: 'Test your knowledge of shopping, numbers, and clothing (80% required to pass)',
+              es: 'Prueba tus conocimientos de compras, números y ropa (se requiere 80% para aprobar)',
+            },
+            xpRequired: 560,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "expensive" en español?',
+                    options: [
+                      { id: '1', label: 'Barato', correct: false },
+                      { id: '2', label: 'Caro', correct: true },
+                      { id: '3', label: 'Precio', correct: false },
+                      { id: '4', label: 'Gratis', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cuánto es cincuenta en números? (escribe el número)',
+                    answer: { acceptable: ['50'] },
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son prendas de ropa? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Camisa', correct: true },
+                      { id: '2', label: 'Precio', correct: false },
+                      { id: '3', label: 'Pantalón', correct: true },
+                      { id: '4', label: 'Zapatos', correct: true },
+                      { id: '5', label: 'Tienda', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué verbo usas para decir "to buy"?',
+                    options: [
+                      { id: '1', label: 'Vender', correct: false },
+                      { id: '2', label: 'Comprar', correct: true },
+                      { id: '3', label: 'Llevar', correct: false },
+                      { id: '4', label: 'Tener', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "forty" en español?',
+                    options: [
+                      { id: '1', label: 'Catorce', correct: false },
+                      { id: '2', label: 'Cuarenta', correct: true },
+                      { id: '3', label: 'Cuatro', correct: false },
+                      { id: '4', label: 'Cincuenta', correct: false },
+                    ],
+                  },
+                ],
               },
             },
           },
@@ -580,6 +904,72 @@ const baseLearningPath = {
               stories: {
                 topic: 'character descriptions',
                 prompt: 'Read stories with diverse characters',
+              },
+            },
+          },
+          {
+            id: 'lesson-6-quiz',
+            title: {
+              en: 'Unit 6 Quiz',
+              es: 'Examen de Unidad 6',
+            },
+            description: {
+              en: 'Test your knowledge of colors, physical descriptions, and personality traits (80% required to pass)',
+              es: 'Prueba tus conocimientos de colores, descripciones físicas y rasgos de personalidad (se requiere 80% para aprobar)',
+            },
+            xpRequired: 720,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "blue" en español?',
+                    answer: { acceptable: ['azul'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué verbo usas para descripciones físicas permanentes?',
+                    options: [
+                      { id: '1', label: 'Estar', correct: false },
+                      { id: '2', label: 'Ser', correct: true },
+                      { id: '3', label: 'Tener', correct: false },
+                      { id: '4', label: 'Hacer', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son rasgos de personalidad positivos? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Simpático', correct: true },
+                      { id: '2', label: 'Amable', correct: true },
+                      { id: '3', label: 'Alto', correct: false },
+                      { id: '4', label: 'Divertido', correct: true },
+                      { id: '5', label: 'Rojo', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "short" (height) en español?',
+                    options: [
+                      { id: '1', label: 'Alto', correct: false },
+                      { id: '2', label: 'Bajo', correct: true },
+                      { id: '3', label: 'Delgado', correct: false },
+                      { id: '4', label: 'Fuerte', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra describe el color de la naturaleza?',
+                    options: [
+                      { id: '1', label: 'Rojo', correct: false },
+                      { id: '2', label: 'Amarillo', correct: false },
+                      { id: '3', label: 'Verde', correct: true },
+                      { id: '4', label: 'Negro', correct: false },
+                    ],
+                  },
+                ],
               },
             },
           },
@@ -682,6 +1072,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-7-quiz',
+            title: {
+              en: 'Unit 7 Quiz',
+              es: 'Examen de Unidad 7',
+            },
+            description: {
+              en: 'Test your knowledge of sports, entertainment, and arts (80% required to pass)',
+              es: 'Prueba tus conocimientos de deportes, entretenimiento y artes (se requiere 80% para aprobar)',
+            },
+            xpRequired: 895,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué verbo usas con deportes como el fútbol?',
+                    options: [
+                      { id: '1', label: 'Hacer', correct: false },
+                      { id: '2', label: 'Jugar', correct: true },
+                      { id: '3', label: 'Tocar', correct: false },
+                      { id: '4', label: 'Ver', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son actividades artísticas? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Dibujar', correct: true },
+                      { id: '2', label: 'Correr', correct: false },
+                      { id: '3', label: 'Pintar', correct: true },
+                      { id: '4', label: 'Escribir', correct: true },
+                      { id: '5', label: 'Nadar', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "to read" en español?',
+                    answer: { acceptable: ['leer'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "I am running" (presente progresivo)?',
+                    options: [
+                      { id: '1', label: 'Yo corro', correct: false },
+                      { id: '2', label: 'Estoy corriendo', correct: true },
+                      { id: '3', label: 'He corrido', correct: false },
+                      { id: '4', label: 'Voy a correr', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra describe una representación musical en vivo?',
+                    options: [
+                      { id: '1', label: 'Película', correct: false },
+                      { id: '2', label: 'Libro', correct: false },
+                      { id: '3', label: 'Concierto', correct: true },
+                      { id: '4', label: 'Juego', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -777,6 +1233,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-8-quiz',
+            title: {
+              en: 'Unit 8 Quiz',
+              es: 'Examen de Unidad 8',
+            },
+            description: {
+              en: 'Test your knowledge of preterite tense and past experiences (80% required to pass)',
+              es: 'Prueba tus conocimientos del pretérito y experiencias pasadas (se requiere 80% para aprobar)',
+            },
+            xpRequired: 1080,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cuál es la palabra correcta para "yesterday"?',
+                    options: [
+                      { id: '1', label: 'Mañana', correct: false },
+                      { id: '2', label: 'Ayer', correct: true },
+                      { id: '3', label: 'Hoy', correct: false },
+                      { id: '4', label: 'Ahora', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "I visited" en español (pretérito)?',
+                    options: [
+                      { id: '1', label: 'Visito', correct: false },
+                      { id: '2', label: 'Visitaba', correct: false },
+                      { id: '3', label: 'Visité', correct: true },
+                      { id: '4', label: 'Visitaré', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son marcadores de tiempo pasado? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Ayer', correct: true },
+                      { id: '2', label: 'Mañana', correct: false },
+                      { id: '3', label: 'Anoche', correct: true },
+                      { id: '4', label: 'La semana pasada', correct: true },
+                      { id: '5', label: 'El próximo año', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "to travel" en español?',
+                    answer: { acceptable: ['viajar'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué tiempo verbal usas para acciones completadas en el pasado?',
+                    options: [
+                      { id: '1', label: 'Presente', correct: false },
+                      { id: '2', label: 'Pretérito', correct: true },
+                      { id: '3', label: 'Futuro', correct: false },
+                      { id: '4', label: 'Presente progresivo', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -864,6 +1386,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-9-quiz',
+            title: {
+              en: 'Unit 9 Quiz',
+              es: 'Examen de Unidad 9',
+            },
+            description: {
+              en: 'Test your knowledge of imperfect tense, childhood, and weather (80% required to pass)',
+              es: 'Prueba tus conocimientos del imperfecto, infancia y clima (se requiere 80% para aprobar)',
+            },
+            xpRequired: 1285,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué tiempo verbal usas para describir acciones habituales en el pasado?',
+                    options: [
+                      { id: '1', label: 'Pretérito', correct: false },
+                      { id: '2', label: 'Imperfecto', correct: true },
+                      { id: '3', label: 'Presente', correct: false },
+                      { id: '4', label: 'Futuro', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "it was raining" (imperfecto)?',
+                    options: [
+                      { id: '1', label: 'Llovió', correct: false },
+                      { id: '2', label: 'Llovía', correct: true },
+                      { id: '3', label: 'Llueve', correct: false },
+                      { id: '4', label: 'Lloverá', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son expresiones del clima? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Hacer calor', correct: true },
+                      { id: '2', label: 'Hacer ejercicio', correct: false },
+                      { id: '3', label: 'Nevar', correct: true },
+                      { id: '4', label: 'Hacer frío', correct: true },
+                      { id: '5', label: 'Hacer la tarea', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cuál es una estación del año que empieza con "P"?',
+                    answer: { acceptable: ['primavera'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cuál es la diferencia entre pretérito e imperfecto?',
+                    options: [
+                      { id: '1', label: 'No hay diferencia', correct: false },
+                      { id: '2', label: 'Pretérito es para acciones completadas, imperfecto para acciones habituales o descriptivas', correct: true },
+                      { id: '3', label: 'Imperfecto es futuro', correct: false },
+                      { id: '4', label: 'Pretérito es presente', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -948,6 +1536,72 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'career planning',
                 prompt: 'Talk about your professional future',
+              },
+            },
+          },
+          {
+            id: 'lesson-10-quiz',
+            title: {
+              en: 'Unit 10 Quiz',
+              es: 'Examen de Unidad 10',
+            },
+            description: {
+              en: 'Test your knowledge of future tenses and career vocabulary (80% required to pass)',
+              es: 'Prueba tus conocimientos de tiempos futuros y vocabulario de carreras (se requiere 80% para aprobar)',
+            },
+            xpRequired: 1515,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "I am going to study" usando ir + a?',
+                    options: [
+                      { id: '1', label: 'Voy a estudiar', correct: true },
+                      { id: '2', label: 'Estudiaré', correct: false },
+                      { id: '3', label: 'Estudio', correct: false },
+                      { id: '4', label: 'Estudié', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cuál es el futuro simple de "hablar" para "yo"?',
+                    options: [
+                      { id: '1', label: 'Hablo', correct: false },
+                      { id: '2', label: 'Hablé', correct: false },
+                      { id: '3', label: 'Hablaré', correct: true },
+                      { id: '4', label: 'Voy a hablar', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son palabras relacionadas con carreras? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Trabajo', correct: true },
+                      { id: '2', label: 'Mesa', correct: false },
+                      { id: '3', label: 'Meta', correct: true },
+                      { id: '4', label: 'Carrera', correct: true },
+                      { id: '5', label: 'Clima', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "future" en español?',
+                    answer: { acceptable: ['futuro'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué estructura usas para hablar del futuro cercano?',
+                    options: [
+                      { id: '1', label: 'Pretérito', correct: false },
+                      { id: '2', label: 'Ir + a + infinitivo', correct: true },
+                      { id: '3', label: 'Estar + gerundio', correct: false },
+                      { id: '4', label: 'Ser + adjetivo', correct: false },
+                    ],
+                  },
+                ],
               },
             },
           },
@@ -1046,6 +1700,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-11-quiz',
+            title: {
+              en: 'Unit 11 Quiz',
+              es: 'Examen de Unidad 11',
+            },
+            description: {
+              en: 'Test your knowledge of body parts, health, and wellness (80% required to pass)',
+              es: 'Prueba tus conocimientos de partes del cuerpo, salud y bienestar (se requiere 80% para aprobar)',
+            },
+            xpRequired: 1735,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "head" en español?',
+                    answer: { acceptable: ['cabeza'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "my leg hurts"?',
+                    options: [
+                      { id: '1', label: 'Me duele la pierna', correct: true },
+                      { id: '2', label: 'Me duelen las piernas', correct: false },
+                      { id: '3', label: 'Tengo pierna', correct: false },
+                      { id: '4', label: 'Estoy pierna', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son partes del cuerpo? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Brazo', correct: true },
+                      { id: '2', label: 'Médico', correct: false },
+                      { id: '3', label: 'Mano', correct: true },
+                      { id: '4', label: 'Pie', correct: true },
+                      { id: '5', label: 'Hospital', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra describe actividad física para la salud?',
+                    options: [
+                      { id: '1', label: 'Dolor', correct: false },
+                      { id: '2', label: 'Fiebre', correct: false },
+                      { id: '3', label: 'Ejercicio', correct: true },
+                      { id: '4', label: 'Enfermedad', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué verbo usas para expresar dolor?',
+                    options: [
+                      { id: '1', label: 'Ser', correct: false },
+                      { id: '2', label: 'Estar', correct: false },
+                      { id: '3', label: 'Doler', correct: true },
+                      { id: '4', label: 'Tener', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -1141,6 +1861,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-12-quiz',
+            title: {
+              en: 'Unit 12 Quiz',
+              es: 'Examen de Unidad 12',
+            },
+            description: {
+              en: 'Test your knowledge of nature, environment, and geography (80% required to pass)',
+              es: 'Prueba tus conocimientos de naturaleza, medio ambiente y geografía (se requiere 80% para aprobar)',
+            },
+            xpRequired: 1970,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "to recycle" en español?',
+                    answer: { acceptable: ['reciclar'] },
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son características geográficas naturales? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Montaña', correct: true },
+                      { id: '2', label: 'Ciudad', correct: false },
+                      { id: '3', label: 'Río', correct: true },
+                      { id: '4', label: 'Mar', correct: true },
+                      { id: '5', label: 'Edificio', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra describe el problema del aire sucio?',
+                    options: [
+                      { id: '1', label: 'Contaminación', correct: true },
+                      { id: '2', label: 'Reciclaje', correct: false },
+                      { id: '3', label: 'Naturaleza', correct: false },
+                      { id: '4', label: 'Bosque', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "tree" en español?',
+                    options: [
+                      { id: '1', label: 'Flor', correct: false },
+                      { id: '2', label: 'Árbol', correct: true },
+                      { id: '3', label: 'Animal', correct: false },
+                      { id: '4', label: 'Planta', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué verbo significa "to protect"?',
+                    options: [
+                      { id: '1', label: 'Contaminar', correct: false },
+                      { id: '2', label: 'Destruir', correct: false },
+                      { id: '3', label: 'Proteger', correct: true },
+                      { id: '4', label: 'Olvidar', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -1217,6 +2003,77 @@ const baseLearningPath = {
               grammar: {
                 topic: 'subjunctive with doubt',
                 focusPoints: ['dudar, no creer, negar'],
+              },
+            },
+          },
+          {
+            id: 'lesson-13-quiz',
+            title: {
+              en: 'Unit 13 Quiz',
+              es: 'Examen de Unidad 13',
+            },
+            description: {
+              en: 'Test your knowledge of subjunctive mood (80% required to pass)',
+              es: 'Prueba tus conocimientos del modo subjuntivo (se requiere 80% para aprobar)',
+            },
+            xpRequired: 2245,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cuándo se usa el subjuntivo?',
+                    options: [
+                      { id: '1', label: 'Para hechos objetivos', correct: false },
+                      { id: '2', label: 'Para deseos, dudas y emociones', correct: true },
+                      { id: '3', label: 'Para el pasado simple', correct: false },
+                      { id: '4', label: 'Para el futuro simple', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cuál es correcto? "Espero que tú..."',
+                    options: [
+                      { id: '1', label: 'vienes', correct: false },
+                      { id: '2', label: 'vengas', correct: true },
+                      { id: '3', label: 'viniste', correct: false },
+                      { id: '4', label: 'vendrás', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles frases requieren subjuntivo? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Quiero que...', correct: true },
+                      { id: '2', label: 'Sé que...', correct: false },
+                      { id: '3', label: 'Dudo que...', correct: true },
+                      { id: '4', label: 'Espero que...', correct: true },
+                      { id: '5', label: 'Es verdad que...', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cuál es el subjuntivo de "ser" para "yo"?',
+                    options: [
+                      { id: '1', label: 'soy', correct: false },
+                      { id: '2', label: 'sea', correct: true },
+                      { id: '3', label: 'fui', correct: false },
+                      { id: '4', label: 'seré', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué frase usa subjuntivo correctamente?',
+                    options: [
+                      { id: '1', label: 'No creo que es verdad', correct: false },
+                      { id: '2', label: 'No creo que sea verdad', correct: true },
+                      { id: '3', label: 'No creo que será verdad', correct: false },
+                      { id: '4', label: 'No creo que fue verdad', correct: false },
+                    ],
+                  },
+                ],
               },
             },
           },
@@ -1319,6 +2176,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-14-quiz',
+            title: {
+              en: 'Unit 14 Quiz',
+              es: 'Examen de Unidad 14',
+            },
+            description: {
+              en: 'Test your knowledge of debate, current events, and professional communication (80% required to pass)',
+              es: 'Prueba tus conocimientos de debate, actualidad y comunicación profesional (se requiere 80% para aprobar)',
+            },
+            xpRequired: 2555,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "to argue/debate" en español?',
+                    options: [
+                      { id: '1', label: 'Discutir', correct: false },
+                      { id: '2', label: 'Debatir', correct: true },
+                      { id: '3', label: 'Hablar', correct: false },
+                      { id: '4', label: 'Gritar', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son palabras relacionadas con la comunicación profesional? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Reunión', correct: true },
+                      { id: '2', label: 'Fiesta', correct: false },
+                      { id: '3', label: 'Presentación', correct: true },
+                      { id: '4', label: 'Informe', correct: true },
+                      { id: '5', label: 'Juego', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "news" en español?',
+                    answer: { acceptable: ['noticia', 'noticias'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué verbo significa "to convince"?',
+                    options: [
+                      { id: '1', label: 'Olvidar', correct: false },
+                      { id: '2', label: 'Convencer', correct: true },
+                      { id: '3', label: 'Escuchar', correct: false },
+                      { id: '4', label: 'Mirar', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra se usa para eventos actuales?',
+                    options: [
+                      { id: '1', label: 'Historia', correct: false },
+                      { id: '2', label: 'Actualidad', correct: true },
+                      { id: '3', label: 'Pasado', correct: false },
+                      { id: '4', label: 'Leyenda', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -1415,6 +2338,72 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'film discussion',
                 prompt: 'Discuss movies and performances',
+              },
+            },
+          },
+          {
+            id: 'lesson-15-quiz',
+            title: {
+              en: 'Unit 15 Quiz',
+              es: 'Examen de Unidad 15',
+            },
+            description: {
+              en: 'Test your knowledge of literature and arts (80% required to pass)',
+              es: 'Prueba tus conocimientos de literatura y artes (se requiere 80% para aprobar)',
+            },
+            xpRequired: 2865,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "poet" en español?',
+                    answer: { acceptable: ['poeta'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra se refiere a una figura literaria?',
+                    options: [
+                      { id: '1', label: 'Metáfora', correct: true },
+                      { id: '2', label: 'Mesa', correct: false },
+                      { id: '3', label: 'Música', correct: false },
+                      { id: '4', label: 'Medicina', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son formas de arte visual? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Pintura', correct: true },
+                      { id: '2', label: 'Poema', correct: false },
+                      { id: '3', label: 'Escultura', correct: true },
+                      { id: '4', label: 'Novela', correct: false },
+                      { id: '5', label: 'Galería', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "movie" en español?',
+                    options: [
+                      { id: '1', label: 'Libro', correct: false },
+                      { id: '2', label: 'Película', correct: true },
+                      { id: '3', label: 'Canción', correct: false },
+                      { id: '4', label: 'Pintura', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra describe el texto de una película?',
+                    options: [
+                      { id: '1', label: 'Actor', correct: false },
+                      { id: '2', label: 'Director', correct: false },
+                      { id: '3', label: 'Guion', correct: true },
+                      { id: '4', label: 'Escena', correct: false },
+                    ],
+                  },
+                ],
               },
             },
           },
@@ -1517,6 +2506,72 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-16-quiz',
+            title: {
+              en: 'Unit 16 Quiz',
+              es: 'Examen de Unidad 16',
+            },
+            description: {
+              en: 'Test your knowledge of technology and innovation (80% required to pass)',
+              es: 'Prueba tus conocimientos de tecnología e innovación (se requiere 80% para aprobar)',
+            },
+            xpRequired: 3190,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "internet" en español?',
+                    options: [
+                      { id: '1', label: 'Internet', correct: true },
+                      { id: '2', label: 'Red', correct: false },
+                      { id: '3', label: 'Computadora', correct: false },
+                      { id: '4', label: 'Teléfono', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son conceptos de la economía digital? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Startup', correct: true },
+                      { id: '2', label: 'Bosque', correct: false },
+                      { id: '3', label: 'Plataforma', correct: true },
+                      { id: '4', label: 'Emprendedor', correct: true },
+                      { id: '5', label: 'Montaña', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "to innovate" en español?',
+                    answer: { acceptable: ['innovar'] },
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra se refiere a una nueva empresa tecnológica?',
+                    options: [
+                      { id: '1', label: 'Hospital', correct: false },
+                      { id: '2', label: 'Startup', correct: true },
+                      { id: '3', label: 'Escuela', correct: false },
+                      { id: '4', label: 'Parque', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "research" en español?',
+                    options: [
+                      { id: '1', label: 'Buscar', correct: false },
+                      { id: '2', label: 'Investigación', correct: true },
+                      { id: '3', label: 'Mensaje', correct: false },
+                      { id: '4', label: 'Aplicación', correct: false },
+                    ],
+                  },
+                ],
+              },
+            },
+          },
         ],
       },
       {
@@ -1585,6 +2640,72 @@ const baseLearningPath = {
               grammar: {
                 topic: 'advanced expressions',
                 focusPoints: ['complex conditionals', 'hypothetical situations'],
+              },
+            },
+          },
+          {
+            id: 'lesson-17-quiz',
+            title: {
+              en: 'Unit 17 Quiz',
+              es: 'Examen de Unidad 17',
+            },
+            description: {
+              en: 'Test your knowledge of social issues and ethics (80% required to pass)',
+              es: 'Prueba tus conocimientos de problemas sociales y ética (se requiere 80% para aprobar)',
+            },
+            xpRequired: 3425,
+            xpReward: 0,
+            modes: ['quiz'],
+            content: {
+              quiz: {
+                questions: [
+                  {
+                    type: 'oneword',
+                    stem: '¿Cómo se dice "equality" en español?',
+                    answer: { acceptable: ['igualdad'] },
+                  },
+                  {
+                    type: 'multi',
+                    stem: '¿Cuáles son conceptos de justicia social? (Selecciona todas)',
+                    options: [
+                      { id: '1', label: 'Igualdad', correct: true },
+                      { id: '2', label: 'Comida', correct: false },
+                      { id: '3', label: 'Derechos', correct: true },
+                      { id: '4', label: 'Inclusión', correct: true },
+                      { id: '5', label: 'Película', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra significa "sustainability"?',
+                    options: [
+                      { id: '1', label: 'Crisis', correct: false },
+                      { id: '2', label: 'Sostenibilidad', correct: true },
+                      { id: '3', label: 'Problema', correct: false },
+                      { id: '4', label: 'Diversión', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Cómo se dice "rights" en español?',
+                    options: [
+                      { id: '1', label: 'Izquierda', correct: false },
+                      { id: '2', label: 'Derecha', correct: false },
+                      { id: '3', label: 'Derechos', correct: true },
+                      { id: '4', label: 'Deberes', correct: false },
+                    ],
+                  },
+                  {
+                    type: 'mcq',
+                    stem: '¿Qué palabra describe trabajar juntos internacionalmente?',
+                    options: [
+                      { id: '1', label: 'Separación', correct: false },
+                      { id: '2', label: 'Cooperación', correct: true },
+                      { id: '3', label: 'Competencia', correct: false },
+                      { id: '4', label: 'Conflicto', correct: false },
+                    ],
+                  },
+                ],
               },
             },
           },
