@@ -697,6 +697,7 @@ export default function Vocabulary({
   const [quizCorrectAnswers, setQuizCorrectAnswers] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
+  const [quizCurrentQuestionAttempted, setQuizCurrentQuestionAttempted] = useState(false);
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
@@ -806,6 +807,9 @@ export default function Vocabulary({
 
   // Quiz mode helper function
   function handleQuizAnswer(isCorrect) {
+    // Mark current question as attempted (prevents multiple submissions)
+    setQuizCurrentQuestionAttempted(true);
+
     const newQuestionsAnswered = quizQuestionsAnswered + 1;
     const newCorrectAnswers = isCorrect ? quizCorrectAnswers + 1 : quizCorrectAnswers;
 
@@ -840,6 +844,10 @@ export default function Vocabulary({
     if (typeof nextAction === "function") {
       setLastOk(null);
       setRecentXp(0);
+      // Reset quiz question attempted flag for next question
+      if (isFinalQuiz) {
+        setQuizCurrentQuestionAttempted(false);
+      }
       const fn = nextAction;
       setNextAction(null);
       fn();
@@ -1395,7 +1403,8 @@ Return EXACTLY:
     }
 
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
-    const nextFn = ok
+    // In quiz mode, always show next button (even on wrong answer)
+    const nextFn = (ok || isFinalQuiz)
       ? lockedType
         ? () => generatorFor(lockedType)()
         : () => generateRandomRef.current()
@@ -1653,7 +1662,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       setRecentXp(delta);
     }
 
-    const nextFn = ok
+    // In quiz mode, always show next button (even on wrong answer)
+    const nextFn = (ok || isFinalQuiz)
       ? lockedType
         ? () => generatorFor(lockedType)()
         : () => generateRandomRef.current()
@@ -2988,13 +2998,35 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* Shared progress header */}
         <Box display={"flex"} justifyContent={"center"}>
           <Box w="50%" justifyContent={"center"}>
-            <HStack justify="space-between" mb={1}>
-              <Badge variant="subtle">
-                {t("vocab_badge_level", { level: levelNumber })}
-              </Badge>
-              <Badge variant="subtle">{t("vocab_badge_xp", { xp })}</Badge>
-            </HStack>
-            <WaveBar value={progressPct} />
+            {isFinalQuiz ? (
+              // Quiz progress display
+              <VStack spacing={2}>
+                <HStack justify="space-between" w="100%">
+                  <Badge colorScheme="purple" fontSize="md">
+                    {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
+                  </Badge>
+                  <Badge colorScheme={quizCorrectAnswers >= quizConfig.passingScore ? "green" : "yellow"} fontSize="md">
+                    {quizCorrectAnswers}/{quizQuestionsAnswered} {userLanguage === "es" ? "correctas" : "correct"}
+                  </Badge>
+                </HStack>
+                <Text fontSize="sm" color="gray.400" textAlign="center">
+                  {userLanguage === "es"
+                    ? `Necesitas ${quizConfig.passingScore}/${quizConfig.questionsRequired} para aprobar`
+                    : `Need ${quizConfig.passingScore}/${quizConfig.questionsRequired} to pass`}
+                </Text>
+              </VStack>
+            ) : (
+              // Normal XP progress display
+              <>
+                <HStack justify="space-between" mb={1}>
+                  <Badge variant="subtle">
+                    {t("vocab_badge_level", { level: levelNumber })}
+                  </Badge>
+                  <Badge variant="subtle">{t("vocab_badge_xp", { xp })}</Badge>
+                </HStack>
+                <WaveBar value={progressPct} />
+              </>
+            )}
           </Box>
         </Box>
 
@@ -3050,12 +3082,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitFill}
-                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
+                isDisabled={loadingGFill || !ansFill.trim() || !qFill || (isFinalQuiz && quizCurrentQuestionAttempted)}
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
@@ -3261,23 +3293,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQMC || loadingGMC}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQMC || loadingGMC}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMC}
-                isDisabled={loadingGMC || !pickMC || !choicesMC.length}
+                isDisabled={loadingGMC || !pickMC || !choicesMC.length || (isFinalQuiz && quizCurrentQuestionAttempted)}
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
@@ -3501,23 +3535,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQMA || loadingGMA}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQMA || loadingGMA}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMA}
-                isDisabled={loadingGMA || !choicesMA.length || !maReady}
+                isDisabled={loadingGMA || !choicesMA.length || !maReady || (isFinalQuiz && quizCurrentQuestionAttempted)}
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
@@ -3640,14 +3676,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
               mt={4}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQSpeak || isSpeakRecording}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQSpeak || isSpeakRecording}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
                 w={{ base: "100%", md: "auto" }}
@@ -3949,14 +3987,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingMG || loadingMJ}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingMG || loadingMJ}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMatch}
