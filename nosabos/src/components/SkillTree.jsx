@@ -334,6 +334,7 @@ function UnitSection({
   index,
   supportLang,
   hasNextUnit,
+  targetLang,
 }) {
   const bgColor = "gray.800";
   const borderColor = "gray.700";
@@ -1114,6 +1115,7 @@ export default function SkillTree({
                 index={index}
                 supportLang={supportLang}
                 hasNextUnit={index < units.length - 1}
+                targetLang={targetLang}
               />
             ))
           ) : (
