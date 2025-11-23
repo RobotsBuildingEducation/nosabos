@@ -723,6 +723,8 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
   useEffect(() => {
     if (!npub || isGenerating || generatingRef.current) return;
     if (lectures.length === 0 && !draftLecture) {
+      // Don't set activeId when auto-generating first lecture
+      setActiveId(null);
       generateNextLectureGeminiStream();
     }
   }, [npub, lectures.length]); // eslint-disable-line
@@ -1431,7 +1433,14 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
             minH="280px"
             width="100%"
           >
-            {viewLecture ? (
+            {isGenerating && !draftLecture ? (
+              <VStack spacing={3} width="100%" justify="center" minH="280px">
+                <Spinner size="lg" color="teal.400" />
+                <Text fontSize="lg" opacity={0.9}>
+                  {t("reading_generating") || "Creating lecture..."}
+                </Text>
+              </VStack>
+            ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
                 <HStack
                   justify="space-between"
