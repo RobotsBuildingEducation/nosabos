@@ -27,6 +27,7 @@ import {
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaVolumeUp, FaStop, FaPen } from "react-icons/fa";
 import { FaWandMagicSparkles } from "react-icons/fa6";
+import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -156,7 +157,6 @@ function useSharedProgress() {
     supportLang: "en", // 'en' | 'es' | 'bilingual'
     voice: "alloy",
   });
-  const [rolePlayRole, setRolePlayRole] = useState("");
 
   useEffect(() => {
     if (!npub) return;
@@ -180,20 +180,13 @@ function useSharedProgress() {
           : "en",
         voice: p.voice || "alloy",
       });
-      const storedRole =
-        typeof data?.rolePlay?.role === "string"
-          ? data.rolePlay.role
-          : typeof data?.rolePlayRole === "string"
-          ? data.rolePlayRole
-          : "";
-      setRolePlayRole(storedRole.trim());
     });
     return () => unsub();
   }, [npub]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
-  return { xp, levelNumber, progressPct, progress, npub, rolePlayRole };
+  return { xp, levelNumber, progressPct, progress, npub };
 }
 
 /* ================================
@@ -303,7 +296,7 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
   const user = useUserStore((s) => s.user);
 
   // Shared settings + XP
-  const { xp, levelNumber, progressPct, progress, npub, rolePlayRole } =
+  const { xp, levelNumber, progressPct, progress, npub } =
     useSharedProgress();
 
   // APP UI language (drives all UI copy)
@@ -337,9 +330,6 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
   const [storyData, setStoryData] = useState(null);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [activeRole, setActiveRole] = useState("");
-  const [roleInput, setRoleInput] = useState("");
-  const [isEditingRole, setIsEditingRole] = useState(false);
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
@@ -365,7 +355,6 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
   const audioRef = useRef(null);
   const storyCacheRef = useRef(null);
   const highlightIntervalRef = useRef(null);
-  const roleInputRef = useRef(null);
   const currentUtteranceRef = useRef(null);
   const animationFrameRef = useRef(null);
   const currentAudioRef = useRef(null);
@@ -376,20 +365,6 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
     speechDone: false,
     timeoutId: null,
   });
-
-  useEffect(() => {
-    const normalized = (rolePlayRole || "").trim();
-    setActiveRole(normalized);
-    setRoleInput(normalized);
-    setIsEditingRole(!normalized);
-  }, [rolePlayRole]);
-
-  useEffect(() => {
-    if (isEditingRole) {
-      roleInputRef.current?.focus();
-      roleInputRef.current?.select();
-    }
-  }, [isEditingRole]);
   const usageStatsRef = useRef({
     ttsCalls: 0,
     storyGenerations: 0,
@@ -554,13 +529,16 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
 
   /* ----------------------------- Story generation (backend, fallback) ----------------------------- */
   const generateStory = useCallback(
-    async (roleOverride) => {
-      const roleFocus = (roleOverride || activeRole || "").trim();
+    async () => {
       setIsLoading(true);
       stopAllAudio();
       try {
         usageStatsRef.current.storyGenerations++;
         const storyUrl = "https://generatestory-hftgya63qa-uc.a.run.app";
+
+        // Determine lesson context for the story
+        const lessonTopic = lessonContent?.topic || lessonContent?.scenario || "general conversation";
+
         const response = await fetch(storyUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -572,7 +550,7 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
               level: progress.level || "beginner",
               targetLang, // content target language
               supportLang, // effective support language (bilingual mirrors UI)
-              rolePlayRole: roleFocus,
+              lessonTopic, // Use lesson context instead of role
             },
           }),
         });
@@ -603,120 +581,72 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
           fullStory: {
             tgt:
               targetLang === "en"
-                ? roleFocus
-                  ? `In this scene, you are ${roleFocus}. One afternoon in San Miguel, the town square is lively as you guide your friends through a new challenge.`
-                  : "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
-                : roleFocus
-                ? `En esta historia eres ${roleFocus}. Una tarde en San Miguel, la plaza del pueblo está llena de vida mientras guías a tus amistades en un nuevo reto.`
+                ? "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
                 : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
             sup:
               supportLang === "es"
-                ? roleFocus
-                  ? `En esta historia eres ${roleFocus}. Una tarde en San Miguel, la plaza del pueblo está llena de vida mientras guías a tus amistades en un nuevo reto.`
-                  : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                : roleFocus
-                ? `In this role play you are ${roleFocus}. One afternoon in San Miguel, the town square is buzzing while you guide your friends through a new challenge.`
+                ? "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
                 : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
           },
           sentences:
             targetLang === "en"
               ? [
                   {
-                    tgt: roleFocus
-                      ? `You step into the plaza as ${roleFocus}, ready to help.`
-                      : "Once upon a time, there was a small town called San Miguel.",
+                    tgt: "Once upon a time, there was a small town called San Miguel.",
                     sup:
                       supportLang === "es"
-                        ? roleFocus
-                          ? `Entras a la plaza como ${roleFocus}, listo para ayudar.`
-                          : "Había una vez un pequeño pueblo llamado San Miguel."
-                        : roleFocus
-                        ? `You step into the plaza as ${roleFocus}, ready to help.`
+                        ? "Había una vez un pequeño pueblo llamado San Miguel."
                         : "Once upon a time, there was a small town called San Miguel.",
                   },
                   {
-                    tgt: roleFocus
-                      ? "The townspeople gather around you, eager for guidance."
-                      : "The town had a lovely square where kids played every day.",
+                    tgt: "The town had a lovely square where kids played every day.",
                     sup:
                       supportLang === "es"
-                        ? roleFocus
-                          ? "La gente del pueblo se reúne contigo, con ganas de escuchar tus consejos."
-                          : "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
-                        : roleFocus
-                        ? "The townspeople gather around you, eager for guidance."
+                        ? "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
                         : "The town had a lovely square where kids played every day.",
                   },
                   {
-                    tgt: roleFocus
-                      ? "You show them how to use the fountain to solve their problem."
-                      : "In the square, an old fountain always had fresh water.",
+                    tgt: "In the square, an old fountain always had fresh water.",
                     sup:
                       supportLang === "es"
-                        ? roleFocus
-                          ? "Les enseñas a usar la fuente para resolver su problema."
-                          : "En la plaza, una fuente antigua siempre tenía agua fresca."
-                        : roleFocus
-                        ? "You show them how to use the fountain to solve their problem."
+                        ? "En la plaza, una fuente antigua siempre tenía agua fresca."
                         : "In the square, an old fountain always had fresh water.",
                   },
                   {
-                    tgt: roleFocus
-                      ? "Everyone thanks you for leading the way with calm confidence."
-                      : "Adults sat around it to talk and rest after work.",
+                    tgt: "Adults sat around it to talk and rest after work.",
                     sup:
                       supportLang === "es"
-                        ? roleFocus
-                          ? "Todos te agradecen por guiarlos con calma y confianza."
-                          : "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
-                        : roleFocus
-                        ? "Everyone thanks you for leading the way with calm confidence."
+                        ? "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
                         : "Adults sat around it to talk and rest after work.",
                   },
                 ]
               : [
                   {
-                    tgt: roleFocus
-                      ? `Eres ${roleFocus} y llegas a la plaza principal.`
-                      : "Había una vez un pequeño pueblo en México llamado San Miguel.",
+                    tgt: "Había una vez un pequeño pueblo en México llamado San Miguel.",
                     sup:
                       supportLang === "es"
                         ? "Había una vez un pequeño pueblo en México llamado San Miguel."
-                        : roleFocus
-                        ? `You are ${roleFocus} arriving at the main square.`
                         : "Once upon a time, there was a small town in Mexico called San Miguel.",
                   },
                   {
-                    tgt: roleFocus
-                      ? "La gente se reúne a tu alrededor para pedirte ayuda."
-                      : "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
+                    tgt: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
                     sup:
                       supportLang === "es"
                         ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
-                        : roleFocus
-                        ? "People gather around you to ask for help."
                         : "The town had a very beautiful square where the children played every day.",
                   },
                   {
-                    tgt: roleFocus
-                      ? "Enseñas a todos a usar la fuente para resolver la situación."
-                      : "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
+                    tgt: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
                     sup:
                       supportLang === "es"
                         ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
-                        : roleFocus
-                        ? "You teach everyone to use the fountain to solve the situation."
                         : "In the square, there was an old fountain that always had fresh water.",
                   },
                   {
-                    tgt: roleFocus
-                      ? "Todos te agradecen por liderar con calma y creatividad."
-                      : "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                    tgt: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
                     sup:
                       supportLang === "es"
                         ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                        : roleFocus
-                        ? "The adults thank you for leading with calm creativity."
                         : "The adults sat around the fountain to talk and rest after work.",
                   },
                 ],
@@ -740,7 +670,7 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
       }
     },
     [
-      activeRole,
+      lessonContent,
       progress.level,
       targetLang,
       supportLang,
@@ -759,21 +689,7 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
    * {"type":"done"}
    */
   const generateStoryGeminiStream = useCallback(
-    async (roleOverride) => {
-      const roleFocus = (roleOverride || activeRole || "").trim();
-      if (!roleFocus) {
-        toast({
-          title: uiLang === "es" ? "Agrega un rol" : "Add a role",
-          description:
-            uiLang === "es"
-              ? "Cuéntanos a quién quieres interpretar antes de continuar."
-              : "Tell us who you want to role play as before continuing.",
-          status: "warning",
-          duration: 3000,
-        });
-        return;
-      }
-
+    async () => {
       setIsLoading(true);
       stopAllAudio();
       try {
@@ -789,18 +705,18 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
           ? lessonContent.scenario
             ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
             : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
-          : "";
+          : "Create a simple conversational story appropriate for language practice.";
 
         const prompt = [
-          "You are a language tutor. Generate a short, engaging role play scenario",
-          `for a ${lvl} learner who is role playing as ${roleFocus}. Target language: ${tName} (${tLang}).`,
+          "You are a language tutor. Generate a short, engaging conversational story",
+          `for a ${lvl} learner practicing ${tName} (${tLang}).`,
           `Also provide a brief support translation in ${sName} (${sLang}).`,
           scenarioDirective,
           "",
           "Constraints:",
           "- 8 to 10 sentences total.",
           "- Simple, culturally-relevant, 8–15 words per sentence.",
-          `- Make the learner, acting as ${roleFocus}, the protagonist of the story.`,
+          "- Create an engaging narrative that helps the learner practice the language.",
           "- NO headings, NO commentary, NO code fences.",
           "",
           "Output protocol (NDJSON, one compact JSON object per line):",
@@ -978,14 +894,14 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
           error
         );
         try {
-          await generateStory(roleFocus); // fallback path
+          await generateStory(); // fallback path
         } catch {
           setIsLoading(false);
         }
       }
     },
     [
-      activeRole,
+      lessonContent,
       progress.level,
       targetLang,
       supportLang,
@@ -996,70 +912,13 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
     ]
   );
 
-  const handleRoleSubmit = async (event) => {
-    event?.preventDefault?.();
-    const trimmed = roleInput.trim();
-    if (!trimmed) {
-      toast({
-        title: uiLang === "es" ? "Agrega un rol" : "Add a role",
-        description:
-          uiLang === "es"
-            ? "Escribe quién quieres ser en esta práctica."
-            : "Describe who you want to role play as before continuing.",
-        status: "warning",
-        duration: 3000,
-      });
-      return;
-    }
-
-    try {
-      if (npub) {
-        await setDoc(
-          doc(database, "users", npub),
-          {
-            rolePlay: {
-              role: trimmed,
-              updatedAt: isoNow(),
-            },
-          },
-          { merge: true }
-        );
-      }
-    } catch (error) {
-      console.error("Failed to save role play preference", error);
-      toast({
-        title:
-          uiLang === "es"
-            ? "No se pudo guardar el rol"
-            : "Couldn't save your role",
-        description:
-          uiLang === "es"
-            ? "Intentaremos generar el juego de todas formas."
-            : "We'll still try to generate your role play.",
-        status: "error",
-        duration: 3000,
-      });
-    }
-
-    setRoleInput(trimmed);
-    setActiveRole(trimmed);
-    storyCacheRef.current = null;
-    setStoryData(null);
-    setCurrentSentenceIndex(0);
-    setSessionXp(0);
-    setPassedCount(0);
-    setShowFullStory(true);
-    setHighlightedWordIndex(-1);
-    setIsEditingRole(false);
-    await generateStoryGeminiStream(trimmed);
-  };
-
+  // Auto-generate story on mount if lessonContent is provided
   useEffect(() => {
-    const normalized = activeRole.trim();
-    if (!normalized) return;
     if (storyData || isLoading) return;
-    generateStoryGeminiStream(normalized);
-  }, [activeRole, storyData, isLoading, generateStoryGeminiStream]);
+    if (lessonContent) {
+      generateStoryGeminiStream();
+    }
+  }, [lessonContent, storyData, isLoading, generateStoryGeminiStream]);
 
   /* ----------------------------- TTS / playback ----------------------------- */
   const playWithOpenAITTS = async (
@@ -1664,48 +1523,14 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
         borderRadius="24px"
       >
         <Center h="100vh">
-          <VStack spacing={5} w="100%" px={6} maxW="lg">
-            <Text color="white" fontSize="2xl" fontWeight="700">
-              {uiText.header}
+          <VStack spacing={6}>
+            <Text color="white" fontSize="xl" fontWeight="600">
+              {uiText.generatingTitle}
             </Text>
-            <Text color="#94a3b8" textAlign="center">
-              {uiText.noStory}
+            <Text color="#94a3b8" fontSize="sm">
+              {uiText.generatingSub}
             </Text>
-            <Box
-              as="form"
-              onSubmit={handleRoleSubmit}
-              w="100%"
-              bg="rgba(15, 23, 42, 0.35)"
-              borderRadius="lg"
-              p={4}
-            >
-              <VStack align="stretch" spacing={3}>
-                <Text fontSize="sm" color="#cbd5f5">
-                  {uiText.rolePrompt}
-                </Text>
-                <Input
-                  ref={roleInputRef}
-                  value={roleInput}
-                  onChange={(e) => setRoleInput(e.target.value)}
-                  placeholder={uiText.rolePlaceholder}
-                  bg="rgba(15, 23, 42, 0.6)"
-                  color="white"
-                  _placeholder={{ color: "rgba(148, 163, 184, 0.7)" }}
-                  isDisabled={isLoading}
-                />
-                <Button
-                  type="submit"
-                  size="lg"
-                  px={6}
-                  leftIcon={<FaWandMagicSparkles />}
-                  colorScheme="teal"
-                  isLoading={isLoading}
-                >
-                  {uiText.startRole}
-                </Button>
-              </VStack>
-            </Box>
-            {isLoading && <Spinner color="teal.200" />}
+            <Spinner color="teal.300" />
           </VStack>
         </Center>
       </Box>
@@ -1747,96 +1572,6 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
                 +{sessionXp}
               </Badge>
             )}
-            <Box
-              as={isEditingRole ? "form" : "div"}
-              onSubmit={isEditingRole ? handleRoleSubmit : undefined}
-            >
-              {isEditingRole ? (
-                <HStack
-                  spacing={2}
-                  alignItems="center"
-                  justify="flex-end"
-                  // flexWrap="wrap"
-                >
-                  <Input
-                    ref={roleInputRef}
-                    value={roleInput}
-                    onChange={(e) => setRoleInput(e.target.value)}
-                    placeholder={uiText.rolePlaceholder}
-                    size="sm"
-                    bg="rgba(15, 23, 42, 0.6)"
-                    color="white"
-                    // maxW={{ base: "200px", md: "240px" }}
-                    _placeholder={{ color: "rgba(148, 163, 184, 0.7)" }}
-                    isDisabled={isLoading}
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    // leftIcon={<FaWandMagicSparkles />}
-                    colorScheme="teal"
-                    isLoading={isLoading}
-                    pl={8}
-                    pr={8}
-                  >
-                    {activeRole ? uiText.updateRole : uiText.startRole}
-                  </Button>
-                  {activeRole && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      colorScheme="teal"
-                      onClick={() => {
-                        setRoleInput(activeRole);
-                        setIsEditingRole(false);
-                      }}
-                    >
-                      {uiText.cancelEdit}
-                    </Button>
-                  )}
-                </HStack>
-              ) : (
-                <HStack spacing={2} alignItems="center" flexWrap="wrap">
-                  {activeRole && (
-                    <Tag
-                      size="lg"
-                      borderRadius="full"
-                      bg="rgba(20, 184, 166, 0.16)"
-                      color="teal.50"
-                      border="1px solid rgba(45, 212, 191, 0.35)"
-                      px={3}
-                      py={1}
-                      maxW={{ base: "100%", sm: "260px" }}
-                      cursor="pointer"
-                      onClick={() => setIsEditingRole(true)}
-                    >
-                      <TagLabel
-                        fontWeight="600"
-                        fontSize="sm"
-                        whiteSpace="nowrap"
-                        overflow="hidden"
-                        textOverflow="ellipsis"
-                        maxW="100%"
-                      >
-                        {activeRole}
-                      </TagLabel>
-                    </Tag>
-                  )}
-                  <IconButton
-                    type="button"
-                    size="sm"
-                    leftIcon={<FaPen fontSizesize="sm" />}
-                    textAlign={"center"}
-                    pl="2"
-                    colorScheme="teal"
-                    variant="outline"
-                    onClick={() => setIsEditingRole(true)}
-                  />
-                  {/* {uiText.editRole} */}
-                </HStack>
-              )}
-            </Box>
           </HStack>
         </HStack>
       </motion.div>
