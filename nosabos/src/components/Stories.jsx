@@ -290,7 +290,7 @@ function useUIText(uiLang, level, translationsObj) {
 /* ================================
    Main Component
 =================================== */
-export default function StoryMode({ userLanguage = "en", lessonContent = null }) {
+export default function StoryMode({ userLanguage = "en", lessonContent = null, onSkip = null }) {
   const navigate = useNavigate();
   const toast = useToast();
   const user = useUserStore((s) => s.user);
@@ -919,6 +919,27 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
       generateStoryGeminiStream();
     }
   }, [lessonContent, storyData, isLoading, generateStoryGeminiStream]);
+
+  /* ----------------------------- Skip module ----------------------------- */
+  const handleSkipModule = () => {
+    // If in lesson mode, call onSkip to switch to next random module type
+    if (onSkip && typeof onSkip === "function") {
+      console.log("[StoryMode] Skipping to next lesson module");
+      onSkip();
+      return;
+    }
+
+    // Not in lesson mode - show a message
+    toast({
+      title: uiLang === "es" ? "No disponible" : "Not available",
+      description:
+        uiLang === "es"
+          ? "Solo puedes saltar cuando estás en un modo de lección."
+          : "You can only skip when in lesson mode.",
+      status: "info",
+      duration: 3000,
+    });
+  };
 
   /* ----------------------------- TTS / playback ----------------------------- */
   const playWithOpenAITTS = async (
@@ -1572,6 +1593,17 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
                 +{sessionXp}
               </Badge>
             )}
+            {onSkip && (
+              <Button
+                onClick={handleSkipModule}
+                size="sm"
+                variant="outline"
+                colorScheme="orange"
+                color="white"
+              >
+                {uiLang === "es" ? "Saltar" : "Skip"}
+              </Button>
+            )}
           </HStack>
         </HStack>
       </motion.div>
@@ -1885,44 +1917,6 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null })
                         size="sm"
                       >
                         {uiText.listen}
-                      </Button>
-                      <Button
-                        onClick={() => {
-                          setSentenceCompleted(false); // Reset completion state when skipping
-                          if (
-                            currentSentenceIndex <
-                            storyData.sentences.length - 1
-                          ) {
-                            setCurrentSentenceIndex((p) => p + 1);
-                          } else {
-                            // Last sentence — finish session and award accumulated XP once
-                            finalizePracticeSession(sessionXp).finally(() => {
-                              toast({
-                                title:
-                                  uiLang === "es"
-                                    ? "¡Felicidades!"
-                                    : "Congrats!",
-                                description:
-                                  uiLang === "es"
-                                    ? `¡Completaste el juego de roles! Ganaste ${sessionXp} ${uiText.xp} en esta sesión.`
-                                    : `Role play completed! You earned ${sessionXp} ${uiText.xp} this session.`,
-                                status: "success",
-                                duration: 3000,
-                              });
-                              setShowFullStory(true);
-                              setCurrentSentenceIndex(0);
-                            });
-                          }
-                        }}
-                        variant="outline"
-                        borderColor="rgba(255, 255, 255, 0.3)"
-                        color="white"
-                        _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
-                        size="sm"
-                      >
-                        {currentSentenceIndex < storyData.sentences.length - 1
-                          ? uiText.skip
-                          : uiText.finish}
                       </Button>
                     </HStack>
                   </VStack>
