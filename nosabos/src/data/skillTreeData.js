@@ -112,6 +112,35 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-1-quiz',
+            title: {
+              en: 'Unit 1 Quiz',
+              es: 'Prueba de Unidad 1',
+            },
+            description: {
+              en: 'Test your knowledge of greetings, introductions, and basic questions',
+              es: 'Pon a prueba tus conocimientos de saludos, presentaciones y preguntas básicas',
+            },
+            xpRequired: 70,
+            xpReward: 50,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                // Use topics instead of hardcoded words to support any target language
+                topic: 'greetings and question words (hello, goodbye, good morning, good afternoon, good evening, how, what, where, when, why)',
+              },
+              grammar: {
+                topics: ['basic greetings', 'introductions', 'question formation'],
+                focusPoints: ['formal vs informal greetings', 'time-based greetings', 'introducing yourself', 'asking where someone is from', 'basic question words', 'question intonation', 'question word order'],
+              },
+            },
+          },
         ],
       },
       {

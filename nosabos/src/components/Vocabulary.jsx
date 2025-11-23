@@ -24,6 +24,10 @@ import {
   Tooltip,
   IconButton,
   useToast,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -676,7 +680,12 @@ function norm(s) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function Vocabulary({ userLanguage = "en", lessonContent = null }) {
+export default function Vocabulary({
+  userLanguage = "en",
+  lessonContent = null,
+  isFinalQuiz = false,
+  quizConfig = { questionsRequired: 10, passingScore: 8 }
+}) {
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
@@ -686,6 +695,16 @@ export default function Vocabulary({ userLanguage = "en", lessonContent = null }
   if (lessonContent?.words) {
     console.log('[Vocabulary Component] Specific words:', lessonContent.words);
   }
+
+  // Quiz mode state
+  const [quizQuestionsAnswered, setQuizQuestionsAnswered] = useState(0);
+  const [quizCorrectAnswers, setQuizCorrectAnswers] = useState(0);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [quizPassed, setQuizPassed] = useState(false);
+  const [quizCurrentQuestionAttempted, setQuizCurrentQuestionAttempted] = useState(false);
+  const [showQuizSuccessModal, setShowQuizSuccessModal] = useState(false);
+  const [showQuizFailureModal, setShowQuizFailureModal] = useState(false);
+  const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
@@ -793,17 +812,96 @@ export default function Vocabulary({ userLanguage = "en", lessonContent = null }
     }
   }
 
+  // Quiz mode helper function
+  function handleQuizAnswer(isCorrect) {
+    // Mark current question as attempted (prevents multiple submissions)
+    setQuizCurrentQuestionAttempted(true);
+
+    const newQuestionsAnswered = quizQuestionsAnswered + 1;
+    const newCorrectAnswers = isCorrect ? quizCorrectAnswers + 1 : quizCorrectAnswers;
+    const newWrongAnswers = newQuestionsAnswered - newCorrectAnswers;
+
+    // Add to answer history for progress bar animation
+    setQuizAnswerHistory(prev => [...prev, isCorrect]);
+
+    setQuizQuestionsAnswered(newQuestionsAnswered);
+    setQuizCorrectAnswers(newCorrectAnswers);
+
+    // Check for early failure: if user has 3+ wrong answers, they can't pass anymore
+    const maxAllowedWrong = quizConfig.questionsRequired - quizConfig.passingScore; // 10 - 8 = 2
+    if (newWrongAnswers > maxAllowedWrong) {
+      setQuizCompleted(true);
+      setQuizPassed(false);
+      setShowQuizFailureModal(true);
+      return;
+    }
+
+    // Check for success: user has reached passing score
+    if (newCorrectAnswers >= quizConfig.passingScore) {
+      setQuizCompleted(true);
+      setQuizPassed(true);
+      setShowQuizSuccessModal(true);
+      return;
+    }
+
+    // Check if all questions answered (normal completion)
+    if (newQuestionsAnswered >= quizConfig.questionsRequired) {
+      const passed = newCorrectAnswers >= quizConfig.passingScore;
+      setQuizCompleted(true);
+      setQuizPassed(passed);
+
+      if (passed) {
+        setShowQuizSuccessModal(true);
+      } else {
+        setShowQuizFailureModal(true);
+      }
+    }
+  }
+
   function handleNext() {
     if (typeof nextAction === "function") {
       setLastOk(null);
       setRecentXp(0);
+      // Reset quiz question attempted flag for next question
+      if (isFinalQuiz) {
+        setQuizCurrentQuestionAttempted(false);
+      }
       const fn = nextAction;
       setNextAction(null);
       fn();
     }
   }
 
+  // Quiz modal handlers
+  function handleRetryQuiz() {
+    // Reset all quiz state
+    setQuizQuestionsAnswered(0);
+    setQuizCorrectAnswers(0);
+    setQuizCompleted(false);
+    setQuizPassed(false);
+    setQuizCurrentQuestionAttempted(false);
+    setQuizAnswerHistory([]);
+    setShowQuizFailureModal(false);
+    setShowQuizSuccessModal(false);
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    // Start a new question
+    const runner = lockedType ? generatorFor(lockedType) : pickRandomGenerator();
+    if (runner) runner();
+  }
+
+  function handleExitQuiz() {
+    // Navigate back to skill tree (this is handled by parent component)
+    if (typeof window !== "undefined") {
+      window.history.back();
+    }
+  }
+
   function handleSkip() {
+    // Skip button is disabled in quiz mode
+    if (isFinalQuiz) return;
+
     if (isSpeakRecording) {
       try {
         stopSpeakRecording();
@@ -1325,23 +1423,32 @@ Return EXACTLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "vocab_fill",
-      question: qFill,
-      hint: hFill,
-      translation: trFill,
-      user_input: ansFill,
-      award_xp: delta,
-    }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    // Handle quiz mode differently
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setResFill(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0); // No XP in quiz mode
+    } else {
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_fill",
+        question: qFill,
+        hint: hFill,
+        translation: trFill,
+        user_input: ansFill,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-    setResFill(ok ? "correct" : "try_again"); // log only
-    setLastOk(ok);
-    setRecentXp(delta);
+      setResFill(ok ? "correct" : "try_again"); // log only
+      setLastOk(ok);
+      setRecentXp(delta);
+    }
 
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
-    const nextFn = ok
+    // In quiz mode, always show next button (even on wrong answer)
+    const nextFn = (ok || isFinalQuiz)
       ? lockedType
         ? () => generatorFor(lockedType)()
         : () => generateRandomRef.current()
@@ -1574,24 +1681,33 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "vocab_mc",
-      question: qMC,
-      hint: hMC,
-      translation: trMC,
-      choices: choicesMC,
-      author_answer: answerMC,
-      user_choice: pickMC,
-      award_xp: delta,
-    }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    // Handle quiz mode differently
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setResMC(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0); // No XP in quiz mode
+    } else {
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_mc",
+        question: qMC,
+        hint: hMC,
+        translation: trMC,
+        choices: choicesMC,
+        author_answer: answerMC,
+        user_choice: pickMC,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-    setResMC(ok ? "correct" : "try_again"); // log only
-    setLastOk(ok);
-    setRecentXp(delta);
+      setResMC(ok ? "correct" : "try_again"); // log only
+      setLastOk(ok);
+      setRecentXp(delta);
+    }
 
-    const nextFn = ok
+    // In quiz mode, always show next button (even on wrong answer)
+    const nextFn = (ok || isFinalQuiz)
       ? lockedType
         ? () => generatorFor(lockedType)()
         : () => generateRandomRef.current()
@@ -1849,23 +1965,33 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "vocab_ma",
-      question: qMA,
-      hint: hMA,
-      translation: trMA,
-      choices: choicesMA,
-      author_answers: answersMA,
-      user_choices: picksMA,
-      award_xp: delta,
-    }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    // Handle quiz mode differently
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setResMA(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0); // No XP in quiz mode
+    } else {
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_ma",
+        question: qMA,
+        hint: hMA,
+        translation: trMA,
+        choices: choicesMA,
+        author_answers: answersMA,
+        user_choices: picksMA,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-    setResMA(ok ? "correct" : "try_again"); // log only
-    setLastOk(ok);
-    setRecentXp(delta);
-    const nextFn = ok
+      setResMA(ok ? "correct" : "try_again"); // log only
+      setLastOk(ok);
+      setRecentXp(delta);
+    }
+
+    // In quiz mode, always show next button (even on wrong answer)
+    const nextFn = (ok || isFinalQuiz)
       ? lockedType
         ? () => generatorFor(lockedType)()
         : () => generateRandomRef.current()
@@ -2312,22 +2438,32 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "vocab_match",
-      question: mStem,
-      hint: mHint,
-      left: mLeft,
-      right: mRight,
-      user_pairs: userPairs,
-      award_xp: delta,
-    }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    // Handle quiz mode differently
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setMResult(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0); // No XP in quiz mode
+    } else {
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_match",
+        question: mStem,
+        hint: mHint,
+        left: mLeft,
+        right: mRight,
+        user_pairs: userPairs,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-    setMResult(ok ? "correct" : "try_again"); // log only
-    setLastOk(ok);
-    setRecentXp(delta);
-    const nextFn = ok
+      setMResult(ok ? "correct" : "try_again"); // log only
+      setLastOk(ok);
+      setRecentXp(delta);
+    }
+
+    // In quiz mode, always show next button (even on wrong answer)
+    const nextFn = (ok || isFinalQuiz)
       ? lockedType
         ? () => generatorFor(lockedType)()
         : () => generateRandom()
@@ -2368,27 +2504,36 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       const ok = evaluation.pass;
       const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
-      await saveAttempt(npub, {
-        ok,
-        mode: "vocab_speak",
-        question: sPrompt,
-        target: sTarget,
-        stimulus: sStimulus,
-        variant: sVariant,
-        hint: sHint,
-        translation: sTranslation,
-        recognized_text: recognizedText || "",
-        confidence,
-        audio_metrics: audioMetrics,
-        eval: evaluation,
-        method,
-        award_xp: delta,
-      }).catch(() => {});
-      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+      // Handle quiz mode differently
+      if (isFinalQuiz) {
+        handleQuizAnswer(ok);
+        setLastOk(ok);
+        setRecentXp(0); // No XP in quiz mode
+      } else {
+        await saveAttempt(npub, {
+          ok,
+          mode: "vocab_speak",
+          question: sPrompt,
+          target: sTarget,
+          stimulus: sStimulus,
+          variant: sVariant,
+          hint: sHint,
+          translation: sTranslation,
+          recognized_text: recognizedText || "",
+          confidence,
+          audio_metrics: audioMetrics,
+          eval: evaluation,
+          method,
+          award_xp: delta,
+        }).catch(() => {});
+        if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-      setLastOk(ok);
-      setRecentXp(delta);
-      const nextFn = ok
+        setLastOk(ok);
+        setRecentXp(delta);
+      }
+
+      // In quiz mode, always show next button (even on wrong answer)
+      const nextFn = (ok || isFinalQuiz)
         ? lockedType
           ? () => generatorFor(lockedType)()
           : () => generateRandomRef.current()
@@ -2926,13 +3071,81 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* Shared progress header */}
         <Box display={"flex"} justifyContent={"center"}>
           <Box w="50%" justifyContent={"center"}>
-            <HStack justify="space-between" mb={1}>
-              <Badge variant="subtle">
-                {t("vocab_badge_level", { level: levelNumber })}
-              </Badge>
-              <Badge variant="subtle">{t("vocab_badge_xp", { xp })}</Badge>
-            </HStack>
-            <WaveBar value={progressPct} />
+            {isFinalQuiz ? (
+              // Quiz progress display with animated bars
+              <VStack spacing={2}>
+                <HStack justify="space-between" w="100%" mb={1}>
+                  <Badge colorScheme="purple" fontSize="md">
+                    {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
+                  </Badge>
+                  <Badge colorScheme={quizCorrectAnswers >= quizConfig.passingScore ? "green" : "yellow"} fontSize="md">
+                    {quizQuestionsAnswered}/{quizConfig.questionsRequired}
+                  </Badge>
+                </HStack>
+
+                {/* Animated progress bar showing correct (blue) and wrong (red) answers */}
+                <HStack spacing="2px" w="100%" h="16px">
+                  {Array.from({ length: quizConfig.questionsRequired }).map((_, i) => {
+                    const hasAnswer = i < quizAnswerHistory.length;
+                    const isCorrect = hasAnswer ? quizAnswerHistory[i] : null;
+
+                    return (
+                      <Box
+                        key={i}
+                        flex="1"
+                        h="100%"
+                        bg={!hasAnswer ? "gray.700" : (isCorrect ? "blue.400" : "red.400")}
+                        borderRadius="sm"
+                        position="relative"
+                        overflow="hidden"
+                        opacity={hasAnswer ? 1 : 0.5}
+                        transition="all 0.3s ease-out"
+                        sx={hasAnswer ? {
+                          animation: `${isCorrect ? 'slideFromRight' : 'slideFromLeft'} 0.4s ease-out`,
+                          "@keyframes slideFromRight": {
+                            "0%": {
+                              transform: "translateX(100%)",
+                              opacity: 0
+                            },
+                            "100%": {
+                              transform: "translateX(0)",
+                              opacity: 1
+                            }
+                          },
+                          "@keyframes slideFromLeft": {
+                            "0%": {
+                              transform: "translateX(-100%)",
+                              opacity: 0
+                            },
+                            "100%": {
+                              transform: "translateX(0)",
+                              opacity: 1
+                            }
+                          }
+                        } : {}}
+                      />
+                    );
+                  })}
+                </HStack>
+
+                <Text fontSize="xs" color="gray.400" textAlign="center">
+                  {userLanguage === "es"
+                    ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
+                    : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                </Text>
+              </VStack>
+            ) : (
+              // Normal XP progress display
+              <>
+                <HStack justify="space-between" mb={1}>
+                  <Badge variant="subtle">
+                    {t("vocab_badge_level", { level: levelNumber })}
+                  </Badge>
+                  <Badge variant="subtle">{t("vocab_badge_xp", { xp })}</Badge>
+                </HStack>
+                <WaveBar value={progressPct} />
+              </>
+            )}
           </Box>
         </Box>
 
@@ -2975,23 +3188,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQFill || loadingGFill}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQFill || loadingGFill}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitFill}
-                isDisabled={loadingGFill || !ansFill.trim() || !qFill}
+                isDisabled={loadingGFill || !ansFill.trim() || !qFill || (isFinalQuiz && quizCurrentQuestionAttempted)}
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
@@ -3197,23 +3412,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQMC || loadingGMC}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQMC || loadingGMC}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMC}
-                isDisabled={loadingGMC || !pickMC || !choicesMC.length}
+                isDisabled={loadingGMC || !pickMC || !choicesMC.length || (isFinalQuiz && quizCurrentQuestionAttempted)}
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
@@ -3437,23 +3654,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQMA || loadingGMA}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQMA || loadingGMA}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMA}
-                isDisabled={loadingGMA || !choicesMA.length || !maReady}
+                isDisabled={loadingGMA || !choicesMA.length || !maReady || (isFinalQuiz && quizCurrentQuestionAttempted)}
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
@@ -3576,14 +3795,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
               mt={4}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQSpeak || isSpeakRecording}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQSpeak || isSpeakRecording}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
                 w={{ base: "100%", md: "auto" }}
@@ -3649,7 +3870,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
@@ -3885,23 +4106,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingMG || loadingMJ}
-                w={{ base: "100%", md: "auto" }}
-              >
-                {skipLabel}
-              </Button>
+              {!isFinalQuiz && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingMG || loadingMJ}
+                  w={{ base: "100%", md: "auto" }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length || (isFinalQuiz && quizCurrentQuestionAttempted)}
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
@@ -3920,6 +4143,226 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           </>
         ) : null}
       </VStack>
+
+      {/* Quiz Success Modal */}
+      <Modal
+        isOpen={showQuizSuccessModal}
+        onClose={() => setShowQuizSuccessModal(false)}
+        isCentered
+        size="lg"
+        closeOnOverlayClick={false}
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          maxW={{ base: "90%", sm: "md" }}
+        >
+          <ModalBody py={12} px={8}>
+            <VStack spacing={6} textAlign="center">
+              {/* Celebration Icon */}
+              <Box position="relative" w="120px" h="120px">
+                <Box
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  w="80px"
+                  h="80px"
+                  borderRadius="full"
+                  bgGradient="linear(135deg, yellow.300, yellow.400, orange.400)"
+                  boxShadow="0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  animation="pulse 2s ease-in-out infinite"
+                  sx={{
+                    "@keyframes pulse": {
+                      "0%, 100%": {
+                        transform: "translate(-50%, -50%) scale(1)",
+                        boxShadow: "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+                      },
+                      "50%": {
+                        transform: "translate(-50%, -50%) scale(1.1)",
+                        boxShadow: "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)"
+                      },
+                    },
+                  }}
+                >
+                  <Box fontSize="3xl" color="white" fontWeight="black" textShadow="0 2px 4px rgba(0,0,0,0.3)">
+                    ★
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Title */}
+              <VStack spacing={2}>
+                <Text fontSize="3xl" fontWeight="bold">
+                  {userLanguage === "es" ? "¡Prueba Aprobada!" : "Quiz Passed!"}
+                </Text>
+                <Text fontSize="lg" opacity={0.9}>
+                  {userLanguage === "es" ? "¡Felicitaciones!" : "Congratulations!"}
+                </Text>
+              </VStack>
+
+              {/* Score Display */}
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="xl"
+                py={6}
+                px={8}
+                width="100%"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+              >
+                <VStack spacing={2}>
+                  <Text fontSize="sm" textTransform="uppercase" letterSpacing="wide" opacity={0.8}>
+                    {userLanguage === "es" ? "Puntuación" : "Score"}
+                  </Text>
+                  <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
+                    {quizCorrectAnswers}/{quizConfig.questionsRequired}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.8}>
+                    {userLanguage === "es"
+                      ? `${quizCorrectAnswers} correctas • Necesitabas ${quizConfig.passingScore}`
+                      : `${quizCorrectAnswers} correct • Needed ${quizConfig.passingScore}`}
+                  </Text>
+                </VStack>
+              </Box>
+
+              {/* Continue Button */}
+              <Button
+                size="lg"
+                width="100%"
+                bg="white"
+                color="purple.600"
+                _hover={{ bg: "gray.100" }}
+                _active={{ bg: "gray.200" }}
+                onClick={handleExitQuiz}
+                fontWeight="bold"
+                fontSize="lg"
+                py={6}
+              >
+                {userLanguage === "es" ? "Continuar" : "Continue"}
+              </Button>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Quiz Failure Modal */}
+      <Modal
+        isOpen={showQuizFailureModal}
+        onClose={() => setShowQuizFailureModal(false)}
+        isCentered
+        size="lg"
+        closeOnOverlayClick={false}
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg="linear-gradient(135deg, #e53e3e 0%, #c53030 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          maxW={{ base: "90%", sm: "md" }}
+        >
+          <ModalBody py={12} px={8}>
+            <VStack spacing={6} textAlign="center">
+              {/* Failure Icon */}
+              <Box position="relative" w="120px" h="120px">
+                <Box
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  w="80px"
+                  h="80px"
+                  borderRadius="full"
+                  bg="red.400"
+                  boxShadow="0 0 40px rgba(245, 101, 101, 0.6)"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Box fontSize="3xl" color="white" fontWeight="black">
+                    ✗
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Title */}
+              <VStack spacing={2}>
+                <Text fontSize="3xl" fontWeight="bold">
+                  {userLanguage === "es" ? "Prueba No Aprobada" : "Quiz Not Passed"}
+                </Text>
+                <Text fontSize="lg" opacity={0.9}>
+                  {userLanguage === "es" ? "Inténtalo de nuevo" : "Try again"}
+                </Text>
+              </VStack>
+
+              {/* Score Display */}
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="xl"
+                py={6}
+                px={8}
+                width="100%"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+              >
+                <VStack spacing={2}>
+                  <Text fontSize="sm" textTransform="uppercase" letterSpacing="wide" opacity={0.8}>
+                    {userLanguage === "es" ? "Puntuación" : "Score"}
+                  </Text>
+                  <Text fontSize="5xl" fontWeight="bold" color="red.200">
+                    {quizCorrectAnswers}/{quizConfig.questionsRequired}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.8}>
+                    {userLanguage === "es"
+                      ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
+                      : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                  </Text>
+                </VStack>
+              </Box>
+
+              {/* Action Buttons */}
+              <VStack spacing={3} width="100%">
+                <Button
+                  size="lg"
+                  width="100%"
+                  bg="white"
+                  color="red.600"
+                  _hover={{ bg: "gray.100" }}
+                  _active={{ bg: "gray.200" }}
+                  onClick={handleRetryQuiz}
+                  fontWeight="bold"
+                  fontSize="lg"
+                  py={6}
+                >
+                  {userLanguage === "es" ? "Intentar de Nuevo" : "Try Again"}
+                </Button>
+                <Button
+                  size="lg"
+                  width="100%"
+                  variant="outline"
+                  borderColor="whiteAlpha.600"
+                  color="white"
+                  _hover={{ bg: "whiteAlpha.200" }}
+                  _active={{ bg: "whiteAlpha.300" }}
+                  onClick={handleExitQuiz}
+                  fontWeight="bold"
+                  fontSize="lg"
+                  py={6}
+                >
+                  {userLanguage === "es" ? "Volver al Árbol" : "Back to Skill Tree"}
+                </Button>
+              </VStack>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }

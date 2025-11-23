@@ -590,10 +590,22 @@ function normalizeMap(map, len) {
 /* ---------------------------
    Component
 --------------------------- */
-export default function GrammarBook({ userLanguage = "en", lessonContent = null }) {
+export default function GrammarBook({
+  userLanguage = "en",
+  lessonContent = null,
+  isFinalQuiz = false,
+  quizConfig = { questionsRequired: 10, passingScore: 8 }
+}) {
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+
+  // Quiz mode state
+  const [quizQuestionsAnswered, setQuizQuestionsAnswered] = useState(0);
+  const [quizCorrectAnswers, setQuizCorrectAnswers] = useState(0);
+  const [quizCompleted, setQuizCompleted] = useState(false);
+  const [quizPassed, setQuizPassed] = useState(false);
+
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
 
