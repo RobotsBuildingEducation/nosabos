@@ -24,6 +24,10 @@ import {
   Tooltip,
   IconButton,
   useToast,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalBody,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -698,6 +702,9 @@ export default function Vocabulary({
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
   const [quizCurrentQuestionAttempted, setQuizCurrentQuestionAttempted] = useState(false);
+  const [showQuizSuccessModal, setShowQuizSuccessModal] = useState(false);
+  const [showQuizFailureModal, setShowQuizFailureModal] = useState(false);
+  const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
@@ -812,31 +819,42 @@ export default function Vocabulary({
 
     const newQuestionsAnswered = quizQuestionsAnswered + 1;
     const newCorrectAnswers = isCorrect ? quizCorrectAnswers + 1 : quizCorrectAnswers;
+    const newWrongAnswers = newQuestionsAnswered - newCorrectAnswers;
+
+    // Add to answer history for progress bar animation
+    setQuizAnswerHistory(prev => [...prev, isCorrect]);
 
     setQuizQuestionsAnswered(newQuestionsAnswered);
     setQuizCorrectAnswers(newCorrectAnswers);
 
-    // Check if quiz is complete
+    // Check for early failure: if user has 3+ wrong answers, they can't pass anymore
+    const maxAllowedWrong = quizConfig.questionsRequired - quizConfig.passingScore; // 10 - 8 = 2
+    if (newWrongAnswers > maxAllowedWrong) {
+      setQuizCompleted(true);
+      setQuizPassed(false);
+      setShowQuizFailureModal(true);
+      return;
+    }
+
+    // Check for success: user has reached passing score
+    if (newCorrectAnswers >= quizConfig.passingScore) {
+      setQuizCompleted(true);
+      setQuizPassed(true);
+      setShowQuizSuccessModal(true);
+      return;
+    }
+
+    // Check if all questions answered (normal completion)
     if (newQuestionsAnswered >= quizConfig.questionsRequired) {
       const passed = newCorrectAnswers >= quizConfig.passingScore;
       setQuizCompleted(true);
       setQuizPassed(passed);
 
-      toast({
-        title: passed
-          ? (userLanguage === "es" ? "¡Prueba Aprobada!" : "Quiz Passed!")
-          : (userLanguage === "es" ? "Prueba Fallada" : "Quiz Failed"),
-        description: passed
-          ? (userLanguage === "es"
-              ? `¡Felicitaciones! Obtuviste ${newCorrectAnswers}/${quizConfig.questionsRequired} correctas.`
-              : `Congratulations! You got ${newCorrectAnswers}/${quizConfig.questionsRequired} correct.`)
-          : (userLanguage === "es"
-              ? `Obtuviste ${newCorrectAnswers}/${quizConfig.questionsRequired}. Necesitas ${quizConfig.passingScore} para aprobar.`
-              : `You got ${newCorrectAnswers}/${quizConfig.questionsRequired}. You need ${quizConfig.passingScore} to pass.`),
-        status: passed ? "success" : "error",
-        duration: 8000,
-        isClosable: true,
-      });
+      if (passed) {
+        setShowQuizSuccessModal(true);
+      } else {
+        setShowQuizFailureModal(true);
+      }
     }
   }
 
@@ -851,6 +869,32 @@ export default function Vocabulary({
       const fn = nextAction;
       setNextAction(null);
       fn();
+    }
+  }
+
+  // Quiz modal handlers
+  function handleRetryQuiz() {
+    // Reset all quiz state
+    setQuizQuestionsAnswered(0);
+    setQuizCorrectAnswers(0);
+    setQuizCompleted(false);
+    setQuizPassed(false);
+    setQuizCurrentQuestionAttempted(false);
+    setQuizAnswerHistory([]);
+    setShowQuizFailureModal(false);
+    setShowQuizSuccessModal(false);
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    // Start a new question
+    const runner = lockedType ? generatorFor(lockedType) : pickRandomGenerator();
+    if (runner) runner();
+  }
+
+  function handleExitQuiz() {
+    // Navigate back to skill tree (this is handled by parent component)
+    if (typeof window !== "undefined") {
+      window.history.back();
     }
   }
 
@@ -3028,7 +3072,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         <Box display={"flex"} justifyContent={"center"}>
           <Box w="50%" justifyContent={"center"}>
             {isFinalQuiz ? (
-              // Quiz progress display with WaveBar
+              // Quiz progress display with animated bars
               <VStack spacing={2}>
                 <HStack justify="space-between" w="100%" mb={1}>
                   <Badge colorScheme="purple" fontSize="md">
@@ -3038,7 +3082,52 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {quizQuestionsAnswered}/{quizConfig.questionsRequired}
                   </Badge>
                 </HStack>
-                <WaveBar value={(quizQuestionsAnswered / quizConfig.questionsRequired) * 100} />
+
+                {/* Animated progress bar showing correct (blue) and wrong (red) answers */}
+                <HStack spacing="2px" w="100%" h="16px">
+                  {Array.from({ length: quizConfig.questionsRequired }).map((_, i) => {
+                    const hasAnswer = i < quizAnswerHistory.length;
+                    const isCorrect = hasAnswer ? quizAnswerHistory[i] : null;
+
+                    return (
+                      <Box
+                        key={i}
+                        flex="1"
+                        h="100%"
+                        bg={!hasAnswer ? "gray.700" : (isCorrect ? "blue.400" : "red.400")}
+                        borderRadius="sm"
+                        position="relative"
+                        overflow="hidden"
+                        opacity={hasAnswer ? 1 : 0.5}
+                        transition="all 0.3s ease-out"
+                        sx={hasAnswer ? {
+                          animation: `${isCorrect ? 'slideFromRight' : 'slideFromLeft'} 0.4s ease-out`,
+                          "@keyframes slideFromRight": {
+                            "0%": {
+                              transform: "translateX(100%)",
+                              opacity: 0
+                            },
+                            "100%": {
+                              transform: "translateX(0)",
+                              opacity: 1
+                            }
+                          },
+                          "@keyframes slideFromLeft": {
+                            "0%": {
+                              transform: "translateX(-100%)",
+                              opacity: 0
+                            },
+                            "100%": {
+                              transform: "translateX(0)",
+                              opacity: 1
+                            }
+                          }
+                        } : {}}
+                      />
+                    );
+                  })}
+                </HStack>
+
                 <Text fontSize="xs" color="gray.400" textAlign="center">
                   {userLanguage === "es"
                     ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
@@ -4054,6 +4143,226 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           </>
         ) : null}
       </VStack>
+
+      {/* Quiz Success Modal */}
+      <Modal
+        isOpen={showQuizSuccessModal}
+        onClose={() => setShowQuizSuccessModal(false)}
+        isCentered
+        size="lg"
+        closeOnOverlayClick={false}
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg="linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          maxW={{ base: "90%", sm: "md" }}
+        >
+          <ModalBody py={12} px={8}>
+            <VStack spacing={6} textAlign="center">
+              {/* Celebration Icon */}
+              <Box position="relative" w="120px" h="120px">
+                <Box
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  w="80px"
+                  h="80px"
+                  borderRadius="full"
+                  bgGradient="linear(135deg, yellow.300, yellow.400, orange.400)"
+                  boxShadow="0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                  animation="pulse 2s ease-in-out infinite"
+                  sx={{
+                    "@keyframes pulse": {
+                      "0%, 100%": {
+                        transform: "translate(-50%, -50%) scale(1)",
+                        boxShadow: "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+                      },
+                      "50%": {
+                        transform: "translate(-50%, -50%) scale(1.1)",
+                        boxShadow: "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)"
+                      },
+                    },
+                  }}
+                >
+                  <Box fontSize="3xl" color="white" fontWeight="black" textShadow="0 2px 4px rgba(0,0,0,0.3)">
+                    ★
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Title */}
+              <VStack spacing={2}>
+                <Text fontSize="3xl" fontWeight="bold">
+                  {userLanguage === "es" ? "¡Prueba Aprobada!" : "Quiz Passed!"}
+                </Text>
+                <Text fontSize="lg" opacity={0.9}>
+                  {userLanguage === "es" ? "¡Felicitaciones!" : "Congratulations!"}
+                </Text>
+              </VStack>
+
+              {/* Score Display */}
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="xl"
+                py={6}
+                px={8}
+                width="100%"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+              >
+                <VStack spacing={2}>
+                  <Text fontSize="sm" textTransform="uppercase" letterSpacing="wide" opacity={0.8}>
+                    {userLanguage === "es" ? "Puntuación" : "Score"}
+                  </Text>
+                  <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
+                    {quizCorrectAnswers}/{quizConfig.questionsRequired}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.8}>
+                    {userLanguage === "es"
+                      ? `${quizCorrectAnswers} correctas • Necesitabas ${quizConfig.passingScore}`
+                      : `${quizCorrectAnswers} correct • Needed ${quizConfig.passingScore}`}
+                  </Text>
+                </VStack>
+              </Box>
+
+              {/* Continue Button */}
+              <Button
+                size="lg"
+                width="100%"
+                bg="white"
+                color="purple.600"
+                _hover={{ bg: "gray.100" }}
+                _active={{ bg: "gray.200" }}
+                onClick={handleExitQuiz}
+                fontWeight="bold"
+                fontSize="lg"
+                py={6}
+              >
+                {userLanguage === "es" ? "Continuar" : "Continue"}
+              </Button>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Quiz Failure Modal */}
+      <Modal
+        isOpen={showQuizFailureModal}
+        onClose={() => setShowQuizFailureModal(false)}
+        isCentered
+        size="lg"
+        closeOnOverlayClick={false}
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg="linear-gradient(135deg, #e53e3e 0%, #c53030 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          maxW={{ base: "90%", sm: "md" }}
+        >
+          <ModalBody py={12} px={8}>
+            <VStack spacing={6} textAlign="center">
+              {/* Failure Icon */}
+              <Box position="relative" w="120px" h="120px">
+                <Box
+                  position="absolute"
+                  top="50%"
+                  left="50%"
+                  transform="translate(-50%, -50%)"
+                  w="80px"
+                  h="80px"
+                  borderRadius="full"
+                  bg="red.400"
+                  boxShadow="0 0 40px rgba(245, 101, 101, 0.6)"
+                  display="flex"
+                  alignItems="center"
+                  justifyContent="center"
+                >
+                  <Box fontSize="3xl" color="white" fontWeight="black">
+                    ✗
+                  </Box>
+                </Box>
+              </Box>
+
+              {/* Title */}
+              <VStack spacing={2}>
+                <Text fontSize="3xl" fontWeight="bold">
+                  {userLanguage === "es" ? "Prueba No Aprobada" : "Quiz Not Passed"}
+                </Text>
+                <Text fontSize="lg" opacity={0.9}>
+                  {userLanguage === "es" ? "Inténtalo de nuevo" : "Try again"}
+                </Text>
+              </VStack>
+
+              {/* Score Display */}
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="xl"
+                py={6}
+                px={8}
+                width="100%"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+              >
+                <VStack spacing={2}>
+                  <Text fontSize="sm" textTransform="uppercase" letterSpacing="wide" opacity={0.8}>
+                    {userLanguage === "es" ? "Puntuación" : "Score"}
+                  </Text>
+                  <Text fontSize="5xl" fontWeight="bold" color="red.200">
+                    {quizCorrectAnswers}/{quizConfig.questionsRequired}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.8}>
+                    {userLanguage === "es"
+                      ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
+                      : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                  </Text>
+                </VStack>
+              </Box>
+
+              {/* Action Buttons */}
+              <VStack spacing={3} width="100%">
+                <Button
+                  size="lg"
+                  width="100%"
+                  bg="white"
+                  color="red.600"
+                  _hover={{ bg: "gray.100" }}
+                  _active={{ bg: "gray.200" }}
+                  onClick={handleRetryQuiz}
+                  fontWeight="bold"
+                  fontSize="lg"
+                  py={6}
+                >
+                  {userLanguage === "es" ? "Intentar de Nuevo" : "Try Again"}
+                </Button>
+                <Button
+                  size="lg"
+                  width="100%"
+                  variant="outline"
+                  borderColor="whiteAlpha.600"
+                  color="white"
+                  _hover={{ bg: "whiteAlpha.200" }}
+                  _active={{ bg: "whiteAlpha.300" }}
+                  onClick={handleExitQuiz}
+                  fontWeight="bold"
+                  fontSize="lg"
+                  py={6}
+                >
+                  {userLanguage === "es" ? "Volver al Árbol" : "Back to Skill Tree"}
+                </Button>
+              </VStack>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
