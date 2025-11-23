@@ -48,7 +48,7 @@ const baseLearningPath = {
             },
             xpRequired: 0, // First lesson always available
             xpReward: 20,
-            modes: ['vocabulary', 'grammar'], // Which learning modes to use
+            modes: ['vocabulary', 'grammar', 'history'], // Which learning modes to use
             content: {
               vocabulary: {
                 words: ['hola', 'adiós', 'buenos días', 'buenas tardes', 'buenas noches'],
@@ -57,6 +57,10 @@ const baseLearningPath = {
               grammar: {
                 topic: 'basic greetings',
                 focusPoints: ['formal vs informal', 'time-based greetings'],
+              },
+              history: {
+                topic: 'greeting customs',
+                prompt: 'Learn about greeting customs and etiquette in Spanish-speaking cultures',
               },
             },
           },
@@ -72,7 +76,7 @@ const baseLearningPath = {
             },
             xpRequired: 20,
             xpReward: 25,
-            modes: ['grammar', 'realtime'],
+            modes: ['grammar', 'realtime', 'stories'],
             content: {
               grammar: {
                 topic: 'introductions',
@@ -81,6 +85,10 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'introduction',
                 prompt: 'Practice introducing yourself in a conversation',
+              },
+              stories: {
+                topic: 'introductions',
+                prompt: 'Read and discuss stories about people meeting and introducing themselves',
               },
             },
           },
@@ -790,7 +798,7 @@ const baseLearningPath = {
             },
             xpRequired: 1015,
             xpReward: 65,
-            modes: ['stories', 'vocabulary', 'jobscript'],
+            modes: ['stories', 'vocabulary'],
             content: {
               vocabulary: {
                 words: ['viajar', 'visitar', 'conocer', 'descubrir'],
@@ -799,10 +807,6 @@ const baseLearningPath = {
               stories: {
                 topic: 'travel',
                 prompt: 'Read and discuss travel stories',
-              },
-              jobscript: {
-                scenario: 'travel presentation',
-                prompt: 'Prepare a presentation about a trip',
               },
             },
           },
@@ -964,15 +968,11 @@ const baseLearningPath = {
             },
             xpRequired: 1435,
             xpReward: 80,
-            modes: ['jobscript', 'vocabulary', 'realtime'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['carrera', 'trabajo', 'meta', 'aspiración', 'futuro'],
                 topic: 'careers',
-              },
-              jobscript: {
-                scenario: 'career interview',
-                prompt: 'Discuss your career goals',
               },
               realtime: {
                 scenario: 'career planning',
@@ -1276,7 +1276,7 @@ const baseLearningPath = {
             },
             xpRequired: 2245,
             xpReward: 100,
-            modes: ['realtime', 'jobscript', 'vocabulary'],
+            modes: ['realtime', 'vocabulary'],
             content: {
               vocabulary: {
                 words: ['argumentar', 'convencer', 'debatir', 'persuadir'],
@@ -1285,10 +1285,6 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'debate',
                 prompt: 'Engage in a structured debate',
-              },
-              jobscript: {
-                scenario: 'persuasive presentation',
-                prompt: 'Create a persuasive argument',
               },
             },
           },
@@ -1332,15 +1328,11 @@ const baseLearningPath = {
             },
             xpRequired: 2445,
             xpReward: 110,
-            modes: ['jobscript', 'realtime', 'vocabulary'],
+            modes: ['realtime', 'vocabulary'],
             content: {
               vocabulary: {
                 words: ['reunión', 'presentación', 'informe', 'negociar'],
                 topic: 'professional',
-              },
-              jobscript: {
-                scenario: 'business meeting',
-                prompt: 'Participate in a professional meeting',
               },
               realtime: {
                 scenario: 'workplace conversation',
@@ -1530,15 +1522,11 @@ const baseLearningPath = {
             },
             xpRequired: 3080,
             xpReward: 110,
-            modes: ['jobscript', 'vocabulary', 'realtime'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['emprendedor', 'startup', 'digital', 'comercio', 'plataforma'],
                 topic: 'digital economy',
-              },
-              jobscript: {
-                scenario: 'tech startup pitch',
-                prompt: 'Present a tech business idea',
               },
               realtime: {
                 scenario: 'business tech discussion',

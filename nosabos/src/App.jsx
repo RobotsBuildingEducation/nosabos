@@ -983,7 +983,6 @@ export default function App() {
   const TAB_KEYS = [
     "realtime",
     "stories",
-    "jobscript", // ⬅️ NEW TAB KEY
     "history",
     "grammar",
     "vocabulary",
@@ -1109,7 +1108,6 @@ export default function App() {
   const TAB_LABELS = {
     realtime: t?.tabs_realtime ?? "Chat",
     stories: t?.tabs_stories ?? "Stories",
-    jobscript: t?.tabs_jobscript ?? "Job Script", // ⬅️ LABEL
     history: t?.tabs_history ?? "History",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
@@ -1118,7 +1116,6 @@ export default function App() {
   const TAB_ICONS = {
     realtime: <RiSpeakLine />,
     stories: <RiSpeakLine />,
-    jobscript: <RiSpeakLine />, // ⬅️ ICON
     history: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <CiEdit />,
@@ -2451,17 +2448,6 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           lessonContent={activeLesson?.content?.stories}
-                        />
-                      </TabPanel>
-                    );
-                  case "jobscript":
-                    return (
-                      <TabPanel key="jobscript" px={0}>
-                        <JobScript
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          lessonContent={activeLesson?.content?.jobscript}
                         />
                       </TabPanel>
                     );
