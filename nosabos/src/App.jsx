@@ -2448,6 +2448,7 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           lessonContent={activeLesson?.content?.stories}
+                          onSkip={switchToRandomLessonMode}
                         />
                       </TabPanel>
                     );
