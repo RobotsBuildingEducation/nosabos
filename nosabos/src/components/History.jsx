@@ -344,27 +344,26 @@ function difficultyHint(level, xp) {
   ][band];
 }
 
-// Seed: FIRST lecture must be Bering migration
+// Seed: FIRST lecture based on lesson content
 function buildSeedLecturePrompt({ targetLang, supportLang, level, xp, lessonContent = null }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
   const diff = difficultyHint(level, xp);
 
-  const topicText = lessonContent?.topic || lessonContent?.scenario
-    ? lessonContent.topic || lessonContent.scenario
-    : "the **initial migration from Siberia across the Bering Strait (Beringia)** into the Americas";
-
-  const strictDirective = lessonContent?.topic || lessonContent?.scenario
-    ? `\nSTRICT REQUIREMENT: The lecture MUST be about ${topicText}. Do NOT write about other topics. This is lesson-specific content and you MUST NOT diverge.`
-    : "";
+  const topicText = lessonContent?.topic || lessonContent?.scenario || "general cultural and linguistic concepts";
+  const promptText = lessonContent?.prompt || "";
 
   return `
-Write ONE short lecture in ${TARGET} (≈180–260 words) about ${topicText}. Suitable for a ${level} learner. Difficulty: ${diff}.${strictDirective}
+Write ONE short educational lecture in ${TARGET} (≈180–260 words) about ${topicText}. ${promptText}
+Suitable for a ${level} learner. Difficulty: ${diff}.
+
+STRICT REQUIREMENT: The lecture MUST focus on ${topicText} in a way that helps language learners understand the cultural context and vocabulary related to this topic. Do NOT diverge to unrelated subjects.
 
 Requirements:
-- Mention approximate time frames (e.g., Late Pleistocene), changing climates/sea levels, and possible inland/coastal routes.
-- Note types of evidence (archaeology, genetics, languages) without getting too technical.
-- Keep it engaging and clear.
+- Make it relevant and practical for language learners
+- Include cultural context and common vocabulary related to ${topicText}
+- Use examples and situations that learners might encounter
+- Keep it engaging, clear, and accessible
 
 Include:
 - A concise title (<= 60 chars) in ${TARGET}.
@@ -393,6 +392,7 @@ function buildLecturePrompt({
   supportLang,
   level,
   xp,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
@@ -402,19 +402,22 @@ function buildLecturePrompt({
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
+  const topicText = lessonContent?.topic || lessonContent?.scenario || "general cultural and linguistic concepts";
+  const promptText = lessonContent?.prompt || "";
+
   return `
-You are curating a long, progressive curriculum of short lectures on Mexican and Mesoamerican history.
-Choose the **next granular topic** based on the list of previous lecture titles (chronological if possible; otherwise deepen a thread).
-Avoid repetition. Favor specificity: a city, figure, event, reform, battle, treaty, cultural theme, or policy.
+You are creating educational reading material for language learners focused on ${topicText}. ${promptText}
+Choose the **next related sub-topic** based on the list of previous lecture titles.
+Avoid repetition but maintain thematic coherence with ${topicText}.
 
 previous_titles:
 ${prev}
 
 Write ONE lecture in ${TARGET} (≈180–260 words), suitable for a ${level} learner. Difficulty: ${diff}.
 Include:
-- A concise title (<= 60 chars).
+- A concise title (<= 60 chars) related to ${topicText}.
 - 3 concise bullet takeaways.
-- Touch on people, culture, governments, and/or wars as relevant.
+- Cultural context and practical vocabulary for language learners.
 - Provide a full ${SUPPORT} translation of the lecture (NOT the takeaways).
 
 Language restrictions:
@@ -575,6 +578,7 @@ function buildStreamingPrompt({
   supportLang,
   level,
   xp,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
@@ -584,12 +588,15 @@ function buildStreamingPrompt({
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
+  const topicText = lessonContent?.topic || lessonContent?.scenario || "general cultural and linguistic concepts";
+  const promptText = lessonContent?.prompt || "";
+
   const baseTopic = isFirst
-    ? `Topic: the initial migration from Siberia across Beringia into the Americas (Late Pleistocene, sea levels, inland/coastal routes, evidence types).`
-    : `Choose the next granular topic for Mexican/Mesoamerican history. Avoid repeating previous_titles. Prefer specificity (figure, city, battle, reform, treaty, cultural theme, or policy) and a coherent progression.\nprevious_titles:\n${prev}`;
+    ? `Topic: ${topicText}. ${promptText}\nFocus on practical cultural context and vocabulary for language learners.`
+    : `Continue the educational series about ${topicText}. Choose the next related sub-topic based on previous_titles. Avoid repetition but maintain thematic coherence.\nprevious_titles:\n${prev}`;
 
   return [
-    `You are writing an educational *history lecture* for language learners.`,
+    `You are writing an educational reading lecture for language learners about ${topicText}.`,
     baseTopic,
     `Target language: ${TARGET} (${targetLang}). Provide a full translation in ${SUPPORT} (${supportLang}).`,
     `Style: ~180–260 words, ${diff}.`,
@@ -768,6 +775,7 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
           supportLang,
           level: progress.level || "beginner",
           xp,
+          lessonContent,
         });
 
     let parsed =
@@ -891,6 +899,7 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
       supportLang,
       level: progress.level || "beginner",
       xp,
+      lessonContent,
     });
 
     let title = "";
@@ -1176,7 +1185,7 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
       ? ` — ${activeLecture.xpReason}`
       : "";
 
-  // Award XP for current lecture and generate a new one
+  // Award XP for current lecture and move to next module
   async function finishReadingAndNext() {
     if (!npub || !activeLecture || isGenerating || isFinishing) return;
     setIsFinishing(true);
@@ -1199,8 +1208,10 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
           await awardXp(npub, amt).catch(() => {});
         }
       }
-      // Immediately move to the next lecture
-      await generateNextLectureGeminiStream();
+      // Move to the next module
+      if (onSkip) {
+        onSkip();
+      }
     } catch (e) {
       console.error("finishReadingAndNext error", e);
     } finally {
@@ -1248,15 +1259,15 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
             <MdMenuBook />
             <Text fontWeight="semibold">{t("reading_title")}</Text>
           </HStack>
-          <Button
-            onClick={generateNextLectureGeminiStream}
-            isDisabled={isGenerating}
-          >
-            {isGenerating ? (
-              <Spinner size="sm" style={{ marginRight: 8 }} />
-            ) : null}
-            {t("reading_btn_generate")}
-          </Button>
+          {onSkip && (
+            <Button
+              onClick={handleSkip}
+              variant="outline"
+              colorScheme="orange"
+            >
+              {t("reading_skip")}
+            </Button>
+          )}
         </HStack>
 
         {/* Mobile: collapsible list */}
@@ -1474,19 +1485,6 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
                       : t("reading_btn_finish") || "Finished reading"}
                   </Button>
                 ) : null}
-
-                {onSkip && (
-                  <Center mt={4}>
-                    <Button
-                      onClick={handleSkip}
-                      variant="outline"
-                      colorScheme="orange"
-                      padding={6}
-                    >
-                      {t("reading_skip")}
-                    </Button>
-                  </Center>
-                )}
 
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
                   {viewLecture.target || ""}
