@@ -12,6 +12,7 @@ import {
   IconButton,
   useDisclosure,
   Collapse,
+  Center,
 } from "@chakra-ui/react";
 import { FaVolumeUp, FaStop } from "react-icons/fa";
 import { MdMenuBook } from "react-icons/md";
@@ -613,7 +614,7 @@ function buildStreamingPrompt({
 /* ---------------------------
    Component
 --------------------------- */
-export default function History({ userLanguage = "en", lessonContent = null }) {
+export default function History({ userLanguage = "en", lessonContent = null, onSkip = null }) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
@@ -905,8 +906,8 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
       if (!revealed) revealed = true;
       const draftTitle =
         title ||
-        t("history_generating_title") ||
-        t("history_generating") ||
+        t("reading_generating_title") ||
+        t("reading_generating") ||
         "Generating…";
       setDraftLecture({
         title: draftTitle,
@@ -1000,7 +1001,6 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
         setDraftLecture(null);
         setIsGenerating(false);
         generatingRef.current = false; // 🔓 release on fallback early-return
-        if (!listDisclosure.isOpen) listDisclosure.onOpen();
         return;
       }
 
@@ -1066,7 +1066,6 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
       const ref = await addDoc(colRef, payload);
       setActiveId(ref.id);
       setDraftLecture(null);
-      if (!listDisclosure.isOpen) listDisclosure.onOpen();
     } catch (e) {
       console.error("Gemini streaming error; using backend fallback.", e);
       try {
@@ -1209,6 +1208,13 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
     }
   }
 
+  // Skip handler
+  function handleSkip() {
+    if (onSkip) {
+      onSkip();
+    }
+  }
+
   if (showPasscodeModal) {
     return (
       <PasscodePage
@@ -1226,10 +1232,10 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
           <Box width="50%">
             <HStack justify="space-between" mb={2}>
               <Badge variant="subtle" px={2} py={1} rounded="md">
-                {t("history_badge_level", { level: levelNumber })}
+                {t("reading_badge_level", { level: levelNumber })}
               </Badge>
               <Badge variant="subtle" px={2} py={1} rounded="md">
-                {t("history_badge_xp", { xp })}
+                {t("reading_badge_xp", { xp })}
               </Badge>
             </HStack>
             <WaveBar value={progressPct} />
@@ -1240,7 +1246,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
         <HStack justify="space-between" flexWrap="wrap" gap={3}>
           <HStack gap={2}>
             <MdMenuBook />
-            <Text fontWeight="semibold">{t("history_title")}</Text>
+            <Text fontWeight="semibold">{t("reading_title")}</Text>
           </HStack>
           <Button
             onClick={generateNextLectureGeminiStream}
@@ -1249,7 +1255,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
             {isGenerating ? (
               <Spinner size="sm" style={{ marginRight: 8 }} />
             ) : null}
-            {t("history_btn_generate")}
+            {t("reading_btn_generate")}
           </Button>
         </HStack>
 
@@ -1262,8 +1268,8 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
             mt={2}
           >
             {listDisclosure.isOpen
-              ? t("history_list_hide")
-              : t("history_list_show")}
+              ? t("reading_list_hide")
+              : t("reading_list_show")}
           </Button>
           <Collapse in={listDisclosure.isOpen} animateOpacity>
             <Box
@@ -1276,7 +1282,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
               mx={1}
             >
               <Text fontSize="sm" opacity={0.8} mb={3}>
-                {t("history_prev_lectures_label")}
+                {t("reading_prev_lectures_label")}
               </Text>
               <VStack
                 align="stretch"
@@ -1294,7 +1300,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
               >
                 {lectures.length === 0 ? (
                   <Text fontSize="sm" opacity={0.7}>
-                    {t("history_none_yet")}
+                    {t("reading_none_yet")}
                   </Text>
                 ) : (
                   lectures.map((lec) => {
@@ -1346,7 +1352,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
             display={{ base: "none", md: "block" }}
           >
             <Text fontSize="sm" opacity={0.8} mb={3}>
-              {t("history_prev_lectures_label")}
+              {t("reading_prev_lectures_label")}
             </Text>
             <VStack
               align="stretch"
@@ -1364,7 +1370,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
             >
               {lectures.length === 0 ? (
                 <Text fontSize="sm" opacity={0.7}>
-                  {t("history_none_yet")}
+                  {t("reading_none_yet")}
                 </Text>
               ) : (
                 lectures.map((lec) => {
@@ -1418,7 +1424,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                     {viewLecture.title}
                     {draftLecture ? (
                       <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
-                        ({t("history_generating") || "generating…"})
+                        ({t("reading_generating") || "generating…"})
                       </Text>
                     ) : null}
                   </Text>
@@ -1430,7 +1436,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                       size="sm"
                       isDisabled={!viewLecture?.target}
                     >
-                      {t("history_read_in", { language: targetDisplay })}
+                      {t("reading_read_in", { language: targetDisplay })}
                     </Button>
                     {showTranslations && viewLecture?.support ? (
                       <Button
@@ -1440,12 +1446,12 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                         size="sm"
                         variant="outline"
                       >
-                        {t("history_read_in", { language: supportDisplay })}
+                        {t("reading_read_in", { language: supportDisplay })}
                       </Button>
                     ) : null}
                     {(isReadingTarget || isReadingSupport) && (
                       <IconButton
-                        aria-label={t("history_stop_aria")}
+                        aria-label={t("reading_stop_aria")}
                         onClick={stopSpeech}
                         icon={<FaStop />}
                         size="sm"
@@ -1464,10 +1470,23 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                     p={4}
                   >
                     {activeLecture.awarded
-                      ? t("history_btn_next") || "Next lecture"
-                      : t("history_btn_finish") || "Finished reading"}
+                      ? t("reading_btn_next") || "Next lecture"
+                      : t("reading_btn_finish") || "Finished reading"}
                   </Button>
                 ) : null}
+
+                {onSkip && (
+                  <Center mt={4}>
+                    <Button
+                      onClick={handleSkip}
+                      variant="outline"
+                      colorScheme="orange"
+                      padding={6}
+                    >
+                      {t("reading_skip")}
+                    </Button>
+                  </Center>
+                )}
 
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
                   {viewLecture.target || ""}
@@ -1494,7 +1513,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                   <>
                     <Divider opacity={0.2} />
                     <Text fontWeight="600" fontSize="sm" opacity={0.9}>
-                      {t("history_takeaways_heading")}
+                      {t("reading_takeaways_heading")}
                     </Text>
                     <VStack align="stretch" spacing={1.5}>
                       {viewLecture.takeaways.map((tkw, i) => (
@@ -1511,17 +1530,17 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                     <Divider opacity={0.2} />
                     {activeLecture.awarded ? (
                       <Text fontSize="sm" opacity={0.9}>
-                        {t("history_xp_awarded_line", {
+                        {t("reading_xp_awarded_line", {
                           xp: activeLecture.xpAward,
                           reason: xpReasonText,
                         })}
                       </Text>
                     ) : (
                       <Text fontSize="sm" opacity={0.9}>
-                        {t("history_xp_pending_line", {
+                        {t("reading_xp_pending_line", {
                           xp: activeLecture.xpAward,
                         }) ||
-                          `Pending +${activeLecture.xpAward} XP — tap “Finished reading” to claim`}
+                          `Pending +${activeLecture.xpAward} XP — tap "Finished reading" to claim`}
                       </Text>
                     )}
                   </>
@@ -1529,7 +1548,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
               </VStack>
             ) : (
               <VStack spacing={3} width="100%">
-                <Text>{t("history_no_lecture")}</Text>
+                <Text>{t("reading_no_lecture")}</Text>
               </VStack>
             )}
           </Box>

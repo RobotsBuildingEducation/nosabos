@@ -983,7 +983,7 @@ export default function App() {
   const TAB_KEYS = [
     "realtime",
     "stories",
-    "history",
+    "reading",
     "grammar",
     "vocabulary",
     "random",
@@ -1108,7 +1108,7 @@ export default function App() {
   const TAB_LABELS = {
     realtime: t?.tabs_realtime ?? "Chat",
     stories: t?.tabs_stories ?? "Stories",
-    history: t?.tabs_history ?? "History",
+    reading: t?.tabs_reading ?? "Reading",
     grammar: t?.tabs_grammar ?? "Grammar",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
     random: t?.tabs_random ?? "Random",
@@ -1116,7 +1116,7 @@ export default function App() {
   const TAB_ICONS = {
     realtime: <RiSpeakLine />,
     stories: <RiSpeakLine />,
-    history: <LuBookOpen />,
+    reading: <LuBookOpen />,
     grammar: <CiEdit />,
     vocabulary: <CiEdit />,
     random: <LuShuffle />,
@@ -2206,7 +2206,7 @@ export default function App() {
             />
           </>
         );
-      case "history":
+      case "reading":
         return (
           <>
             {RandomHeader}
@@ -2452,12 +2452,13 @@ export default function App() {
                         />
                       </TabPanel>
                     );
-                  case "history":
+                  case "reading":
                     return (
-                      <TabPanel key="history" px={0}>
+                      <TabPanel key="reading" px={0}>
                         <History
                           userLanguage={appLanguage}
-                          lessonContent={activeLesson?.content?.history}
+                          lessonContent={activeLesson?.content?.reading}
+                          onSkip={switchToRandomLessonMode}
                         />
                       </TabPanel>
                     );

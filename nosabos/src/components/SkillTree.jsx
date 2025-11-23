@@ -65,7 +65,7 @@ const MODE_ICONS = {
   grammar: RiPencilLine,
   realtime: RiSpeakLine,
   stories: RiBookOpenLine,
-  history: RiHistoryLine,
+  reading: RiBookOpenLine,
 };
 
 /**

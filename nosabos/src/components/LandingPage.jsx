@@ -72,10 +72,10 @@ const FEATURE_CARD_CONFIG = [
     icon: FiBookOpen,
   },
   {
-    titleKey: "feature_history_title",
-    legacyTitleKey: "landing_feature_history_title",
-    descriptionKey: "feature_history_desc",
-    legacyDescriptionKey: "landing_feature_history_desc",
+    titleKey: "feature_reading_title",
+    legacyTitleKey: "landing_feature_reading_title",
+    descriptionKey: "feature_reading_desc",
+    legacyDescriptionKey: "landing_feature_reading_desc",
     icon: FiLayers,
   },
   {
@@ -219,9 +219,9 @@ const landingTranslations = {
     feature_stories_title: "Stories for reading & speaking",
     feature_stories_desc:
       "Follow interactive stories that invite you to read aloud, summarize, and role-play to your liking.",
-    feature_history_title: "History lectures",
-    feature_history_desc:
-      "Explore briefings on Mexican history to expand your cultural and academic vocabulary.",
+    feature_reading_title: "Reading practice",
+    feature_reading_desc:
+      "Practice reading comprehension with subject-focused lectures to expand your vocabulary and cultural knowledge.",
     feature_grammar_title: "Grammar & vocabulary books",
     feature_grammar_desc:
       "Check rules quickly, drill tricky concepts, and test yourself with adaptive review sets.",
@@ -290,9 +290,9 @@ const landingTranslations = {
     feature_stories_title: "Historias para leer y hablar",
     feature_stories_desc:
       "Sigue historias interactivas que te invitan a leer en voz alta, resumir y representar papeles.",
-    feature_history_title: "Lecciones de historia",
-    feature_history_desc:
-      "Explora resúmenes de historia mexicana para ampliar tu vocabulario cultural y académico.",
+    feature_reading_title: "Práctica de lectura",
+    feature_reading_desc:
+      "Practica la comprensión de lectura con lecciones enfocadas en temas para ampliar tu vocabulario y conocimiento cultural.",
     feature_grammar_title: "Libros de gramática y vocabulario",
     feature_grammar_desc:
       "Consulta reglas rápido, practica puntos difíciles y pon a prueba tus conocimientos con repasos adaptativos.",

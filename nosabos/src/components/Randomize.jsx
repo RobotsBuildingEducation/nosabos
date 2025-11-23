@@ -43,7 +43,7 @@ const MODES = [
   { key: "story" },
   { key: "grammar" },
   { key: "vocab" },
-  { key: "history" },
+  { key: "reading" },
 ];
 
 function strongNpub(user) {
@@ -90,7 +90,7 @@ export default function Randomize() {
       grammar: t("tabs_grammar") || (uiLang === "es" ? "Gramática" : "Grammar"),
       vocab:
         t("tabs_vocab") || (uiLang === "es" ? "Vocabulario" : "Vocabulary"),
-      history: t("tabs_history") || (uiLang === "es" ? "Historia" : "History"),
+      reading: t("tabs_reading") || (uiLang === "es" ? "Lectura" : "Reading"),
     }),
     [t, uiLang]
   );

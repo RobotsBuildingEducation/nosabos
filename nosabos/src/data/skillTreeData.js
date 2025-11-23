@@ -48,13 +48,13 @@ const baseLearningPath = {
             },
             xpRequired: 0, // First lesson always available
             xpReward: 20,
-            modes: ['grammar', 'history'], // Which learning modes to use
+            modes: ['grammar', 'reading'], // Which learning modes to use
             content: {
               grammar: {
                 topic: 'basic greetings',
                 focusPoints: ['formal vs informal', 'time-based greetings'],
               },
-              history: {
+              reading: {
                 topic: 'greeting customs',
                 prompt: 'Learn about greeting customs and etiquette in Spanish-speaking cultures',
               },
@@ -1038,7 +1038,7 @@ const baseLearningPath = {
             },
             xpRequired: 1810,
             xpReward: 80,
-            modes: ['grammar', 'realtime', 'history'],
+            modes: ['grammar', 'realtime', 'reading'],
             content: {
               grammar: {
                 topic: 'environmental language',
@@ -1048,7 +1048,7 @@ const baseLearningPath = {
                 scenario: 'environmental discussion',
                 prompt: 'Discuss environmental concerns',
               },
-              history: {
+              reading: {
                 topic: 'conservation',
                 prompt: 'Learn about environmental movements',
               },
@@ -1212,13 +1212,13 @@ const baseLearningPath = {
             },
             xpRequired: 2345,
             xpReward: 100,
-            modes: ['history', 'realtime', 'grammar'],
+            modes: ['reading', 'realtime', 'grammar'],
             content: {
               grammar: {
                 topic: 'news and reporting language',
                 focusPoints: ['passive voice', 'reported speech', 'news expressions'],
               },
-              history: {
+              reading: {
                 topic: 'current events',
                 prompt: 'Read and discuss current news',
               },
@@ -1279,7 +1279,7 @@ const baseLearningPath = {
             },
             xpRequired: 2555,
             xpReward: 100,
-            modes: ['stories', 'vocabulary', 'history'],
+            modes: ['stories', 'vocabulary', 'reading'],
             content: {
               vocabulary: {
                 words: ['poeta', 'verso', 'metáfora', 'narrativa', 'estilo'],
@@ -1289,7 +1289,7 @@ const baseLearningPath = {
                 topic: 'literature',
                 prompt: 'Read works by famous Hispanic authors',
               },
-              history: {
+              reading: {
                 topic: 'literary movements',
                 prompt: 'Learn about Hispanic literary history',
               },
@@ -1307,13 +1307,13 @@ const baseLearningPath = {
             },
             xpRequired: 2655,
             xpReward: 105,
-            modes: ['grammar', 'history', 'realtime'],
+            modes: ['grammar', 'reading', 'realtime'],
             content: {
               grammar: {
                 topic: 'describing art',
                 focusPoints: ['present progressive', 'aesthetic descriptions', 'art criticism'],
               },
-              history: {
+              reading: {
                 topic: 'Hispanic artists',
                 prompt: 'Learn about Frida Kahlo, Diego Rivera, and more',
               },
@@ -1402,13 +1402,13 @@ const baseLearningPath = {
             },
             xpRequired: 2970,
             xpReward: 110,
-            modes: ['grammar', 'history', 'realtime'],
+            modes: ['grammar', 'reading', 'realtime'],
             content: {
               grammar: {
                 topic: 'scientific language',
                 focusPoints: ['passive constructions', 'technical terminology', 'cause and effect'],
               },
-              history: {
+              reading: {
                 topic: 'Hispanic scientists',
                 prompt: 'Learn about Hispanic contributions to science',
               },
@@ -1469,7 +1469,7 @@ const baseLearningPath = {
             },
             xpRequired: 3190,
             xpReward: 115,
-            modes: ['vocabulary', 'realtime', 'history'],
+            modes: ['vocabulary', 'realtime', 'reading'],
             content: {
               vocabulary: {
                 words: ['justicia', 'igualdad', 'derechos', 'diversidad', 'inclusión'],
@@ -1479,7 +1479,7 @@ const baseLearningPath = {
                 scenario: 'social issues discussion',
                 prompt: 'Discuss social justice topics',
               },
-              history: {
+              reading: {
                 topic: 'civil rights movements',
                 prompt: 'Learn about Hispanic social movements',
               },
