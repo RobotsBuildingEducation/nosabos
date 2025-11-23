@@ -3781,7 +3781,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
