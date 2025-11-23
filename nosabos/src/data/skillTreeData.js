@@ -48,12 +48,8 @@ const baseLearningPath = {
             },
             xpRequired: 0, // First lesson always available
             xpReward: 20,
-            modes: ['vocabulary', 'grammar', 'history'], // Which learning modes to use
+            modes: ['grammar', 'history'], // Which learning modes to use
             content: {
-              vocabulary: {
-                words: ['hola', 'adiós', 'buenos días', 'buenas tardes', 'buenas noches'],
-                topic: 'greetings',
-              },
               grammar: {
                 topic: 'basic greetings',
                 focusPoints: ['formal vs informal', 'time-based greetings'],
@@ -104,12 +100,8 @@ const baseLearningPath = {
             },
             xpRequired: 45,
             xpReward: 25,
-            modes: ['grammar', 'vocabulary', 'realtime'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['¿cómo?', '¿qué?', '¿dónde?', '¿cuándo?', '¿por qué?'],
-                topic: 'question words',
-              },
               grammar: {
                 topic: 'question formation',
                 focusPoints: ['question words', 'intonation', 'word order'],
@@ -176,12 +168,8 @@ const baseLearningPath = {
             },
             xpRequired: 70,
             xpReward: 30,
-            modes: ['grammar', 'vocabulary', 'stories'],
+            modes: ['grammar', 'stories'],
             content: {
-              vocabulary: {
-                words: ['me gusta', 'no me gusta', 'me encanta', 'odio', 'prefiero'],
-                topic: 'preferences',
-              },
               grammar: {
                 topic: 'gustar verb',
                 focusPoints: ['indirect object pronouns', 'singular vs plural'],
@@ -204,15 +192,11 @@ const baseLearningPath = {
             },
             xpRequired: 100,
             xpReward: 30,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'diez', 'veinte'],
                 topic: 'numbers',
-              },
-              grammar: {
-                topic: 'numbers and counting',
-                focusPoints: ['pronunciation', 'usage in sentences'],
               },
             },
           },
@@ -271,12 +255,8 @@ const baseLearningPath = {
             },
             xpRequired: 165,
             xpReward: 35,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
-              vocabulary: {
-                words: ['hora', 'minuto', 'mañana', 'tarde', 'noche'],
-                topic: 'time',
-              },
               grammar: {
                 topic: 'telling time',
                 focusPoints: ['¿Qué hora es?', 'es la / son las', 'y/menos'],
@@ -295,12 +275,8 @@ const baseLearningPath = {
             },
             xpRequired: 200,
             xpReward: 40,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['grammar', 'stories'],
             content: {
-              vocabulary: {
-                words: ['despertarse', 'levantarse', 'ducharse', 'desayunar', 'trabajar'],
-                topic: 'daily activities',
-              },
               grammar: {
                 topic: 'reflexive verbs',
                 focusPoints: ['me/te/se', 'daily routine verbs'],
@@ -323,15 +299,11 @@ const baseLearningPath = {
             },
             xpRequired: 240,
             xpReward: 40,
-            modes: ['vocabulary', 'grammar', 'realtime'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['madre', 'padre', 'hermano', 'hermana', 'familia'],
                 topic: 'family',
-              },
-              grammar: {
-                topic: 'possessive adjectives',
-                focusPoints: ['mi/tu/su', 'family descriptions'],
               },
               realtime: {
                 scenario: 'family introduction',
@@ -366,15 +338,11 @@ const baseLearningPath = {
             },
             xpRequired: 280,
             xpReward: 40,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['banco', 'supermercado', 'hospital', 'escuela', 'parque'],
                 topic: 'places',
-              },
-              grammar: {
-                topic: 'location prepositions',
-                focusPoints: ['en, al, del', 'estar + location'],
               },
             },
           },
@@ -390,12 +358,8 @@ const baseLearningPath = {
             },
             xpRequired: 320,
             xpReward: 45,
-            modes: ['grammar', 'realtime', 'vocabulary'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['derecha', 'izquierda', 'recto', 'cerca', 'lejos'],
-                topic: 'directions',
-              },
               grammar: {
                 topic: 'imperative mood',
                 focusPoints: ['commands', 'direction-giving'],
@@ -418,15 +382,11 @@ const baseLearningPath = {
             },
             xpRequired: 365,
             xpReward: 45,
-            modes: ['vocabulary', 'stories', 'grammar'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['autobús', 'metro', 'taxi', 'bicicleta', 'caminar'],
                 topic: 'transportation',
-              },
-              grammar: {
-                topic: 'ir + a',
-                focusPoints: ['going to places', 'transportation verbs'],
               },
               stories: {
                 topic: 'transportation',
@@ -485,15 +445,11 @@ const baseLearningPath = {
             },
             xpRequired: 460,
             xpReward: 50,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['treinta', 'cuarenta', 'cincuenta', 'cien'],
                 topic: 'numbers',
-              },
-              grammar: {
-                topic: 'numbers and currency',
-                focusPoints: ['large numbers', 'prices'],
               },
             },
           },
@@ -509,15 +465,11 @@ const baseLearningPath = {
             },
             xpRequired: 510,
             xpReward: 50,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['camisa', 'pantalón', 'zapatos', 'vestido', 'llevar'],
                 topic: 'clothing',
-              },
-              grammar: {
-                topic: 'adjective agreement',
-                focusPoints: ['colors', 'sizes', 'descriptions'],
               },
               stories: {
                 topic: 'clothing',
@@ -552,15 +504,11 @@ const baseLearningPath = {
             },
             xpRequired: 560,
             xpReward: 50,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['rojo', 'azul', 'verde', 'amarillo', 'negro', 'blanco'],
                 topic: 'colors',
-              },
-              grammar: {
-                topic: 'color adjectives',
-                focusPoints: ['adjective agreement', 'gender and number'],
               },
             },
           },
@@ -576,12 +524,8 @@ const baseLearningPath = {
             },
             xpRequired: 610,
             xpReward: 55,
-            modes: ['vocabulary', 'grammar', 'realtime'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['alto', 'bajo', 'delgado', 'fuerte', 'pelo', 'ojos'],
-                topic: 'physical descriptions',
-              },
               grammar: {
                 topic: 'ser vs estar for descriptions',
                 focusPoints: ['permanent vs temporary traits'],
@@ -604,15 +548,11 @@ const baseLearningPath = {
             },
             xpRequired: 665,
             xpReward: 55,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['simpático', 'amable', 'inteligente', 'divertido', 'serio'],
                 topic: 'personality',
-              },
-              grammar: {
-                topic: 'personality adjectives',
-                focusPoints: ['positive and negative traits'],
               },
               stories: {
                 topic: 'character descriptions',
@@ -647,15 +587,11 @@ const baseLearningPath = {
             },
             xpRequired: 720,
             xpReward: 55,
-            modes: ['vocabulary', 'grammar', 'realtime'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['fútbol', 'nadar', 'correr', 'jugar', 'practicar'],
                 topic: 'sports',
-              },
-              grammar: {
-                topic: 'jugar vs practicar',
-                focusPoints: ['sports verbs', 'frequency expressions'],
               },
               realtime: {
                 scenario: 'sports conversation',
@@ -703,12 +639,8 @@ const baseLearningPath = {
             },
             xpRequired: 835,
             xpReward: 60,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['grammar', 'stories'],
             content: {
-              vocabulary: {
-                words: ['libro', 'leer', 'escribir', 'dibujar', 'pintar'],
-                topic: 'arts and reading',
-              },
               grammar: {
                 topic: 'present progressive',
                 focusPoints: ['estar + gerund', 'ongoing activities'],
@@ -746,15 +678,11 @@ const baseLearningPath = {
             },
             xpRequired: 895,
             xpReward: 60,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
               grammar: {
                 topic: 'preterite tense',
                 focusPoints: ['regular -ar verbs', 'past time markers'],
-              },
-              vocabulary: {
-                words: ['ayer', 'anoche', 'la semana pasada'],
-                topic: 'time expressions',
               },
             },
           },
@@ -837,7 +765,7 @@ const baseLearningPath = {
             },
             xpRequired: 1080,
             xpReward: 65,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
               grammar: {
                 topic: 'imperfect tense',
@@ -885,15 +813,11 @@ const baseLearningPath = {
             },
             xpRequired: 1215,
             xpReward: 70,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['llover', 'nevar', 'hacer calor', 'hacer frío', 'primavera'],
                 topic: 'weather',
-              },
-              grammar: {
-                topic: 'weather expressions',
-                focusPoints: ['hacer, estar, hay'],
               },
             },
           },
@@ -948,7 +872,7 @@ const baseLearningPath = {
             },
             xpRequired: 1360,
             xpReward: 75,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
               grammar: {
                 topic: 'simple future',
@@ -1007,15 +931,11 @@ const baseLearningPath = {
             },
             xpRequired: 1515,
             xpReward: 70,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['cabeza', 'brazo', 'pierna', 'mano', 'pie', 'ojo'],
                 topic: 'body parts',
-              },
-              grammar: {
-                topic: 'reflexive verbs with body',
-                focusPoints: ['doler', 'lavarse', 'body-related actions'],
               },
             },
           },
@@ -1031,7 +951,7 @@ const baseLearningPath = {
             },
             xpRequired: 1585,
             xpReward: 75,
-            modes: ['vocabulary', 'realtime', 'grammar'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['dolor', 'fiebre', 'médico', 'enfermedad', 'medicina'],
@@ -1040,10 +960,6 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'doctor visit',
                 prompt: 'Practice a conversation at the doctor\'s office',
-              },
-              grammar: {
-                topic: 'expressing pain',
-                focusPoints: ['me duele/me duelen'],
               },
             },
           },
@@ -1059,7 +975,7 @@ const baseLearningPath = {
             },
             xpRequired: 1660,
             xpReward: 75,
-            modes: ['vocabulary', 'stories', 'grammar'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['ejercicio', 'saludable', 'dieta', 'descansar', 'energía'],
@@ -1068,10 +984,6 @@ const baseLearningPath = {
               stories: {
                 topic: 'healthy living',
                 prompt: 'Read about maintaining a healthy lifestyle',
-              },
-              grammar: {
-                topic: 'commands for advice',
-                focusPoints: ['informal commands', 'health recommendations'],
               },
             },
           },
@@ -1154,15 +1066,11 @@ const baseLearningPath = {
             },
             xpRequired: 1890,
             xpReward: 80,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['montaña', 'río', 'mar', 'playa', 'desierto', 'valle'],
                 topic: 'geography',
-              },
-              grammar: {
-                topic: 'location and description',
-                focusPoints: ['geographic descriptions', 'estar + location'],
               },
               stories: {
                 topic: 'landscapes',
@@ -1197,7 +1105,7 @@ const baseLearningPath = {
             },
             xpRequired: 1970,
             xpReward: 90,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
               grammar: {
                 topic: 'present subjunctive',
@@ -1466,7 +1374,7 @@ const baseLearningPath = {
             },
             xpRequired: 2865,
             xpReward: 105,
-            modes: ['vocabulary', 'realtime', 'grammar'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['internet', 'correo', 'mensaje', 'aplicación', 'red social'],
@@ -1475,10 +1383,6 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'online conversation',
                 prompt: 'Practice digital communication',
-              },
-              grammar: {
-                topic: 'technology expressions',
-                focusPoints: ['tech-related verbs', 'modern terminology'],
               },
             },
           },
@@ -1589,19 +1493,15 @@ const baseLearningPath = {
             },
             xpRequired: 3305,
             xpReward: 120,
-            modes: ['vocabulary', 'realtime', 'grammar'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['global', 'crisis', 'solución', 'cooperación', 'sostenibilidad'],
-                topic: 'global issues',
+              grammar: {
+                topic: 'advanced expressions',
+                focusPoints: ['complex conditionals', 'hypothetical situations'],
               },
               realtime: {
                 scenario: 'global discussion',
                 prompt: 'Discuss international challenges',
-              },
-              grammar: {
-                topic: 'advanced expressions',
-                focusPoints: ['complex conditionals', 'hypothetical situations'],
               },
             },
           },
