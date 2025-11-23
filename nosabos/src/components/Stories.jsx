@@ -1593,17 +1593,6 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null, o
                 +{sessionXp}
               </Badge>
             )}
-            {onSkip && (
-              <Button
-                onClick={handleSkipModule}
-                size="sm"
-                variant="outline"
-                colorScheme="orange"
-                color="white"
-              >
-                {uiLang === "es" ? "Saltar" : "Skip"}
-              </Button>
-            )}
           </HStack>
         </HStack>
       </motion.div>
@@ -1925,6 +1914,21 @@ export default function StoryMode({ userLanguage = "en", lessonContent = null, o
             </Box>
           </VStack>
         </motion.div>
+
+        {/* Skip button - only show in lesson mode */}
+        {onSkip && (
+          <Center mt={4}>
+            <Button
+              onClick={handleSkipModule}
+              size="md"
+              variant="outline"
+              colorScheme="orange"
+              color="white"
+            >
+              {uiLang === "es" ? "Saltar módulo" : "Skip module"}
+            </Button>
+          </Center>
+        )}
       </Box>
     </Box>
   );
