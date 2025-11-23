@@ -48,15 +48,15 @@ const baseLearningPath = {
             },
             xpRequired: 0, // First lesson always available
             xpReward: 20,
-            modes: ['vocabulary', 'grammar'], // Which learning modes to use
+            modes: ['grammar', 'history'], // Which learning modes to use
             content: {
-              vocabulary: {
-                words: ['hola', 'adiós', 'buenos días', 'buenas tardes', 'buenas noches'],
-                topic: 'greetings',
-              },
               grammar: {
                 topic: 'basic greetings',
                 focusPoints: ['formal vs informal', 'time-based greetings'],
+              },
+              history: {
+                topic: 'greeting customs',
+                prompt: 'Learn about greeting customs and etiquette in Spanish-speaking cultures',
               },
             },
           },
@@ -72,15 +72,19 @@ const baseLearningPath = {
             },
             xpRequired: 20,
             xpReward: 25,
-            modes: ['grammar', 'realtime'],
+            modes: ['vocabulary', 'realtime', 'stories'],
             content: {
-              grammar: {
+              vocabulary: {
+                words: ['me llamo', 'soy de', 'nombre', 'apellido', 'país'],
                 topic: 'introductions',
-                focusPoints: ['me llamo', 'soy de', 'verb ser'],
               },
               realtime: {
                 scenario: 'introduction',
                 prompt: 'Practice introducing yourself in a conversation',
+              },
+              stories: {
+                topic: 'introductions',
+                prompt: 'Read and discuss stories about people meeting and introducing themselves',
               },
             },
           },
@@ -96,12 +100,8 @@ const baseLearningPath = {
             },
             xpRequired: 45,
             xpReward: 25,
-            modes: ['grammar', 'vocabulary', 'realtime'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['¿cómo?', '¿qué?', '¿dónde?', '¿cuándo?', '¿por qué?'],
-                topic: 'question words',
-              },
               grammar: {
                 topic: 'question formation',
                 focusPoints: ['question words', 'intonation', 'word order'],
@@ -168,12 +168,8 @@ const baseLearningPath = {
             },
             xpRequired: 70,
             xpReward: 30,
-            modes: ['grammar', 'vocabulary', 'stories'],
+            modes: ['grammar', 'stories'],
             content: {
-              vocabulary: {
-                words: ['me gusta', 'no me gusta', 'me encanta', 'odio', 'prefiero'],
-                topic: 'preferences',
-              },
               grammar: {
                 topic: 'gustar verb',
                 focusPoints: ['indirect object pronouns', 'singular vs plural'],
@@ -196,15 +192,11 @@ const baseLearningPath = {
             },
             xpRequired: 100,
             xpReward: 30,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['uno', 'dos', 'tres', 'cuatro', 'cinco', 'diez', 'veinte'],
                 topic: 'numbers',
-              },
-              grammar: {
-                topic: 'numbers and counting',
-                focusPoints: ['pronunciation', 'usage in sentences'],
               },
             },
           },
@@ -220,11 +212,11 @@ const baseLearningPath = {
             },
             xpRequired: 130,
             xpReward: 35,
-            modes: ['vocabulary', 'realtime', 'stories'],
+            modes: ['grammar', 'realtime', 'stories'],
             content: {
-              vocabulary: {
-                words: ['agua', 'café', 'pan', 'arroz', 'pollo', 'fruta'],
-                topic: 'food and drinks',
+              grammar: {
+                topic: 'food and restaurant language',
+                focusPoints: ['querer + infinitive', 'me gustaría', 'tener + noun'],
               },
               realtime: {
                 scenario: 'restaurant ordering',
@@ -263,12 +255,8 @@ const baseLearningPath = {
             },
             xpRequired: 165,
             xpReward: 35,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
-              vocabulary: {
-                words: ['hora', 'minuto', 'mañana', 'tarde', 'noche'],
-                topic: 'time',
-              },
               grammar: {
                 topic: 'telling time',
                 focusPoints: ['¿Qué hora es?', 'es la / son las', 'y/menos'],
@@ -287,15 +275,11 @@ const baseLearningPath = {
             },
             xpRequired: 200,
             xpReward: 40,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['despertarse', 'levantarse', 'ducharse', 'desayunar', 'trabajar'],
                 topic: 'daily activities',
-              },
-              grammar: {
-                topic: 'reflexive verbs',
-                focusPoints: ['me/te/se', 'daily routine verbs'],
               },
               stories: {
                 topic: 'daily routine',
@@ -315,12 +299,8 @@ const baseLearningPath = {
             },
             xpRequired: 240,
             xpReward: 40,
-            modes: ['vocabulary', 'grammar', 'realtime'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['madre', 'padre', 'hermano', 'hermana', 'familia'],
-                topic: 'family',
-              },
               grammar: {
                 topic: 'possessive adjectives',
                 focusPoints: ['mi/tu/su', 'family descriptions'],
@@ -358,15 +338,11 @@ const baseLearningPath = {
             },
             xpRequired: 280,
             xpReward: 40,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['banco', 'supermercado', 'hospital', 'escuela', 'parque'],
                 topic: 'places',
-              },
-              grammar: {
-                topic: 'location prepositions',
-                focusPoints: ['en, al, del', 'estar + location'],
               },
             },
           },
@@ -382,12 +358,8 @@ const baseLearningPath = {
             },
             xpRequired: 320,
             xpReward: 45,
-            modes: ['grammar', 'realtime', 'vocabulary'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['derecha', 'izquierda', 'recto', 'cerca', 'lejos'],
-                topic: 'directions',
-              },
               grammar: {
                 topic: 'imperative mood',
                 focusPoints: ['commands', 'direction-giving'],
@@ -410,15 +382,11 @@ const baseLearningPath = {
             },
             xpRequired: 365,
             xpReward: 45,
-            modes: ['vocabulary', 'stories', 'grammar'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['autobús', 'metro', 'taxi', 'bicicleta', 'caminar'],
                 topic: 'transportation',
-              },
-              grammar: {
-                topic: 'ir + a',
-                focusPoints: ['going to places', 'transportation verbs'],
               },
               stories: {
                 topic: 'transportation',
@@ -477,15 +445,11 @@ const baseLearningPath = {
             },
             xpRequired: 460,
             xpReward: 50,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['grammar'],
             content: {
-              vocabulary: {
-                words: ['treinta', 'cuarenta', 'cincuenta', 'cien'],
-                topic: 'numbers',
-              },
               grammar: {
                 topic: 'numbers and currency',
-                focusPoints: ['large numbers', 'prices'],
+                focusPoints: ['large numbers', 'prices', 'costar + amount'],
               },
             },
           },
@@ -501,15 +465,11 @@ const baseLearningPath = {
             },
             xpRequired: 510,
             xpReward: 50,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['camisa', 'pantalón', 'zapatos', 'vestido', 'llevar'],
                 topic: 'clothing',
-              },
-              grammar: {
-                topic: 'adjective agreement',
-                focusPoints: ['colors', 'sizes', 'descriptions'],
               },
               stories: {
                 topic: 'clothing',
@@ -544,15 +504,11 @@ const baseLearningPath = {
             },
             xpRequired: 560,
             xpReward: 50,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['rojo', 'azul', 'verde', 'amarillo', 'negro', 'blanco'],
                 topic: 'colors',
-              },
-              grammar: {
-                topic: 'color adjectives',
-                focusPoints: ['adjective agreement', 'gender and number'],
               },
             },
           },
@@ -568,12 +524,8 @@ const baseLearningPath = {
             },
             xpRequired: 610,
             xpReward: 55,
-            modes: ['vocabulary', 'grammar', 'realtime'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['alto', 'bajo', 'delgado', 'fuerte', 'pelo', 'ojos'],
-                topic: 'physical descriptions',
-              },
               grammar: {
                 topic: 'ser vs estar for descriptions',
                 focusPoints: ['permanent vs temporary traits'],
@@ -596,15 +548,11 @@ const baseLearningPath = {
             },
             xpRequired: 665,
             xpReward: 55,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['simpático', 'amable', 'inteligente', 'divertido', 'serio'],
                 topic: 'personality',
-              },
-              grammar: {
-                topic: 'personality adjectives',
-                focusPoints: ['positive and negative traits'],
               },
               stories: {
                 topic: 'character descriptions',
@@ -639,15 +587,11 @@ const baseLearningPath = {
             },
             xpRequired: 720,
             xpReward: 55,
-            modes: ['vocabulary', 'grammar', 'realtime'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['fútbol', 'nadar', 'correr', 'jugar', 'practicar'],
                 topic: 'sports',
-              },
-              grammar: {
-                topic: 'jugar vs practicar',
-                focusPoints: ['sports verbs', 'frequency expressions'],
               },
               realtime: {
                 scenario: 'sports conversation',
@@ -667,11 +611,11 @@ const baseLearningPath = {
             },
             xpRequired: 775,
             xpReward: 60,
-            modes: ['vocabulary', 'stories', 'realtime'],
+            modes: ['grammar', 'stories', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['música', 'canción', 'película', 'concierto', 'bailar'],
-                topic: 'entertainment',
+              grammar: {
+                topic: 'expressing preferences and opinions',
+                focusPoints: ['me parece', 'creo que', 'preference verbs'],
               },
               stories: {
                 topic: 'music and movies',
@@ -695,15 +639,11 @@ const baseLearningPath = {
             },
             xpRequired: 835,
             xpReward: 60,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['libro', 'leer', 'escribir', 'dibujar', 'pintar'],
                 topic: 'arts and reading',
-              },
-              grammar: {
-                topic: 'present progressive',
-                focusPoints: ['estar + gerund', 'ongoing activities'],
               },
               stories: {
                 topic: 'books and art',
@@ -738,15 +678,11 @@ const baseLearningPath = {
             },
             xpRequired: 895,
             xpReward: 60,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
               grammar: {
                 topic: 'preterite tense',
                 focusPoints: ['regular -ar verbs', 'past time markers'],
-              },
-              vocabulary: {
-                words: ['ayer', 'anoche', 'la semana pasada'],
-                topic: 'time expressions',
               },
             },
           },
@@ -762,11 +698,11 @@ const baseLearningPath = {
             },
             xpRequired: 955,
             xpReward: 60,
-            modes: ['grammar', 'realtime', 'stories'],
+            modes: ['vocabulary', 'realtime', 'stories'],
             content: {
-              grammar: {
-                topic: 'preterite -er/-ir verbs',
-                focusPoints: ['regular verbs', 'past actions'],
+              vocabulary: {
+                words: ['fin de semana', 'ayer', 'anoche', 'la semana pasada'],
+                topic: 'time expressions',
               },
               realtime: {
                 scenario: 'weekend recap',
@@ -790,19 +726,15 @@ const baseLearningPath = {
             },
             xpRequired: 1015,
             xpReward: 65,
-            modes: ['stories', 'vocabulary', 'jobscript'],
+            modes: ['stories', 'grammar'],
             content: {
-              vocabulary: {
-                words: ['viajar', 'visitar', 'conocer', 'descubrir'],
-                topic: 'travel',
+              grammar: {
+                topic: 'preterite -er/-ir verbs',
+                focusPoints: ['regular verbs', 'irregular verbs', 'past actions'],
               },
               stories: {
                 topic: 'travel',
                 prompt: 'Read and discuss travel stories',
-              },
-              jobscript: {
-                scenario: 'travel presentation',
-                prompt: 'Prepare a presentation about a trip',
               },
             },
           },
@@ -833,7 +765,7 @@ const baseLearningPath = {
             },
             xpRequired: 1080,
             xpReward: 65,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
               grammar: {
                 topic: 'imperfect tense',
@@ -853,11 +785,11 @@ const baseLearningPath = {
             },
             xpRequired: 1145,
             xpReward: 70,
-            modes: ['grammar', 'stories', 'realtime'],
+            modes: ['vocabulary', 'stories', 'realtime'],
             content: {
-              grammar: {
-                topic: 'imperfect for descriptions',
-                focusPoints: ['childhood', 'habitual actions'],
+              vocabulary: {
+                words: ['niñez', 'infancia', 'jugar', 'crecer', 'recuerdo'],
+                topic: 'childhood',
               },
               stories: {
                 topic: 'childhood',
@@ -881,15 +813,11 @@ const baseLearningPath = {
             },
             xpRequired: 1215,
             xpReward: 70,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['grammar'],
             content: {
-              vocabulary: {
-                words: ['llover', 'nevar', 'hacer calor', 'hacer frío', 'primavera'],
-                topic: 'weather',
-              },
               grammar: {
                 topic: 'weather expressions',
-                focusPoints: ['hacer, estar, hay'],
+                focusPoints: ['hacer, estar, hay', 'imperfect tense for weather'],
               },
             },
           },
@@ -944,11 +872,11 @@ const baseLearningPath = {
             },
             xpRequired: 1360,
             xpReward: 75,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['vocabulary'],
             content: {
-              grammar: {
-                topic: 'simple future',
-                focusPoints: ['regular endings', 'irregular verbs'],
+              vocabulary: {
+                words: ['mañana', 'próximo', 'futuro', 'después', 'luego'],
+                topic: 'future time expressions',
               },
             },
           },
@@ -964,15 +892,11 @@ const baseLearningPath = {
             },
             xpRequired: 1435,
             xpReward: 80,
-            modes: ['jobscript', 'vocabulary', 'realtime'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['carrera', 'trabajo', 'meta', 'aspiración', 'futuro'],
-                topic: 'careers',
-              },
-              jobscript: {
-                scenario: 'career interview',
-                prompt: 'Discuss your career goals',
+              grammar: {
+                topic: 'simple future tense',
+                focusPoints: ['regular endings', 'irregular verbs', 'future planning'],
               },
               realtime: {
                 scenario: 'career planning',
@@ -1007,15 +931,11 @@ const baseLearningPath = {
             },
             xpRequired: 1515,
             xpReward: 70,
-            modes: ['vocabulary', 'grammar'],
+            modes: ['vocabulary'],
             content: {
               vocabulary: {
                 words: ['cabeza', 'brazo', 'pierna', 'mano', 'pie', 'ojo'],
                 topic: 'body parts',
-              },
-              grammar: {
-                topic: 'reflexive verbs with body',
-                focusPoints: ['doler', 'lavarse', 'body-related actions'],
               },
             },
           },
@@ -1031,19 +951,15 @@ const baseLearningPath = {
             },
             xpRequired: 1585,
             xpReward: 75,
-            modes: ['vocabulary', 'realtime', 'grammar'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['dolor', 'fiebre', 'médico', 'enfermedad', 'medicina'],
-                topic: 'health',
+              grammar: {
+                topic: 'expressing pain',
+                focusPoints: ['me duele/me duelen', 'doler verb', 'body parts'],
               },
               realtime: {
                 scenario: 'doctor visit',
                 prompt: 'Practice a conversation at the doctor\'s office',
-              },
-              grammar: {
-                topic: 'expressing pain',
-                focusPoints: ['me duele/me duelen'],
               },
             },
           },
@@ -1059,7 +975,7 @@ const baseLearningPath = {
             },
             xpRequired: 1660,
             xpReward: 75,
-            modes: ['vocabulary', 'stories', 'grammar'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['ejercicio', 'saludable', 'dieta', 'descansar', 'energía'],
@@ -1068,10 +984,6 @@ const baseLearningPath = {
               stories: {
                 topic: 'healthy living',
                 prompt: 'Read about maintaining a healthy lifestyle',
-              },
-              grammar: {
-                topic: 'commands for advice',
-                focusPoints: ['informal commands', 'health recommendations'],
               },
             },
           },
@@ -1126,11 +1038,11 @@ const baseLearningPath = {
             },
             xpRequired: 1810,
             xpReward: 80,
-            modes: ['vocabulary', 'realtime', 'history'],
+            modes: ['grammar', 'realtime', 'history'],
             content: {
-              vocabulary: {
-                words: ['contaminación', 'reciclar', 'clima', 'proteger', 'naturaleza'],
-                topic: 'environment',
+              grammar: {
+                topic: 'environmental language',
+                focusPoints: ['conditional tense', 'should/would', 'environmental expressions'],
               },
               realtime: {
                 scenario: 'environmental discussion',
@@ -1154,15 +1066,11 @@ const baseLearningPath = {
             },
             xpRequired: 1890,
             xpReward: 80,
-            modes: ['vocabulary', 'grammar', 'stories'],
+            modes: ['vocabulary', 'stories'],
             content: {
               vocabulary: {
                 words: ['montaña', 'río', 'mar', 'playa', 'desierto', 'valle'],
                 topic: 'geography',
-              },
-              grammar: {
-                topic: 'location and description',
-                focusPoints: ['geographic descriptions', 'estar + location'],
               },
               stories: {
                 topic: 'landscapes',
@@ -1197,7 +1105,7 @@ const baseLearningPath = {
             },
             xpRequired: 1970,
             xpReward: 90,
-            modes: ['grammar', 'vocabulary'],
+            modes: ['grammar'],
             content: {
               grammar: {
                 topic: 'present subjunctive',
@@ -1217,15 +1125,19 @@ const baseLearningPath = {
             },
             xpRequired: 2060,
             xpReward: 90,
-            modes: ['grammar', 'realtime', 'stories'],
+            modes: ['vocabulary', 'realtime', 'stories'],
             content: {
-              grammar: {
-                topic: 'subjunctive with querer, esperar',
-                focusPoints: ['wishes', 'desires', 'hope'],
+              vocabulary: {
+                words: ['deseo', 'esperanza', 'sueño', 'anhelo', 'ojalá'],
+                topic: 'wishes and desires',
               },
               realtime: {
                 scenario: 'expressing wishes',
                 prompt: 'Talk about your hopes and desires',
+              },
+              stories: {
+                topic: 'aspirations',
+                prompt: 'Read about people pursuing their dreams',
               },
             },
           },
@@ -1276,7 +1188,7 @@ const baseLearningPath = {
             },
             xpRequired: 2245,
             xpReward: 100,
-            modes: ['realtime', 'jobscript', 'vocabulary'],
+            modes: ['realtime', 'vocabulary'],
             content: {
               vocabulary: {
                 words: ['argumentar', 'convencer', 'debatir', 'persuadir'],
@@ -1285,10 +1197,6 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'debate',
                 prompt: 'Engage in a structured debate',
-              },
-              jobscript: {
-                scenario: 'persuasive presentation',
-                prompt: 'Create a persuasive argument',
               },
             },
           },
@@ -1304,11 +1212,11 @@ const baseLearningPath = {
             },
             xpRequired: 2345,
             xpReward: 100,
-            modes: ['history', 'realtime', 'vocabulary'],
+            modes: ['history', 'realtime', 'grammar'],
             content: {
-              vocabulary: {
-                words: ['noticia', 'evento', 'actualidad', 'política'],
-                topic: 'current events',
+              grammar: {
+                topic: 'news and reporting language',
+                focusPoints: ['passive voice', 'reported speech', 'news expressions'],
               },
               history: {
                 topic: 'current events',
@@ -1332,15 +1240,11 @@ const baseLearningPath = {
             },
             xpRequired: 2445,
             xpReward: 110,
-            modes: ['jobscript', 'realtime', 'vocabulary'],
+            modes: ['realtime', 'vocabulary'],
             content: {
               vocabulary: {
                 words: ['reunión', 'presentación', 'informe', 'negociar'],
                 topic: 'professional',
-              },
-              jobscript: {
-                scenario: 'business meeting',
-                prompt: 'Participate in a professional meeting',
               },
               realtime: {
                 scenario: 'workplace conversation',
@@ -1403,11 +1307,11 @@ const baseLearningPath = {
             },
             xpRequired: 2655,
             xpReward: 105,
-            modes: ['vocabulary', 'history', 'realtime'],
+            modes: ['grammar', 'history', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['pintura', 'escultura', 'artista', 'galería', 'obra'],
-                topic: 'visual arts',
+              grammar: {
+                topic: 'describing art',
+                focusPoints: ['present progressive', 'aesthetic descriptions', 'art criticism'],
               },
               history: {
                 topic: 'Hispanic artists',
@@ -1474,7 +1378,7 @@ const baseLearningPath = {
             },
             xpRequired: 2865,
             xpReward: 105,
-            modes: ['vocabulary', 'realtime', 'grammar'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['internet', 'correo', 'mensaje', 'aplicación', 'red social'],
@@ -1483,10 +1387,6 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'online conversation',
                 prompt: 'Practice digital communication',
-              },
-              grammar: {
-                topic: 'technology expressions',
-                focusPoints: ['tech-related verbs', 'modern terminology'],
               },
             },
           },
@@ -1502,11 +1402,11 @@ const baseLearningPath = {
             },
             xpRequired: 2970,
             xpReward: 110,
-            modes: ['vocabulary', 'history', 'realtime'],
+            modes: ['grammar', 'history', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['investigación', 'descubrimiento', 'tecnología', 'innovar', 'futuro'],
-                topic: 'science',
+              grammar: {
+                topic: 'scientific language',
+                focusPoints: ['passive constructions', 'technical terminology', 'cause and effect'],
               },
               history: {
                 topic: 'Hispanic scientists',
@@ -1530,15 +1430,11 @@ const baseLearningPath = {
             },
             xpRequired: 3080,
             xpReward: 110,
-            modes: ['jobscript', 'vocabulary', 'realtime'],
+            modes: ['vocabulary', 'realtime'],
             content: {
               vocabulary: {
                 words: ['emprendedor', 'startup', 'digital', 'comercio', 'plataforma'],
                 topic: 'digital economy',
-              },
-              jobscript: {
-                scenario: 'tech startup pitch',
-                prompt: 'Present a tech business idea',
               },
               realtime: {
                 scenario: 'business tech discussion',
@@ -1601,19 +1497,15 @@ const baseLearningPath = {
             },
             xpRequired: 3305,
             xpReward: 120,
-            modes: ['vocabulary', 'realtime', 'grammar'],
+            modes: ['grammar', 'realtime'],
             content: {
-              vocabulary: {
-                words: ['global', 'crisis', 'solución', 'cooperación', 'sostenibilidad'],
-                topic: 'global issues',
+              grammar: {
+                topic: 'advanced expressions',
+                focusPoints: ['complex conditionals', 'hypothetical situations'],
               },
               realtime: {
                 scenario: 'global discussion',
                 prompt: 'Discuss international challenges',
-              },
-              grammar: {
-                topic: 'advanced expressions',
-                focusPoints: ['complex conditionals', 'hypothetical situations'],
               },
             },
           },

@@ -66,7 +66,6 @@ const MODE_ICONS = {
   realtime: RiSpeakLine,
   stories: RiBookOpenLine,
   history: RiHistoryLine,
-  jobscript: RiPencilLine,
 };
 
 /**
