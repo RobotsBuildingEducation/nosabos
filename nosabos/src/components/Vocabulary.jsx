@@ -1921,23 +1921,33 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "vocab_ma",
-      question: qMA,
-      hint: hMA,
-      translation: trMA,
-      choices: choicesMA,
-      author_answers: answersMA,
-      user_choices: picksMA,
-      award_xp: delta,
-    }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    // Handle quiz mode differently
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setResMA(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0); // No XP in quiz mode
+    } else {
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_ma",
+        question: qMA,
+        hint: hMA,
+        translation: trMA,
+        choices: choicesMA,
+        author_answers: answersMA,
+        user_choices: picksMA,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-    setResMA(ok ? "correct" : "try_again"); // log only
-    setLastOk(ok);
-    setRecentXp(delta);
-    const nextFn = ok
+      setResMA(ok ? "correct" : "try_again"); // log only
+      setLastOk(ok);
+      setRecentXp(delta);
+    }
+
+    // In quiz mode, always show next button (even on wrong answer)
+    const nextFn = (ok || isFinalQuiz)
       ? lockedType
         ? () => generatorFor(lockedType)()
         : () => generateRandomRef.current()
@@ -2384,22 +2394,32 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "vocab_match",
-      question: mStem,
-      hint: mHint,
-      left: mLeft,
-      right: mRight,
-      user_pairs: userPairs,
-      award_xp: delta,
-    }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    // Handle quiz mode differently
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setMResult(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0); // No XP in quiz mode
+    } else {
+      await saveAttempt(npub, {
+        ok,
+        mode: "vocab_match",
+        question: mStem,
+        hint: mHint,
+        left: mLeft,
+        right: mRight,
+        user_pairs: userPairs,
+        award_xp: delta,
+      }).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-    setMResult(ok ? "correct" : "try_again"); // log only
-    setLastOk(ok);
-    setRecentXp(delta);
-    const nextFn = ok
+      setMResult(ok ? "correct" : "try_again"); // log only
+      setLastOk(ok);
+      setRecentXp(delta);
+    }
+
+    // In quiz mode, always show next button (even on wrong answer)
+    const nextFn = (ok || isFinalQuiz)
       ? lockedType
         ? () => generatorFor(lockedType)()
         : () => generateRandom()
@@ -2440,27 +2460,36 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       const ok = evaluation.pass;
       const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
-      await saveAttempt(npub, {
-        ok,
-        mode: "vocab_speak",
-        question: sPrompt,
-        target: sTarget,
-        stimulus: sStimulus,
-        variant: sVariant,
-        hint: sHint,
-        translation: sTranslation,
-        recognized_text: recognizedText || "",
-        confidence,
-        audio_metrics: audioMetrics,
-        eval: evaluation,
-        method,
-        award_xp: delta,
-      }).catch(() => {});
-      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+      // Handle quiz mode differently
+      if (isFinalQuiz) {
+        handleQuizAnswer(ok);
+        setLastOk(ok);
+        setRecentXp(0); // No XP in quiz mode
+      } else {
+        await saveAttempt(npub, {
+          ok,
+          mode: "vocab_speak",
+          question: sPrompt,
+          target: sTarget,
+          stimulus: sStimulus,
+          variant: sVariant,
+          hint: sHint,
+          translation: sTranslation,
+          recognized_text: recognizedText || "",
+          confidence,
+          audio_metrics: audioMetrics,
+          eval: evaluation,
+          method,
+          award_xp: delta,
+        }).catch(() => {});
+        if (delta > 0) await awardXp(npub, delta).catch(() => {});
 
-      setLastOk(ok);
-      setRecentXp(delta);
-      const nextFn = ok
+        setLastOk(ok);
+        setRecentXp(delta);
+      }
+
+      // In quiz mode, always show next button (even on wrong answer)
+      const nextFn = (ok || isFinalQuiz)
         ? lockedType
           ? () => generatorFor(lockedType)()
           : () => generateRandomRef.current()
@@ -2999,20 +3028,21 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         <Box display={"flex"} justifyContent={"center"}>
           <Box w="50%" justifyContent={"center"}>
             {isFinalQuiz ? (
-              // Quiz progress display
+              // Quiz progress display with WaveBar
               <VStack spacing={2}>
-                <HStack justify="space-between" w="100%">
+                <HStack justify="space-between" w="100%" mb={1}>
                   <Badge colorScheme="purple" fontSize="md">
                     {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
                   </Badge>
                   <Badge colorScheme={quizCorrectAnswers >= quizConfig.passingScore ? "green" : "yellow"} fontSize="md">
-                    {quizCorrectAnswers}/{quizQuestionsAnswered} {userLanguage === "es" ? "correctas" : "correct"}
+                    {quizQuestionsAnswered}/{quizConfig.questionsRequired}
                   </Badge>
                 </HStack>
-                <Text fontSize="sm" color="gray.400" textAlign="center">
+                <WaveBar value={(quizQuestionsAnswered / quizConfig.questionsRequired) * 100} />
+                <Text fontSize="xs" color="gray.400" textAlign="center">
                   {userLanguage === "es"
-                    ? `Necesitas ${quizConfig.passingScore}/${quizConfig.questionsRequired} para aprobar`
-                    : `Need ${quizConfig.passingScore}/${quizConfig.questionsRequired} to pass`}
+                    ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
+                    : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
                 </Text>
               </VStack>
             ) : (
@@ -4000,12 +4030,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length || (isFinalQuiz && quizCurrentQuestionAttempted)}
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
+              {(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction ? (
                 <Button
                   variant="outline"
                   borderColor="cyan.500"
