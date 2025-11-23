@@ -132,12 +132,12 @@ const baseLearningPath = {
             },
             content: {
               vocabulary: {
-                words: ['hola', 'adiós', 'buenos días', 'buenas tardes', 'buenas noches', '¿cómo?', '¿qué?', '¿dónde?', '¿cuándo?', '¿por qué?'],
-                topics: ['greetings', 'question words'],
+                // Use topics instead of hardcoded words to support any target language
+                topic: 'greetings and question words (hello, goodbye, good morning, good afternoon, good evening, how, what, where, when, why)',
               },
               grammar: {
                 topics: ['basic greetings', 'introductions', 'question formation'],
-                focusPoints: ['formal vs informal', 'time-based greetings', 'me llamo', 'soy de', 'verb ser', 'question words', 'intonation', 'word order'],
+                focusPoints: ['formal vs informal greetings', 'time-based greetings', 'introducing yourself', 'asking where someone is from', 'basic question words', 'question intonation', 'question word order'],
               },
             },
           },
