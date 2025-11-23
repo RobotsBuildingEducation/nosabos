@@ -2472,6 +2472,7 @@ export default function App() {
                           lessonContent={activeLesson?.content?.grammar}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
                           quizConfig={activeLesson?.quizConfig || { questionsRequired: 10, passingScore: 8 }}
+                          onSkip={switchToRandomLessonMode}
                         />
                       </TabPanel>
                     );
@@ -2485,6 +2486,7 @@ export default function App() {
                           lessonContent={activeLesson?.content?.vocabulary}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
                           quizConfig={activeLesson?.quizConfig || { questionsRequired: 10, passingScore: 8 }}
+                          onSkip={switchToRandomLessonMode}
                         />
                       </TabPanel>
                     );

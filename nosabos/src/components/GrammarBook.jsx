@@ -594,7 +594,8 @@ export default function GrammarBook({
   userLanguage = "en",
   lessonContent = null,
   isFinalQuiz = false,
-  quizConfig = { questionsRequired: 10, passingScore: 8 }
+  quizConfig = { questionsRequired: 10, passingScore: 8 },
+  onSkip = null
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -714,11 +715,19 @@ export default function GrammarBook({
   }
 
   function handleNext() {
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+
+    // In lesson mode, move to next module
+    if (onSkip) {
+      onSkip();
+      return;
+    }
+
+    // In random mode, generate next question
     if (typeof nextAction === "function") {
-      setLastOk(null);
-      setRecentXp(0);
       const fn = nextAction;
-      setNextAction(null);
       fn();
     }
   }
@@ -732,6 +741,14 @@ export default function GrammarBook({
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
+
+    // In lesson mode, skip to next module
+    if (onSkip) {
+      onSkip();
+      return;
+    }
+
+    // In random mode, generate next question
     const runner = modeLocked ? generatorFor(mode) : generateRandomRef.current;
     if (typeof runner === "function") {
       runner();

@@ -719,6 +719,14 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
     return () => unsub();
   }, [npub]); // eslint-disable-line
 
+  // Auto-generate lecture when component mounts with no lectures
+  useEffect(() => {
+    if (!npub || isGenerating || generatingRef.current) return;
+    if (lectures.length === 0 && !draftLecture) {
+      generateNextLectureGeminiStream();
+    }
+  }, [npub, lectures.length]); // eslint-disable-line
+
   const activeLecture = useMemo(
     () => lectures.find((l) => l.id === activeId) || null,
     [lectures, activeId]
