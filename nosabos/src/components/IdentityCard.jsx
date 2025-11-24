@@ -55,16 +55,16 @@ const CardFace = styled.div`
   ${({ theme }) =>
     theme === "web5"
       ? css`
-          background: linear-gradient(135deg, #2c2c2c, #1a1a1a, #0f0f0f);
+          background: linear-gradient(135deg, #3a2f4d, #2a1f3d, #1a0f2e);
           background-size: 200% 200%;
           animation: ${subtleSwirl} 6s ease infinite;
-          color: yellow;
+          color: #fcd34d;
           font-family: "IBM Plex Mono";
           font-size: 0.8em;
         `
       : theme === "nostr"
       ? css`
-          background: linear-gradient(135deg, #ff6f91, #d783ff, #c471ed);
+          background: linear-gradient(135deg, #fda4af, #f0abfc, #d8b4fe);
           background-size: 200% 200%;
           animation: ${subtleSwirl} 6s ease infinite;
           color: #fff;
@@ -73,7 +73,7 @@ const CardFace = styled.div`
         `
       : theme === "cashu"
       ? css`
-          background: linear-gradient(135deg, #004e92, #2ec6f0);
+          background: linear-gradient(135deg, #1e3a5f, #7dd3fc, #93c5fd);
           background-size: 200% 200%;
           animation: ${subtleSwirl} 6s ease infinite;
           color: #fff;
@@ -82,15 +82,15 @@ const CardFace = styled.div`
         `
       : theme === "BTC"
       ? css`
-          background: linear-gradient(135deg, #f0f0f0, #d0d0d0, #b0b0b0);
+          background: linear-gradient(135deg, #fcd34d, #fdba74, #fda4af);
           background-size: 200% 200%;
           animation: ${subtleSwirl} 6s ease infinite;
-          color: #333;
+          color: #1a0f2e;
           font-family: "Avenir";
           font-size: 1.2em;
         `
       : css`
-          background: linear-gradient(135deg, #f9a825, #ff7043, #ffb300);
+          background: linear-gradient(135deg, #fcd34d, #fdba74, #fda4af);
           background-size: 200% 200%;
           animation: ${subtleSwirl} 6s ease infinite;
           color: #fff;

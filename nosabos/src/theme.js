@@ -9,19 +9,19 @@ const { definePartsStyle, defineMultiStyleConfig } =
   createMultiStyleConfigHelpers(parts.keys);
 
 // -------------------------------------------------------
-// Colors (Duolingo-ish flat palette)
+// Colors (Soft Pastel Palette - Feminine accents on dark theme)
 // -------------------------------------------------------
-const duoGreen = {
-  50: "#E0FFFF",
-  100: "#CCFFF7",
-  200: "#A8FFF0",
-  300: "#7FFFD4",
-  400: "#66CDAA",
-  500: "#5dade2",
-  600: "#3CCB5A",
-  700: "#2EB24A",
-  800: "#2f7cf7",
-  900: "#2f7cf7",
+const duoPastel = {
+  50: "#FBF7FF",   // Lightest tint
+  100: "#F4EDFF",  // Very light
+  200: "#E9DBFF",  // Light lavender
+  300: "#DCC3FF",  // Soft lavender
+  400: "#CCA5FF",  // Medium lavender
+  500: "#B888FF",  // Main accent - soft purple
+  600: "#9D6FE6",  // Deeper lavender
+  700: "#8556CC",  // Rich lavender
+  800: "#6D3DB3",  // Deep purple
+  900: "#552499",  // Deepest purple
 };
 
 // -------------------------------------------------------
@@ -173,14 +173,14 @@ const minimalMenu = definePartsStyle(() => ({
     rounded: "md",
     _hover: { bg: "gray.800" },
     _focus: { bg: "gray.800" },
-    _active: { bg: "teal.600", color: "white" },
+    _active: { bg: "duo.600", color: "white" },
     _expanded: { bg: "gray.800" },
     _disabled: { opacity: 0.45, cursor: "not-allowed" },
     _checked: {
-      bg: "teal.600",
+      bg: "duo.600",
       color: "white",
-      _hover: { bg: "teal.600" },
-      _focus: { bg: "teal.600" },
+      _hover: { bg: "duo.600" },
+      _focus: { bg: "duo.600" },
     },
   },
 
@@ -204,10 +204,31 @@ const Menu = defineMultiStyleConfig({
 });
 
 // -------------------------------------------------------
+// Soft Dark Backgrounds (optional - slightly warmer than pure black)
+// -------------------------------------------------------
+const softDarkGray = {
+  950: "#1a0f2e", // Very dark purple-tinted background (softer than pure black)
+  900: "#2a1f3d", // Dark purple-gray (softer than default gray.900)
+  800: "#3a2f4d", // Medium-dark purple-gray
+};
+
+// -------------------------------------------------------
 // Export theme
 // -------------------------------------------------------
 export const theme = extendTheme({
-  colors: { duo: duoGreen },
+  colors: {
+    duo: duoPastel,
+    // Optionally override specific grays for softer dark backgrounds
+    // gray: { ...chakraTheme.colors.gray, ...softDarkGray },
+  },
+  styles: {
+    global: {
+      body: {
+        bg: "#1a0f2e", // Soft dark purple background instead of harsh black
+        color: "gray.100",
+      },
+    },
+  },
   components: {
     Button,
     IconButton,

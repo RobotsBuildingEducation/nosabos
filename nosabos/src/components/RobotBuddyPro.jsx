@@ -11,59 +11,59 @@ import { Box, Badge, HStack } from "@chakra-ui/react";
 
 const PALETTES = {
   ocean: {
-    primary: "#22d3ee",
-    secondary: "#60a5fa",
-    accent: "#58f7a2",
-    ringListening: "rgba(14,165,233,0.6)",
-    ringSpeaking: "rgba(34,211,238,0.65)",
-    ringThinking: "rgba(255,220,0,0.55)",
-    neutral: "#a0b3ff",
-    bg: "linear-gradient(180deg,#0b1220 0%,#162033 100%)",
-    stroke: "#2b3a55",
+    primary: "#7dd3fc",    // Soft sky blue
+    secondary: "#93c5fd",  // Soft lavender blue
+    accent: "#a5f3fc",     // Soft cyan
+    ringListening: "rgba(125,211,252,0.6)",
+    ringSpeaking: "rgba(165,243,252,0.65)",
+    ringThinking: "rgba(147,197,253,0.55)",
+    neutral: "#c4b5fd",
+    bg: "linear-gradient(180deg,#1a0f2e 0%,#2a1f3d 100%)", // Soft dark purple
+    stroke: "#4a3f5d",
   },
   sunset: {
-    primary: "#f59e0b",
-    secondary: "#fb7185",
-    accent: "#facc15",
-    ringListening: "rgba(251,113,133,0.5)",
-    ringSpeaking: "rgba(250,204,21,0.6)",
-    ringThinking: "rgba(245,158,11,0.6)",
-    neutral: "#ffb3a7",
-    bg: "linear-gradient(180deg,#1b1020 0%,#2a1a14 100%)",
-    stroke: "#4b2a20",
+    primary: "#fda4af",    // Soft rose
+    secondary: "#fcd34d",  // Soft peach
+    accent: "#fdba74",     // Soft coral
+    ringListening: "rgba(253,164,175,0.5)",
+    ringSpeaking: "rgba(253,186,116,0.6)",
+    ringThinking: "rgba(252,211,77,0.6)",
+    neutral: "#f9a8d4",
+    bg: "linear-gradient(180deg,#2a1420 0%,#3a1f2e 100%)", // Soft dark rose
+    stroke: "#5a3f4e",
   },
   candy: {
-    primary: "#f472b6",
-    secondary: "#a78bfa",
-    accent: "#34d399",
-    ringListening: "rgba(167,139,250,0.55)",
-    ringSpeaking: "rgba(52,211,153,0.65)",
-    ringThinking: "rgba(244,114,182,0.6)",
-    neutral: "#ffc6f2",
-    bg: "linear-gradient(180deg,#171226 0%,#271a2b 100%)",
-    stroke: "#3a2d4a",
+    primary: "#f9a8d4",    // Soft pink
+    secondary: "#d8b4fe",  // Soft lilac
+    accent: "#a78bfa",     // Soft violet
+    ringListening: "rgba(216,180,254,0.55)",
+    ringSpeaking: "rgba(167,139,250,0.65)",
+    ringThinking: "rgba(249,168,212,0.6)",
+    neutral: "#f0abfc",
+    bg: "linear-gradient(180deg,#1f142a 0%,#2f1f3a 100%)", // Soft dark purple
+    stroke: "#4f3f5a",
   },
   mint: {
-    primary: "#5eead4",
-    secondary: "#86efac",
-    accent: "#2dd4bf",
-    ringListening: "rgba(94,234,212,0.55)",
-    ringSpeaking: "rgba(45,212,191,0.6)",
-    ringThinking: "rgba(134,239,172,0.55)",
-    neutral: "#b7ffe8",
-    bg: "linear-gradient(180deg,#0f1a17 0%,#11211e 100%)",
-    stroke: "#29443d",
+    primary: "#86efac",    // Soft mint
+    secondary: "#6ee7b7",  // Soft emerald
+    accent: "#5eead4",     // Soft teal
+    ringListening: "rgba(134,239,172,0.55)",
+    ringSpeaking: "rgba(94,234,212,0.6)",
+    ringThinking: "rgba(110,231,183,0.55)",
+    neutral: "#a7f3d0",
+    bg: "linear-gradient(180deg,#14241f 0%,#1f342e 100%)", // Soft dark mint
+    stroke: "#3f544e",
   },
   violet: {
-    primary: "#8b5cf6",
-    secondary: "#22d3ee",
-    accent: "#ec4899",
-    ringListening: "rgba(139,92,246,0.55)",
-    ringSpeaking: "rgba(34,211,238,0.6)",
-    ringThinking: "rgba(236,72,153,0.55)",
-    neutral: "#cdbaff",
-    bg: "linear-gradient(180deg,#130f1c 0%,#1b1630 100%)",
-    stroke: "#332a56",
+    primary: "#c4b5fd",    // Soft lavender
+    secondary: "#a78bfa",  // Soft violet
+    accent: "#f0abfc",     // Soft orchid
+    ringListening: "rgba(196,181,253,0.55)",
+    ringSpeaking: "rgba(167,139,250,0.6)",
+    ringThinking: "rgba(240,171,252,0.55)",
+    neutral: "#d8b4fe",
+    bg: "linear-gradient(180deg,#1a0f2e 0%,#2a1f3e 100%)", // Soft dark purple
+    stroke: "#4a3f5e",
   },
 };
 
