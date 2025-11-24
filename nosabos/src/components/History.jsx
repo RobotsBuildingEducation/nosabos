@@ -12,6 +12,7 @@ import {
   IconButton,
   useDisclosure,
   Collapse,
+  Center,
 } from "@chakra-ui/react";
 import { FaVolumeUp, FaStop } from "react-icons/fa";
 import { MdMenuBook } from "react-icons/md";
@@ -125,7 +126,9 @@ async function normalizeLectureTexts({
 
   if (shouldTranslateSupport) {
     const prompt = [
-      `Translate the following text from ${LANG_NAME(targetLang)} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
+      `Translate the following text from ${LANG_NAME(
+        targetLang
+      )} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
       "Return only the translation in that language without labels, speaker names, or commentary.",
       "",
       cleanTarget,
@@ -240,12 +243,17 @@ function stripLineLabel(text, langCode) {
   let output = text.trim();
   if (tokens.length) {
     const pattern = new RegExp(
-      `^(?:${tokens.map((token) => escapeRegExp(token)).join("|")})\\s*[:\\-–—]\\s*`,
+      `^(?:${tokens
+        .map((token) => escapeRegExp(token))
+        .join("|")})\\s*[:\\-–—]\\s*`,
       "i"
     );
     output = output.replace(pattern, "").trim();
   }
-  output = output.replace(/^\[\s*/, "").replace(/\s*\]$/, "").trim();
+  output = output
+    .replace(/^\[\s*/, "")
+    .replace(/\s*\]$/, "")
+    .trim();
   output = output.replace(/^[•·\-–—]+\s*/, "").trim();
   return output;
 }
@@ -343,27 +351,35 @@ function difficultyHint(level, xp) {
   ][band];
 }
 
-// Seed: FIRST lecture must be Bering migration
-function buildSeedLecturePrompt({ targetLang, supportLang, level, xp, lessonContent = null }) {
+// Seed: FIRST lecture based on lesson content
+function buildSeedLecturePrompt({
+  targetLang,
+  supportLang,
+  level,
+  xp,
+  lessonContent = null,
+}) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
   const diff = difficultyHint(level, xp);
 
-  const topicText = lessonContent?.topic || lessonContent?.scenario
-    ? lessonContent.topic || lessonContent.scenario
-    : "the **initial migration from Siberia across the Bering Strait (Beringia)** into the Americas";
-
-  const strictDirective = lessonContent?.topic || lessonContent?.scenario
-    ? `\nSTRICT REQUIREMENT: The lecture MUST be about ${topicText}. Do NOT write about other topics. This is lesson-specific content and you MUST NOT diverge.`
-    : "";
+  const topicText =
+    lessonContent?.topic ||
+    lessonContent?.scenario ||
+    "general cultural and linguistic concepts";
+  const promptText = lessonContent?.prompt || "";
 
   return `
-Write ONE short lecture in ${TARGET} (≈180–260 words) about ${topicText}. Suitable for a ${level} learner. Difficulty: ${diff}.${strictDirective}
+Write ONE short educational lecture in ${TARGET} (≈180–260 words) about ${topicText}. ${promptText}
+Suitable for a ${level} learner. Difficulty: ${diff}.
+
+STRICT REQUIREMENT: The lecture MUST focus on ${topicText} in a way that helps language learners understand the cultural context and vocabulary related to this topic. Do NOT diverge to unrelated subjects.
 
 Requirements:
-- Mention approximate time frames (e.g., Late Pleistocene), changing climates/sea levels, and possible inland/coastal routes.
-- Note types of evidence (archaeology, genetics, languages) without getting too technical.
-- Keep it engaging and clear.
+- Make it relevant and practical for language learners
+- Include cultural context and common vocabulary related to ${topicText}
+- Use examples and situations that learners might encounter
+- Keep it engaging, clear, and accessible
 
 Include:
 - A concise title (<= 60 chars) in ${TARGET}.
@@ -392,6 +408,7 @@ function buildLecturePrompt({
   supportLang,
   level,
   xp,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
@@ -401,19 +418,25 @@ function buildLecturePrompt({
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
+  const topicText =
+    lessonContent?.topic ||
+    lessonContent?.scenario ||
+    "general cultural and linguistic concepts";
+  const promptText = lessonContent?.prompt || "";
+
   return `
-You are curating a long, progressive curriculum of short lectures on Mexican and Mesoamerican history.
-Choose the **next granular topic** based on the list of previous lecture titles (chronological if possible; otherwise deepen a thread).
-Avoid repetition. Favor specificity: a city, figure, event, reform, battle, treaty, cultural theme, or policy.
+You are creating educational reading material for language learners focused on ${topicText}. ${promptText}
+Choose the **next related sub-topic** based on the list of previous lecture titles.
+Avoid repetition but maintain thematic coherence with ${topicText}.
 
 previous_titles:
 ${prev}
 
 Write ONE lecture in ${TARGET} (≈180–260 words), suitable for a ${level} learner. Difficulty: ${diff}.
 Include:
-- A concise title (<= 60 chars).
+- A concise title (<= 60 chars) related to ${topicText}.
 - 3 concise bullet takeaways.
-- Touch on people, culture, governments, and/or wars as relevant.
+- Cultural context and practical vocabulary for language learners.
 - Provide a full ${SUPPORT} translation of the lecture (NOT the takeaways).
 
 Language restrictions:
@@ -574,6 +597,7 @@ function buildStreamingPrompt({
   supportLang,
   level,
   xp,
+  lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
@@ -583,12 +607,18 @@ function buildStreamingPrompt({
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
+  const topicText =
+    lessonContent?.topic ||
+    lessonContent?.scenario ||
+    "general cultural and linguistic concepts";
+  const promptText = lessonContent?.prompt || "";
+
   const baseTopic = isFirst
-    ? `Topic: the initial migration from Siberia across Beringia into the Americas (Late Pleistocene, sea levels, inland/coastal routes, evidence types).`
-    : `Choose the next granular topic for Mexican/Mesoamerican history. Avoid repeating previous_titles. Prefer specificity (figure, city, battle, reform, treaty, cultural theme, or policy) and a coherent progression.\nprevious_titles:\n${prev}`;
+    ? `Topic: ${topicText}. ${promptText}\nFocus on practical cultural context and vocabulary for language learners.`
+    : `Continue the educational series about ${topicText}. Choose the next related sub-topic based on previous_titles. Avoid repetition but maintain thematic coherence.\nprevious_titles:\n${prev}`;
 
   return [
-    `You are writing an educational *history lecture* for language learners.`,
+    `You are writing an educational reading lecture for language learners about ${topicText}.`,
     baseTopic,
     `Target language: ${TARGET} (${targetLang}). Provide a full translation in ${SUPPORT} (${supportLang}).`,
     `Style: ~180–260 words, ${diff}.`,
@@ -613,7 +643,11 @@ function buildStreamingPrompt({
 /* ---------------------------
    Component
 --------------------------- */
-export default function History({ userLanguage = "en", lessonContent = null }) {
+export default function History({
+  userLanguage = "en",
+  lessonContent = null,
+  onSkip = null,
+}) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
@@ -711,6 +745,16 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
     return () => unsub();
   }, [npub]); // eslint-disable-line
 
+  // Auto-generate lecture when component mounts with no lectures
+  useEffect(() => {
+    if (!npub || isGenerating || generatingRef.current) return;
+    if (lectures.length === 0 && !draftLecture) {
+      // Don't set activeId when auto-generating first lecture
+      setActiveId(null);
+      generateNextLectureGeminiStream();
+    }
+  }, [npub, lectures.length]); // eslint-disable-line
+
   const activeLecture = useMemo(
     () => lectures.find((l) => l.id === activeId) || null,
     [lectures, activeId]
@@ -767,6 +811,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
           supportLang,
           level: progress.level || "beginner",
           xp,
+          lessonContent,
         });
 
     let parsed =
@@ -890,6 +935,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
       supportLang,
       level: progress.level || "beginner",
       xp,
+      lessonContent,
     });
 
     let title = "";
@@ -905,8 +951,8 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
       if (!revealed) revealed = true;
       const draftTitle =
         title ||
-        t("history_generating_title") ||
-        t("history_generating") ||
+        t("reading_generating_title") ||
+        t("reading_generating") ||
         "Generating…";
       setDraftLecture({
         title: draftTitle,
@@ -1000,7 +1046,6 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
         setDraftLecture(null);
         setIsGenerating(false);
         generatingRef.current = false; // 🔓 release on fallback early-return
-        if (!listDisclosure.isOpen) listDisclosure.onOpen();
         return;
       }
 
@@ -1023,7 +1068,9 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
       });
       const safeTarget = cleanTarget || draftTarget;
       const safeSupport =
-        cleanSupport || sanitizeLectureBlock(draftSupport, supportLang) || safeTarget;
+        cleanSupport ||
+        sanitizeLectureBlock(draftSupport, supportLang) ||
+        safeTarget;
       const finalTitle =
         title ||
         (targetLang === "en" ? "Untitled lecture" : "Lección sin título");
@@ -1066,7 +1113,6 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
       const ref = await addDoc(colRef, payload);
       setActiveId(ref.id);
       setDraftLecture(null);
-      if (!listDisclosure.isOpen) listDisclosure.onOpen();
     } catch (e) {
       console.error("Gemini streaming error; using backend fallback.", e);
       try {
@@ -1177,7 +1223,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
       ? ` — ${activeLecture.xpReason}`
       : "";
 
-  // Award XP for current lecture and generate a new one
+  // Award XP for current lecture and move to next module
   async function finishReadingAndNext() {
     if (!npub || !activeLecture || isGenerating || isFinishing) return;
     setIsFinishing(true);
@@ -1200,12 +1246,21 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
           await awardXp(npub, amt).catch(() => {});
         }
       }
-      // Immediately move to the next lecture
-      await generateNextLectureGeminiStream();
+      // Move to the next module
+      if (onSkip) {
+        onSkip();
+      }
     } catch (e) {
       console.error("finishReadingAndNext error", e);
     } finally {
       setIsFinishing(false);
+    }
+  }
+
+  // Skip handler
+  function handleSkip() {
+    if (onSkip) {
+      onSkip();
     }
   }
 
@@ -1226,10 +1281,10 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
           <Box width="50%">
             <HStack justify="space-between" mb={2}>
               <Badge variant="subtle" px={2} py={1} rounded="md">
-                {t("history_badge_level", { level: levelNumber })}
+                {t("reading_badge_level", { level: levelNumber })}
               </Badge>
               <Badge variant="subtle" px={2} py={1} rounded="md">
-                {t("history_badge_xp", { xp })}
+                {t("reading_badge_xp", { xp })}
               </Badge>
             </HStack>
             <WaveBar value={progressPct} />
@@ -1240,17 +1295,13 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
         <HStack justify="space-between" flexWrap="wrap" gap={3}>
           <HStack gap={2}>
             <MdMenuBook />
-            <Text fontWeight="semibold">{t("history_title")}</Text>
+            <Text fontWeight="semibold">{t("reading_title")}</Text>
           </HStack>
-          <Button
-            onClick={generateNextLectureGeminiStream}
-            isDisabled={isGenerating}
-          >
-            {isGenerating ? (
-              <Spinner size="sm" style={{ marginRight: 8 }} />
-            ) : null}
-            {t("history_btn_generate")}
-          </Button>
+          {onSkip && (
+            <Button onClick={handleSkip} variant="outline" colorScheme="orange">
+              {t("reading_skip")}
+            </Button>
+          )}
         </HStack>
 
         {/* Mobile: collapsible list */}
@@ -1262,8 +1313,8 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
             mt={2}
           >
             {listDisclosure.isOpen
-              ? t("history_list_hide")
-              : t("history_list_show")}
+              ? t("reading_list_hide")
+              : t("reading_list_show")}
           </Button>
           <Collapse in={listDisclosure.isOpen} animateOpacity>
             <Box
@@ -1276,7 +1327,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
               mx={1}
             >
               <Text fontSize="sm" opacity={0.8} mb={3}>
-                {t("history_prev_lectures_label")}
+                {t("reading_prev_lectures_label")}
               </Text>
               <VStack
                 align="stretch"
@@ -1294,7 +1345,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
               >
                 {lectures.length === 0 ? (
                   <Text fontSize="sm" opacity={0.7}>
-                    {t("history_none_yet")}
+                    {t("reading_none_yet")}
                   </Text>
                 ) : (
                   lectures.map((lec) => {
@@ -1346,7 +1397,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
             display={{ base: "none", md: "block" }}
           >
             <Text fontSize="sm" opacity={0.8} mb={3}>
-              {t("history_prev_lectures_label")}
+              {t("reading_prev_lectures_label")}
             </Text>
             <VStack
               align="stretch"
@@ -1364,7 +1415,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
             >
               {lectures.length === 0 ? (
                 <Text fontSize="sm" opacity={0.7}>
-                  {t("history_none_yet")}
+                  {t("reading_none_yet")}
                 </Text>
               ) : (
                 lectures.map((lec) => {
@@ -1406,7 +1457,14 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
             minH="280px"
             width="100%"
           >
-            {viewLecture ? (
+            {isGenerating && !draftLecture ? (
+              <VStack spacing={3} width="100%" justify="center" minH="280px">
+                <Spinner size="lg" color="teal.400" />
+                <Text fontSize="lg" opacity={0.9}>
+                  {t("reading_generating") || "Creating lecture..."}
+                </Text>
+              </VStack>
+            ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
                 <HStack
                   justify="space-between"
@@ -1418,7 +1476,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                     {viewLecture.title}
                     {draftLecture ? (
                       <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
-                        ({t("history_generating") || "generating…"})
+                        ({t("reading_generating") || "generating…"})
                       </Text>
                     ) : null}
                   </Text>
@@ -1430,7 +1488,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                       size="sm"
                       isDisabled={!viewLecture?.target}
                     >
-                      {t("history_read_in", { language: targetDisplay })}
+                      {t("reading_read_in", { language: targetDisplay })}
                     </Button>
                     {showTranslations && viewLecture?.support ? (
                       <Button
@@ -1440,12 +1498,12 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                         size="sm"
                         variant="outline"
                       >
-                        {t("history_read_in", { language: supportDisplay })}
+                        {t("reading_read_in", { language: supportDisplay })}
                       </Button>
                     ) : null}
                     {(isReadingTarget || isReadingSupport) && (
                       <IconButton
-                        aria-label={t("history_stop_aria")}
+                        aria-label={t("reading_stop_aria")}
                         onClick={stopSpeech}
                         icon={<FaStop />}
                         size="sm"
@@ -1464,8 +1522,8 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                     p={4}
                   >
                     {activeLecture.awarded
-                      ? t("history_btn_next") || "Next lecture"
-                      : t("history_btn_finish") || "Finished reading"}
+                      ? t("reading_btn_next") || "Next lecture"
+                      : t("reading_btn_finish") || "Finished reading"}
                   </Button>
                 ) : null}
 
@@ -1494,7 +1552,7 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                   <>
                     <Divider opacity={0.2} />
                     <Text fontWeight="600" fontSize="sm" opacity={0.9}>
-                      {t("history_takeaways_heading")}
+                      {t("reading_takeaways_heading")}
                     </Text>
                     <VStack align="stretch" spacing={1.5}>
                       {viewLecture.takeaways.map((tkw, i) => (
@@ -1505,31 +1563,10 @@ export default function History({ userLanguage = "en", lessonContent = null }) {
                     </VStack>
                   </>
                 ) : null}
-
-                {!draftLecture && Number.isFinite(activeLecture?.xpAward) ? (
-                  <>
-                    <Divider opacity={0.2} />
-                    {activeLecture.awarded ? (
-                      <Text fontSize="sm" opacity={0.9}>
-                        {t("history_xp_awarded_line", {
-                          xp: activeLecture.xpAward,
-                          reason: xpReasonText,
-                        })}
-                      </Text>
-                    ) : (
-                      <Text fontSize="sm" opacity={0.9}>
-                        {t("history_xp_pending_line", {
-                          xp: activeLecture.xpAward,
-                        }) ||
-                          `Pending +${activeLecture.xpAward} XP — tap “Finished reading” to claim`}
-                      </Text>
-                    )}
-                  </>
-                ) : null}
               </VStack>
             ) : (
               <VStack spacing={3} width="100%">
-                <Text>{t("history_no_lecture")}</Text>
+                <Text>{t("reading_no_lecture")}</Text>
               </VStack>
             )}
           </Box>

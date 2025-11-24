@@ -684,7 +684,8 @@ export default function Vocabulary({
   userLanguage = "en",
   lessonContent = null,
   isFinalQuiz = false,
-  quizConfig = { questionsRequired: 10, passingScore: 8 }
+  quizConfig = { questionsRequired: 10, passingScore: 8 },
+  onSkip = null
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -859,15 +860,24 @@ export default function Vocabulary({
   }
 
   function handleNext() {
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+
+    // In lesson mode (non-quiz), move to next module
+    if (onSkip && !isFinalQuiz) {
+      onSkip();
+      return;
+    }
+
+    // Reset quiz question attempted flag for next question
+    if (isFinalQuiz) {
+      setQuizCurrentQuestionAttempted(false);
+    }
+
+    // In random/quiz mode, generate next question
     if (typeof nextAction === "function") {
-      setLastOk(null);
-      setRecentXp(0);
-      // Reset quiz question attempted flag for next question
-      if (isFinalQuiz) {
-        setQuizCurrentQuestionAttempted(false);
-      }
       const fn = nextAction;
-      setNextAction(null);
       fn();
     }
   }
@@ -910,6 +920,14 @@ export default function Vocabulary({
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
+
+    // In lesson mode, skip to next module
+    if (onSkip) {
+      onSkip();
+      return;
+    }
+
+    // In random mode, generate next question
     const runner = lockedType
       ? generatorFor(lockedType)
       : generateRandomRef.current;
