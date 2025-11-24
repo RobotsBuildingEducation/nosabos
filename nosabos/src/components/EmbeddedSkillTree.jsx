@@ -18,6 +18,7 @@ import {
   RiTrophyLine,
 } from 'react-icons/ri';
 import SkillTree from './SkillTree';
+import { translations } from '../utils/translation';
 
 const MotionBox = motion(Box);
 
@@ -37,6 +38,9 @@ export default function EmbeddedSkillTree({
 }) {
   const [isExpanded, setIsExpanded] = useState(!activeLesson); // Collapsed when lesson active
   const totalXp = userProgress?.totalXp || 0;
+
+  // Get translations for current language
+  const t = translations[appLanguage] || translations.en;
 
   return (
     <Box
@@ -58,14 +62,14 @@ export default function EmbeddedSkillTree({
           <HStack spacing={3}>
             <IconButton
               icon={isExpanded ? <RiArrowUpSLine size={24} /> : <RiArrowDownSLine size={24} />}
-              aria-label={isExpanded ? "Collapse" : "Expand"}
+              aria-label={isExpanded ? t.skill_tree_collapse : t.skill_tree_expand}
               variant="ghost"
               size="sm"
               color="gray.300"
             />
             <VStack align="start" spacing={0}>
               <Heading size="sm" color="gray.100">
-                {appLanguage === 'es' ? 'Tu Camino de Aprendizaje' : 'Your Learning Path'}
+                {t.skill_tree_your_path}
               </Heading>
               {activeLesson && (
                 <HStack spacing={2} fontSize="xs">
@@ -87,7 +91,7 @@ export default function EmbeddedSkillTree({
             </HStack>
             {activeLesson && (
               <Badge colorScheme="teal" fontSize="xs">
-                Lesson Active
+                {t.skill_tree_lesson_active}
               </Badge>
             )}
           </HStack>
@@ -106,6 +110,7 @@ export default function EmbeddedSkillTree({
           <SkillTree
             targetLang={targetLang}
             level={level}
+            supportLang={appLanguage}
             userProgress={userProgress}
             onStartLesson={(lesson) => {
               onStartLesson(lesson);
