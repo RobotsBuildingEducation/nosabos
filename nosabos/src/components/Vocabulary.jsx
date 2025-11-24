@@ -3171,32 +3171,51 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           </Box>
         </Box>
 
-        {/* Context chips */}
-        <HStack spacing={2}>
-          <Badge variant="outline">{targetName}</Badge>
-          <Badge variant="outline">{supportName}</Badge>
-          <Badge variant="subtle">{levelLabel}</Badge>
-        </HStack>
-
         {/* ---- FILL UI ---- */}
         {mode === "fill" && (qFill || loadingQFill) ? (
           <VStack align="stretch" spacing={4}>
-            <HStack align="start">
-              <CopyAllBtn q={qFill} h={hFill} tr={showTRFill ? trFill : ""} />
-              <Text fontWeight="semibold" flex="1">
-                {qFill || (loadingQFill ? "…" : "")}
-              </Text>
-            </HStack>
-            {showTRFill && trFill ? (
-              <Text fontSize="sm" opacity={0.8}>
-                {trFill}
-              </Text>
-            ) : null}
-            {hFill ? (
-              <Text fontSize="xs" opacity={0.85}>
-                💡 {hFill}
-              </Text>
-            ) : null}
+            <Box
+              bg="rgba(255, 255, 255, 0.02)"
+              borderRadius="lg"
+              borderWidth="1px"
+              borderColor="whiteAlpha.100"
+              p={5}
+            >
+              <VStack align="stretch" spacing={3}>
+                <HStack align="start" spacing={2}>
+                  <CopyAllBtn q={qFill} h={hFill} tr={showTRFill ? trFill : ""} />
+                  <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                    {qFill || (loadingQFill ? "…" : "")}
+                  </Text>
+                </HStack>
+                {showTRFill && trFill ? (
+                  <Box
+                    pl={7}
+                    py={2}
+                    borderLeftWidth="3px"
+                    borderLeftColor="purple.500"
+                    bg="rgba(159, 122, 234, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      {trFill}
+                    </Text>
+                  </Box>
+                ) : null}
+                {hFill ? (
+                  <Box
+                    pl={7}
+                    py={2}
+                    borderLeftWidth="3px"
+                    borderLeftColor="cyan.500"
+                    bg="rgba(0, 206, 209, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      💡 {hFill}
+                    </Text>
+                  </Box>
+                ) : null}
+              </VStack>
+            </Box>
 
             <Input
               value={ansFill}
@@ -3253,28 +3272,54 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             {mcLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMcDragEnd}>
                 <VStack align="stretch" spacing={3}>
-                  <HStack align="start">
-                    <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-                    <Text fontWeight="semibold" flex="1">
-                      {renderMcPrompt() || (loadingQMC ? "…" : "")}
-                    </Text>
-                  </HStack>
-                  {showTRMC && trMC ? (
-                    <Text fontSize="sm" opacity={0.8}>
-                      {trMC}
-                    </Text>
-                  ) : null}
-                  {hMC ? (
-                    <Text fontSize="xs" opacity={0.85}>
-                      💡 {hMC}
-                    </Text>
-                  ) : null}
-                  <Text fontSize="xs" opacity={0.75}>
-                    {t("practice_drag_drop_instruction") ||
-                      (userLanguage === "es"
-                        ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
-                        : "Drag or select the correct answer into the blank in the sentence.")}
-                  </Text>
+                  <Box
+                    bg="rgba(255, 255, 255, 0.02)"
+                    borderRadius="lg"
+                    borderWidth="1px"
+                    borderColor="whiteAlpha.100"
+                    p={5}
+                  >
+                    <VStack align="stretch" spacing={3}>
+                      <HStack align="start" spacing={2}>
+                        <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+                        <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                          {renderMcPrompt() || (loadingQMC ? "…" : "")}
+                        </Text>
+                      </HStack>
+                      {showTRMC && trMC ? (
+                        <Box
+                          pl={7}
+                          py={2}
+                          borderLeftWidth="3px"
+                          borderLeftColor="purple.500"
+                          bg="rgba(159, 122, 234, 0.05)"
+                        >
+                          <Text fontSize="sm" color="gray.400">
+                            {trMC}
+                          </Text>
+                        </Box>
+                      ) : null}
+                      {hMC ? (
+                        <Box
+                          pl={7}
+                          py={2}
+                          borderLeftWidth="3px"
+                          borderLeftColor="cyan.500"
+                          bg="rgba(0, 206, 209, 0.05)"
+                        >
+                          <Text fontSize="sm" color="gray.400">
+                            💡 {hMC}
+                          </Text>
+                        </Box>
+                      ) : null}
+                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                        {t("practice_drag_drop_instruction") ||
+                          (userLanguage === "es"
+                            ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
+                            : "Drag or select the correct answer into the blank in the sentence.")}
+                      </Text>
+                    </VStack>
+                  </Box>
                   <Droppable droppableId="mc-bank" direction="horizontal">
                     {(provided) => (
                       <Flex
@@ -3338,22 +3383,49 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </DragDropContext>
             ) : (
               <>
-                <HStack align="start">
-                  <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-                  <Text fontWeight="semibold" flex="1">
-                    {qMC || (loadingQMC ? "…" : "")}
-                  </Text>
-                </HStack>
-                {showTRMC && trMC ? (
-                  <Text fontSize="sm" opacity={0.8}>
-                    {trMC}
-                  </Text>
-                ) : null}
-                {hMC ? (
-                  <Text fontSize="xs" opacity={0.85}>
-                    💡 {hMC}
-                  </Text>
-                ) : null}
+                <Box
+                  bg="rgba(255, 255, 255, 0.02)"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="whiteAlpha.100"
+                  p={5}
+                  mb={3}
+                >
+                  <VStack align="stretch" spacing={3}>
+                    <HStack align="start" spacing={2}>
+                      <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
+                      <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                        {qMC || (loadingQMC ? "…" : "")}
+                      </Text>
+                    </HStack>
+                    {showTRMC && trMC ? (
+                      <Box
+                        pl={7}
+                        py={2}
+                        borderLeftWidth="3px"
+                        borderLeftColor="purple.500"
+                        bg="rgba(159, 122, 234, 0.05)"
+                      >
+                        <Text fontSize="sm" color="gray.400">
+                          {trMC}
+                        </Text>
+                      </Box>
+                    ) : null}
+                    {hMC ? (
+                      <Box
+                        pl={7}
+                        py={2}
+                        borderLeftWidth="3px"
+                        borderLeftColor="cyan.500"
+                        bg="rgba(0, 206, 209, 0.05)"
+                      >
+                        <Text fontSize="sm" color="gray.400">
+                          💡 {hMC}
+                        </Text>
+                      </Box>
+                    ) : null}
+                  </VStack>
+                </Box>
                 <Stack spacing={3} align="stretch">
                   {(choicesMC.length
                     ? choicesMC
@@ -3477,31 +3549,57 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             {maLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMaDragEnd}>
                 <VStack align="stretch" spacing={3}>
-                  <HStack align="start">
-                    <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-                    <Text fontWeight="semibold" flex="1">
-                      {renderMaPrompt() || (loadingQMA ? "…" : "")}
-                    </Text>
-                  </HStack>
-                  {showTRMA && trMA ? (
-                    <Text fontSize="sm" opacity={0.8}>
-                      {trMA}
-                    </Text>
-                  ) : null}
-                  {hMA ? (
-                    <Text fontSize="xs" opacity={0.85}>
-                      💡 {hMA}
-                    </Text>
-                  ) : null}
-                  <Text fontSize="xs" opacity={0.7}>
-                    {t("vocab_select_all_apply")}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.75}>
-                    {t("practice_drag_drop_multi_instruction") ||
-                      (userLanguage === "es"
-                        ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
-                        : "Drag or select each correct answer into its place in the sentence.")}
-                  </Text>
+                  <Box
+                    bg="rgba(255, 255, 255, 0.02)"
+                    borderRadius="lg"
+                    borderWidth="1px"
+                    borderColor="whiteAlpha.100"
+                    p={5}
+                  >
+                    <VStack align="stretch" spacing={3}>
+                      <HStack align="start" spacing={2}>
+                        <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+                        <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                          {renderMaPrompt() || (loadingQMA ? "…" : "")}
+                        </Text>
+                      </HStack>
+                      {showTRMA && trMA ? (
+                        <Box
+                          pl={7}
+                          py={2}
+                          borderLeftWidth="3px"
+                          borderLeftColor="purple.500"
+                          bg="rgba(159, 122, 234, 0.05)"
+                        >
+                          <Text fontSize="sm" color="gray.400">
+                            {trMA}
+                          </Text>
+                        </Box>
+                      ) : null}
+                      {hMA ? (
+                        <Box
+                          pl={7}
+                          py={2}
+                          borderLeftWidth="3px"
+                          borderLeftColor="cyan.500"
+                          bg="rgba(0, 206, 209, 0.05)"
+                        >
+                          <Text fontSize="sm" color="gray.400">
+                            💡 {hMA}
+                          </Text>
+                        </Box>
+                      ) : null}
+                      <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+                        {t("vocab_select_all_apply")}
+                      </Text>
+                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                        {t("practice_drag_drop_multi_instruction") ||
+                          (userLanguage === "es"
+                            ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
+                            : "Drag or select each correct answer into its place in the sentence.")}
+                      </Text>
+                    </VStack>
+                  </Box>
                   <Droppable droppableId="ma-bank" direction="horizontal">
                     {(provided) => (
                       <Flex
@@ -3565,25 +3663,52 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </DragDropContext>
             ) : (
               <>
-                <HStack align="start">
-                  <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-                  <Text fontWeight="semibold" flex="1">
-                    {qMA || (loadingQMA ? "…" : "")}
-                  </Text>
-                </HStack>
-                {showTRMA && trMA ? (
-                  <Text fontSize="sm" opacity={0.8}>
-                    {trMA}
-                  </Text>
-                ) : null}
-                {hMA ? (
-                  <Text fontSize="xs" opacity={0.85}>
-                    💡 {hMA}
-                  </Text>
-                ) : null}
-                <Text fontSize="xs" opacity={0.7}>
-                  {t("vocab_select_all_apply")}
-                </Text>
+                <Box
+                  bg="rgba(255, 255, 255, 0.02)"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="whiteAlpha.100"
+                  p={5}
+                  mb={3}
+                >
+                  <VStack align="stretch" spacing={3}>
+                    <HStack align="start" spacing={2}>
+                      <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
+                      <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                        {qMA || (loadingQMA ? "…" : "")}
+                      </Text>
+                    </HStack>
+                    {showTRMA && trMA ? (
+                      <Box
+                        pl={7}
+                        py={2}
+                        borderLeftWidth="3px"
+                        borderLeftColor="purple.500"
+                        bg="rgba(159, 122, 234, 0.05)"
+                      >
+                        <Text fontSize="sm" color="gray.400">
+                          {trMA}
+                        </Text>
+                      </Box>
+                    ) : null}
+                    {hMA ? (
+                      <Box
+                        pl={7}
+                        py={2}
+                        borderLeftWidth="3px"
+                        borderLeftColor="cyan.500"
+                        bg="rgba(0, 206, 209, 0.05)"
+                      >
+                        <Text fontSize="sm" color="gray.400">
+                          💡 {hMA}
+                        </Text>
+                      </Box>
+                    ) : null}
+                    <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+                      {t("vocab_select_all_apply")}
+                    </Text>
+                  </VStack>
+                </Box>
                 <Stack spacing={3} align="stretch">
                   {(choicesMA.length
                     ? choicesMA
@@ -3725,26 +3850,39 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Box>
             ) : (
               <>
-                <HStack align="flex-start" spacing={2} mb={2}>
-                  <CopyAllBtn
-                    q={`${sPrompt ? `${sPrompt}\n` : ""}${
-                      sStimulus || sTarget || ""
-                    }`}
-                    h={sHint}
-                    tr={sTranslation}
-                  />
-                  <VStack align="flex-start" spacing={1} flex="1">
-                    <Text fontSize="sm" opacity={0.85}>
-                      {t("vocab_speak_instruction_label") ||
-                        (userLanguage === "es"
-                          ? "Sigue la indicación y di la frase en voz alta."
-                          : "Follow the prompt and say it aloud.")}
-                    </Text>
-                    <Text fontWeight="600" fontSize="md">
-                      {sPrompt || ""}
-                    </Text>
+                <Box
+                  bg="rgba(255, 255, 255, 0.02)"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="whiteAlpha.100"
+                  p={5}
+                  mb={4}
+                >
+                  <VStack align="stretch" spacing={3}>
+                    <HStack align="start" spacing={2}>
+                      <CopyAllBtn
+                        q={`${sPrompt ? `${sPrompt}\n` : ""}${
+                          sStimulus || sTarget || ""
+                        }`}
+                        h={sHint}
+                        tr={sTranslation}
+                      />
+                      <VStack align="flex-start" spacing={2} flex="1">
+                        <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                          {t("vocab_speak_instruction_label") ||
+                            (userLanguage === "es"
+                              ? "Sigue la indicación y di la frase en voz alta."
+                              : "Follow the prompt and say it aloud.")}
+                        </Text>
+                        {sPrompt && (
+                          <Text fontSize="lg" fontWeight="medium" lineHeight="tall">
+                            {sPrompt}
+                          </Text>
+                        )}
+                      </VStack>
+                    </HStack>
                   </VStack>
-                </HStack>
+                </Box>
 
                 <Box
                   border="1px solid rgba(255,255,255,0.18)"
@@ -3777,25 +3915,33 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 </Box>
 
                 {sHint ? (
-                  <Text fontSize="sm" mt={3}>
-                    <Text as="span" fontWeight="600">
-                      {t("vocab_speak_hint_label") ||
-                        (userLanguage === "es" ? "Pista" : "Hint")}
-                      :
-                    </Text>{" "}
-                    {sHint}
-                  </Text>
+                  <Box
+                    pl={7}
+                    py={2}
+                    mt={3}
+                    borderLeftWidth="3px"
+                    borderLeftColor="cyan.500"
+                    bg="rgba(0, 206, 209, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      💡 {sHint}
+                    </Text>
+                  </Box>
                 ) : null}
 
                 {showTRSpeak ? (
-                  <Text fontSize="sm" mt={1} opacity={0.85}>
-                    <Text as="span" fontWeight="600">
-                      {t("vocab_speak_translation_label") ||
-                        (userLanguage === "es" ? "Traducción" : "Translation")}
-                      :
-                    </Text>{" "}
-                    {sTranslation}
-                  </Text>
+                  <Box
+                    pl={7}
+                    py={2}
+                    mt={2}
+                    borderLeftWidth="3px"
+                    borderLeftColor="purple.500"
+                    bg="rgba(159, 122, 234, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      {sTranslation}
+                    </Text>
+                  </Box>
                 ) : null}
               </>
             )}
@@ -3938,17 +4084,36 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MATCH UI (Drag & Drop) ---- */}
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <HStack align="start">
-              <CopyAllBtn q={mStem} h={mHint} tr="" />
-              <Text fontWeight="semibold" flex="1">
-                {mStem || (loadingMG ? "…" : "")}
-              </Text>
-            </HStack>
-            {!!mHint && (
-              <Text fontSize="xs" opacity={0.85}>
-                💡 {mHint}
-              </Text>
-            )}
+            <Box
+              bg="rgba(255, 255, 255, 0.02)"
+              borderRadius="lg"
+              borderWidth="1px"
+              borderColor="whiteAlpha.100"
+              p={5}
+              mb={4}
+            >
+              <VStack align="stretch" spacing={3}>
+                <HStack align="start" spacing={2}>
+                  <CopyAllBtn q={mStem} h={mHint} tr="" />
+                  <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                    {mStem || (loadingMG ? "…" : "")}
+                  </Text>
+                </HStack>
+                {!!mHint && (
+                  <Box
+                    pl={7}
+                    py={2}
+                    borderLeftWidth="3px"
+                    borderLeftColor="cyan.500"
+                    bg="rgba(0, 206, 209, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      💡 {mHint}
+                    </Text>
+                  </Box>
+                )}
+              </VStack>
+            </Box>
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
