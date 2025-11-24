@@ -99,6 +99,13 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
     status === SKILL_STATUS.IN_PROGRESS ||
     status === SKILL_STATUS.COMPLETED;
 
+  const baseBorderColor =
+    status === SKILL_STATUS.COMPLETED
+      ? unit.color
+      : status === SKILL_STATUS.LOCKED
+      ? "gray.600"
+      : `${unit.color}88`;
+
   return (
     <MotionBox
       whileHover={isClickable ? { scale: 1.02, y: -1 } : {}}
@@ -162,7 +169,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
             )}
 
             {/* Lesson Circle */}
-            <Box
+            <Button
               w="90px"
               h="90px"
               borderRadius="full"
@@ -174,32 +181,18 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                   : `linear(135deg, ${unit.color}dd, ${unit.color})`
               }
               border="4px solid"
-              borderColor={
-                status === SKILL_STATUS.COMPLETED
-                  ? `${unit.color}`
-                  : status === SKILL_STATUS.LOCKED
-                  ? "gray.600"
-                  : `${unit.color}88`
-              }
+              borderColor="transparent"
               display="flex"
               alignItems="center"
               justifyContent="center"
               position="relative"
               boxShadow={
                 status !== SKILL_STATUS.LOCKED
-                  ? `0 0 30px ${unit.color}66, 0 8px 16px rgba(0,0,0,0.4)`
-                  : "none"
+                  ? `0 8px 0px ${unit.color}AA` // darker shadow version of unit.color
+                  : `0 8px 0px rgba(0,0,0,0.4)`
               }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
               transition="all 0.3s ease"
-              _hover={
-                isClickable
-                  ? {
-                      boxShadow: `0 0 32px ${unit.color}60, 0 8px 18px rgba(0,0,0,0.35)`,
-                      borderColor: `${unit.color}cc`,
-                    }
-                  : {}
-              }
             >
               <Icon
                 size={36}
@@ -272,7 +265,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                   />
                 </>
               )}
-            </Box>
+            </Button>
 
             {/* Lesson Title */}
             <Text
