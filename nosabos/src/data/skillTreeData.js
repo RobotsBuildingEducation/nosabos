@@ -33,7 +33,7 @@ const baseLearningPath = {
           en: 'Start your Spanish journey with essential greetings and introductions',
           es: 'Comienza tu viaje en español con saludos esenciales y presentaciones',
         },
-        color: '#22C55E', // Green
+        color: '#86efac', // Soft mint green
         position: { row: 0, offset: 0 },
         lessons: [
           {
@@ -153,7 +153,7 @@ const baseLearningPath = {
           en: 'Express likes, dislikes, and talk about everyday things',
           es: 'Expresa gustos, disgustos y habla de cosas cotidianas',
         },
-        color: '#3B82F6', // Blue
+        color: '#93c5fd', // Soft sky blue
         position: { row: 1, offset: 1 },
         lessons: [
           {
@@ -240,7 +240,7 @@ const baseLearningPath = {
           en: 'Describe your routine and talk about time',
           es: 'Describe tu rutina y habla sobre el tiempo',
         },
-        color: '#F59E0B', // Amber
+        color: '#fcd34d', // Soft peach/amber
         position: { row: 2, offset: 0 },
         lessons: [
           {
@@ -323,7 +323,7 @@ const baseLearningPath = {
           en: 'Navigate places and give directions',
           es: 'Navega lugares y da direcciones',
         },
-        color: '#8B5CF6', // Purple
+        color: '#c4b5fd', // Soft lavender
         position: { row: 3, offset: 1 },
         lessons: [
           {
@@ -406,7 +406,7 @@ const baseLearningPath = {
           en: 'Buy things and handle money',
           es: 'Compra cosas y maneja dinero',
         },
-        color: '#EC4899', // Pink
+        color: '#f9a8d4', // Soft pink
         position: { row: 4, offset: 0 },
         lessons: [
           {
@@ -489,7 +489,7 @@ const baseLearningPath = {
           en: 'Describe people, places, and things',
           es: 'Describe personas, lugares y cosas',
         },
-        color: '#F97316', // Orange
+        color: '#fdba74', // Soft coral
         position: { row: 5, offset: 1 },
         lessons: [
           {
@@ -572,7 +572,7 @@ const baseLearningPath = {
           en: 'Talk about activities and interests',
           es: 'Habla sobre actividades e intereses',
         },
-        color: '#06B6D4', // Cyan
+        color: '#67e8f9', // Soft cyan
         position: { row: 6, offset: 0 },
         lessons: [
           {
@@ -663,7 +663,7 @@ const baseLearningPath = {
           en: 'Talk about things you did',
           es: 'Habla sobre cosas que hiciste',
         },
-        color: '#14B8A6', // Teal
+        color: '#5eead4', // Soft teal
         position: { row: 0, offset: 0 },
         lessons: [
           {
@@ -750,7 +750,7 @@ const baseLearningPath = {
           en: 'Describe what was happening',
           es: 'Describe lo que estaba pasando',
         },
-        color: '#F97316', // Orange
+        color: '#fda4af', // Soft rose
         position: { row: 1, offset: 1 },
         lessons: [
           {
@@ -833,7 +833,7 @@ const baseLearningPath = {
           en: 'Talk about what you will do',
           es: 'Habla sobre lo que harás',
         },
-        color: '#06B6D4', // Cyan
+        color: '#a5f3fc', // Soft aqua
         position: { row: 2, offset: 0 },
         lessons: [
           {
@@ -916,7 +916,7 @@ const baseLearningPath = {
           en: 'Talk about health and wellness',
           es: 'Habla sobre salud y bienestar',
         },
-        color: '#10B981', // Emerald
+        color: '#6ee7b7', // Soft emerald
         position: { row: 3, offset: 1 },
         lessons: [
           {
@@ -999,7 +999,7 @@ const baseLearningPath = {
           en: 'Discuss nature and environmental topics',
           es: 'Discute temas de naturaleza y medio ambiente',
         },
-        color: '#84CC16', // Lime
+        color: '#bef264', // Soft lime
         position: { row: 4, offset: 0 },
         lessons: [
           {
@@ -1090,7 +1090,7 @@ const baseLearningPath = {
           en: 'Express wishes, doubts, and emotions',
           es: 'Expresa deseos, dudas y emociones',
         },
-        color: '#7C3AED', // Violet
+        color: '#a78bfa', // Soft violet
         position: { row: 0, offset: 0 },
         lessons: [
           {
@@ -1173,7 +1173,7 @@ const baseLearningPath = {
           en: 'Engage in sophisticated discussions',
           es: 'Participa en discusiones sofisticadas',
         },
-        color: '#DC2626', // Red
+        color: '#fca5a5', // Soft rose-red
         position: { row: 1, offset: 1 },
         lessons: [
           {
@@ -1264,7 +1264,7 @@ const baseLearningPath = {
           en: 'Explore Hispanic culture and creativity',
           es: 'Explora la cultura y creatividad hispana',
         },
-        color: '#DB2777', // Pink-600
+        color: '#f0abfc', // Soft orchid
         position: { row: 2, offset: 0 },
         lessons: [
           {
@@ -1363,7 +1363,7 @@ const baseLearningPath = {
           en: 'Discuss modern technology and digital life',
           es: 'Discute tecnología moderna y vida digital',
         },
-        color: '#0EA5E9', // Sky-500
+        color: '#7dd3fc', // Soft powder blue
         position: { row: 3, offset: 1 },
         lessons: [
           {
@@ -1454,7 +1454,7 @@ const baseLearningPath = {
           en: 'Engage with complex social topics',
           es: 'Participa en temas sociales complejos',
         },
-        color: '#A855F7', // Purple-500
+        color: '#d8b4fe', // Soft lilac
         position: { row: 4, offset: 0 },
         lessons: [
           {
