@@ -3423,24 +3423,37 @@ Return JSON ONLY:
               </Box>
             ) : (
               <>
-                <HStack align="flex-start" spacing={2} mb={2}>
-                  <CopyAllBtn
-                    q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
-                    h={sHint}
-                    tr={sTranslation}
-                  />
-                  <VStack align="flex-start" spacing={1} flex="1">
-                    <Text fontSize="sm" opacity={0.85}>
-                      {t("grammar_speak_instruction_label") ||
-                        (userLanguage === "es"
-                          ? "Pronuncia la oración para practicar la gramática."
-                          : "Say the sentence aloud to practice the grammar point.")}
-                    </Text>
-                    <Text fontWeight="600" fontSize="md">
-                      {sPrompt || ""}
-                    </Text>
+                <Box
+                  bg="rgba(255, 255, 255, 0.02)"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="whiteAlpha.100"
+                  p={5}
+                  mb={4}
+                >
+                  <VStack align="stretch" spacing={3}>
+                    <HStack align="start" spacing={2}>
+                      <CopyAllBtn
+                        q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
+                        h={sHint}
+                        tr={sTranslation}
+                      />
+                      <VStack align="flex-start" spacing={2} flex="1">
+                        <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                          {t("grammar_speak_instruction_label") ||
+                            (userLanguage === "es"
+                              ? "Pronuncia la oración para practicar la gramática."
+                              : "Say the sentence aloud to practice the grammar point.")}
+                        </Text>
+                        {sPrompt && (
+                          <Text fontSize="lg" fontWeight="medium" lineHeight="tall">
+                            {sPrompt}
+                          </Text>
+                        )}
+                      </VStack>
+                    </HStack>
                   </VStack>
-                </HStack>
+                </Box>
 
                 <Box
                   border="1px solid rgba(255,255,255,0.18)"
@@ -3473,27 +3486,33 @@ Return JSON ONLY:
                 </Box>
 
                 {sHint ? (
-                  <Text fontSize="sm" mt={3}>
-                    <Text as="span" fontWeight="600">
-                      {t("grammar_speak_hint_label") ||
-                        (userLanguage === "es"
-                          ? "Pista gramatical"
-                          : "Grammar hint")}
-                      :
-                    </Text>{" "}
-                    {sHint}
-                  </Text>
+                  <Box
+                    pl={7}
+                    py={2}
+                    mt={3}
+                    borderLeftWidth="3px"
+                    borderLeftColor="cyan.500"
+                    bg="rgba(0, 206, 209, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      💡 {sHint}
+                    </Text>
+                  </Box>
                 ) : null}
 
                 {showTRSpeak ? (
-                  <Text fontSize="sm" mt={1} opacity={0.85}>
-                    <Text as="span" fontWeight="600">
-                      {t("grammar_speak_translation_label") ||
-                        (userLanguage === "es" ? "Traducción" : "Translation")}
-                      :
-                    </Text>{" "}
-                    {sTranslation}
-                  </Text>
+                  <Box
+                    pl={7}
+                    py={2}
+                    mt={2}
+                    borderLeftWidth="3px"
+                    borderLeftColor="purple.500"
+                    bg="rgba(159, 122, 234, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      {sTranslation}
+                    </Text>
+                  </Box>
                 ) : null}
               </>
             )}
@@ -3634,17 +3653,36 @@ Return JSON ONLY:
         {/* ---- MATCH UI (Drag & Drop) ---- */}
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <HStack align="start">
-              <CopyAllBtn q={mStem} h={mHint} tr="" />
-              <Text fontWeight="semibold" flex="1">
-                {mStem || (loadingMG ? "…" : "")}
-              </Text>
-            </HStack>
-            {!!mHint && (
-              <Text fontSize="xs" opacity={0.85}>
-                💡 {mHint}
-              </Text>
-            )}
+            <Box
+              bg="rgba(255, 255, 255, 0.02)"
+              borderRadius="lg"
+              borderWidth="1px"
+              borderColor="whiteAlpha.100"
+              p={5}
+              mb={4}
+            >
+              <VStack align="stretch" spacing={3}>
+                <HStack align="start" spacing={2}>
+                  <CopyAllBtn q={mStem} h={mHint} tr="" />
+                  <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                    {mStem || (loadingMG ? "…" : "")}
+                  </Text>
+                </HStack>
+                {!!mHint && (
+                  <Box
+                    pl={7}
+                    py={2}
+                    borderLeftWidth="3px"
+                    borderLeftColor="cyan.500"
+                    bg="rgba(0, 206, 209, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      💡 {mHint}
+                    </Text>
+                  </Box>
+                )}
+              </VStack>
+            </Box>
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
