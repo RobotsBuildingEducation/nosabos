@@ -239,11 +239,36 @@ export default function IdentityDrawer({
         </DrawerHeader>
         <DrawerBody pb={6}>
           <VStack align="stretch" spacing={3}>
-            {/* Language Switcher */}
-            <Box>
-              <Text fontSize="sm" mb={2} fontWeight="semibold">
-                {t?.app_language_label || (appLanguage === "es" ? "Idioma de la aplicación" : "App Language")}
-              </Text>
+            {/* Top HStack with Copy ID, Secret Key, and Language Switch */}
+            <HStack spacing={2} align="flex-start" flexWrap="wrap">
+              {/* Copy ID Button */}
+              <Button
+                size="sm"
+                onClick={() =>
+                  copy(currentId, t?.toast_id_copied || "ID copied")
+                }
+                isDisabled={!currentId}
+                colorScheme="teal"
+              >
+                {t?.app_copy_id || "Copy ID"}
+              </Button>
+
+              {/* Copy Secret Key Button */}
+              <Button
+                size="sm"
+                colorScheme="orange"
+                onClick={() =>
+                  copy(
+                    currentSecret,
+                    t?.toast_secret_copied || "Secret copied"
+                  )
+                }
+                isDisabled={!currentSecret}
+              >
+                {t?.app_copy_secret || "Copy Secret"}
+              </Button>
+
+              {/* Language Switcher */}
               <ButtonGroup
                 size="sm"
                 isAttached
@@ -252,7 +277,7 @@ export default function IdentityDrawer({
                 bg="rgba(255, 255, 255, 0.04)"
                 border="1px solid"
                 borderColor="gray.700"
-                width="100%"
+                width="fit-content"
               >
                 <Button
                   onClick={() => onSelectLanguage?.("en")}
@@ -261,9 +286,8 @@ export default function IdentityDrawer({
                   fontSize="sm"
                   fontWeight="bold"
                   aria-label={t?.language_en || t?.app_language_en || "English"}
-                  flex={1}
                 >
-                  English (EN)
+                  EN
                 </Button>
                 <Button
                   onClick={() => onSelectLanguage?.("es")}
@@ -272,14 +296,43 @@ export default function IdentityDrawer({
                   fontSize="sm"
                   fontWeight="bold"
                   aria-label={t?.language_es || t?.app_language_es || "Spanish"}
-                  flex={1}
                 >
-                  Español (ES)
+                  ES
                 </Button>
               </ButtonGroup>
+            </HStack>
+
+            {/* Switch account */}
+            <Box bg="gray.800" p={3} rounded="md">
+              <Text fontSize="sm" mb={2}>
+                {t?.app_switch_account || "Switch account"}
+              </Text>
+              <Input
+                value={switchNsec}
+                onChange={(e) => setSwitchNsec(e.target.value)}
+                bg="gray.700"
+                placeholder={
+                  t?.app_nsec_placeholder || "Paste an nsec key to switch"
+                }
+              />
+              <HStack mt={2} justify="flex-end">
+                <Button
+                  isLoading={isSwitching}
+                  loadingText={t?.app_switching || "Switching…"}
+                  onClick={switchAccountWithNsec}
+                  colorScheme="teal"
+                >
+                  {t?.app_switch || "Switch"}
+                </Button>
+              </HStack>
+              <Text fontSize="xs" opacity={0.75} mt={1}>
+                {t?.app_switch_note ||
+                  "We'll derive your public key (npub) from the secret and switch safely."}
+              </Text>
             </Box>
 
             <Accordion allowToggle reduceMotion>
+              {/* Install as App Accordion */}
               <AccordionItem border="none">
                 <AccordionButton
                   bg="gray.800"
@@ -321,134 +374,73 @@ export default function IdentityDrawer({
                   ))}
                 </AccordionPanel>
               </AccordionItem>
+
+              {/* Bitcoin Wallet Accordion */}
+              {enableWallet && (
+                <AccordionItem border="none" mt={3}>
+                  <AccordionButton
+                    bg="gray.800"
+                    _hover={{ bg: "gray.700" }}
+                    rounded="md"
+                    px={4}
+                    py={3}
+                    w="fit-content"
+                    alignSelf="flex-start"
+                    minW={0}
+                    gap={2}
+                    border="2px solid"
+                    borderColor="orange.400"
+                  >
+                    <Text fontWeight="semibold">
+                      {appLanguage === "es"
+                        ? "Billetera Bitcoin (experimental)"
+                        : "Bitcoin wallet (experimental)"}
+                    </Text>
+                    <AccordionIcon flexShrink={0} />
+                  </AccordionButton>
+                  <AccordionPanel
+                    bg="gray.900"
+                    border="1px solid"
+                    borderColor="gray.800"
+                    rounded="md"
+                    mt={2}
+                    px={4}
+                    py={3}
+                  >
+                    <BitcoinWalletSection
+                      userLanguage={appLanguage}
+                      identity={user?.identity || ""}
+                      onSelectIdentity={onSelectIdentity}
+                      isIdentitySaving={isIdentitySaving}
+                    />
+
+                    <Box bg="gray.800" p={3} rounded="md" mt={3}>
+                      <Text fontSize="xs" opacity={0.8}>
+                        {reloadNote}
+                      </Text>
+                    </Box>
+
+                    {reloadScheduled && (
+                      <Alert
+                        status="success"
+                        variant="left-accent"
+                        bg="green.900"
+                        color="green.100"
+                        mt={3}
+                      >
+                        <AlertIcon />
+                        <AlertDescription fontSize="sm">
+                          {successMessage}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </AccordionPanel>
+                </AccordionItem>
+              )}
             </Accordion>
 
-            {/* --- Wallet (inline, not hidden) --- */}
-            {enableWallet && (
-              <>
-                <BitcoinWalletSection
-                  userLanguage={appLanguage}
-                  identity={user?.identity || ""}
-                  onSelectIdentity={onSelectIdentity}
-                  isIdentitySaving={isIdentitySaving}
-                />
-
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="xs" opacity={0.8}>
-                    {reloadNote}
-                  </Text>
-                </Box>
-
-                {reloadScheduled && (
-                  <Alert
-                    status="success"
-                    variant="left-accent"
-                    bg="green.900"
-                    color="green.100"
-                  >
-                    <AlertIcon />
-                    <AlertDescription fontSize="sm">
-                      {successMessage}
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </>
-            )}
-
-            {/* Your ID */}
-            <Box bg="gray.800" p={3} rounded="md">
-              <Text fontSize="sm" mb={1}>
-                {t?.app_your_id || "Your ID"}
-              </Text>
-              <InputGroup>
-                <Input
-                  value={currentId || ""}
-                  readOnly
-                  bg="gray.700"
-                  placeholder={t?.app_id_placeholder || "npub..."}
-                />
-                <InputRightElement width="4.5rem">
-                  <Button
-                    h="1.75rem"
-                    size="sm"
-                    onClick={() =>
-                      copy(currentId, t?.toast_id_copied || "ID copied")
-                    }
-                    isDisabled={!currentId}
-                  >
-                    {t?.app_copy || "Copy"}
-                  </Button>
-                </InputRightElement>
-              </InputGroup>
-            </Box>
-
-            {/* Secret key (masked) */}
-            <Box bg="gray.800" p={3} rounded="md">
-              <Text fontSize="sm" mb={1}>
-                {t?.app_secret_key || "Secret key"}
-              </Text>
-              <InputGroup>
-                <Input
-                  type="password"
-                  value={currentSecret ? "••••••••••••••••••••••••••••" : ""}
-                  readOnly
-                  bg="gray.700"
-                  placeholder={t?.app_secret_placeholder || "nsec..."}
-                />
-                <InputRightElement width="6rem">
-                  <Button
-                    h="1.75rem"
-                    size="sm"
-                    colorScheme="orange"
-                    mr={0}
-                    onClick={() =>
-                      copy(
-                        currentSecret,
-                        t?.toast_secret_copied || "Secret copied"
-                      )
-                    }
-                    isDisabled={!currentSecret}
-                  >
-                    {t?.app_copy || "Copy"}
-                  </Button>
-                </InputRightElement>
-              </InputGroup>
-              <Text fontSize="xs" opacity={0.75} mt={1}>
-                {t?.app_secret_note ||
-                  "Keep your secret safe. Anyone with it can access your account."}
-              </Text>
-            </Box>
-
-            {/* Switch account */}
-            <Box bg="gray.800" p={3} rounded="md">
-              <Text fontSize="sm" mb={2}>
-                {t?.app_switch_account || "Switch account"}
-              </Text>
-              <Input
-                value={switchNsec}
-                onChange={(e) => setSwitchNsec(e.target.value)}
-                bg="gray.700"
-                placeholder={
-                  t?.app_nsec_placeholder || "Paste an nsec key to switch"
-                }
-              />
-              <HStack mt={2} justify="flex-end">
-                <Button
-                  isLoading={isSwitching}
-                  loadingText={t?.app_switching || "Switching…"}
-                  onClick={switchAccountWithNsec}
-                  colorScheme="teal"
-                >
-                  {t?.app_switch || "Switch"}
-                </Button>
-              </HStack>
-              <Text fontSize="xs" opacity={0.75} mt={1}>
-                {t?.app_switch_note ||
-                  "We’ll derive your public key (npub) from the secret and switch safely."}
-              </Text>
-            </Box>
-
-            {/* CEFR insight */}
+            {/* CEFR insight - Commented out for future development */}
+            {/*
             <Box bg="gray.800" p={3} rounded="md">
               <HStack justify="space-between" align="flex-start" mb={2}>
                 <VStack align="flex-start" spacing={0} flex="1">
@@ -506,6 +498,7 @@ export default function IdentityDrawer({
                 {t?.app_cefr_run || "Analyze level"}
               </Button>
             </Box>
+            */}
           </VStack>
         </DrawerBody>
       </DrawerContent>
