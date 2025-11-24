@@ -2372,7 +2372,7 @@ export default function App() {
         translationLabel={translationToggleLabel}
         appLanguage={appLanguage}
         viewMode={viewMode}
-        onNavigateToSkillTree={() => setViewMode("skillTree")}
+        onNavigateToSkillTree={handleReturnToSkillTree}
         onOpenHelpChat={helpChatDisclosure.onOpen}
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
       />
