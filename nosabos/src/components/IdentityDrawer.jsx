@@ -258,10 +258,7 @@ export default function IdentityDrawer({
                 size="sm"
                 colorScheme="orange"
                 onClick={() =>
-                  copy(
-                    currentSecret,
-                    t?.toast_secret_copied || "Secret copied"
-                  )
+                  copy(currentSecret, t?.toast_secret_copied || "Secret copied")
                 }
                 isDisabled={!currentSecret}
               >
