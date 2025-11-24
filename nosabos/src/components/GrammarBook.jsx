@@ -285,6 +285,7 @@ ${hint || ""}
 Policy:
 - Say YES if the answer is grammatically correct and fits the context.
 - Allow contractions, minor casing/punctuation differences, and natural variants.
+- Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - If clearly wrong or ungrammatical for the stem, say NO.
 
 Reply ONE WORD ONLY:
@@ -415,6 +416,7 @@ Instructions:
 - Say YES if the selected choice is a grammatically correct, context-appropriate answer to the stem.
 - Use the hint and any time/aspect cues in the stem (e.g., "usually", "yesterday", "for/since").
 - Allow contractions, minor punctuation/casing differences, and natural variation.
+- Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - If more than one choice could be acceptable, accept the user's if it fits well.
 - Otherwise say NO.
 
@@ -541,6 +543,7 @@ Instructions:
 - Determine which choices are grammatically correct and context-appropriate answers.
 - Say YES if the user's selection includes ALL correct choices and NO incorrect ones (order doesn't matter).
 - Be lenient about contractions and minor surface differences; focus on grammar/meaning fit with the stem + hint.
+- Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - If two variants are both acceptable, either may be included.
 
 Reply with ONE WORD ONLY:

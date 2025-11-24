@@ -527,6 +527,7 @@ ${hint || ""}
 Policy:
 - Say YES if the user's word fits the meaning and collocates naturally in context (allow close synonyms).
 - Ignore minor casing/inflection if meaning is equivalent.
+- Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - If it clearly doesn't fit the meaning or register, say NO.
 
 Reply ONE WORD ONLY: YES or NO
@@ -560,6 +561,7 @@ ${hint || ""}
 Rules:
 - Say YES if the selected word best fits the stem's meaning/context.
 - Allow close synonyms if they fit as well as the intended answer.
+- Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - Otherwise say NO.
 
 Reply ONE WORD ONLY: YES or NO
@@ -595,6 +597,7 @@ Policy:
 - Determine which choices are semantically correct (synonyms/fit the sentence).
 - Say YES if the user's selection includes ALL correct choices and NO incorrect ones (order doesn't matter).
 - Be lenient with near-synonyms if they fit naturally.
+- Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 
 Reply ONE WORD ONLY: YES or NO
 `.trim();
@@ -629,6 +632,7 @@ ${U}
 Rules:
 - Say YES if each word is matched to a definition that is semantically accurate.
 - Allow close paraphrases.
+- Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - If any mapping is wrong or missing, say NO.
 
 Reply ONE WORD ONLY:
