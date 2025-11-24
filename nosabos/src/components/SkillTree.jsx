@@ -337,20 +337,22 @@ function UnitSection({
   const borderColor = "gray.700";
 
   // Responsive horizontal offset for zigzag pattern
-  const zigzagOffset = useBreakpointValue({
-    base: 90,    // Mobile devices
-    sm: 110,     // Small tablets
-    md: 140,     // Medium tablets
-    lg: 180,     // Desktop
-  }) || 90; // Fallback to mobile size
+  const zigzagOffset =
+    useBreakpointValue({
+      base: 90, // Mobile devices
+      sm: 110, // Small tablets
+      md: 140, // Medium tablets
+      lg: 180, // Desktop
+    }) || 90; // Fallback to mobile size
 
   // Responsive SVG container width
-  const svgWidth = useBreakpointValue({
-    base: 240,
-    sm: 260,
-    md: 300,
-    lg: 320,
-  }) || 240;
+  const svgWidth =
+    useBreakpointValue({
+      base: 240,
+      sm: 260,
+      md: 300,
+      lg: 320,
+    }) || 240;
 
   const unitProgressPercent = getUnitProgress(unit, userProgress);
   const completedCount = unit.lessons.filter(
@@ -537,15 +539,23 @@ function UnitSection({
             let status = SKILL_STATUS.LOCKED;
 
             // Testing unlock: check for specific nsec in local storage
-            const testNsec = typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
-            const isTestUnlocked = testNsec === "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+            const testNsec =
+              typeof window !== "undefined"
+                ? localStorage.getItem("local_nsec")
+                : null;
+            const isTestUnlocked =
+              testNsec ===
+              "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
 
             // Determine lesson status
             if (lessonProgress?.status === SKILL_STATUS.COMPLETED) {
               status = SKILL_STATUS.COMPLETED;
             } else if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
               status = SKILL_STATUS.IN_PROGRESS;
-            } else if (isTestUnlocked || userProgress.totalXp >= lesson.xpRequired) {
+            } else if (
+              isTestUnlocked ||
+              userProgress.totalXp >= lesson.xpRequired
+            ) {
               status = SKILL_STATUS.AVAILABLE;
             }
 

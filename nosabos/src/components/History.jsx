@@ -126,7 +126,9 @@ async function normalizeLectureTexts({
 
   if (shouldTranslateSupport) {
     const prompt = [
-      `Translate the following text from ${LANG_NAME(targetLang)} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
+      `Translate the following text from ${LANG_NAME(
+        targetLang
+      )} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
       "Return only the translation in that language without labels, speaker names, or commentary.",
       "",
       cleanTarget,
@@ -241,12 +243,17 @@ function stripLineLabel(text, langCode) {
   let output = text.trim();
   if (tokens.length) {
     const pattern = new RegExp(
-      `^(?:${tokens.map((token) => escapeRegExp(token)).join("|")})\\s*[:\\-–—]\\s*`,
+      `^(?:${tokens
+        .map((token) => escapeRegExp(token))
+        .join("|")})\\s*[:\\-–—]\\s*`,
       "i"
     );
     output = output.replace(pattern, "").trim();
   }
-  output = output.replace(/^\[\s*/, "").replace(/\s*\]$/, "").trim();
+  output = output
+    .replace(/^\[\s*/, "")
+    .replace(/\s*\]$/, "")
+    .trim();
   output = output.replace(/^[•·\-–—]+\s*/, "").trim();
   return output;
 }
@@ -345,12 +352,21 @@ function difficultyHint(level, xp) {
 }
 
 // Seed: FIRST lecture based on lesson content
-function buildSeedLecturePrompt({ targetLang, supportLang, level, xp, lessonContent = null }) {
+function buildSeedLecturePrompt({
+  targetLang,
+  supportLang,
+  level,
+  xp,
+  lessonContent = null,
+}) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
   const diff = difficultyHint(level, xp);
 
-  const topicText = lessonContent?.topic || lessonContent?.scenario || "general cultural and linguistic concepts";
+  const topicText =
+    lessonContent?.topic ||
+    lessonContent?.scenario ||
+    "general cultural and linguistic concepts";
   const promptText = lessonContent?.prompt || "";
 
   return `
@@ -402,7 +418,10 @@ function buildLecturePrompt({
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
-  const topicText = lessonContent?.topic || lessonContent?.scenario || "general cultural and linguistic concepts";
+  const topicText =
+    lessonContent?.topic ||
+    lessonContent?.scenario ||
+    "general cultural and linguistic concepts";
   const promptText = lessonContent?.prompt || "";
 
   return `
@@ -588,7 +607,10 @@ function buildStreamingPrompt({
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
-  const topicText = lessonContent?.topic || lessonContent?.scenario || "general cultural and linguistic concepts";
+  const topicText =
+    lessonContent?.topic ||
+    lessonContent?.scenario ||
+    "general cultural and linguistic concepts";
   const promptText = lessonContent?.prompt || "";
 
   const baseTopic = isFirst
@@ -621,7 +643,11 @@ function buildStreamingPrompt({
 /* ---------------------------
    Component
 --------------------------- */
-export default function History({ userLanguage = "en", lessonContent = null, onSkip = null }) {
+export default function History({
+  userLanguage = "en",
+  lessonContent = null,
+  onSkip = null,
+}) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
@@ -1042,7 +1068,9 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
       });
       const safeTarget = cleanTarget || draftTarget;
       const safeSupport =
-        cleanSupport || sanitizeLectureBlock(draftSupport, supportLang) || safeTarget;
+        cleanSupport ||
+        sanitizeLectureBlock(draftSupport, supportLang) ||
+        safeTarget;
       const finalTitle =
         title ||
         (targetLang === "en" ? "Untitled lecture" : "Lección sin título");
@@ -1270,11 +1298,7 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
             <Text fontWeight="semibold">{t("reading_title")}</Text>
           </HStack>
           {onSkip && (
-            <Button
-              onClick={handleSkip}
-              variant="outline"
-              colorScheme="orange"
-            >
+            <Button onClick={handleSkip} variant="outline" colorScheme="orange">
               {t("reading_skip")}
             </Button>
           )}
@@ -1537,27 +1561,6 @@ export default function History({ userLanguage = "en", lessonContent = null, onS
                         </Text>
                       ))}
                     </VStack>
-                  </>
-                ) : null}
-
-                {!draftLecture && Number.isFinite(activeLecture?.xpAward) ? (
-                  <>
-                    <Divider opacity={0.2} />
-                    {activeLecture.awarded ? (
-                      <Text fontSize="sm" opacity={0.9}>
-                        {t("reading_xp_awarded_line", {
-                          xp: activeLecture.xpAward,
-                          reason: xpReasonText,
-                        })}
-                      </Text>
-                    ) : (
-                      <Text fontSize="sm" opacity={0.9}>
-                        {t("reading_xp_pending_line", {
-                          xp: activeLecture.xpAward,
-                        }) ||
-                          `Pending +${activeLecture.xpAward} XP — tap "Finished reading" to claim`}
-                      </Text>
-                    )}
                   </>
                 ) : null}
               </VStack>
