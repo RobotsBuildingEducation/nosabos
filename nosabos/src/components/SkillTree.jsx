@@ -124,8 +124,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
         <Box position="relative">
           <VStack
             spacing={2}
-            cursor={isClickable ? "pointer" : "not-allowed"}
-            onClick={isClickable ? onClick : undefined}
           >
             {/* Glow Effect for active lessons */}
             {status !== SKILL_STATUS.LOCKED && (
@@ -161,10 +159,11 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               />
             )}
 
-            {/* Lesson Circle */}
-            <Box
+            {/* Lesson Circle - Duolingo style button */}
+            <Button
               w="90px"
               h="90px"
+              minW="90px"
               borderRadius="full"
               bgGradient={
                 status === SKILL_STATUS.LOCKED
@@ -181,22 +180,36 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                   ? "gray.600"
                   : `${unit.color}88`
               }
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
               position="relative"
+              isDisabled={!isClickable}
+              onClick={isClickable ? onClick : undefined}
+              variant="duo"
+              sx={{
+                "--button-shadow": status === SKILL_STATUS.LOCKED
+                  ? "rgba(0,0,0,0.2)"
+                  : `${unit.color}dd`,
+              }}
               boxShadow={
                 status !== SKILL_STATUS.LOCKED
-                  ? `0 0 30px ${unit.color}66, 0 8px 16px rgba(0,0,0,0.4)`
-                  : "none"
+                  ? `0 4px 0 var(--button-shadow), 0 0 20px ${unit.color}44 !important`
+                  : "0 2px 0 rgba(0,0,0,0.2) !important"
               }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
-              transition="all 0.3s ease"
               _hover={
                 isClickable
                   ? {
-                      boxShadow: `0 0 32px ${unit.color}60, 0 8px 18px rgba(0,0,0,0.35)`,
+                      bgGradient: status === SKILL_STATUS.COMPLETED
+                        ? `linear(135deg, ${unit.color}ee, ${unit.color})`
+                        : `linear(135deg, ${unit.color}ee, ${unit.color}dd)`,
                       borderColor: `${unit.color}cc`,
+                    }
+                  : {}
+              }
+              _active={
+                isClickable
+                  ? {
+                      boxShadow: `0 0 20px ${unit.color}44 !important`,
+                      transform: "translateY(4px)",
                     }
                   : {}
               }
@@ -272,7 +285,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                   />
                 </>
               )}
-            </Box>
+            </Button>
 
             {/* Lesson Title */}
             <Text
