@@ -40,6 +40,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import { translations } from "../utils/translation";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -57,6 +58,17 @@ const getDisplayText = (textObj, supportLang = "en") => {
     return en || es || fallback;
   }
   return textObj[supportLang] || fallback;
+};
+
+// Helper to get translations for UI elements
+const getTranslation = (supportLang = "en", key, params = {}) => {
+  const lang = supportLang === "bilingual" ? "en" : supportLang;
+  const dict = translations[lang] || translations.en;
+  const raw = dict[key] || key;
+  if (typeof raw !== "string") return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) =>
+    params[k] != null ? String(params[k]) : `{${k}}`
+  );
 };
 
 // Icon mapping for different learning modes
@@ -117,7 +129,9 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
       <Tooltip
         label={
           status === SKILL_STATUS.LOCKED
-            ? `Unlock at ${lesson.xpRequired} XP`
+            ? getTranslation(supportLang, "skill_tree_unlock_at", {
+                xpRequired: lesson.xpRequired,
+              })
             : lessonDescription
         }
         placement="right"
@@ -816,7 +830,7 @@ function LessonDetailModal({
               borderColor="whiteAlpha.100"
             >
               <Text fontWeight="bold" mb={3} color="white" fontSize="sm">
-                Learning Activities:
+                {getTranslation(supportLang, "skill_tree_learning_activities")}
               </Text>
               <Flex gap={2} flexWrap="wrap">
                 {lesson.modes.map((mode) => {
@@ -878,7 +892,7 @@ function LessonDetailModal({
                     <RiStarFill color="white" size={24} />
                   </Box>
                   <Text fontWeight="bold" color="white" fontSize="md">
-                    XP Reward:
+                    {getTranslation(supportLang, "skill_tree_xp_reward")}
                   </Text>
                 </HStack>
                 <Badge
@@ -921,7 +935,7 @@ function LessonDetailModal({
               }}
               transition="all 0.2s"
             >
-              Start Lesson
+              {getTranslation(supportLang, "skill_tree_start_lesson")}
             </Button>
           </VStack>
         </ModalBody>
@@ -1084,7 +1098,9 @@ export default function SkillTree({
                   {userProgress.totalXp || 0} XP
                 </Text>
                 <Text fontSize="xs" color="gray.400" fontWeight="medium">
-                  Level {Math.floor((userProgress.totalXp || 0) / 100) + 1}
+                  {getTranslation(supportLang, "skill_tree_level", {
+                    level: Math.floor((userProgress.totalXp || 0) / 100) + 1,
+                  })}
                 </Text>
               </VStack>
             </HStack>
@@ -1134,10 +1150,10 @@ export default function SkillTree({
           ) : (
             <Box textAlign="center" py={12}>
               <Text fontSize="lg" color="gray.400">
-                No learning path available for this language yet.
+                {getTranslation(supportLang, "skill_tree_no_path")}
               </Text>
               <Text fontSize="sm" color="gray.500" mt={2}>
-                Check back soon for structured lessons!
+                {getTranslation(supportLang, "skill_tree_check_back")}
               </Text>
             </Box>
           )}

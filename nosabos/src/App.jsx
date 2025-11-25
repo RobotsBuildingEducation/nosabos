@@ -2383,7 +2383,7 @@ export default function App() {
           <SkillTree
             targetLang={resolvedTargetLang}
             level={resolvedLevel}
-            supportLang={resolvedSupportLang}
+            supportLang={appLanguage}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
           />
