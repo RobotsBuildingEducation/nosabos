@@ -2523,16 +2523,6 @@ Do not return the whole sentence as a single chunk.`;
           gap={2}
         ></Flex>
 
-        {/* Robot */}
-        <VStack align="stretch" spacing={3} px={4} mt={0}>
-          <RobotBuddyPro
-            state={uiState}
-            loudness={uiState === "listening" ? volume : 0}
-            mood={mood}
-            variant="abstract"
-          />
-        </VStack>
-
         {/* Only Delete (settings moved to top bar) */}
 
         {/* 🎯 Active goal display */}
@@ -2545,6 +2535,17 @@ Do not return the whole sentence as a single chunk.`;
             width="100%"
             maxWidth="400px"
           >
+            {/* Robot animation - compact */}
+            <Box mb={3}>
+              <RobotBuddyPro
+                state={uiState}
+                loudness={uiState === "listening" ? volume : 0}
+                mood={mood}
+                variant="abstract"
+                maxW={120}
+              />
+            </Box>
+
             <HStack justify="space-between" align="center" mb={1}>
               <HStack>
                 <Badge colorScheme="yellow" variant="subtle" fontSize={"10px"}>
