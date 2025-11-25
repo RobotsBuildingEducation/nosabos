@@ -686,7 +686,8 @@ export default function History({
   // ---- Dedup & concurrency guards ----
   const generatingRef = useRef(false); // synchronous mutex to stop double invokes
 
-  const { xp, levelNumber, progressPct, progress, npub, isLoading } = useSharedProgress();
+  const { xp, levelNumber, progressPct, progress, npub, isLoading } =
+    useSharedProgress();
 
   const targetLang = ["en", "es", "pt", "nah", "fr", "it"].includes(
     progress.targetLang
