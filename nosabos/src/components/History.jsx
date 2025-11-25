@@ -291,9 +291,15 @@ function useSharedProgress() {
     showTranslations: true,
     voice: "alloy",
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!npub) return;
+    if (!npub) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
@@ -316,13 +322,14 @@ function useSharedProgress() {
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
         voice: p.voice || "alloy",
       });
+      setIsLoading(false);
     });
     return () => unsub();
   }, [npub]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
-  return { xp, levelNumber, progressPct, progress, npub };
+  return { xp, levelNumber, progressPct, progress, npub, isLoading };
 }
 
 /* ---------------------------
@@ -679,7 +686,7 @@ export default function History({
   // ---- Dedup & concurrency guards ----
   const generatingRef = useRef(false); // synchronous mutex to stop double invokes
 
-  const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
+  const { xp, levelNumber, progressPct, progress, npub, isLoading } = useSharedProgress();
 
   const targetLang = ["en", "es", "pt", "nah", "fr", "it"].includes(
     progress.targetLang
@@ -772,13 +779,14 @@ export default function History({
 
   // Auto-generate lecture when component mounts with no lectures
   useEffect(() => {
-    if (!npub || isGenerating || generatingRef.current) return;
+    // Wait for progress data to load before generating content
+    if (!npub || isLoading || isGenerating || generatingRef.current) return;
     if (lectures.length === 0 && !draftLecture) {
       // Don't set activeId when auto-generating first lecture
       setActiveId(null);
       generateNextLectureGeminiStream();
     }
-  }, [npub, lectures.length]); // eslint-disable-line
+  }, [npub, lectures.length, isLoading]); // eslint-disable-line
 
   const activeLecture = useMemo(
     () => lectures.find((l) => l.id === activeId) || null,
@@ -1482,7 +1490,14 @@ export default function History({
             minH="280px"
             width="100%"
           >
-            {isGenerating && !draftLecture ? (
+            {isLoading ? (
+              <VStack spacing={3} width="100%" justify="center" minH="280px">
+                <Spinner size="lg" color="teal.400" />
+                <Text fontSize="lg" opacity={0.9}>
+                  {t("reading_loading") || "Loading settings..."}
+                </Text>
+              </VStack>
+            ) : isGenerating && !draftLecture ? (
               <VStack spacing={3} width="100%" justify="center" minH="280px">
                 <Spinner size="lg" color="teal.400" />
                 <Text fontSize="lg" opacity={0.9}>
