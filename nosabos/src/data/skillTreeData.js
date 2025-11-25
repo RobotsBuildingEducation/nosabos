@@ -19,10 +19,17 @@ export const SKILL_STATUS = {
 
 /**
  * Learning path structure for each language
- * Organized by proficiency level (beginner, intermediate, advanced)
+ * Organized by CEFR proficiency levels (A1, A2, B1, B2, C1, C2)
+ *
+ * A1: Absolute Beginner - Basic survival language
+ * A2: Elementary - Simple everyday communication
+ * B1: Intermediate - Handle most everyday situations
+ * B2: Upper Intermediate - Abstract topics and complex discussions
+ * C1: Advanced - Flexible, sophisticated language use
+ * C2: Mastery - Near-native proficiency
  */
 const baseLearningPath = {
-  beginner: [
+  A1: [
     {
       id: "unit-1",
       title: {
@@ -441,6 +448,296 @@ const baseLearningPath = {
         },
       ],
     },
+    {
+      id: "unit-a1-4",
+      title: {
+        en: "Personal Information",
+        es: "Información Personal",
+      },
+      description: {
+        en: "Share basic personal details",
+        es: "Comparte detalles personales básicos",
+      },
+      color: "#EF4444", // Red
+      position: { row: 3, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a1-4-1",
+          title: {
+            en: "Age & Birthday",
+            es: "Edad y Cumpleaños",
+          },
+          description: {
+            en: "Say your age and birthday",
+            es: "Di tu edad y cumpleaños",
+          },
+          xpRequired: 330,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "numbers",
+            },
+            grammar: {
+              topic: "tener for age",
+              focusPoints: ["tengo X años", "age expressions", "birthday phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-4-2",
+          title: {
+            en: "Nationality & Languages",
+            es: "Nacionalidad e Idiomas",
+          },
+          description: {
+            en: "Say where you're from and what languages you speak",
+            es: "Di de dónde eres y qué idiomas hablas",
+          },
+          xpRequired: 360,
+          xpReward: 35,
+          modes: ["vocabulary", "realtime"],
+          content: {
+            vocabulary: {
+              words: ["país", "nacionalidad", "idioma", "hablar", "entender"],
+              topic: "geography",
+            },
+            realtime: {
+              scenario: "nationality discussion",
+              prompt: "Practice talking about your nationality and languages",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-4-quiz",
+          title: {
+            en: "Unit A1-4 Quiz",
+            es: "Prueba de Unidad A1-4",
+          },
+          description: {
+            en: "Test your knowledge of personal information",
+            es: "Pon a prueba tus conocimientos de información personal",
+          },
+          xpRequired: 395,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "personal information and geography",
+            },
+            grammar: {
+              topics: ["tener for age", "nationality expressions", "language names"],
+              focusPoints: [
+                "tengo X años",
+                "soy de [country]",
+                "hablo [language]",
+                "age and birthday",
+              ],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-5",
+      title: {
+        en: "Basic Needs",
+        es: "Necesidades Básicas",
+      },
+      description: {
+        en: "Express basic physical needs",
+        es: "Expresa necesidades físicas básicas",
+      },
+      color: "#F59E0B", // Amber
+      position: { row: 4, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a1-5-1",
+          title: {
+            en: "Hunger & Thirst",
+            es: "Hambre y Sed",
+          },
+          description: {
+            en: "Say when you're hungry or thirsty",
+            es: "Di cuando tienes hambre o sed",
+          },
+          xpRequired: 435,
+          xpReward: 30,
+          modes: ["grammar", "vocabulary"],
+          content: {
+            grammar: {
+              topic: "tener expressions for needs",
+              focusPoints: ["tengo hambre", "tengo sed", "tener + noun"],
+            },
+            vocabulary: {
+              words: ["hambre", "sed", "comer", "beber", "agua"],
+              topic: "food and drinks",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-5-2",
+          title: {
+            en: "Asking for Help",
+            es: "Pedir Ayuda",
+          },
+          description: {
+            en: "Request assistance politely",
+            es: "Solicita ayuda cortésmente",
+          },
+          xpRequired: 465,
+          xpReward: 35,
+          modes: ["realtime", "grammar"],
+          content: {
+            realtime: {
+              scenario: "asking for help",
+              prompt: "Practice politely asking for help",
+            },
+            grammar: {
+              topic: "polite requests",
+              focusPoints: ["por favor", "perdón", "puede ayudarme", "necesito"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-5-quiz",
+          title: {
+            en: "Unit A1-5 Quiz",
+            es: "Prueba de Unidad A1-5",
+          },
+          description: {
+            en: "Test your knowledge of basic needs",
+            es: "Pon a prueba tus conocimientos de necesidades básicas",
+          },
+          xpRequired: 500,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "basic needs and polite expressions",
+            },
+            grammar: {
+              topics: ["tener expressions for needs", "polite requests"],
+              focusPoints: [
+                "tengo hambre/sed",
+                "necesito",
+                "por favor",
+                "puede ayudarme",
+                "perdón/disculpe",
+              ],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-6",
+      title: {
+        en: "Feelings & States",
+        es: "Sentimientos y Estados",
+      },
+      description: {
+        en: "Express how you feel",
+        es: "Expresa cómo te sientes",
+      },
+      color: "#EC4899", // Pink
+      position: { row: 5, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a1-6-1",
+          title: {
+            en: "Basic Emotions",
+            es: "Emociones Básicas",
+          },
+          description: {
+            en: "Say how you feel",
+            es: "Di cómo te sientes",
+          },
+          xpRequired: 540,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              words: ["feliz", "triste", "cansado", "enojado", "nervioso"],
+              topic: "emotions",
+            },
+            grammar: {
+              topic: "estar for feelings",
+              focusPoints: ["estoy + adjective", "temporary states with estar"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-6-2",
+          title: {
+            en: "Physical States",
+            es: "Estados Físicos",
+          },
+          description: {
+            en: "Describe how you feel physically",
+            es: "Describe cómo te sientes físicamente",
+          },
+          xpRequired: 575,
+          xpReward: 35,
+          modes: ["vocabulary", "realtime"],
+          content: {
+            vocabulary: {
+              words: ["cansado", "enfermo", "bien", "mal", "calor", "frío"],
+              topic: "physical states",
+            },
+            realtime: {
+              scenario: "describing feelings",
+              prompt: "Practice talking about how you feel",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-6-quiz",
+          title: {
+            en: "Unit A1-6 Quiz",
+            es: "Prueba de Unidad A1-6",
+          },
+          description: {
+            en: "Test your knowledge of feelings and states",
+            es: "Pon a prueba tus conocimientos de sentimientos y estados",
+          },
+          xpRequired: 610,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "emotions and physical states",
+            },
+            grammar: {
+              topics: ["estar for feelings", "temporary states", "tener expressions"],
+              focusPoints: [
+                "estoy + emotion adjective",
+                "tengo calor/frío",
+                "me siento + adjective",
+                "basic emotion vocabulary",
+              ],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  A2: [
     {
       id: "unit-4",
       title: {
@@ -968,6 +1265,223 @@ const baseLearningPath = {
       ],
     },
     {
+      id: "unit-a2-8",
+      title: {
+        en: "Making Plans",
+        es: "Hacer Planes",
+      },
+      description: {
+        en: "Invite people and make social plans",
+        es: "Invita personas y haz planes sociales",
+      },
+      color: "#10B981", // Emerald
+      position: { row: 7, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-8-1",
+          title: {
+            en: "Invitations",
+            es: "Invitaciones",
+          },
+          description: {
+            en: "Invite someone to do something",
+            es: "Invita a alguien a hacer algo",
+          },
+          xpRequired: 955,
+          xpReward: 55,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "invitations",
+              focusPoints: [
+                "quieres + infinitive",
+                "te gustaría",
+                "accepting/declining",
+              ],
+            },
+            realtime: {
+              scenario: "making invitations",
+              prompt: "Practice inviting someone and responding to invitations",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-8-2",
+          title: {
+            en: "Days & Dates",
+            es: "Días y Fechas",
+          },
+          description: {
+            en: "Talk about days of the week and dates",
+            es: "Habla sobre días de la semana y fechas",
+          },
+          xpRequired: 1010,
+          xpReward: 55,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              words: [
+                "lunes",
+                "martes",
+                "miércoles",
+                "jueves",
+                "viernes",
+                "sábado",
+                "domingo",
+              ],
+              topic: "days of week",
+            },
+            grammar: {
+              topic: "dates and time",
+              focusPoints: ["days of week", "months", "date expressions"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-8-quiz",
+          title: {
+            en: "Unit A2-8 Quiz",
+            es: "Prueba de Unidad A2-8",
+          },
+          description: {
+            en: "Test your knowledge of making plans and dates",
+            es: "Pon a prueba tus conocimientos de hacer planes y fechas",
+          },
+          xpRequired: 1065,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "invitations and days of week",
+            },
+            grammar: {
+              topics: ["invitations", "dates and time", "social plans"],
+              focusPoints: [
+                "quieres + infinitive",
+                "te gustaría",
+                "accepting invitations",
+                "declining politely",
+                "days of the week",
+                "months and dates",
+              ],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-9",
+      title: {
+        en: "Abilities & Skills",
+        es: "Habilidades y Destrezas",
+      },
+      description: {
+        en: "Talk about what you can and can't do",
+        es: "Habla sobre lo que puedes y no puedes hacer",
+      },
+      color: "#8B5CF6", // Purple
+      position: { row: 8, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-9-1",
+          title: {
+            en: "Can & Can't",
+            es: "Puedo y No Puedo",
+          },
+          description: {
+            en: "Express abilities",
+            es: "Expresa habilidades",
+          },
+          xpRequired: 1125,
+          xpReward: 60,
+          modes: ["grammar", "vocabulary"],
+          content: {
+            grammar: {
+              topic: "poder verb",
+              focusPoints: [
+                "puedo/no puedo + infinitive",
+                "expressing ability",
+                "poder conjugation",
+              ],
+            },
+            vocabulary: {
+              words: ["poder", "saber", "habilidad", "capacidad", "talento"],
+              topic: "abilities",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-9-2",
+          title: {
+            en: "Knowing How",
+            es: "Saber Cómo",
+          },
+          description: {
+            en: "Talk about skills you have",
+            es: "Habla sobre habilidades que tienes",
+          },
+          xpRequired: 1185,
+          xpReward: 60,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "saber vs poder",
+              focusPoints: [
+                "saber + infinitive",
+                "difference between saber and poder",
+                "conocer vs saber",
+              ],
+            },
+            realtime: {
+              scenario: "discussing skills",
+              prompt: "Talk about things you know how to do",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-9-quiz",
+          title: {
+            en: "Unit A2-9 Quiz",
+            es: "Prueba de Unidad A2-9",
+          },
+          description: {
+            en: "Test your knowledge of abilities and skills",
+            es: "Pon a prueba tus conocimientos de habilidades y destrezas",
+          },
+          xpRequired: 1245,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "abilities and skills",
+            },
+            grammar: {
+              topics: ["poder verb", "saber vs poder", "expressing ability"],
+              focusPoints: [
+                "puedo/no puedo + infinitive",
+                "saber + infinitive",
+                "poder conjugation",
+                "saber vs conocer",
+                "expressing what you can and can't do",
+              ],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  B1: [
+    {
       id: "unit-8",
       title: {
         en: "Past Experiences",
@@ -1373,6 +1887,223 @@ const baseLearningPath = {
       ],
     },
     {
+      id: "unit-b1-11",
+      title: {
+        en: "Comparisons",
+        es: "Comparaciones",
+      },
+      description: {
+        en: "Compare people, places, and things",
+        es: "Compara personas, lugares y cosas",
+      },
+      color: "#F59E0B", // Amber
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-11-1",
+          title: {
+            en: "More & Less",
+            es: "Más y Menos",
+          },
+          description: {
+            en: "Make basic comparisons",
+            es: "Haz comparaciones básicas",
+          },
+          xpRequired: 1590,
+          xpReward: 75,
+          modes: ["grammar", "vocabulary"],
+          content: {
+            grammar: {
+              topic: "comparatives",
+              focusPoints: [
+                "más... que",
+                "menos... que",
+                "tan... como",
+                "comparative adjectives",
+              ],
+            },
+            vocabulary: {
+              words: ["más", "menos", "igual", "diferente", "mejor", "peor"],
+              topic: "comparisons",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-11-2",
+          title: {
+            en: "The Best & Worst",
+            es: "El Mejor y el Peor",
+          },
+          description: {
+            en: "Use superlatives",
+            es: "Usa superlativos",
+          },
+          xpRequired: 1665,
+          xpReward: 75,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "superlatives",
+              focusPoints: [
+                "el/la más + adjective",
+                "el/la menos + adjective",
+                "irregular superlatives",
+              ],
+            },
+            realtime: {
+              scenario: "comparing things",
+              prompt: "Practice comparing and ranking things",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-11-quiz",
+          title: {
+            en: "Unit B1-11 Quiz",
+            es: "Prueba de Unidad B1-11",
+          },
+          description: {
+            en: "Test your knowledge of comparisons and superlatives",
+            es: "Pon a prueba tus conocimientos de comparaciones y superlativos",
+          },
+          xpRequired: 1740,
+          xpReward: 75,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "comparisons",
+            },
+            grammar: {
+              topics: ["comparatives", "superlatives", "comparison structures"],
+              focusPoints: [
+                "más/menos + adjective + que",
+                "tan + adjective + como",
+                "el/la más + adjective",
+                "mejor/peor",
+                "mayor/menor",
+                "irregular comparatives",
+              ],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-12",
+      title: {
+        en: "Suggestions & Advice",
+        es: "Sugerencias y Consejos",
+      },
+      description: {
+        en: "Give recommendations and advice",
+        es: "Da recomendaciones y consejos",
+      },
+      color: "#8B5CF6", // Purple
+      position: { row: 4, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b1-12-1",
+          title: {
+            en: "Making Suggestions",
+            es: "Hacer Sugerencias",
+          },
+          description: {
+            en: "Suggest ideas and activities",
+            es: "Sugiere ideas y actividades",
+          },
+          xpRequired: 1815,
+          xpReward: 80,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "suggestions",
+              focusPoints: [
+                "¿Por qué no...?",
+                "Podemos/Podríamos",
+                "Deberíamos",
+                "Te recomiendo",
+              ],
+            },
+            realtime: {
+              scenario: "making suggestions",
+              prompt: "Practice making and responding to suggestions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-12-2",
+          title: {
+            en: "Giving Advice",
+            es: "Dar Consejos",
+          },
+          description: {
+            en: "Offer helpful advice",
+            es: "Ofrece consejos útiles",
+          },
+          xpRequired: 1895,
+          xpReward: 80,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "giving advice",
+              focusPoints: [
+                "deber + infinitive",
+                "tener que + infinitive",
+                "es mejor/importante/necesario",
+                "conditional for advice",
+              ],
+            },
+            realtime: {
+              scenario: "giving advice",
+              prompt: "Give advice for different situations",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-12-quiz",
+          title: {
+            en: "Unit B1-12 Quiz",
+            es: "Prueba de Unidad B1-12",
+          },
+          description: {
+            en: "Test your knowledge of suggestions and advice",
+            es: "Pon a prueba tus conocimientos de sugerencias y consejos",
+          },
+          xpRequired: 1975,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "advice and suggestions",
+            },
+            grammar: {
+              topics: ["suggestions", "giving advice", "recommendations"],
+              focusPoints: [
+                "¿Por qué no...?",
+                "Podríamos/Deberíamos",
+                "deber + infinitive",
+                "tener que",
+                "es mejor/importante que",
+                "Te recomiendo/aconsejo",
+              ],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  B2: [
+    {
       id: "unit-11",
       title: {
         en: "Health & Body",
@@ -1644,6 +2375,233 @@ const baseLearningPath = {
         },
       ],
     },
+    {
+      id: "unit-b2-13",
+      title: {
+        en: "Opinions & Arguments",
+        es: "Opiniones y Argumentos",
+      },
+      description: {
+        en: "Express and defend your viewpoint",
+        es: "Expresa y defiende tu punto de vista",
+      },
+      color: "#EF4444", // Red
+      position: { row: 5, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b2-13-1",
+          title: {
+            en: "Expressing Opinions",
+            es: "Expresar Opiniones",
+          },
+          description: {
+            en: "Share your views on topics",
+            es: "Comparte tus puntos de vista sobre temas",
+          },
+          xpRequired: 2050,
+          xpReward: 85,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "opinion expressions",
+              focusPoints: [
+                "en mi opinión",
+                "creo/pienso que",
+                "desde mi punto de vista",
+                "subjunctive with opinion",
+              ],
+            },
+            realtime: {
+              scenario: "expressing opinions",
+              prompt: "Discuss your opinions on various topics",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-13-2",
+          title: {
+            en: "Agreeing & Disagreeing",
+            es: "Estar de Acuerdo y en Desacuerdo",
+          },
+          description: {
+            en: "Respond to others' opinions",
+            es: "Responde a las opiniones de otros",
+          },
+          xpRequired: 2135,
+          xpReward: 85,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "agreement and disagreement",
+              focusPoints: [
+                "estoy de acuerdo",
+                "no estoy de acuerdo",
+                "tienes razón",
+                "depende",
+                "por un lado/por otro lado",
+              ],
+            },
+            realtime: {
+              scenario: "debate",
+              prompt: "Practice agreeing and disagreeing politely",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-13-quiz",
+          title: {
+            en: "Unit B2-13 Quiz",
+            es: "Prueba de Unidad B2-13",
+          },
+          description: {
+            en: "Test your knowledge of opinions and arguments",
+            es: "Pon a prueba tus conocimientos de opiniones y argumentos",
+          },
+          xpRequired: 2220,
+          xpReward: 85,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "opinions and debate",
+            },
+            grammar: {
+              topics: [
+                "opinion expressions",
+                "agreement and disagreement",
+                "debate language",
+              ],
+              focusPoints: [
+                "en mi opinión/creo que",
+                "desde mi punto de vista",
+                "estoy de acuerdo/en desacuerdo",
+                "tienes razón/no tienes razón",
+                "por un lado... por otro lado",
+                "depende de",
+              ],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-14",
+      title: {
+        en: "Storytelling",
+        es: "Contar Historias",
+      },
+      description: {
+        en: "Share experiences and anecdotes",
+        es: "Comparte experiencias y anécdotas",
+      },
+      color: "#06B6D4", // Cyan
+      position: { row: 6, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b2-14-1",
+          title: {
+            en: "Narrating Events",
+            es: "Narrar Eventos",
+          },
+          description: {
+            en: "Tell stories about past events",
+            es: "Cuenta historias sobre eventos pasados",
+          },
+          xpRequired: 2305,
+          xpReward: 90,
+          modes: ["grammar", "stories"],
+          content: {
+            grammar: {
+              topic: "narrative tenses",
+              focusPoints: [
+                "preterite vs imperfect",
+                "pluperfect",
+                "sequencing events",
+                "time connectors",
+              ],
+            },
+            stories: {
+              topic: "personal anecdotes",
+              prompt: "Read and create engaging narratives",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-14-2",
+          title: {
+            en: "Reported Speech",
+            es: "Discurso Indirecto",
+          },
+          description: {
+            en: "Report what others said",
+            es: "Reporta lo que otros dijeron",
+          },
+          xpRequired: 2395,
+          xpReward: 90,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "reported speech",
+              focusPoints: [
+                "dijo que",
+                "tense changes in reported speech",
+                "reporting questions",
+                "reporting commands",
+              ],
+            },
+            realtime: {
+              scenario: "reporting conversations",
+              prompt: "Practice reporting what others have said",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-14-quiz",
+          title: {
+            en: "Unit B2-14 Quiz",
+            es: "Prueba de Unidad B2-14",
+          },
+          description: {
+            en: "Test your knowledge of storytelling and reported speech",
+            es: "Pon a prueba tus conocimientos de contar historias y discurso indirecto",
+          },
+          xpRequired: 2485,
+          xpReward: 90,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "narrative and storytelling",
+            },
+            grammar: {
+              topics: [
+                "narrative tenses",
+                "reported speech",
+                "storytelling structures",
+              ],
+              focusPoints: [
+                "preterite vs imperfect in narratives",
+                "pluperfect tense",
+                "sequencing words (primero, luego, después, finalmente)",
+                "dijo/preguntó/pidió que",
+                "tense changes in reported speech",
+                "creating engaging narratives",
+              ],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  C1: [
     {
       id: "unit-13",
       title: {
@@ -2053,6 +3011,110 @@ const baseLearningPath = {
       ],
     },
     {
+      id: "unit-c1-16",
+      title: {
+        en: "Idiomatic Expressions",
+        es: "Expresiones Idiomáticas",
+      },
+      description: {
+        en: "Master colloquial and idiomatic language",
+        es: "Domina el lenguaje coloquial e idiomático",
+      },
+      color: "#F59E0B", // Amber
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c1-16-1",
+          title: {
+            en: "Common Idioms",
+            es: "Modismos Comunes",
+          },
+          description: {
+            en: "Learn frequently used idioms",
+            es: "Aprende modismos de uso frecuente",
+          },
+          xpRequired: 2970,
+          xpReward: 110,
+          modes: ["vocabulary", "stories"],
+          content: {
+            vocabulary: {
+              words: [
+                "estar en las nubes",
+                "meter la pata",
+                "estar como pez en el agua",
+                "ser pan comido",
+              ],
+              topic: "idioms",
+            },
+            stories: {
+              topic: "idiomatic expressions",
+              prompt: "Read texts with authentic idiomatic language",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-16-2",
+          title: {
+            en: "Colloquial Speech",
+            es: "Habla Coloquial",
+          },
+          description: {
+            en: "Understand and use informal language",
+            es: "Entiende y usa lenguaje informal",
+          },
+          xpRequired: 3080,
+          xpReward: 110,
+          modes: ["realtime", "reading"],
+          content: {
+            realtime: {
+              scenario: "informal conversation",
+              prompt: "Practice natural, colloquial conversations",
+            },
+            reading: {
+              topic: "colloquial language",
+              prompt: "Study informal registers and slang",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-16-quiz",
+          title: {
+            en: "Unit C1-16 Quiz",
+            es: "Prueba de Unidad C1-16",
+          },
+          description: {
+            en: "Test your knowledge of idioms and colloquial language",
+            es: "Pon a prueba tus conocimientos de modismos y lenguaje coloquial",
+          },
+          xpRequired: 3190,
+          xpReward: 110,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "idioms and colloquial expressions",
+            },
+            grammar: {
+              topics: ["idiomatic expressions", "colloquial language", "informal registers"],
+              focusPoints: [
+                "common Spanish idioms",
+                "regional variations",
+                "informal vs formal register",
+                "slang and colloquialisms",
+                "figurative language",
+              ],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  C2: [
+    {
       id: "unit-16",
       title: {
         en: "Technology & Innovation",
@@ -2312,9 +3374,232 @@ const baseLearningPath = {
         },
       ],
     },
+    {
+      id: "unit-c2-18",
+      title: {
+        en: "Cultural Nuances",
+        es: "Matices Culturales",
+      },
+      description: {
+        en: "Navigate cultural contexts and registers",
+        es: "Navega contextos culturales y registros",
+      },
+      color: "#10B981", // Emerald
+      position: { row: 5, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c2-18-1",
+          title: {
+            en: "Regional Variations",
+            es: "Variaciones Regionales",
+          },
+          description: {
+            en: "Understand differences across Spanish-speaking regions",
+            es: "Entiende diferencias entre regiones hispanohablantes",
+          },
+          xpRequired: 3545,
+          xpReward: 125,
+          modes: ["reading", "vocabulary"],
+          content: {
+            reading: {
+              topic: "regional dialects",
+              prompt: "Study linguistic variations across Spanish-speaking countries",
+            },
+            vocabulary: {
+              words: [
+                "castellano",
+                "vosotros",
+                "voseo",
+                "modismos regionales",
+                "acento",
+              ],
+              topic: "regional language",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-18-2",
+          title: {
+            en: "Formal vs Informal Mastery",
+            es: "Dominio Formal e Informal",
+          },
+          description: {
+            en: "Switch seamlessly between registers",
+            es: "Cambia sin problemas entre registros",
+          },
+          xpRequired: 3670,
+          xpReward: 125,
+          modes: ["grammar", "realtime"],
+          content: {
+            grammar: {
+              topic: "register and formality",
+              focusPoints: [
+                "tú vs usted mastery",
+                "formal writing",
+                "academic language",
+                "professional communication",
+              ],
+            },
+            realtime: {
+              scenario: "register switching",
+              prompt: "Practice adapting language to different contexts",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-18-quiz",
+          title: {
+            en: "Unit C2-18 Quiz",
+            es: "Prueba de Unidad C2-18",
+          },
+          description: {
+            en: "Test your knowledge of cultural nuances and registers",
+            es: "Pon a prueba tus conocimientos de matices culturales y registros",
+          },
+          xpRequired: 3795,
+          xpReward: 125,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "regional language and cultural references",
+            },
+            grammar: {
+              topics: [
+                "register and formality",
+                "regional variations",
+                "cultural context",
+              ],
+              focusPoints: [
+                "vosotros vs ustedes",
+                "voseo (Argentina, Uruguay)",
+                "regional vocabulary differences",
+                "formal vs informal registers",
+                "academic and professional language",
+                "cultural references and idioms",
+              ],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c2-19",
+      title: {
+        en: "Native-like Fluency",
+        es: "Fluidez Nativa",
+      },
+      description: {
+        en: "Achieve near-native mastery",
+        es: "Alcanza dominio casi nativo",
+      },
+      color: "#A855F7", // Purple-500
+      position: { row: 6, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c2-19-1",
+          title: {
+            en: "Subtle Meanings",
+            es: "Significados Sutiles",
+          },
+          description: {
+            en: "Master nuance and implication",
+            es: "Domina matiz e implicación",
+          },
+          xpRequired: 3920,
+          xpReward: 130,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "subtle language",
+              prompt: "Analyze texts for implied meanings and subtle connotations",
+            },
+            realtime: {
+              scenario: "nuanced conversation",
+              prompt: "Express subtle ideas and implications",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-19-2",
+          title: {
+            en: "Advanced Rhetoric",
+            es: "Retórica Avanzada",
+          },
+          description: {
+            en: "Use sophisticated rhetorical devices",
+            es: "Usa dispositivos retóricos sofisticados",
+          },
+          xpRequired: 4050,
+          xpReward: 130,
+          modes: ["grammar", "reading"],
+          content: {
+            grammar: {
+              topic: "rhetorical devices",
+              focusPoints: [
+                "metaphor and analogy",
+                "irony and sarcasm",
+                "persuasive techniques",
+                "stylistic variation",
+              ],
+            },
+            reading: {
+              topic: "advanced rhetoric",
+              prompt: "Study sophisticated persuasive and literary techniques",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-19-quiz",
+          title: {
+            en: "Final Mastery Quiz",
+            es: "Prueba Final de Dominio",
+          },
+          description: {
+            en: "Demonstrate native-like proficiency",
+            es: "Demuestra competencia casi nativa",
+          },
+          xpRequired: 4180,
+          xpReward: 150,
+          modes: ["vocabulary", "grammar", "realtime"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 15,
+            passingScore: 13,
+          },
+          content: {
+            vocabulary: {
+              topic: "advanced vocabulary and nuanced expressions",
+            },
+            grammar: {
+              topics: [
+                "rhetorical devices",
+                "subtle meanings",
+                "native-like expression",
+              ],
+              focusPoints: [
+                "metaphor and analogy",
+                "irony and sarcasm",
+                "implied meanings",
+                "stylistic variation",
+                "persuasive techniques",
+                "cultural and contextual mastery",
+                "near-native fluency",
+              ],
+            },
+            realtime: {
+              scenario: "mastery demonstration",
+              prompt: "Demonstrate comprehensive command of the language",
+            },
+          },
+        },
+      ],
+    },
   ],
-  intermediate: [],
-  advanced: [],
 };
 
 const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nah"]);
@@ -2630,6 +3915,197 @@ const VOCABULARY_LIBRARY = {
       "desenvolvimento",
     ],
     it: ["clima", "migrazione", "cooperazione", "sostenibilità", "sviluppo"],
+  },
+  emotions: {
+    en: ["happy", "sad", "angry", "nervous", "excited"],
+    es: ["feliz", "triste", "enojado", "nervioso", "emocionado"],
+    fr: ["heureux", "triste", "en colère", "nerveux", "excité"],
+    pt: ["feliz", "triste", "zangado", "nervoso", "animado"],
+    it: ["felice", "triste", "arrabbiato", "nervoso", "eccitato"],
+  },
+  "physical states": {
+    en: ["tired", "sick", "hot", "cold", "hungry"],
+    es: ["cansado", "enfermo", "calor", "frío", "hambre"],
+    fr: ["fatigué", "malade", "chaud", "froid", "faim"],
+    pt: ["cansado", "doente", "calor", "frio", "fome"],
+    it: ["stanco", "malato", "caldo", "freddo", "fame"],
+  },
+  "days of week": {
+    en: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
+    es: [
+      "lunes",
+      "martes",
+      "miércoles",
+      "jueves",
+      "viernes",
+      "sábado",
+      "domingo",
+    ],
+    fr: [
+      "lundi",
+      "mardi",
+      "mercredi",
+      "jeudi",
+      "vendredi",
+      "samedi",
+      "dimanche",
+    ],
+    pt: [
+      "segunda-feira",
+      "terça-feira",
+      "quarta-feira",
+      "quinta-feira",
+      "sexta-feira",
+      "sábado",
+      "domingo",
+    ],
+    it: [
+      "lunedì",
+      "martedì",
+      "mercoledì",
+      "giovedì",
+      "venerdì",
+      "sabato",
+      "domenica",
+    ],
+  },
+  invitations: {
+    en: ["do you want to", "would you like", "let's", "join us", "come with"],
+    es: ["quieres", "te gustaría", "vamos a", "únete", "ven con"],
+    fr: ["veux-tu", "aimerais-tu", "allons", "rejoins-nous", "viens avec"],
+    pt: ["você quer", "gostaria de", "vamos", "junte-se", "venha com"],
+    it: ["vuoi", "ti piacerebbe", "andiamo", "unisciti", "vieni con"],
+  },
+  abilities: {
+    en: ["can", "know how", "skill", "ability", "talent"],
+    es: ["poder", "saber", "habilidad", "capacidad", "talento"],
+    fr: ["pouvoir", "savoir", "compétence", "capacité", "talent"],
+    pt: ["poder", "saber", "habilidade", "capacidade", "talento"],
+    it: ["potere", "sapere", "abilità", "capacità", "talento"],
+  },
+  comparisons: {
+    en: ["more", "less", "equal", "different", "better", "worse"],
+    es: ["más", "menos", "igual", "diferente", "mejor", "peor"],
+    fr: ["plus", "moins", "égal", "différent", "meilleur", "pire"],
+    pt: ["mais", "menos", "igual", "diferente", "melhor", "pior"],
+    it: ["più", "meno", "uguale", "diverso", "migliore", "peggiore"],
+  },
+  "advice and suggestions": {
+    en: ["should", "could", "recommend", "advise", "suggest"],
+    es: ["deber", "poder", "recomendar", "aconsejar", "sugerir"],
+    fr: ["devoir", "pouvoir", "recommander", "conseiller", "suggérer"],
+    pt: ["dever", "poder", "recomendar", "aconselhar", "sugerir"],
+    it: ["dovere", "potere", "raccomandare", "consigliare", "suggerire"],
+  },
+  "opinions and debate": {
+    en: ["opinion", "think", "believe", "agree", "disagree"],
+    es: ["opinión", "pensar", "creer", "estar de acuerdo", "no estar de acuerdo"],
+    fr: ["opinion", "penser", "croire", "être d'accord", "ne pas être d'accord"],
+    pt: ["opinião", "pensar", "acreditar", "concordar", "discordar"],
+    it: ["opinione", "pensare", "credere", "essere d'accordo", "non essere d'accordo"],
+  },
+  "narrative and storytelling": {
+    en: ["once upon a time", "then", "after", "finally", "story"],
+    es: ["érase una vez", "luego", "después", "finalmente", "historia"],
+    fr: ["il était une fois", "puis", "après", "finalement", "histoire"],
+    pt: ["era uma vez", "então", "depois", "finalmente", "história"],
+    it: ["c'era una volta", "poi", "dopo", "finalmente", "storia"],
+  },
+  idioms: {
+    en: [
+      "piece of cake",
+      "break the ice",
+      "hit the nail on the head",
+      "under the weather",
+      "spill the beans",
+    ],
+    es: [
+      "ser pan comido",
+      "romper el hielo",
+      "dar en el clavo",
+      "estar en las nubes",
+      "meter la pata",
+    ],
+    fr: [
+      "c'est du gâteau",
+      "briser la glace",
+      "mettre le doigt dessus",
+      "avoir le cafard",
+      "vendre la mèche",
+    ],
+    pt: [
+      "moleza",
+      "quebrar o gelo",
+      "acertar na mosca",
+      "estar nas nuvens",
+      "meter os pés pelas mãos",
+    ],
+    it: [
+      "un gioco da ragazzi",
+      "rompere il ghiaccio",
+      "azzeccare",
+      "essere tra le nuvole",
+      "fare una gaffe",
+    ],
+  },
+  "idioms and colloquial expressions": {
+    en: [
+      "no way",
+      "for real",
+      "hang out",
+      "freak out",
+      "catch up",
+    ],
+    es: [
+      "ni hablar",
+      "en serio",
+      "salir con amigos",
+      "ponerse nervioso",
+      "ponerse al día",
+    ],
+    fr: [
+      "pas question",
+      "sérieusement",
+      "traîner",
+      "paniquer",
+      "se rattraper",
+    ],
+    pt: [
+      "nem pensar",
+      "sério",
+      "sair com amigos",
+      "pirar",
+      "colocar em dia",
+    ],
+    it: [
+      "neanche per sogno",
+      "davvero",
+      "uscire con amici",
+      "andare fuori di testa",
+      "recuperare",
+    ],
+  },
+  "regional language": {
+    en: ["dialect", "accent", "slang", "regional", "variation"],
+    es: ["dialecto", "acento", "jerga", "regional", "variación"],
+    fr: ["dialecte", "accent", "argot", "régional", "variation"],
+    pt: ["dialeto", "sotaque", "gíria", "regional", "variação"],
+    it: ["dialetto", "accento", "gergo", "regionale", "variazione"],
+  },
+  "advanced vocabulary and nuanced expressions": {
+    en: ["nuance", "implication", "subtle", "connotation", "rhetoric"],
+    es: ["matiz", "implicación", "sutil", "connotación", "retórica"],
+    fr: ["nuance", "implication", "subtil", "connotation", "rhétorique"],
+    pt: ["nuance", "implicação", "sutil", "conotação", "retórica"],
+    it: ["sfumatura", "implicazione", "sottile", "connotazione", "retorica"],
   },
 };
 

@@ -115,6 +115,19 @@ const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 3;
+
+/**
+ * Migrate old level values to CEFR levels
+ * beginner -> A1, intermediate -> B1, advanced -> C1
+ */
+function migrateToCEFRLevel(level) {
+  const migrations = {
+    beginner: "A1",
+    intermediate: "B1",
+    advanced: "C1",
+  };
+  return migrations[level] || level || "A1";
+}
 const TARGET_LANGUAGE_LABELS = {
   en: "English",
   es: "Spanish",
@@ -245,7 +258,7 @@ function TopBar({
 
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
-  const [level, setLevel] = useState(p.level || "beginner");
+  const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "A1");
   const [supportLang, setSupportLang] = useState(p.supportLang || "en");
   const [voice, setVoice] = useState(p.voice || "alloy");
   const [voicePersona, setVoicePersona] = useState(
@@ -268,7 +281,7 @@ function TopBar({
   // Refill draft when store changes
   useEffect(() => {
     const q = user?.progress || {};
-    setLevel(q.level || "beginner");
+    setLevel(migrateToCEFRLevel(q.level) || "A1");
     setSupportLang(q.supportLang || "en");
     setVoice(q.voice || "alloy");
     setVoicePersona(
@@ -577,15 +590,12 @@ function TopBar({
                   size="md"
                   w="auto"
                 >
-                  <option value="beginner">
-                    {translations[appLanguage].onboarding_level_beginner}
-                  </option>
-                  <option value="intermediate">
-                    {translations[appLanguage].onboarding_level_intermediate}
-                  </option>
-                  <option value="advanced">
-                    {translations[appLanguage].onboarding_level_advanced}
-                  </option>
+                  <option value="A1">A1 - Beginner</option>
+                  <option value="A2">A2 - Elementary</option>
+                  <option value="B1">B1 - Intermediate</option>
+                  <option value="B2">B2 - Upper Intermediate</option>
+                  <option value="C1">C1 - Advanced</option>
+                  <option value="C2">C2 - Mastery</option>
                 </Select>
 
                 <Select
@@ -852,7 +862,7 @@ export default function App() {
 
   const resolvedTargetLang = user?.progress?.targetLang || "es";
   const resolvedSupportLang = user?.progress?.supportLang || "en";
-  const resolvedLevel = user?.progress?.level || "beginner";
+  const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "A1";
 
   const dailyGoalTarget = useMemo(() => {
     const rawGoal =
@@ -1161,7 +1171,7 @@ export default function App() {
 
   // Default progress (mirrors onboarding)
   const DEFAULT_PROGRESS = {
-    level: "beginner",
+    level: "A1",
     supportLang: "en",
     voice: "alloy",
     voicePersona: translations?.en?.onboarding_persona_default_example || "",
@@ -1389,7 +1399,7 @@ export default function App() {
     };
 
     const prev = user?.progress || {
-      level: "beginner",
+      level: "A1",
       supportLang: "en",
       voice: "alloy",
       voicePersona: translations?.en?.onboarding_persona_default_example || "",
@@ -1402,7 +1412,7 @@ export default function App() {
 
     const next = {
       ...prev, // Preserve all existing progress data including XP
-      level: partial.level ?? prev.level ?? "beginner",
+      level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "A1",
       supportLang: ["en", "es", "bilingual"].includes(
         partial.supportLang ?? prev.supportLang
       )
@@ -1519,7 +1529,7 @@ export default function App() {
       };
 
       const normalized = {
-        level: safe(payload.level, "beginner"),
+        level: migrateToCEFRLevel(safe(payload.level, "A1")),
         supportLang: ["en", "es", "bilingual"].includes(payload.supportLang)
           ? payload.supportLang
           : "en",

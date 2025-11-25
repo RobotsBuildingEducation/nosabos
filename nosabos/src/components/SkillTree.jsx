@@ -1110,7 +1110,7 @@ function LessonDetailModal({
  */
 export default function SkillTree({
   targetLang = "es",
-  level = "beginner",
+  level = "A1",
   supportLang = "en",
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
