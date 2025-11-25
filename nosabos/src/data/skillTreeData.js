@@ -228,6 +228,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-2-quiz',
+            title: {
+              en: 'Unit 2 Quiz',
+              es: 'Prueba de Unidad 2',
+            },
+            description: {
+              en: 'Test your knowledge of likes/dislikes, numbers, and food vocabulary',
+              es: 'Pon a prueba tus conocimientos de gustos/disgustos, números y vocabulario de comida',
+            },
+            xpRequired: 165,
+            xpReward: 50,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'preferences, numbers, and food and drinks',
+              },
+              grammar: {
+                topics: ['gustar verb', 'numbers and currency', 'food and restaurant language'],
+                focusPoints: ['indirect object pronouns', 'singular vs plural with gustar', 'counting 1-20', 'querer + infinitive', 'me gustaría', 'tener + noun', 'restaurant ordering phrases'],
+              },
+            },
+          },
         ],
       },
       {
@@ -308,6 +336,34 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'family introduction',
                 prompt: 'Describe your family in a conversation',
+              },
+            },
+          },
+          {
+            id: 'lesson-3-quiz',
+            title: {
+              en: 'Unit 3 Quiz',
+              es: 'Prueba de Unidad 3',
+            },
+            description: {
+              en: 'Test your knowledge of time, daily routines, and family',
+              es: 'Pon a prueba tus conocimientos del tiempo, rutinas diarias y familia',
+            },
+            xpRequired: 280,
+            xpReward: 50,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'time, daily activities, and family',
+              },
+              grammar: {
+                topics: ['telling time', 'daily routine', 'possessive adjectives'],
+                focusPoints: ['¿Qué hora es?', 'es la / son las', 'y/menos', 'reflexive verbs for daily activities', 'mi/tu/su', 'family member terms', 'describing daily schedules'],
               },
             },
           },
@@ -394,6 +450,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-4-quiz',
+            title: {
+              en: 'Unit 4 Quiz',
+              es: 'Prueba de Unidad 4',
+            },
+            description: {
+              en: 'Test your knowledge of places, directions, and transportation',
+              es: 'Pon a prueba tus conocimientos de lugares, direcciones y transporte',
+            },
+            xpRequired: 410,
+            xpReward: 55,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'places, directions, and transportation',
+              },
+              grammar: {
+                topics: ['imperative mood', 'giving directions', 'location prepositions'],
+                focusPoints: ['command forms', 'direction verbs (girar, seguir, cruzar)', 'location expressions (a la izquierda, a la derecha, todo recto)', 'asking for directions', 'transportation vocabulary in context'],
+              },
+            },
+          },
         ],
       },
       {
@@ -477,6 +561,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-5-quiz',
+            title: {
+              en: 'Unit 5 Quiz',
+              es: 'Prueba de Unidad 5',
+            },
+            description: {
+              en: 'Test your knowledge of shopping, numbers, and clothing vocabulary',
+              es: 'Pon a prueba tus conocimientos de compras, números y vocabulario de ropa',
+            },
+            xpRequired: 560,
+            xpReward: 55,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'shopping, numbers, and clothing',
+              },
+              grammar: {
+                topics: ['numbers and currency', 'shopping expressions', 'clothing descriptions'],
+                focusPoints: ['numbers 20-100', 'costar + amount', 'price negotiations', '¿Cuánto cuesta?', 'barato vs caro', 'clothing items with colors', 'shopping phrases (comprar, vender, precio)'],
+              },
+            },
+          },
         ],
       },
       {
@@ -557,6 +669,34 @@ const baseLearningPath = {
               stories: {
                 topic: 'character descriptions',
                 prompt: 'Read stories with diverse characters',
+              },
+            },
+          },
+          {
+            id: 'lesson-6-quiz',
+            title: {
+              en: 'Unit 6 Quiz',
+              es: 'Prueba de Unidad 6',
+            },
+            description: {
+              en: 'Test your knowledge of colors, physical traits, and personality',
+              es: 'Pon a prueba tus conocimientos de colores, rasgos físicos y personalidad',
+            },
+            xpRequired: 720,
+            xpReward: 60,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'colors, physical descriptions, and personality',
+              },
+              grammar: {
+                topics: ['ser vs estar for descriptions', 'adjective agreement', 'descriptive language'],
+                focusPoints: ['permanent traits with ser', 'temporary states with estar', 'color adjectives', 'physical description adjectives (alto, bajo, joven, viejo)', 'personality adjectives (simpático, amable, inteligente)', 'gender and number agreement'],
               },
             },
           },
@@ -651,6 +791,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-7-quiz',
+            title: {
+              en: 'Unit 7 Quiz',
+              es: 'Prueba de Unidad 7',
+            },
+            description: {
+              en: 'Test your knowledge of hobbies, sports, entertainment, and arts',
+              es: 'Pon a prueba tus conocimientos de pasatiempos, deportes, entretenimiento y artes',
+            },
+            xpRequired: 895,
+            xpReward: 60,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'sports, entertainment, and arts and reading',
+              },
+              grammar: {
+                topics: ['expressing preferences and opinions', 'hobby-related verbs', 'leisure activities'],
+                focusPoints: ['jugar vs practicar with sports', 'me parece', 'creo que', 'preference verbs', 'entertainment vocabulary', 'arts and creative activities', 'discussing hobbies and interests'],
+              },
+            },
+          },
         ],
       },
       {
@@ -738,6 +906,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-8-quiz',
+            title: {
+              en: 'Unit 8 Quiz',
+              es: 'Prueba de Unidad 8',
+            },
+            description: {
+              en: 'Test your knowledge of preterite tense and past experiences',
+              es: 'Pon a prueba tus conocimientos del tiempo pretérito y experiencias pasadas',
+            },
+            xpRequired: 1080,
+            xpReward: 65,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'time expressions and travel',
+              },
+              grammar: {
+                topics: ['preterite tense', 'past time expressions', 'completed actions'],
+                focusPoints: ['regular -ar verbs in preterite', 'regular -er/-ir verbs in preterite', 'irregular preterite verbs', 'past time markers (ayer, anoche, la semana pasada)', 'talking about completed past actions', 'travel vocabulary in past tense'],
+              },
+            },
+          },
         ],
       },
       {
@@ -818,6 +1014,34 @@ const baseLearningPath = {
               grammar: {
                 topic: 'weather expressions',
                 focusPoints: ['hacer, estar, hay', 'imperfect tense for weather'],
+              },
+            },
+          },
+          {
+            id: 'lesson-9-quiz',
+            title: {
+              en: 'Unit 9 Quiz',
+              es: 'Prueba de Unidad 9',
+            },
+            description: {
+              en: 'Test your knowledge of imperfect tense, childhood, and weather',
+              es: 'Pon a prueba tus conocimientos del tiempo imperfecto, infancia y clima',
+            },
+            xpRequired: 1285,
+            xpReward: 70,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'childhood and weather',
+              },
+              grammar: {
+                topics: ['imperfect tense', 'weather expressions', 'imperfect vs preterite'],
+                focusPoints: ['imperfect tense formation', 'past habits and states', 'describing ongoing past actions', 'weather verbs (hacer, estar, hay)', 'imperfect for weather descriptions', 'childhood vocabulary in context', 'when to use imperfect vs preterite'],
               },
             },
           },
@@ -904,6 +1128,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-10-quiz',
+            title: {
+              en: 'Unit 10 Quiz',
+              es: 'Prueba de Unidad 10',
+            },
+            description: {
+              en: 'Test your knowledge of future tenses and career planning',
+              es: 'Pon a prueba tus conocimientos de tiempos futuros y planificación profesional',
+            },
+            xpRequired: 1515,
+            xpReward: 75,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'careers and time expressions',
+              },
+              grammar: {
+                topics: ['ir a + infinitive', 'simple future tense', 'future planning'],
+                focusPoints: ['ir + a + infinitive structure', 'near future plans', 'simple future tense formation', 'regular future endings', 'irregular future verbs', 'time expressions for future (mañana, próximo, después)', 'career vocabulary in future tense'],
+              },
+            },
+          },
         ],
       },
       {
@@ -984,6 +1236,34 @@ const baseLearningPath = {
               stories: {
                 topic: 'healthy living',
                 prompt: 'Read about maintaining a healthy lifestyle',
+              },
+            },
+          },
+          {
+            id: 'lesson-11-quiz',
+            title: {
+              en: 'Unit 11 Quiz',
+              es: 'Prueba de Unidad 11',
+            },
+            description: {
+              en: 'Test your knowledge of body parts, health, and wellness',
+              es: 'Pon a prueba tus conocimientos de partes del cuerpo, salud y bienestar',
+            },
+            xpRequired: 1735,
+            xpReward: 75,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'body parts, health, and wellness',
+              },
+              grammar: {
+                topics: ['expressing pain', 'health-related expressions', 'wellness vocabulary'],
+                focusPoints: ['me duele/me duelen', 'doler verb conjugation', 'body parts with articles', 'doctor visit phrases', 'symptoms and ailments', 'healthy living expressions', 'health advice (deber + infinitive)'],
               },
             },
           },
@@ -1078,6 +1358,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-12-quiz',
+            title: {
+              en: 'Unit 12 Quiz',
+              es: 'Prueba de Unidad 12',
+            },
+            description: {
+              en: 'Test your knowledge of nature, environment, and geography',
+              es: 'Pon a prueba tus conocimientos de naturaleza, medio ambiente y geografía',
+            },
+            xpRequired: 1970,
+            xpReward: 80,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'nature, environment, and geography',
+              },
+              grammar: {
+                topics: ['environmental language', 'conditional tense', 'descriptive expressions for nature'],
+                focusPoints: ['conditional tense formation', 'should/would expressions', 'environmental vocabulary in context', 'nature and wildlife terms', 'geographical features', 'conservation and ecology expressions', 'expressing environmental concerns'],
+              },
+            },
+          },
         ],
       },
       {
@@ -1158,6 +1466,34 @@ const baseLearningPath = {
               grammar: {
                 topic: 'subjunctive with doubt',
                 focusPoints: ['dudar, no creer, negar'],
+              },
+            },
+          },
+          {
+            id: 'lesson-13-quiz',
+            title: {
+              en: 'Unit 13 Quiz',
+              es: 'Prueba de Unidad 13',
+            },
+            description: {
+              en: 'Test your knowledge of the subjunctive mood',
+              es: 'Pon a prueba tus conocimientos del modo subjuntivo',
+            },
+            xpRequired: 2245,
+            xpReward: 95,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'wishes and desires and global issues',
+              },
+              grammar: {
+                topics: ['present subjunctive', 'subjunctive trigger phrases', 'wishes and doubts'],
+                focusPoints: ['present subjunctive formation', 'trigger phrases that require subjunctive', 'expressing wishes (esperar que, querer que, desear que)', 'expressing doubt (dudar, no creer, negar)', 'ojalá expressions', 'subjunctive vs indicative', 'irregular subjunctive forms'],
               },
             },
           },
@@ -1249,6 +1585,34 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'workplace conversation',
                 prompt: 'Navigate workplace scenarios',
+              },
+            },
+          },
+          {
+            id: 'lesson-14-quiz',
+            title: {
+              en: 'Unit 14 Quiz',
+              es: 'Prueba de Unidad 14',
+            },
+            description: {
+              en: 'Test your knowledge of debate, current events, and professional language',
+              es: 'Pon a prueba tus conocimientos de debate, actualidad y lenguaje profesional',
+            },
+            xpRequired: 2555,
+            xpReward: 100,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'debate, current events, and professional',
+              },
+              grammar: {
+                topics: ['news and reporting language', 'passive voice', 'formal communication'],
+                focusPoints: ['passive voice construction', 'reported speech', 'news expressions', 'debate and persuasion vocabulary', 'professional communication phrases', 'formal vs informal registers', 'argumentation structures'],
               },
             },
           },
@@ -1351,6 +1715,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-15-quiz',
+            title: {
+              en: 'Unit 15 Quiz',
+              es: 'Prueba de Unidad 15',
+            },
+            description: {
+              en: 'Test your knowledge of literature, visual arts, and cinema',
+              es: 'Pon a prueba tus conocimientos de literatura, artes visuales y cine',
+            },
+            xpRequired: 2865,
+            xpReward: 105,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'literature, visual arts, and cinema',
+              },
+              grammar: {
+                topics: ['describing art', 'aesthetic expressions', 'cultural commentary'],
+                focusPoints: ['present progressive for art descriptions', 'aesthetic vocabulary', 'literary terms (metáfora, narrativa, verso)', 'visual arts vocabulary (lienzo, pincel, galería)', 'cinema terms (director, escena, guion)', 'expressing artistic opinions', 'art criticism language'],
+              },
+            },
+          },
         ],
       },
       {
@@ -1442,6 +1834,34 @@ const baseLearningPath = {
               },
             },
           },
+          {
+            id: 'lesson-16-quiz',
+            title: {
+              en: 'Unit 16 Quiz',
+              es: 'Prueba de Unidad 16',
+            },
+            description: {
+              en: 'Test your knowledge of technology, science, and digital economy',
+              es: 'Pon a prueba tus conocimientos de tecnología, ciencia y economía digital',
+            },
+            xpRequired: 3190,
+            xpReward: 110,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'digital communication, science, and digital economy',
+              },
+              grammar: {
+                topics: ['scientific language', 'technical terminology', 'cause and effect'],
+                focusPoints: ['passive constructions in technical contexts', 'scientific vocabulary', 'digital communication terms (internet, correo, mensaje, aplicación)', 'science terms (experimento, laboratorio, hipótesis)', 'digital economy vocabulary (startup, plataforma, comercio)', 'expressing technological concepts', 'cause and effect expressions'],
+              },
+            },
+          },
         ],
       },
       {
@@ -1506,6 +1926,34 @@ const baseLearningPath = {
               realtime: {
                 scenario: 'global discussion',
                 prompt: 'Discuss international challenges',
+              },
+            },
+          },
+          {
+            id: 'lesson-17-quiz',
+            title: {
+              en: 'Unit 17 Quiz',
+              es: 'Prueba de Unidad 17',
+            },
+            description: {
+              en: 'Test your knowledge of social justice, global challenges, and ethics',
+              es: 'Pon a prueba tus conocimientos de justicia social, desafíos globales y ética',
+            },
+            xpRequired: 3425,
+            xpReward: 120,
+            modes: ['vocabulary', 'grammar'],
+            isFinalQuiz: true,
+            quizConfig: {
+              questionsRequired: 10,
+              passingScore: 8,
+            },
+            content: {
+              vocabulary: {
+                topic: 'social justice and global issues',
+              },
+              grammar: {
+                topics: ['advanced expressions', 'complex conditionals', 'social discourse'],
+                focusPoints: ['complex conditional structures', 'hypothetical situations', 'si clauses with subjunctive', 'social justice vocabulary (justicia, igualdad, derechos, diversidad)', 'global issues terms (clima, migración, cooperación, sostenibilidad)', 'expressing social concerns', 'discussing ethical topics'],
               },
             },
           },
