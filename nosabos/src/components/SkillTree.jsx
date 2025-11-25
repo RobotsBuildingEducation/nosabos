@@ -112,7 +112,7 @@ const getTranslation = (supportLang = "en", key, params = {}) => {
 
 // Icon mapping for different learning modes
 const MODE_ICONS = {
-  vocabulary: RiBookOpenLine,
+  vocabulary: RiBook2Line,
   grammar: RiPencilLine,
   realtime: RiSpeakLine,
   stories: RiBookOpenLine,

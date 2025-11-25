@@ -63,7 +63,7 @@ import {
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { RiSpeakLine } from "react-icons/ri";
+import { RiSpeakLine, RiBook2Line } from "react-icons/ri";
 import {
   LuBadgeCheck,
   LuBookOpen,
@@ -1118,7 +1118,7 @@ export default function App() {
     stories: <RiSpeakLine />,
     reading: <LuBookOpen />,
     grammar: <CiEdit />,
-    vocabulary: <CiEdit />,
+    vocabulary: <RiBook2Line />,
     random: <LuShuffle />,
   };
 
