@@ -181,20 +181,79 @@
 ## B1 (Intermediate) - 15 Units | 60 Lessons
 
 ### Unit 37: Present Perfect
+- **Topics**: Recent actions, life experiences, unfinished time periods
+- **Grammar**: Haber + participio (he comido, has vivido, hemos visto)
+- **Vocabulary**: Time expressions (ya, todavía, alguna vez, nunca, recientemente)
+
 ### Unit 38: Past Continuous
+- **Topics**: Interrupted actions, simultaneous past actions, background descriptions
+- **Grammar**: Imperfecto continuous (estaba comiendo, estábamos hablando)
+- **Vocabulary**: While, when, as, during
+
 ### Unit 39: Simple Future Tense
+- **Topics**: Predictions, promises, spontaneous decisions, future plans
+- **Grammar**: Future simple (hablaré, comerás, vivirán), Ir + a + infinitive review
+- **Vocabulary**: Tomorrow, next week/month/year, in the future, probably
+
 ### Unit 40: Comparisons & Superlatives
+- **Topics**: Comparing people, places, and things; expressing superiority/inferiority
+- **Grammar**: Más/menos que, tan...como, el/la más/menos, comparatives irregulares (mejor, peor)
+- **Vocabulary**: Comparative adjectives and adverbs
+
 ### Unit 41: Giving Advice
+- **Topics**: Recommendations, obligations, suggestions
+- **Grammar**: Deber, tener que, hay que, deberías, te recomiendo que
+- **Vocabulary**: Health advice, life advice, study tips
+
 ### Unit 42: Making Suggestions
+- **Topics**: Proposing activities, invitations, group decisions
+- **Grammar**: ¿Por qué no...?, ¿Qué tal si...?, Podríamos..., ¿Te apetece...?
+- **Vocabulary**: Activity suggestions, leisure proposals
+
 ### Unit 43: Conditional (Would)
+- **Topics**: Hypothetical situations, polite requests, preferences
+- **Grammar**: Conditional simple (hablaría, comería, viviría), Me gustaría
+- **Vocabulary**: Hypothetical scenarios, dream situations
+
 ### Unit 44: Travel & Tourism
+- **Topics**: Planning trips, booking accommodations, tourist attractions
+- **Grammar**: Travel-related verbs (viajar, reservar, visitar, alojarse)
+- **Vocabulary**: Hotel, airport, tourist sites, transportation, reservations
+
 ### Unit 45: Environment & Nature
+- **Topics**: Natural environment, climate change, conservation, ecosystems
+- **Grammar**: Environmental verbs (contaminar, reciclar, proteger, conservar)
+- **Vocabulary**: Animals, plants, habitats, pollution, sustainability
+
 ### Unit 46: Culture & Traditions
+- **Topics**: Cultural celebrations, customs, festivals, regional traditions
+- **Grammar**: Celebrar, festejar, soler + infinitive (habitual actions)
+- **Vocabulary**: Holidays, celebrations, traditional foods, customs
+
 ### Unit 47: Media & News
+- **Topics**: Newspapers, television, radio, social media, current events
+- **Grammar**: Reporting verbs (informar, anunciar, declarar, publicar)
+- **Vocabulary**: News vocabulary, media types, journalism terms
+
 ### Unit 48: Expressing Opinions
+- **Topics**: Personal views, agreeing/disagreeing, debating
+- **Grammar**: Creo que, pienso que, en mi opinión, (no) estoy de acuerdo
+- **Vocabulary**: Opinion phrases, argumentative expressions
+
 ### Unit 49: Making Complaints
+- **Topics**: Problems with services, expressing dissatisfaction, requesting solutions
+- **Grammar**: Me molesta que, no funciona, quisiera quejarme, no estoy satisfecho/a
+- **Vocabulary**: Complaint vocabulary, problem descriptions, solution requests
+
 ### Unit 50: Describing Experiences
+- **Topics**: Past events, anecdotes, memorable moments, life stories
+- **Grammar**: Past tenses review (preterite, imperfect, present perfect)
+- **Vocabulary**: Experience expressions, narrative connectors (entonces, luego, después)
+
 ### Unit 51: Talking about Probability
+- **Topics**: Likelihood, possibilities, uncertainty, predictions
+- **Grammar**: Quizás, tal vez, es probable que, puede que, a lo mejor
+- **Vocabulary**: Probability expressions, degrees of certainty
 
 ---
 
@@ -246,9 +305,9 @@
 ## Implementation Progress
 
 - [x] Plan created
-- [ ] A1 Units 1-18 implemented (72 lessons)
-- [ ] A2 Units 19-36 implemented (72 lessons)
-- [ ] B1 Units 37-51 implemented (60 lessons)
+- [x] A1 Units 1-18 implemented (72 lessons)
+- [x] A2 Units 19-36 implemented (72 lessons)
+- [x] B1 Units 37-51 implemented (60 lessons) - **COMPLETED!**
 - [ ] B2 Units 52-63 implemented (48 lessons)
 - [ ] C1 Units 64-73 implemented (40 lessons)
 - [ ] C2 Units 74-81 implemented (32 lessons)
