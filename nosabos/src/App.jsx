@@ -238,6 +238,7 @@ function TopBar({
   tabIcons = {},
   currentTab = "realtime",
   onSelectTab,
+  viewMode,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -503,41 +504,43 @@ function TopBar({
           ml="auto"
           align="center"
         >
-          <Menu autoSelect={false} isLazy>
-            <MenuButton
-              as={Button}
-              rightIcon={<ChevronDownIcon />}
-              variant="outline"
-              size="sm"
-              borderColor="gray.700"
-              px={3}
-              py={1.5}
-            >
-              <HStack spacing={2}>
-                {tabIcons?.[currentTab]}
-                <Text fontSize="sm" noOfLines={1}>
-                  {tabLabels?.[currentTab] || currentTab}
-                </Text>
-              </HStack>
-            </MenuButton>
-
-            <MenuList borderColor="gray.700" bg="gray.900">
-              <MenuOptionGroup
-                type="radio"
-                value={currentTab}
-                onChange={(value) => onSelectTab?.(String(value))}
+          {viewMode !== "skillTree" && (
+            <Menu autoSelect={false} isLazy>
+              <MenuButton
+                as={Button}
+                rightIcon={<ChevronDownIcon />}
+                variant="outline"
+                size="sm"
+                borderColor="gray.700"
+                px={3}
+                py={1.5}
               >
-                {tabOrder.map((key) => (
-                  <MenuItemOption key={key} value={key}>
-                    <HStack spacing={2}>
-                      {tabIcons?.[key]}
-                      <Text>{tabLabels?.[key] || key}</Text>
-                    </HStack>
-                  </MenuItemOption>
-                ))}
-              </MenuOptionGroup>
-            </MenuList>
-          </Menu>
+                <HStack spacing={2}>
+                  {tabIcons?.[currentTab]}
+                  <Text fontSize="sm" noOfLines={1}>
+                    {tabLabels?.[currentTab] || currentTab}
+                  </Text>
+                </HStack>
+              </MenuButton>
+
+              <MenuList borderColor="gray.700" bg="gray.900">
+                <MenuOptionGroup
+                  type="radio"
+                  value={currentTab}
+                  onChange={(value) => onSelectTab?.(String(value))}
+                >
+                  {tabOrder.map((key) => (
+                    <MenuItemOption key={key} value={key}>
+                      <HStack spacing={2}>
+                        {tabIcons?.[key]}
+                        <Text>{tabLabels?.[key] || key}</Text>
+                      </HStack>
+                    </MenuItemOption>
+                  ))}
+                </MenuOptionGroup>
+              </MenuList>
+            </Menu>
+          )}
         </HStack>
       </HStack>
 
@@ -2349,6 +2352,7 @@ export default function App() {
         tabIcons={TAB_ICONS}
         currentTab={currentTab}
         onSelectTab={handleSelectTab}
+        viewMode={viewMode}
       />
 
       <TeamsDrawer
