@@ -2536,14 +2536,14 @@ Do not return the whole sentence as a single chunk.`;
             maxWidth="400px"
           >
             <HStack align="center" spacing={3}>
-              {/* Robot animation - compact, on the left */}
-              <Box flexShrink={0} width="100px">
+              {/* Robot animation - prominent on the left */}
+              <Box flexShrink={0} width="150px">
                 <RobotBuddyPro
                   state={uiState}
                   loudness={uiState === "listening" ? volume : 0}
                   mood={mood}
                   variant="abstract"
-                  maxW={100}
+                  maxW={150}
                 />
               </Box>
 
