@@ -640,7 +640,6 @@ const LandingPage = ({ onAuthenticated }) => {
           spacing={8}
           bg="rgba(8, 18, 29, 0.92)"
           borderRadius="3xl"
-          border="1px solid rgba(45, 212, 191, 0.35)"
           p={{ base: 8, md: 12 }}
           maxW="lg"
           w="full"
@@ -728,11 +727,7 @@ const LandingPage = ({ onAuthenticated }) => {
 
       <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
         <Flex direction="column" align="center" gap={12}>
-          <LandingSection
-            bg="rgba(4, 12, 22, 0.92)"
-            borderRadius="3xl"
-            border="1px solid rgba(96, 165, 250, 0.25)"
-          >
+          <LandingSection bg="rgba(4, 12, 22, 0.92)" borderRadius="3xl">
             <VStack spacing={8} align="stretch">
               <Text
                 textAlign="center"
@@ -748,7 +743,6 @@ const LandingPage = ({ onAuthenticated }) => {
                     key={feature.titleKey}
                     p={6}
                     borderRadius="xl"
-                    border="1px solid rgba(14, 165, 233, 0.35)"
                     bg="rgba(6, 18, 30, 0.95)"
                   >
                     <VStack align="flex-start" spacing={4}>
@@ -784,11 +778,7 @@ const LandingPage = ({ onAuthenticated }) => {
             </VStack>
           </LandingSection>
 
-          <LandingSection
-            bg="rgba(8, 26, 36, 0.9)"
-            borderRadius="3xl"
-            border="1px solid rgba(45, 212, 191, 0.3)"
-          >
+          <LandingSection bg="rgba(8, 26, 36, 0.9)" borderRadius="3xl">
             <VStack spacing={5} align="center">
               <Text fontSize="3xl" fontWeight="bold" textAlign="center">
                 {copy.wallet_section_title}
@@ -812,11 +802,7 @@ const LandingPage = ({ onAuthenticated }) => {
             </VStack>
           </LandingSection>
 
-          <LandingSection
-            bg="rgba(6, 18, 30, 0.9)"
-            borderRadius="3xl"
-            border="1px solid rgba(45, 212, 191, 0.3)"
-          >
+          <LandingSection bg="rgba(6, 18, 30, 0.9)" borderRadius="3xl">
             <VStack spacing={6} align="center">
               <Text fontSize="3xl" fontWeight="bold" textAlign="center">
                 {copy.ready_title}
