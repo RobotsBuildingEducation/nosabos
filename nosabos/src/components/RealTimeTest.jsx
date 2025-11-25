@@ -2535,15 +2535,15 @@ Do not return the whole sentence as a single chunk.`;
             width="100%"
             maxWidth="400px"
           >
-            <HStack align="start" spacing={3}>
+            <HStack align="center" spacing={3}>
               {/* Robot animation - compact, on the left */}
-              <Box flexShrink={0} width="80px">
+              <Box flexShrink={0} width="100px">
                 <RobotBuddyPro
                   state={uiState}
                   loudness={uiState === "listening" ? volume : 0}
                   mood={mood}
                   variant="abstract"
-                  maxW={80}
+                  maxW={100}
                 />
               </Box>
 
