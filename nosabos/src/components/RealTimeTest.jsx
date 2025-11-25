@@ -2535,52 +2535,57 @@ Do not return the whole sentence as a single chunk.`;
             width="100%"
             maxWidth="400px"
           >
-            {/* Robot animation - compact */}
-            <Box mb={3}>
-              <RobotBuddyPro
-                state={uiState}
-                loudness={uiState === "listening" ? volume : 0}
-                mood={mood}
-                variant="abstract"
-                maxW={120}
-              />
-            </Box>
+            <HStack align="start" spacing={3}>
+              {/* Robot animation - compact, on the left */}
+              <Box flexShrink={0} width="80px">
+                <RobotBuddyPro
+                  state={uiState}
+                  loudness={uiState === "listening" ? volume : 0}
+                  mood={mood}
+                  variant="abstract"
+                  maxW={80}
+                />
+              </Box>
 
-            <HStack justify="space-between" align="center" mb={1}>
-              <HStack>
-                <Badge colorScheme="yellow" variant="subtle" fontSize={"10px"}>
-                  {tGoalLabel}
-                </Badge>
-                <Text fontSize="xs" opacity={0.9}>
-                  {goalTitleForUI(currentGoal) || "—"}
-                </Text>
-              </HStack>
-              <HStack></HStack>
+              {/* Goal content on the right */}
+              <Box flex={1}>
+                <HStack justify="space-between" align="center" mb={1}>
+                  <HStack>
+                    <Badge colorScheme="yellow" variant="subtle" fontSize={"10px"}>
+                      {tGoalLabel}
+                    </Badge>
+                    <Text fontSize="xs" opacity={0.9}>
+                      {goalTitleForUI(currentGoal) || "—"}
+                    </Text>
+                  </HStack>
+                  <HStack></HStack>
+                </HStack>
+                {!!currentGoal && (
+                  <Text fontSize="xs" opacity={0.8}>
+                    <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
+                    {goalRubricForUI(currentGoal)}
+                  </Text>
+                )}
+                {goalFeedback ? (
+                  <Text fontSize="xs" mt={2} opacity={0.9}>
+                    💡 {goalFeedback}
+                  </Text>
+                ) : null}
+
+                {/* Level progress bar under goal UI */}
+                <Box mt={4}>
+                  <HStack justifyContent="space-between" mb={1}>
+                    <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+                      {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
+                    </Badge>
+                    <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                      {ui.ra_label_xp} {xp}
+                    </Badge>
+                  </HStack>
+                  <WaveBar value={progressPct} />
+                </Box>
+              </Box>
             </HStack>
-            {!!currentGoal && (
-              <Text fontSize="xs" opacity={0.8}>
-                <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
-                {goalRubricForUI(currentGoal)}
-              </Text>
-            )}
-            {goalFeedback ? (
-              <Text fontSize="xs" mt={2} opacity={0.9}>
-                💡 {goalFeedback}
-              </Text>
-            ) : null}
-
-            {/* Level progress bar under goal UI */}
-            <Box mt={4}>
-              <HStack justifyContent="space-between" mb={1}>
-                <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                  {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-                </Badge>
-                <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                  {ui.ra_label_xp} {xp}
-                </Badge>
-              </HStack>
-              <WaveBar value={progressPct} />
-            </Box>
           </Box>
         </Box>
 
