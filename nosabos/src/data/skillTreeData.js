@@ -207,7 +207,7 @@ const baseLearningPath = {
           },
           xpRequired: 100,
           xpReward: 30,
-          modes: ["vocabulary"],
+          modes: ["vocabulary", "realtime", "stories"],
           content: {
             vocabulary: {
               words: [
@@ -220,6 +220,14 @@ const baseLearningPath = {
                 "veinte",
               ],
               topic: "numbers",
+            },
+            realtime: {
+              scenario: "counting practice",
+              prompt: "Practice counting and using numbers in conversation",
+            },
+            stories: {
+              topic: "numbers",
+              prompt: "Read about numbers in everyday contexts",
             },
           },
         },
@@ -322,11 +330,18 @@ const baseLearningPath = {
           },
           xpRequired: 165,
           xpReward: 35,
-          modes: ["grammar"],
+          modes: ["grammar", "realtime", "vocabulary"],
           content: {
             grammar: {
               topic: "telling time",
               focusPoints: ["¿Qué hora es?", "es la / son las", "y/menos"],
+            },
+            realtime: {
+              scenario: "asking and telling time",
+              prompt: "Practice asking and telling the time in conversation",
+            },
+            vocabulary: {
+              topic: "time",
             },
           },
         },
@@ -451,11 +466,19 @@ const baseLearningPath = {
           },
           xpRequired: 280,
           xpReward: 40,
-          modes: ["vocabulary"],
+          modes: ["vocabulary", "realtime", "stories"],
           content: {
             vocabulary: {
               words: ["banco", "supermercado", "hospital", "escuela", "parque"],
               topic: "places",
+            },
+            realtime: {
+              scenario: "asking about places",
+              prompt: "Practice asking about and describing locations in town",
+            },
+            stories: {
+              topic: "places",
+              prompt: "Read about different places in a city",
             },
           },
         },
@@ -596,11 +619,18 @@ const baseLearningPath = {
           },
           xpRequired: 460,
           xpReward: 50,
-          modes: ["grammar"],
+          modes: ["grammar", "vocabulary", "realtime"],
           content: {
             grammar: {
               topic: "numbers and currency",
               focusPoints: ["large numbers", "prices", "costar + amount"],
+            },
+            vocabulary: {
+              topic: "numbers",
+            },
+            realtime: {
+              scenario: "shopping with prices",
+              prompt: "Practice using numbers for prices in shopping situations",
             },
           },
         },
@@ -695,11 +725,19 @@ const baseLearningPath = {
           },
           xpRequired: 560,
           xpReward: 50,
-          modes: ["vocabulary"],
+          modes: ["vocabulary", "grammar", "realtime"],
           content: {
             vocabulary: {
               words: ["rojo", "azul", "verde", "amarillo", "negro", "blanco"],
               topic: "colors",
+            },
+            grammar: {
+              topic: "adjective agreement with colors",
+              focusPoints: ["color adjectives", "gender agreement", "noun-adjective order"],
+            },
+            realtime: {
+              scenario: "describing colors",
+              prompt: "Practice describing objects using colors",
             },
           },
         },
@@ -954,11 +992,18 @@ const baseLearningPath = {
           },
           xpRequired: 895,
           xpReward: 60,
-          modes: ["grammar"],
+          modes: ["grammar", "vocabulary", "reading"],
           content: {
             grammar: {
               topic: "preterite tense",
               focusPoints: ["regular -ar verbs", "past time markers"],
+            },
+            vocabulary: {
+              topic: "time expressions",
+            },
+            reading: {
+              topic: "past events",
+              prompt: "Read about completed actions and past events",
             },
           },
         },
@@ -1080,11 +1125,18 @@ const baseLearningPath = {
           },
           xpRequired: 1080,
           xpReward: 65,
-          modes: ["grammar"],
+          modes: ["grammar", "vocabulary", "reading"],
           content: {
             grammar: {
               topic: "imperfect tense",
               focusPoints: ["formation", "uses vs preterite"],
+            },
+            vocabulary: {
+              topic: "childhood",
+            },
+            reading: {
+              topic: "past habits",
+              prompt: "Read about past habits and routines",
             },
           },
         },
@@ -1128,11 +1180,18 @@ const baseLearningPath = {
           },
           xpRequired: 1215,
           xpReward: 70,
-          modes: ["grammar"],
+          modes: ["grammar", "vocabulary", "realtime"],
           content: {
             grammar: {
               topic: "weather expressions",
               focusPoints: ["hacer, estar, hay", "imperfect tense for weather"],
+            },
+            vocabulary: {
+              topic: "weather",
+            },
+            realtime: {
+              scenario: "weather conversation",
+              prompt: "Practice discussing weather and seasons",
             },
           },
         },
@@ -1227,11 +1286,19 @@ const baseLearningPath = {
           },
           xpRequired: 1360,
           xpReward: 75,
-          modes: ["vocabulary"],
+          modes: ["vocabulary", "grammar", "reading"],
           content: {
             vocabulary: {
               words: ["mañana", "próximo", "futuro", "después", "luego"],
               topic: "future time expressions",
+            },
+            grammar: {
+              topic: "simple future tense formation",
+              focusPoints: ["regular endings", "irregular verbs", "future time markers"],
+            },
+            reading: {
+              topic: "future plans",
+              prompt: "Read about future plans and predictions",
             },
           },
         },
@@ -1330,11 +1397,19 @@ const baseLearningPath = {
           },
           xpRequired: 1515,
           xpReward: 70,
-          modes: ["vocabulary"],
+          modes: ["vocabulary", "grammar", "reading"],
           content: {
             vocabulary: {
               words: ["cabeza", "brazo", "pierna", "mano", "pie", "ojo"],
               topic: "body parts",
+            },
+            grammar: {
+              topic: "body parts with articles",
+              focusPoints: ["definite articles with body parts", "reflexive verbs with body parts"],
+            },
+            reading: {
+              topic: "body and health",
+              prompt: "Read about the human body and health",
             },
           },
         },
@@ -1594,11 +1669,18 @@ const baseLearningPath = {
           },
           xpRequired: 1970,
           xpReward: 90,
-          modes: ["grammar"],
+          modes: ["grammar", "vocabulary", "reading"],
           content: {
             grammar: {
               topic: "present subjunctive",
               focusPoints: ["formation", "trigger phrases"],
+            },
+            vocabulary: {
+              topic: "wishes and desires",
+            },
+            reading: {
+              topic: "subjunctive examples",
+              prompt: "Read examples of subjunctive mood in context",
             },
           },
         },
