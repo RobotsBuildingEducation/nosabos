@@ -9975,6 +9975,29 @@ export function getLearningPath(targetLang, level) {
 }
 
 /**
+ * Get the learning path for multiple levels
+ * Returns combined units from all specified levels with level metadata
+ */
+export function getMultiLevelLearningPath(targetLang, levels = ['A1', 'A2']) {
+  const lang = SUPPORTED_TARGET_LANGS.has(targetLang)
+    ? targetLang
+    : DEFAULT_TARGET_LANG;
+
+  const allUnits = [];
+  levels.forEach((level) => {
+    const units = LEARNING_PATHS[lang]?.[level] || [];
+    // Add level metadata to each unit
+    const unitsWithLevel = units.map(unit => ({
+      ...unit,
+      cefrLevel: level,
+    }));
+    allUnits.push(...unitsWithLevel);
+  });
+
+  return localizeLearningPath(allUnits, lang);
+}
+
+/**
  * Calculate total XP required to complete a unit
  */
 export function getUnitTotalXP(unit) {
