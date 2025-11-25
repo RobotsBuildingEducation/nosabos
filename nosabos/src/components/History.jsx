@@ -789,7 +789,9 @@ export default function History({
   useEffect(() => {
     // Wait for progress data to load before generating content
     if (!npub || isLoading || isGenerating || generatingRef.current) return;
-    if (lectures.length === 0 && !draftLecture) {
+    // Avoid double-generation when a lesson-provided prompt is present;
+    // the lessonContent effect will trigger its own generation path.
+    if (lectures.length === 0 && !draftLecture && !lessonContent) {
       // Don't set activeId when auto-generating first lecture
       setActiveId(null);
       generateNextLectureGeminiStream();
