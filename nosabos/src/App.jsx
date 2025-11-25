@@ -2400,6 +2400,8 @@ export default function App() {
             supportLang={appLanguage}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
+            showMultipleLevels={true}
+            levels={["A1", "A2", "B1"]}
           />
         </Box>
       )}
