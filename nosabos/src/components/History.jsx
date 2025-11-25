@@ -683,6 +683,13 @@ export default function History({
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
+  // Track lesson content changes to auto-trigger generation
+  const lessonContentKey = useMemo(
+    () => JSON.stringify(lessonContent || null),
+    [lessonContent]
+  );
+  const lastLessonContentKeyRef = useRef(null);
+
   // ---- Dedup & concurrency guards ----
   const generatingRef = useRef(false); // synchronous mutex to stop double invokes
 
@@ -788,6 +795,19 @@ export default function History({
       generateNextLectureGeminiStream();
     }
   }, [npub, lectures.length, isLoading]); // eslint-disable-line
+
+  // Auto-generate a fresh lecture whenever lesson content changes (lesson mode)
+  useEffect(() => {
+    if (!npub || isLoading || isGenerating || generatingRef.current) return;
+    if (!lessonContentKey) return;
+
+    if (lastLessonContentKeyRef.current !== lessonContentKey) {
+      lastLessonContentKeyRef.current = lessonContentKey;
+      setActiveId(null);
+      setDraftLecture(null);
+      generateNextLectureGeminiStream();
+    }
+  }, [npub, isLoading, isGenerating, lessonContentKey]);
 
   const activeLecture = useMemo(
     () => lectures.find((l) => l.id === activeId) || null,
