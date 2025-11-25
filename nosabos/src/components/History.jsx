@@ -291,9 +291,15 @@ function useSharedProgress() {
     showTranslations: true,
     voice: "alloy",
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!npub) return;
+    if (!npub) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
@@ -316,13 +322,14 @@ function useSharedProgress() {
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
         voice: p.voice || "alloy",
       });
+      setIsLoading(false);
     });
     return () => unsub();
   }, [npub]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
-  return { xp, levelNumber, progressPct, progress, npub };
+  return { xp, levelNumber, progressPct, progress, npub, isLoading };
 }
 
 /* ---------------------------
@@ -370,26 +377,31 @@ function buildSeedLecturePrompt({
   const promptText = lessonContent?.prompt || "";
 
   return `
-Write ONE short educational lecture in ${TARGET} (≈180–260 words) about ${topicText}. ${promptText}
+Write ONE short educational lecture about ${topicText}. ${promptText}
 Suitable for a ${level} learner. Difficulty: ${diff}.
 
-STRICT REQUIREMENT: The lecture MUST focus on ${topicText} in a way that helps language learners understand the cultural context and vocabulary related to this topic. Do NOT diverge to unrelated subjects.
+CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
+1. The target language for learning is: ${TARGET} (language code: ${targetLang})
+2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
+3. Write the ENTIRE lecture content (title, body, takeaways) in ${TARGET} ONLY
+4. Write the translation in ${SUPPORT} ONLY
+5. Do NOT write in any other language regardless of what the topic mentions
+6. Even if the topic references other cultures or languages, you MUST write in ${TARGET}
 
-Requirements:
+IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
+
+Content requirements:
+- Length: ≈180–260 words
 - Make it relevant and practical for language learners
 - Include cultural context and common vocabulary related to ${topicText}
 - Use examples and situations that learners might encounter
 - Keep it engaging, clear, and accessible
 
 Include:
-- A concise title (<= 60 chars) in ${TARGET}.
-- 3 concise bullet takeaways in ${TARGET}.
-- A full ${SUPPORT} translation of the lecture (NOT the takeaways).
-
-Language restrictions:
-- Use ${TARGET} only for the title, lecture body, and takeaways.
-- Use ${SUPPORT} only for the translation.
-- Do NOT include any other languages, language labels, or commentary.
+- A concise title (<= 60 chars) in ${TARGET}
+- Lecture body in ${TARGET}
+- 3 concise bullet takeaways in ${TARGET}
+- A full ${SUPPORT} translation of the lecture body (NOT the takeaways)
 
 Return JSON ONLY:
 {
@@ -432,17 +444,27 @@ Avoid repetition but maintain thematic coherence with ${topicText}.
 previous_titles:
 ${prev}
 
-Write ONE lecture in ${TARGET} (≈180–260 words), suitable for a ${level} learner. Difficulty: ${diff}.
-Include:
-- A concise title (<= 60 chars) related to ${topicText}.
-- 3 concise bullet takeaways.
-- Cultural context and practical vocabulary for language learners.
-- Provide a full ${SUPPORT} translation of the lecture (NOT the takeaways).
+CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
+1. The target language for learning is: ${TARGET} (language code: ${targetLang})
+2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
+3. Write the ENTIRE lecture content (title, body, takeaways) in ${TARGET} ONLY
+4. Write the translation in ${SUPPORT} ONLY
+5. Do NOT write in any other language regardless of what the topic mentions
+6. Even if the topic references other cultures or languages, you MUST write in ${TARGET}
 
-Language restrictions:
-- Use ${TARGET} only for the title, lecture body, and takeaways.
-- Use ${SUPPORT} only for the translation.
-- Do NOT include any other languages, labels, or commentary.
+IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
+
+Content requirements:
+- Length: ≈180–260 words, suitable for a ${level} learner
+- Difficulty: ${diff}
+- Include cultural context and practical vocabulary for language learners
+- Use examples and situations that learners might encounter
+
+Include:
+- A concise title (<= 60 chars) related to ${topicText} in ${TARGET}
+- Lecture body in ${TARGET}
+- 3 concise bullet takeaways in ${TARGET}
+- A full ${SUPPORT} translation of the lecture body (NOT the takeaways)
 
 Return JSON ONLY:
 {
@@ -620,7 +642,17 @@ function buildStreamingPrompt({
   return [
     `You are writing an educational reading lecture for language learners about ${topicText}.`,
     baseTopic,
-    `Target language: ${TARGET} (${targetLang}). Provide a full translation in ${SUPPORT} (${supportLang}).`,
+    "",
+    "CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:",
+    `1. The target language for learning is: ${TARGET} (language code: ${targetLang})`,
+    `2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})`,
+    `3. Write ALL lecture content (title, body, takeaways) in ${TARGET} ONLY`,
+    `4. Write the translation in ${SUPPORT} ONLY`,
+    `5. Do NOT write in any other language regardless of what the topic mentions`,
+    `6. Even if the topic references other cultures or languages, you MUST write in ${TARGET}`,
+    "",
+    `IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by ${TARGET} and ${SUPPORT}.`,
+    "",
     `Style: ~180–260 words, ${diff}.`,
     "",
     "OUTPUT PROTOCOL — NDJSON (one compact JSON object per line):",
@@ -631,8 +663,8 @@ function buildStreamingPrompt({
     '5) Finally emit {"type":"done"}',
     "",
     "STRICT RULES:",
-    `- Use ${TARGET} only for \"title\", \"target\", and \"takeaway\" lines.`,
-    `- Use ${SUPPORT} only for \"support\" lines.`,
+    `- Use ${TARGET} ONLY for \"title\", \"target\", and \"takeaway\" lines.`,
+    `- Use ${SUPPORT} ONLY for \"support\" lines.`,
     "- Do not include any other languages, labels, or commentary.",
     "- Do not output code fences or commentary.",
     "- Each line must be a single valid JSON object matching one of the types above.",
@@ -654,7 +686,8 @@ export default function History({
   // ---- Dedup & concurrency guards ----
   const generatingRef = useRef(false); // synchronous mutex to stop double invokes
 
-  const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
+  const { xp, levelNumber, progressPct, progress, npub, isLoading } =
+    useSharedProgress();
 
   const targetLang = ["en", "es", "pt", "nah", "fr", "it"].includes(
     progress.targetLang
@@ -747,13 +780,14 @@ export default function History({
 
   // Auto-generate lecture when component mounts with no lectures
   useEffect(() => {
-    if (!npub || isGenerating || generatingRef.current) return;
+    // Wait for progress data to load before generating content
+    if (!npub || isLoading || isGenerating || generatingRef.current) return;
     if (lectures.length === 0 && !draftLecture) {
       // Don't set activeId when auto-generating first lecture
       setActiveId(null);
       generateNextLectureGeminiStream();
     }
-  }, [npub, lectures.length]); // eslint-disable-line
+  }, [npub, lectures.length, isLoading]); // eslint-disable-line
 
   const activeLecture = useMemo(
     () => lectures.find((l) => l.id === activeId) || null,
@@ -1457,7 +1491,14 @@ export default function History({
             minH="280px"
             width="100%"
           >
-            {isGenerating && !draftLecture ? (
+            {isLoading ? (
+              <VStack spacing={3} width="100%" justify="center" minH="280px">
+                <Spinner size="lg" color="teal.400" />
+                <Text fontSize="lg" opacity={0.9}>
+                  {t("reading_loading") || "Loading settings..."}
+                </Text>
+              </VStack>
+            ) : isGenerating && !draftLecture ? (
               <VStack spacing={3} width="100%" justify="center" minH="280px">
                 <Spinner size="lg" color="teal.400" />
                 <Text fontSize="lg" opacity={0.9}>

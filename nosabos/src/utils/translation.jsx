@@ -276,7 +276,7 @@ export const translations = {
     app_id_placeholder: "npub...",
     app_err_save_language_title: "Could not save language",
     tabs_realtime: "Chat",
-    tabs_stories: "Role Play",
+    tabs_stories: "Stories",
     tabs_reading: "Reading",
     tabs_grammar: "Grammar",
     tabs_vocab: "Vocabulary",
@@ -683,7 +683,8 @@ export const translations = {
     skill_tree_start_lesson: "Comenzar Lección",
     skill_tree_unlock_at: "Desbloquear con {xpRequired} XP",
     skill_tree_level: "Nivel {level}",
-    skill_tree_no_path: "Aún no hay una ruta de aprendizaje disponible para este idioma.",
+    skill_tree_no_path:
+      "Aún no hay una ruta de aprendizaje disponible para este idioma.",
     skill_tree_check_back: "¡Vuelve pronto para lecciones estructuradas!",
     skill_tree_your_path: "Tu Camino de Aprendizaje",
     skill_tree_collapse: "Contraer",
