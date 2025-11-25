@@ -123,105 +123,105 @@ const MODE_ICONS = {
 const getLessonIcon = (lessonId) => {
   const iconMap = {
     // Unit 1: Basics 1
-    'lesson-1-1': RiHandHeartLine, // Hello & Goodbye
-    'lesson-1-2': RiUserVoiceLine, // Introduce Yourself
-    'lesson-1-3': RiQuestionAnswerLine, // Basic Questions
-    'lesson-1-quiz': RiQuestionLine, // Unit 1 Quiz
+    "lesson-1-1": RiHandHeartLine, // Hello & Goodbye
+    "lesson-1-2": RiUserVoiceLine, // Introduce Yourself
+    "lesson-1-3": RiQuestionAnswerLine, // Basic Questions
+    "lesson-1-quiz": RiQuestionLine, // Unit 1 Quiz
 
     // Unit 2: Basics 2
-    'lesson-2-1': RiHeartLine, // Likes & Dislikes
-    'lesson-2-2': RiNumbersLine, // Numbers 1-20
-    'lesson-2-3': RiRestaurantLine, // Food & Drinks
-    'lesson-2-quiz': RiQuestionLine, // Unit 2 Quiz
+    "lesson-2-1": RiHeartLine, // Likes & Dislikes
+    "lesson-2-2": RiNumbersLine, // Numbers 1-20
+    "lesson-2-3": RiRestaurantLine, // Food & Drinks
+    "lesson-2-quiz": RiQuestionLine, // Unit 2 Quiz
 
     // Unit 3: Daily Life
-    'lesson-3-1': RiTimeLine, // Telling Time
-    'lesson-3-2': RiCalendarLine, // Daily Routine
-    'lesson-3-3': RiTeamLine, // Family Members
-    'lesson-3-quiz': RiQuestionLine, // Unit 3 Quiz
+    "lesson-3-1": RiTimeLine, // Telling Time
+    "lesson-3-2": RiCalendarLine, // Daily Routine
+    "lesson-3-3": RiTeamLine, // Family Members
+    "lesson-3-quiz": RiQuestionLine, // Unit 3 Quiz
 
     // Unit 4: Getting Around
-    'lesson-4-1': RiMapPinLine, // Places in Town
-    'lesson-4-2': RiCompassLine, // Directions
-    'lesson-4-3': RiBusLine, // Transportation
-    'lesson-4-quiz': RiQuestionLine, // Unit 4 Quiz
+    "lesson-4-1": RiMapPinLine, // Places in Town
+    "lesson-4-2": RiCompassLine, // Directions
+    "lesson-4-3": RiBusLine, // Transportation
+    "lesson-4-quiz": RiQuestionLine, // Unit 4 Quiz
 
     // Unit 5: Shopping & Money
-    'lesson-5-1': RiShoppingCartLine, // At the Store
-    'lesson-5-2': RiNumbersLine, // Numbers 20-100
-    'lesson-5-3': RiShirtLine, // Clothing
-    'lesson-5-quiz': RiQuestionLine, // Unit 5 Quiz
+    "lesson-5-1": RiShoppingCartLine, // At the Store
+    "lesson-5-2": RiNumbersLine, // Numbers 20-100
+    "lesson-5-3": RiShirtLine, // Clothing
+    "lesson-5-quiz": RiQuestionLine, // Unit 5 Quiz
 
     // Unit 6: Colors & Descriptions
-    'lesson-6-1': RiPaletteLine, // Colors
-    'lesson-6-2': RiEmotionLine, // Physical Descriptions
-    'lesson-6-3': RiEmotionLine, // Personality Traits
-    'lesson-6-quiz': RiQuestionLine, // Unit 6 Quiz
+    "lesson-6-1": RiPaletteLine, // Colors
+    "lesson-6-2": RiEmotionLine, // Physical Descriptions
+    "lesson-6-3": RiEmotionLine, // Personality Traits
+    "lesson-6-quiz": RiQuestionLine, // Unit 6 Quiz
 
     // Unit 7: Hobbies & Free Time
-    'lesson-7-1': RiFootballLine, // Sports & Exercise
-    'lesson-7-2': RiMusicLine, // Music & Entertainment
-    'lesson-7-3': RiBook2Line, // Reading & Arts
-    'lesson-7-quiz': RiQuestionLine, // Unit 7 Quiz
+    "lesson-7-1": RiFootballLine, // Sports & Exercise
+    "lesson-7-2": RiMusicLine, // Music & Entertainment
+    "lesson-7-3": RiBook2Line, // Reading & Arts
+    "lesson-7-quiz": RiQuestionLine, // Unit 7 Quiz
 
     // Unit 8: Past Experiences
-    'lesson-8-1': RiHistoryLine, // Preterite Tense Intro
-    'lesson-8-2': RiCalendarLine, // Weekend Activities
-    'lesson-8-3': RiSuitcaseLine, // Travel Stories
-    'lesson-8-quiz': RiQuestionLine, // Unit 8 Quiz
+    "lesson-8-1": RiHistoryLine, // Preterite Tense Intro
+    "lesson-8-2": RiCalendarLine, // Weekend Activities
+    "lesson-8-3": RiSuitcaseLine, // Travel Stories
+    "lesson-8-quiz": RiQuestionLine, // Unit 8 Quiz
 
     // Unit 9: Ongoing Past
-    'lesson-9-1': RiHistoryFill, // Imperfect Tense
-    'lesson-9-2': RiHistoryLine, // Childhood Memories
-    'lesson-9-3': RiCloudyLine, // Weather & Seasons
-    'lesson-9-quiz': RiQuestionLine, // Unit 9 Quiz
+    "lesson-9-1": RiHistoryFill, // Imperfect Tense
+    "lesson-9-2": RiHistoryLine, // Childhood Memories
+    "lesson-9-3": RiCloudyLine, // Weather & Seasons
+    "lesson-9-quiz": RiQuestionLine, // Unit 9 Quiz
 
     // Unit 10: Future Plans
-    'lesson-10-1': RiCalendarLine, // Future with Ir + a
-    'lesson-10-2': RiCalendarLine, // Simple Future Tense
-    'lesson-10-3': RiBriefcaseLine, // Career Goals
-    'lesson-10-quiz': RiQuestionLine, // Unit 10 Quiz
+    "lesson-10-1": RiCalendarLine, // Future with Ir + a
+    "lesson-10-2": RiCalendarLine, // Simple Future Tense
+    "lesson-10-3": RiBriefcaseLine, // Career Goals
+    "lesson-10-quiz": RiQuestionLine, // Unit 10 Quiz
 
     // Unit 11: Health & Body
-    'lesson-11-1': RiBodyScanLine, // Body Parts
-    'lesson-11-2': RiHeartPulseLine, // At the Doctor
-    'lesson-11-3': RiHeartPulseLine, // Healthy Habits
-    'lesson-11-quiz': RiQuestionLine, // Unit 11 Quiz
+    "lesson-11-1": RiBodyScanLine, // Body Parts
+    "lesson-11-2": RiHeartPulseLine, // At the Doctor
+    "lesson-11-3": RiHeartPulseLine, // Healthy Habits
+    "lesson-11-quiz": RiQuestionLine, // Unit 11 Quiz
 
     // Unit 12: Environment & Nature
-    'lesson-12-1': RiPlantLine, // Animals & Plants
-    'lesson-12-2': RiGlobalLine, // Environmental Issues
-    'lesson-12-3': RiEarthLine, // Geography & Landscapes
-    'lesson-12-quiz': RiQuestionLine, // Unit 12 Quiz
+    "lesson-12-1": RiPlantLine, // Animals & Plants
+    "lesson-12-2": RiGlobalLine, // Environmental Issues
+    "lesson-12-3": RiEarthLine, // Geography & Landscapes
+    "lesson-12-quiz": RiQuestionLine, // Unit 12 Quiz
 
     // Unit 13: Subjunctive Mood
-    'lesson-13-1': RiLightbulbLine, // Present Subjunctive Intro
-    'lesson-13-2': RiStarLine, // Wishes & Desires
-    'lesson-13-3': RiQuestionLine, // Doubts & Denials
-    'lesson-13-quiz': RiQuestionLine, // Unit 13 Quiz
+    "lesson-13-1": RiLightbulbLine, // Present Subjunctive Intro
+    "lesson-13-2": RiStarLine, // Wishes & Desires
+    "lesson-13-3": RiQuestionLine, // Doubts & Denials
+    "lesson-13-quiz": RiQuestionLine, // Unit 13 Quiz
 
     // Unit 14: Complex Conversations
-    'lesson-14-1': RiMegaphoneLine, // Debate & Persuasion
-    'lesson-14-2': RiNewspaperLine, // Current Events
-    'lesson-14-3': RiBriefcaseLine, // Professional Communication
-    'lesson-14-quiz': RiQuestionLine, // Unit 14 Quiz
+    "lesson-14-1": RiMegaphoneLine, // Debate & Persuasion
+    "lesson-14-2": RiNewspaperLine, // Current Events
+    "lesson-14-3": RiBriefcaseLine, // Professional Communication
+    "lesson-14-quiz": RiQuestionLine, // Unit 14 Quiz
 
     // Unit 15: Literature & Arts
-    'lesson-15-1': RiQuillPenLine, // Poetry & Prose
-    'lesson-15-2': RiPaintBrushLine, // Visual Arts
-    'lesson-15-3': RiClapperboardLine, // Cinema & Theater
-    'lesson-15-quiz': RiQuestionLine, // Unit 15 Quiz
+    "lesson-15-1": RiQuillPenLine, // Poetry & Prose
+    "lesson-15-2": RiPaintBrushLine, // Visual Arts
+    "lesson-15-3": RiClapperboardLine, // Cinema & Theater
+    "lesson-15-quiz": RiQuestionLine, // Unit 15 Quiz
 
     // Unit 16: Technology & Innovation
-    'lesson-16-1': RiSmartphoneLine, // Digital Communication
-    'lesson-16-2': RiFlaskLine, // Science & Progress
-    'lesson-16-3': RiBitCoinLine, // Digital Economy
-    'lesson-16-quiz': RiQuestionLine, // Unit 16 Quiz
+    "lesson-16-1": RiSmartphoneLine, // Digital Communication
+    "lesson-16-2": RiFlaskLine, // Science & Progress
+    "lesson-16-3": RiBitCoinLine, // Digital Economy
+    "lesson-16-quiz": RiQuestionLine, // Unit 16 Quiz
 
     // Unit 17: Social Issues & Ethics
-    'lesson-17-1': RiScalesLine, // Social Justice
-    'lesson-17-2': RiEarthLine, // Global Challenges
-    'lesson-17-quiz': RiQuestionLine, // Unit 17 Quiz
+    "lesson-17-1": RiScalesLine, // Social Justice
+    "lesson-17-2": RiEarthLine, // Global Challenges
+    "lesson-17-quiz": RiQuestionLine, // Unit 17 Quiz
   };
 
   return iconMap[lessonId] || RiBookOpenLine; // Default fallback
@@ -394,16 +394,24 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     position="absolute"
                     top="10%"
                     right="15%"
-                    w="6px"
-                    h="6px"
+                    w="10px"
+                    h="10px"
                     borderRadius="full"
                     bg="white"
-                    boxShadow="0 0 10px white"
-                    animation="sparkle 3s ease-in-out infinite"
+                    boxShadow="0 0 12px 4px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.6)"
+                    animation="sparkle 2.4s ease-in-out infinite"
                     sx={{
                       "@keyframes sparkle": {
-                        "0%, 100%": { opacity: 0, transform: "scale(0)" },
-                        "50%": { opacity: 1, transform: "scale(1)" },
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.5) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 0.6,
+                          transform: "scale(0.6) rotate(15deg)",
+                          filter:
+                            "drop-shadow(0 0 10px rgba(255, 255, 255, 0.9))",
+                        },
                       },
                     }}
                   />
@@ -411,16 +419,47 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     position="absolute"
                     bottom="15%"
                     left="10%"
-                    w="4px"
-                    h="4px"
+                    w="8px"
+                    h="8px"
                     borderRadius="full"
                     bg="white"
-                    boxShadow="0 0 8px white"
-                    animation="sparkle 3s ease-in-out infinite 1.5s"
+                    boxShadow="0 0 10px 3px rgba(255,255,255,0.7), 0 0 18px rgba(255,255,255,0.5)"
+                    animation="sparkle 2.7s ease-in-out infinite 1.2s"
                     sx={{
                       "@keyframes sparkle": {
-                        "0%, 100%": { opacity: 0, transform: "scale(0)" },
-                        "50%": { opacity: 1, transform: "scale(1)" },
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.4) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 1,
+                          transform: "scale(1.4) rotate(-10deg)",
+                          filter: "drop-shadow(0 0 8px rgba(255,255,255,0.9))",
+                        },
+                      },
+                    }}
+                  />
+                  <Box
+                    position="absolute"
+                    top="45%"
+                    left="60%"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 10px 3px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.6)"
+                    animation="sparkle 2.2s ease-in-out infinite 0.6s"
+                    sx={{
+                      "@keyframes sparkle": {
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.3) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 1,
+                          transform: "scale(1.2) rotate(8deg)",
+                          filter: "drop-shadow(0 0 9px rgba(255,255,255,0.9))",
+                        },
                       },
                     }}
                   />
