@@ -1443,7 +1443,7 @@ Return EXACTLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
+    const delta = ok ? 3 : 0; // ✅ normalized to 2-4 XP range
 
     // Handle quiz mode differently
     if (isFinalQuiz) {
@@ -1701,7 +1701,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
+    const delta = ok ? 3 : 0; // ✅ normalized to 2-4 XP range
 
     // Handle quiz mode differently
     if (isFinalQuiz) {
@@ -1985,7 +1985,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
+    const delta = ok ? 3 : 0; // ✅ normalized to 2-4 XP range
 
     // Handle quiz mode differently
     if (isFinalQuiz) {
@@ -2458,7 +2458,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
-    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
+    const delta = ok ? 3 : 0; // ✅ normalized to 2-4 XP range
 
     // Handle quiz mode differently
     if (isFinalQuiz) {
@@ -2524,7 +2524,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       setSEval(evaluation);
 
       const ok = evaluation.pass;
-      const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
+      const delta = ok ? 3 : 0; // ✅ normalized to 2-4 XP range
 
       // Handle quiz mode differently
       if (isFinalQuiz) {

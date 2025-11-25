@@ -535,8 +535,8 @@ async function computeAdaptiveXp({
   currentXp,
   hoursSinceLastLecture,
 }) {
-  const MIN = 4;
-  const MAX = 7;
+  const MIN = 2;
+  const MAX = 4;
 
   try {
     const prompt = buildXpPrompt({
@@ -564,9 +564,9 @@ async function computeAdaptiveXp({
     if (xp !== null) return { xp, reason };
   } catch {}
 
-  // Heuristic fallback (kept inside 4–7) - normalized to 4-7 XP range
-  let score = 5; // center
-  // Nudge by density (smaller increments for 4-7 range)
+  // Heuristic fallback (kept inside 2–4) - normalized to 2-4 XP range
+  let score = 3; // center
+  // Nudge by density (smaller increments for 2-4 range)
   score += target.length > 230 ? 1 : target.length < 170 ? -1 : 0;
   // Novelty vs previous titles
   const looksRepeated = previousTitles?.some((t) =>

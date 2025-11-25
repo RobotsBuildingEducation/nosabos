@@ -1401,7 +1401,7 @@ export default function StoryMode({
     }
 
     // Passed — accumulate XP and advance (no award yet)
-    const delta = 5; // ✅ normalized to 4-7 XP range
+    const delta = 3; // ✅ normalized to 2-4 XP range
     setSessionXp((p) => p + delta);
     setPassedCount((c) => c + 1);
 
