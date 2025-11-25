@@ -394,16 +394,20 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     position="absolute"
                     top="10%"
                     right="15%"
-                    w="6px"
-                    h="6px"
+                    w="10px"
+                    h="10px"
                     borderRadius="full"
                     bg="white"
-                    boxShadow="0 0 10px white"
-                    animation="sparkle 3s ease-in-out infinite"
+                    boxShadow="0 0 12px 4px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.6)"
+                    animation="sparkle 2.4s ease-in-out infinite"
                     sx={{
                       "@keyframes sparkle": {
-                        "0%, 100%": { opacity: 0, transform: "scale(0)" },
-                        "50%": { opacity: 1, transform: "scale(1)" },
+                        "0%, 100%": { opacity: 0, transform: "scale(0.5) rotate(0deg)" },
+                        "50%": {
+                          opacity: 1,
+                          transform: "scale(1.6) rotate(15deg)",
+                          filter: "drop-shadow(0 0 10px rgba(255,255,255,0.9))",
+                        },
                       },
                     }}
                   />
@@ -411,16 +415,41 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     position="absolute"
                     bottom="15%"
                     left="10%"
-                    w="4px"
-                    h="4px"
+                    w="8px"
+                    h="8px"
                     borderRadius="full"
                     bg="white"
-                    boxShadow="0 0 8px white"
-                    animation="sparkle 3s ease-in-out infinite 1.5s"
+                    boxShadow="0 0 10px 3px rgba(255,255,255,0.7), 0 0 18px rgba(255,255,255,0.5)"
+                    animation="sparkle 2.7s ease-in-out infinite 1.2s"
                     sx={{
                       "@keyframes sparkle": {
-                        "0%, 100%": { opacity: 0, transform: "scale(0)" },
-                        "50%": { opacity: 1, transform: "scale(1)" },
+                        "0%, 100%": { opacity: 0, transform: "scale(0.4) rotate(0deg)" },
+                        "50%": {
+                          opacity: 1,
+                          transform: "scale(1.4) rotate(-10deg)",
+                          filter: "drop-shadow(0 0 8px rgba(255,255,255,0.9))",
+                        },
+                      },
+                    }}
+                  />
+                  <Box
+                    position="absolute"
+                    top="45%"
+                    left="60%"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 10px 3px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.6)"
+                    animation="sparkle 2.2s ease-in-out infinite 0.6s"
+                    sx={{
+                      "@keyframes sparkle": {
+                        "0%, 100%": { opacity: 0, transform: "scale(0.3) rotate(0deg)" },
+                        "50%": {
+                          opacity: 1,
+                          transform: "scale(1.2) rotate(8deg)",
+                          filter: "drop-shadow(0 0 9px rgba(255,255,255,0.9))",
+                        },
                       },
                     }}
                   />
