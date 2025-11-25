@@ -636,9 +636,9 @@ function UnitSection({
                       )}
                     </defs>
                     <path
-                      d={`M ${svgWidth / 2 + offset - nextOffset} 0 Q ${
-                        svgWidth / 2 + (offset - nextOffset) / 2
-                      } 70, ${svgWidth / 2} 95`}
+                      d={`M ${svgWidth / 2 + offset} 0 Q ${
+                        svgWidth / 2 + (offset + nextOffset) / 2
+                      } 70, ${svgWidth / 2 + nextOffset} 95`}
                       stroke={`url(#gradient-${lesson.id})`}
                       strokeWidth="5"
                       fill="none"
