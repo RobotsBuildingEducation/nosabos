@@ -221,379 +221,338 @@ const getIconFromTopic = (topic) => {
   return RiBookOpenLine; // Default fallback
 };
 
-// Map lesson title patterns to unique contextual icons
+// Direct mapping of all unique lesson titles to contextual icons
+const LESSON_TITLE_ICONS = {
+  // A1 - Greetings & Introductions
+  "Hello and Goodbye": RiHandHeartLine,
+  "Meeting Someone New": RiSpeakLine,
+  "Polite Conversations": RiUserVoiceLine,
+  "What's Your Name?": RiUserVoiceLine,
+  "Nice to Meet You": RiTeamLine,
+  "Tell Me About Yourself": RiQuestionAnswerLine,
+
+  // A1 - Numbers
+  "Counting to Twenty": RiNumbersLine,
+  "Using Numbers Daily": RiCalendarLine,
+  "Phone Numbers and Ages": RiSmartphoneLine,
+  "Counting to One Hundred": RiNumbersLine,
+  "Prices and Money": RiBitCoinLine,
+  "Big Numbers in Context": RiNumbersLine,
+
+  // A1 - Days & Time
+  "Monday to Sunday": RiCalendarLine,
+  "What Day Is It?": RiCalendarLine,
+  "Planning Your Week": RiHistoryLine,
+  "Twelve Months": RiCalendarLine,
+  "When's Your Birthday?": RiStarLine,
+  "Important Dates": RiCalendarLine,
+  "What Time Is It?": RiTimeLine,
+  "Daily Schedule": RiTimeLine,
+  "Making Appointments": RiCalendarLine,
+
+  // A1 - Family & Colors
+  "My Family Tree": RiTeamLine,
+  "Talking About Family": RiHeartLine,
+  "Family Relationships": RiTeamLine,
+  "Rainbow Colors": RiPaletteLine,
+  "Describing Things": RiPaintBrushLine,
+  "Colors Everywhere": RiPaletteLine,
+
+  // A1 - Food & Dining
+  "Food Vocabulary": RiRestaurantLine,
+  "I'm Hungry!": RiRestaurantLine,
+  "My Favorite Foods": RiHeartLine,
+  "Restaurant Words": RiRestaurantLine,
+  "Ordering a Meal": RiQuestionAnswerLine,
+  "Paying the Bill": RiShoppingCartLine,
+
+  // A1 - Objects & Spaces
+  "Everyday Items": RiBookOpenLine,
+  "What Is This?": RiQuestionLine,
+  "Objects Around Us": RiShoppingCartLine,
+  "Rooms of the House": RiMapPinLine,
+  "Where Is It?": RiCompassLine,
+  "At Home": RiMapPinLine,
+
+  // A1 - Clothing & Daily Life
+  "What to Wear": RiShirtLine,
+  "Shopping for Clothes": RiShoppingCartLine,
+  "My Wardrobe": RiShirtLine,
+  "My Day": RiTimeLine,
+  "Daily Activities": RiCalendarLine,
+  "From Morning to Night": RiTimeLine,
+
+  // A1 - Weather & Preferences
+  "How's the Weather?": RiCloudyLine,
+  "Four Seasons": RiPlantLine,
+  "Weather Reports": RiCloudyLine,
+  "I Like, I Love": RiHeartLine,
+  "Expressing Preferences": RiEmotionLine,
+  "Favorites and Dislikes": RiHeartLine,
+
+  // A1 - Questions & Descriptions
+  "Question Words": RiQuestionAnswerLine,
+  "Asking Questions": RiQuestionLine,
+  "Getting Information": RiQuestionAnswerLine,
+  "Appearance Words": RiEmotionLine,
+  "How Do They Look?": RiBodyScanLine,
+  "Detailed Descriptions": RiEmotionLine,
+
+  // A1 - Places & Shopping
+  "Places Around Town": RiMapPinLine,
+  "My Neighborhood": RiCompassLine,
+  "Dream Destinations": RiSuitcaseLine,
+  "At the Store": RiShoppingCartLine,
+  "Bargain Hunting": RiBitCoinLine,
+  "Smart Shopping": RiShoppingCartLine,
+  "Fresh Produce": RiRestaurantLine,
+  "Buying Groceries": RiShoppingCartLine,
+  "Market Day": RiRestaurantLine,
+
+  // A1 - Transportation & Directions
+  "Getting Around": RiBusLine,
+  "Taking the Bus": RiBusLine,
+  "Travel Options": RiSuitcaseLine,
+  "Left and Right": RiCompassLine,
+  "How Do I Get There?": RiMapPinLine,
+  "Finding Your Way": RiCompassLine,
+
+  // A2 - Future & Hobbies
+  "Future Activities": RiCalendarLine,
+  "Let's Meet Up!": RiTeamLine,
+  "Scheduling Events": RiCalendarLine,
+  "Free Time Fun": RiMusicLine,
+  "What Do You Enjoy?": RiHeartLine,
+  "Sharing Interests": RiPaintBrushLine,
+  "Playing Sports": RiFootballLine,
+  "Staying Active": RiBodyScanLine,
+  "Fitness Goals": RiFootballLine,
+
+  // A2 - Past Tense & Stories
+  "Yesterday's Actions": RiHistoryLine,
+  "What Did You Do?": RiQuestionAnswerLine,
+  "Recent Events": RiHistoryLine,
+  "Common Irregular Verbs": RiPencilLine,
+  "Last Week": RiHistoryLine,
+  "Life Stories": RiBookOpenLine,
+  "Story Elements": RiBook2Line,
+  "Once Upon a Time": RiBookOpenLine,
+  "My Story": RiQuillPenLine,
+
+  // A2 - Future & Health
+  "Dreams and Goals": RiLightbulbLine,
+  "What Will You Do?": RiCalendarLine,
+  "Planning Ahead": RiLightbulbLine,
+  "Body Parts": RiBodyScanLine,
+  "How Do You Feel?": RiEmotionLine,
+  "Healthy Living": RiHeartPulseLine,
+  "Medical Terms": RiHeartPulseLine,
+  "Visiting the Doctor": RiBodyScanLine,
+  "Health Concerns": RiHeartPulseLine,
+
+  // A2 - Work & Education
+  "Career Words": RiBriefcaseLine,
+  "What Do You Do?": RiSuitcaseLine,
+  "Dream Job": RiBriefcaseLine,
+  "In the Classroom": RiBook2Line,
+  "School Life": RiPencilLine,
+  "Learning Journey": RiBook2Line,
+
+  // A2 - Technology
+  "Digital Devices": RiSmartphoneLine,
+  "Using Technology": RiGlobalLine,
+  "Connected Life": RiSmartphoneLine,
+
+  // B1 - Present Perfect & Continuous
+  "Have You Ever?": RiHistoryLine,
+  "Life Experiences": RiBookOpenLine,
+  "Achievements": RiTrophyLine,
+  "While It Was Happening": RiHistoryFill,
+  "Background Actions": RiPencilLine,
+  "Setting the Scene": RiBookOpenLine,
+
+  // B1 - Future & Comparisons
+  "Tomorrow's World": RiCalendarLine,
+  "Predictions": RiLightbulbLine,
+  "Future Possibilities": RiCalendarLine,
+  "Better or Worse": RiScalesLine,
+  "Making Comparisons": RiScalesLine,
+  "Superlatives": RiStarLine,
+
+  // B1 - Modals & Suggestions
+  "Should and Shouldn't": RiLightbulbLine,
+  "Helpful Suggestions": RiQuestionAnswerLine,
+  "Problem Solving": RiLightbulbLine,
+  "Why Don't We?": RiTeamLine,
+  "Let's Try This": RiQuestionAnswerLine,
+  "Collaborative Ideas": RiLightbulbLine,
+
+  // B1 - Conditionals & Travel
+  "If I Were You": RiQuestionLine,
+  "Hypothetical Situations": RiLightbulbLine,
+  "Imagining Possibilities": RiQuestionLine,
+  "Trip Planning": RiSuitcaseLine,
+  "Booking a Trip": RiMapPinLine,
+  "Adventure Awaits": RiSuitcaseLine,
+
+  // B1 - Environment & Culture
+  "Our Planet": RiEarthLine,
+  "Going Green": RiPlantLine,
+  "Saving Earth": RiEarthLine,
+  "Cultural Heritage": RiGlobalLine,
+  "Customs and Festivals": RiStarLine,
+  "Celebrating Diversity": RiGlobalLine,
+
+  // B1 - Media & Opinions
+  "Headlines": RiNewspaperLine,
+  "Current Events": RiNewspaperLine,
+  "Informed Citizen": RiMegaphoneLine,
+  "I Think That...": RiMegaphoneLine,
+  "Sharing Views": RiQuestionAnswerLine,
+  "Respectful Debate": RiScalesLine,
+
+  // B1 - Complaints & Anecdotes
+  "Something's Wrong": RiMegaphoneLine,
+  "I'm Not Satisfied": RiEmotionLine,
+  "Resolving Issues": RiLightbulbLine,
+  "Memorable Moments": RiBookOpenLine,
+  "Sharing Experiences": RiQuestionAnswerLine,
+  "Learning from Life": RiBook2Line,
+
+  // B2 - Modal Verbs & Past Perfect
+  "Maybe and Perhaps": RiQuestionLine,
+  "Likely or Unlikely": RiLightbulbLine,
+  "Making Predictions": RiCalendarLine,
+  "Before It Happened": RiHistoryFill,
+  "Earlier Actions": RiHistoryLine,
+  "Complex Timelines": RiHistoryFill,
+
+  // B2 - Passive & Reported Speech
+  "It Was Done": RiPencilLine,
+  "Formal Writing": RiQuillPenLine,
+  "Professional Tone": RiBriefcaseLine,
+  "She Said That...": RiQuestionAnswerLine,
+  "Quoting Others": RiSpeakLine,
+  "Retelling Stories": RiBookOpenLine,
+
+  // B2 - Relative Clauses & Register
+  "Who, Which, That": RiPencilLine,
+  "Connecting Ideas": RiLightbulbLine,
+  "Complex Sentences": RiBook2Line,
+  "Registers of Speech": RiSpeakLine,
+  "Appropriate Language": RiUserVoiceLine,
+  "Context Matters": RiLightbulbLine,
+
+  // B2 - Business & Science
+  "Corporate World": RiBriefcaseLine,
+  "Professional Meetings": RiTeamLine,
+  "Business Communication": RiBriefcaseLine,
+  "Scientific Terms": RiFlaskLine,
+  "Technological Advances": RiSmartphoneLine,
+  "Future of Science": RiLightbulbLine,
+
+  // B2 - Social Issues & Arts
+  "Society Today": RiScalesLine,
+  "Discussing Problems": RiMegaphoneLine,
+  "Making Change": RiScalesLine,
+  "Creative Expression": RiPaintBrushLine,
+  "Artistic Movements": RiQuillPenLine,
+  "Cultural Analysis": RiGlobalLine,
+
+  // B2 - Politics & Wellness
+  "Civic Engagement": RiMegaphoneLine,
+  "Political Discourse": RiScalesLine,
+  "Active Citizenship": RiMegaphoneLine,
+  "Wellness Choices": RiHeartPulseLine,
+  "Balanced Living": RiHeartLine,
+  "Holistic Health": RiHeartPulseLine,
+
+  // B2 - Philosophy
+  "Philosophical Ideas": RiLightbulbLine,
+  "Deep Thinking": RiBook2Line,
+  "Theoretical Discussion": RiQuillPenLine,
+
+  // C1 - Subjunctive & Conditionals
+  "Doubt and Desire": RiStarLine,
+  "Expressing Wishes": RiHeartLine,
+  "Nuanced Meaning": RiPencilLine,
+  "If Only...": RiQuestionLine,
+  "Contrary to Fact": RiLightbulbLine,
+  "Complex Emotions": RiEmotionLine,
+  "Advanced If Clauses": RiQuestionLine,
+  "Mixed Conditionals": RiLightbulbLine,
+  "Sophisticated Logic": RiBook2Line,
+
+  // C1 - Idioms & Academic
+  "Native Phrases": RiQuillPenLine,
+  "Sound Natural": RiSpeakLine,
+  "Cultural Fluency": RiGlobalLine,
+  "Scholarly Language": RiBook2Line,
+  "Research Papers": RiPencilLine,
+  "Critical Analysis": RiQuillPenLine,
+
+  // C1 - Business & Debate
+  "Business Etiquette": RiBriefcaseLine,
+  "Executive Presence": RiSuitcaseLine,
+  "Leadership Language": RiBriefcaseLine,
+  "Persuasive Language": RiMegaphoneLine,
+  "Building Arguments": RiScalesLine,
+  "Winning Debates": RiMegaphoneLine,
+
+  // C1 - Culture & Literature
+  "Cultural Studies": RiGlobalLine,
+  "Interpreting Culture": RiEarthLine,
+  "Cross-Cultural Understanding": RiGlobalLine,
+  "Literary Devices": RiQuillPenLine,
+  "Analyzing Texts": RiBook2Line,
+  "Literary Criticism": RiQuillPenLine,
+
+  // C1 - Discourse
+  "Discourse Markers": RiPencilLine,
+  "Coherent Arguments": RiScalesLine,
+  "Fluent Expression": RiSpeakLine,
+
+  // C2 - Near-Native Fluency
+  "Advanced Expressions": RiQuillPenLine,
+  "Speaking Like a Native": RiTrophyLine,
+  "Cultural Mastery": RiStarFill,
+  "Dialects": RiGlobalLine,
+  "Accent and Usage": RiSpeakLine,
+  "Linguistic Diversity": RiEarthLine,
+
+  // C2 - Refined Language
+  "Refined Language": RiQuillPenLine,
+  "Elegant Expression": RiPaintBrushLine,
+  "Artistic Language": RiQuillPenLine,
+
+  // C2 - Rhetoric & Mastery
+  "Persuasive Techniques": RiMegaphoneLine,
+  "Powerful Speech": RiMegaphoneLine,
+  "Master Rhetoric": RiScalesLine,
+  "Expert Terminology": RiFlaskLine,
+  "Professional Fields": RiBriefcaseLine,
+  "Domain Expertise": RiTrophyLine,
+
+  // C2 - Precision & Cultural Intelligence
+  "Fine Distinctions": RiScalesLine,
+  "Precise Meaning": RiPencilLine,
+  "Mastery of Detail": RiBook2Line,
+  "Cultural Intelligence": RiGlobalLine,
+  "Cultural Navigator": RiEarthLine,
+  "Cultural Ambassador": RiGlobalLine,
+
+  // C2 - Ultimate Mastery
+  "Native-Like Skills": RiStarFill,
+  "Perfect Fluency": RiTrophyLine,
+  "Complete Mastery": RiStarFill,
+};
+
+// Get icon based on exact lesson title match
 const getTitleBasedIcon = (title) => {
   if (!title) return RiBookOpenLine;
 
-  const lowerTitle = title.toLowerCase();
-
-  // Direct title matches for specific crafted titles
-  if (lowerTitle === "hello and goodbye") return RiHandHeartLine;
-  if (lowerTitle === "meeting someone new") return RiSpeakLine;
-  if (lowerTitle === "polite conversations") return RiUserVoiceLine;
-
-  // Extract topic and lesson type from title pattern: "[Topic] - [Type]"
-  const parts = title.split(" - ");
-  const topic = parts[0]?.toLowerCase() || "";
-  const lessonType = parts[1]?.toLowerCase() || "";
-
-  // Create unique icons based on topic + lesson type combinations
-
-  // INTRODUCTIONS
-  if (topic.includes("introduc")) {
-    if (lessonType.includes("vocab")) return RiUserVoiceLine;
-    if (lessonType.includes("practice")) return RiQuestionAnswerLine;
-    if (lessonType.includes("applic")) return RiTeamLine;
-  }
-
-  // NUMBERS
-  if (topic.includes("number") || topic.includes("0-20") || topic.includes("21-100")) {
-    if (lessonType.includes("vocab")) return RiNumbersLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiCalendarLine;
-  }
-
-  // DAYS & TIME
-  if (topic.includes("days") || topic.includes("week")) {
-    if (lessonType.includes("vocab")) return RiCalendarLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiHistoryLine;
-  }
-
-  if (topic.includes("months") || topic.includes("dates")) {
-    if (lessonType.includes("vocab")) return RiCalendarLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiStarLine;
-  }
-
-  if (topic.includes("telling time") || topic.includes("time")) {
-    if (lessonType.includes("vocab")) return RiTimeLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiCalendarLine;
-  }
-
-  // FAMILY
-  if (topic.includes("family")) {
-    if (lessonType.includes("vocab")) return RiTeamLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiHeartLine;
-  }
-
-  // COLORS
-  if (topic.includes("color")) {
-    if (lessonType.includes("vocab")) return RiPaletteLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiPaintBrushLine;
-  }
-
-  // FOOD & DINING
-  if (topic.includes("food") || topic.includes("drink")) {
-    if (lessonType.includes("vocab")) return RiRestaurantLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiHeartLine;
-  }
-
-  if (topic.includes("restaurant")) {
-    if (lessonType.includes("vocab")) return RiRestaurantLine;
-    if (lessonType.includes("practice")) return RiQuestionAnswerLine;
-    if (lessonType.includes("applic")) return RiShoppingCartLine;
-  }
-
-  // OBJECTS & SPACES
-  if (topic.includes("common object")) {
-    if (lessonType.includes("vocab")) return RiBookOpenLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiShoppingCartLine;
-  }
-
-  if (topic.includes("house")) {
-    if (lessonType.includes("vocab")) return RiMapPinLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiCompassLine;
-  }
-
-  // CLOTHING & SHOPPING
-  if (topic.includes("cloth")) {
-    if (lessonType.includes("vocab")) return RiShirtLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiShoppingCartLine;
-  }
-
-  if (topic.includes("shopping")) {
-    if (lessonType.includes("vocab")) return RiShoppingCartLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBitCoinLine;
-  }
-
-  // DAILY LIFE
-  if (topic.includes("daily") || topic.includes("routine")) {
-    if (lessonType.includes("vocab")) return RiTimeLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiCalendarLine;
-  }
-
-  // WEATHER
-  if (topic.includes("weather")) {
-    if (lessonType.includes("vocab")) return RiCloudyLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiPlantLine;
-  }
-
-  // PREFERENCES & EMOTIONS
-  if (topic.includes("like") || topic.includes("dislike")) {
-    if (lessonType.includes("vocab")) return RiHeartLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiEmotionLine;
-  }
-
-  // QUESTIONS
-  if (topic.includes("question")) {
-    if (lessonType.includes("vocab")) return RiQuestionAnswerLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiQuestionLine;
-  }
-
-  // PEOPLE DESCRIPTIONS
-  if (topic.includes("describing people") || topic.includes("physical")) {
-    if (lessonType.includes("vocab")) return RiEmotionLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBodyScanLine;
-  }
-
-  // PLACES
-  if (topic.includes("describing places") || topic.includes("places")) {
-    if (lessonType.includes("vocab")) return RiMapPinLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiCompassLine;
-  }
-
-  // TRANSPORTATION & DIRECTIONS
-  if (topic.includes("transport")) {
-    if (lessonType.includes("vocab")) return RiBusLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiMapPinLine;
-  }
-
-  if (topic.includes("direction")) {
-    if (lessonType.includes("vocab")) return RiCompassLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiMapPinLine;
-  }
-
-  // HOBBIES & ACTIVITIES
-  if (topic.includes("sport")) {
-    if (lessonType.includes("vocab")) return RiFootballLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBodyScanLine;
-  }
-
-  if (topic.includes("hobb") || topic.includes("interest")) {
-    if (lessonType.includes("vocab")) return RiMusicLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiPaintBrushLine;
-  }
-
-  // PAST TENSE & TIME
-  if (topic.includes("past tense")) {
-    if (lessonType.includes("vocab")) return RiHistoryLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBookOpenLine;
-  }
-
-  if (topic.includes("stories") || topic.includes("telling")) {
-    if (lessonType.includes("vocab")) return RiBookOpenLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBook2Line;
-  }
-
-  // FUTURE & PLANS
-  if (topic.includes("future") || topic.includes("plans")) {
-    if (lessonType.includes("vocab")) return RiCalendarLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiLightbulbLine;
-  }
-
-  // HEALTH & BODY
-  if (topic.includes("health") || topic.includes("body")) {
-    if (lessonType.includes("vocab")) return RiBodyScanLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiHeartPulseLine;
-  }
-
-  if (topic.includes("doctor")) {
-    if (lessonType.includes("vocab")) return RiHeartPulseLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBodyScanLine;
-  }
-
-  // WORK & PROFESSIONS
-  if (topic.includes("job") || topic.includes("profession") || topic.includes("career")) {
-    if (lessonType.includes("vocab")) return RiBriefcaseLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiSuitcaseLine;
-  }
-
-  // EDUCATION & SCHOOL
-  if (topic.includes("school") || topic.includes("education")) {
-    if (lessonType.includes("vocab")) return RiBook2Line;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiPencilLine;
-  }
-
-  // TECHNOLOGY
-  if (topic.includes("technolog")) {
-    if (lessonType.includes("vocab")) return RiSmartphoneLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiGlobalLine;
-  }
-
-  // TRAVEL
-  if (topic.includes("travel")) {
-    if (lessonType.includes("vocab")) return RiSuitcaseLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiMapPinLine;
-  }
-
-  // ENVIRONMENT & NATURE
-  if (topic.includes("environment")) {
-    if (lessonType.includes("vocab")) return RiPlantLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiEarthLine;
-  }
-
-  // CULTURE & TRADITIONS
-  if (topic.includes("culture") || topic.includes("tradition")) {
-    if (lessonType.includes("vocab")) return RiGlobalLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiStarLine;
-  }
-
-  // MEDIA & NEWS
-  if (topic.includes("media") || topic.includes("news")) {
-    if (lessonType.includes("vocab")) return RiNewspaperLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiMegaphoneLine;
-  }
-
-  // OPINIONS & DEBATE
-  if (topic.includes("opinion")) {
-    if (lessonType.includes("vocab")) return RiMegaphoneLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiQuestionAnswerLine;
-  }
-
-  if (topic.includes("complaint")) {
-    if (lessonType.includes("vocab")) return RiMegaphoneLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiEmotionLine;
-  }
-
-  // ARTS & LITERATURE
-  if (topic.includes("literature") || topic.includes("arts")) {
-    if (lessonType.includes("vocab")) return RiQuillPenLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBookOpenLine;
-  }
-
-  if (topic.includes("visual")) {
-    if (lessonType.includes("vocab")) return RiPaintBrushLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiQuillPenLine;
-  }
-
-  if (topic.includes("cinema") || topic.includes("theater")) {
-    if (lessonType.includes("vocab")) return RiClapperboardLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiStarLine;
-  }
-
-  // BUSINESS & PROFESSIONAL
-  if (topic.includes("business")) {
-    if (lessonType.includes("vocab")) return RiBriefcaseLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiPencilLine;
-  }
-
-  if (topic.includes("professional")) {
-    if (lessonType.includes("vocab")) return RiBriefcaseLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiMegaphoneLine;
-  }
-
-  // SCIENCE & INNOVATION
-  if (topic.includes("science")) {
-    if (lessonType.includes("vocab")) return RiFlaskLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiLightbulbLine;
-  }
-
-  // SOCIAL ISSUES
-  if (topic.includes("social")) {
-    if (lessonType.includes("vocab")) return RiScalesLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiMegaphoneLine;
-  }
-
-  // DIGITAL & ECONOMY
-  if (topic.includes("digital")) {
-    if (lessonType.includes("vocab")) return RiSmartphoneLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBitCoinLine;
-  }
-
-  // GRAMMAR TOPICS
-  if (topic.includes("tense") || topic.includes("perfect") || topic.includes("continuous")) {
-    if (lessonType.includes("vocab")) return RiHistoryLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiPencilLine;
-  }
-
-  if (topic.includes("passive")) {
-    if (lessonType.includes("vocab")) return RiPencilLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBookOpenLine;
-  }
-
-  if (topic.includes("subjunctive")) {
-    if (lessonType.includes("vocab")) return RiStarLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiPencilLine;
-  }
-
-  if (topic.includes("conditional")) {
-    if (lessonType.includes("vocab")) return RiQuestionLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiLightbulbLine;
-  }
-
-  // ADVANCED COMMUNICATION
-  if (topic.includes("debate") || topic.includes("argument")) {
-    if (lessonType.includes("vocab")) return RiMegaphoneLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiScalesLine;
-  }
-
-  if (topic.includes("idiom")) {
-    if (lessonType.includes("vocab")) return RiQuillPenLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiBookOpenLine;
-  }
-
-  // MASTERY TOPICS
-  if (topic.includes("fluency") || topic.includes("mastery")) {
-    if (lessonType.includes("vocab")) return RiTrophyLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiStarFill;
-  }
-
-  if (topic.includes("native") || topic.includes("regional")) {
-    if (lessonType.includes("vocab")) return RiGlobalLine;
-    if (lessonType.includes("practice")) return RiSpeakLine;
-    if (lessonType.includes("applic")) return RiEarthLine;
-  }
-
-  // Fallback: try vocabulary topic mapping if title-based didn't match
-  return RiBookOpenLine;
+  // Direct lookup from comprehensive title mapping
+  return LESSON_TITLE_ICONS[title] || RiBookOpenLine;
 };
 
 // Get unique icon for each individual lesson based on lesson content
