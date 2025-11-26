@@ -9379,6 +9379,90 @@ function deriveLessonTopic(unit, lesson) {
   );
 }
 
+function addSupplementalLessons(level, unit) {
+  const lessons = unit.lessons || [];
+  const nonQuizLessons = lessons.filter((lesson) => !lesson.isFinalQuiz);
+  const maxNonQuizXp = Math.max(
+    ...nonQuizLessons.map((lesson) => lesson.xpRequired || 0),
+    0
+  );
+  const xpStep = 15;
+  const topic = unit.title?.en || unit.description?.en || "unit theme";
+
+  const supplementalLessons = [
+    {
+      id: `${unit.id}-skill-builder`,
+      title: {
+        en: `${unit.title?.en || "Unit"} Skill Builder`,
+        es: `Refuerzo de ${unit.title?.es || unit.title?.en || "Unidad"}`,
+      },
+      description: {
+        en: "Short targeted drills to consolidate the unit language before the quiz.",
+        es: "Ejercicios breves para consolidar el lenguaje de la unidad antes del cuestionario.",
+      },
+      xpRequired: maxNonQuizXp + xpStep,
+      xpReward: 15,
+      modes: ["realtime", "reading"],
+      content: {
+        realtime: {
+          scenario: `${topic.toLowerCase()} practice`,
+          prompt: `Rotate through quick prompts to apply ${topic} in short exchanges.`,
+        },
+        reading: {
+          topic,
+          prompt: `Interpret brief dialogues about ${topic} and restate key details.`,
+        },
+      },
+      cefrStage: level,
+      pathway: "granularity",
+    },
+    {
+      id: `${unit.id}-integrated-practice`,
+      title: {
+        en: `${unit.title?.en || "Unit"} Integrated Practice`,
+        es: `Práctica integrada de ${unit.title?.es || unit.title?.en || "Unidad"}`,
+      },
+      description: {
+        en: "Link vocabulary and grammar from the unit in a guided scenario.",
+        es: "Vincula vocabulario y gramática de la unidad en un escenario guiado.",
+      },
+      xpRequired: maxNonQuizXp + xpStep * 2,
+      xpReward: 20,
+      modes: ["stories", "realtime"],
+      content: {
+        stories: {
+          topic,
+          prompt: `Follow a mini scenario that blends the unit's core language for ${topic}.`,
+        },
+        realtime: {
+          scenario: `${topic.toLowerCase()} integrated task`,
+          prompt: `Produce longer turns that connect earlier lesson points for ${topic}.`,
+        },
+      },
+      cefrStage: level,
+      pathway: "granularity",
+    },
+  ];
+
+  const quizIndex = lessons.findIndex((lesson) => lesson.isFinalQuiz);
+
+  if (quizIndex === -1) {
+    return [...lessons, ...supplementalLessons];
+  }
+
+  const quizLesson = lessons[quizIndex];
+  const minQuizXp = maxNonQuizXp + xpStep * (supplementalLessons.length + 1);
+  const updatedQuiz = {
+    ...quizLesson,
+    xpRequired: Math.max(quizLesson.xpRequired || 0, minQuizXp),
+  };
+
+  const coreLessons = lessons.filter((lesson) => !lesson.isFinalQuiz);
+  const trailingLessons = lessons.slice(quizIndex + 1);
+
+  return [...coreLessons, ...supplementalLessons, updatedQuiz, ...trailingLessons];
+}
+
 function buildLessonObjectives(level, unit, lesson) {
   const profile = CEFR_LEVEL_PROFILES[level] || CEFR_LEVEL_PROFILES.A1;
   const topic = deriveLessonTopic(unit, lesson);
@@ -9496,7 +9580,8 @@ function applyCEFRScaffolding(path) {
 
   Object.entries(stagedPath).forEach(([level, units]) => {
     stagedPath[level] = units.map((unit) => {
-      const enhancedLessons = unit.lessons.map((lesson) =>
+      const expandedLessons = addSupplementalLessons(level, unit);
+      const enhancedLessons = expandedLessons.map((lesson) =>
         appendAdvancedModes(level, tagLessonWithFunction(level, unit, lesson), unit)
       );
 
