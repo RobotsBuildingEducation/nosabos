@@ -186,8 +186,7 @@ import {
   RiCopyrightLine,
   RiCreativeCommonsLine,
   RiLightbulbFlashLine,
-  RiIdeasLine,
-  RiMindMap,
+  RiNodeTree,
   RiFocus3Line,
   RiTargetLine,
   RiCheckboxCircleLine,
@@ -209,25 +208,21 @@ import {
   RiSuitcase2Line,
   RiSuitcase3Line,
   RiAncientGateLine,
-  RiCastleLine,
-  RiMickeyLine,
+  RiBuilding2Line,
   RiSparklingLine,
   RiSparklingFill,
   RiStarSmileLine,
   RiFireLine,
   RiFireFill,
-  RiLeafFill,
   RiTreeLine,
   RiFlowerLine,
   RiSeedlingLine,
   RiRecycleLine,
-  RiEarthFill,
   RiGlobeLine,
   RiCompass2Line,
   RiFlagLine,
   RiFlag2Line,
   RiMedalFill,
-  RiTrophy2Line,
   RiAwardFill,
 } from "react-icons/ri";
 import {
@@ -462,7 +457,7 @@ const LESSON_TITLE_ICONS = {
   "At the Store": RiStore2Line,
   "Bargain Hunting": RiAuctionLine,
   "Smart Shopping": RiShoppingBasketLine,
-  "Fresh Produce": RiLeafFill,
+  "Fresh Produce": RiLeafLine,
   "Buying Groceries": RiShoppingCartLine,
   "Market Day": RiFridgeLine,
 
@@ -497,7 +492,7 @@ const LESSON_TITLE_ICONS = {
   "My Story": RiDraftLine,
 
   // A2 - Future & Health
-  "Dreams and Goals": RiIdeasLine,
+  "Dreams and Goals": RiLightbulbFlashLine,
   "What Will You Do?": RiFocus3Line,
   "Planning Ahead": RiRoadMapLine,
   "Body Parts": RiBodyScanLine,
@@ -539,21 +534,21 @@ const LESSON_TITLE_ICONS = {
   // B1 - Modals & Suggestions
   "Should and Shouldn't": RiCheckboxCircleLine,
   "Helpful Suggestions": RiLightbulbLine,
-  "Problem Solving": RiMindMap,
+  "Problem Solving": RiNodeTree,
   "Why Don't We?": RiGroupLine,
   "Let's Try This": RiPlayListAddLine,
   "Collaborative Ideas": RiTeamLine,
 
   // B1 - Conditionals & Travel
   "If I Were You": RiQuestionAnswerLine,
-  "Hypothetical Situations": RiIdeasLine,
+  "Hypothetical Situations": RiLightbulbLine,
   "Imagining Possibilities": RiSparklingFill,
   "Trip Planning": RiMapLine,
   "Booking a Trip": RiFlightTakeoffLine,
   "Adventure Awaits": RiSailboatLine,
 
   // B1 - Environment & Culture
-  "Our Planet": RiEarthFill,
+  "Our Planet": RiEarthLine,
   "Going Green": RiRecycleLine,
   "Saving Earth": RiSeedlingLine,
   "Cultural Heritage": RiAncientGateLine,
@@ -594,7 +589,7 @@ const LESSON_TITLE_ICONS = {
 
   // B2 - Relative Clauses & Register
   "Who, Which, That": RiEdit2Line,
-  "Connecting Ideas": RiMindMap,
+  "Connecting Ideas": RiNodeTree,
   "Complex Sentences": RiFileList3Line,
   "Registers of Speech": RiMicLine,
   "Appropriate Language": RiSpeakerLine,
@@ -625,8 +620,8 @@ const LESSON_TITLE_ICONS = {
   "Holistic Health": RiHeartAddLine,
 
   // B2 - Philosophy
-  "Philosophical Ideas": RiMindMap,
-  "Deep Thinking": RiIdeasLine,
+  "Philosophical Ideas": RiNodeTree,
+  "Deep Thinking": RiLightbulbFlashLine,
   "Theoretical Discussion": RiArticleLine,
 
   // C1 - Subjunctive & Conditionals
@@ -638,7 +633,7 @@ const LESSON_TITLE_ICONS = {
   "Complex Emotions": RiMentalHealthLine,
   "Advanced If Clauses": RiMarkPenLine,
   "Mixed Conditionals": RiEdit2Line,
-  "Sophisticated Logic": RiMindMap,
+  "Sophisticated Logic": RiNodeTree,
 
   // C1 - Idioms & Academic
   "Native Phrases": RiChatLine,
@@ -657,7 +652,7 @@ const LESSON_TITLE_ICONS = {
   "Winning Debates": RiAwardFill,
 
   // C1 - Culture & Literature
-  "Cultural Studies": RiCastleLine,
+  "Cultural Studies": RiBuilding2Line,
   "Interpreting Culture": RiCompass2Line,
   "Cross-Cultural Understanding": RiGlobeLine,
   "Literary Devices": RiPenNibLine,
@@ -688,7 +683,7 @@ const LESSON_TITLE_ICONS = {
   "Master Rhetoric": RiPresentationLine,
   "Expert Terminology": RiFileTextLine,
   "Professional Fields": RiBriefcase5Line,
-  "Domain Expertise": RiTrophy2Line,
+  "Domain Expertise": RiTrophyLine,
 
   // C2 - Precision & Cultural Intelligence
   "Fine Distinctions": RiContrastLine,
@@ -696,7 +691,7 @@ const LESSON_TITLE_ICONS = {
   "Mastery of Detail": RiFocus3Line,
   "Cultural Intelligence": RiCompass2Line,
   "Cultural Navigator": RiNavigationLine,
-  "Cultural Ambassador": RiEarthFill,
+  "Cultural Ambassador": RiEarthLine,
 
   // C2 - Ultimate Mastery
   "Native-Like Skills": RiMedalFill,
