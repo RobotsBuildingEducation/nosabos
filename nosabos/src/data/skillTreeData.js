@@ -2136,7 +2136,8 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "physical descriptions conversation",
-              prompt: "Practice using physical descriptions in real conversation",
+              prompt:
+                "Practice using physical descriptions in real conversation",
             },
             stories: {
               topic: "physical descriptions",
@@ -2160,7 +2161,8 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "physical descriptions",
-              prompt: "Advanced physical descriptions content and comprehension",
+              prompt:
+                "Advanced physical descriptions content and comprehension",
             },
             realtime: {
               scenario: "physical descriptions mastery",
@@ -3390,7 +3392,8 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "narrative and storytelling conversation",
-              prompt: "Practice using narrative and storytelling in real conversation",
+              prompt:
+                "Practice using narrative and storytelling in real conversation",
             },
             stories: {
               topic: "narrative and storytelling",
@@ -3414,7 +3417,8 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "narrative and storytelling",
-              prompt: "Advanced narrative and storytelling content and comprehension",
+              prompt:
+                "Advanced narrative and storytelling content and comprehension",
             },
             realtime: {
               scenario: "narrative and storytelling mastery",
@@ -4074,7 +4078,8 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "digital communication conversation",
-              prompt: "Practice using digital communication in real conversation",
+              prompt:
+                "Practice using digital communication in real conversation",
             },
             stories: {
               topic: "digital communication",
@@ -4098,7 +4103,8 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "digital communication",
-              prompt: "Advanced digital communication content and comprehension",
+              prompt:
+                "Advanced digital communication content and comprehension",
             },
             realtime: {
               scenario: "digital communication mastery",
@@ -4646,7 +4652,8 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "advice and suggestions conversation",
-              prompt: "Practice using advice and suggestions in real conversation",
+              prompt:
+                "Practice using advice and suggestions in real conversation",
             },
             stories: {
               topic: "advice and suggestions",
@@ -4670,7 +4677,8 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "advice and suggestions",
-              prompt: "Advanced advice and suggestions content and comprehension",
+              prompt:
+                "Advanced advice and suggestions content and comprehension",
             },
             realtime: {
               scenario: "advice and suggestions mastery",
@@ -4760,7 +4768,8 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "advice and suggestions conversation",
-              prompt: "Practice using advice and suggestions in real conversation",
+              prompt:
+                "Practice using advice and suggestions in real conversation",
             },
             stories: {
               topic: "advice and suggestions",
@@ -4784,7 +4793,8 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "advice and suggestions",
-              prompt: "Advanced advice and suggestions content and comprehension",
+              prompt:
+                "Advanced advice and suggestions content and comprehension",
             },
             realtime: {
               scenario: "advice and suggestions mastery",
@@ -6130,7 +6140,8 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "narrative and storytelling conversation",
-              prompt: "Practice using narrative and storytelling in real conversation",
+              prompt:
+                "Practice using narrative and storytelling in real conversation",
             },
             stories: {
               topic: "narrative and storytelling",
@@ -6154,7 +6165,8 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "narrative and storytelling",
-              prompt: "Advanced narrative and storytelling content and comprehension",
+              prompt:
+                "Advanced narrative and storytelling content and comprehension",
             },
             realtime: {
               scenario: "narrative and storytelling mastery",
@@ -8414,7 +8426,8 @@ const baseLearningPath = {
           content: {
             realtime: {
               scenario: "idioms and colloquial expressions conversation",
-              prompt: "Practice using idioms and colloquial expressions in real conversation",
+              prompt:
+                "Practice using idioms and colloquial expressions in real conversation",
             },
             stories: {
               topic: "idioms and colloquial expressions",
@@ -8438,11 +8451,13 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "idioms and colloquial expressions",
-              prompt: "Advanced idioms and colloquial expressions content and comprehension",
+              prompt:
+                "Advanced idioms and colloquial expressions content and comprehension",
             },
             realtime: {
               scenario: "idioms and colloquial expressions mastery",
-              prompt: "Demonstrate mastery of idioms and colloquial expressions",
+              prompt:
+                "Demonstrate mastery of idioms and colloquial expressions",
             },
           },
         },
@@ -8983,12 +8998,15 @@ const baseLearningPath = {
           modes: ["realtime", "stories"],
           content: {
             realtime: {
-              scenario: "advanced vocabulary and nuanced expressions conversation",
-              prompt: "Practice using advanced vocabulary and nuanced expressions in real conversation",
+              scenario:
+                "advanced vocabulary and nuanced expressions conversation",
+              prompt:
+                "Practice using advanced vocabulary and nuanced expressions in real conversation",
             },
             stories: {
               topic: "advanced vocabulary and nuanced expressions",
-              prompt: "Read and discuss advanced vocabulary and nuanced expressions",
+              prompt:
+                "Read and discuss advanced vocabulary and nuanced expressions",
             },
           },
         },
@@ -9008,11 +9026,13 @@ const baseLearningPath = {
           content: {
             reading: {
               topic: "advanced vocabulary and nuanced expressions",
-              prompt: "Advanced advanced vocabulary and nuanced expressions content and comprehension",
+              prompt:
+                "Advanced advanced vocabulary and nuanced expressions content and comprehension",
             },
             realtime: {
               scenario: "advanced vocabulary and nuanced expressions mastery",
-              prompt: "Demonstrate mastery of advanced vocabulary and nuanced expressions",
+              prompt:
+                "Demonstrate mastery of advanced vocabulary and nuanced expressions",
             },
           },
         },
@@ -9039,7 +9059,9 @@ const baseLearningPath = {
               topic: "advanced vocabulary and nuanced expressions",
             },
             grammar: {
-              topics: ["advanced vocabulary and nuanced expressions structures"],
+              topics: [
+                "advanced vocabulary and nuanced expressions structures",
+              ],
               focusPoints: ["comprehensive review"],
             },
           },
@@ -9274,7 +9296,7 @@ const baseLearningPath = {
         },
       ],
     },
-  ]
+  ],
 };
 
 const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nah"]);
@@ -9682,10 +9704,28 @@ const VOCABULARY_LIBRARY = {
   },
   "opinions and debate": {
     en: ["opinion", "think", "believe", "agree", "disagree"],
-    es: ["opinión", "pensar", "creer", "estar de acuerdo", "no estar de acuerdo"],
-    fr: ["opinion", "penser", "croire", "être d'accord", "ne pas être d'accord"],
+    es: [
+      "opinión",
+      "pensar",
+      "creer",
+      "estar de acuerdo",
+      "no estar de acuerdo",
+    ],
+    fr: [
+      "opinion",
+      "penser",
+      "croire",
+      "être d'accord",
+      "ne pas être d'accord",
+    ],
     pt: ["opinião", "pensar", "acreditar", "concordar", "discordar"],
-    it: ["opinione", "pensare", "credere", "essere d'accordo", "non essere d'accordo"],
+    it: [
+      "opinione",
+      "pensare",
+      "credere",
+      "essere d'accordo",
+      "non essere d'accordo",
+    ],
   },
   "narrative and storytelling": {
     en: ["once upon a time", "then", "after", "finally", "story"],
@@ -9732,13 +9772,7 @@ const VOCABULARY_LIBRARY = {
     ],
   },
   "idioms and colloquial expressions": {
-    en: [
-      "no way",
-      "for real",
-      "hang out",
-      "freak out",
-      "catch up",
-    ],
+    en: ["no way", "for real", "hang out", "freak out", "catch up"],
     es: [
       "ni hablar",
       "en serio",
@@ -9746,20 +9780,8 @@ const VOCABULARY_LIBRARY = {
       "ponerse nervioso",
       "ponerse al día",
     ],
-    fr: [
-      "pas question",
-      "sérieusement",
-      "traîner",
-      "paniquer",
-      "se rattraper",
-    ],
-    pt: [
-      "nem pensar",
-      "sério",
-      "sair com amigos",
-      "pirar",
-      "colocar em dia",
-    ],
+    fr: ["pas question", "sérieusement", "traîner", "paniquer", "se rattraper"],
+    pt: ["nem pensar", "sério", "sair com amigos", "pirar", "colocar em dia"],
     it: [
       "neanche per sogno",
       "davvero",
@@ -9799,9 +9821,21 @@ const VOCABULARY_LIBRARY = {
   probability: {
     en: ["maybe", "probably", "possibly", "might", "could"],
     es: ["quizás", "probablemente", "posiblemente", "podría", "tal vez"],
-    fr: ["peut-être", "probablement", "possiblement", "pourrait", "éventuellement"],
+    fr: [
+      "peut-être",
+      "probablement",
+      "possiblement",
+      "pourrait",
+      "éventuellement",
+    ],
     pt: ["talvez", "provavelmente", "possivelmente", "poderia", "porventura"],
-    it: ["forse", "probabilmente", "possibilmente", "potrebbe", "eventualmente"],
+    it: [
+      "forse",
+      "probabilmente",
+      "possibilmente",
+      "potrebbe",
+      "eventualmente",
+    ],
   },
   complaints: {
     en: ["complaint", "problem", "issue", "dissatisfied", "unhappy"],
@@ -9847,7 +9881,13 @@ const VOCABULARY_LIBRARY = {
   },
   wellness: {
     en: ["wellness", "fitness", "nutrition", "mental health", "balance"],
-    es: ["bienestar", "condición física", "nutrición", "salud mental", "equilibrio"],
+    es: [
+      "bienestar",
+      "condición física",
+      "nutrición",
+      "salud mental",
+      "equilibrio",
+    ],
     fr: ["bien-être", "forme", "nutrition", "santé mentale", "équilibre"],
     pt: ["bem-estar", "fitness", "nutrição", "saúde mental", "equilíbrio"],
     it: ["benessere", "fitness", "nutrizione", "salute mentale", "equilibrio"],
@@ -9870,7 +9910,13 @@ const VOCABULARY_LIBRARY = {
     en: ["argument", "counterargument", "evidence", "persuade", "convince"],
     es: ["argumento", "contraargumento", "evidencia", "persuadir", "convencer"],
     fr: ["argument", "contre-argument", "preuve", "persuader", "convaincre"],
-    pt: ["argumento", "contra-argumento", "evidência", "persuadir", "convencer"],
+    pt: [
+      "argumento",
+      "contra-argumento",
+      "evidência",
+      "persuadir",
+      "convencer",
+    ],
     it: ["argomento", "controargomento", "prova", "persuadere", "convincere"],
   },
   academic: {
@@ -9978,7 +10024,7 @@ export function getLearningPath(targetLang, level) {
  * Get the learning path for multiple levels
  * Returns combined units from all specified levels with level metadata
  */
-export function getMultiLevelLearningPath(targetLang, levels = ['A1', 'A2']) {
+export function getMultiLevelLearningPath(targetLang, levels = ["A1", "A2"]) {
   const lang = SUPPORTED_TARGET_LANGS.has(targetLang)
     ? targetLang
     : DEFAULT_TARGET_LANG;
@@ -9987,7 +10033,7 @@ export function getMultiLevelLearningPath(targetLang, levels = ['A1', 'A2']) {
   levels.forEach((level) => {
     const units = LEARNING_PATHS[lang]?.[level] || [];
     // Add level metadata to each unit
-    const unitsWithLevel = units.map(unit => ({
+    const unitsWithLevel = units.map((unit) => ({
       ...unit,
       cefrLevel: level,
     }));

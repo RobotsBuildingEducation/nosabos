@@ -188,10 +188,8 @@ import {
   RiLightbulbFlashLine,
   RiNodeTree,
   RiFocus3Line,
-  RiTargetLine,
   RiCheckboxCircleLine,
   RiTodoLine,
-  RiListCheck2Line,
   RiPlayListAddLine,
   RiFileEditLine,
   RiEditLine,
@@ -224,6 +222,7 @@ import {
   RiFlag2Line,
   RiMedalFill,
   RiAwardFill,
+  RiCheckboxLine,
 } from "react-icons/ri";
 import {
   getLearningPath,
@@ -233,6 +232,7 @@ import {
   SKILL_STATUS,
 } from "../data/skillTreeData";
 import { translations } from "../utils/translation";
+import { FiTarget } from "react-icons/fi";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -478,7 +478,7 @@ const LESSON_TITLE_ICONS = {
   "Sharing Interests": RiDiscussFill,
   "Playing Sports": RiBasketballLine,
   "Staying Active": RiRunLine,
-  "Fitness Goals": RiTargetLine,
+  "Fitness Goals": FiTarget,
 
   // A2 - Past Tense & Stories
   "Yesterday's Actions": RiHistoryLine,
@@ -518,18 +518,18 @@ const LESSON_TITLE_ICONS = {
   // B1 - Present Perfect & Continuous
   "Have You Ever?": RiQuestionAnswerLine,
   "Life Experiences": RiSuitcaseLine,
-  "Achievements": RiMedalLine,
+  Achievements: RiMedalLine,
   "While It Was Happening": RiHourglassLine,
   "Background Actions": RiFileEditLine,
   "Setting the Scene": RiCameraLine,
 
   // B1 - Future & Comparisons
   "Tomorrow's World": RiGlobeLine,
-  "Predictions": RiLightbulbFlashLine,
+  Predictions: RiLightbulbFlashLine,
   "Future Possibilities": RiSparklingLine,
   "Better or Worse": RiBarChartLine,
   "Making Comparisons": RiPieChart2Line,
-  "Superlatives": RiAwardLine,
+  Superlatives: RiAwardLine,
 
   // B1 - Modals & Suggestions
   "Should and Shouldn't": RiCheckboxCircleLine,
@@ -556,7 +556,7 @@ const LESSON_TITLE_ICONS = {
   "Celebrating Diversity": RiFlag2Line,
 
   // B1 - Media & Opinions
-  "Headlines": RiNewspaperLine,
+  Headlines: RiNewspaperLine,
   "Current Events": RiArticleLine,
   "Informed Citizen": RiGovernmentLine,
   "I Think That...": RiChatQuoteLine,
@@ -566,7 +566,7 @@ const LESSON_TITLE_ICONS = {
   // B1 - Complaints & Anecdotes
   "Something's Wrong": RiEmotionUnhappyLine,
   "I'm Not Satisfied": RiDislikeLine,
-  "Resolving Issues": RiListCheck2Line,
+  "Resolving Issues": RiCheckboxLine,
   "Memorable Moments": RiStarSmileLine,
   "Sharing Experiences": RiMessageLine,
   "Learning from Life": RiBookletLine,
@@ -668,7 +668,7 @@ const LESSON_TITLE_ICONS = {
   "Advanced Expressions": RiQuillPenLine,
   "Speaking Like a Native": RiVipCrownLine,
   "Cultural Mastery": RiAwardFill,
-  "Dialects": RiVoiceprintLine,
+  Dialects: RiVoiceprintLine,
   "Accent and Usage": RiSpeakerLine,
   "Linguistic Diversity": RiGlobeLine,
 
@@ -687,7 +687,7 @@ const LESSON_TITLE_ICONS = {
 
   // C2 - Precision & Cultural Intelligence
   "Fine Distinctions": RiContrastLine,
-  "Precise Meaning": RiTargetLine,
+  "Precise Meaning": FiTarget,
   "Mastery of Detail": RiFocus3Line,
   "Cultural Intelligence": RiCompass2Line,
   "Cultural Navigator": RiNavigationLine,
