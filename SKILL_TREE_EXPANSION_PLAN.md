@@ -260,17 +260,64 @@
 ## B2 (Upper Intermediate) - 12 Units | 48 Lessons
 
 ### Unit 52: Past Perfect
+- **Topics**: Actions completed before other past actions, narrative sequences, cause and effect in the past
+- **Grammar**: Pluscuamperfecto (había comido, habías vivido, habíamos visto), time markers (antes de, después de que, cuando ya)
+- **Vocabulary**: Sequential time expressions, narrative connectors, retrospective phrases
+
 ### Unit 53: Passive Voice
+- **Topics**: Formal descriptions, processes, impersonal statements, news reporting
+- **Grammar**: Ser + participio (es hecho, fue construido, será publicado), passive with different tenses, se pasiva
+- **Vocabulary**: Process verbs, formal register vocabulary, impersonal constructions
+
 ### Unit 54: Reported Speech
+- **Topics**: Relaying conversations, indirect communication, reporting statements and questions
+- **Grammar**: Discurso indirecto, verb tense changes (dice que/dijo que), question word changes
+- **Vocabulary**: Reporting verbs (decir, comentar, preguntar, afirmar, negar), communication expressions
+
 ### Unit 55: Relative Clauses
+- **Topics**: Providing additional information, defining and non-defining clauses, complex descriptions
+- **Grammar**: Relative pronouns (que, quien, cual, cuyo), donde, cuando as relatives
+- **Vocabulary**: Descriptive vocabulary, complex sentence structures, linking phrases
+
 ### Unit 56: Formal vs Informal Language
+- **Topics**: Register appropriateness, professional vs casual communication, social contexts
+- **Grammar**: Usted vs tú, formal imperatives, conditional for politeness, subjunctive in formal requests
+- **Vocabulary**: Formal expressions, professional terminology, polite formulae, informal slang
+
 ### Unit 57: Business Spanish
+- **Topics**: Workplace communication, meetings, presentations, emails, negotiations
+- **Grammar**: Business conditional, subjunctive for suggestions, passive constructions, formal imperatives
+- **Vocabulary**: Business terminology, corporate jargon, professional phrases, meeting language
+
 ### Unit 58: Science & Innovation
+- **Topics**: Scientific discoveries, technological advances, research methods, future innovations
+- **Grammar**: Scientific passive voice, impersonal se, technical descriptions, hypothesis expressions
+- **Vocabulary**: Scientific terminology, research vocabulary, technical processes, innovation terms
+
 ### Unit 59: Social Issues
+- **Topics**: Contemporary social challenges, inequality, justice, community problems, activism
+- **Grammar**: Subjunctive for opinions on social matters, conditional for solutions, passive for describing problems
+- **Vocabulary**: Social justice terms, societal issues, activism vocabulary, policy language
+
 ### Unit 60: Arts & Literature
+- **Topics**: Literary analysis, artistic movements, cultural critique, creative expression
+- **Grammar**: Subjunctive for artistic opinions, imperfect for descriptions, literary present tense
+- **Vocabulary**: Literary terminology, artistic vocabulary, critique language, aesthetic descriptions
+
 ### Unit 61: Politics & Society
+- **Topics**: Political systems, governance, elections, public policy, civic engagement
+- **Grammar**: Subjunctive for political opinions and wishes, conditional for policy proposals, formal discourse
+- **Vocabulary**: Political terminology, governmental vocabulary, democratic processes, policy language
+
 ### Unit 62: Health & Lifestyle
+- **Topics**: Wellness trends, mental health, nutrition science, fitness, preventive care
+- **Grammar**: Subjunctive for health recommendations, conditional for lifestyle changes, passive for medical descriptions
+- **Vocabulary**: Advanced health terminology, wellness vocabulary, medical conditions, lifestyle choices
+
 ### Unit 63: Abstract Concepts
+- **Topics**: Philosophy, ethics, abstract thinking, theoretical discussions, complex ideas
+- **Grammar**: Subjunctive for abstract opinions, conditional for hypothetical scenarios, complex subordinate clauses
+- **Vocabulary**: Philosophical terminology, abstract nouns, conceptual language, theoretical expressions
 
 ---
 
@@ -308,7 +355,7 @@
 - [x] A1 Units 1-18 implemented (72 lessons)
 - [x] A2 Units 19-36 implemented (72 lessons)
 - [x] B1 Units 37-51 implemented (60 lessons) - **COMPLETED!**
-- [ ] B2 Units 52-63 implemented (48 lessons)
+- [x] B2 Units 52-63 implemented (48 lessons) - **COMPLETED!**
 - [ ] C1 Units 64-73 implemented (40 lessons)
 - [ ] C2 Units 74-81 implemented (32 lessons)
 - [ ] All vocabulary entries added

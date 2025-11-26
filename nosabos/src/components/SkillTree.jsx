@@ -1141,7 +1141,7 @@ export default function SkillTree({
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
   showMultipleLevels = true, // New prop to show multiple levels
-  levels = ["A1", "A2", "B1"], // Default to showing A1, A2, and B1
+  levels = ["A1", "A2", "B1", "B2"], // Default to showing A1, A2, B1, and B2
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
