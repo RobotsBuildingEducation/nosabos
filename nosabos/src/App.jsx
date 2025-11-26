@@ -2401,7 +2401,7 @@ export default function App() {
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
             showMultipleLevels={true}
-            levels={["A1", "A2", "B1", "B2", "C1"]}
+            levels={["A1", "A2", "B1", "B2", "C1", "C2"]}
           />
         </Box>
       )}

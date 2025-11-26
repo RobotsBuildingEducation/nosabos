@@ -1141,7 +1141,7 @@ export default function SkillTree({
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
   showMultipleLevels = true, // New prop to show multiple levels
-  levels = ["A1", "A2", "B1", "B2", "C1"], // Default to showing A1, A2, B1, B2, and C1
+  levels = ["A1", "A2", "B1", "B2", "C1", "C2"], // Default to showing all CEFR levels A1 through C2
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);

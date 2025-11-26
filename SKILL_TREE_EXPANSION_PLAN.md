@@ -378,13 +378,44 @@
 ## C2 (Mastery) - 8 Units | 32 Lessons
 
 ### Unit 74: Native-Level Idioms
+- **Topics**: Advanced idiomatic expressions, colloquialisms used by native speakers, slang variations, generational expressions
+- **Grammar**: Complex idiomatic structures, non-literal language patterns, fixed phrases with cultural meaning, phrasal verb mastery
+- **Vocabulary**: Native-level idioms and colloquialisms (estar como una cabra, meter la pata, costar un ojo de la cara), regional slang, generational expressions, informal registers
+
 ### Unit 75: Regional Variations
+- **Topics**: Spanish dialects (Castilian, Mexican, Argentine, Caribbean, etc.), regional pronunciation, vocabulary differences, cultural context of variations
+- **Grammar**: Voseo vs tuteo, regional past tense preferences (preterite vs present perfect usage differences), regional imperative forms
+- **Vocabulary**: Regional vocabulary variations (coche/carro/auto, ordenador/computadora), dialectal expressions, country-specific slang, pronunciation patterns
+
 ### Unit 76: Stylistic Mastery
+- **Topics**: Register shifting, tone control, formality levels, stylistic variation for different contexts and audiences
+- **Grammar**: Sophisticated sentence structures, varied syntax for emphasis, stylistic inversion, periodic sentences, parallelism
+- **Vocabulary**: Synonyms for stylistic variation, register-appropriate vocabulary, elegant expressions, sophisticated connectors, nuanced word choice
+
 ### Unit 77: Rhetorical Devices
-### Unit 78: Specialized Vocabularies
+- **Topics**: Advanced persuasive techniques, rhetorical figures (anaphora, epistrophe, chiasmus), ethos/pathos/logos, oratory skills
+- **Grammar**: Rhetorical questions, emphatic structures, repetition for effect, antithesis, climax structures
+- **Vocabulary**: Rhetorical terminology (metáfora, hipérbole, ironía, paradoja), persuasive language, oratory vocabulary, classical rhetorical terms
+
+### Unit 78: Specialized Vocabulary
+- **Topics**: Domain-specific vocabularies (legal, medical, technical, scientific, financial), professional jargon, industry-specific terminology
+- **Grammar**: Technical writing conventions, specialized passive constructions, formal scientific discourse, legal language structures
+- **Vocabulary**: Legal terminology (jurisprudencia, litigio), medical terms (patología, diagnóstico), technical jargon, scientific nomenclature, financial vocabulary
+
 ### Unit 79: Subtle Nuances
+- **Topics**: Connotation vs denotation, subtle meaning differences, pragmatic competence, implicit communication, reading between the lines
+- **Grammar**: Subtle mood shifts, nuanced use of subjunctive, delicate modal expressions, implicature, presupposition
+- **Vocabulary**: Words with subtle distinctions (mirar vs ver vs observar vs contemplar), connotation awareness, euphemisms, understated expressions, delicate language
+
 ### Unit 80: Cultural Expertise
+- **Topics**: Deep cultural knowledge, historical references, literary allusions, cultural metaphors, societal values and worldviews
+- **Grammar**: Culture-specific grammatical preferences, politeness strategies across cultures, culture-bound expressions
+- **Vocabulary**: Cultural references (Don Quijote allusions, historical events), proverbs and their origins (refranes), cultural metaphors, literary references, cultural institutions
+
 ### Unit 81: Near-Native Fluency
+- **Topics**: Mastery integration, spontaneous complex communication, cultural and linguistic intuition, native-like production and comprehension
+- **Grammar**: Intuitive grammar use, native-like error self-correction, complex improvisation, full range of tenses and moods in natural discourse
+- **Vocabulary**: Complete vocabulary range, automatic lexical retrieval, appropriate word choice for any context, idiomatic fluency, creative language use
 
 ---
 
@@ -396,7 +427,7 @@
 - [x] B1 Units 37-51 implemented (60 lessons) - **COMPLETED!**
 - [x] B2 Units 52-63 implemented (48 lessons) - **COMPLETED!**
 - [x] C1 Units 64-73 implemented (40 lessons) - **COMPLETED!**
-- [ ] C2 Units 74-81 implemented (32 lessons)
+- [x] C2 Units 74-81 implemented (32 lessons) - **COMPLETED!**
 - [ ] All vocabulary entries added
 - [ ] Testing and QA complete
 
