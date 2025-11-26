@@ -323,16 +323,55 @@
 
 ## C1 (Advanced) - 10 Units | 40 Lessons
 
-### Unit 64: Subjunctive Mood (Present)
-### Unit 65: Subjunctive Mood (Past)
+### Unit 64: Subjunctive Present
+- **Topics**: Complex moods for doubt, desire, emotion, and uncertainty in present contexts
+- **Grammar**: Present subjunctive formation (hable, comas, viva), triggers (espero que, dudo que, es importante que), subjunctive after conjunctions (aunque, para que, antes de que)
+- **Vocabulary**: Expressions of doubt, desire, emotion, uncertainty, subjunctive triggers, conjunctions requiring subjunctive
+
+### Unit 65: Subjunctive Past
+- **Topics**: Past subjunctive for hypothetical situations, wishes about the past, polite requests
+- **Grammar**: Imperfect subjunctive (hablara/hablase, comiera/comiese, viviera/viviese), past perfect subjunctive (hubiera/hubiese hablado), si clauses with past subjunctive
+- **Vocabulary**: Hypothetical expressions, wish statements, polite formulas, contrary-to-fact scenarios
+
 ### Unit 66: Complex Conditionals
+- **Topics**: Advanced conditional structures, mixed conditionals, hypothetical past situations with present consequences
+- **Grammar**: Third conditional (Si hubiera sabido, habría ido), mixed conditionals (Si hubiera estudiado, ahora sería médico), conditional perfect (habría hecho)
+- **Vocabulary**: Regret expressions, hypothetical scenarios, consequence markers, speculation vocabulary
+
 ### Unit 67: Idiomatic Expressions
+- **Topics**: Spanish idioms, colloquialisms, sayings, cultural expressions, figurative language
+- **Grammar**: Idiomatic verb structures, fixed expressions, prepositional idioms, proverbs and refranes
+- **Vocabulary**: Common Spanish idioms (tirar la casa por la ventana, estar en las nubes), regional expressions, figurative language, cultural sayings
+
 ### Unit 68: Academic Writing
+- **Topics**: Formal writing styles, research papers, essays, academic discourse, citation methods
+- **Grammar**: Passive constructions for academic tone, impersonal se, formal connectors (por consiguiente, sin embargo, no obstante), nominalization
+- **Vocabulary**: Academic terminology, research vocabulary, formal connectors, analysis verbs (analizar, examinar, argumentar, sostener)
+
 ### Unit 69: Professional Communication
+- **Topics**: Workplace interactions, business correspondence, presentations, negotiations, corporate culture
+- **Grammar**: Professional register, formal imperatives, subjunctive for polite requests, conditional for diplomacy
+- **Vocabulary**: Business terminology, corporate jargon, professional email phrases, meeting vocabulary, negotiation language
+
 ### Unit 70: Debate & Argumentation
+- **Topics**: Constructing arguments, counterarguments, rhetorical strategies, persuasive techniques, logical reasoning
+- **Grammar**: Subjunctive for persuasion, conditional for hypothetical arguments, connectors for argumentation (por lo tanto, en consecuencia, a pesar de que)
+- **Vocabulary**: Argumentative discourse markers, persuasive vocabulary, logical connectors, debate terminology (refutar, sostener, rebatir)
+
 ### Unit 71: Cultural Analysis
+- **Topics**: Deep cultural understanding, cultural comparisons, societal values, traditions analysis, intercultural communication
+- **Grammar**: Subjunctive for cultural opinions, comparative structures for cultural analysis, passive for describing cultural phenomena
+- **Vocabulary**: Cultural terminology, anthropological vocabulary, social customs vocabulary, intercultural expressions
+
 ### Unit 72: Literary Techniques
-### Unit 73: Advanced Discourse Markers
+- **Topics**: Literary analysis, narrative techniques, poetic devices, stylistic elements, literary criticism
+- **Grammar**: Literary tenses (historic present, imperfect for description), subjunctive for literary interpretation, complex relative clauses
+- **Vocabulary**: Literary terminology (metáfora, símil, personificación), narrative vocabulary, critical analysis terms, stylistic descriptions
+
+### Unit 73: Advanced Discourse
+- **Topics**: Complex communication patterns, discourse markers, cohesion devices, text organization, pragmatic competence
+- **Grammar**: Advanced connectors, discourse particles (pues, entonces, bueno), topic shifting markers, emphasis structures
+- **Vocabulary**: Sophisticated discourse markers, cohesion devices, pragmatic expressions, nuanced communication vocabulary
 
 ---
 
@@ -356,7 +395,7 @@
 - [x] A2 Units 19-36 implemented (72 lessons)
 - [x] B1 Units 37-51 implemented (60 lessons) - **COMPLETED!**
 - [x] B2 Units 52-63 implemented (48 lessons) - **COMPLETED!**
-- [ ] C1 Units 64-73 implemented (40 lessons)
+- [x] C1 Units 64-73 implemented (40 lessons) - **COMPLETED!**
 - [ ] C2 Units 74-81 implemented (32 lessons)
 - [ ] All vocabulary entries added
 - [ ] Testing and QA complete

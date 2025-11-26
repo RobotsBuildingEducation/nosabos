@@ -117,7 +117,7 @@ export default function EmbeddedSkillTree({
               setIsExpanded(false); // Collapse after starting lesson
             }}
             showMultipleLevels={true}
-            levels={["A1", "A2", "B1", "B2"]}
+            levels={["A1", "A2", "B1", "B2", "C1"]}
           />
         </Box>
       </Collapse>
