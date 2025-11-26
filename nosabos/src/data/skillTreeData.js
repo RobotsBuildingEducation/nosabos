@@ -9299,6 +9299,469 @@ const baseLearningPath = {
   ],
 };
 
+const SUB_LEVEL_SEGMENTS = {
+  A1: ["A1.1", "A1.2", "A1.3"],
+  A2: ["A2.1", "A2.2", "A2.3"],
+  B1: ["B1.1", "B1.2", "B1.3"],
+  B2: ["B2.1", "B2.2", "B2.3"],
+  C1: ["C1.1", "C1.2", "C1.3"],
+  C2: ["C2.1", "C2.2", "C2.3"],
+};
+
+const CEFR_LEVEL_PROFILES = {
+  A1: {
+    interaction: "exchange short, formulaic turns",
+    production: "share personal details and immediate needs",
+    mediation: "relay single facts or key words",
+    accuracy: "use memorized phrases with understandable pronunciation",
+    discourseSkills: ["turn-taking", "formulaic exchanges"],
+  },
+  A2: {
+    interaction: "handle simple transactions and social routines",
+    production: "describe familiar topics in short phrases",
+    mediation: "summarize main points of brief messages",
+    accuracy: "combine rehearsed sentences with basic connectors",
+    discourseSkills: ["connected phrases", "short descriptions"],
+  },
+  B1: {
+    interaction: "sustain conversations about experiences and plans",
+    production: "narrate events and explain opinions",
+    mediation: "relay key details from longer texts or dialogue",
+    accuracy: "use past and future frames with emerging control",
+    discourseSkills: ["narration", "linking devices", "reformulation"],
+  },
+  B2: {
+    interaction: "negotiate viewpoints and manage breakdowns",
+    production: "develop arguments with supporting detail",
+    mediation: "summarize and compare sources or positions",
+    accuracy: "use complex clauses with generally consistent control",
+    discourseSkills: ["argumentation", "clarification", "hedging"],
+  },
+  C1: {
+    interaction: "lead discussions with nuanced register control",
+    production: "deliver structured analyses and persuasive discourse",
+    mediation: "reframe ideas for different audiences",
+    accuracy: "maintain natural flow with precise vocabulary",
+    discourseSkills: ["synthesizing", "stance-taking", "register shifts"],
+  },
+  C2: {
+    interaction: "switch effortlessly across formal and informal contexts",
+    production: "craft subtle argumentation and stylistic effects",
+    mediation: "mediate complex content, positions, or emotions",
+    accuracy: "demonstrate near-native control and nuance",
+    discourseSkills: ["stylistic control", "idiomatic range", "critical response"],
+  },
+};
+
+const ADVANCED_MODES = {
+  B1: ["listening", "writing"],
+  B2: ["listening", "writing", "mediation"],
+  C1: ["listening", "writing", "mediation"],
+  C2: ["listening", "writing", "mediation"],
+};
+
+const ALLOWED_MODULES = new Set([
+  "vocabulary",
+  "grammar",
+  "stories",
+  "reading",
+  "realtime",
+]);
+
+const FUNCTIONAL_PROMPTS = {
+  listening: (topic, levelLabel) =>
+    `Interpret authentic audio about ${topic} and capture the main points (${levelLabel})`,
+  writing: (topic, levelLabel) =>
+    `Write a short response that applies the lesson topic to a real scenario (${levelLabel})`,
+  mediation: (topic, levelLabel) =>
+    `Bridge information about ${topic} for someone with less background knowledge (${levelLabel})`,
+};
+
+function deriveLessonTopic(unit, lesson) {
+  return (
+    lesson.content?.vocabulary?.topic ||
+    lesson.content?.grammar?.topic ||
+    unit.title?.en ||
+    lesson.title?.en ||
+    "lesson focus"
+  );
+}
+
+function addSupplementalLessons(level, unit) {
+  const lessons = unit.lessons || [];
+  const nonQuizLessons = lessons.filter((lesson) => !lesson.isFinalQuiz);
+  const maxNonQuizXp = Math.max(
+    ...nonQuizLessons.map((lesson) => lesson.xpRequired || 0),
+    0
+  );
+  const xpStep = 15;
+  const topic = unit.title?.en || unit.description?.en || "unit theme";
+
+  const supplementalLessons = [
+    {
+      id: `${unit.id}-skill-builder`,
+      title: {
+        en: `${unit.title?.en || "Unit"} Skill Builder`,
+        es: `Refuerzo de ${unit.title?.es || unit.title?.en || "Unidad"}`,
+      },
+      description: {
+        en: "Short targeted drills to consolidate the unit language before the quiz.",
+        es: "Ejercicios breves para consolidar el lenguaje de la unidad antes del cuestionario.",
+      },
+      xpRequired: maxNonQuizXp + xpStep,
+      xpReward: 15,
+      modes: ["grammar", "vocabulary"],
+      content: {
+        grammar: {
+          topic,
+          focusPoints: ["pattern recycling", "micro-drills"],
+        },
+        vocabulary: {
+          topic,
+          prompt: `Cycle through quick recall of ${topic} phrases before applying them.`,
+        },
+      },
+      cefrStage: level,
+      pathway: "granularity",
+    },
+    {
+      id: `${unit.id}-integrated-practice`,
+      title: {
+        en: `${unit.title?.en || "Unit"} Integrated Practice`,
+        es: `Práctica integrada de ${unit.title?.es || unit.title?.en || "Unidad"}`,
+      },
+      description: {
+        en: "Link vocabulary and grammar from the unit in a guided scenario.",
+        es: "Vincula vocabulario y gramática de la unidad en un escenario guiado.",
+      },
+      xpRequired: maxNonQuizXp + xpStep * 2,
+      xpReward: 20,
+      modes: ["realtime", "reading", "stories"],
+      content: {
+        realtime: {
+          scenario: `${topic.toLowerCase()} integrated task`,
+          prompt: `Produce longer turns that connect earlier lesson points for ${topic}.`,
+        },
+        reading: {
+          topic,
+          prompt: `Interpret scaffolded prompts about ${topic} before responding live.`,
+        },
+        stories: {
+          topic,
+          prompt: `Follow a mini scenario that blends the unit's core language for ${topic}.`,
+        },
+      },
+      cefrStage: level,
+      pathway: "granularity",
+    },
+  ];
+
+  const quizIndex = lessons.findIndex((lesson) => lesson.isFinalQuiz);
+
+  if (quizIndex === -1) {
+    return [...lessons, ...supplementalLessons];
+  }
+
+  const quizLesson = lessons[quizIndex];
+  const minQuizXp = maxNonQuizXp + xpStep * (supplementalLessons.length + 1);
+  const updatedQuiz = {
+    ...quizLesson,
+    xpRequired: Math.max(quizLesson.xpRequired || 0, minQuizXp),
+  };
+
+  const coreLessons = lessons.filter((lesson) => !lesson.isFinalQuiz);
+  const trailingLessons = lessons.slice(quizIndex + 1);
+
+  return [...coreLessons, ...supplementalLessons, updatedQuiz, ...trailingLessons];
+}
+
+function buildLessonObjectives(level, unit, lesson) {
+  const profile = CEFR_LEVEL_PROFILES[level] || CEFR_LEVEL_PROFILES.A1;
+  const topic = deriveLessonTopic(unit, lesson);
+  const baseAssessment = lesson.isFinalQuiz
+    ? `Meet the ${lesson.title?.en || "lesson"} pass criteria to show readiness for the next sub-stage.`
+    : `Complete guided practice showing control of ${topic} in ${
+        lesson.modes?.join(", ") || "core"
+      } tasks.`;
+
+  return {
+    cefrLevel: level,
+    communicativeObjectives: [
+      `Can ${profile.interaction} when discussing ${topic}.`,
+      `Can ${profile.production} while keeping conversation aligned to ${unit.title?.en?.toLowerCase()}.`,
+      `Can ${profile.mediation} related to ${topic} when peers need support.`,
+    ],
+    successCriteria: [
+      `Uses lesson language to ${profile.interaction} with ${profile.accuracy}.`,
+      `Shows ${profile.discourseSkills.join(", ") || "connected speech"} across ${
+        lesson.modes?.length || 1
+      } activity modes.`,
+      baseAssessment,
+    ],
+  };
+}
+
+function appendAdvancedModes(level, lesson, unit) {
+  const additions = ADVANCED_MODES[level];
+  if (!additions) return lesson;
+
+  const topic = deriveLessonTopic(unit, lesson);
+  const advancedTasks = additions.map((mode) => ({
+    mode,
+    topic,
+    prompt:
+      FUNCTIONAL_PROMPTS[mode]?.(topic, level) ||
+      `Apply ${topic} in a ${mode} task for level ${level}.`,
+  }));
+
+  return {
+    ...lesson,
+    advancedTasks: [...(lesson.advancedTasks || []), ...advancedTasks],
+  };
+}
+
+function ensureModeContent(mode, topic, lesson) {
+  const topicLabel = typeof topic === "string" ? topic : String(topic || "topic");
+  const updatedContent = { ...(lesson.content || {}) };
+
+  if (mode === "vocabulary") {
+    updatedContent.vocabulary = updatedContent.vocabulary || {
+      topic: topicLabel,
+      prompt: `Learn and recycle ${topicLabel} vocabulary in context.`,
+    };
+  }
+
+  if (mode === "grammar") {
+    updatedContent.grammar = updatedContent.grammar || {
+      topic: topicLabel,
+      focusPoints: ["form", "use"],
+    };
+  }
+
+  if (mode === "stories") {
+    updatedContent.stories = updatedContent.stories || {
+      topic: topicLabel,
+      prompt: `Follow a short story that highlights ${topicLabel} language.`,
+    };
+  }
+
+  if (mode === "reading") {
+    updatedContent.reading = updatedContent.reading || {
+      topic: topicLabel,
+      prompt: `Interpret written prompts about ${topicLabel}.`,
+    };
+  }
+
+  if (mode === "realtime") {
+    updatedContent.realtime = updatedContent.realtime || {
+      scenario: `${topicLabel.toLowerCase()} exchange`,
+      prompt: `Respond in real time using ${topicLabel} language.`,
+    };
+  }
+
+  return updatedContent;
+}
+
+function normalizeLessonModes(unit, lesson) {
+  const topic = deriveLessonTopic(unit, lesson);
+  const isQuiz = lesson.isFinalQuiz;
+  const isSkillBuilder = lesson.id?.includes("skill-builder");
+  const isIntegratedPractice = lesson.id?.includes("integrated-practice");
+
+  let modes = (lesson.modes || []).filter((mode) => ALLOWED_MODULES.has(mode));
+  modes = Array.from(new Set(modes));
+
+  if (isQuiz) {
+    modes = ["grammar", "vocabulary"];
+  } else if (isSkillBuilder) {
+    modes = ["grammar", "vocabulary"];
+  } else if (isIntegratedPractice) {
+    modes = ["realtime", "reading", "stories"];
+  } else {
+    if (modes.length === 0) {
+      modes = ["vocabulary", "realtime", "reading"];
+    }
+
+    const hasOnlyVocabGrammar =
+      modes.length === 2 && modes.includes("vocabulary") && modes.includes("grammar");
+
+    if (hasOnlyVocabGrammar) {
+      modes.push("realtime");
+    }
+
+    while (modes.length < 3) {
+      const filler = ["vocabulary", "grammar", "reading", "stories", "realtime"].find(
+        (mode) => !modes.includes(mode)
+      );
+      if (!filler) break;
+      modes.push(filler);
+    }
+
+    if (modes.length > 4) {
+      modes = modes.slice(0, 4);
+    }
+  }
+
+  let content = { ...(lesson.content || {}) };
+  modes.forEach((mode) => {
+    content = ensureModeContent(mode, topic, { ...lesson, content });
+  });
+
+  return { ...lesson, modes, content };
+}
+
+function ensureUnitModuleCoverage(unit, lessons) {
+  const moduleCounts = lessons.reduce((counts, lesson) => {
+    lesson.modes?.forEach((mode) => {
+      counts[mode] = (counts[mode] || 0) + 1;
+    });
+    return counts;
+  }, {});
+
+  const missingModules = Array.from(ALLOWED_MODULES).filter(
+    (module) => !moduleCounts[module]
+  );
+
+  const eligibleLessons = lessons.filter(
+    (lesson) =>
+      !lesson.isFinalQuiz &&
+      !lesson.id?.includes("skill-builder") &&
+      !lesson.id?.includes("integrated-practice")
+  );
+
+  missingModules.forEach((module) => {
+    let targetLesson = eligibleLessons.find((lesson) =>
+      (lesson.modes?.length || 0) < 4 && !(lesson.modes || []).includes(module)
+    );
+
+    if (!targetLesson) {
+      targetLesson = eligibleLessons.find((lesson) => {
+        const lessonModes = lesson.modes || [];
+        if (lessonModes.includes(module)) return false;
+        if (lessonModes.length !== 4) return false;
+        return lessonModes.some((mode) => moduleCounts[mode] > 1);
+      });
+
+      if (targetLesson) {
+        const modeToReplace = targetLesson.modes.find((mode) => moduleCounts[mode] > 1);
+        if (modeToReplace) {
+          targetLesson.modes = targetLesson.modes
+            .filter((mode) => mode !== modeToReplace)
+            .concat(module);
+          moduleCounts[modeToReplace] -= 1;
+        }
+      }
+    }
+
+    if (!targetLesson) {
+      return;
+    }
+
+    targetLesson.modes = Array.from(new Set([...(targetLesson.modes || []), module]));
+    targetLesson.content = ensureModeContent(
+      module,
+      deriveLessonTopic(unit, targetLesson),
+      targetLesson
+    );
+    moduleCounts[module] = (moduleCounts[module] || 0) + 1;
+  });
+
+  return lessons;
+}
+
+function tagLessonWithFunction(level, unit, lesson) {
+  const topic = deriveLessonTopic(unit, lesson);
+  const profile = CEFR_LEVEL_PROFILES[level] || CEFR_LEVEL_PROFILES.A1;
+  return {
+    ...lesson,
+    objectives: buildLessonObjectives(level, unit, lesson),
+    communicativeFocus: {
+      function: `${profile.interaction} on ${topic}`,
+      discourseSkills: profile.discourseSkills,
+      scenario: `${unit.description?.en || unit.title?.en}: ${
+        lesson.description?.en || lesson.title?.en || "lesson"
+      }`,
+    },
+  };
+}
+
+function assignSubLevels(unitsByLevel) {
+  const cloned = JSON.parse(JSON.stringify(unitsByLevel));
+
+  Object.entries(cloned).forEach(([level, units]) => {
+    const subStages = SUB_LEVEL_SEGMENTS[level] || [level];
+    const chunkSize = Math.ceil(units.length / subStages.length);
+
+    cloned[level] = units.map((unit, index) => {
+      const subLevelIndex = Math.min(
+        Math.floor(index / chunkSize),
+        subStages.length - 1
+      );
+      const subLevel = subStages[subLevelIndex];
+      const isMilestone =
+        index === units.length - 1 || (index + 1) % chunkSize === 0;
+
+      return {
+        ...unit,
+        subLevel,
+        milestone: isMilestone
+          ? {
+              title: `${subLevel} milestone`,
+              summary: `Checkpoint for ${subLevel} to verify readiness before advancing to the next sub-stage.`,
+              checks: [
+                `Completed ${unit.title?.en || "unit"} quiz with ${
+                  unit.lessons?.find((lesson) => lesson.isFinalQuiz)?.quizConfig
+                    ?.passingScore || "target"
+                } passing score target.`,
+                `Can ${
+                  CEFR_LEVEL_PROFILES[level]?.interaction ||
+                  "interact in everyday situations"
+                } using the themes from this segment.`,
+                `Demonstrates ${
+                  CEFR_LEVEL_PROFILES[level]?.accuracy || "steady control"
+                } across ${subLevel} topics.`,
+              ],
+            }
+          : undefined,
+      };
+    });
+  });
+
+  return cloned;
+}
+
+function applyCEFRScaffolding(path) {
+  const stagedPath = assignSubLevels(path);
+
+  Object.entries(stagedPath).forEach(([level, units]) => {
+    stagedPath[level] = units.map((unit) => {
+      const expandedLessons = addSupplementalLessons(level, unit);
+      const enhancedLessons = expandedLessons.map((lesson) =>
+        normalizeLessonModes(
+          unit,
+          appendAdvancedModes(level, tagLessonWithFunction(level, unit, lesson), unit)
+        )
+      );
+      const balancedLessons = ensureUnitModuleCoverage(unit, enhancedLessons);
+
+      return {
+        ...unit,
+        communicativeFunctions: [
+          `Functional focus: ${CEFR_LEVEL_PROFILES[level]?.interaction || "interaction"}.`,
+          `Discourse skills: ${(CEFR_LEVEL_PROFILES[level]?.discourseSkills || []).join(
+            ", "
+          )}.`,
+        ],
+        lessons: balancedLessons,
+      };
+    });
+  });
+
+  return stagedPath;
+}
+
+const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
+
 const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nah"]);
 const DEFAULT_TARGET_LANG = "es";
 
@@ -9998,7 +10461,7 @@ function localizeLearningPath(units, targetLang) {
   return cloned;
 }
 
-const cloneLearningPath = () => JSON.parse(JSON.stringify(baseLearningPath));
+const cloneLearningPath = () => JSON.parse(JSON.stringify(cefrAlignedLearningPath));
 
 export const LEARNING_PATHS = {
   es: cloneLearningPath(), // Spanish
