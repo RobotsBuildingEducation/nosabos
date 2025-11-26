@@ -9299,6 +9299,225 @@ const baseLearningPath = {
   ],
 };
 
+const SUB_LEVEL_SEGMENTS = {
+  A1: ["A1.1", "A1.2", "A1.3"],
+  A2: ["A2.1", "A2.2", "A2.3"],
+  B1: ["B1.1", "B1.2", "B1.3"],
+  B2: ["B2.1", "B2.2", "B2.3"],
+  C1: ["C1.1", "C1.2", "C1.3"],
+  C2: ["C2.1", "C2.2", "C2.3"],
+};
+
+const CEFR_LEVEL_PROFILES = {
+  A1: {
+    interaction: "exchange short, formulaic turns",
+    production: "share personal details and immediate needs",
+    mediation: "relay single facts or key words",
+    accuracy: "use memorized phrases with understandable pronunciation",
+    discourseSkills: ["turn-taking", "formulaic exchanges"],
+  },
+  A2: {
+    interaction: "handle simple transactions and social routines",
+    production: "describe familiar topics in short phrases",
+    mediation: "summarize main points of brief messages",
+    accuracy: "combine rehearsed sentences with basic connectors",
+    discourseSkills: ["connected phrases", "short descriptions"],
+  },
+  B1: {
+    interaction: "sustain conversations about experiences and plans",
+    production: "narrate events and explain opinions",
+    mediation: "relay key details from longer texts or dialogue",
+    accuracy: "use past and future frames with emerging control",
+    discourseSkills: ["narration", "linking devices", "reformulation"],
+  },
+  B2: {
+    interaction: "negotiate viewpoints and manage breakdowns",
+    production: "develop arguments with supporting detail",
+    mediation: "summarize and compare sources or positions",
+    accuracy: "use complex clauses with generally consistent control",
+    discourseSkills: ["argumentation", "clarification", "hedging"],
+  },
+  C1: {
+    interaction: "lead discussions with nuanced register control",
+    production: "deliver structured analyses and persuasive discourse",
+    mediation: "reframe ideas for different audiences",
+    accuracy: "maintain natural flow with precise vocabulary",
+    discourseSkills: ["synthesizing", "stance-taking", "register shifts"],
+  },
+  C2: {
+    interaction: "switch effortlessly across formal and informal contexts",
+    production: "craft subtle argumentation and stylistic effects",
+    mediation: "mediate complex content, positions, or emotions",
+    accuracy: "demonstrate near-native control and nuance",
+    discourseSkills: ["stylistic control", "idiomatic range", "critical response"],
+  },
+};
+
+const ADVANCED_MODES = {
+  B1: ["listening", "writing"],
+  B2: ["listening", "writing", "mediation"],
+  C1: ["listening", "writing", "mediation"],
+  C2: ["listening", "writing", "mediation"],
+};
+
+const FUNCTIONAL_PROMPTS = {
+  listening: (topic, levelLabel) =>
+    `Interpret authentic audio about ${topic} and capture the main points (${levelLabel})`,
+  writing: (topic, levelLabel) =>
+    `Write a short response that applies the lesson topic to a real scenario (${levelLabel})`,
+  mediation: (topic, levelLabel) =>
+    `Bridge information about ${topic} for someone with less background knowledge (${levelLabel})`,
+};
+
+function deriveLessonTopic(unit, lesson) {
+  return (
+    lesson.content?.vocabulary?.topic ||
+    lesson.content?.grammar?.topic ||
+    unit.title?.en ||
+    lesson.title?.en ||
+    "lesson focus"
+  );
+}
+
+function buildLessonObjectives(level, unit, lesson) {
+  const profile = CEFR_LEVEL_PROFILES[level] || CEFR_LEVEL_PROFILES.A1;
+  const topic = deriveLessonTopic(unit, lesson);
+  const baseAssessment = lesson.isFinalQuiz
+    ? `Meet the ${lesson.title?.en || "lesson"} pass criteria to show readiness for the next sub-stage.`
+    : `Complete guided practice showing control of ${topic} in ${
+        lesson.modes?.join(", ") || "core"
+      } tasks.`;
+
+  return {
+    cefrLevel: level,
+    communicativeObjectives: [
+      `Can ${profile.interaction} when discussing ${topic}.`,
+      `Can ${profile.production} while keeping conversation aligned to ${unit.title?.en?.toLowerCase()}.`,
+      `Can ${profile.mediation} related to ${topic} when peers need support.`,
+    ],
+    successCriteria: [
+      `Uses lesson language to ${profile.interaction} with ${profile.accuracy}.`,
+      `Shows ${profile.discourseSkills.join(", ") || "connected speech"} across ${
+        lesson.modes?.length || 1
+      } activity modes.`,
+      baseAssessment,
+    ],
+  };
+}
+
+function appendAdvancedModes(level, lesson, unit) {
+  const additions = ADVANCED_MODES[level];
+  if (!additions) return lesson;
+
+  const topic = deriveLessonTopic(unit, lesson);
+  const enrichedModes = Array.from(new Set([...(lesson.modes || []), ...additions]));
+  const updatedContent = { ...(lesson.content || {}) };
+
+  additions.forEach((mode) => {
+    if (!updatedContent[mode]) {
+      updatedContent[mode] = {
+        topic,
+        prompt: FUNCTIONAL_PROMPTS[mode]?.(topic, level) ||
+          `Apply ${topic} in a ${mode} task for level ${level}.`,
+      };
+    }
+  });
+
+  return {
+    ...lesson,
+    modes: enrichedModes,
+    content: updatedContent,
+  };
+}
+
+function tagLessonWithFunction(level, unit, lesson) {
+  const topic = deriveLessonTopic(unit, lesson);
+  const profile = CEFR_LEVEL_PROFILES[level] || CEFR_LEVEL_PROFILES.A1;
+  return {
+    ...lesson,
+    objectives: buildLessonObjectives(level, unit, lesson),
+    communicativeFocus: {
+      function: `${profile.interaction} on ${topic}`,
+      discourseSkills: profile.discourseSkills,
+      scenario: `${unit.description?.en || unit.title?.en}: ${
+        lesson.description?.en || lesson.title?.en || "lesson"
+      }`,
+    },
+  };
+}
+
+function assignSubLevels(unitsByLevel) {
+  const cloned = JSON.parse(JSON.stringify(unitsByLevel));
+
+  Object.entries(cloned).forEach(([level, units]) => {
+    const subStages = SUB_LEVEL_SEGMENTS[level] || [level];
+    const chunkSize = Math.ceil(units.length / subStages.length);
+
+    cloned[level] = units.map((unit, index) => {
+      const subLevelIndex = Math.min(
+        Math.floor(index / chunkSize),
+        subStages.length - 1
+      );
+      const subLevel = subStages[subLevelIndex];
+      const isMilestone =
+        index === units.length - 1 || (index + 1) % chunkSize === 0;
+
+      return {
+        ...unit,
+        subLevel,
+        milestone: isMilestone
+          ? {
+              title: `${subLevel} milestone`,
+              summary: `Checkpoint for ${subLevel} to verify readiness before advancing to the next sub-stage.`,
+              checks: [
+                `Completed ${unit.title?.en || "unit"} quiz with ${
+                  unit.lessons?.find((lesson) => lesson.isFinalQuiz)?.quizConfig
+                    ?.passingScore || "target"
+                } passing score target.`,
+                `Can ${
+                  CEFR_LEVEL_PROFILES[level]?.interaction ||
+                  "interact in everyday situations"
+                } using the themes from this segment.`,
+                `Demonstrates ${
+                  CEFR_LEVEL_PROFILES[level]?.accuracy || "steady control"
+                } across ${subLevel} topics.`,
+              ],
+            }
+          : undefined,
+      };
+    });
+  });
+
+  return cloned;
+}
+
+function applyCEFRScaffolding(path) {
+  const stagedPath = assignSubLevels(path);
+
+  Object.entries(stagedPath).forEach(([level, units]) => {
+    stagedPath[level] = units.map((unit) => {
+      const enhancedLessons = unit.lessons.map((lesson) =>
+        appendAdvancedModes(level, tagLessonWithFunction(level, unit, lesson), unit)
+      );
+
+      return {
+        ...unit,
+        communicativeFunctions: [
+          `Functional focus: ${CEFR_LEVEL_PROFILES[level]?.interaction || "interaction"}.`,
+          `Discourse skills: ${(CEFR_LEVEL_PROFILES[level]?.discourseSkills || []).join(
+            ", "
+          )}.`,
+        ],
+        lessons: enhancedLessons,
+      };
+    });
+  });
+
+  return stagedPath;
+}
+
+const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
+
 const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nah"]);
 const DEFAULT_TARGET_LANG = "es";
 
@@ -9998,7 +10217,7 @@ function localizeLearningPath(units, targetLang) {
   return cloned;
 }
 
-const cloneLearningPath = () => JSON.parse(JSON.stringify(baseLearningPath));
+const cloneLearningPath = () => JSON.parse(JSON.stringify(cefrAlignedLearningPath));
 
 export const LEARNING_PATHS = {
   es: cloneLearningPath(), // Spanish
