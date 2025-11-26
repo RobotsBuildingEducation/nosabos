@@ -9579,7 +9579,7 @@ function normalizeLessonModes(unit, lesson) {
     modes = ["realtime", "reading", "stories"];
   } else {
     if (modes.length === 0) {
-      modes = ["vocabulary", "realtime"];
+      modes = ["vocabulary", "realtime", "reading"];
     }
 
     const hasOnlyVocabGrammar =
@@ -9589,7 +9589,7 @@ function normalizeLessonModes(unit, lesson) {
       modes.push("realtime");
     }
 
-    while (modes.length < 2) {
+    while (modes.length < 3) {
       const filler = ["vocabulary", "grammar", "reading", "stories", "realtime"].find(
         (mode) => !modes.includes(mode)
       );
