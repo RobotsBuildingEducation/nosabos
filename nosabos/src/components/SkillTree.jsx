@@ -120,528 +120,156 @@ const MODE_ICONS = {
   reading: RiBookOpenLine,
 };
 
-// Get unique icon for each individual lesson based on unit topic + lesson type
-const getLessonIcon = (lessonId, unitId) => {
+// Map vocabulary library topics to contextual icons
+const TOPIC_ICON_MAP = {
+  // Basic communication
+  greetings: RiHandHeartLine,
+  introductions: RiUserVoiceLine,
+  "question words": RiQuestionAnswerLine,
+
+  // Numbers and counting
+  numbers: RiNumbersLine,
+
+  // Time and dates
+  time: RiTimeLine,
+  "time expressions": RiHistoryLine,
+  "days of week": RiCalendarLine,
+
+  // Food and dining
+  "food and drinks": RiRestaurantLine,
+
+  // Daily life
+  "daily activities": RiTimeLine,
+  preferences: RiHeartLine,
+
+  // People and relationships
+  family: RiTeamLine,
+  "physical descriptions": RiEmotionLine,
+  personality: RiEmotionLine,
+
+  // Places and navigation
+  places: RiMapPinLine,
+  directions: RiCompassLine,
+  transportation: RiBusLine,
+
+  // Shopping and commerce
+  shopping: RiShoppingCartLine,
+  clothing: RiShirtLine,
+
+  // Colors and appearance
+  colors: RiPaletteLine,
+
+  // Sports and hobbies
+  sports: RiFootballLine,
+  entertainment: RiMusicLine,
+  "arts and reading": RiBook2Line,
+
+  // Travel
+  travel: RiSuitcaseLine,
+
+  // Weather and nature
+  weather: RiCloudyLine,
+  nature: RiPlantLine,
+  environment: RiEarthLine,
+  geography: RiGlobalLine,
+
+  // Work and education
+  careers: RiBriefcaseLine,
+  professional: RiBriefcaseLine,
+
+  // Health and wellness
+  "body parts": RiBodyScanLine,
+  health: RiHeartPulseLine,
+  wellness: RiHeartPulseLine,
+
+  // Advanced topics
+  debate: RiMegaphoneLine,
+  "current events": RiNewspaperLine,
+  literature: RiQuillPenLine,
+  "visual arts": RiPaintBrushLine,
+  cinema: RiClapperboardLine,
+  "digital communication": RiSmartphoneLine,
+  science: RiFlaskLine,
+  "digital economy": RiBitCoinLine,
+  "social justice": RiScalesLine,
+  "global issues": RiEarthLine,
+
+  // Common objects and spaces
+  "common objects": RiBookOpenLine,
+  "house and rooms": RiMapPinLine,
+};
+
+// Get icon based on lesson's vocabulary topic
+const getIconFromTopic = (topic) => {
+  if (!topic) return RiBookOpenLine;
+
+  // Normalize topic string (lowercase, trim)
+  const normalizedTopic = topic.toLowerCase().trim();
+
+  // Direct match
+  if (TOPIC_ICON_MAP[normalizedTopic]) {
+    return TOPIC_ICON_MAP[normalizedTopic];
+  }
+
+  // Partial match for compound topics (e.g., "greetings structures" -> "greetings")
+  for (const [key, icon] of Object.entries(TOPIC_ICON_MAP)) {
+    if (normalizedTopic.includes(key)) {
+      return icon;
+    }
+  }
+
+  return RiBookOpenLine; // Default fallback
+};
+
+// Get unique icon for each individual lesson based on lesson content
+const getLessonIcon = (lesson, unitId) => {
   // Quiz lessons always get the question mark icon
-  if (lessonId.includes("-quiz")) return RiQuestionLine;
+  if (lesson.id.includes("-quiz")) return RiQuestionLine;
 
   // Extract lesson number (1, 2, or 3) from lessonId
   // lessonId format: "lesson-a1-1-1" where last digit is lesson number
-  const lessonNum = lessonId.split("-").pop();
-
-  // Map each unit + lesson combination to a unique icon
-  // This creates variety: lesson 1 = vocabulary focus, lesson 2 = practice, lesson 3 = application
-
-  // UNIT A1-1: First Words (Greetings)
-  if (unitId === "unit-a1-1") {
-    if (lessonNum === "1") return RiHandHeartLine; // Vocabulary - greeting gesture
-    if (lessonNum === "2") return RiSpeakLine; // Practice - speaking
-    if (lessonNum === "3") return RiUserVoiceLine; // Application - conversation
-  }
-
-  // UNIT A1-2: Introducing Yourself
-  if (unitId === "unit-a1-2") {
-    if (lessonNum === "1") return RiUserVoiceLine; // Vocabulary - person speaking
-    if (lessonNum === "2") return RiQuestionAnswerLine; // Practice - Q&A
-    if (lessonNum === "3") return RiTeamLine; // Application - meeting people
-  }
-
-  // UNIT A1-3: Numbers 0-20
-  if (unitId === "unit-a1-3") {
-    if (lessonNum === "1") return RiNumbersLine; // Vocabulary - numbers
-    if (lessonNum === "2") return RiSpeakLine; // Practice - saying numbers
-    if (lessonNum === "3") return RiCalendarLine; // Application - using numbers
-  }
-
-  // UNIT A1-4: Numbers 21-100
-  if (unitId === "unit-a1-4") {
-    if (lessonNum === "1") return RiNumbersLine; // Vocabulary - higher numbers
-    if (lessonNum === "2") return RiShoppingCartLine; // Practice - shopping context
-    if (lessonNum === "3") return RiBitCoinLine; // Application - money/counting
-  }
-
-  // UNIT A1-5: Days of Week
-  if (unitId === "unit-a1-5") {
-    if (lessonNum === "1") return RiCalendarLine; // Vocabulary - calendar
-    if (lessonNum === "2") return RiSpeakLine; // Practice - saying days
-    if (lessonNum === "3") return RiHistoryLine; // Application - planning/time
-  }
-
-  // UNIT A1-6: Months & Dates
-  if (unitId === "unit-a1-6") {
-    if (lessonNum === "1") return RiCalendarLine; // Vocabulary - calendar months
-    if (lessonNum === "2") return RiSpeakLine; // Practice - dates
-    if (lessonNum === "3") return RiStarLine; // Application - birthdays/events
-  }
-
-  // UNIT A1-7: Telling Time
-  if (unitId === "unit-a1-7") {
-    if (lessonNum === "1") return RiTimeLine; // Vocabulary - clock
-    if (lessonNum === "2") return RiSpeakLine; // Practice - telling time
-    if (lessonNum === "3") return RiCalendarLine; // Application - scheduling
-  }
-
-  // UNIT A1-8: Family Members
-  if (unitId === "unit-a1-8") {
-    if (lessonNum === "1") return RiTeamLine; // Vocabulary - family group
-    if (lessonNum === "2") return RiSpeakLine; // Practice - talking about family
-    if (lessonNum === "3") return RiHeartLine; // Application - family relationships
-  }
-
-  // UNIT A1-9: Colors & Shapes
-  if (unitId === "unit-a1-9") {
-    if (lessonNum === "1") return RiPaletteLine; // Vocabulary - color palette
-    if (lessonNum === "2") return RiSpeakLine; // Practice - describing colors
-    if (lessonNum === "3") return RiPaintBrushLine; // Application - using colors
-  }
-
-  // UNIT A1-10: Food & Drinks
-  if (unitId === "unit-a1-10") {
-    if (lessonNum === "1") return RiRestaurantLine; // Vocabulary - food items
-    if (lessonNum === "2") return RiSpeakLine; // Practice - ordering
-    if (lessonNum === "3") return RiHeartLine; // Application - preferences
-  }
-
-  // UNIT A1-11: At the Restaurant
-  if (unitId === "unit-a1-11") {
-    if (lessonNum === "1") return RiRestaurantLine; // Vocabulary - restaurant terms
-    if (lessonNum === "2") return RiQuestionAnswerLine; // Practice - menu/ordering
-    if (lessonNum === "3") return RiShoppingCartLine; // Application - paying
-  }
-
-  // UNIT A1-12: Common Objects
-  if (unitId === "unit-a1-12") {
-    if (lessonNum === "1") return RiBookOpenLine; // Vocabulary - everyday items
-    if (lessonNum === "2") return RiSpeakLine; // Practice - naming objects
-    if (lessonNum === "3") return RiShoppingCartLine; // Application - using objects
-  }
-
-  // UNIT A1-13: In the House
-  if (unitId === "unit-a1-13") {
-    if (lessonNum === "1") return RiMapPinLine; // Vocabulary - rooms/spaces
-    if (lessonNum === "2") return RiSpeakLine; // Practice - describing house
-    if (lessonNum === "3") return RiCompassLine; // Application - navigation
-  }
-
-  // UNIT A1-14: Clothing
-  if (unitId === "unit-a1-14") {
-    if (lessonNum === "1") return RiShirtLine; // Vocabulary - clothes
-    if (lessonNum === "2") return RiSpeakLine; // Practice - describing outfits
-    if (lessonNum === "3") return RiShoppingCartLine; // Application - shopping
-  }
-
-  // UNIT A1-15: Daily Routine
-  if (unitId === "unit-a1-15") {
-    if (lessonNum === "1") return RiTimeLine; // Vocabulary - daily activities
-    if (lessonNum === "2") return RiSpeakLine; // Practice - describing routine
-    if (lessonNum === "3") return RiCalendarLine; // Application - scheduling
-  }
-
-  // UNIT A1-16: Weather
-  if (unitId === "unit-a1-16") {
-    if (lessonNum === "1") return RiCloudyLine; // Vocabulary - weather terms
-    if (lessonNum === "2") return RiSpeakLine; // Practice - weather talk
-    if (lessonNum === "3") return RiPlantLine; // Application - seasons
-  }
-
-  // UNIT A1-17: Likes & Dislikes
-  if (unitId === "unit-a1-17") {
-    if (lessonNum === "1") return RiHeartLine; // Vocabulary - preferences
-    if (lessonNum === "2") return RiSpeakLine; // Practice - expressing opinions
-    if (lessonNum === "3") return RiEmotionLine; // Application - emotions
-  }
-
-  // UNIT A1-18: Basic Questions
-  if (unitId === "unit-a1-18") {
-    if (lessonNum === "1") return RiQuestionAnswerLine; // Vocabulary - question words
-    if (lessonNum === "2") return RiSpeakLine; // Practice - asking questions
-    if (lessonNum === "3") return RiQuestionLine; // Application - inquiry
-  }
-
-  // A2 Units
-  if (unitId === "unit-a2-1") {
-    if (lessonNum === "1") return RiEmotionLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBodyScanLine;
-  }
-
-  if (unitId === "unit-a2-2") {
-    if (lessonNum === "1") return RiMapPinLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiCompassLine;
-  }
-
-  if (unitId === "unit-a2-3") {
-    if (lessonNum === "1") return RiShoppingCartLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBitCoinLine;
-  }
-
-  if (unitId === "unit-a2-4") {
-    if (lessonNum === "1") return RiShoppingCartLine;
-    if (lessonNum === "2") return RiRestaurantLine;
-    if (lessonNum === "3") return RiPlantLine;
-  }
-
-  if (unitId === "unit-a2-5") {
-    if (lessonNum === "1") return RiBusLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiMapPinLine;
-  }
-
-  if (unitId === "unit-a2-6") {
-    if (lessonNum === "1") return RiCompassLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiMapPinLine;
-  }
-
-  if (unitId === "unit-a2-7") {
-    if (lessonNum === "1") return RiCalendarLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiStarLine;
-  }
-
-  if (unitId === "unit-a2-8") {
-    if (lessonNum === "1") return RiMusicLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPaintBrushLine;
-  }
-
-  if (unitId === "unit-a2-9") {
-    if (lessonNum === "1") return RiFootballLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBodyScanLine;
-  }
-
-  if (unitId === "unit-a2-10") {
-    if (lessonNum === "1") return RiHistoryLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBookOpenLine;
-  }
-
-  if (unitId === "unit-a2-11") {
-    if (lessonNum === "1") return RiHistoryFill;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBookOpenLine;
-  }
-
-  if (unitId === "unit-a2-12") {
-    if (lessonNum === "1") return RiBookOpenLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBook2Line;
-  }
-
-  if (unitId === "unit-a2-13") {
-    if (lessonNum === "1") return RiCalendarLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiLightbulbLine;
-  }
-
-  if (unitId === "unit-a2-14") {
-    if (lessonNum === "1") return RiBodyScanLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiHeartPulseLine;
-  }
-
-  if (unitId === "unit-a2-15") {
-    if (lessonNum === "1") return RiHeartPulseLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBodyScanLine;
-  }
-
-  if (unitId === "unit-a2-16") {
-    if (lessonNum === "1") return RiBriefcaseLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiSuitcaseLine;
-  }
-
-  if (unitId === "unit-a2-17") {
-    if (lessonNum === "1") return RiBook2Line;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-a2-18") {
-    if (lessonNum === "1") return RiSmartphoneLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiGlobalLine;
-  }
-
-  // B1 Units
-  if (unitId === "unit-b1-1") {
-    if (lessonNum === "1") return RiHistoryLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-b1-2") {
-    if (lessonNum === "1") return RiHistoryFill;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-b1-3") {
-    if (lessonNum === "1") return RiCalendarLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiLightbulbLine;
-  }
-
-  if (unitId === "unit-b1-4") {
-    if (lessonNum === "1") return RiScalesLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-b1-5") {
-    if (lessonNum === "1") return RiLightbulbLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiQuestionAnswerLine;
-  }
-
-  if (unitId === "unit-b1-6") {
-    if (lessonNum === "1") return RiLightbulbLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiTeamLine;
-  }
-
-  if (unitId === "unit-b1-7") {
-    if (lessonNum === "1") return RiQuestionLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-b1-8") {
-    if (lessonNum === "1") return RiSuitcaseLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiMapPinLine;
-  }
-
-  if (unitId === "unit-b1-9") {
-    if (lessonNum === "1") return RiPlantLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiEarthLine;
-  }
-
-  if (unitId === "unit-b1-10") {
-    if (lessonNum === "1") return RiGlobalLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiStarLine;
-  }
-
-  if (unitId === "unit-b1-11") {
-    if (lessonNum === "1") return RiNewspaperLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiMegaphoneLine;
-  }
-
-  if (unitId === "unit-b1-12") {
-    if (lessonNum === "1") return RiMegaphoneLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiQuestionAnswerLine;
-  }
-
-  if (unitId === "unit-b1-13") {
-    if (lessonNum === "1") return RiMegaphoneLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiEmotionLine;
-  }
-
-  if (unitId === "unit-b1-14") {
-    if (lessonNum === "1") return RiStarLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBookOpenLine;
-  }
-
-  if (unitId === "unit-b1-15") {
-    if (lessonNum === "1") return RiQuestionLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiLightbulbLine;
-  }
-
-  // B2 Units
-  if (unitId === "unit-b2-1") {
-    if (lessonNum === "1") return RiHistoryFill;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-b2-2") {
-    if (lessonNum === "1") return RiPencilLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBookOpenLine;
-  }
-
-  if (unitId === "unit-b2-3") {
-    if (lessonNum === "1") return RiSpeakLine;
-    if (lessonNum === "2") return RiQuestionAnswerLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-b2-4") {
-    if (lessonNum === "1") return RiPencilLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBookOpenLine;
-  }
-
-  if (unitId === "unit-b2-5") {
-    if (lessonNum === "1") return RiBookOpenLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBriefcaseLine;
-  }
-
-  if (unitId === "unit-b2-6") {
-    if (lessonNum === "1") return RiBriefcaseLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-b2-7") {
-    if (lessonNum === "1") return RiFlaskLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiLightbulbLine;
-  }
-
-  if (unitId === "unit-b2-8") {
-    if (lessonNum === "1") return RiScalesLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiMegaphoneLine;
-  }
-
-  if (unitId === "unit-b2-9") {
-    if (lessonNum === "1") return RiPaintBrushLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiQuillPenLine;
-  }
-
-  if (unitId === "unit-b2-10") {
-    if (lessonNum === "1") return RiMegaphoneLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiNewspaperLine;
-  }
-
-  if (unitId === "unit-b2-11") {
-    if (lessonNum === "1") return RiHeartPulseLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBodyScanLine;
-  }
-
-  if (unitId === "unit-b2-12") {
-    if (lessonNum === "1") return RiLightbulbLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBookOpenLine;
-  }
-
-  // C1 Units
-  if (unitId === "unit-c1-1") {
-    if (lessonNum === "1") return RiStarLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-c1-2") {
-    if (lessonNum === "1") return RiStarFill;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-c1-3") {
-    if (lessonNum === "1") return RiQuestionLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiLightbulbLine;
-  }
-
-  if (unitId === "unit-c1-4") {
-    if (lessonNum === "1") return RiQuillPenLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBookOpenLine;
-  }
-
-  if (unitId === "unit-c1-5") {
-    if (lessonNum === "1") return RiBook2Line;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPencilLine;
-  }
-
-  if (unitId === "unit-c1-6") {
-    if (lessonNum === "1") return RiBriefcaseLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiMegaphoneLine;
-  }
-
-  if (unitId === "unit-c1-7") {
-    if (lessonNum === "1") return RiMegaphoneLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiScalesLine;
-  }
-
-  if (unitId === "unit-c1-8") {
-    if (lessonNum === "1") return RiGlobalLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPaintBrushLine;
-  }
-
-  if (unitId === "unit-c1-9") {
-    if (lessonNum === "1") return RiQuillPenLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiBookOpenLine;
-  }
-
-  if (unitId === "unit-c1-10") {
-    if (lessonNum === "1") return RiSpeakLine;
-    if (lessonNum === "2") return RiMegaphoneLine;
-    if (lessonNum === "3") return RiQuestionAnswerLine;
-  }
-
-  // C2 Units
-  if (unitId === "unit-c2-1") {
-    if (lessonNum === "1") return RiStarFill;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiQuillPenLine;
-  }
-
-  if (unitId === "unit-c2-2") {
-    if (lessonNum === "1") return RiGlobalLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiEarthLine;
-  }
-
-  if (unitId === "unit-c2-3") {
-    if (lessonNum === "1") return RiQuillPenLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiPaintBrushLine;
-  }
-
-  if (unitId === "unit-c2-4") {
-    if (lessonNum === "1") return RiPaintBrushLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiMegaphoneLine;
-  }
-
-  if (unitId === "unit-c2-5") {
-    if (lessonNum === "1") return RiBook2Line;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiFlaskLine;
-  }
-
-  if (unitId === "unit-c2-6") {
-    if (lessonNum === "1") return RiLightbulbLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiStarLine;
-  }
-
-  if (unitId === "unit-c2-7") {
-    if (lessonNum === "1") return RiEarthLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiGlobalLine;
-  }
-
-  if (unitId === "unit-c2-8") {
-    if (lessonNum === "1") return RiTrophyLine;
-    if (lessonNum === "2") return RiSpeakLine;
-    if (lessonNum === "3") return RiStarFill;
-  }
-
-  // Default fallback
+  const lessonNum = lesson.id.split("-").pop();
+
+  // Try to get icon from lesson's vocabulary topic
+  if (lesson.content?.vocabulary?.topic) {
+    const topicIcon = getIconFromTopic(lesson.content.vocabulary.topic);
+
+    // For lesson 1 (vocabulary), use the topic icon directly
+    if (lessonNum === "1") {
+      return topicIcon;
+    }
+
+    // For lesson 2 (practice), use speaking icon for conversation practice
+    if (lessonNum === "2") {
+      return RiSpeakLine;
+    }
+
+    // For lesson 3 (application), use a contextual variation
+    // This creates visual distinction while maintaining thematic relevance
+    if (lessonNum === "3") {
+      // Use secondary icons based on topic category
+      const topic = lesson.content.vocabulary.topic.toLowerCase();
+
+      if (topic.includes("number")) return RiCalendarLine;
+      if (topic.includes("time") || topic.includes("day") || topic.includes("month")) return RiHistoryLine;
+      if (topic.includes("food") || topic.includes("restaurant")) return RiShoppingCartLine;
+      if (topic.includes("family")) return RiHeartLine;
+      if (topic.includes("color")) return RiPaintBrushLine;
+      if (topic.includes("cloth")) return RiShoppingCartLine;
+      if (topic.includes("place")) return RiCompassLine;
+      if (topic.includes("transport") || topic.includes("direction")) return RiMapPinLine;
+      if (topic.includes("shop")) return RiBitCoinLine;
+      if (topic.includes("sport")) return RiBodyScanLine;
+      if (topic.includes("health") || topic.includes("body")) return RiHeartPulseLine;
+      if (topic.includes("weather")) return RiPlantLine;
+      if (topic.includes("career") || topic.includes("professional")) return RiSuitcaseLine;
+
+      // Default for application: use the topic icon
+      return topicIcon;
+    }
+  }
+
+  // Simple fallback: return book icon if no topic found
   return RiBookOpenLine;
 };
 
@@ -667,7 +295,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   const getNodeIcon = () => {
     if (status === SKILL_STATUS.COMPLETED) return RiCheckLine;
     if (status === SKILL_STATUS.LOCKED) return RiLockLine;
-    return getLessonIcon(lesson.id, unit.id);
+    return getLessonIcon(lesson, unit.id);
   };
 
   const Icon = getNodeIcon();

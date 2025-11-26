@@ -46,12 +46,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-1-1",
           title: {
-            en: "First Words - Vocabulary",
-            es: "Primeras Palabras - Vocabulario",
+            en: "Hello and Goodbye",
+            es: "Hola y Adiós",
           },
           description: {
-            en: "Learn key vocabulary for first words",
-            es: "Aprende vocabulario clave para primeras palabras",
+            en: "Learn essential greetings and farewells",
+            es: "Aprende saludos y despedidas esenciales",
           },
           xpRequired: 0,
           xpReward: 15,
@@ -69,12 +69,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-1-2",
           title: {
-            en: "First Words - Practice",
-            es: "Primeras Palabras - Práctica",
+            en: "Meeting Someone New",
+            es: "Conocer a Alguien Nuevo",
           },
           description: {
-            en: "Practice first words in conversation",
-            es: "Practica primeras palabras en conversación",
+            en: "Practice greetings in real conversations",
+            es: "Practica saludos en conversaciones reales",
           },
           xpRequired: 15,
           xpReward: 15,
@@ -93,12 +93,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-1-3",
           title: {
-            en: "First Words - Application",
-            es: "Primeras Palabras - Aplicación",
+            en: "Polite Conversations",
+            es: "Conversaciones Corteses",
           },
           description: {
-            en: "Apply first words skills",
-            es: "Aplica habilidades de primeras palabras",
+            en: "Master greeting etiquette and social niceties",
+            es: "Domina la etiqueta de saludos y cortesías sociales",
           },
           xpRequired: 30,
           xpReward: 15,
