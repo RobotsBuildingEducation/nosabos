@@ -9360,6 +9360,14 @@ const ADVANCED_MODES = {
   C2: ["listening", "writing", "mediation"],
 };
 
+const ALLOWED_MODULES = new Set([
+  "vocabulary",
+  "grammar",
+  "stories",
+  "reading",
+  "realtime",
+]);
+
 const FUNCTIONAL_PROMPTS = {
   listening: (topic, levelLabel) =>
     `Interpret authentic audio about ${topic} and capture the main points (${levelLabel})`,
@@ -9402,15 +9410,15 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep,
       xpReward: 15,
-      modes: ["realtime", "reading"],
+      modes: ["grammar", "vocabulary"],
       content: {
-        realtime: {
-          scenario: `${topic.toLowerCase()} practice`,
-          prompt: `Rotate through quick prompts to apply ${topic} in short exchanges.`,
-        },
-        reading: {
+        grammar: {
           topic,
-          prompt: `Interpret brief dialogues about ${topic} and restate key details.`,
+          focusPoints: ["pattern recycling", "micro-drills"],
+        },
+        vocabulary: {
+          topic,
+          prompt: `Cycle through quick recall of ${topic} phrases before applying them.`,
         },
       },
       cefrStage: level,
@@ -9428,15 +9436,19 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep * 2,
       xpReward: 20,
-      modes: ["stories", "realtime"],
+      modes: ["realtime", "reading", "stories"],
       content: {
-        stories: {
-          topic,
-          prompt: `Follow a mini scenario that blends the unit's core language for ${topic}.`,
-        },
         realtime: {
           scenario: `${topic.toLowerCase()} integrated task`,
           prompt: `Produce longer turns that connect earlier lesson points for ${topic}.`,
+        },
+        reading: {
+          topic,
+          prompt: `Interpret scaffolded prompts about ${topic} before responding live.`,
+        },
+        stories: {
+          topic,
+          prompt: `Follow a mini scenario that blends the unit's core language for ${topic}.`,
         },
       },
       cefrStage: level,
@@ -9494,24 +9506,167 @@ function appendAdvancedModes(level, lesson, unit) {
   if (!additions) return lesson;
 
   const topic = deriveLessonTopic(unit, lesson);
-  const enrichedModes = Array.from(new Set([...(lesson.modes || []), ...additions]));
-  const updatedContent = { ...(lesson.content || {}) };
-
-  additions.forEach((mode) => {
-    if (!updatedContent[mode]) {
-      updatedContent[mode] = {
-        topic,
-        prompt: FUNCTIONAL_PROMPTS[mode]?.(topic, level) ||
-          `Apply ${topic} in a ${mode} task for level ${level}.`,
-      };
-    }
-  });
+  const advancedTasks = additions.map((mode) => ({
+    mode,
+    topic,
+    prompt:
+      FUNCTIONAL_PROMPTS[mode]?.(topic, level) ||
+      `Apply ${topic} in a ${mode} task for level ${level}.`,
+  }));
 
   return {
     ...lesson,
-    modes: enrichedModes,
-    content: updatedContent,
+    advancedTasks: [...(lesson.advancedTasks || []), ...advancedTasks],
   };
+}
+
+function ensureModeContent(mode, topic, lesson) {
+  const topicLabel = typeof topic === "string" ? topic : String(topic || "topic");
+  const updatedContent = { ...(lesson.content || {}) };
+
+  if (mode === "vocabulary") {
+    updatedContent.vocabulary = updatedContent.vocabulary || {
+      topic: topicLabel,
+      prompt: `Learn and recycle ${topicLabel} vocabulary in context.`,
+    };
+  }
+
+  if (mode === "grammar") {
+    updatedContent.grammar = updatedContent.grammar || {
+      topic: topicLabel,
+      focusPoints: ["form", "use"],
+    };
+  }
+
+  if (mode === "stories") {
+    updatedContent.stories = updatedContent.stories || {
+      topic: topicLabel,
+      prompt: `Follow a short story that highlights ${topicLabel} language.`,
+    };
+  }
+
+  if (mode === "reading") {
+    updatedContent.reading = updatedContent.reading || {
+      topic: topicLabel,
+      prompt: `Interpret written prompts about ${topicLabel}.`,
+    };
+  }
+
+  if (mode === "realtime") {
+    updatedContent.realtime = updatedContent.realtime || {
+      scenario: `${topicLabel.toLowerCase()} exchange`,
+      prompt: `Respond in real time using ${topicLabel} language.`,
+    };
+  }
+
+  return updatedContent;
+}
+
+function normalizeLessonModes(unit, lesson) {
+  const topic = deriveLessonTopic(unit, lesson);
+  const isQuiz = lesson.isFinalQuiz;
+  const isSkillBuilder = lesson.id?.includes("skill-builder");
+  const isIntegratedPractice = lesson.id?.includes("integrated-practice");
+
+  let modes = (lesson.modes || []).filter((mode) => ALLOWED_MODULES.has(mode));
+  modes = Array.from(new Set(modes));
+
+  if (isQuiz) {
+    modes = ["grammar", "vocabulary"];
+  } else if (isSkillBuilder) {
+    modes = ["grammar", "vocabulary"];
+  } else if (isIntegratedPractice) {
+    modes = ["realtime", "reading", "stories"];
+  } else {
+    if (modes.length === 0) {
+      modes = ["vocabulary", "realtime"];
+    }
+
+    const hasOnlyVocabGrammar =
+      modes.length === 2 && modes.includes("vocabulary") && modes.includes("grammar");
+
+    if (hasOnlyVocabGrammar) {
+      modes.push("realtime");
+    }
+
+    while (modes.length < 2) {
+      const filler = ["vocabulary", "grammar", "reading", "stories", "realtime"].find(
+        (mode) => !modes.includes(mode)
+      );
+      if (!filler) break;
+      modes.push(filler);
+    }
+
+    if (modes.length > 4) {
+      modes = modes.slice(0, 4);
+    }
+  }
+
+  let content = { ...(lesson.content || {}) };
+  modes.forEach((mode) => {
+    content = ensureModeContent(mode, topic, { ...lesson, content });
+  });
+
+  return { ...lesson, modes, content };
+}
+
+function ensureUnitModuleCoverage(unit, lessons) {
+  const moduleCounts = lessons.reduce((counts, lesson) => {
+    lesson.modes?.forEach((mode) => {
+      counts[mode] = (counts[mode] || 0) + 1;
+    });
+    return counts;
+  }, {});
+
+  const missingModules = Array.from(ALLOWED_MODULES).filter(
+    (module) => !moduleCounts[module]
+  );
+
+  const eligibleLessons = lessons.filter(
+    (lesson) =>
+      !lesson.isFinalQuiz &&
+      !lesson.id?.includes("skill-builder") &&
+      !lesson.id?.includes("integrated-practice")
+  );
+
+  missingModules.forEach((module) => {
+    let targetLesson = eligibleLessons.find((lesson) =>
+      (lesson.modes?.length || 0) < 4 && !(lesson.modes || []).includes(module)
+    );
+
+    if (!targetLesson) {
+      targetLesson = eligibleLessons.find((lesson) => {
+        const lessonModes = lesson.modes || [];
+        if (lessonModes.includes(module)) return false;
+        if (lessonModes.length !== 4) return false;
+        return lessonModes.some((mode) => moduleCounts[mode] > 1);
+      });
+
+      if (targetLesson) {
+        const modeToReplace = targetLesson.modes.find((mode) => moduleCounts[mode] > 1);
+        if (modeToReplace) {
+          targetLesson.modes = targetLesson.modes
+            .filter((mode) => mode !== modeToReplace)
+            .concat(module);
+          moduleCounts[modeToReplace] -= 1;
+        }
+      }
+    }
+
+    if (!targetLesson) {
+      return;
+    }
+
+    targetLesson.modes = Array.from(new Set([...(targetLesson.modes || []), module]));
+    targetLesson.content = ensureModeContent(
+      module,
+      deriveLessonTopic(unit, targetLesson),
+      targetLesson
+    );
+    moduleCounts[module] = (moduleCounts[module] || 0) + 1;
+  });
+
+  return lessons;
 }
 
 function tagLessonWithFunction(level, unit, lesson) {
@@ -9582,8 +9737,12 @@ function applyCEFRScaffolding(path) {
     stagedPath[level] = units.map((unit) => {
       const expandedLessons = addSupplementalLessons(level, unit);
       const enhancedLessons = expandedLessons.map((lesson) =>
-        appendAdvancedModes(level, tagLessonWithFunction(level, unit, lesson), unit)
+        normalizeLessonModes(
+          unit,
+          appendAdvancedModes(level, tagLessonWithFunction(level, unit, lesson), unit)
+        )
       );
+      const balancedLessons = ensureUnitModuleCoverage(unit, enhancedLessons);
 
       return {
         ...unit,
@@ -9593,7 +9752,7 @@ function applyCEFRScaffolding(path) {
             ", "
           )}.`,
         ],
-        lessons: enhancedLessons,
+        lessons: balancedLessons,
       };
     });
   });
