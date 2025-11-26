@@ -75,6 +75,7 @@ import {
 } from "react-icons/ri";
 import {
   getLearningPath,
+  getMultiLevelLearningPath,
   getUnitProgress,
   getNextLesson,
   SKILL_STATUS,
@@ -610,6 +611,31 @@ function UnitSection({
                 >
                   {unitTitle}
                 </Heading>
+                {/* CEFR Level Badge */}
+                {unit.cefrLevel && (
+                  <Badge
+                    colorScheme={
+                      unit.cefrLevel === "A1"
+                        ? "green"
+                        : unit.cefrLevel === "A2"
+                        ? "blue"
+                        : unit.cefrLevel === "B1"
+                        ? "purple"
+                        : unit.cefrLevel === "B2"
+                        ? "orange"
+                        : unit.cefrLevel === "C1"
+                        ? "red"
+                        : "pink"
+                    }
+                    fontSize="xs"
+                    px={2}
+                    py={1}
+                    borderRadius="md"
+                    fontWeight="bold"
+                  >
+                    {unit.cefrLevel}
+                  </Badge>
+                )}
               </HStack>
               <Text fontSize="sm" color="gray.300" ml={8}>
                 {unitDescription}
@@ -1110,16 +1136,21 @@ function LessonDetailModal({
  */
 export default function SkillTree({
   targetLang = "es",
-  level = "beginner",
+  level = "A1",
   supportLang = "en",
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
+  showMultipleLevels = true, // New prop to show multiple levels
+  levels = ["A1", "A2", "B1", "B2", "C1", "C2"], // Default to showing all CEFR levels A1 through C2
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const units = getLearningPath(targetLang, level);
+  // Use multi-level path if enabled, otherwise use single level
+  const units = showMultipleLevels
+    ? getMultiLevelLearningPath(targetLang, levels)
+    : getLearningPath(targetLang, level);
   const bgColor = "gray.950";
 
   const handleLessonClick = (lesson, unit, status) => {

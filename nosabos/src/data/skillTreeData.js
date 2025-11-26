@@ -19,2302 +19,9262 @@ export const SKILL_STATUS = {
 
 /**
  * Learning path structure for each language
- * Organized by proficiency level (beginner, intermediate, advanced)
+ * Organized by CEFR proficiency levels (A1, A2, B1, B2, C1, C2)
+ *
+ * A1: Absolute Beginner - Basic survival language
+ * A2: Elementary - Simple everyday communication
+ * B1: Intermediate - Handle most everyday situations
+ * B2: Upper Intermediate - Abstract topics and complex discussions
+ * C1: Advanced - Flexible, sophisticated language use
+ * C2: Mastery - Near-native proficiency
  */
 const baseLearningPath = {
-  beginner: [
+  A1: [
     {
-      id: "unit-1",
+      id: "unit-a1-1",
       title: {
-        en: "Basics 1",
-        es: "Básicos 1",
+        en: "First Words",
+        es: "Primeras Palabras",
       },
       description: {
-        en: "Start your journey with essential greetings and introductions",
-        es: "Comienza tu viaje en español con saludos esenciales y presentaciones",
+        en: "Your very first words",
+        es: "Tus primeras palabras",
       },
-      color: "#22C55E", // Green
+      color: "#22C55E",
       position: { row: 0, offset: 0 },
       lessons: [
         {
-          id: "lesson-1-1",
+          id: "lesson-a1-1-1",
           title: {
-            en: "Hello & Goodbye",
-            es: "Hola y Adiós",
+            en: "First Words - Vocabulary",
+            es: "Primeras Palabras - Vocabulario",
           },
           description: {
-            en: "Learn basic greetings",
-            es: "Aprende saludos básicos",
+            en: "Learn key vocabulary for first words",
+            es: "Aprende vocabulario clave para primeras palabras",
           },
-          xpRequired: 0, // First lesson always available
-          xpReward: 20,
-          modes: ["grammar", "reading"], // Which learning modes to use
-          content: {
-            grammar: {
-              topic: "basic greetings",
-              focusPoints: ["formal vs informal", "time-based greetings"],
-            },
-            reading: {
-              topic: "greeting customs",
-              prompt:
-                "Learn about greeting customs and etiquette in Spanish-speaking cultures",
-            },
-          },
-        },
-        {
-          id: "lesson-1-2",
-          title: {
-            en: "Introduce Yourself",
-            es: "Preséntate",
-          },
-          description: {
-            en: "Say your name and where you're from",
-            es: "Di tu nombre y de dónde eres",
-          },
-          xpRequired: 20,
-          xpReward: 25,
-          modes: ["vocabulary", "realtime", "stories"],
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              words: ["me llamo", "soy de", "nombre", "apellido", "país"],
-              topic: "introductions",
+              topic: "greetings",
             },
+            grammar: {
+              topic: "greetings structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-1-2",
+          title: {
+            en: "First Words - Practice",
+            es: "Primeras Palabras - Práctica",
+          },
+          description: {
+            en: "Practice first words in conversation",
+            es: "Practica primeras palabras en conversación",
+          },
+          xpRequired: 15,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
             realtime: {
-              scenario: "introduction",
-              prompt: "Practice introducing yourself in a conversation",
+              scenario: "greetings conversation",
+              prompt: "Practice using greetings in real conversation",
             },
             stories: {
-              topic: "introductions",
-              prompt:
-                "Read and discuss stories about people meeting and introducing themselves",
+              topic: "greetings",
+              prompt: "Read and discuss greetings",
             },
           },
         },
         {
-          id: "lesson-1-3",
+          id: "lesson-a1-1-3",
           title: {
-            en: "Basic Questions",
-            es: "Preguntas Básicas",
+            en: "First Words - Application",
+            es: "Primeras Palabras - Aplicación",
           },
           description: {
-            en: "Ask and answer simple questions",
-            es: "Hacer y responder preguntas simples",
+            en: "Apply first words skills",
+            es: "Aplica habilidades de primeras palabras",
           },
-          xpRequired: 45,
-          xpReward: 25,
-          modes: ["grammar", "realtime"],
+          xpRequired: 30,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
           content: {
-            grammar: {
-              topic: "question formation",
-              focusPoints: ["question words", "intonation", "word order"],
+            reading: {
+              topic: "greetings",
+              prompt: "Advanced greetings content and comprehension",
             },
             realtime: {
-              scenario: "asking questions",
-              prompt: "Practice asking and answering questions",
+              scenario: "greetings mastery",
+              prompt: "Demonstrate mastery of greetings",
             },
           },
         },
         {
-          id: "lesson-1-quiz",
+          id: "lesson-a1-1-quiz",
           title: {
-            en: "Unit 1 Quiz",
-            es: "Prueba de Unidad 1",
+            en: "First Words Quiz",
+            es: "Prueba de Primeras Palabras",
           },
           description: {
-            en: "Test your knowledge of greetings, introductions, and basic questions",
-            es: "Pon a prueba tus conocimientos de saludos, presentaciones y preguntas básicas",
+            en: "Test your knowledge of first words",
+            es: "Prueba tus conocimientos de primeras palabras",
           },
-          xpRequired: 70,
-          xpReward: 50,
+          xpRequired: 45,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              // Use topics instead of hardcoded words to support any target language
-              topic:
-                "greetings and question words (hello, goodbye, good morning, good afternoon, good evening, how, what, where, when, why)",
+              topic: "greetings",
             },
             grammar: {
-              topics: [
-                "basic greetings",
-                "introductions",
-                "question formation",
-              ],
-              focusPoints: [
-                "formal vs informal greetings",
-                "time-based greetings",
-                "introducing yourself",
-                "asking where someone is from",
-                "basic question words",
-                "question intonation",
-                "question word order",
-              ],
+              topics: ["greetings structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
     {
-      id: "unit-2",
+      id: "unit-a1-2",
       title: {
-        en: "Basics 2",
-        es: "Básicos 2",
+        en: "Introducing Yourself",
+        es: "Presentándote",
       },
       description: {
-        en: "Express likes, dislikes, and talk about everyday things",
-        es: "Expresa gustos, disgustos y habla de cosas cotidianas",
+        en: "Say your name and origin",
+        es: "Di tu nombre y origen",
       },
-      color: "#3B82F6", // Blue
+      color: "#3B82F6",
+      position: { row: 0, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a1-2-1",
+          title: {
+            en: "Introducing Yourself - Vocabulary",
+            es: "Presentándote - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for introducing yourself",
+            es: "Aprende vocabulario clave para presentándote",
+          },
+          xpRequired: 75,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "introductions",
+            },
+            grammar: {
+              topic: "introductions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-2-2",
+          title: {
+            en: "Introducing Yourself - Practice",
+            es: "Presentándote - Práctica",
+          },
+          description: {
+            en: "Practice introducing yourself in conversation",
+            es: "Practica presentándote en conversación",
+          },
+          xpRequired: 90,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "introductions conversation",
+              prompt: "Practice using introductions in real conversation",
+            },
+            stories: {
+              topic: "introductions",
+              prompt: "Read and discuss introductions",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-2-3",
+          title: {
+            en: "Introducing Yourself - Application",
+            es: "Presentándote - Aplicación",
+          },
+          description: {
+            en: "Apply introducing yourself skills",
+            es: "Aplica habilidades de presentándote",
+          },
+          xpRequired: 105,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "introductions",
+              prompt: "Advanced introductions content and comprehension",
+            },
+            realtime: {
+              scenario: "introductions mastery",
+              prompt: "Demonstrate mastery of introductions",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-2-quiz",
+          title: {
+            en: "Introducing Yourself Quiz",
+            es: "Prueba de Presentándote",
+          },
+          description: {
+            en: "Test your knowledge of introducing yourself",
+            es: "Prueba tus conocimientos de presentándote",
+          },
+          xpRequired: 120,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "introductions",
+            },
+            grammar: {
+              topics: ["introductions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-3",
+      title: {
+        en: "Numbers 0-20",
+        es: "Números 0-20",
+      },
+      description: {
+        en: "Count to twenty",
+        es: "Cuenta hasta veinte",
+      },
+      color: "#F59E0B",
+      position: { row: 1, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a1-3-1",
+          title: {
+            en: "Numbers 0-20 - Vocabulary",
+            es: "Números 0-20 - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for numbers 0-20",
+            es: "Aprende vocabulario clave para números 0-20",
+          },
+          xpRequired: 150,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "numbers",
+            },
+            grammar: {
+              topic: "numbers structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-3-2",
+          title: {
+            en: "Numbers 0-20 - Practice",
+            es: "Números 0-20 - Práctica",
+          },
+          description: {
+            en: "Practice numbers 0-20 in conversation",
+            es: "Practica números 0-20 en conversación",
+          },
+          xpRequired: 165,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "numbers conversation",
+              prompt: "Practice using numbers in real conversation",
+            },
+            stories: {
+              topic: "numbers",
+              prompt: "Read and discuss numbers",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-3-3",
+          title: {
+            en: "Numbers 0-20 - Application",
+            es: "Números 0-20 - Aplicación",
+          },
+          description: {
+            en: "Apply numbers 0-20 skills",
+            es: "Aplica habilidades de números 0-20",
+          },
+          xpRequired: 180,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "numbers",
+              prompt: "Advanced numbers content and comprehension",
+            },
+            realtime: {
+              scenario: "numbers mastery",
+              prompt: "Demonstrate mastery of numbers",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-3-quiz",
+          title: {
+            en: "Numbers 0-20 Quiz",
+            es: "Prueba de Números 0-20",
+          },
+          description: {
+            en: "Test your knowledge of numbers 0-20",
+            es: "Prueba tus conocimientos de números 0-20",
+          },
+          xpRequired: 195,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "numbers",
+            },
+            grammar: {
+              topics: ["numbers structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-4",
+      title: {
+        en: "Numbers 21-100",
+        es: "Números 21-100",
+      },
+      description: {
+        en: "Larger numbers",
+        es: "Números más grandes",
+      },
+      color: "#8B5CF6",
       position: { row: 1, offset: 1 },
       lessons: [
         {
-          id: "lesson-2-1",
+          id: "lesson-a1-4-1",
           title: {
-            en: "Likes & Dislikes",
-            es: "Gustos y Disgustos",
+            en: "Numbers 21-100 - Vocabulary",
+            es: "Números 21-100 - Vocabulario",
           },
           description: {
-            en: "Talk about what you like and don't like",
-            es: "Habla sobre lo que te gusta y no te gusta",
+            en: "Learn key vocabulary for numbers 21-100",
+            es: "Aprende vocabulario clave para números 21-100",
           },
-          xpRequired: 70,
-          xpReward: 30,
-          modes: ["grammar", "stories"],
-          content: {
-            grammar: {
-              topic: "gustar verb",
-              focusPoints: ["indirect object pronouns", "singular vs plural"],
-            },
-            stories: {
-              topic: "preferences",
-              prompt: "Read a story about someone's favorite things",
-            },
-          },
-        },
-        {
-          id: "lesson-2-2",
-          title: {
-            en: "Numbers 1-20",
-            es: "Números 1-20",
-          },
-          description: {
-            en: "Count and use basic numbers",
-            es: "Cuenta y usa números básicos",
-          },
-          xpRequired: 100,
-          xpReward: 30,
-          modes: ["vocabulary", "realtime", "stories"],
+          xpRequired: 225,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              words: [
-                "uno",
-                "dos",
-                "tres",
-                "cuatro",
-                "cinco",
-                "diez",
-                "veinte",
-              ],
               topic: "numbers",
             },
-            realtime: {
-              scenario: "counting practice",
-              prompt: "Practice counting and using numbers in conversation",
-            },
-            stories: {
-              topic: "numbers",
-              prompt: "Read about numbers in everyday contexts",
-            },
-          },
-        },
-        {
-          id: "lesson-2-3",
-          title: {
-            en: "Food & Drinks",
-            es: "Comida y Bebidas",
-          },
-          description: {
-            en: "Order food and talk about meals",
-            es: "Pide comida y habla sobre las comidas",
-          },
-          xpRequired: 130,
-          xpReward: 35,
-          modes: ["grammar", "realtime", "stories"],
-          content: {
             grammar: {
-              topic: "food and restaurant language",
-              focusPoints: [
-                "querer + infinitive",
-                "me gustaría",
-                "tener + noun",
-              ],
-            },
-            realtime: {
-              scenario: "restaurant ordering",
-              prompt: "Practice ordering food at a restaurant",
-            },
-            stories: {
-              topic: "dining",
-              prompt: "Read a story about a meal",
+              topic: "numbers structures",
+              focusPoints: ["basic patterns", "common phrases"],
             },
           },
         },
         {
-          id: "lesson-2-quiz",
+          id: "lesson-a1-4-2",
           title: {
-            en: "Unit 2 Quiz",
-            es: "Prueba de Unidad 2",
+            en: "Numbers 21-100 - Practice",
+            es: "Números 21-100 - Práctica",
           },
           description: {
-            en: "Test your knowledge of likes/dislikes, numbers, and food vocabulary",
-            es: "Pon a prueba tus conocimientos de gustos/disgustos, números y vocabulario de comida",
+            en: "Practice numbers 21-100 in conversation",
+            es: "Practica números 21-100 en conversación",
           },
-          xpRequired: 165,
-          xpReward: 50,
+          xpRequired: 240,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "numbers conversation",
+              prompt: "Practice using numbers in real conversation",
+            },
+            stories: {
+              topic: "numbers",
+              prompt: "Read and discuss numbers",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-4-3",
+          title: {
+            en: "Numbers 21-100 - Application",
+            es: "Números 21-100 - Aplicación",
+          },
+          description: {
+            en: "Apply numbers 21-100 skills",
+            es: "Aplica habilidades de números 21-100",
+          },
+          xpRequired: 255,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "numbers",
+              prompt: "Advanced numbers content and comprehension",
+            },
+            realtime: {
+              scenario: "numbers mastery",
+              prompt: "Demonstrate mastery of numbers",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-4-quiz",
+          title: {
+            en: "Numbers 21-100 Quiz",
+            es: "Prueba de Números 21-100",
+          },
+          description: {
+            en: "Test your knowledge of numbers 21-100",
+            es: "Prueba tus conocimientos de números 21-100",
+          },
+          xpRequired: 270,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              topic: "preferences, numbers, and food and drinks",
+              topic: "numbers",
             },
             grammar: {
-              topics: [
-                "gustar verb",
-                "numbers and currency",
-                "food and restaurant language",
-              ],
-              focusPoints: [
-                "indirect object pronouns",
-                "singular vs plural with gustar",
-                "counting 1-20",
-                "querer + infinitive",
-                "me gustaría",
-                "tener + noun",
-                "restaurant ordering phrases",
-              ],
+              topics: ["numbers structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
     {
-      id: "unit-3",
+      id: "unit-a1-5",
       title: {
-        en: "Daily Life",
-        es: "Vida Diaria",
+        en: "Days of Week",
+        es: "Días de la Semana",
       },
       description: {
-        en: "Describe your routine and talk about time",
-        es: "Describe tu rutina y habla sobre el tiempo",
+        en: "Learn the days",
+        es: "Aprende los días",
       },
-      color: "#F59E0B", // Amber
+      color: "#EC4899",
       position: { row: 2, offset: 0 },
       lessons: [
         {
-          id: "lesson-3-1",
+          id: "lesson-a1-5-1",
           title: {
-            en: "Telling Time",
-            es: "Decir la Hora",
+            en: "Days of Week - Vocabulary",
+            es: "Días de la Semana - Vocabulario",
           },
           description: {
-            en: "Ask and tell the time",
-            es: "Preguntar y decir la hora",
+            en: "Learn key vocabulary for days of week",
+            es: "Aprende vocabulario clave para días de la semana",
           },
-          xpRequired: 165,
-          xpReward: 35,
-          modes: ["grammar", "realtime", "vocabulary"],
+          xpRequired: 300,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
           content: {
+            vocabulary: {
+              topic: "days of week",
+            },
             grammar: {
-              topic: "telling time",
-              focusPoints: ["¿Qué hora es?", "es la / son las", "y/menos"],
+              topic: "days of week structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-5-2",
+          title: {
+            en: "Days of Week - Practice",
+            es: "Días de la Semana - Práctica",
+          },
+          description: {
+            en: "Practice days of week in conversation",
+            es: "Practica días de la semana en conversación",
+          },
+          xpRequired: 315,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "days of week conversation",
+              prompt: "Practice using days of week in real conversation",
+            },
+            stories: {
+              topic: "days of week",
+              prompt: "Read and discuss days of week",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-5-3",
+          title: {
+            en: "Days of Week - Application",
+            es: "Días de la Semana - Aplicación",
+          },
+          description: {
+            en: "Apply days of week skills",
+            es: "Aplica habilidades de días de la semana",
+          },
+          xpRequired: 330,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "days of week",
+              prompt: "Advanced days of week content and comprehension",
             },
             realtime: {
-              scenario: "asking and telling time",
-              prompt: "Practice asking and telling the time in conversation",
+              scenario: "days of week mastery",
+              prompt: "Demonstrate mastery of days of week",
             },
+          },
+        },
+        {
+          id: "lesson-a1-5-quiz",
+          title: {
+            en: "Days of Week Quiz",
+            es: "Prueba de Días de la Semana",
+          },
+          description: {
+            en: "Test your knowledge of days of week",
+            es: "Prueba tus conocimientos de días de la semana",
+          },
+          xpRequired: 345,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "days of week",
+            },
+            grammar: {
+              topics: ["days of week structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-6",
+      title: {
+        en: "Months & Dates",
+        es: "Meses y Fechas",
+      },
+      description: {
+        en: "Calendar basics",
+        es: "Conceptos del calendario",
+      },
+      color: "#10B981",
+      position: { row: 2, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a1-6-1",
+          title: {
+            en: "Months & Dates - Vocabulary",
+            es: "Meses y Fechas - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for months & dates",
+            es: "Aprende vocabulario clave para meses y fechas",
+          },
+          xpRequired: 375,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topic: "time expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-6-2",
+          title: {
+            en: "Months & Dates - Practice",
+            es: "Meses y Fechas - Práctica",
+          },
+          description: {
+            en: "Practice months & dates in conversation",
+            es: "Practica meses y fechas en conversación",
+          },
+          xpRequired: 390,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "time expressions conversation",
+              prompt: "Practice using time expressions in real conversation",
+            },
+            stories: {
+              topic: "time expressions",
+              prompt: "Read and discuss time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-6-3",
+          title: {
+            en: "Months & Dates - Application",
+            es: "Meses y Fechas - Aplicación",
+          },
+          description: {
+            en: "Apply months & dates skills",
+            es: "Aplica habilidades de meses y fechas",
+          },
+          xpRequired: 405,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "time expressions",
+              prompt: "Advanced time expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "time expressions mastery",
+              prompt: "Demonstrate mastery of time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-6-quiz",
+          title: {
+            en: "Months & Dates Quiz",
+            es: "Prueba de Meses y Fechas",
+          },
+          description: {
+            en: "Test your knowledge of months & dates",
+            es: "Prueba tus conocimientos de meses y fechas",
+          },
+          xpRequired: 420,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topics: ["time expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-7",
+      title: {
+        en: "Telling Time",
+        es: "Decir la Hora",
+      },
+      description: {
+        en: "What time is it?",
+        es: "¿Qué hora es?",
+      },
+      color: "#06B6D4",
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a1-7-1",
+          title: {
+            en: "Telling Time - Vocabulary",
+            es: "Decir la Hora - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for telling time",
+            es: "Aprende vocabulario clave para decir la hora",
+          },
+          xpRequired: 450,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
             vocabulary: {
               topic: "time",
             },
+            grammar: {
+              topic: "time structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
           },
         },
         {
-          id: "lesson-3-2",
+          id: "lesson-a1-7-2",
           title: {
-            en: "Daily Routine",
-            es: "Rutina Diaria",
+            en: "Telling Time - Practice",
+            es: "Decir la Hora - Práctica",
           },
           description: {
-            en: "Talk about your day",
-            es: "Habla sobre tu día",
+            en: "Practice telling time in conversation",
+            es: "Practica decir la hora en conversación",
           },
-          xpRequired: 200,
-          xpReward: 40,
-          modes: ["vocabulary", "stories"],
+          xpRequired: 465,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
           content: {
-            vocabulary: {
-              words: [
-                "despertarse",
-                "levantarse",
-                "ducharse",
-                "desayunar",
-                "trabajar",
-              ],
-              topic: "daily activities",
+            realtime: {
+              scenario: "time conversation",
+              prompt: "Practice using time in real conversation",
             },
             stories: {
-              topic: "daily routine",
-              prompt: "Read about someone's typical day",
+              topic: "time",
+              prompt: "Read and discuss time",
             },
           },
         },
         {
-          id: "lesson-3-3",
+          id: "lesson-a1-7-3",
           title: {
-            en: "Family Members",
-            es: "Miembros de la Familia",
+            en: "Telling Time - Application",
+            es: "Decir la Hora - Aplicación",
           },
           description: {
-            en: "Talk about your family",
-            es: "Habla sobre tu familia",
+            en: "Apply telling time skills",
+            es: "Aplica habilidades de decir la hora",
           },
-          xpRequired: 240,
-          xpReward: 40,
-          modes: ["grammar", "realtime"],
+          xpRequired: 480,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
           content: {
-            grammar: {
-              topic: "possessive adjectives",
-              focusPoints: ["mi/tu/su", "family descriptions"],
+            reading: {
+              topic: "time",
+              prompt: "Advanced time content and comprehension",
             },
             realtime: {
-              scenario: "family introduction",
-              prompt: "Describe your family in a conversation",
+              scenario: "time mastery",
+              prompt: "Demonstrate mastery of time",
             },
           },
         },
         {
-          id: "lesson-3-quiz",
+          id: "lesson-a1-7-quiz",
           title: {
-            en: "Unit 3 Quiz",
-            es: "Prueba de Unidad 3",
+            en: "Telling Time Quiz",
+            es: "Prueba de Decir la Hora",
           },
           description: {
-            en: "Test your knowledge of time, daily routines, and family",
-            es: "Pon a prueba tus conocimientos del tiempo, rutinas diarias y familia",
+            en: "Test your knowledge of telling time",
+            es: "Prueba tus conocimientos de decir la hora",
           },
-          xpRequired: 280,
-          xpReward: 50,
+          xpRequired: 495,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              topic: "time, daily activities, and family",
+              topic: "time",
             },
             grammar: {
-              topics: [
-                "telling time",
-                "daily routine",
-                "possessive adjectives",
-              ],
-              focusPoints: [
-                "¿Qué hora es?",
-                "es la / son las",
-                "y/menos",
-                "reflexive verbs for daily activities",
-                "mi/tu/su",
-                "family member terms",
-                "describing daily schedules",
-              ],
+              topics: ["time structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
     {
-      id: "unit-4",
+      id: "unit-a1-8",
       title: {
-        en: "Getting Around",
-        es: "Moviéndose",
+        en: "Family Members",
+        es: "Familia",
       },
       description: {
-        en: "Navigate places and give directions",
-        es: "Navega lugares y da direcciones",
+        en: "Your family",
+        es: "Tu familia",
       },
-      color: "#8B5CF6", // Purple
+      color: "#EF4444",
       position: { row: 3, offset: 1 },
       lessons: [
         {
-          id: "lesson-4-1",
+          id: "lesson-a1-8-1",
           title: {
-            en: "Places in Town",
-            es: "Lugares en la Ciudad",
+            en: "Family Members - Vocabulary",
+            es: "Familia - Vocabulario",
           },
           description: {
-            en: "Name common locations",
-            es: "Nombra ubicaciones comunes",
+            en: "Learn key vocabulary for family members",
+            es: "Aprende vocabulario clave para familia",
           },
-          xpRequired: 280,
-          xpReward: 40,
-          modes: ["vocabulary", "realtime", "stories"],
+          xpRequired: 525,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              words: ["banco", "supermercado", "hospital", "escuela", "parque"],
-              topic: "places",
+              topic: "family",
             },
-            realtime: {
-              scenario: "asking about places",
-              prompt: "Practice asking about and describing locations in town",
-            },
-            stories: {
-              topic: "places",
-              prompt: "Read about different places in a city",
-            },
-          },
-        },
-        {
-          id: "lesson-4-2",
-          title: {
-            en: "Directions",
-            es: "Direcciones",
-          },
-          description: {
-            en: "Ask for and give directions",
-            es: "Pedir y dar direcciones",
-          },
-          xpRequired: 320,
-          xpReward: 45,
-          modes: ["grammar", "realtime"],
-          content: {
             grammar: {
-              topic: "imperative mood",
-              focusPoints: ["commands", "direction-giving"],
-            },
-            realtime: {
-              scenario: "asking for directions",
-              prompt: "Practice asking for and giving directions",
+              topic: "family structures",
+              focusPoints: ["basic patterns", "common phrases"],
             },
           },
         },
         {
-          id: "lesson-4-3",
+          id: "lesson-a1-8-2",
           title: {
-            en: "Transportation",
-            es: "Transporte",
+            en: "Family Members - Practice",
+            es: "Familia - Práctica",
           },
           description: {
-            en: "Talk about how you travel",
-            es: "Habla sobre cómo viajas",
+            en: "Practice family members in conversation",
+            es: "Practica familia en conversación",
           },
-          xpRequired: 365,
-          xpReward: 45,
-          modes: ["vocabulary", "stories"],
+          xpRequired: 540,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
           content: {
-            vocabulary: {
-              words: ["autobús", "metro", "taxi", "bicicleta", "caminar"],
-              topic: "transportation",
+            realtime: {
+              scenario: "family conversation",
+              prompt: "Practice using family in real conversation",
             },
             stories: {
-              topic: "transportation",
-              prompt: "Read about different ways to travel",
+              topic: "family",
+              prompt: "Read and discuss family",
             },
           },
         },
         {
-          id: "lesson-4-quiz",
+          id: "lesson-a1-8-3",
           title: {
-            en: "Unit 4 Quiz",
-            es: "Prueba de Unidad 4",
+            en: "Family Members - Application",
+            es: "Familia - Aplicación",
           },
           description: {
-            en: "Test your knowledge of places, directions, and transportation",
-            es: "Pon a prueba tus conocimientos de lugares, direcciones y transporte",
+            en: "Apply family members skills",
+            es: "Aplica habilidades de familia",
           },
-          xpRequired: 410,
-          xpReward: 55,
+          xpRequired: 555,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "family",
+              prompt: "Advanced family content and comprehension",
+            },
+            realtime: {
+              scenario: "family mastery",
+              prompt: "Demonstrate mastery of family",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-8-quiz",
+          title: {
+            en: "Family Members Quiz",
+            es: "Prueba de Familia",
+          },
+          description: {
+            en: "Test your knowledge of family members",
+            es: "Prueba tus conocimientos de familia",
+          },
+          xpRequired: 570,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              topic: "places, directions, and transportation",
+              topic: "family",
             },
             grammar: {
-              topics: [
-                "imperative mood",
-                "giving directions",
-                "location prepositions",
-              ],
-              focusPoints: [
-                "command forms",
-                "direction verbs (girar, seguir, cruzar)",
-                "location expressions (a la izquierda, a la derecha, todo recto)",
-                "asking for directions",
-                "transportation vocabulary in context",
-              ],
+              topics: ["family structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
     {
-      id: "unit-5",
+      id: "unit-a1-9",
       title: {
-        en: "Shopping & Money",
-        es: "Compras y Dinero",
+        en: "Colors & Shapes",
+        es: "Colores y Formas",
       },
       description: {
-        en: "Buy things and handle money",
-        es: "Compra cosas y maneja dinero",
+        en: "Describe visually",
+        es: "Describe visualmente",
       },
-      color: "#EC4899", // Pink
+      color: "#F97316",
       position: { row: 4, offset: 0 },
       lessons: [
         {
-          id: "lesson-5-1",
+          id: "lesson-a1-9-1",
           title: {
-            en: "At the Store",
-            es: "En la Tienda",
+            en: "Colors & Shapes - Vocabulary",
+            es: "Colores y Formas - Vocabulario",
           },
           description: {
-            en: "Shop for items",
-            es: "Compra artículos",
+            en: "Learn key vocabulary for colors & shapes",
+            es: "Aprende vocabulario clave para colores y formas",
           },
-          xpRequired: 410,
-          xpReward: 50,
-          modes: ["vocabulary", "realtime"],
-          content: {
-            vocabulary: {
-              words: ["comprar", "vender", "precio", "barato", "caro"],
-              topic: "shopping",
-            },
-            realtime: {
-              scenario: "shopping",
-              prompt: "Practice shopping conversations",
-            },
-          },
-        },
-        {
-          id: "lesson-5-2",
-          title: {
-            en: "Numbers 20-100",
-            es: "Números 20-100",
-          },
-          description: {
-            en: "Use larger numbers for prices",
-            es: "Usa números más grandes para precios",
-          },
-          xpRequired: 460,
-          xpReward: 50,
-          modes: ["grammar", "vocabulary", "realtime"],
-          content: {
-            grammar: {
-              topic: "numbers and currency",
-              focusPoints: ["large numbers", "prices", "costar + amount"],
-            },
-            vocabulary: {
-              topic: "numbers",
-            },
-            realtime: {
-              scenario: "shopping with prices",
-              prompt: "Practice using numbers for prices in shopping situations",
-            },
-          },
-        },
-        {
-          id: "lesson-5-3",
-          title: {
-            en: "Clothing",
-            es: "Ropa",
-          },
-          description: {
-            en: "Describe what you wear",
-            es: "Describe lo que vistes",
-          },
-          xpRequired: 510,
-          xpReward: 50,
-          modes: ["vocabulary", "stories"],
-          content: {
-            vocabulary: {
-              words: ["camisa", "pantalón", "zapatos", "vestido", "llevar"],
-              topic: "clothing",
-            },
-            stories: {
-              topic: "clothing",
-              prompt: "Read about fashion and clothing",
-            },
-          },
-        },
-        {
-          id: "lesson-5-quiz",
-          title: {
-            en: "Unit 5 Quiz",
-            es: "Prueba de Unidad 5",
-          },
-          description: {
-            en: "Test your knowledge of shopping, numbers, and clothing vocabulary",
-            es: "Pon a prueba tus conocimientos de compras, números y vocabulario de ropa",
-          },
-          xpRequired: 560,
-          xpReward: 55,
+          xpRequired: 600,
+          xpReward: 15,
           modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
           content: {
             vocabulary: {
-              topic: "shopping, numbers, and clothing",
-            },
-            grammar: {
-              topics: [
-                "numbers and currency",
-                "shopping expressions",
-                "clothing descriptions",
-              ],
-              focusPoints: [
-                "numbers 20-100",
-                "costar + amount",
-                "price negotiations",
-                "¿Cuánto cuesta?",
-                "barato vs caro",
-                "clothing items with colors",
-                "shopping phrases (comprar, vender, precio)",
-              ],
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: "unit-6",
-      title: {
-        en: "Colors & Descriptions",
-        es: "Colores y Descripciones",
-      },
-      description: {
-        en: "Describe people, places, and things",
-        es: "Describe personas, lugares y cosas",
-      },
-      color: "#F97316", // Orange
-      position: { row: 5, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-6-1",
-          title: {
-            en: "Colors",
-            es: "Colores",
-          },
-          description: {
-            en: "Learn and use colors",
-            es: "Aprende y usa colores",
-          },
-          xpRequired: 560,
-          xpReward: 50,
-          modes: ["vocabulary", "grammar", "realtime"],
-          content: {
-            vocabulary: {
-              words: ["rojo", "azul", "verde", "amarillo", "negro", "blanco"],
               topic: "colors",
             },
             grammar: {
-              topic: "adjective agreement with colors",
-              focusPoints: ["color adjectives", "gender agreement", "noun-adjective order"],
-            },
-            realtime: {
-              scenario: "describing colors",
-              prompt: "Practice describing objects using colors",
+              topic: "colors structures",
+              focusPoints: ["basic patterns", "common phrases"],
             },
           },
         },
         {
-          id: "lesson-6-2",
+          id: "lesson-a1-9-2",
           title: {
-            en: "Physical Descriptions",
-            es: "Descripciones Físicas",
+            en: "Colors & Shapes - Practice",
+            es: "Colores y Formas - Práctica",
           },
           description: {
-            en: "Describe how people look",
-            es: "Describe cómo se ve la gente",
+            en: "Practice colors & shapes in conversation",
+            es: "Practica colores y formas en conversación",
           },
-          xpRequired: 610,
-          xpReward: 55,
-          modes: ["grammar", "realtime"],
+          xpRequired: 615,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
           content: {
-            grammar: {
-              topic: "ser vs estar for descriptions",
-              focusPoints: ["permanent vs temporary traits"],
-            },
             realtime: {
-              scenario: "describing people",
-              prompt: "Describe family members or friends",
-            },
-          },
-        },
-        {
-          id: "lesson-6-3",
-          title: {
-            en: "Personality Traits",
-            es: "Rasgos de Personalidad",
-          },
-          description: {
-            en: "Describe character and personality",
-            es: "Describe carácter y personalidad",
-          },
-          xpRequired: 665,
-          xpReward: 55,
-          modes: ["vocabulary", "stories"],
-          content: {
-            vocabulary: {
-              words: [
-                "simpático",
-                "amable",
-                "inteligente",
-                "divertido",
-                "serio",
-              ],
-              topic: "personality",
+              scenario: "colors conversation",
+              prompt: "Practice using colors in real conversation",
             },
             stories: {
-              topic: "character descriptions",
-              prompt: "Read stories with diverse characters",
+              topic: "colors",
+              prompt: "Read and discuss colors",
             },
           },
         },
         {
-          id: "lesson-6-quiz",
+          id: "lesson-a1-9-3",
           title: {
-            en: "Unit 6 Quiz",
-            es: "Prueba de Unidad 6",
+            en: "Colors & Shapes - Application",
+            es: "Colores y Formas - Aplicación",
           },
           description: {
-            en: "Test your knowledge of colors, physical traits, and personality",
-            es: "Pon a prueba tus conocimientos de colores, rasgos físicos y personalidad",
+            en: "Apply colors & shapes skills",
+            es: "Aplica habilidades de colores y formas",
           },
-          xpRequired: 720,
-          xpReward: 60,
+          xpRequired: 630,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "colors",
+              prompt: "Advanced colors content and comprehension",
+            },
+            realtime: {
+              scenario: "colors mastery",
+              prompt: "Demonstrate mastery of colors",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-9-quiz",
+          title: {
+            en: "Colors & Shapes Quiz",
+            es: "Prueba de Colores y Formas",
+          },
+          description: {
+            en: "Test your knowledge of colors & shapes",
+            es: "Prueba tus conocimientos de colores y formas",
+          },
+          xpRequired: 645,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              topic: "colors, physical descriptions, and personality",
+              topic: "colors",
             },
             grammar: {
-              topics: [
-                "ser vs estar for descriptions",
-                "adjective agreement",
-                "descriptive language",
-              ],
-              focusPoints: [
-                "permanent traits with ser",
-                "temporary states with estar",
-                "color adjectives",
-                "physical description adjectives (alto, bajo, joven, viejo)",
-                "personality adjectives (simpático, amable, inteligente)",
-                "gender and number agreement",
-              ],
+              topics: ["colors structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
     {
-      id: "unit-7",
+      id: "unit-a1-10",
       title: {
-        en: "Hobbies & Free Time",
-        es: "Pasatiempos y Tiempo Libre",
+        en: "Food & Drinks",
+        es: "Comida y Bebidas",
       },
       description: {
-        en: "Talk about activities and interests",
-        es: "Habla sobre actividades e intereses",
+        en: "Basic food vocabulary",
+        es: "Vocabulario de comida",
       },
-      color: "#06B6D4", // Cyan
+      color: "#84CC16",
+      position: { row: 4, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a1-10-1",
+          title: {
+            en: "Food & Drinks - Vocabulary",
+            es: "Comida y Bebidas - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for food & drinks",
+            es: "Aprende vocabulario clave para comida y bebidas",
+          },
+          xpRequired: 675,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "food and drinks",
+            },
+            grammar: {
+              topic: "food and drinks structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-10-2",
+          title: {
+            en: "Food & Drinks - Practice",
+            es: "Comida y Bebidas - Práctica",
+          },
+          description: {
+            en: "Practice food & drinks in conversation",
+            es: "Practica comida y bebidas en conversación",
+          },
+          xpRequired: 690,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "food and drinks conversation",
+              prompt: "Practice using food and drinks in real conversation",
+            },
+            stories: {
+              topic: "food and drinks",
+              prompt: "Read and discuss food and drinks",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-10-3",
+          title: {
+            en: "Food & Drinks - Application",
+            es: "Comida y Bebidas - Aplicación",
+          },
+          description: {
+            en: "Apply food & drinks skills",
+            es: "Aplica habilidades de comida y bebidas",
+          },
+          xpRequired: 705,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "food and drinks",
+              prompt: "Advanced food and drinks content and comprehension",
+            },
+            realtime: {
+              scenario: "food and drinks mastery",
+              prompt: "Demonstrate mastery of food and drinks",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-10-quiz",
+          title: {
+            en: "Food & Drinks Quiz",
+            es: "Prueba de Comida y Bebidas",
+          },
+          description: {
+            en: "Test your knowledge of food & drinks",
+            es: "Prueba tus conocimientos de comida y bebidas",
+          },
+          xpRequired: 720,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "food and drinks",
+            },
+            grammar: {
+              topics: ["food and drinks structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-11",
+      title: {
+        en: "At the Restaurant",
+        es: "En el Restaurante",
+      },
+      description: {
+        en: "Order food",
+        es: "Pide comida",
+      },
+      color: "#14B8A6",
+      position: { row: 5, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a1-11-1",
+          title: {
+            en: "At the Restaurant - Vocabulary",
+            es: "En el Restaurante - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for at the restaurant",
+            es: "Aprende vocabulario clave para en el restaurante",
+          },
+          xpRequired: 750,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "food and drinks",
+            },
+            grammar: {
+              topic: "food and drinks structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-11-2",
+          title: {
+            en: "At the Restaurant - Practice",
+            es: "En el Restaurante - Práctica",
+          },
+          description: {
+            en: "Practice at the restaurant in conversation",
+            es: "Practica en el restaurante en conversación",
+          },
+          xpRequired: 765,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "food and drinks conversation",
+              prompt: "Practice using food and drinks in real conversation",
+            },
+            stories: {
+              topic: "food and drinks",
+              prompt: "Read and discuss food and drinks",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-11-3",
+          title: {
+            en: "At the Restaurant - Application",
+            es: "En el Restaurante - Aplicación",
+          },
+          description: {
+            en: "Apply at the restaurant skills",
+            es: "Aplica habilidades de en el restaurante",
+          },
+          xpRequired: 780,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "food and drinks",
+              prompt: "Advanced food and drinks content and comprehension",
+            },
+            realtime: {
+              scenario: "food and drinks mastery",
+              prompt: "Demonstrate mastery of food and drinks",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-11-quiz",
+          title: {
+            en: "At the Restaurant Quiz",
+            es: "Prueba de En el Restaurante",
+          },
+          description: {
+            en: "Test your knowledge of at the restaurant",
+            es: "Prueba tus conocimientos de en el restaurante",
+          },
+          xpRequired: 795,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "food and drinks",
+            },
+            grammar: {
+              topics: ["food and drinks structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-12",
+      title: {
+        en: "Common Objects",
+        es: "Objetos Comunes",
+      },
+      description: {
+        en: "Everyday items",
+        es: "Artículos cotidianos",
+      },
+      color: "#A855F7",
+      position: { row: 5, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a1-12-1",
+          title: {
+            en: "Common Objects - Vocabulary",
+            es: "Objetos Comunes - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for common objects",
+            es: "Aprende vocabulario clave para objetos comunes",
+          },
+          xpRequired: 825,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "common objects",
+            },
+            grammar: {
+              topic: "common objects structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-12-2",
+          title: {
+            en: "Common Objects - Practice",
+            es: "Objetos Comunes - Práctica",
+          },
+          description: {
+            en: "Practice common objects in conversation",
+            es: "Practica objetos comunes en conversación",
+          },
+          xpRequired: 840,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "common objects conversation",
+              prompt: "Practice using common objects in real conversation",
+            },
+            stories: {
+              topic: "common objects",
+              prompt: "Read and discuss common objects",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-12-3",
+          title: {
+            en: "Common Objects - Application",
+            es: "Objetos Comunes - Aplicación",
+          },
+          description: {
+            en: "Apply common objects skills",
+            es: "Aplica habilidades de objetos comunes",
+          },
+          xpRequired: 855,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "common objects",
+              prompt: "Advanced common objects content and comprehension",
+            },
+            realtime: {
+              scenario: "common objects mastery",
+              prompt: "Demonstrate mastery of common objects",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-12-quiz",
+          title: {
+            en: "Common Objects Quiz",
+            es: "Prueba de Objetos Comunes",
+          },
+          description: {
+            en: "Test your knowledge of common objects",
+            es: "Prueba tus conocimientos de objetos comunes",
+          },
+          xpRequired: 870,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "common objects",
+            },
+            grammar: {
+              topics: ["common objects structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-13",
+      title: {
+        en: "In the House",
+        es: "En la Casa",
+      },
+      description: {
+        en: "Rooms and furniture",
+        es: "Habitaciones y muebles",
+      },
+      color: "#DB2777",
       position: { row: 6, offset: 0 },
       lessons: [
         {
-          id: "lesson-7-1",
+          id: "lesson-a1-13-1",
           title: {
-            en: "Sports & Exercise",
-            es: "Deportes y Ejercicio",
+            en: "In the House - Vocabulary",
+            es: "En la Casa - Vocabulario",
           },
           description: {
-            en: "Discuss sports and physical activities",
-            es: "Discute deportes y actividades físicas",
+            en: "Learn key vocabulary for in the house",
+            es: "Aprende vocabulario clave para en la casa",
           },
-          xpRequired: 720,
-          xpReward: 55,
-          modes: ["vocabulary", "realtime"],
+          xpRequired: 900,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              words: ["fútbol", "nadar", "correr", "jugar", "practicar"],
-              topic: "sports",
+              topic: "house and rooms",
             },
-            realtime: {
-              scenario: "sports conversation",
-              prompt: "Talk about your favorite sports",
-            },
-          },
-        },
-        {
-          id: "lesson-7-2",
-          title: {
-            en: "Music & Entertainment",
-            es: "Música y Entretenimiento",
-          },
-          description: {
-            en: "Express preferences in entertainment",
-            es: "Expresa preferencias en entretenimiento",
-          },
-          xpRequired: 775,
-          xpReward: 60,
-          modes: ["grammar", "stories", "realtime"],
-          content: {
             grammar: {
-              topic: "expressing preferences and opinions",
-              focusPoints: ["me parece", "creo que", "preference verbs"],
+              topic: "house and rooms structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-13-2",
+          title: {
+            en: "In the House - Practice",
+            es: "En la Casa - Práctica",
+          },
+          description: {
+            en: "Practice in the house in conversation",
+            es: "Practica en la casa en conversación",
+          },
+          xpRequired: 915,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "house and rooms conversation",
+              prompt: "Practice using house and rooms in real conversation",
             },
             stories: {
-              topic: "music and movies",
-              prompt: "Read about cultural entertainment",
+              topic: "house and rooms",
+              prompt: "Read and discuss house and rooms",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-13-3",
+          title: {
+            en: "In the House - Application",
+            es: "En la Casa - Aplicación",
+          },
+          description: {
+            en: "Apply in the house skills",
+            es: "Aplica habilidades de en la casa",
+          },
+          xpRequired: 930,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "house and rooms",
+              prompt: "Advanced house and rooms content and comprehension",
             },
             realtime: {
-              scenario: "entertainment discussion",
-              prompt: "Discuss music and movies you enjoy",
+              scenario: "house and rooms mastery",
+              prompt: "Demonstrate mastery of house and rooms",
             },
           },
         },
         {
-          id: "lesson-7-3",
+          id: "lesson-a1-13-quiz",
           title: {
-            en: "Reading & Arts",
-            es: "Lectura y Artes",
+            en: "In the House Quiz",
+            es: "Prueba de En la Casa",
           },
           description: {
-            en: "Talk about books and creative activities",
-            es: "Habla sobre libros y actividades creativas",
+            en: "Test your knowledge of in the house",
+            es: "Prueba tus conocimientos de en la casa",
           },
-          xpRequired: 835,
-          xpReward: 60,
-          modes: ["vocabulary", "stories"],
-          content: {
-            vocabulary: {
-              words: ["libro", "leer", "escribir", "dibujar", "pintar"],
-              topic: "arts and reading",
-            },
-            stories: {
-              topic: "books and art",
-              prompt: "Read about famous Hispanic artists",
-            },
-          },
-        },
-        {
-          id: "lesson-7-quiz",
-          title: {
-            en: "Unit 7 Quiz",
-            es: "Prueba de Unidad 7",
-          },
-          description: {
-            en: "Test your knowledge of hobbies, sports, entertainment, and arts",
-            es: "Pon a prueba tus conocimientos de pasatiempos, deportes, entretenimiento y artes",
-          },
-          xpRequired: 895,
-          xpReward: 60,
+          xpRequired: 945,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              topic: "sports, entertainment, and arts and reading",
+              topic: "house and rooms",
             },
             grammar: {
-              topics: [
-                "expressing preferences and opinions",
-                "hobby-related verbs",
-                "leisure activities",
-              ],
-              focusPoints: [
-                "jugar vs practicar with sports",
-                "me parece",
-                "creo que",
-                "preference verbs",
-                "entertainment vocabulary",
-                "arts and creative activities",
-                "discussing hobbies and interests",
-              ],
+              topics: ["house and rooms structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
     {
-      id: "unit-8",
+      id: "unit-a1-14",
       title: {
-        en: "Past Experiences",
-        es: "Experiencias Pasadas",
+        en: "Clothing",
+        es: "Ropa",
       },
       description: {
-        en: "Talk about things you did",
-        es: "Habla sobre cosas que hiciste",
+        en: "What you wear",
+        es: "Lo que vistes",
       },
-      color: "#14B8A6", // Teal
-      position: { row: 0, offset: 0 },
+      color: "#0EA5E9",
+      position: { row: 6, offset: 1 },
       lessons: [
         {
-          id: "lesson-8-1",
+          id: "lesson-a1-14-1",
           title: {
-            en: "Preterite Tense Intro",
-            es: "Introducción al Pretérito",
+            en: "Clothing - Vocabulary",
+            es: "Ropa - Vocabulario",
           },
           description: {
-            en: "Talk about completed past actions",
-            es: "Habla sobre acciones pasadas completadas",
+            en: "Learn key vocabulary for clothing",
+            es: "Aprende vocabulario clave para ropa",
           },
-          xpRequired: 895,
-          xpReward: 60,
-          modes: ["grammar", "vocabulary", "reading"],
+          xpRequired: 975,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
           content: {
-            grammar: {
-              topic: "preterite tense",
-              focusPoints: ["regular -ar verbs", "past time markers"],
-            },
             vocabulary: {
-              topic: "time expressions",
+              topic: "clothing",
             },
-            reading: {
-              topic: "past events",
-              prompt: "Read about completed actions and past events",
+            grammar: {
+              topic: "clothing structures",
+              focusPoints: ["basic patterns", "common phrases"],
             },
           },
         },
         {
-          id: "lesson-8-2",
+          id: "lesson-a1-14-2",
           title: {
-            en: "Weekend Activities",
-            es: "Actividades del Fin de Semana",
+            en: "Clothing - Practice",
+            es: "Ropa - Práctica",
           },
           description: {
-            en: "Describe what you did last weekend",
-            es: "Describe qué hiciste el fin de semana pasado",
+            en: "Practice clothing in conversation",
+            es: "Practica ropa en conversación",
           },
-          xpRequired: 955,
-          xpReward: 60,
-          modes: ["vocabulary", "realtime", "stories"],
+          xpRequired: 990,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
           content: {
-            vocabulary: {
-              words: ["fin de semana", "ayer", "anoche", "la semana pasada"],
-              topic: "time expressions",
+            realtime: {
+              scenario: "clothing conversation",
+              prompt: "Practice using clothing in real conversation",
+            },
+            stories: {
+              topic: "clothing",
+              prompt: "Read and discuss clothing",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-14-3",
+          title: {
+            en: "Clothing - Application",
+            es: "Ropa - Aplicación",
+          },
+          description: {
+            en: "Apply clothing skills",
+            es: "Aplica habilidades de ropa",
+          },
+          xpRequired: 1005,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "clothing",
+              prompt: "Advanced clothing content and comprehension",
             },
             realtime: {
-              scenario: "weekend recap",
-              prompt: "Talk about what you did last weekend",
-            },
-            stories: {
-              topic: "weekend activities",
-              prompt: "Read about someone's weekend",
+              scenario: "clothing mastery",
+              prompt: "Demonstrate mastery of clothing",
             },
           },
         },
         {
-          id: "lesson-8-3",
+          id: "lesson-a1-14-quiz",
           title: {
-            en: "Travel Stories",
-            es: "Historias de Viaje",
+            en: "Clothing Quiz",
+            es: "Prueba de Ropa",
           },
           description: {
-            en: "Share travel experiences",
-            es: "Comparte experiencias de viaje",
+            en: "Test your knowledge of clothing",
+            es: "Prueba tus conocimientos de ropa",
           },
-          xpRequired: 1015,
-          xpReward: 65,
-          modes: ["stories", "grammar"],
-          content: {
-            grammar: {
-              topic: "preterite -er/-ir verbs",
-              focusPoints: ["regular verbs", "irregular verbs", "past actions"],
-            },
-            stories: {
-              topic: "travel",
-              prompt: "Read and discuss travel stories",
-            },
-          },
-        },
-        {
-          id: "lesson-8-quiz",
-          title: {
-            en: "Unit 8 Quiz",
-            es: "Prueba de Unidad 8",
-          },
-          description: {
-            en: "Test your knowledge of preterite tense and past experiences",
-            es: "Pon a prueba tus conocimientos del tiempo pretérito y experiencias pasadas",
-          },
-          xpRequired: 1080,
-          xpReward: 65,
+          xpRequired: 1020,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              topic: "time expressions and travel",
+              topic: "clothing",
             },
             grammar: {
-              topics: [
-                "preterite tense",
-                "past time expressions",
-                "completed actions",
-              ],
-              focusPoints: [
-                "regular -ar verbs in preterite",
-                "regular -er/-ir verbs in preterite",
-                "irregular preterite verbs",
-                "past time markers (ayer, anoche, la semana pasada)",
-                "talking about completed past actions",
-                "travel vocabulary in past tense",
-              ],
+              topics: ["clothing structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
     {
-      id: "unit-9",
+      id: "unit-a1-15",
       title: {
-        en: "Ongoing Past",
-        es: "Pasado Continuo",
+        en: "Daily Routine",
+        es: "Rutina Diaria",
       },
       description: {
-        en: "Describe what was happening",
-        es: "Describe lo que estaba pasando",
+        en: "Your day",
+        es: "Tu día",
       },
-      color: "#F97316", // Orange
-      position: { row: 1, offset: 1 },
+      color: "#22C55E",
+      position: { row: 7, offset: 0 },
       lessons: [
         {
-          id: "lesson-9-1",
+          id: "lesson-a1-15-1",
           title: {
-            en: "Imperfect Tense",
-            es: "Tiempo Imperfecto",
+            en: "Daily Routine - Vocabulary",
+            es: "Rutina Diaria - Vocabulario",
           },
           description: {
-            en: "Describe past habits and states",
-            es: "Describe hábitos y estados pasados",
+            en: "Learn key vocabulary for daily routine",
+            es: "Aprende vocabulario clave para rutina diaria",
           },
-          xpRequired: 1080,
-          xpReward: 65,
-          modes: ["grammar", "vocabulary", "reading"],
+          xpRequired: 1050,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
           content: {
-            grammar: {
-              topic: "imperfect tense",
-              focusPoints: ["formation", "uses vs preterite"],
-            },
             vocabulary: {
-              topic: "childhood",
+              topic: "daily activities",
             },
-            reading: {
-              topic: "past habits",
-              prompt: "Read about past habits and routines",
+            grammar: {
+              topic: "daily activities structures",
+              focusPoints: ["basic patterns", "common phrases"],
             },
           },
         },
         {
-          id: "lesson-9-2",
+          id: "lesson-a1-15-2",
           title: {
-            en: "Childhood Memories",
-            es: "Recuerdos de la Infancia",
+            en: "Daily Routine - Practice",
+            es: "Rutina Diaria - Práctica",
           },
           description: {
-            en: "Talk about when you were young",
-            es: "Habla sobre cuando eras joven",
+            en: "Practice daily routine in conversation",
+            es: "Practica rutina diaria en conversación",
           },
-          xpRequired: 1145,
-          xpReward: 70,
-          modes: ["vocabulary", "stories", "realtime"],
+          xpRequired: 1065,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
           content: {
-            vocabulary: {
-              words: ["niñez", "infancia", "jugar", "crecer", "recuerdo"],
-              topic: "childhood",
+            realtime: {
+              scenario: "daily activities conversation",
+              prompt: "Practice using daily activities in real conversation",
             },
             stories: {
-              topic: "childhood",
-              prompt: "Read about childhood memories",
-            },
-            realtime: {
-              scenario: "childhood stories",
-              prompt: "Share stories from your childhood",
+              topic: "daily activities",
+              prompt: "Read and discuss daily activities",
             },
           },
         },
         {
-          id: "lesson-9-3",
+          id: "lesson-a1-15-3",
           title: {
-            en: "Weather & Seasons",
-            es: "Clima y Estaciones",
+            en: "Daily Routine - Application",
+            es: "Rutina Diaria - Aplicación",
           },
           description: {
-            en: "Describe weather and seasons",
-            es: "Describe el clima y las estaciones",
+            en: "Apply daily routine skills",
+            es: "Aplica habilidades de rutina diaria",
           },
-          xpRequired: 1215,
-          xpReward: 70,
-          modes: ["grammar", "vocabulary", "realtime"],
+          xpRequired: 1080,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
           content: {
-            grammar: {
-              topic: "weather expressions",
-              focusPoints: ["hacer, estar, hay", "imperfect tense for weather"],
+            reading: {
+              topic: "daily activities",
+              prompt: "Advanced daily activities content and comprehension",
             },
+            realtime: {
+              scenario: "daily activities mastery",
+              prompt: "Demonstrate mastery of daily activities",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-15-quiz",
+          title: {
+            en: "Daily Routine Quiz",
+            es: "Prueba de Rutina Diaria",
+          },
+          description: {
+            en: "Test your knowledge of daily routine",
+            es: "Prueba tus conocimientos de rutina diaria",
+          },
+          xpRequired: 1095,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "daily activities",
+            },
+            grammar: {
+              topics: ["daily activities structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-16",
+      title: {
+        en: "Weather",
+        es: "Clima",
+      },
+      description: {
+        en: "Talk about weather",
+        es: "Habla del clima",
+      },
+      color: "#3B82F6",
+      position: { row: 7, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a1-16-1",
+          title: {
+            en: "Weather - Vocabulary",
+            es: "Clima - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for weather",
+            es: "Aprende vocabulario clave para clima",
+          },
+          xpRequired: 1125,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
             vocabulary: {
               topic: "weather",
             },
+            grammar: {
+              topic: "weather structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-16-2",
+          title: {
+            en: "Weather - Practice",
+            es: "Clima - Práctica",
+          },
+          description: {
+            en: "Practice weather in conversation",
+            es: "Practica clima en conversación",
+          },
+          xpRequired: 1140,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
             realtime: {
               scenario: "weather conversation",
-              prompt: "Practice discussing weather and seasons",
-            },
-          },
-        },
-        {
-          id: "lesson-9-quiz",
-          title: {
-            en: "Unit 9 Quiz",
-            es: "Prueba de Unidad 9",
-          },
-          description: {
-            en: "Test your knowledge of imperfect tense, childhood, and weather",
-            es: "Pon a prueba tus conocimientos del tiempo imperfecto, infancia y clima",
-          },
-          xpRequired: 1285,
-          xpReward: 70,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
-          content: {
-            vocabulary: {
-              topic: "childhood and weather",
-            },
-            grammar: {
-              topics: [
-                "imperfect tense",
-                "weather expressions",
-                "imperfect vs preterite",
-              ],
-              focusPoints: [
-                "imperfect tense formation",
-                "past habits and states",
-                "describing ongoing past actions",
-                "weather verbs (hacer, estar, hay)",
-                "imperfect for weather descriptions",
-                "childhood vocabulary in context",
-                "when to use imperfect vs preterite",
-              ],
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: "unit-10",
-      title: {
-        en: "Future Plans",
-        es: "Planes Futuros",
-      },
-      description: {
-        en: "Talk about what you will do",
-        es: "Habla sobre lo que harás",
-      },
-      color: "#06B6D4", // Cyan
-      position: { row: 2, offset: 0 },
-      lessons: [
-        {
-          id: "lesson-10-1",
-          title: {
-            en: "Future with Ir + a",
-            es: "Futuro con Ir + a",
-          },
-          description: {
-            en: "Express near future plans",
-            es: "Expresa planes del futuro cercano",
-          },
-          xpRequired: 1285,
-          xpReward: 75,
-          modes: ["grammar", "realtime"],
-          content: {
-            grammar: {
-              topic: "ir a + infinitive",
-              focusPoints: ["formation", "time expressions"],
-            },
-            realtime: {
-              scenario: "future plans",
-              prompt: "Discuss your plans for tomorrow",
-            },
-          },
-        },
-        {
-          id: "lesson-10-2",
-          title: {
-            en: "Simple Future Tense",
-            es: "Futuro Simple",
-          },
-          description: {
-            en: "Use the future tense",
-            es: "Usa el tiempo futuro",
-          },
-          xpRequired: 1360,
-          xpReward: 75,
-          modes: ["vocabulary", "grammar", "reading"],
-          content: {
-            vocabulary: {
-              words: ["mañana", "próximo", "futuro", "después", "luego"],
-              topic: "future time expressions",
-            },
-            grammar: {
-              topic: "simple future tense formation",
-              focusPoints: ["regular endings", "irregular verbs", "future time markers"],
-            },
-            reading: {
-              topic: "future plans",
-              prompt: "Read about future plans and predictions",
-            },
-          },
-        },
-        {
-          id: "lesson-10-3",
-          title: {
-            en: "Career Goals",
-            es: "Metas Profesionales",
-          },
-          description: {
-            en: "Discuss career aspirations",
-            es: "Discute aspiraciones profesionales",
-          },
-          xpRequired: 1435,
-          xpReward: 80,
-          modes: ["grammar", "realtime"],
-          content: {
-            grammar: {
-              topic: "simple future tense",
-              focusPoints: [
-                "regular endings",
-                "irregular verbs",
-                "future planning",
-              ],
-            },
-            realtime: {
-              scenario: "career planning",
-              prompt: "Talk about your professional future",
-            },
-          },
-        },
-        {
-          id: "lesson-10-quiz",
-          title: {
-            en: "Unit 10 Quiz",
-            es: "Prueba de Unidad 10",
-          },
-          description: {
-            en: "Test your knowledge of future tenses and career planning",
-            es: "Pon a prueba tus conocimientos de tiempos futuros y planificación profesional",
-          },
-          xpRequired: 1515,
-          xpReward: 75,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
-          content: {
-            vocabulary: {
-              topic: "careers and time expressions",
-            },
-            grammar: {
-              topics: [
-                "ir a + infinitive",
-                "simple future tense",
-                "future planning",
-              ],
-              focusPoints: [
-                "ir + a + infinitive structure",
-                "near future plans",
-                "simple future tense formation",
-                "regular future endings",
-                "irregular future verbs",
-                "time expressions for future (mañana, próximo, después)",
-                "career vocabulary in future tense",
-              ],
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: "unit-11",
-      title: {
-        en: "Health & Body",
-        es: "Salud y Cuerpo",
-      },
-      description: {
-        en: "Talk about health and wellness",
-        es: "Habla sobre salud y bienestar",
-      },
-      color: "#10B981", // Emerald
-      position: { row: 3, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-11-1",
-          title: {
-            en: "Body Parts",
-            es: "Partes del Cuerpo",
-          },
-          description: {
-            en: "Learn vocabulary for the body",
-            es: "Aprende vocabulario del cuerpo",
-          },
-          xpRequired: 1515,
-          xpReward: 70,
-          modes: ["vocabulary", "grammar", "reading"],
-          content: {
-            vocabulary: {
-              words: ["cabeza", "brazo", "pierna", "mano", "pie", "ojo"],
-              topic: "body parts",
-            },
-            grammar: {
-              topic: "body parts with articles",
-              focusPoints: ["definite articles with body parts", "reflexive verbs with body parts"],
-            },
-            reading: {
-              topic: "body and health",
-              prompt: "Read about the human body and health",
-            },
-          },
-        },
-        {
-          id: "lesson-11-2",
-          title: {
-            en: "At the Doctor",
-            es: "En el Médico",
-          },
-          description: {
-            en: "Describe symptoms and ailments",
-            es: "Describe síntomas y dolencias",
-          },
-          xpRequired: 1585,
-          xpReward: 75,
-          modes: ["grammar", "realtime"],
-          content: {
-            grammar: {
-              topic: "expressing pain",
-              focusPoints: ["me duele/me duelen", "doler verb", "body parts"],
-            },
-            realtime: {
-              scenario: "doctor visit",
-              prompt: "Practice a conversation at the doctor's office",
-            },
-          },
-        },
-        {
-          id: "lesson-11-3",
-          title: {
-            en: "Healthy Habits",
-            es: "Hábitos Saludables",
-          },
-          description: {
-            en: "Discuss exercise and wellness",
-            es: "Discute ejercicio y bienestar",
-          },
-          xpRequired: 1660,
-          xpReward: 75,
-          modes: ["vocabulary", "stories"],
-          content: {
-            vocabulary: {
-              words: [
-                "ejercicio",
-                "saludable",
-                "dieta",
-                "descansar",
-                "energía",
-              ],
-              topic: "wellness",
+              prompt: "Practice using weather in real conversation",
             },
             stories: {
-              topic: "healthy living",
-              prompt: "Read about maintaining a healthy lifestyle",
+              topic: "weather",
+              prompt: "Read and discuss weather",
             },
           },
         },
         {
-          id: "lesson-11-quiz",
+          id: "lesson-a1-16-3",
           title: {
-            en: "Unit 11 Quiz",
-            es: "Prueba de Unidad 11",
+            en: "Weather - Application",
+            es: "Clima - Aplicación",
           },
           description: {
-            en: "Test your knowledge of body parts, health, and wellness",
-            es: "Pon a prueba tus conocimientos de partes del cuerpo, salud y bienestar",
+            en: "Apply weather skills",
+            es: "Aplica habilidades de clima",
           },
-          xpRequired: 1735,
-          xpReward: 75,
+          xpRequired: 1155,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "weather",
+              prompt: "Advanced weather content and comprehension",
+            },
+            realtime: {
+              scenario: "weather mastery",
+              prompt: "Demonstrate mastery of weather",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-16-quiz",
+          title: {
+            en: "Weather Quiz",
+            es: "Prueba de Clima",
+          },
+          description: {
+            en: "Test your knowledge of weather",
+            es: "Prueba tus conocimientos de clima",
+          },
+          xpRequired: 1170,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              topic: "body parts, health, and wellness",
+              topic: "weather",
             },
             grammar: {
-              topics: [
-                "expressing pain",
-                "health-related expressions",
-                "wellness vocabulary",
-              ],
-              focusPoints: [
-                "me duele/me duelen",
-                "doler verb conjugation",
-                "body parts with articles",
-                "doctor visit phrases",
-                "symptoms and ailments",
-                "healthy living expressions",
-                "health advice (deber + infinitive)",
-              ],
+              topics: ["weather structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
     {
-      id: "unit-12",
+      id: "unit-a1-17",
       title: {
-        en: "Environment & Nature",
-        es: "Medio Ambiente y Naturaleza",
+        en: "Likes & Dislikes",
+        es: "Gustos",
       },
       description: {
-        en: "Discuss nature and environmental topics",
-        es: "Discute temas de naturaleza y medio ambiente",
+        en: "Preferences",
+        es: "Preferencias",
       },
-      color: "#84CC16", // Lime
-      position: { row: 4, offset: 0 },
+      color: "#F59E0B",
+      position: { row: 8, offset: 0 },
       lessons: [
         {
-          id: "lesson-12-1",
+          id: "lesson-a1-17-1",
           title: {
-            en: "Animals & Plants",
-            es: "Animales y Plantas",
+            en: "Likes & Dislikes - Vocabulary",
+            es: "Gustos - Vocabulario",
           },
           description: {
-            en: "Learn vocabulary about nature",
-            es: "Aprende vocabulario sobre la naturaleza",
+            en: "Learn key vocabulary for likes & dislikes",
+            es: "Aprende vocabulario clave para gustos",
           },
-          xpRequired: 1735,
-          xpReward: 75,
-          modes: ["vocabulary", "stories"],
+          xpRequired: 1200,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              words: ["animal", "perro", "gato", "árbol", "flor", "bosque"],
-              topic: "nature",
+              topic: "preferences",
+            },
+            grammar: {
+              topic: "preferences structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-17-2",
+          title: {
+            en: "Likes & Dislikes - Practice",
+            es: "Gustos - Práctica",
+          },
+          description: {
+            en: "Practice likes & dislikes in conversation",
+            es: "Practica gustos en conversación",
+          },
+          xpRequired: 1215,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "preferences conversation",
+              prompt: "Practice using preferences in real conversation",
             },
             stories: {
-              topic: "wildlife",
-              prompt: "Read about Latin American wildlife",
+              topic: "preferences",
+              prompt: "Read and discuss preferences",
             },
           },
         },
         {
-          id: "lesson-12-2",
+          id: "lesson-a1-17-3",
           title: {
-            en: "Environmental Issues",
-            es: "Problemas Ambientales",
+            en: "Likes & Dislikes - Application",
+            es: "Gustos - Aplicación",
           },
           description: {
-            en: "Discuss ecology and conservation",
-            es: "Discute ecología y conservación",
+            en: "Apply likes & dislikes skills",
+            es: "Aplica habilidades de gustos",
           },
-          xpRequired: 1810,
-          xpReward: 80,
-          modes: ["grammar", "realtime", "reading"],
+          xpRequired: 1230,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
           content: {
-            grammar: {
-              topic: "environmental language",
-              focusPoints: [
-                "conditional tense",
-                "should/would",
-                "environmental expressions",
-              ],
+            reading: {
+              topic: "preferences",
+              prompt: "Advanced preferences content and comprehension",
             },
             realtime: {
-              scenario: "environmental discussion",
-              prompt: "Discuss environmental concerns",
-            },
-            reading: {
-              topic: "conservation",
-              prompt: "Learn about environmental movements",
+              scenario: "preferences mastery",
+              prompt: "Demonstrate mastery of preferences",
             },
           },
         },
         {
-          id: "lesson-12-3",
+          id: "lesson-a1-17-quiz",
           title: {
-            en: "Geography & Landscapes",
-            es: "Geografía y Paisajes",
+            en: "Likes & Dislikes Quiz",
+            es: "Prueba de Gustos",
           },
           description: {
-            en: "Describe natural features and places",
-            es: "Describe características y lugares naturales",
+            en: "Test your knowledge of likes & dislikes",
+            es: "Prueba tus conocimientos de gustos",
           },
-          xpRequired: 1890,
-          xpReward: 80,
-          modes: ["vocabulary", "stories"],
+          xpRequired: 1245,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
           content: {
             vocabulary: {
-              words: ["montaña", "río", "mar", "playa", "desierto", "valle"],
-              topic: "geography",
+              topic: "preferences",
+            },
+            grammar: {
+              topics: ["preferences structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a1-18",
+      title: {
+        en: "Basic Questions",
+        es: "Preguntas",
+      },
+      description: {
+        en: "Ask questions",
+        es: "Haz preguntas",
+      },
+      color: "#8B5CF6",
+      position: { row: 8, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a1-18-1",
+          title: {
+            en: "Basic Questions - Vocabulary",
+            es: "Preguntas - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for basic questions",
+            es: "Aprende vocabulario clave para preguntas",
+          },
+          xpRequired: 1275,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "question words",
+            },
+            grammar: {
+              topic: "question words structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a1-18-2",
+          title: {
+            en: "Basic Questions - Practice",
+            es: "Preguntas - Práctica",
+          },
+          description: {
+            en: "Practice basic questions in conversation",
+            es: "Practica preguntas en conversación",
+          },
+          xpRequired: 1290,
+          xpReward: 15,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "question words conversation",
+              prompt: "Practice using question words in real conversation",
             },
             stories: {
-              topic: "landscapes",
-              prompt: "Read about diverse Latin American landscapes",
+              topic: "question words",
+              prompt: "Read and discuss question words",
             },
           },
         },
         {
-          id: "lesson-12-quiz",
+          id: "lesson-a1-18-3",
           title: {
-            en: "Unit 12 Quiz",
-            es: "Prueba de Unidad 12",
+            en: "Basic Questions - Application",
+            es: "Preguntas - Aplicación",
           },
           description: {
-            en: "Test your knowledge of nature, environment, and geography",
-            es: "Pon a prueba tus conocimientos de naturaleza, medio ambiente y geografía",
+            en: "Apply basic questions skills",
+            es: "Aplica habilidades de preguntas",
           },
-          xpRequired: 1970,
-          xpReward: 80,
+          xpRequired: 1305,
+          xpReward: 15,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "question words",
+              prompt: "Advanced question words content and comprehension",
+            },
+            realtime: {
+              scenario: "question words mastery",
+              prompt: "Demonstrate mastery of question words",
+            },
+          },
+        },
+        {
+          id: "lesson-a1-18-quiz",
+          title: {
+            en: "Basic Questions Quiz",
+            es: "Prueba de Preguntas",
+          },
+          description: {
+            en: "Test your knowledge of basic questions",
+            es: "Prueba tus conocimientos de preguntas",
+          },
+          xpRequired: 1320,
+          xpReward: 30,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
+            questionsRequired: 8,
+            passingScore: 6,
           },
           content: {
             vocabulary: {
-              topic: "nature, environment, and geography",
+              topic: "question words",
             },
             grammar: {
-              topics: [
-                "environmental language",
-                "conditional tense",
-                "descriptive expressions for nature",
-              ],
-              focusPoints: [
-                "conditional tense formation",
-                "should/would expressions",
-                "environmental vocabulary in context",
-                "nature and wildlife terms",
-                "geographical features",
-                "conservation and ecology expressions",
-                "expressing environmental concerns",
-              ],
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: "unit-13",
-      title: {
-        en: "Subjunctive Mood",
-        es: "Modo Subjuntivo",
-      },
-      description: {
-        en: "Express wishes, doubts, and emotions",
-        es: "Expresa deseos, dudas y emociones",
-      },
-      color: "#7C3AED", // Violet
-      position: { row: 0, offset: 0 },
-      lessons: [
-        {
-          id: "lesson-13-1",
-          title: {
-            en: "Present Subjunctive Intro",
-            es: "Introducción al Subjuntivo Presente",
-          },
-          description: {
-            en: "Learn subjunctive formation",
-            es: "Aprende la formación del subjuntivo",
-          },
-          xpRequired: 1970,
-          xpReward: 90,
-          modes: ["grammar", "vocabulary", "reading"],
-          content: {
-            grammar: {
-              topic: "present subjunctive",
-              focusPoints: ["formation", "trigger phrases"],
-            },
-            vocabulary: {
-              topic: "wishes and desires",
-            },
-            reading: {
-              topic: "subjunctive examples",
-              prompt: "Read examples of subjunctive mood in context",
-            },
-          },
-        },
-        {
-          id: "lesson-13-2",
-          title: {
-            en: "Wishes & Desires",
-            es: "Deseos y Anhelos",
-          },
-          description: {
-            en: "Express hopes and wishes",
-            es: "Expresa esperanzas y deseos",
-          },
-          xpRequired: 2060,
-          xpReward: 90,
-          modes: ["vocabulary", "realtime", "stories"],
-          content: {
-            vocabulary: {
-              words: ["deseo", "esperanza", "sueño", "anhelo", "ojalá"],
-              topic: "wishes and desires",
-            },
-            realtime: {
-              scenario: "expressing wishes",
-              prompt: "Talk about your hopes and desires",
-            },
-            stories: {
-              topic: "aspirations",
-              prompt: "Read about people pursuing their dreams",
-            },
-          },
-        },
-        {
-          id: "lesson-13-3",
-          title: {
-            en: "Doubts & Denials",
-            es: "Dudas y Negaciones",
-          },
-          description: {
-            en: "Express uncertainty",
-            es: "Expresa incertidumbre",
-          },
-          xpRequired: 2150,
-          xpReward: 95,
-          modes: ["grammar", "realtime"],
-          content: {
-            grammar: {
-              topic: "subjunctive with doubt",
-              focusPoints: ["dudar, no creer, negar"],
-            },
-          },
-        },
-        {
-          id: "lesson-13-quiz",
-          title: {
-            en: "Unit 13 Quiz",
-            es: "Prueba de Unidad 13",
-          },
-          description: {
-            en: "Test your knowledge of the subjunctive mood",
-            es: "Pon a prueba tus conocimientos del modo subjuntivo",
-          },
-          xpRequired: 2245,
-          xpReward: 95,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
-          content: {
-            vocabulary: {
-              topic: "wishes and desires and global issues",
-            },
-            grammar: {
-              topics: [
-                "present subjunctive",
-                "subjunctive trigger phrases",
-                "wishes and doubts",
-              ],
-              focusPoints: [
-                "present subjunctive formation",
-                "trigger phrases that require subjunctive",
-                "expressing wishes (esperar que, querer que, desear que)",
-                "expressing doubt (dudar, no creer, negar)",
-                "ojalá expressions",
-                "subjunctive vs indicative",
-                "irregular subjunctive forms",
-              ],
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: "unit-14",
-      title: {
-        en: "Complex Conversations",
-        es: "Conversaciones Complejas",
-      },
-      description: {
-        en: "Engage in sophisticated discussions",
-        es: "Participa en discusiones sofisticadas",
-      },
-      color: "#DC2626", // Red
-      position: { row: 1, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-14-1",
-          title: {
-            en: "Debate & Persuasion",
-            es: "Debate y Persuasión",
-          },
-          description: {
-            en: "Argue and persuade effectively",
-            es: "Argumenta y persuade efectivamente",
-          },
-          xpRequired: 2245,
-          xpReward: 100,
-          modes: ["realtime", "vocabulary"],
-          content: {
-            vocabulary: {
-              words: ["argumentar", "convencer", "debatir", "persuadir"],
-              topic: "debate",
-            },
-            realtime: {
-              scenario: "debate",
-              prompt: "Engage in a structured debate",
-            },
-          },
-        },
-        {
-          id: "lesson-14-2",
-          title: {
-            en: "Current Events",
-            es: "Actualidad",
-          },
-          description: {
-            en: "Discuss news and events",
-            es: "Discute noticias y eventos",
-          },
-          xpRequired: 2345,
-          xpReward: 100,
-          modes: ["reading", "realtime", "grammar"],
-          content: {
-            grammar: {
-              topic: "news and reporting language",
-              focusPoints: [
-                "passive voice",
-                "reported speech",
-                "news expressions",
-              ],
-            },
-            reading: {
-              topic: "current events",
-              prompt: "Read and discuss current news",
-            },
-            realtime: {
-              scenario: "news discussion",
-              prompt: "Discuss recent events",
-            },
-          },
-        },
-        {
-          id: "lesson-14-3",
-          title: {
-            en: "Professional Communication",
-            es: "Comunicación Profesional",
-          },
-          description: {
-            en: "Master workplace language",
-            es: "Domina el lenguaje laboral",
-          },
-          xpRequired: 2445,
-          xpReward: 110,
-          modes: ["realtime", "vocabulary"],
-          content: {
-            vocabulary: {
-              words: ["reunión", "presentación", "informe", "negociar"],
-              topic: "professional",
-            },
-            realtime: {
-              scenario: "workplace conversation",
-              prompt: "Navigate workplace scenarios",
-            },
-          },
-        },
-        {
-          id: "lesson-14-quiz",
-          title: {
-            en: "Unit 14 Quiz",
-            es: "Prueba de Unidad 14",
-          },
-          description: {
-            en: "Test your knowledge of debate, current events, and professional language",
-            es: "Pon a prueba tus conocimientos de debate, actualidad y lenguaje profesional",
-          },
-          xpRequired: 2555,
-          xpReward: 100,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
-          content: {
-            vocabulary: {
-              topic: "debate, current events, and professional",
-            },
-            grammar: {
-              topics: [
-                "news and reporting language",
-                "passive voice",
-                "formal communication",
-              ],
-              focusPoints: [
-                "passive voice construction",
-                "reported speech",
-                "news expressions",
-                "debate and persuasion vocabulary",
-                "professional communication phrases",
-                "formal vs informal registers",
-                "argumentation structures",
-              ],
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: "unit-15",
-      title: {
-        en: "Literature & Arts",
-        es: "Literatura y Artes",
-      },
-      description: {
-        en: "Explore Hispanic culture and creativity",
-        es: "Explora la cultura y creatividad hispana",
-      },
-      color: "#DB2777", // Pink-600
-      position: { row: 2, offset: 0 },
-      lessons: [
-        {
-          id: "lesson-15-1",
-          title: {
-            en: "Poetry & Prose",
-            es: "Poesía y Prosa",
-          },
-          description: {
-            en: "Read and analyze literature",
-            es: "Lee y analiza literatura",
-          },
-          xpRequired: 2555,
-          xpReward: 100,
-          modes: ["stories", "vocabulary", "reading"],
-          content: {
-            vocabulary: {
-              words: ["poeta", "verso", "metáfora", "narrativa", "estilo"],
-              topic: "literature",
-            },
-            stories: {
-              topic: "literature",
-              prompt: "Read works by famous Hispanic authors",
-            },
-            reading: {
-              topic: "literary movements",
-              prompt: "Learn about Hispanic literary history",
-            },
-          },
-        },
-        {
-          id: "lesson-15-2",
-          title: {
-            en: "Visual Arts",
-            es: "Artes Visuales",
-          },
-          description: {
-            en: "Discuss painting and sculpture",
-            es: "Discute pintura y escultura",
-          },
-          xpRequired: 2655,
-          xpReward: 105,
-          modes: ["grammar", "reading", "realtime"],
-          content: {
-            grammar: {
-              topic: "describing art",
-              focusPoints: [
-                "present progressive",
-                "aesthetic descriptions",
-                "art criticism",
-              ],
-            },
-            reading: {
-              topic: "Hispanic artists",
-              prompt: "Learn about Frida Kahlo, Diego Rivera, and more",
-            },
-            realtime: {
-              scenario: "art discussion",
-              prompt: "Discuss artistic works and styles",
-            },
-          },
-        },
-        {
-          id: "lesson-15-3",
-          title: {
-            en: "Cinema & Theater",
-            es: "Cine y Teatro",
-          },
-          description: {
-            en: "Explore performing arts",
-            es: "Explora artes escénicas",
-          },
-          xpRequired: 2760,
-          xpReward: 105,
-          modes: ["vocabulary", "stories", "realtime"],
-          content: {
-            vocabulary: {
-              words: ["película", "director", "actor", "escena", "guion"],
-              topic: "cinema",
-            },
-            stories: {
-              topic: "Hispanic cinema",
-              prompt: "Learn about influential Hispanic films",
-            },
-            realtime: {
-              scenario: "film discussion",
-              prompt: "Discuss movies and performances",
-            },
-          },
-        },
-        {
-          id: "lesson-15-quiz",
-          title: {
-            en: "Unit 15 Quiz",
-            es: "Prueba de Unidad 15",
-          },
-          description: {
-            en: "Test your knowledge of literature, visual arts, and cinema",
-            es: "Pon a prueba tus conocimientos de literatura, artes visuales y cine",
-          },
-          xpRequired: 2865,
-          xpReward: 105,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
-          content: {
-            vocabulary: {
-              topic: "literature, visual arts, and cinema",
-            },
-            grammar: {
-              topics: [
-                "describing art",
-                "aesthetic expressions",
-                "cultural commentary",
-              ],
-              focusPoints: [
-                "present progressive for art descriptions",
-                "aesthetic vocabulary",
-                "literary terms (metáfora, narrativa, verso)",
-                "visual arts vocabulary (lienzo, pincel, galería)",
-                "cinema terms (director, escena, guion)",
-                "expressing artistic opinions",
-                "art criticism language",
-              ],
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: "unit-16",
-      title: {
-        en: "Technology & Innovation",
-        es: "Tecnología e Innovación",
-      },
-      description: {
-        en: "Discuss modern technology and digital life",
-        es: "Discute tecnología moderna y vida digital",
-      },
-      color: "#0EA5E9", // Sky-500
-      position: { row: 3, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-16-1",
-          title: {
-            en: "Digital Communication",
-            es: "Comunicación Digital",
-          },
-          description: {
-            en: "Navigate online interactions",
-            es: "Navega interacciones en línea",
-          },
-          xpRequired: 2865,
-          xpReward: 105,
-          modes: ["vocabulary", "realtime"],
-          content: {
-            vocabulary: {
-              words: [
-                "internet",
-                "correo",
-                "mensaje",
-                "aplicación",
-                "red social",
-              ],
-              topic: "digital communication",
-            },
-            realtime: {
-              scenario: "online conversation",
-              prompt: "Practice digital communication",
-            },
-          },
-        },
-        {
-          id: "lesson-16-2",
-          title: {
-            en: "Science & Progress",
-            es: "Ciencia y Progreso",
-          },
-          description: {
-            en: "Discuss scientific advancement",
-            es: "Discute avance científico",
-          },
-          xpRequired: 2970,
-          xpReward: 110,
-          modes: ["grammar", "reading", "realtime"],
-          content: {
-            grammar: {
-              topic: "scientific language",
-              focusPoints: [
-                "passive constructions",
-                "technical terminology",
-                "cause and effect",
-              ],
-            },
-            reading: {
-              topic: "Hispanic scientists",
-              prompt: "Learn about Hispanic contributions to science",
-            },
-            realtime: {
-              scenario: "science discussion",
-              prompt: "Discuss technological innovations",
-            },
-          },
-        },
-        {
-          id: "lesson-16-3",
-          title: {
-            en: "Digital Economy",
-            es: "Economía Digital",
-          },
-          description: {
-            en: "Talk about modern business and tech",
-            es: "Habla sobre negocios modernos y tecnología",
-          },
-          xpRequired: 3080,
-          xpReward: 110,
-          modes: ["vocabulary", "realtime"],
-          content: {
-            vocabulary: {
-              words: [
-                "emprendedor",
-                "startup",
-                "digital",
-                "comercio",
-                "plataforma",
-              ],
-              topic: "digital economy",
-            },
-            realtime: {
-              scenario: "business tech discussion",
-              prompt: "Discuss digital business trends",
-            },
-          },
-        },
-        {
-          id: "lesson-16-quiz",
-          title: {
-            en: "Unit 16 Quiz",
-            es: "Prueba de Unidad 16",
-          },
-          description: {
-            en: "Test your knowledge of technology, science, and digital economy",
-            es: "Pon a prueba tus conocimientos de tecnología, ciencia y economía digital",
-          },
-          xpRequired: 3190,
-          xpReward: 110,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
-          content: {
-            vocabulary: {
-              topic: "digital communication, science, and digital economy",
-            },
-            grammar: {
-              topics: [
-                "scientific language",
-                "technical terminology",
-                "cause and effect",
-              ],
-              focusPoints: [
-                "passive constructions in technical contexts",
-                "scientific vocabulary",
-                "digital communication terms (internet, correo, mensaje, aplicación)",
-                "science terms (experimento, laboratorio, hipótesis)",
-                "digital economy vocabulary (startup, plataforma, comercio)",
-                "expressing technological concepts",
-                "cause and effect expressions",
-              ],
-            },
-          },
-        },
-      ],
-    },
-    {
-      id: "unit-17",
-      title: {
-        en: "Social Issues & Ethics",
-        es: "Problemas Sociales y Ética",
-      },
-      description: {
-        en: "Engage with complex social topics",
-        es: "Participa en temas sociales complejos",
-      },
-      color: "#A855F7", // Purple-500
-      position: { row: 4, offset: 0 },
-      lessons: [
-        {
-          id: "lesson-17-1",
-          title: {
-            en: "Social Justice",
-            es: "Justicia Social",
-          },
-          description: {
-            en: "Discuss equality and rights",
-            es: "Discute igualdad y derechos",
-          },
-          xpRequired: 3190,
-          xpReward: 115,
-          modes: ["vocabulary", "realtime", "reading"],
-          content: {
-            vocabulary: {
-              words: [
-                "justicia",
-                "igualdad",
-                "derechos",
-                "diversidad",
-                "inclusión",
-              ],
-              topic: "social justice",
-            },
-            realtime: {
-              scenario: "social issues discussion",
-              prompt: "Discuss social justice topics",
-            },
-            reading: {
-              topic: "civil rights movements",
-              prompt: "Learn about Hispanic social movements",
-            },
-          },
-        },
-        {
-          id: "lesson-17-2",
-          title: {
-            en: "Global Challenges",
-            es: "Desafíos Globales",
-          },
-          description: {
-            en: "Address worldwide issues",
-            es: "Aborda problemas mundiales",
-          },
-          xpRequired: 3305,
-          xpReward: 120,
-          modes: ["grammar", "realtime"],
-          content: {
-            grammar: {
-              topic: "advanced expressions",
-              focusPoints: ["complex conditionals", "hypothetical situations"],
-            },
-            realtime: {
-              scenario: "global discussion",
-              prompt: "Discuss international challenges",
-            },
-          },
-        },
-        {
-          id: "lesson-17-quiz",
-          title: {
-            en: "Unit 17 Quiz",
-            es: "Prueba de Unidad 17",
-          },
-          description: {
-            en: "Test your knowledge of social justice, global challenges, and ethics",
-            es: "Pon a prueba tus conocimientos de justicia social, desafíos globales y ética",
-          },
-          xpRequired: 3425,
-          xpReward: 120,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
-          content: {
-            vocabulary: {
-              topic: "social justice and global issues",
-            },
-            grammar: {
-              topics: [
-                "advanced expressions",
-                "complex conditionals",
-                "social discourse",
-              ],
-              focusPoints: [
-                "complex conditional structures",
-                "hypothetical situations",
-                "si clauses with subjunctive",
-                "social justice vocabulary (justicia, igualdad, derechos, diversidad)",
-                "global issues terms (clima, migración, cooperación, sostenibilidad)",
-                "expressing social concerns",
-                "discussing ethical topics",
-              ],
+              topics: ["question words structures"],
+              focusPoints: ["comprehensive review"],
             },
           },
         },
       ],
     },
   ],
-  intermediate: [],
-  advanced: [],
+  A2: [
+    {
+      id: "unit-a2-1",
+      title: {
+        en: "Describing People",
+        es: "Describir Personas",
+      },
+      description: {
+        en: "Physical descriptions",
+        es: "Descripciones físicas",
+      },
+      color: "#22C55E",
+      position: { row: 0, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-1-1",
+          title: {
+            en: "Describing People - Vocabulary",
+            es: "Describir Personas - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for describing people",
+            es: "Aprende vocabulario clave para describir personas",
+          },
+          xpRequired: 1350,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "physical descriptions",
+            },
+            grammar: {
+              topic: "physical descriptions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-1-2",
+          title: {
+            en: "Describing People - Practice",
+            es: "Describir Personas - Práctica",
+          },
+          description: {
+            en: "Practice describing people in conversation",
+            es: "Practica describir personas en conversación",
+          },
+          xpRequired: 1370,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "physical descriptions conversation",
+              prompt: "Practice using physical descriptions in real conversation",
+            },
+            stories: {
+              topic: "physical descriptions",
+              prompt: "Read and discuss physical descriptions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-1-3",
+          title: {
+            en: "Describing People - Application",
+            es: "Describir Personas - Aplicación",
+          },
+          description: {
+            en: "Apply describing people skills",
+            es: "Aplica habilidades de describir personas",
+          },
+          xpRequired: 1390,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "physical descriptions",
+              prompt: "Advanced physical descriptions content and comprehension",
+            },
+            realtime: {
+              scenario: "physical descriptions mastery",
+              prompt: "Demonstrate mastery of physical descriptions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-1-quiz",
+          title: {
+            en: "Describing People Quiz",
+            es: "Prueba de Describir Personas",
+          },
+          description: {
+            en: "Test your knowledge of describing people",
+            es: "Prueba tus conocimientos de describir personas",
+          },
+          xpRequired: 1410,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "physical descriptions",
+            },
+            grammar: {
+              topics: ["physical descriptions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-2",
+      title: {
+        en: "Describing Places",
+        es: "Describir Lugares",
+      },
+      description: {
+        en: "Talk about locations",
+        es: "Habla sobre lugares",
+      },
+      color: "#3B82F6",
+      position: { row: 0, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-2-1",
+          title: {
+            en: "Describing Places - Vocabulary",
+            es: "Describir Lugares - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for describing places",
+            es: "Aprende vocabulario clave para describir lugares",
+          },
+          xpRequired: 1450,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "places",
+            },
+            grammar: {
+              topic: "places structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-2-2",
+          title: {
+            en: "Describing Places - Practice",
+            es: "Describir Lugares - Práctica",
+          },
+          description: {
+            en: "Practice describing places in conversation",
+            es: "Practica describir lugares en conversación",
+          },
+          xpRequired: 1470,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "places conversation",
+              prompt: "Practice using places in real conversation",
+            },
+            stories: {
+              topic: "places",
+              prompt: "Read and discuss places",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-2-3",
+          title: {
+            en: "Describing Places - Application",
+            es: "Describir Lugares - Aplicación",
+          },
+          description: {
+            en: "Apply describing places skills",
+            es: "Aplica habilidades de describir lugares",
+          },
+          xpRequired: 1490,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "places",
+              prompt: "Advanced places content and comprehension",
+            },
+            realtime: {
+              scenario: "places mastery",
+              prompt: "Demonstrate mastery of places",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-2-quiz",
+          title: {
+            en: "Describing Places Quiz",
+            es: "Prueba de Describir Lugares",
+          },
+          description: {
+            en: "Test your knowledge of describing places",
+            es: "Prueba tus conocimientos de describir lugares",
+          },
+          xpRequired: 1510,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "places",
+            },
+            grammar: {
+              topics: ["places structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-3",
+      title: {
+        en: "Shopping & Money",
+        es: "Compras y Dinero",
+      },
+      description: {
+        en: "Buy things",
+        es: "Compra cosas",
+      },
+      color: "#F59E0B",
+      position: { row: 1, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-3-1",
+          title: {
+            en: "Shopping & Money - Vocabulary",
+            es: "Compras y Dinero - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for shopping & money",
+            es: "Aprende vocabulario clave para compras y dinero",
+          },
+          xpRequired: 1550,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "shopping",
+            },
+            grammar: {
+              topic: "shopping structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-3-2",
+          title: {
+            en: "Shopping & Money - Practice",
+            es: "Compras y Dinero - Práctica",
+          },
+          description: {
+            en: "Practice shopping & money in conversation",
+            es: "Practica compras y dinero en conversación",
+          },
+          xpRequired: 1570,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "shopping conversation",
+              prompt: "Practice using shopping in real conversation",
+            },
+            stories: {
+              topic: "shopping",
+              prompt: "Read and discuss shopping",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-3-3",
+          title: {
+            en: "Shopping & Money - Application",
+            es: "Compras y Dinero - Aplicación",
+          },
+          description: {
+            en: "Apply shopping & money skills",
+            es: "Aplica habilidades de compras y dinero",
+          },
+          xpRequired: 1590,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "shopping",
+              prompt: "Advanced shopping content and comprehension",
+            },
+            realtime: {
+              scenario: "shopping mastery",
+              prompt: "Demonstrate mastery of shopping",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-3-quiz",
+          title: {
+            en: "Shopping & Money Quiz",
+            es: "Prueba de Compras y Dinero",
+          },
+          description: {
+            en: "Test your knowledge of shopping & money",
+            es: "Prueba tus conocimientos de compras y dinero",
+          },
+          xpRequired: 1610,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "shopping",
+            },
+            grammar: {
+              topics: ["shopping structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-4",
+      title: {
+        en: "At the Market",
+        es: "En el Mercado",
+      },
+      description: {
+        en: "Fresh food shopping",
+        es: "Compra de alimentos",
+      },
+      color: "#8B5CF6",
+      position: { row: 1, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-4-1",
+          title: {
+            en: "At the Market - Vocabulary",
+            es: "En el Mercado - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for at the market",
+            es: "Aprende vocabulario clave para en el mercado",
+          },
+          xpRequired: 1650,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "shopping",
+            },
+            grammar: {
+              topic: "shopping structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-4-2",
+          title: {
+            en: "At the Market - Practice",
+            es: "En el Mercado - Práctica",
+          },
+          description: {
+            en: "Practice at the market in conversation",
+            es: "Practica en el mercado en conversación",
+          },
+          xpRequired: 1670,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "shopping conversation",
+              prompt: "Practice using shopping in real conversation",
+            },
+            stories: {
+              topic: "shopping",
+              prompt: "Read and discuss shopping",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-4-3",
+          title: {
+            en: "At the Market - Application",
+            es: "En el Mercado - Aplicación",
+          },
+          description: {
+            en: "Apply at the market skills",
+            es: "Aplica habilidades de en el mercado",
+          },
+          xpRequired: 1690,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "shopping",
+              prompt: "Advanced shopping content and comprehension",
+            },
+            realtime: {
+              scenario: "shopping mastery",
+              prompt: "Demonstrate mastery of shopping",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-4-quiz",
+          title: {
+            en: "At the Market Quiz",
+            es: "Prueba de En el Mercado",
+          },
+          description: {
+            en: "Test your knowledge of at the market",
+            es: "Prueba tus conocimientos de en el mercado",
+          },
+          xpRequired: 1710,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "shopping",
+            },
+            grammar: {
+              topics: ["shopping structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-5",
+      title: {
+        en: "Transportation",
+        es: "Transporte",
+      },
+      description: {
+        en: "Getting around",
+        es: "Moverse",
+      },
+      color: "#EC4899",
+      position: { row: 2, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-5-1",
+          title: {
+            en: "Transportation - Vocabulary",
+            es: "Transporte - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for transportation",
+            es: "Aprende vocabulario clave para transporte",
+          },
+          xpRequired: 1750,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "transportation",
+            },
+            grammar: {
+              topic: "transportation structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-5-2",
+          title: {
+            en: "Transportation - Practice",
+            es: "Transporte - Práctica",
+          },
+          description: {
+            en: "Practice transportation in conversation",
+            es: "Practica transporte en conversación",
+          },
+          xpRequired: 1770,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "transportation conversation",
+              prompt: "Practice using transportation in real conversation",
+            },
+            stories: {
+              topic: "transportation",
+              prompt: "Read and discuss transportation",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-5-3",
+          title: {
+            en: "Transportation - Application",
+            es: "Transporte - Aplicación",
+          },
+          description: {
+            en: "Apply transportation skills",
+            es: "Aplica habilidades de transporte",
+          },
+          xpRequired: 1790,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "transportation",
+              prompt: "Advanced transportation content and comprehension",
+            },
+            realtime: {
+              scenario: "transportation mastery",
+              prompt: "Demonstrate mastery of transportation",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-5-quiz",
+          title: {
+            en: "Transportation Quiz",
+            es: "Prueba de Transporte",
+          },
+          description: {
+            en: "Test your knowledge of transportation",
+            es: "Prueba tus conocimientos de transporte",
+          },
+          xpRequired: 1810,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "transportation",
+            },
+            grammar: {
+              topics: ["transportation structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-6",
+      title: {
+        en: "Directions",
+        es: "Direcciones",
+      },
+      description: {
+        en: "Find your way",
+        es: "Encuentra tu camino",
+      },
+      color: "#10B981",
+      position: { row: 2, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-6-1",
+          title: {
+            en: "Directions - Vocabulary",
+            es: "Direcciones - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for directions",
+            es: "Aprende vocabulario clave para direcciones",
+          },
+          xpRequired: 1850,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "directions",
+            },
+            grammar: {
+              topic: "directions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-6-2",
+          title: {
+            en: "Directions - Practice",
+            es: "Direcciones - Práctica",
+          },
+          description: {
+            en: "Practice directions in conversation",
+            es: "Practica direcciones en conversación",
+          },
+          xpRequired: 1870,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "directions conversation",
+              prompt: "Practice using directions in real conversation",
+            },
+            stories: {
+              topic: "directions",
+              prompt: "Read and discuss directions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-6-3",
+          title: {
+            en: "Directions - Application",
+            es: "Direcciones - Aplicación",
+          },
+          description: {
+            en: "Apply directions skills",
+            es: "Aplica habilidades de direcciones",
+          },
+          xpRequired: 1890,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "directions",
+              prompt: "Advanced directions content and comprehension",
+            },
+            realtime: {
+              scenario: "directions mastery",
+              prompt: "Demonstrate mastery of directions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-6-quiz",
+          title: {
+            en: "Directions Quiz",
+            es: "Prueba de Direcciones",
+          },
+          description: {
+            en: "Test your knowledge of directions",
+            es: "Prueba tus conocimientos de direcciones",
+          },
+          xpRequired: 1910,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "directions",
+            },
+            grammar: {
+              topics: ["directions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-7",
+      title: {
+        en: "Making Plans",
+        es: "Hacer Planes",
+      },
+      description: {
+        en: "Social arrangements",
+        es: "Arreglos sociales",
+      },
+      color: "#06B6D4",
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-7-1",
+          title: {
+            en: "Making Plans - Vocabulary",
+            es: "Hacer Planes - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for making plans",
+            es: "Aprende vocabulario clave para hacer planes",
+          },
+          xpRequired: 1950,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "invitations",
+            },
+            grammar: {
+              topic: "invitations structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-7-2",
+          title: {
+            en: "Making Plans - Practice",
+            es: "Hacer Planes - Práctica",
+          },
+          description: {
+            en: "Practice making plans in conversation",
+            es: "Practica hacer planes en conversación",
+          },
+          xpRequired: 1970,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "invitations conversation",
+              prompt: "Practice using invitations in real conversation",
+            },
+            stories: {
+              topic: "invitations",
+              prompt: "Read and discuss invitations",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-7-3",
+          title: {
+            en: "Making Plans - Application",
+            es: "Hacer Planes - Aplicación",
+          },
+          description: {
+            en: "Apply making plans skills",
+            es: "Aplica habilidades de hacer planes",
+          },
+          xpRequired: 1990,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "invitations",
+              prompt: "Advanced invitations content and comprehension",
+            },
+            realtime: {
+              scenario: "invitations mastery",
+              prompt: "Demonstrate mastery of invitations",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-7-quiz",
+          title: {
+            en: "Making Plans Quiz",
+            es: "Prueba de Hacer Planes",
+          },
+          description: {
+            en: "Test your knowledge of making plans",
+            es: "Prueba tus conocimientos de hacer planes",
+          },
+          xpRequired: 2010,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "invitations",
+            },
+            grammar: {
+              topics: ["invitations structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-8",
+      title: {
+        en: "Hobbies & Interests",
+        es: "Pasatiempos",
+      },
+      description: {
+        en: "Free time",
+        es: "Tiempo libre",
+      },
+      color: "#EF4444",
+      position: { row: 3, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-8-1",
+          title: {
+            en: "Hobbies & Interests - Vocabulary",
+            es: "Pasatiempos - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for hobbies & interests",
+            es: "Aprende vocabulario clave para pasatiempos",
+          },
+          xpRequired: 2050,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "arts and reading",
+            },
+            grammar: {
+              topic: "arts and reading structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-8-2",
+          title: {
+            en: "Hobbies & Interests - Practice",
+            es: "Pasatiempos - Práctica",
+          },
+          description: {
+            en: "Practice hobbies & interests in conversation",
+            es: "Practica pasatiempos en conversación",
+          },
+          xpRequired: 2070,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "arts and reading conversation",
+              prompt: "Practice using arts and reading in real conversation",
+            },
+            stories: {
+              topic: "arts and reading",
+              prompt: "Read and discuss arts and reading",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-8-3",
+          title: {
+            en: "Hobbies & Interests - Application",
+            es: "Pasatiempos - Aplicación",
+          },
+          description: {
+            en: "Apply hobbies & interests skills",
+            es: "Aplica habilidades de pasatiempos",
+          },
+          xpRequired: 2090,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "arts and reading",
+              prompt: "Advanced arts and reading content and comprehension",
+            },
+            realtime: {
+              scenario: "arts and reading mastery",
+              prompt: "Demonstrate mastery of arts and reading",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-8-quiz",
+          title: {
+            en: "Hobbies & Interests Quiz",
+            es: "Prueba de Pasatiempos",
+          },
+          description: {
+            en: "Test your knowledge of hobbies & interests",
+            es: "Prueba tus conocimientos de pasatiempos",
+          },
+          xpRequired: 2110,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "arts and reading",
+            },
+            grammar: {
+              topics: ["arts and reading structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-9",
+      title: {
+        en: "Sports & Exercise",
+        es: "Deportes",
+      },
+      description: {
+        en: "Athletic activities",
+        es: "Actividades atléticas",
+      },
+      color: "#F97316",
+      position: { row: 4, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-9-1",
+          title: {
+            en: "Sports & Exercise - Vocabulary",
+            es: "Deportes - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for sports & exercise",
+            es: "Aprende vocabulario clave para deportes",
+          },
+          xpRequired: 2150,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "sports",
+            },
+            grammar: {
+              topic: "sports structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-9-2",
+          title: {
+            en: "Sports & Exercise - Practice",
+            es: "Deportes - Práctica",
+          },
+          description: {
+            en: "Practice sports & exercise in conversation",
+            es: "Practica deportes en conversación",
+          },
+          xpRequired: 2170,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "sports conversation",
+              prompt: "Practice using sports in real conversation",
+            },
+            stories: {
+              topic: "sports",
+              prompt: "Read and discuss sports",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-9-3",
+          title: {
+            en: "Sports & Exercise - Application",
+            es: "Deportes - Aplicación",
+          },
+          description: {
+            en: "Apply sports & exercise skills",
+            es: "Aplica habilidades de deportes",
+          },
+          xpRequired: 2190,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "sports",
+              prompt: "Advanced sports content and comprehension",
+            },
+            realtime: {
+              scenario: "sports mastery",
+              prompt: "Demonstrate mastery of sports",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-9-quiz",
+          title: {
+            en: "Sports & Exercise Quiz",
+            es: "Prueba de Deportes",
+          },
+          description: {
+            en: "Test your knowledge of sports & exercise",
+            es: "Prueba tus conocimientos de deportes",
+          },
+          xpRequired: 2210,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "sports",
+            },
+            grammar: {
+              topics: ["sports structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-10",
+      title: {
+        en: "Past Tense Regular",
+        es: "Pasado Regular",
+      },
+      description: {
+        en: "Regular past verbs",
+        es: "Verbos pasados regulares",
+      },
+      color: "#84CC16",
+      position: { row: 4, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-10-1",
+          title: {
+            en: "Past Tense Regular - Vocabulary",
+            es: "Pasado Regular - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for past tense regular",
+            es: "Aprende vocabulario clave para pasado regular",
+          },
+          xpRequired: 2250,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topic: "time expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-10-2",
+          title: {
+            en: "Past Tense Regular - Practice",
+            es: "Pasado Regular - Práctica",
+          },
+          description: {
+            en: "Practice past tense regular in conversation",
+            es: "Practica pasado regular en conversación",
+          },
+          xpRequired: 2270,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "time expressions conversation",
+              prompt: "Practice using time expressions in real conversation",
+            },
+            stories: {
+              topic: "time expressions",
+              prompt: "Read and discuss time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-10-3",
+          title: {
+            en: "Past Tense Regular - Application",
+            es: "Pasado Regular - Aplicación",
+          },
+          description: {
+            en: "Apply past tense regular skills",
+            es: "Aplica habilidades de pasado regular",
+          },
+          xpRequired: 2290,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "time expressions",
+              prompt: "Advanced time expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "time expressions mastery",
+              prompt: "Demonstrate mastery of time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-10-quiz",
+          title: {
+            en: "Past Tense Regular Quiz",
+            es: "Prueba de Pasado Regular",
+          },
+          description: {
+            en: "Test your knowledge of past tense regular",
+            es: "Prueba tus conocimientos de pasado regular",
+          },
+          xpRequired: 2310,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topics: ["time expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-11",
+      title: {
+        en: "Past Tense Irregular",
+        es: "Pasado Irregular",
+      },
+      description: {
+        en: "Irregular verbs",
+        es: "Verbos irregulares",
+      },
+      color: "#14B8A6",
+      position: { row: 5, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-11-1",
+          title: {
+            en: "Past Tense Irregular - Vocabulary",
+            es: "Pasado Irregular - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for past tense irregular",
+            es: "Aprende vocabulario clave para pasado irregular",
+          },
+          xpRequired: 2350,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topic: "time expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-11-2",
+          title: {
+            en: "Past Tense Irregular - Practice",
+            es: "Pasado Irregular - Práctica",
+          },
+          description: {
+            en: "Practice past tense irregular in conversation",
+            es: "Practica pasado irregular en conversación",
+          },
+          xpRequired: 2370,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "time expressions conversation",
+              prompt: "Practice using time expressions in real conversation",
+            },
+            stories: {
+              topic: "time expressions",
+              prompt: "Read and discuss time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-11-3",
+          title: {
+            en: "Past Tense Irregular - Application",
+            es: "Pasado Irregular - Aplicación",
+          },
+          description: {
+            en: "Apply past tense irregular skills",
+            es: "Aplica habilidades de pasado irregular",
+          },
+          xpRequired: 2390,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "time expressions",
+              prompt: "Advanced time expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "time expressions mastery",
+              prompt: "Demonstrate mastery of time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-11-quiz",
+          title: {
+            en: "Past Tense Irregular Quiz",
+            es: "Prueba de Pasado Irregular",
+          },
+          description: {
+            en: "Test your knowledge of past tense irregular",
+            es: "Prueba tus conocimientos de pasado irregular",
+          },
+          xpRequired: 2410,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topics: ["time expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-12",
+      title: {
+        en: "Telling Stories",
+        es: "Contar Historias",
+      },
+      description: {
+        en: "Narrate events",
+        es: "Narra eventos",
+      },
+      color: "#A855F7",
+      position: { row: 5, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-12-1",
+          title: {
+            en: "Telling Stories - Vocabulary",
+            es: "Contar Historias - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for telling stories",
+            es: "Aprende vocabulario clave para contar historias",
+          },
+          xpRequired: 2450,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "narrative and storytelling",
+            },
+            grammar: {
+              topic: "narrative and storytelling structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-12-2",
+          title: {
+            en: "Telling Stories - Practice",
+            es: "Contar Historias - Práctica",
+          },
+          description: {
+            en: "Practice telling stories in conversation",
+            es: "Practica contar historias en conversación",
+          },
+          xpRequired: 2470,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "narrative and storytelling conversation",
+              prompt: "Practice using narrative and storytelling in real conversation",
+            },
+            stories: {
+              topic: "narrative and storytelling",
+              prompt: "Read and discuss narrative and storytelling",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-12-3",
+          title: {
+            en: "Telling Stories - Application",
+            es: "Contar Historias - Aplicación",
+          },
+          description: {
+            en: "Apply telling stories skills",
+            es: "Aplica habilidades de contar historias",
+          },
+          xpRequired: 2490,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "narrative and storytelling",
+              prompt: "Advanced narrative and storytelling content and comprehension",
+            },
+            realtime: {
+              scenario: "narrative and storytelling mastery",
+              prompt: "Demonstrate mastery of narrative and storytelling",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-12-quiz",
+          title: {
+            en: "Telling Stories Quiz",
+            es: "Prueba de Contar Historias",
+          },
+          description: {
+            en: "Test your knowledge of telling stories",
+            es: "Prueba tus conocimientos de contar historias",
+          },
+          xpRequired: 2510,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "narrative and storytelling",
+            },
+            grammar: {
+              topics: ["narrative and storytelling structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-13",
+      title: {
+        en: "Future Plans",
+        es: "Planes Futuros",
+      },
+      description: {
+        en: "Future intentions",
+        es: "Intenciones futuras",
+      },
+      color: "#DB2777",
+      position: { row: 6, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-13-1",
+          title: {
+            en: "Future Plans - Vocabulary",
+            es: "Planes Futuros - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for future plans",
+            es: "Aprende vocabulario clave para planes futuros",
+          },
+          xpRequired: 2550,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topic: "time expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-13-2",
+          title: {
+            en: "Future Plans - Practice",
+            es: "Planes Futuros - Práctica",
+          },
+          description: {
+            en: "Practice future plans in conversation",
+            es: "Practica planes futuros en conversación",
+          },
+          xpRequired: 2570,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "time expressions conversation",
+              prompt: "Practice using time expressions in real conversation",
+            },
+            stories: {
+              topic: "time expressions",
+              prompt: "Read and discuss time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-13-3",
+          title: {
+            en: "Future Plans - Application",
+            es: "Planes Futuros - Aplicación",
+          },
+          description: {
+            en: "Apply future plans skills",
+            es: "Aplica habilidades de planes futuros",
+          },
+          xpRequired: 2590,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "time expressions",
+              prompt: "Advanced time expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "time expressions mastery",
+              prompt: "Demonstrate mastery of time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-13-quiz",
+          title: {
+            en: "Future Plans Quiz",
+            es: "Prueba de Planes Futuros",
+          },
+          description: {
+            en: "Test your knowledge of future plans",
+            es: "Prueba tus conocimientos de planes futuros",
+          },
+          xpRequired: 2610,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topics: ["time expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-14",
+      title: {
+        en: "Health & Body",
+        es: "Salud y Cuerpo",
+      },
+      description: {
+        en: "Body and health",
+        es: "Cuerpo y salud",
+      },
+      color: "#0EA5E9",
+      position: { row: 6, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-14-1",
+          title: {
+            en: "Health & Body - Vocabulary",
+            es: "Salud y Cuerpo - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for health & body",
+            es: "Aprende vocabulario clave para salud y cuerpo",
+          },
+          xpRequired: 2650,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "body parts",
+            },
+            grammar: {
+              topic: "body parts structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-14-2",
+          title: {
+            en: "Health & Body - Practice",
+            es: "Salud y Cuerpo - Práctica",
+          },
+          description: {
+            en: "Practice health & body in conversation",
+            es: "Practica salud y cuerpo en conversación",
+          },
+          xpRequired: 2670,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "body parts conversation",
+              prompt: "Practice using body parts in real conversation",
+            },
+            stories: {
+              topic: "body parts",
+              prompt: "Read and discuss body parts",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-14-3",
+          title: {
+            en: "Health & Body - Application",
+            es: "Salud y Cuerpo - Aplicación",
+          },
+          description: {
+            en: "Apply health & body skills",
+            es: "Aplica habilidades de salud y cuerpo",
+          },
+          xpRequired: 2690,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "body parts",
+              prompt: "Advanced body parts content and comprehension",
+            },
+            realtime: {
+              scenario: "body parts mastery",
+              prompt: "Demonstrate mastery of body parts",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-14-quiz",
+          title: {
+            en: "Health & Body Quiz",
+            es: "Prueba de Salud y Cuerpo",
+          },
+          description: {
+            en: "Test your knowledge of health & body",
+            es: "Prueba tus conocimientos de salud y cuerpo",
+          },
+          xpRequired: 2710,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "body parts",
+            },
+            grammar: {
+              topics: ["body parts structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-15",
+      title: {
+        en: "At the Doctor's",
+        es: "En el Médico",
+      },
+      description: {
+        en: "Medical visits",
+        es: "Visitas médicas",
+      },
+      color: "#22C55E",
+      position: { row: 7, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-15-1",
+          title: {
+            en: "At the Doctor's - Vocabulary",
+            es: "En el Médico - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for at the doctor's",
+            es: "Aprende vocabulario clave para en el médico",
+          },
+          xpRequired: 2750,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "health",
+            },
+            grammar: {
+              topic: "health structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-15-2",
+          title: {
+            en: "At the Doctor's - Practice",
+            es: "En el Médico - Práctica",
+          },
+          description: {
+            en: "Practice at the doctor's in conversation",
+            es: "Practica en el médico en conversación",
+          },
+          xpRequired: 2770,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "health conversation",
+              prompt: "Practice using health in real conversation",
+            },
+            stories: {
+              topic: "health",
+              prompt: "Read and discuss health",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-15-3",
+          title: {
+            en: "At the Doctor's - Application",
+            es: "En el Médico - Aplicación",
+          },
+          description: {
+            en: "Apply at the doctor's skills",
+            es: "Aplica habilidades de en el médico",
+          },
+          xpRequired: 2790,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "health",
+              prompt: "Advanced health content and comprehension",
+            },
+            realtime: {
+              scenario: "health mastery",
+              prompt: "Demonstrate mastery of health",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-15-quiz",
+          title: {
+            en: "At the Doctor's Quiz",
+            es: "Prueba de En el Médico",
+          },
+          description: {
+            en: "Test your knowledge of at the doctor's",
+            es: "Prueba tus conocimientos de en el médico",
+          },
+          xpRequired: 2810,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "health",
+            },
+            grammar: {
+              topics: ["health structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-16",
+      title: {
+        en: "Jobs & Professions",
+        es: "Trabajos",
+      },
+      description: {
+        en: "Different careers",
+        es: "Diferentes carreras",
+      },
+      color: "#3B82F6",
+      position: { row: 7, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-16-1",
+          title: {
+            en: "Jobs & Professions - Vocabulary",
+            es: "Trabajos - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for jobs & professions",
+            es: "Aprende vocabulario clave para trabajos",
+          },
+          xpRequired: 2850,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "careers",
+            },
+            grammar: {
+              topic: "careers structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-16-2",
+          title: {
+            en: "Jobs & Professions - Practice",
+            es: "Trabajos - Práctica",
+          },
+          description: {
+            en: "Practice jobs & professions in conversation",
+            es: "Practica trabajos en conversación",
+          },
+          xpRequired: 2870,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "careers conversation",
+              prompt: "Practice using careers in real conversation",
+            },
+            stories: {
+              topic: "careers",
+              prompt: "Read and discuss careers",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-16-3",
+          title: {
+            en: "Jobs & Professions - Application",
+            es: "Trabajos - Aplicación",
+          },
+          description: {
+            en: "Apply jobs & professions skills",
+            es: "Aplica habilidades de trabajos",
+          },
+          xpRequired: 2890,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "careers",
+              prompt: "Advanced careers content and comprehension",
+            },
+            realtime: {
+              scenario: "careers mastery",
+              prompt: "Demonstrate mastery of careers",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-16-quiz",
+          title: {
+            en: "Jobs & Professions Quiz",
+            es: "Prueba de Trabajos",
+          },
+          description: {
+            en: "Test your knowledge of jobs & professions",
+            es: "Prueba tus conocimientos de trabajos",
+          },
+          xpRequired: 2910,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "careers",
+            },
+            grammar: {
+              topics: ["careers structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-17",
+      title: {
+        en: "School & Education",
+        es: "Escuela",
+      },
+      description: {
+        en: "Educational topics",
+        es: "Temas educativos",
+      },
+      color: "#F59E0B",
+      position: { row: 8, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-a2-17-1",
+          title: {
+            en: "School & Education - Vocabulary",
+            es: "Escuela - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for school & education",
+            es: "Aprende vocabulario clave para escuela",
+          },
+          xpRequired: 2950,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "education",
+            },
+            grammar: {
+              topic: "education structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-17-2",
+          title: {
+            en: "School & Education - Practice",
+            es: "Escuela - Práctica",
+          },
+          description: {
+            en: "Practice school & education in conversation",
+            es: "Practica escuela en conversación",
+          },
+          xpRequired: 2970,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "education conversation",
+              prompt: "Practice using education in real conversation",
+            },
+            stories: {
+              topic: "education",
+              prompt: "Read and discuss education",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-17-3",
+          title: {
+            en: "School & Education - Application",
+            es: "Escuela - Aplicación",
+          },
+          description: {
+            en: "Apply school & education skills",
+            es: "Aplica habilidades de escuela",
+          },
+          xpRequired: 2990,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "education",
+              prompt: "Advanced education content and comprehension",
+            },
+            realtime: {
+              scenario: "education mastery",
+              prompt: "Demonstrate mastery of education",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-17-quiz",
+          title: {
+            en: "School & Education Quiz",
+            es: "Prueba de Escuela",
+          },
+          description: {
+            en: "Test your knowledge of school & education",
+            es: "Prueba tus conocimientos de escuela",
+          },
+          xpRequired: 3010,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "education",
+            },
+            grammar: {
+              topics: ["education structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-a2-18",
+      title: {
+        en: "Technology Basics",
+        es: "Tecnología",
+      },
+      description: {
+        en: "Digital life",
+        es: "Vida digital",
+      },
+      color: "#8B5CF6",
+      position: { row: 8, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-a2-18-1",
+          title: {
+            en: "Technology Basics - Vocabulary",
+            es: "Tecnología - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for technology basics",
+            es: "Aprende vocabulario clave para tecnología",
+          },
+          xpRequired: 3050,
+          xpReward: 20,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "digital communication",
+            },
+            grammar: {
+              topic: "digital communication structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-a2-18-2",
+          title: {
+            en: "Technology Basics - Practice",
+            es: "Tecnología - Práctica",
+          },
+          description: {
+            en: "Practice technology basics in conversation",
+            es: "Practica tecnología en conversación",
+          },
+          xpRequired: 3070,
+          xpReward: 20,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "digital communication conversation",
+              prompt: "Practice using digital communication in real conversation",
+            },
+            stories: {
+              topic: "digital communication",
+              prompt: "Read and discuss digital communication",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-18-3",
+          title: {
+            en: "Technology Basics - Application",
+            es: "Tecnología - Aplicación",
+          },
+          description: {
+            en: "Apply technology basics skills",
+            es: "Aplica habilidades de tecnología",
+          },
+          xpRequired: 3090,
+          xpReward: 20,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "digital communication",
+              prompt: "Advanced digital communication content and comprehension",
+            },
+            realtime: {
+              scenario: "digital communication mastery",
+              prompt: "Demonstrate mastery of digital communication",
+            },
+          },
+        },
+        {
+          id: "lesson-a2-18-quiz",
+          title: {
+            en: "Technology Basics Quiz",
+            es: "Prueba de Tecnología",
+          },
+          description: {
+            en: "Test your knowledge of technology basics",
+            es: "Prueba tus conocimientos de tecnología",
+          },
+          xpRequired: 3110,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 8,
+            passingScore: 6,
+          },
+          content: {
+            vocabulary: {
+              topic: "digital communication",
+            },
+            grammar: {
+              topics: ["digital communication structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  B1: [
+    {
+      id: "unit-b1-1",
+      title: {
+        en: "Present Perfect",
+        es: "Pretérito Perfecto",
+      },
+      description: {
+        en: "Have done",
+        es: "He hecho",
+      },
+      color: "#22C55E",
+      position: { row: 0, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-1-1",
+          title: {
+            en: "Present Perfect - Vocabulary",
+            es: "Pretérito Perfecto - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for present perfect",
+            es: "Aprende vocabulario clave para pretérito perfecto",
+          },
+          xpRequired: 3150,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topic: "time expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-1-2",
+          title: {
+            en: "Present Perfect - Practice",
+            es: "Pretérito Perfecto - Práctica",
+          },
+          description: {
+            en: "Practice present perfect in conversation",
+            es: "Practica pretérito perfecto en conversación",
+          },
+          xpRequired: 3175,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "time expressions conversation",
+              prompt: "Practice using time expressions in real conversation",
+            },
+            stories: {
+              topic: "time expressions",
+              prompt: "Read and discuss time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-1-3",
+          title: {
+            en: "Present Perfect - Application",
+            es: "Pretérito Perfecto - Aplicación",
+          },
+          description: {
+            en: "Apply present perfect skills",
+            es: "Aplica habilidades de pretérito perfecto",
+          },
+          xpRequired: 3200,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "time expressions",
+              prompt: "Advanced time expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "time expressions mastery",
+              prompt: "Demonstrate mastery of time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-1-quiz",
+          title: {
+            en: "Present Perfect Quiz",
+            es: "Prueba de Pretérito Perfecto",
+          },
+          description: {
+            en: "Test your knowledge of present perfect",
+            es: "Prueba tus conocimientos de pretérito perfecto",
+          },
+          xpRequired: 3225,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topics: ["time expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-2",
+      title: {
+        en: "Past Continuous",
+        es: "Pasado Continuo",
+      },
+      description: {
+        en: "Was doing",
+        es: "Estaba haciendo",
+      },
+      color: "#3B82F6",
+      position: { row: 0, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b1-2-1",
+          title: {
+            en: "Past Continuous - Vocabulary",
+            es: "Pasado Continuo - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for past continuous",
+            es: "Aprende vocabulario clave para pasado continuo",
+          },
+          xpRequired: 3275,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topic: "time expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-2-2",
+          title: {
+            en: "Past Continuous - Practice",
+            es: "Pasado Continuo - Práctica",
+          },
+          description: {
+            en: "Practice past continuous in conversation",
+            es: "Practica pasado continuo en conversación",
+          },
+          xpRequired: 3300,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "time expressions conversation",
+              prompt: "Practice using time expressions in real conversation",
+            },
+            stories: {
+              topic: "time expressions",
+              prompt: "Read and discuss time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-2-3",
+          title: {
+            en: "Past Continuous - Application",
+            es: "Pasado Continuo - Aplicación",
+          },
+          description: {
+            en: "Apply past continuous skills",
+            es: "Aplica habilidades de pasado continuo",
+          },
+          xpRequired: 3325,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "time expressions",
+              prompt: "Advanced time expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "time expressions mastery",
+              prompt: "Demonstrate mastery of time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-2-quiz",
+          title: {
+            en: "Past Continuous Quiz",
+            es: "Prueba de Pasado Continuo",
+          },
+          description: {
+            en: "Test your knowledge of past continuous",
+            es: "Prueba tus conocimientos de pasado continuo",
+          },
+          xpRequired: 3350,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topics: ["time expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-3",
+      title: {
+        en: "Future Tense",
+        es: "Futuro",
+      },
+      description: {
+        en: "Will do",
+        es: "Haré",
+      },
+      color: "#F59E0B",
+      position: { row: 1, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-3-1",
+          title: {
+            en: "Future Tense - Vocabulary",
+            es: "Futuro - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for future tense",
+            es: "Aprende vocabulario clave para futuro",
+          },
+          xpRequired: 3400,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topic: "time expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-3-2",
+          title: {
+            en: "Future Tense - Practice",
+            es: "Futuro - Práctica",
+          },
+          description: {
+            en: "Practice future tense in conversation",
+            es: "Practica futuro en conversación",
+          },
+          xpRequired: 3425,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "time expressions conversation",
+              prompt: "Practice using time expressions in real conversation",
+            },
+            stories: {
+              topic: "time expressions",
+              prompt: "Read and discuss time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-3-3",
+          title: {
+            en: "Future Tense - Application",
+            es: "Futuro - Aplicación",
+          },
+          description: {
+            en: "Apply future tense skills",
+            es: "Aplica habilidades de futuro",
+          },
+          xpRequired: 3450,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "time expressions",
+              prompt: "Advanced time expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "time expressions mastery",
+              prompt: "Demonstrate mastery of time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-3-quiz",
+          title: {
+            en: "Future Tense Quiz",
+            es: "Prueba de Futuro",
+          },
+          description: {
+            en: "Test your knowledge of future tense",
+            es: "Prueba tus conocimientos de futuro",
+          },
+          xpRequired: 3475,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topics: ["time expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-4",
+      title: {
+        en: "Comparisons",
+        es: "Comparaciones",
+      },
+      description: {
+        en: "More, less, equal",
+        es: "Más, menos, igual",
+      },
+      color: "#8B5CF6",
+      position: { row: 1, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b1-4-1",
+          title: {
+            en: "Comparisons - Vocabulary",
+            es: "Comparaciones - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for comparisons",
+            es: "Aprende vocabulario clave para comparaciones",
+          },
+          xpRequired: 3525,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "comparisons",
+            },
+            grammar: {
+              topic: "comparisons structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-4-2",
+          title: {
+            en: "Comparisons - Practice",
+            es: "Comparaciones - Práctica",
+          },
+          description: {
+            en: "Practice comparisons in conversation",
+            es: "Practica comparaciones en conversación",
+          },
+          xpRequired: 3550,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "comparisons conversation",
+              prompt: "Practice using comparisons in real conversation",
+            },
+            stories: {
+              topic: "comparisons",
+              prompt: "Read and discuss comparisons",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-4-3",
+          title: {
+            en: "Comparisons - Application",
+            es: "Comparaciones - Aplicación",
+          },
+          description: {
+            en: "Apply comparisons skills",
+            es: "Aplica habilidades de comparaciones",
+          },
+          xpRequired: 3575,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "comparisons",
+              prompt: "Advanced comparisons content and comprehension",
+            },
+            realtime: {
+              scenario: "comparisons mastery",
+              prompt: "Demonstrate mastery of comparisons",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-4-quiz",
+          title: {
+            en: "Comparisons Quiz",
+            es: "Prueba de Comparaciones",
+          },
+          description: {
+            en: "Test your knowledge of comparisons",
+            es: "Prueba tus conocimientos de comparaciones",
+          },
+          xpRequired: 3600,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "comparisons",
+            },
+            grammar: {
+              topics: ["comparisons structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-5",
+      title: {
+        en: "Giving Advice",
+        es: "Dar Consejos",
+      },
+      description: {
+        en: "Should, must",
+        es: "Debería, debe",
+      },
+      color: "#EC4899",
+      position: { row: 2, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-5-1",
+          title: {
+            en: "Giving Advice - Vocabulary",
+            es: "Dar Consejos - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for giving advice",
+            es: "Aprende vocabulario clave para dar consejos",
+          },
+          xpRequired: 3650,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "advice and suggestions",
+            },
+            grammar: {
+              topic: "advice and suggestions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-5-2",
+          title: {
+            en: "Giving Advice - Practice",
+            es: "Dar Consejos - Práctica",
+          },
+          description: {
+            en: "Practice giving advice in conversation",
+            es: "Practica dar consejos en conversación",
+          },
+          xpRequired: 3675,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "advice and suggestions conversation",
+              prompt: "Practice using advice and suggestions in real conversation",
+            },
+            stories: {
+              topic: "advice and suggestions",
+              prompt: "Read and discuss advice and suggestions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-5-3",
+          title: {
+            en: "Giving Advice - Application",
+            es: "Dar Consejos - Aplicación",
+          },
+          description: {
+            en: "Apply giving advice skills",
+            es: "Aplica habilidades de dar consejos",
+          },
+          xpRequired: 3700,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "advice and suggestions",
+              prompt: "Advanced advice and suggestions content and comprehension",
+            },
+            realtime: {
+              scenario: "advice and suggestions mastery",
+              prompt: "Demonstrate mastery of advice and suggestions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-5-quiz",
+          title: {
+            en: "Giving Advice Quiz",
+            es: "Prueba de Dar Consejos",
+          },
+          description: {
+            en: "Test your knowledge of giving advice",
+            es: "Prueba tus conocimientos de dar consejos",
+          },
+          xpRequired: 3725,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "advice and suggestions",
+            },
+            grammar: {
+              topics: ["advice and suggestions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-6",
+      title: {
+        en: "Making Suggestions",
+        es: "Hacer Sugerencias",
+      },
+      description: {
+        en: "Let's, why don't we",
+        es: "Vamos, por qué no",
+      },
+      color: "#10B981",
+      position: { row: 2, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b1-6-1",
+          title: {
+            en: "Making Suggestions - Vocabulary",
+            es: "Hacer Sugerencias - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for making suggestions",
+            es: "Aprende vocabulario clave para hacer sugerencias",
+          },
+          xpRequired: 3775,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "advice and suggestions",
+            },
+            grammar: {
+              topic: "advice and suggestions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-6-2",
+          title: {
+            en: "Making Suggestions - Practice",
+            es: "Hacer Sugerencias - Práctica",
+          },
+          description: {
+            en: "Practice making suggestions in conversation",
+            es: "Practica hacer sugerencias en conversación",
+          },
+          xpRequired: 3800,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "advice and suggestions conversation",
+              prompt: "Practice using advice and suggestions in real conversation",
+            },
+            stories: {
+              topic: "advice and suggestions",
+              prompt: "Read and discuss advice and suggestions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-6-3",
+          title: {
+            en: "Making Suggestions - Application",
+            es: "Hacer Sugerencias - Aplicación",
+          },
+          description: {
+            en: "Apply making suggestions skills",
+            es: "Aplica habilidades de hacer sugerencias",
+          },
+          xpRequired: 3825,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "advice and suggestions",
+              prompt: "Advanced advice and suggestions content and comprehension",
+            },
+            realtime: {
+              scenario: "advice and suggestions mastery",
+              prompt: "Demonstrate mastery of advice and suggestions",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-6-quiz",
+          title: {
+            en: "Making Suggestions Quiz",
+            es: "Prueba de Hacer Sugerencias",
+          },
+          description: {
+            en: "Test your knowledge of making suggestions",
+            es: "Prueba tus conocimientos de hacer sugerencias",
+          },
+          xpRequired: 3850,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "advice and suggestions",
+            },
+            grammar: {
+              topics: ["advice and suggestions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-7",
+      title: {
+        en: "Conditional Would",
+        es: "Condicional",
+      },
+      description: {
+        en: "I would...",
+        es: "Yo haría...",
+      },
+      color: "#06B6D4",
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-7-1",
+          title: {
+            en: "Conditional Would - Vocabulary",
+            es: "Condicional - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for conditional would",
+            es: "Aprende vocabulario clave para condicional",
+          },
+          xpRequired: 3900,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "conditional",
+            },
+            grammar: {
+              topic: "conditional structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-7-2",
+          title: {
+            en: "Conditional Would - Practice",
+            es: "Condicional - Práctica",
+          },
+          description: {
+            en: "Practice conditional would in conversation",
+            es: "Practica condicional en conversación",
+          },
+          xpRequired: 3925,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "conditional conversation",
+              prompt: "Practice using conditional in real conversation",
+            },
+            stories: {
+              topic: "conditional",
+              prompt: "Read and discuss conditional",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-7-3",
+          title: {
+            en: "Conditional Would - Application",
+            es: "Condicional - Aplicación",
+          },
+          description: {
+            en: "Apply conditional would skills",
+            es: "Aplica habilidades de condicional",
+          },
+          xpRequired: 3950,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "conditional",
+              prompt: "Advanced conditional content and comprehension",
+            },
+            realtime: {
+              scenario: "conditional mastery",
+              prompt: "Demonstrate mastery of conditional",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-7-quiz",
+          title: {
+            en: "Conditional Would Quiz",
+            es: "Prueba de Condicional",
+          },
+          description: {
+            en: "Test your knowledge of conditional would",
+            es: "Prueba tus conocimientos de condicional",
+          },
+          xpRequired: 3975,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "conditional",
+            },
+            grammar: {
+              topics: ["conditional structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-8",
+      title: {
+        en: "Travel & Tourism",
+        es: "Viajes y Turismo",
+      },
+      description: {
+        en: "Traveling abroad",
+        es: "Viajar al extranjero",
+      },
+      color: "#EF4444",
+      position: { row: 3, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b1-8-1",
+          title: {
+            en: "Travel & Tourism - Vocabulary",
+            es: "Viajes y Turismo - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for travel & tourism",
+            es: "Aprende vocabulario clave para viajes y turismo",
+          },
+          xpRequired: 4025,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "travel",
+            },
+            grammar: {
+              topic: "travel structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-8-2",
+          title: {
+            en: "Travel & Tourism - Practice",
+            es: "Viajes y Turismo - Práctica",
+          },
+          description: {
+            en: "Practice travel & tourism in conversation",
+            es: "Practica viajes y turismo en conversación",
+          },
+          xpRequired: 4050,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "travel conversation",
+              prompt: "Practice using travel in real conversation",
+            },
+            stories: {
+              topic: "travel",
+              prompt: "Read and discuss travel",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-8-3",
+          title: {
+            en: "Travel & Tourism - Application",
+            es: "Viajes y Turismo - Aplicación",
+          },
+          description: {
+            en: "Apply travel & tourism skills",
+            es: "Aplica habilidades de viajes y turismo",
+          },
+          xpRequired: 4075,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "travel",
+              prompt: "Advanced travel content and comprehension",
+            },
+            realtime: {
+              scenario: "travel mastery",
+              prompt: "Demonstrate mastery of travel",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-8-quiz",
+          title: {
+            en: "Travel & Tourism Quiz",
+            es: "Prueba de Viajes y Turismo",
+          },
+          description: {
+            en: "Test your knowledge of travel & tourism",
+            es: "Prueba tus conocimientos de viajes y turismo",
+          },
+          xpRequired: 4100,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "travel",
+            },
+            grammar: {
+              topics: ["travel structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-9",
+      title: {
+        en: "Environment",
+        es: "Medio Ambiente",
+      },
+      description: {
+        en: "Nature and ecology",
+        es: "Naturaleza y ecología",
+      },
+      color: "#F97316",
+      position: { row: 4, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-9-1",
+          title: {
+            en: "Environment - Vocabulary",
+            es: "Medio Ambiente - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for environment",
+            es: "Aprende vocabulario clave para medio ambiente",
+          },
+          xpRequired: 4150,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "environment",
+            },
+            grammar: {
+              topic: "environment structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-9-2",
+          title: {
+            en: "Environment - Practice",
+            es: "Medio Ambiente - Práctica",
+          },
+          description: {
+            en: "Practice environment in conversation",
+            es: "Practica medio ambiente en conversación",
+          },
+          xpRequired: 4175,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "environment conversation",
+              prompt: "Practice using environment in real conversation",
+            },
+            stories: {
+              topic: "environment",
+              prompt: "Read and discuss environment",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-9-3",
+          title: {
+            en: "Environment - Application",
+            es: "Medio Ambiente - Aplicación",
+          },
+          description: {
+            en: "Apply environment skills",
+            es: "Aplica habilidades de medio ambiente",
+          },
+          xpRequired: 4200,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "environment",
+              prompt: "Advanced environment content and comprehension",
+            },
+            realtime: {
+              scenario: "environment mastery",
+              prompt: "Demonstrate mastery of environment",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-9-quiz",
+          title: {
+            en: "Environment Quiz",
+            es: "Prueba de Medio Ambiente",
+          },
+          description: {
+            en: "Test your knowledge of environment",
+            es: "Prueba tus conocimientos de medio ambiente",
+          },
+          xpRequired: 4225,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "environment",
+            },
+            grammar: {
+              topics: ["environment structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-10",
+      title: {
+        en: "Culture & Traditions",
+        es: "Cultura y Tradiciones",
+      },
+      description: {
+        en: "Cultural practices",
+        es: "Prácticas culturales",
+      },
+      color: "#84CC16",
+      position: { row: 4, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b1-10-1",
+          title: {
+            en: "Culture & Traditions - Vocabulary",
+            es: "Cultura y Tradiciones - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for culture & traditions",
+            es: "Aprende vocabulario clave para cultura y tradiciones",
+          },
+          xpRequired: 4275,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "culture",
+            },
+            grammar: {
+              topic: "culture structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-10-2",
+          title: {
+            en: "Culture & Traditions - Practice",
+            es: "Cultura y Tradiciones - Práctica",
+          },
+          description: {
+            en: "Practice culture & traditions in conversation",
+            es: "Practica cultura y tradiciones en conversación",
+          },
+          xpRequired: 4300,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "culture conversation",
+              prompt: "Practice using culture in real conversation",
+            },
+            stories: {
+              topic: "culture",
+              prompt: "Read and discuss culture",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-10-3",
+          title: {
+            en: "Culture & Traditions - Application",
+            es: "Cultura y Tradiciones - Aplicación",
+          },
+          description: {
+            en: "Apply culture & traditions skills",
+            es: "Aplica habilidades de cultura y tradiciones",
+          },
+          xpRequired: 4325,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "culture",
+              prompt: "Advanced culture content and comprehension",
+            },
+            realtime: {
+              scenario: "culture mastery",
+              prompt: "Demonstrate mastery of culture",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-10-quiz",
+          title: {
+            en: "Culture & Traditions Quiz",
+            es: "Prueba de Cultura y Tradiciones",
+          },
+          description: {
+            en: "Test your knowledge of culture & traditions",
+            es: "Prueba tus conocimientos de cultura y tradiciones",
+          },
+          xpRequired: 4350,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "culture",
+            },
+            grammar: {
+              topics: ["culture structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-11",
+      title: {
+        en: "Media & News",
+        es: "Medios y Noticias",
+      },
+      description: {
+        en: "News and media",
+        es: "Noticias y medios",
+      },
+      color: "#14B8A6",
+      position: { row: 5, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-11-1",
+          title: {
+            en: "Media & News - Vocabulary",
+            es: "Medios y Noticias - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for media & news",
+            es: "Aprende vocabulario clave para medios y noticias",
+          },
+          xpRequired: 4400,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "current events",
+            },
+            grammar: {
+              topic: "current events structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-11-2",
+          title: {
+            en: "Media & News - Practice",
+            es: "Medios y Noticias - Práctica",
+          },
+          description: {
+            en: "Practice media & news in conversation",
+            es: "Practica medios y noticias en conversación",
+          },
+          xpRequired: 4425,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "current events conversation",
+              prompt: "Practice using current events in real conversation",
+            },
+            stories: {
+              topic: "current events",
+              prompt: "Read and discuss current events",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-11-3",
+          title: {
+            en: "Media & News - Application",
+            es: "Medios y Noticias - Aplicación",
+          },
+          description: {
+            en: "Apply media & news skills",
+            es: "Aplica habilidades de medios y noticias",
+          },
+          xpRequired: 4450,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "current events",
+              prompt: "Advanced current events content and comprehension",
+            },
+            realtime: {
+              scenario: "current events mastery",
+              prompt: "Demonstrate mastery of current events",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-11-quiz",
+          title: {
+            en: "Media & News Quiz",
+            es: "Prueba de Medios y Noticias",
+          },
+          description: {
+            en: "Test your knowledge of media & news",
+            es: "Prueba tus conocimientos de medios y noticias",
+          },
+          xpRequired: 4475,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "current events",
+            },
+            grammar: {
+              topics: ["current events structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-12",
+      title: {
+        en: "Expressing Opinions",
+        es: "Expresar Opiniones",
+      },
+      description: {
+        en: "I think that...",
+        es: "Creo que...",
+      },
+      color: "#A855F7",
+      position: { row: 5, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b1-12-1",
+          title: {
+            en: "Expressing Opinions - Vocabulary",
+            es: "Expresar Opiniones - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for expressing opinions",
+            es: "Aprende vocabulario clave para expresar opiniones",
+          },
+          xpRequired: 4525,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "opinions and debate",
+            },
+            grammar: {
+              topic: "opinions and debate structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-12-2",
+          title: {
+            en: "Expressing Opinions - Practice",
+            es: "Expresar Opiniones - Práctica",
+          },
+          description: {
+            en: "Practice expressing opinions in conversation",
+            es: "Practica expresar opiniones en conversación",
+          },
+          xpRequired: 4550,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "opinions and debate conversation",
+              prompt: "Practice using opinions and debate in real conversation",
+            },
+            stories: {
+              topic: "opinions and debate",
+              prompt: "Read and discuss opinions and debate",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-12-3",
+          title: {
+            en: "Expressing Opinions - Application",
+            es: "Expresar Opiniones - Aplicación",
+          },
+          description: {
+            en: "Apply expressing opinions skills",
+            es: "Aplica habilidades de expresar opiniones",
+          },
+          xpRequired: 4575,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "opinions and debate",
+              prompt: "Advanced opinions and debate content and comprehension",
+            },
+            realtime: {
+              scenario: "opinions and debate mastery",
+              prompt: "Demonstrate mastery of opinions and debate",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-12-quiz",
+          title: {
+            en: "Expressing Opinions Quiz",
+            es: "Prueba de Expresar Opiniones",
+          },
+          description: {
+            en: "Test your knowledge of expressing opinions",
+            es: "Prueba tus conocimientos de expresar opiniones",
+          },
+          xpRequired: 4600,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "opinions and debate",
+            },
+            grammar: {
+              topics: ["opinions and debate structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-13",
+      title: {
+        en: "Making Complaints",
+        es: "Quejas",
+      },
+      description: {
+        en: "Express dissatisfaction",
+        es: "Expresar insatisfacción",
+      },
+      color: "#DB2777",
+      position: { row: 6, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-13-1",
+          title: {
+            en: "Making Complaints - Vocabulary",
+            es: "Quejas - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for making complaints",
+            es: "Aprende vocabulario clave para quejas",
+          },
+          xpRequired: 4650,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "complaints",
+            },
+            grammar: {
+              topic: "complaints structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-13-2",
+          title: {
+            en: "Making Complaints - Practice",
+            es: "Quejas - Práctica",
+          },
+          description: {
+            en: "Practice making complaints in conversation",
+            es: "Practica quejas en conversación",
+          },
+          xpRequired: 4675,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "complaints conversation",
+              prompt: "Practice using complaints in real conversation",
+            },
+            stories: {
+              topic: "complaints",
+              prompt: "Read and discuss complaints",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-13-3",
+          title: {
+            en: "Making Complaints - Application",
+            es: "Quejas - Aplicación",
+          },
+          description: {
+            en: "Apply making complaints skills",
+            es: "Aplica habilidades de quejas",
+          },
+          xpRequired: 4700,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "complaints",
+              prompt: "Advanced complaints content and comprehension",
+            },
+            realtime: {
+              scenario: "complaints mastery",
+              prompt: "Demonstrate mastery of complaints",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-13-quiz",
+          title: {
+            en: "Making Complaints Quiz",
+            es: "Prueba de Quejas",
+          },
+          description: {
+            en: "Test your knowledge of making complaints",
+            es: "Prueba tus conocimientos de quejas",
+          },
+          xpRequired: 4725,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "complaints",
+            },
+            grammar: {
+              topics: ["complaints structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-14",
+      title: {
+        en: "Experiences",
+        es: "Experiencias",
+      },
+      description: {
+        en: "Life experiences",
+        es: "Experiencias de vida",
+      },
+      color: "#0EA5E9",
+      position: { row: 6, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b1-14-1",
+          title: {
+            en: "Experiences - Vocabulary",
+            es: "Experiencias - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for experiences",
+            es: "Aprende vocabulario clave para experiencias",
+          },
+          xpRequired: 4775,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "experiences",
+            },
+            grammar: {
+              topic: "experiences structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-14-2",
+          title: {
+            en: "Experiences - Practice",
+            es: "Experiencias - Práctica",
+          },
+          description: {
+            en: "Practice experiences in conversation",
+            es: "Practica experiencias en conversación",
+          },
+          xpRequired: 4800,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "experiences conversation",
+              prompt: "Practice using experiences in real conversation",
+            },
+            stories: {
+              topic: "experiences",
+              prompt: "Read and discuss experiences",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-14-3",
+          title: {
+            en: "Experiences - Application",
+            es: "Experiencias - Aplicación",
+          },
+          description: {
+            en: "Apply experiences skills",
+            es: "Aplica habilidades de experiencias",
+          },
+          xpRequired: 4825,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "experiences",
+              prompt: "Advanced experiences content and comprehension",
+            },
+            realtime: {
+              scenario: "experiences mastery",
+              prompt: "Demonstrate mastery of experiences",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-14-quiz",
+          title: {
+            en: "Experiences Quiz",
+            es: "Prueba de Experiencias",
+          },
+          description: {
+            en: "Test your knowledge of experiences",
+            es: "Prueba tus conocimientos de experiencias",
+          },
+          xpRequired: 4850,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "experiences",
+            },
+            grammar: {
+              topics: ["experiences structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b1-15",
+      title: {
+        en: "Probability",
+        es: "Probabilidad",
+      },
+      description: {
+        en: "Maybe, might",
+        es: "Quizás, podría",
+      },
+      color: "#22C55E",
+      position: { row: 7, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b1-15-1",
+          title: {
+            en: "Probability - Vocabulary",
+            es: "Probabilidad - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for probability",
+            es: "Aprende vocabulario clave para probabilidad",
+          },
+          xpRequired: 4900,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "probability",
+            },
+            grammar: {
+              topic: "probability structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b1-15-2",
+          title: {
+            en: "Probability - Practice",
+            es: "Probabilidad - Práctica",
+          },
+          description: {
+            en: "Practice probability in conversation",
+            es: "Practica probabilidad en conversación",
+          },
+          xpRequired: 4925,
+          xpReward: 25,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "probability conversation",
+              prompt: "Practice using probability in real conversation",
+            },
+            stories: {
+              topic: "probability",
+              prompt: "Read and discuss probability",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-15-3",
+          title: {
+            en: "Probability - Application",
+            es: "Probabilidad - Aplicación",
+          },
+          description: {
+            en: "Apply probability skills",
+            es: "Aplica habilidades de probabilidad",
+          },
+          xpRequired: 4950,
+          xpReward: 25,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "probability",
+              prompt: "Advanced probability content and comprehension",
+            },
+            realtime: {
+              scenario: "probability mastery",
+              prompt: "Demonstrate mastery of probability",
+            },
+          },
+        },
+        {
+          id: "lesson-b1-15-quiz",
+          title: {
+            en: "Probability Quiz",
+            es: "Prueba de Probabilidad",
+          },
+          description: {
+            en: "Test your knowledge of probability",
+            es: "Prueba tus conocimientos de probabilidad",
+          },
+          xpRequired: 4975,
+          xpReward: 50,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "probability",
+            },
+            grammar: {
+              topics: ["probability structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  B2: [
+    {
+      id: "unit-b2-1",
+      title: {
+        en: "Past Perfect",
+        es: "Pluscuamperfecto",
+      },
+      description: {
+        en: "Had done",
+        es: "Había hecho",
+      },
+      color: "#22C55E",
+      position: { row: 0, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b2-1-1",
+          title: {
+            en: "Past Perfect - Vocabulary",
+            es: "Pluscuamperfecto - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for past perfect",
+            es: "Aprende vocabulario clave para pluscuamperfecto",
+          },
+          xpRequired: 5025,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topic: "time expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-1-2",
+          title: {
+            en: "Past Perfect - Practice",
+            es: "Pluscuamperfecto - Práctica",
+          },
+          description: {
+            en: "Practice past perfect in conversation",
+            es: "Practica pluscuamperfecto en conversación",
+          },
+          xpRequired: 5055,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "time expressions conversation",
+              prompt: "Practice using time expressions in real conversation",
+            },
+            stories: {
+              topic: "time expressions",
+              prompt: "Read and discuss time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-1-3",
+          title: {
+            en: "Past Perfect - Application",
+            es: "Pluscuamperfecto - Aplicación",
+          },
+          description: {
+            en: "Apply past perfect skills",
+            es: "Aplica habilidades de pluscuamperfecto",
+          },
+          xpRequired: 5085,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "time expressions",
+              prompt: "Advanced time expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "time expressions mastery",
+              prompt: "Demonstrate mastery of time expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-1-quiz",
+          title: {
+            en: "Past Perfect Quiz",
+            es: "Prueba de Pluscuamperfecto",
+          },
+          description: {
+            en: "Test your knowledge of past perfect",
+            es: "Prueba tus conocimientos de pluscuamperfecto",
+          },
+          xpRequired: 5115,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "time expressions",
+            },
+            grammar: {
+              topics: ["time expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-2",
+      title: {
+        en: "Passive Voice",
+        es: "Voz Pasiva",
+      },
+      description: {
+        en: "Is done by",
+        es: "Es hecho por",
+      },
+      color: "#3B82F6",
+      position: { row: 0, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b2-2-1",
+          title: {
+            en: "Passive Voice - Vocabulary",
+            es: "Voz Pasiva - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for passive voice",
+            es: "Aprende vocabulario clave para voz pasiva",
+          },
+          xpRequired: 5175,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "passive",
+            },
+            grammar: {
+              topic: "passive structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-2-2",
+          title: {
+            en: "Passive Voice - Practice",
+            es: "Voz Pasiva - Práctica",
+          },
+          description: {
+            en: "Practice passive voice in conversation",
+            es: "Practica voz pasiva en conversación",
+          },
+          xpRequired: 5205,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "passive conversation",
+              prompt: "Practice using passive in real conversation",
+            },
+            stories: {
+              topic: "passive",
+              prompt: "Read and discuss passive",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-2-3",
+          title: {
+            en: "Passive Voice - Application",
+            es: "Voz Pasiva - Aplicación",
+          },
+          description: {
+            en: "Apply passive voice skills",
+            es: "Aplica habilidades de voz pasiva",
+          },
+          xpRequired: 5235,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "passive",
+              prompt: "Advanced passive content and comprehension",
+            },
+            realtime: {
+              scenario: "passive mastery",
+              prompt: "Demonstrate mastery of passive",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-2-quiz",
+          title: {
+            en: "Passive Voice Quiz",
+            es: "Prueba de Voz Pasiva",
+          },
+          description: {
+            en: "Test your knowledge of passive voice",
+            es: "Prueba tus conocimientos de voz pasiva",
+          },
+          xpRequired: 5265,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "passive",
+            },
+            grammar: {
+              topics: ["passive structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-3",
+      title: {
+        en: "Reported Speech",
+        es: "Discurso Indirecto",
+      },
+      description: {
+        en: "He said that...",
+        es: "Él dijo que...",
+      },
+      color: "#F59E0B",
+      position: { row: 1, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b2-3-1",
+          title: {
+            en: "Reported Speech - Vocabulary",
+            es: "Discurso Indirecto - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for reported speech",
+            es: "Aprende vocabulario clave para discurso indirecto",
+          },
+          xpRequired: 5325,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "narrative and storytelling",
+            },
+            grammar: {
+              topic: "narrative and storytelling structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-3-2",
+          title: {
+            en: "Reported Speech - Practice",
+            es: "Discurso Indirecto - Práctica",
+          },
+          description: {
+            en: "Practice reported speech in conversation",
+            es: "Practica discurso indirecto en conversación",
+          },
+          xpRequired: 5355,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "narrative and storytelling conversation",
+              prompt: "Practice using narrative and storytelling in real conversation",
+            },
+            stories: {
+              topic: "narrative and storytelling",
+              prompt: "Read and discuss narrative and storytelling",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-3-3",
+          title: {
+            en: "Reported Speech - Application",
+            es: "Discurso Indirecto - Aplicación",
+          },
+          description: {
+            en: "Apply reported speech skills",
+            es: "Aplica habilidades de discurso indirecto",
+          },
+          xpRequired: 5385,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "narrative and storytelling",
+              prompt: "Advanced narrative and storytelling content and comprehension",
+            },
+            realtime: {
+              scenario: "narrative and storytelling mastery",
+              prompt: "Demonstrate mastery of narrative and storytelling",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-3-quiz",
+          title: {
+            en: "Reported Speech Quiz",
+            es: "Prueba de Discurso Indirecto",
+          },
+          description: {
+            en: "Test your knowledge of reported speech",
+            es: "Prueba tus conocimientos de discurso indirecto",
+          },
+          xpRequired: 5415,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "narrative and storytelling",
+            },
+            grammar: {
+              topics: ["narrative and storytelling structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-4",
+      title: {
+        en: "Relative Clauses",
+        es: "Cláusulas Relativas",
+      },
+      description: {
+        en: "Who, which, that",
+        es: "Que, quien",
+      },
+      color: "#8B5CF6",
+      position: { row: 1, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b2-4-1",
+          title: {
+            en: "Relative Clauses - Vocabulary",
+            es: "Cláusulas Relativas - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for relative clauses",
+            es: "Aprende vocabulario clave para cláusulas relativas",
+          },
+          xpRequired: 5475,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "relative clauses",
+            },
+            grammar: {
+              topic: "relative clauses structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-4-2",
+          title: {
+            en: "Relative Clauses - Practice",
+            es: "Cláusulas Relativas - Práctica",
+          },
+          description: {
+            en: "Practice relative clauses in conversation",
+            es: "Practica cláusulas relativas en conversación",
+          },
+          xpRequired: 5505,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "relative clauses conversation",
+              prompt: "Practice using relative clauses in real conversation",
+            },
+            stories: {
+              topic: "relative clauses",
+              prompt: "Read and discuss relative clauses",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-4-3",
+          title: {
+            en: "Relative Clauses - Application",
+            es: "Cláusulas Relativas - Aplicación",
+          },
+          description: {
+            en: "Apply relative clauses skills",
+            es: "Aplica habilidades de cláusulas relativas",
+          },
+          xpRequired: 5535,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "relative clauses",
+              prompt: "Advanced relative clauses content and comprehension",
+            },
+            realtime: {
+              scenario: "relative clauses mastery",
+              prompt: "Demonstrate mastery of relative clauses",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-4-quiz",
+          title: {
+            en: "Relative Clauses Quiz",
+            es: "Prueba de Cláusulas Relativas",
+          },
+          description: {
+            en: "Test your knowledge of relative clauses",
+            es: "Prueba tus conocimientos de cláusulas relativas",
+          },
+          xpRequired: 5565,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "relative clauses",
+            },
+            grammar: {
+              topics: ["relative clauses structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-5",
+      title: {
+        en: "Formal vs Informal",
+        es: "Formal e Informal",
+      },
+      description: {
+        en: "Register switching",
+        es: "Cambio de registro",
+      },
+      color: "#EC4899",
+      position: { row: 2, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b2-5-1",
+          title: {
+            en: "Formal vs Informal - Vocabulary",
+            es: "Formal e Informal - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for formal vs informal",
+            es: "Aprende vocabulario clave para formal e informal",
+          },
+          xpRequired: 5625,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "register",
+            },
+            grammar: {
+              topic: "register structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-5-2",
+          title: {
+            en: "Formal vs Informal - Practice",
+            es: "Formal e Informal - Práctica",
+          },
+          description: {
+            en: "Practice formal vs informal in conversation",
+            es: "Practica formal e informal en conversación",
+          },
+          xpRequired: 5655,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "register conversation",
+              prompt: "Practice using register in real conversation",
+            },
+            stories: {
+              topic: "register",
+              prompt: "Read and discuss register",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-5-3",
+          title: {
+            en: "Formal vs Informal - Application",
+            es: "Formal e Informal - Aplicación",
+          },
+          description: {
+            en: "Apply formal vs informal skills",
+            es: "Aplica habilidades de formal e informal",
+          },
+          xpRequired: 5685,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "register",
+              prompt: "Advanced register content and comprehension",
+            },
+            realtime: {
+              scenario: "register mastery",
+              prompt: "Demonstrate mastery of register",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-5-quiz",
+          title: {
+            en: "Formal vs Informal Quiz",
+            es: "Prueba de Formal e Informal",
+          },
+          description: {
+            en: "Test your knowledge of formal vs informal",
+            es: "Prueba tus conocimientos de formal e informal",
+          },
+          xpRequired: 5715,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "register",
+            },
+            grammar: {
+              topics: ["register structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-6",
+      title: {
+        en: "Business Spanish",
+        es: "Español de Negocios",
+      },
+      description: {
+        en: "Professional language",
+        es: "Lenguaje profesional",
+      },
+      color: "#10B981",
+      position: { row: 2, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b2-6-1",
+          title: {
+            en: "Business Spanish - Vocabulary",
+            es: "Español de Negocios - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for business spanish",
+            es: "Aprende vocabulario clave para español de negocios",
+          },
+          xpRequired: 5775,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "professional",
+            },
+            grammar: {
+              topic: "professional structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-6-2",
+          title: {
+            en: "Business Spanish - Practice",
+            es: "Español de Negocios - Práctica",
+          },
+          description: {
+            en: "Practice business spanish in conversation",
+            es: "Practica español de negocios en conversación",
+          },
+          xpRequired: 5805,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "professional conversation",
+              prompt: "Practice using professional in real conversation",
+            },
+            stories: {
+              topic: "professional",
+              prompt: "Read and discuss professional",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-6-3",
+          title: {
+            en: "Business Spanish - Application",
+            es: "Español de Negocios - Aplicación",
+          },
+          description: {
+            en: "Apply business spanish skills",
+            es: "Aplica habilidades de español de negocios",
+          },
+          xpRequired: 5835,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "professional",
+              prompt: "Advanced professional content and comprehension",
+            },
+            realtime: {
+              scenario: "professional mastery",
+              prompt: "Demonstrate mastery of professional",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-6-quiz",
+          title: {
+            en: "Business Spanish Quiz",
+            es: "Prueba de Español de Negocios",
+          },
+          description: {
+            en: "Test your knowledge of business spanish",
+            es: "Prueba tus conocimientos de español de negocios",
+          },
+          xpRequired: 5865,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "professional",
+            },
+            grammar: {
+              topics: ["professional structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-7",
+      title: {
+        en: "Science & Innovation",
+        es: "Ciencia e Innovación",
+      },
+      description: {
+        en: "Scientific topics",
+        es: "Temas científicos",
+      },
+      color: "#06B6D4",
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b2-7-1",
+          title: {
+            en: "Science & Innovation - Vocabulary",
+            es: "Ciencia e Innovación - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for science & innovation",
+            es: "Aprende vocabulario clave para ciencia e innovación",
+          },
+          xpRequired: 5925,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "science",
+            },
+            grammar: {
+              topic: "science structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-7-2",
+          title: {
+            en: "Science & Innovation - Practice",
+            es: "Ciencia e Innovación - Práctica",
+          },
+          description: {
+            en: "Practice science & innovation in conversation",
+            es: "Practica ciencia e innovación en conversación",
+          },
+          xpRequired: 5955,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "science conversation",
+              prompt: "Practice using science in real conversation",
+            },
+            stories: {
+              topic: "science",
+              prompt: "Read and discuss science",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-7-3",
+          title: {
+            en: "Science & Innovation - Application",
+            es: "Ciencia e Innovación - Aplicación",
+          },
+          description: {
+            en: "Apply science & innovation skills",
+            es: "Aplica habilidades de ciencia e innovación",
+          },
+          xpRequired: 5985,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "science",
+              prompt: "Advanced science content and comprehension",
+            },
+            realtime: {
+              scenario: "science mastery",
+              prompt: "Demonstrate mastery of science",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-7-quiz",
+          title: {
+            en: "Science & Innovation Quiz",
+            es: "Prueba de Ciencia e Innovación",
+          },
+          description: {
+            en: "Test your knowledge of science & innovation",
+            es: "Prueba tus conocimientos de ciencia e innovación",
+          },
+          xpRequired: 6015,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "science",
+            },
+            grammar: {
+              topics: ["science structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-8",
+      title: {
+        en: "Social Issues",
+        es: "Problemas Sociales",
+      },
+      description: {
+        en: "Society and issues",
+        es: "Sociedad y problemas",
+      },
+      color: "#EF4444",
+      position: { row: 3, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b2-8-1",
+          title: {
+            en: "Social Issues - Vocabulary",
+            es: "Problemas Sociales - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for social issues",
+            es: "Aprende vocabulario clave para problemas sociales",
+          },
+          xpRequired: 6075,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "social justice",
+            },
+            grammar: {
+              topic: "social justice structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-8-2",
+          title: {
+            en: "Social Issues - Practice",
+            es: "Problemas Sociales - Práctica",
+          },
+          description: {
+            en: "Practice social issues in conversation",
+            es: "Practica problemas sociales en conversación",
+          },
+          xpRequired: 6105,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "social justice conversation",
+              prompt: "Practice using social justice in real conversation",
+            },
+            stories: {
+              topic: "social justice",
+              prompt: "Read and discuss social justice",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-8-3",
+          title: {
+            en: "Social Issues - Application",
+            es: "Problemas Sociales - Aplicación",
+          },
+          description: {
+            en: "Apply social issues skills",
+            es: "Aplica habilidades de problemas sociales",
+          },
+          xpRequired: 6135,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "social justice",
+              prompt: "Advanced social justice content and comprehension",
+            },
+            realtime: {
+              scenario: "social justice mastery",
+              prompt: "Demonstrate mastery of social justice",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-8-quiz",
+          title: {
+            en: "Social Issues Quiz",
+            es: "Prueba de Problemas Sociales",
+          },
+          description: {
+            en: "Test your knowledge of social issues",
+            es: "Prueba tus conocimientos de problemas sociales",
+          },
+          xpRequired: 6165,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "social justice",
+            },
+            grammar: {
+              topics: ["social justice structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-9",
+      title: {
+        en: "Arts & Literature",
+        es: "Artes y Literatura",
+      },
+      description: {
+        en: "Cultural works",
+        es: "Obras culturales",
+      },
+      color: "#F97316",
+      position: { row: 4, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b2-9-1",
+          title: {
+            en: "Arts & Literature - Vocabulary",
+            es: "Artes y Literatura - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for arts & literature",
+            es: "Aprende vocabulario clave para artes y literatura",
+          },
+          xpRequired: 6225,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "literature",
+            },
+            grammar: {
+              topic: "literature structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-9-2",
+          title: {
+            en: "Arts & Literature - Practice",
+            es: "Artes y Literatura - Práctica",
+          },
+          description: {
+            en: "Practice arts & literature in conversation",
+            es: "Practica artes y literatura en conversación",
+          },
+          xpRequired: 6255,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "literature conversation",
+              prompt: "Practice using literature in real conversation",
+            },
+            stories: {
+              topic: "literature",
+              prompt: "Read and discuss literature",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-9-3",
+          title: {
+            en: "Arts & Literature - Application",
+            es: "Artes y Literatura - Aplicación",
+          },
+          description: {
+            en: "Apply arts & literature skills",
+            es: "Aplica habilidades de artes y literatura",
+          },
+          xpRequired: 6285,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "literature",
+              prompt: "Advanced literature content and comprehension",
+            },
+            realtime: {
+              scenario: "literature mastery",
+              prompt: "Demonstrate mastery of literature",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-9-quiz",
+          title: {
+            en: "Arts & Literature Quiz",
+            es: "Prueba de Artes y Literatura",
+          },
+          description: {
+            en: "Test your knowledge of arts & literature",
+            es: "Prueba tus conocimientos de artes y literatura",
+          },
+          xpRequired: 6315,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "literature",
+            },
+            grammar: {
+              topics: ["literature structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-10",
+      title: {
+        en: "Politics & Society",
+        es: "Política y Sociedad",
+      },
+      description: {
+        en: "Civic topics",
+        es: "Temas cívicos",
+      },
+      color: "#84CC16",
+      position: { row: 4, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b2-10-1",
+          title: {
+            en: "Politics & Society - Vocabulary",
+            es: "Política y Sociedad - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for politics & society",
+            es: "Aprende vocabulario clave para política y sociedad",
+          },
+          xpRequired: 6375,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "politics",
+            },
+            grammar: {
+              topic: "politics structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-10-2",
+          title: {
+            en: "Politics & Society - Practice",
+            es: "Política y Sociedad - Práctica",
+          },
+          description: {
+            en: "Practice politics & society in conversation",
+            es: "Practica política y sociedad en conversación",
+          },
+          xpRequired: 6405,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "politics conversation",
+              prompt: "Practice using politics in real conversation",
+            },
+            stories: {
+              topic: "politics",
+              prompt: "Read and discuss politics",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-10-3",
+          title: {
+            en: "Politics & Society - Application",
+            es: "Política y Sociedad - Aplicación",
+          },
+          description: {
+            en: "Apply politics & society skills",
+            es: "Aplica habilidades de política y sociedad",
+          },
+          xpRequired: 6435,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "politics",
+              prompt: "Advanced politics content and comprehension",
+            },
+            realtime: {
+              scenario: "politics mastery",
+              prompt: "Demonstrate mastery of politics",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-10-quiz",
+          title: {
+            en: "Politics & Society Quiz",
+            es: "Prueba de Política y Sociedad",
+          },
+          description: {
+            en: "Test your knowledge of politics & society",
+            es: "Prueba tus conocimientos de política y sociedad",
+          },
+          xpRequired: 6465,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "politics",
+            },
+            grammar: {
+              topics: ["politics structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-11",
+      title: {
+        en: "Health & Lifestyle",
+        es: "Salud y Estilo de Vida",
+      },
+      description: {
+        en: "Wellness",
+        es: "Bienestar",
+      },
+      color: "#14B8A6",
+      position: { row: 5, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-b2-11-1",
+          title: {
+            en: "Health & Lifestyle - Vocabulary",
+            es: "Salud y Estilo de Vida - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for health & lifestyle",
+            es: "Aprende vocabulario clave para salud y estilo de vida",
+          },
+          xpRequired: 6525,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "wellness",
+            },
+            grammar: {
+              topic: "wellness structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-11-2",
+          title: {
+            en: "Health & Lifestyle - Practice",
+            es: "Salud y Estilo de Vida - Práctica",
+          },
+          description: {
+            en: "Practice health & lifestyle in conversation",
+            es: "Practica salud y estilo de vida en conversación",
+          },
+          xpRequired: 6555,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "wellness conversation",
+              prompt: "Practice using wellness in real conversation",
+            },
+            stories: {
+              topic: "wellness",
+              prompt: "Read and discuss wellness",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-11-3",
+          title: {
+            en: "Health & Lifestyle - Application",
+            es: "Salud y Estilo de Vida - Aplicación",
+          },
+          description: {
+            en: "Apply health & lifestyle skills",
+            es: "Aplica habilidades de salud y estilo de vida",
+          },
+          xpRequired: 6585,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "wellness",
+              prompt: "Advanced wellness content and comprehension",
+            },
+            realtime: {
+              scenario: "wellness mastery",
+              prompt: "Demonstrate mastery of wellness",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-11-quiz",
+          title: {
+            en: "Health & Lifestyle Quiz",
+            es: "Prueba de Salud y Estilo de Vida",
+          },
+          description: {
+            en: "Test your knowledge of health & lifestyle",
+            es: "Prueba tus conocimientos de salud y estilo de vida",
+          },
+          xpRequired: 6615,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "wellness",
+            },
+            grammar: {
+              topics: ["wellness structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-b2-12",
+      title: {
+        en: "Abstract Concepts",
+        es: "Conceptos Abstractos",
+      },
+      description: {
+        en: "Complex ideas",
+        es: "Ideas complejas",
+      },
+      color: "#A855F7",
+      position: { row: 5, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-b2-12-1",
+          title: {
+            en: "Abstract Concepts - Vocabulary",
+            es: "Conceptos Abstractos - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for abstract concepts",
+            es: "Aprende vocabulario clave para conceptos abstractos",
+          },
+          xpRequired: 6675,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "abstract",
+            },
+            grammar: {
+              topic: "abstract structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-b2-12-2",
+          title: {
+            en: "Abstract Concepts - Practice",
+            es: "Conceptos Abstractos - Práctica",
+          },
+          description: {
+            en: "Practice abstract concepts in conversation",
+            es: "Practica conceptos abstractos en conversación",
+          },
+          xpRequired: 6705,
+          xpReward: 30,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "abstract conversation",
+              prompt: "Practice using abstract in real conversation",
+            },
+            stories: {
+              topic: "abstract",
+              prompt: "Read and discuss abstract",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-12-3",
+          title: {
+            en: "Abstract Concepts - Application",
+            es: "Conceptos Abstractos - Aplicación",
+          },
+          description: {
+            en: "Apply abstract concepts skills",
+            es: "Aplica habilidades de conceptos abstractos",
+          },
+          xpRequired: 6735,
+          xpReward: 30,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "abstract",
+              prompt: "Advanced abstract content and comprehension",
+            },
+            realtime: {
+              scenario: "abstract mastery",
+              prompt: "Demonstrate mastery of abstract",
+            },
+          },
+        },
+        {
+          id: "lesson-b2-12-quiz",
+          title: {
+            en: "Abstract Concepts Quiz",
+            es: "Prueba de Conceptos Abstractos",
+          },
+          description: {
+            en: "Test your knowledge of abstract concepts",
+            es: "Prueba tus conocimientos de conceptos abstractos",
+          },
+          xpRequired: 6765,
+          xpReward: 60,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 10,
+            passingScore: 8,
+          },
+          content: {
+            vocabulary: {
+              topic: "abstract",
+            },
+            grammar: {
+              topics: ["abstract structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  C1: [
+    {
+      id: "unit-c1-1",
+      title: {
+        en: "Subjunctive Present",
+        es: "Subjuntivo Presente",
+      },
+      description: {
+        en: "Complex moods",
+        es: "Modos complejos",
+      },
+      color: "#22C55E",
+      position: { row: 0, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c1-1-1",
+          title: {
+            en: "Subjunctive Present - Vocabulary",
+            es: "Subjuntivo Presente - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for subjunctive present",
+            es: "Aprende vocabulario clave para subjuntivo presente",
+          },
+          xpRequired: 6825,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "subjunctive",
+            },
+            grammar: {
+              topic: "subjunctive structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-1-2",
+          title: {
+            en: "Subjunctive Present - Practice",
+            es: "Subjuntivo Presente - Práctica",
+          },
+          description: {
+            en: "Practice subjunctive present in conversation",
+            es: "Practica subjuntivo presente en conversación",
+          },
+          xpRequired: 6860,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "subjunctive conversation",
+              prompt: "Practice using subjunctive in real conversation",
+            },
+            stories: {
+              topic: "subjunctive",
+              prompt: "Read and discuss subjunctive",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-1-3",
+          title: {
+            en: "Subjunctive Present - Application",
+            es: "Subjuntivo Presente - Aplicación",
+          },
+          description: {
+            en: "Apply subjunctive present skills",
+            es: "Aplica habilidades de subjuntivo presente",
+          },
+          xpRequired: 6895,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "subjunctive",
+              prompt: "Advanced subjunctive content and comprehension",
+            },
+            realtime: {
+              scenario: "subjunctive mastery",
+              prompt: "Demonstrate mastery of subjunctive",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-1-quiz",
+          title: {
+            en: "Subjunctive Present Quiz",
+            es: "Prueba de Subjuntivo Presente",
+          },
+          description: {
+            en: "Test your knowledge of subjunctive present",
+            es: "Prueba tus conocimientos de subjuntivo presente",
+          },
+          xpRequired: 6930,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "subjunctive",
+            },
+            grammar: {
+              topics: ["subjunctive structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-2",
+      title: {
+        en: "Subjunctive Past",
+        es: "Subjuntivo Pasado",
+      },
+      description: {
+        en: "Past subjunctive",
+        es: "Subjuntivo pasado",
+      },
+      color: "#3B82F6",
+      position: { row: 0, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c1-2-1",
+          title: {
+            en: "Subjunctive Past - Vocabulary",
+            es: "Subjuntivo Pasado - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for subjunctive past",
+            es: "Aprende vocabulario clave para subjuntivo pasado",
+          },
+          xpRequired: 7000,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "subjunctive",
+            },
+            grammar: {
+              topic: "subjunctive structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-2-2",
+          title: {
+            en: "Subjunctive Past - Practice",
+            es: "Subjuntivo Pasado - Práctica",
+          },
+          description: {
+            en: "Practice subjunctive past in conversation",
+            es: "Practica subjuntivo pasado en conversación",
+          },
+          xpRequired: 7035,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "subjunctive conversation",
+              prompt: "Practice using subjunctive in real conversation",
+            },
+            stories: {
+              topic: "subjunctive",
+              prompt: "Read and discuss subjunctive",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-2-3",
+          title: {
+            en: "Subjunctive Past - Application",
+            es: "Subjuntivo Pasado - Aplicación",
+          },
+          description: {
+            en: "Apply subjunctive past skills",
+            es: "Aplica habilidades de subjuntivo pasado",
+          },
+          xpRequired: 7070,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "subjunctive",
+              prompt: "Advanced subjunctive content and comprehension",
+            },
+            realtime: {
+              scenario: "subjunctive mastery",
+              prompt: "Demonstrate mastery of subjunctive",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-2-quiz",
+          title: {
+            en: "Subjunctive Past Quiz",
+            es: "Prueba de Subjuntivo Pasado",
+          },
+          description: {
+            en: "Test your knowledge of subjunctive past",
+            es: "Prueba tus conocimientos de subjuntivo pasado",
+          },
+          xpRequired: 7105,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "subjunctive",
+            },
+            grammar: {
+              topics: ["subjunctive structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-3",
+      title: {
+        en: "Complex Conditionals",
+        es: "Condicionales Complejos",
+      },
+      description: {
+        en: "If I had...",
+        es: "Si hubiera...",
+      },
+      color: "#F59E0B",
+      position: { row: 1, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c1-3-1",
+          title: {
+            en: "Complex Conditionals - Vocabulary",
+            es: "Condicionales Complejos - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for complex conditionals",
+            es: "Aprende vocabulario clave para condicionales complejos",
+          },
+          xpRequired: 7175,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "conditional",
+            },
+            grammar: {
+              topic: "conditional structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-3-2",
+          title: {
+            en: "Complex Conditionals - Practice",
+            es: "Condicionales Complejos - Práctica",
+          },
+          description: {
+            en: "Practice complex conditionals in conversation",
+            es: "Practica condicionales complejos en conversación",
+          },
+          xpRequired: 7210,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "conditional conversation",
+              prompt: "Practice using conditional in real conversation",
+            },
+            stories: {
+              topic: "conditional",
+              prompt: "Read and discuss conditional",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-3-3",
+          title: {
+            en: "Complex Conditionals - Application",
+            es: "Condicionales Complejos - Aplicación",
+          },
+          description: {
+            en: "Apply complex conditionals skills",
+            es: "Aplica habilidades de condicionales complejos",
+          },
+          xpRequired: 7245,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "conditional",
+              prompt: "Advanced conditional content and comprehension",
+            },
+            realtime: {
+              scenario: "conditional mastery",
+              prompt: "Demonstrate mastery of conditional",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-3-quiz",
+          title: {
+            en: "Complex Conditionals Quiz",
+            es: "Prueba de Condicionales Complejos",
+          },
+          description: {
+            en: "Test your knowledge of complex conditionals",
+            es: "Prueba tus conocimientos de condicionales complejos",
+          },
+          xpRequired: 7280,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "conditional",
+            },
+            grammar: {
+              topics: ["conditional structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-4",
+      title: {
+        en: "Idiomatic Expressions",
+        es: "Expresiones Idiomáticas",
+      },
+      description: {
+        en: "Idioms and sayings",
+        es: "Modismos y dichos",
+      },
+      color: "#8B5CF6",
+      position: { row: 1, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c1-4-1",
+          title: {
+            en: "Idiomatic Expressions - Vocabulary",
+            es: "Expresiones Idiomáticas - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for idiomatic expressions",
+            es: "Aprende vocabulario clave para expresiones idiomáticas",
+          },
+          xpRequired: 7350,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "idioms",
+            },
+            grammar: {
+              topic: "idioms structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-4-2",
+          title: {
+            en: "Idiomatic Expressions - Practice",
+            es: "Expresiones Idiomáticas - Práctica",
+          },
+          description: {
+            en: "Practice idiomatic expressions in conversation",
+            es: "Practica expresiones idiomáticas en conversación",
+          },
+          xpRequired: 7385,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "idioms conversation",
+              prompt: "Practice using idioms in real conversation",
+            },
+            stories: {
+              topic: "idioms",
+              prompt: "Read and discuss idioms",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-4-3",
+          title: {
+            en: "Idiomatic Expressions - Application",
+            es: "Expresiones Idiomáticas - Aplicación",
+          },
+          description: {
+            en: "Apply idiomatic expressions skills",
+            es: "Aplica habilidades de expresiones idiomáticas",
+          },
+          xpRequired: 7420,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "idioms",
+              prompt: "Advanced idioms content and comprehension",
+            },
+            realtime: {
+              scenario: "idioms mastery",
+              prompt: "Demonstrate mastery of idioms",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-4-quiz",
+          title: {
+            en: "Idiomatic Expressions Quiz",
+            es: "Prueba de Expresiones Idiomáticas",
+          },
+          description: {
+            en: "Test your knowledge of idiomatic expressions",
+            es: "Prueba tus conocimientos de expresiones idiomáticas",
+          },
+          xpRequired: 7455,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "idioms",
+            },
+            grammar: {
+              topics: ["idioms structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-5",
+      title: {
+        en: "Academic Writing",
+        es: "Escritura Académica",
+      },
+      description: {
+        en: "Formal writing",
+        es: "Escritura formal",
+      },
+      color: "#EC4899",
+      position: { row: 2, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c1-5-1",
+          title: {
+            en: "Academic Writing - Vocabulary",
+            es: "Escritura Académica - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for academic writing",
+            es: "Aprende vocabulario clave para escritura académica",
+          },
+          xpRequired: 7525,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "academic",
+            },
+            grammar: {
+              topic: "academic structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-5-2",
+          title: {
+            en: "Academic Writing - Practice",
+            es: "Escritura Académica - Práctica",
+          },
+          description: {
+            en: "Practice academic writing in conversation",
+            es: "Practica escritura académica en conversación",
+          },
+          xpRequired: 7560,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "academic conversation",
+              prompt: "Practice using academic in real conversation",
+            },
+            stories: {
+              topic: "academic",
+              prompt: "Read and discuss academic",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-5-3",
+          title: {
+            en: "Academic Writing - Application",
+            es: "Escritura Académica - Aplicación",
+          },
+          description: {
+            en: "Apply academic writing skills",
+            es: "Aplica habilidades de escritura académica",
+          },
+          xpRequired: 7595,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "academic",
+              prompt: "Advanced academic content and comprehension",
+            },
+            realtime: {
+              scenario: "academic mastery",
+              prompt: "Demonstrate mastery of academic",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-5-quiz",
+          title: {
+            en: "Academic Writing Quiz",
+            es: "Prueba de Escritura Académica",
+          },
+          description: {
+            en: "Test your knowledge of academic writing",
+            es: "Prueba tus conocimientos de escritura académica",
+          },
+          xpRequired: 7630,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "academic",
+            },
+            grammar: {
+              topics: ["academic structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-6",
+      title: {
+        en: "Professional Communication",
+        es: "Comunicación Profesional",
+      },
+      description: {
+        en: "Workplace language",
+        es: "Lenguaje laboral",
+      },
+      color: "#10B981",
+      position: { row: 2, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c1-6-1",
+          title: {
+            en: "Professional Communication - Vocabulary",
+            es: "Comunicación Profesional - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for professional communication",
+            es: "Aprende vocabulario clave para comunicación profesional",
+          },
+          xpRequired: 7700,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "professional",
+            },
+            grammar: {
+              topic: "professional structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-6-2",
+          title: {
+            en: "Professional Communication - Practice",
+            es: "Comunicación Profesional - Práctica",
+          },
+          description: {
+            en: "Practice professional communication in conversation",
+            es: "Practica comunicación profesional en conversación",
+          },
+          xpRequired: 7735,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "professional conversation",
+              prompt: "Practice using professional in real conversation",
+            },
+            stories: {
+              topic: "professional",
+              prompt: "Read and discuss professional",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-6-3",
+          title: {
+            en: "Professional Communication - Application",
+            es: "Comunicación Profesional - Aplicación",
+          },
+          description: {
+            en: "Apply professional communication skills",
+            es: "Aplica habilidades de comunicación profesional",
+          },
+          xpRequired: 7770,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "professional",
+              prompt: "Advanced professional content and comprehension",
+            },
+            realtime: {
+              scenario: "professional mastery",
+              prompt: "Demonstrate mastery of professional",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-6-quiz",
+          title: {
+            en: "Professional Communication Quiz",
+            es: "Prueba de Comunicación Profesional",
+          },
+          description: {
+            en: "Test your knowledge of professional communication",
+            es: "Prueba tus conocimientos de comunicación profesional",
+          },
+          xpRequired: 7805,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "professional",
+            },
+            grammar: {
+              topics: ["professional structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-7",
+      title: {
+        en: "Debate & Argumentation",
+        es: "Debate y Argumentación",
+      },
+      description: {
+        en: "Persuasive skills",
+        es: "Habilidades persuasivas",
+      },
+      color: "#06B6D4",
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c1-7-1",
+          title: {
+            en: "Debate & Argumentation - Vocabulary",
+            es: "Debate y Argumentación - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for debate & argumentation",
+            es: "Aprende vocabulario clave para debate y argumentación",
+          },
+          xpRequired: 7875,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "debate",
+            },
+            grammar: {
+              topic: "debate structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-7-2",
+          title: {
+            en: "Debate & Argumentation - Practice",
+            es: "Debate y Argumentación - Práctica",
+          },
+          description: {
+            en: "Practice debate & argumentation in conversation",
+            es: "Practica debate y argumentación en conversación",
+          },
+          xpRequired: 7910,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "debate conversation",
+              prompt: "Practice using debate in real conversation",
+            },
+            stories: {
+              topic: "debate",
+              prompt: "Read and discuss debate",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-7-3",
+          title: {
+            en: "Debate & Argumentation - Application",
+            es: "Debate y Argumentación - Aplicación",
+          },
+          description: {
+            en: "Apply debate & argumentation skills",
+            es: "Aplica habilidades de debate y argumentación",
+          },
+          xpRequired: 7945,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "debate",
+              prompt: "Advanced debate content and comprehension",
+            },
+            realtime: {
+              scenario: "debate mastery",
+              prompt: "Demonstrate mastery of debate",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-7-quiz",
+          title: {
+            en: "Debate & Argumentation Quiz",
+            es: "Prueba de Debate y Argumentación",
+          },
+          description: {
+            en: "Test your knowledge of debate & argumentation",
+            es: "Prueba tus conocimientos de debate y argumentación",
+          },
+          xpRequired: 7980,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "debate",
+            },
+            grammar: {
+              topics: ["debate structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-8",
+      title: {
+        en: "Cultural Analysis",
+        es: "Análisis Cultural",
+      },
+      description: {
+        en: "Deep culture",
+        es: "Cultura profunda",
+      },
+      color: "#EF4444",
+      position: { row: 3, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c1-8-1",
+          title: {
+            en: "Cultural Analysis - Vocabulary",
+            es: "Análisis Cultural - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for cultural analysis",
+            es: "Aprende vocabulario clave para análisis cultural",
+          },
+          xpRequired: 8050,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "culture",
+            },
+            grammar: {
+              topic: "culture structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-8-2",
+          title: {
+            en: "Cultural Analysis - Practice",
+            es: "Análisis Cultural - Práctica",
+          },
+          description: {
+            en: "Practice cultural analysis in conversation",
+            es: "Practica análisis cultural en conversación",
+          },
+          xpRequired: 8085,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "culture conversation",
+              prompt: "Practice using culture in real conversation",
+            },
+            stories: {
+              topic: "culture",
+              prompt: "Read and discuss culture",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-8-3",
+          title: {
+            en: "Cultural Analysis - Application",
+            es: "Análisis Cultural - Aplicación",
+          },
+          description: {
+            en: "Apply cultural analysis skills",
+            es: "Aplica habilidades de análisis cultural",
+          },
+          xpRequired: 8120,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "culture",
+              prompt: "Advanced culture content and comprehension",
+            },
+            realtime: {
+              scenario: "culture mastery",
+              prompt: "Demonstrate mastery of culture",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-8-quiz",
+          title: {
+            en: "Cultural Analysis Quiz",
+            es: "Prueba de Análisis Cultural",
+          },
+          description: {
+            en: "Test your knowledge of cultural analysis",
+            es: "Prueba tus conocimientos de análisis cultural",
+          },
+          xpRequired: 8155,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "culture",
+            },
+            grammar: {
+              topics: ["culture structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-9",
+      title: {
+        en: "Literary Techniques",
+        es: "Técnicas Literarias",
+      },
+      description: {
+        en: "Literary analysis",
+        es: "Análisis literario",
+      },
+      color: "#F97316",
+      position: { row: 4, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c1-9-1",
+          title: {
+            en: "Literary Techniques - Vocabulary",
+            es: "Técnicas Literarias - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for literary techniques",
+            es: "Aprende vocabulario clave para técnicas literarias",
+          },
+          xpRequired: 8225,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "literature",
+            },
+            grammar: {
+              topic: "literature structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-9-2",
+          title: {
+            en: "Literary Techniques - Practice",
+            es: "Técnicas Literarias - Práctica",
+          },
+          description: {
+            en: "Practice literary techniques in conversation",
+            es: "Practica técnicas literarias en conversación",
+          },
+          xpRequired: 8260,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "literature conversation",
+              prompt: "Practice using literature in real conversation",
+            },
+            stories: {
+              topic: "literature",
+              prompt: "Read and discuss literature",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-9-3",
+          title: {
+            en: "Literary Techniques - Application",
+            es: "Técnicas Literarias - Aplicación",
+          },
+          description: {
+            en: "Apply literary techniques skills",
+            es: "Aplica habilidades de técnicas literarias",
+          },
+          xpRequired: 8295,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "literature",
+              prompt: "Advanced literature content and comprehension",
+            },
+            realtime: {
+              scenario: "literature mastery",
+              prompt: "Demonstrate mastery of literature",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-9-quiz",
+          title: {
+            en: "Literary Techniques Quiz",
+            es: "Prueba de Técnicas Literarias",
+          },
+          description: {
+            en: "Test your knowledge of literary techniques",
+            es: "Prueba tus conocimientos de técnicas literarias",
+          },
+          xpRequired: 8330,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "literature",
+            },
+            grammar: {
+              topics: ["literature structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c1-10",
+      title: {
+        en: "Advanced Discourse",
+        es: "Discurso Avanzado",
+      },
+      description: {
+        en: "Complex communication",
+        es: "Comunicación compleja",
+      },
+      color: "#84CC16",
+      position: { row: 4, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c1-10-1",
+          title: {
+            en: "Advanced Discourse - Vocabulary",
+            es: "Discurso Avanzado - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for advanced discourse",
+            es: "Aprende vocabulario clave para discurso avanzado",
+          },
+          xpRequired: 8400,
+          xpReward: 35,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "discourse",
+            },
+            grammar: {
+              topic: "discourse structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c1-10-2",
+          title: {
+            en: "Advanced Discourse - Practice",
+            es: "Discurso Avanzado - Práctica",
+          },
+          description: {
+            en: "Practice advanced discourse in conversation",
+            es: "Practica discurso avanzado en conversación",
+          },
+          xpRequired: 8435,
+          xpReward: 35,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "discourse conversation",
+              prompt: "Practice using discourse in real conversation",
+            },
+            stories: {
+              topic: "discourse",
+              prompt: "Read and discuss discourse",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-10-3",
+          title: {
+            en: "Advanced Discourse - Application",
+            es: "Discurso Avanzado - Aplicación",
+          },
+          description: {
+            en: "Apply advanced discourse skills",
+            es: "Aplica habilidades de discurso avanzado",
+          },
+          xpRequired: 8470,
+          xpReward: 35,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "discourse",
+              prompt: "Advanced discourse content and comprehension",
+            },
+            realtime: {
+              scenario: "discourse mastery",
+              prompt: "Demonstrate mastery of discourse",
+            },
+          },
+        },
+        {
+          id: "lesson-c1-10-quiz",
+          title: {
+            en: "Advanced Discourse Quiz",
+            es: "Prueba de Discurso Avanzado",
+          },
+          description: {
+            en: "Test your knowledge of advanced discourse",
+            es: "Prueba tus conocimientos de discurso avanzado",
+          },
+          xpRequired: 8505,
+          xpReward: 70,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "discourse",
+            },
+            grammar: {
+              topics: ["discourse structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+  ],
+  C2: [
+    {
+      id: "unit-c2-1",
+      title: {
+        en: "Native Idioms",
+        es: "Modismos Nativos",
+      },
+      description: {
+        en: "Advanced idioms",
+        es: "Modismos avanzados",
+      },
+      color: "#22C55E",
+      position: { row: 0, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c2-1-1",
+          title: {
+            en: "Native Idioms - Vocabulary",
+            es: "Modismos Nativos - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for native idioms",
+            es: "Aprende vocabulario clave para modismos nativos",
+          },
+          xpRequired: 8575,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "idioms and colloquial expressions",
+            },
+            grammar: {
+              topic: "idioms and colloquial expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c2-1-2",
+          title: {
+            en: "Native Idioms - Practice",
+            es: "Modismos Nativos - Práctica",
+          },
+          description: {
+            en: "Practice native idioms in conversation",
+            es: "Practica modismos nativos en conversación",
+          },
+          xpRequired: 8615,
+          xpReward: 40,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "idioms and colloquial expressions conversation",
+              prompt: "Practice using idioms and colloquial expressions in real conversation",
+            },
+            stories: {
+              topic: "idioms and colloquial expressions",
+              prompt: "Read and discuss idioms and colloquial expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-1-3",
+          title: {
+            en: "Native Idioms - Application",
+            es: "Modismos Nativos - Aplicación",
+          },
+          description: {
+            en: "Apply native idioms skills",
+            es: "Aplica habilidades de modismos nativos",
+          },
+          xpRequired: 8655,
+          xpReward: 40,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "idioms and colloquial expressions",
+              prompt: "Advanced idioms and colloquial expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "idioms and colloquial expressions mastery",
+              prompt: "Demonstrate mastery of idioms and colloquial expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-1-quiz",
+          title: {
+            en: "Native Idioms Quiz",
+            es: "Prueba de Modismos Nativos",
+          },
+          description: {
+            en: "Test your knowledge of native idioms",
+            es: "Prueba tus conocimientos de modismos nativos",
+          },
+          xpRequired: 8695,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "idioms and colloquial expressions",
+            },
+            grammar: {
+              topics: ["idioms and colloquial expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c2-2",
+      title: {
+        en: "Regional Variations",
+        es: "Variaciones Regionales",
+      },
+      description: {
+        en: "Dialects",
+        es: "Dialectos",
+      },
+      color: "#3B82F6",
+      position: { row: 0, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c2-2-1",
+          title: {
+            en: "Regional Variations - Vocabulary",
+            es: "Variaciones Regionales - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for regional variations",
+            es: "Aprende vocabulario clave para variaciones regionales",
+          },
+          xpRequired: 8775,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "regional language",
+            },
+            grammar: {
+              topic: "regional language structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c2-2-2",
+          title: {
+            en: "Regional Variations - Practice",
+            es: "Variaciones Regionales - Práctica",
+          },
+          description: {
+            en: "Practice regional variations in conversation",
+            es: "Practica variaciones regionales en conversación",
+          },
+          xpRequired: 8815,
+          xpReward: 40,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "regional language conversation",
+              prompt: "Practice using regional language in real conversation",
+            },
+            stories: {
+              topic: "regional language",
+              prompt: "Read and discuss regional language",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-2-3",
+          title: {
+            en: "Regional Variations - Application",
+            es: "Variaciones Regionales - Aplicación",
+          },
+          description: {
+            en: "Apply regional variations skills",
+            es: "Aplica habilidades de variaciones regionales",
+          },
+          xpRequired: 8855,
+          xpReward: 40,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "regional language",
+              prompt: "Advanced regional language content and comprehension",
+            },
+            realtime: {
+              scenario: "regional language mastery",
+              prompt: "Demonstrate mastery of regional language",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-2-quiz",
+          title: {
+            en: "Regional Variations Quiz",
+            es: "Prueba de Variaciones Regionales",
+          },
+          description: {
+            en: "Test your knowledge of regional variations",
+            es: "Prueba tus conocimientos de variaciones regionales",
+          },
+          xpRequired: 8895,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "regional language",
+            },
+            grammar: {
+              topics: ["regional language structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c2-3",
+      title: {
+        en: "Stylistic Mastery",
+        es: "Dominio Estilístico",
+      },
+      description: {
+        en: "Style control",
+        es: "Control de estilo",
+      },
+      color: "#F59E0B",
+      position: { row: 1, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c2-3-1",
+          title: {
+            en: "Stylistic Mastery - Vocabulary",
+            es: "Dominio Estilístico - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for stylistic mastery",
+            es: "Aprende vocabulario clave para dominio estilístico",
+          },
+          xpRequired: 8975,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "style",
+            },
+            grammar: {
+              topic: "style structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c2-3-2",
+          title: {
+            en: "Stylistic Mastery - Practice",
+            es: "Dominio Estilístico - Práctica",
+          },
+          description: {
+            en: "Practice stylistic mastery in conversation",
+            es: "Practica dominio estilístico en conversación",
+          },
+          xpRequired: 9015,
+          xpReward: 40,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "style conversation",
+              prompt: "Practice using style in real conversation",
+            },
+            stories: {
+              topic: "style",
+              prompt: "Read and discuss style",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-3-3",
+          title: {
+            en: "Stylistic Mastery - Application",
+            es: "Dominio Estilístico - Aplicación",
+          },
+          description: {
+            en: "Apply stylistic mastery skills",
+            es: "Aplica habilidades de dominio estilístico",
+          },
+          xpRequired: 9055,
+          xpReward: 40,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "style",
+              prompt: "Advanced style content and comprehension",
+            },
+            realtime: {
+              scenario: "style mastery",
+              prompt: "Demonstrate mastery of style",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-3-quiz",
+          title: {
+            en: "Stylistic Mastery Quiz",
+            es: "Prueba de Dominio Estilístico",
+          },
+          description: {
+            en: "Test your knowledge of stylistic mastery",
+            es: "Prueba tus conocimientos de dominio estilístico",
+          },
+          xpRequired: 9095,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "style",
+            },
+            grammar: {
+              topics: ["style structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c2-4",
+      title: {
+        en: "Rhetorical Devices",
+        es: "Dispositivos Retóricos",
+      },
+      description: {
+        en: "Persuasive techniques",
+        es: "Técnicas persuasivas",
+      },
+      color: "#8B5CF6",
+      position: { row: 1, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c2-4-1",
+          title: {
+            en: "Rhetorical Devices - Vocabulary",
+            es: "Dispositivos Retóricos - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for rhetorical devices",
+            es: "Aprende vocabulario clave para dispositivos retóricos",
+          },
+          xpRequired: 9175,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "rhetoric",
+            },
+            grammar: {
+              topic: "rhetoric structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c2-4-2",
+          title: {
+            en: "Rhetorical Devices - Practice",
+            es: "Dispositivos Retóricos - Práctica",
+          },
+          description: {
+            en: "Practice rhetorical devices in conversation",
+            es: "Practica dispositivos retóricos en conversación",
+          },
+          xpRequired: 9215,
+          xpReward: 40,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "rhetoric conversation",
+              prompt: "Practice using rhetoric in real conversation",
+            },
+            stories: {
+              topic: "rhetoric",
+              prompt: "Read and discuss rhetoric",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-4-3",
+          title: {
+            en: "Rhetorical Devices - Application",
+            es: "Dispositivos Retóricos - Aplicación",
+          },
+          description: {
+            en: "Apply rhetorical devices skills",
+            es: "Aplica habilidades de dispositivos retóricos",
+          },
+          xpRequired: 9255,
+          xpReward: 40,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "rhetoric",
+              prompt: "Advanced rhetoric content and comprehension",
+            },
+            realtime: {
+              scenario: "rhetoric mastery",
+              prompt: "Demonstrate mastery of rhetoric",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-4-quiz",
+          title: {
+            en: "Rhetorical Devices Quiz",
+            es: "Prueba de Dispositivos Retóricos",
+          },
+          description: {
+            en: "Test your knowledge of rhetorical devices",
+            es: "Prueba tus conocimientos de dispositivos retóricos",
+          },
+          xpRequired: 9295,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "rhetoric",
+            },
+            grammar: {
+              topics: ["rhetoric structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c2-5",
+      title: {
+        en: "Specialized Vocabulary",
+        es: "Vocabulario Especializado",
+      },
+      description: {
+        en: "Technical terms",
+        es: "Términos técnicos",
+      },
+      color: "#EC4899",
+      position: { row: 2, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c2-5-1",
+          title: {
+            en: "Specialized Vocabulary - Vocabulary",
+            es: "Vocabulario Especializado - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for specialized vocabulary",
+            es: "Aprende vocabulario clave para vocabulario especializado",
+          },
+          xpRequired: 9375,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "specialized",
+            },
+            grammar: {
+              topic: "specialized structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c2-5-2",
+          title: {
+            en: "Specialized Vocabulary - Practice",
+            es: "Vocabulario Especializado - Práctica",
+          },
+          description: {
+            en: "Practice specialized vocabulary in conversation",
+            es: "Practica vocabulario especializado en conversación",
+          },
+          xpRequired: 9415,
+          xpReward: 40,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "specialized conversation",
+              prompt: "Practice using specialized in real conversation",
+            },
+            stories: {
+              topic: "specialized",
+              prompt: "Read and discuss specialized",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-5-3",
+          title: {
+            en: "Specialized Vocabulary - Application",
+            es: "Vocabulario Especializado - Aplicación",
+          },
+          description: {
+            en: "Apply specialized vocabulary skills",
+            es: "Aplica habilidades de vocabulario especializado",
+          },
+          xpRequired: 9455,
+          xpReward: 40,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "specialized",
+              prompt: "Advanced specialized content and comprehension",
+            },
+            realtime: {
+              scenario: "specialized mastery",
+              prompt: "Demonstrate mastery of specialized",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-5-quiz",
+          title: {
+            en: "Specialized Vocabulary Quiz",
+            es: "Prueba de Vocabulario Especializado",
+          },
+          description: {
+            en: "Test your knowledge of specialized vocabulary",
+            es: "Prueba tus conocimientos de vocabulario especializado",
+          },
+          xpRequired: 9495,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "specialized",
+            },
+            grammar: {
+              topics: ["specialized structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c2-6",
+      title: {
+        en: "Subtle Nuances",
+        es: "Matices Sutiles",
+      },
+      description: {
+        en: "Fine distinctions",
+        es: "Distinciones finas",
+      },
+      color: "#10B981",
+      position: { row: 2, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c2-6-1",
+          title: {
+            en: "Subtle Nuances - Vocabulary",
+            es: "Matices Sutiles - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for subtle nuances",
+            es: "Aprende vocabulario clave para matices sutiles",
+          },
+          xpRequired: 9575,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "advanced vocabulary and nuanced expressions",
+            },
+            grammar: {
+              topic: "advanced vocabulary and nuanced expressions structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c2-6-2",
+          title: {
+            en: "Subtle Nuances - Practice",
+            es: "Matices Sutiles - Práctica",
+          },
+          description: {
+            en: "Practice subtle nuances in conversation",
+            es: "Practica matices sutiles en conversación",
+          },
+          xpRequired: 9615,
+          xpReward: 40,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "advanced vocabulary and nuanced expressions conversation",
+              prompt: "Practice using advanced vocabulary and nuanced expressions in real conversation",
+            },
+            stories: {
+              topic: "advanced vocabulary and nuanced expressions",
+              prompt: "Read and discuss advanced vocabulary and nuanced expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-6-3",
+          title: {
+            en: "Subtle Nuances - Application",
+            es: "Matices Sutiles - Aplicación",
+          },
+          description: {
+            en: "Apply subtle nuances skills",
+            es: "Aplica habilidades de matices sutiles",
+          },
+          xpRequired: 9655,
+          xpReward: 40,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "advanced vocabulary and nuanced expressions",
+              prompt: "Advanced advanced vocabulary and nuanced expressions content and comprehension",
+            },
+            realtime: {
+              scenario: "advanced vocabulary and nuanced expressions mastery",
+              prompt: "Demonstrate mastery of advanced vocabulary and nuanced expressions",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-6-quiz",
+          title: {
+            en: "Subtle Nuances Quiz",
+            es: "Prueba de Matices Sutiles",
+          },
+          description: {
+            en: "Test your knowledge of subtle nuances",
+            es: "Prueba tus conocimientos de matices sutiles",
+          },
+          xpRequired: 9695,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "advanced vocabulary and nuanced expressions",
+            },
+            grammar: {
+              topics: ["advanced vocabulary and nuanced expressions structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c2-7",
+      title: {
+        en: "Cultural Expertise",
+        es: "Experiencia Cultural",
+      },
+      description: {
+        en: "Cultural mastery",
+        es: "Dominio cultural",
+      },
+      color: "#06B6D4",
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-c2-7-1",
+          title: {
+            en: "Cultural Expertise - Vocabulary",
+            es: "Experiencia Cultural - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for cultural expertise",
+            es: "Aprende vocabulario clave para experiencia cultural",
+          },
+          xpRequired: 9775,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "culture",
+            },
+            grammar: {
+              topic: "culture structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c2-7-2",
+          title: {
+            en: "Cultural Expertise - Practice",
+            es: "Experiencia Cultural - Práctica",
+          },
+          description: {
+            en: "Practice cultural expertise in conversation",
+            es: "Practica experiencia cultural en conversación",
+          },
+          xpRequired: 9815,
+          xpReward: 40,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "culture conversation",
+              prompt: "Practice using culture in real conversation",
+            },
+            stories: {
+              topic: "culture",
+              prompt: "Read and discuss culture",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-7-3",
+          title: {
+            en: "Cultural Expertise - Application",
+            es: "Experiencia Cultural - Aplicación",
+          },
+          description: {
+            en: "Apply cultural expertise skills",
+            es: "Aplica habilidades de experiencia cultural",
+          },
+          xpRequired: 9855,
+          xpReward: 40,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "culture",
+              prompt: "Advanced culture content and comprehension",
+            },
+            realtime: {
+              scenario: "culture mastery",
+              prompt: "Demonstrate mastery of culture",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-7-quiz",
+          title: {
+            en: "Cultural Expertise Quiz",
+            es: "Prueba de Experiencia Cultural",
+          },
+          description: {
+            en: "Test your knowledge of cultural expertise",
+            es: "Prueba tus conocimientos de experiencia cultural",
+          },
+          xpRequired: 9895,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "culture",
+            },
+            grammar: {
+              topics: ["culture structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+    {
+      id: "unit-c2-8",
+      title: {
+        en: "Near-Native Fluency",
+        es: "Fluidez Casi Nativa",
+      },
+      description: {
+        en: "Native-like skills",
+        es: "Habilidades casi nativas",
+      },
+      color: "#EF4444",
+      position: { row: 3, offset: 1 },
+      lessons: [
+        {
+          id: "lesson-c2-8-1",
+          title: {
+            en: "Near-Native Fluency - Vocabulary",
+            es: "Fluidez Casi Nativa - Vocabulario",
+          },
+          description: {
+            en: "Learn key vocabulary for near-native fluency",
+            es: "Aprende vocabulario clave para fluidez casi nativa",
+          },
+          xpRequired: 9975,
+          xpReward: 40,
+          modes: ["vocabulary", "grammar"],
+          content: {
+            vocabulary: {
+              topic: "fluency",
+            },
+            grammar: {
+              topic: "fluency structures",
+              focusPoints: ["basic patterns", "common phrases"],
+            },
+          },
+        },
+        {
+          id: "lesson-c2-8-2",
+          title: {
+            en: "Near-Native Fluency - Practice",
+            es: "Fluidez Casi Nativa - Práctica",
+          },
+          description: {
+            en: "Practice near-native fluency in conversation",
+            es: "Practica fluidez casi nativa en conversación",
+          },
+          xpRequired: 10015,
+          xpReward: 40,
+          modes: ["realtime", "stories"],
+          content: {
+            realtime: {
+              scenario: "fluency conversation",
+              prompt: "Practice using fluency in real conversation",
+            },
+            stories: {
+              topic: "fluency",
+              prompt: "Read and discuss fluency",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-8-3",
+          title: {
+            en: "Near-Native Fluency - Application",
+            es: "Fluidez Casi Nativa - Aplicación",
+          },
+          description: {
+            en: "Apply near-native fluency skills",
+            es: "Aplica habilidades de fluidez casi nativa",
+          },
+          xpRequired: 10055,
+          xpReward: 40,
+          modes: ["reading", "realtime"],
+          content: {
+            reading: {
+              topic: "fluency",
+              prompt: "Advanced fluency content and comprehension",
+            },
+            realtime: {
+              scenario: "fluency mastery",
+              prompt: "Demonstrate mastery of fluency",
+            },
+          },
+        },
+        {
+          id: "lesson-c2-8-quiz",
+          title: {
+            en: "Near-Native Fluency Quiz",
+            es: "Prueba de Fluidez Casi Nativa",
+          },
+          description: {
+            en: "Test your knowledge of near-native fluency",
+            es: "Prueba tus conocimientos de fluidez casi nativa",
+          },
+          xpRequired: 10095,
+          xpReward: 80,
+          modes: ["vocabulary", "grammar"],
+          isFinalQuiz: true,
+          quizConfig: {
+            questionsRequired: 12,
+            passingScore: 10,
+          },
+          content: {
+            vocabulary: {
+              topic: "fluency",
+            },
+            grammar: {
+              topics: ["fluency structures"],
+              focusPoints: ["comprehensive review"],
+            },
+          },
+        },
+      ],
+    },
+  ]
 };
 
 const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nah"]);
@@ -2631,6 +9591,330 @@ const VOCABULARY_LIBRARY = {
     ],
     it: ["clima", "migrazione", "cooperazione", "sostenibilità", "sviluppo"],
   },
+  emotions: {
+    en: ["happy", "sad", "angry", "nervous", "excited"],
+    es: ["feliz", "triste", "enojado", "nervioso", "emocionado"],
+    fr: ["heureux", "triste", "en colère", "nerveux", "excité"],
+    pt: ["feliz", "triste", "zangado", "nervoso", "animado"],
+    it: ["felice", "triste", "arrabbiato", "nervoso", "eccitato"],
+  },
+  "physical states": {
+    en: ["tired", "sick", "hot", "cold", "hungry"],
+    es: ["cansado", "enfermo", "calor", "frío", "hambre"],
+    fr: ["fatigué", "malade", "chaud", "froid", "faim"],
+    pt: ["cansado", "doente", "calor", "frio", "fome"],
+    it: ["stanco", "malato", "caldo", "freddo", "fame"],
+  },
+  "days of week": {
+    en: [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ],
+    es: [
+      "lunes",
+      "martes",
+      "miércoles",
+      "jueves",
+      "viernes",
+      "sábado",
+      "domingo",
+    ],
+    fr: [
+      "lundi",
+      "mardi",
+      "mercredi",
+      "jeudi",
+      "vendredi",
+      "samedi",
+      "dimanche",
+    ],
+    pt: [
+      "segunda-feira",
+      "terça-feira",
+      "quarta-feira",
+      "quinta-feira",
+      "sexta-feira",
+      "sábado",
+      "domingo",
+    ],
+    it: [
+      "lunedì",
+      "martedì",
+      "mercoledì",
+      "giovedì",
+      "venerdì",
+      "sabato",
+      "domenica",
+    ],
+  },
+  invitations: {
+    en: ["do you want to", "would you like", "let's", "join us", "come with"],
+    es: ["quieres", "te gustaría", "vamos a", "únete", "ven con"],
+    fr: ["veux-tu", "aimerais-tu", "allons", "rejoins-nous", "viens avec"],
+    pt: ["você quer", "gostaria de", "vamos", "junte-se", "venha com"],
+    it: ["vuoi", "ti piacerebbe", "andiamo", "unisciti", "vieni con"],
+  },
+  abilities: {
+    en: ["can", "know how", "skill", "ability", "talent"],
+    es: ["poder", "saber", "habilidad", "capacidad", "talento"],
+    fr: ["pouvoir", "savoir", "compétence", "capacité", "talent"],
+    pt: ["poder", "saber", "habilidade", "capacidade", "talento"],
+    it: ["potere", "sapere", "abilità", "capacità", "talento"],
+  },
+  comparisons: {
+    en: ["more", "less", "equal", "different", "better", "worse"],
+    es: ["más", "menos", "igual", "diferente", "mejor", "peor"],
+    fr: ["plus", "moins", "égal", "différent", "meilleur", "pire"],
+    pt: ["mais", "menos", "igual", "diferente", "melhor", "pior"],
+    it: ["più", "meno", "uguale", "diverso", "migliore", "peggiore"],
+  },
+  "advice and suggestions": {
+    en: ["should", "could", "recommend", "advise", "suggest"],
+    es: ["deber", "poder", "recomendar", "aconsejar", "sugerir"],
+    fr: ["devoir", "pouvoir", "recommander", "conseiller", "suggérer"],
+    pt: ["dever", "poder", "recomendar", "aconselhar", "sugerir"],
+    it: ["dovere", "potere", "raccomandare", "consigliare", "suggerire"],
+  },
+  "opinions and debate": {
+    en: ["opinion", "think", "believe", "agree", "disagree"],
+    es: ["opinión", "pensar", "creer", "estar de acuerdo", "no estar de acuerdo"],
+    fr: ["opinion", "penser", "croire", "être d'accord", "ne pas être d'accord"],
+    pt: ["opinião", "pensar", "acreditar", "concordar", "discordar"],
+    it: ["opinione", "pensare", "credere", "essere d'accordo", "non essere d'accordo"],
+  },
+  "narrative and storytelling": {
+    en: ["once upon a time", "then", "after", "finally", "story"],
+    es: ["érase una vez", "luego", "después", "finalmente", "historia"],
+    fr: ["il était une fois", "puis", "après", "finalement", "histoire"],
+    pt: ["era uma vez", "então", "depois", "finalmente", "história"],
+    it: ["c'era una volta", "poi", "dopo", "finalmente", "storia"],
+  },
+  idioms: {
+    en: [
+      "piece of cake",
+      "break the ice",
+      "hit the nail on the head",
+      "under the weather",
+      "spill the beans",
+    ],
+    es: [
+      "ser pan comido",
+      "romper el hielo",
+      "dar en el clavo",
+      "estar en las nubes",
+      "meter la pata",
+    ],
+    fr: [
+      "c'est du gâteau",
+      "briser la glace",
+      "mettre le doigt dessus",
+      "avoir le cafard",
+      "vendre la mèche",
+    ],
+    pt: [
+      "moleza",
+      "quebrar o gelo",
+      "acertar na mosca",
+      "estar nas nuvens",
+      "meter os pés pelas mãos",
+    ],
+    it: [
+      "un gioco da ragazzi",
+      "rompere il ghiaccio",
+      "azzeccare",
+      "essere tra le nuvole",
+      "fare una gaffe",
+    ],
+  },
+  "idioms and colloquial expressions": {
+    en: [
+      "no way",
+      "for real",
+      "hang out",
+      "freak out",
+      "catch up",
+    ],
+    es: [
+      "ni hablar",
+      "en serio",
+      "salir con amigos",
+      "ponerse nervioso",
+      "ponerse al día",
+    ],
+    fr: [
+      "pas question",
+      "sérieusement",
+      "traîner",
+      "paniquer",
+      "se rattraper",
+    ],
+    pt: [
+      "nem pensar",
+      "sério",
+      "sair com amigos",
+      "pirar",
+      "colocar em dia",
+    ],
+    it: [
+      "neanche per sogno",
+      "davvero",
+      "uscire con amici",
+      "andare fuori di testa",
+      "recuperare",
+    ],
+  },
+  "regional language": {
+    en: ["dialect", "accent", "slang", "regional", "variation"],
+    es: ["dialecto", "acento", "jerga", "regional", "variación"],
+    fr: ["dialecte", "accent", "argot", "régional", "variation"],
+    pt: ["dialeto", "sotaque", "gíria", "regional", "variação"],
+    it: ["dialetto", "accento", "gergo", "regionale", "variazione"],
+  },
+  "advanced vocabulary and nuanced expressions": {
+    en: ["nuance", "implication", "subtle", "connotation", "rhetoric"],
+    es: ["matiz", "implicación", "sutil", "connotación", "retórica"],
+    fr: ["nuance", "implication", "subtil", "connotation", "rhétorique"],
+    pt: ["nuance", "implicação", "sutil", "conotação", "retórica"],
+    it: ["sfumatura", "implicazione", "sottile", "connotazione", "retorica"],
+  },
+  conditional: {
+    en: ["would", "could", "should", "if", "hypothetical"],
+    es: ["haría", "podría", "debería", "si", "hipotético"],
+    fr: ["ferais", "pourrais", "devrais", "si", "hypothétique"],
+    pt: ["faria", "poderia", "deveria", "se", "hipotético"],
+    it: ["farei", "potrei", "dovrei", "se", "ipotetico"],
+  },
+  experiences: {
+    en: ["experience", "memory", "event", "story", "moment"],
+    es: ["experiencia", "memoria", "evento", "historia", "momento"],
+    fr: ["expérience", "mémoire", "événement", "histoire", "moment"],
+    pt: ["experiência", "memória", "evento", "história", "momento"],
+    it: ["esperienza", "memoria", "evento", "storia", "momento"],
+  },
+  probability: {
+    en: ["maybe", "probably", "possibly", "might", "could"],
+    es: ["quizás", "probablemente", "posiblemente", "podría", "tal vez"],
+    fr: ["peut-être", "probablement", "possiblement", "pourrait", "éventuellement"],
+    pt: ["talvez", "provavelmente", "possivelmente", "poderia", "porventura"],
+    it: ["forse", "probabilmente", "possibilmente", "potrebbe", "eventualmente"],
+  },
+  complaints: {
+    en: ["complaint", "problem", "issue", "dissatisfied", "unhappy"],
+    es: ["queja", "problema", "asunto", "insatisfecho", "infeliz"],
+    fr: ["plainte", "problème", "question", "insatisfait", "mécontent"],
+    pt: ["reclamação", "problema", "questão", "insatisfeito", "infeliz"],
+    it: ["reclamo", "problema", "questione", "insoddisfatto", "scontento"],
+  },
+  "current events": {
+    en: ["news", "media", "press", "journalism", "report"],
+    es: ["noticias", "medios", "prensa", "periodismo", "informe"],
+    fr: ["nouvelles", "médias", "presse", "journalisme", "rapport"],
+    pt: ["notícias", "mídia", "imprensa", "jornalismo", "relatório"],
+    it: ["notizie", "media", "stampa", "giornalismo", "rapporto"],
+  },
+  passive: {
+    en: ["is done", "was made", "has been", "being", "by"],
+    es: ["se hace", "fue hecho", "ha sido", "siendo", "por"],
+    fr: ["est fait", "a été fait", "a été", "étant", "par"],
+    pt: ["é feito", "foi feito", "tem sido", "sendo", "por"],
+    it: ["è fatto", "è stato fatto", "è stato", "essendo", "da"],
+  },
+  "relative clauses": {
+    en: ["who", "which", "that", "where", "whose"],
+    es: ["que", "quien", "el cual", "donde", "cuyo"],
+    fr: ["qui", "que", "lequel", "où", "dont"],
+    pt: ["que", "quem", "o qual", "onde", "cujo"],
+    it: ["che", "il quale", "dove", "cui", "il cui"],
+  },
+  register: {
+    en: ["formal", "informal", "polite", "casual", "respectful"],
+    es: ["formal", "informal", "cortés", "casual", "respetuoso"],
+    fr: ["formel", "informel", "poli", "décontracté", "respectueux"],
+    pt: ["formal", "informal", "educado", "casual", "respeitoso"],
+    it: ["formale", "informale", "cortese", "casuale", "rispettoso"],
+  },
+  science: {
+    en: ["research", "study", "experiment", "theory", "discovery"],
+    es: ["investigación", "estudio", "experimento", "teoría", "descubrimiento"],
+    fr: ["recherche", "étude", "expérience", "théorie", "découverte"],
+    pt: ["pesquisa", "estudo", "experimento", "teoria", "descoberta"],
+    it: ["ricerca", "studio", "esperimento", "teoria", "scoperta"],
+  },
+  wellness: {
+    en: ["wellness", "fitness", "nutrition", "mental health", "balance"],
+    es: ["bienestar", "condición física", "nutrición", "salud mental", "equilibrio"],
+    fr: ["bien-être", "forme", "nutrition", "santé mentale", "équilibre"],
+    pt: ["bem-estar", "fitness", "nutrição", "saúde mental", "equilíbrio"],
+    it: ["benessere", "fitness", "nutrizione", "salute mentale", "equilibrio"],
+  },
+  abstract: {
+    en: ["concept", "idea", "notion", "philosophy", "principle"],
+    es: ["concepto", "idea", "noción", "filosofía", "principio"],
+    fr: ["concept", "idée", "notion", "philosophie", "principe"],
+    pt: ["conceito", "ideia", "noção", "filosofia", "princípio"],
+    it: ["concetto", "idea", "nozione", "filosofia", "principio"],
+  },
+  subjunctive: {
+    en: ["wish", "hope", "doubt", "uncertainty", "desire"],
+    es: ["deseo", "esperanza", "duda", "incertidumbre", "deseo"],
+    fr: ["souhait", "espoir", "doute", "incertitude", "désir"],
+    pt: ["desejo", "esperança", "dúvida", "incerteza", "desejo"],
+    it: ["desiderio", "speranza", "dubbio", "incertezza", "desiderio"],
+  },
+  debate: {
+    en: ["argument", "counterargument", "evidence", "persuade", "convince"],
+    es: ["argumento", "contraargumento", "evidencia", "persuadir", "convencer"],
+    fr: ["argument", "contre-argument", "preuve", "persuader", "convaincre"],
+    pt: ["argumento", "contra-argumento", "evidência", "persuadir", "convencer"],
+    it: ["argomento", "controargomento", "prova", "persuadere", "convincere"],
+  },
+  academic: {
+    en: ["thesis", "research", "citation", "bibliography", "scholarly"],
+    es: ["tesis", "investigación", "cita", "bibliografía", "académico"],
+    fr: ["thèse", "recherche", "citation", "bibliographie", "universitaire"],
+    pt: ["tese", "pesquisa", "citação", "bibliografia", "acadêmico"],
+    it: ["tesi", "ricerca", "citazione", "bibliografia", "accademico"],
+  },
+  discourse: {
+    en: ["therefore", "however", "moreover", "nevertheless", "thus"],
+    es: ["por lo tanto", "sin embargo", "además", "no obstante", "así"],
+    fr: ["donc", "cependant", "de plus", "néanmoins", "ainsi"],
+    pt: ["portanto", "no entanto", "além disso", "não obstante", "assim"],
+    it: ["quindi", "tuttavia", "inoltre", "nondimeno", "così"],
+  },
+  style: {
+    en: ["elegant", "concise", "formal", "casual", "tone"],
+    es: ["elegante", "conciso", "formal", "casual", "tono"],
+    fr: ["élégant", "concis", "formel", "décontracté", "ton"],
+    pt: ["elegante", "conciso", "formal", "casual", "tom"],
+    it: ["elegante", "conciso", "formale", "informale", "tono"],
+  },
+  rhetoric: {
+    en: ["metaphor", "irony", "analogy", "persuasion", "ethos"],
+    es: ["metáfora", "ironía", "analogía", "persuasión", "ética"],
+    fr: ["métaphore", "ironie", "analogie", "persuasion", "ethos"],
+    pt: ["metáfora", "ironia", "analogia", "persuasão", "ética"],
+    it: ["metafora", "ironia", "analogia", "persuasione", "etica"],
+  },
+  specialized: {
+    en: ["technical", "terminology", "jargon", "specific", "expert"],
+    es: ["técnico", "terminología", "jerga", "específico", "experto"],
+    fr: ["technique", "terminologie", "jargon", "spécifique", "expert"],
+    pt: ["técnico", "terminologia", "jargão", "específico", "especialista"],
+    it: ["tecnico", "terminologia", "gergo", "specifico", "esperto"],
+  },
+  fluency: {
+    en: ["fluent", "native", "proficient", "mastery", "command"],
+    es: ["fluido", "nativo", "competente", "dominio", "mando"],
+    fr: ["fluide", "natif", "compétent", "maîtrise", "commande"],
+    pt: ["fluente", "nativo", "proficiente", "domínio", "comando"],
+    it: ["fluente", "nativo", "competente", "padronanza", "comando"],
+  },
 };
 
 function normalizeTopicKey(topic = "") {
@@ -2688,6 +9972,29 @@ export function getLearningPath(targetLang, level) {
     : DEFAULT_TARGET_LANG;
   const units = LEARNING_PATHS[lang]?.[level] || [];
   return localizeLearningPath(units, lang);
+}
+
+/**
+ * Get the learning path for multiple levels
+ * Returns combined units from all specified levels with level metadata
+ */
+export function getMultiLevelLearningPath(targetLang, levels = ['A1', 'A2']) {
+  const lang = SUPPORTED_TARGET_LANGS.has(targetLang)
+    ? targetLang
+    : DEFAULT_TARGET_LANG;
+
+  const allUnits = [];
+  levels.forEach((level) => {
+    const units = LEARNING_PATHS[lang]?.[level] || [];
+    // Add level metadata to each unit
+    const unitsWithLevel = units.map(unit => ({
+      ...unit,
+      cefrLevel: level,
+    }));
+    allUnits.push(...unitsWithLevel);
+  });
+
+  return localizeLearningPath(allUnits, lang);
 }
 
 /**
