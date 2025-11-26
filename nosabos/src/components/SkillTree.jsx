@@ -120,112 +120,111 @@ const MODE_ICONS = {
   reading: RiBookOpenLine,
 };
 
-// Lesson-specific icon mapping
-const getLessonIcon = (lessonId) => {
-  const iconMap = {
-    // Unit 1: Basics 1
-    "lesson-1-1": RiHandHeartLine, // Hello & Goodbye
-    "lesson-1-2": RiUserVoiceLine, // Introduce Yourself
-    "lesson-1-3": RiQuestionAnswerLine, // Basic Questions
-    "lesson-1-quiz": RiQuestionLine, // Unit 1 Quiz
+// Dynamic lesson icon mapping based on unit topics
+const getUnitTopicIcon = (unitId) => {
+  // A1 Units - Beginner
+  if (unitId === "unit-a1-1") return RiHandHeartLine; // First Words
+  if (unitId === "unit-a1-2") return RiUserVoiceLine; // Introducing Yourself
+  if (unitId === "unit-a1-3") return RiNumbersLine; // Numbers 0-20
+  if (unitId === "unit-a1-4") return RiNumbersLine; // Numbers 21-100
+  if (unitId === "unit-a1-5") return RiCalendarLine; // Days of Week
+  if (unitId === "unit-a1-6") return RiCalendarLine; // Months & Dates
+  if (unitId === "unit-a1-7") return RiTimeLine; // Telling Time
+  if (unitId === "unit-a1-8") return RiTeamLine; // Family Members
+  if (unitId === "unit-a1-9") return RiPaletteLine; // Colors & Shapes
+  if (unitId === "unit-a1-10") return RiRestaurantLine; // Food & Drinks
+  if (unitId === "unit-a1-11") return RiRestaurantLine; // At the Restaurant
+  if (unitId === "unit-a1-12") return RiBookOpenLine; // Common Objects
+  if (unitId === "unit-a1-13") return RiMapPinLine; // In the House
+  if (unitId === "unit-a1-14") return RiShirtLine; // Clothing
+  if (unitId === "unit-a1-15") return RiTimeLine; // Daily Routine
+  if (unitId === "unit-a1-16") return RiCloudyLine; // Weather
+  if (unitId === "unit-a1-17") return RiHeartLine; // Likes & Dislikes
+  if (unitId === "unit-a1-18") return RiQuestionAnswerLine; // Basic Questions
 
-    // Unit 2: Basics 2
-    "lesson-2-1": RiHeartLine, // Likes & Dislikes
-    "lesson-2-2": RiNumbersLine, // Numbers 1-20
-    "lesson-2-3": RiRestaurantLine, // Food & Drinks
-    "lesson-2-quiz": RiQuestionLine, // Unit 2 Quiz
+  // A2 Units - Elementary
+  if (unitId === "unit-a2-1") return RiEmotionLine; // Describing People
+  if (unitId === "unit-a2-2") return RiMapPinLine; // Describing Places
+  if (unitId === "unit-a2-3") return RiShoppingCartLine; // Shopping & Money
+  if (unitId === "unit-a2-4") return RiShoppingCartLine; // At the Market
+  if (unitId === "unit-a2-5") return RiBusLine; // Transportation
+  if (unitId === "unit-a2-6") return RiCompassLine; // Directions
+  if (unitId === "unit-a2-7") return RiCalendarLine; // Making Plans
+  if (unitId === "unit-a2-8") return RiMusicLine; // Hobbies & Interests
+  if (unitId === "unit-a2-9") return RiFootballLine; // Sports & Exercise
+  if (unitId === "unit-a2-10") return RiHistoryLine; // Past Tense Regular
+  if (unitId === "unit-a2-11") return RiHistoryFill; // Past Tense Irregular
+  if (unitId === "unit-a2-12") return RiBookOpenLine; // Telling Stories
+  if (unitId === "unit-a2-13") return RiCalendarLine; // Future Plans
+  if (unitId === "unit-a2-14") return RiBodyScanLine; // Health & Body
+  if (unitId === "unit-a2-15") return RiHeartPulseLine; // At the Doctor's
+  if (unitId === "unit-a2-16") return RiBriefcaseLine; // Jobs & Professions
+  if (unitId === "unit-a2-17") return RiBook2Line; // School & Education
+  if (unitId === "unit-a2-18") return RiSmartphoneLine; // Technology Basics
 
-    // Unit 3: Daily Life
-    "lesson-3-1": RiTimeLine, // Telling Time
-    "lesson-3-2": RiCalendarLine, // Daily Routine
-    "lesson-3-3": RiTeamLine, // Family Members
-    "lesson-3-quiz": RiQuestionLine, // Unit 3 Quiz
+  // B1 Units - Intermediate
+  if (unitId === "unit-b1-1") return RiHistoryLine; // Present Perfect
+  if (unitId === "unit-b1-2") return RiHistoryFill; // Past Continuous
+  if (unitId === "unit-b1-3") return RiCalendarLine; // Future Tense
+  if (unitId === "unit-b1-4") return RiScalesLine; // Comparisons
+  if (unitId === "unit-b1-5") return RiLightbulbLine; // Giving Advice
+  if (unitId === "unit-b1-6") return RiLightbulbLine; // Making Suggestions
+  if (unitId === "unit-b1-7") return RiQuestionLine; // Conditional Would
+  if (unitId === "unit-b1-8") return RiSuitcaseLine; // Travel & Tourism
+  if (unitId === "unit-b1-9") return RiPlantLine; // Environment
+  if (unitId === "unit-b1-10") return RiGlobalLine; // Culture & Traditions
+  if (unitId === "unit-b1-11") return RiNewspaperLine; // Media & News
+  if (unitId === "unit-b1-12") return RiMegaphoneLine; // Expressing Opinions
+  if (unitId === "unit-b1-13") return RiMegaphoneLine; // Making Complaints
+  if (unitId === "unit-b1-14") return RiStarLine; // Experiences
+  if (unitId === "unit-b1-15") return RiQuestionLine; // Probability
 
-    // Unit 4: Getting Around
-    "lesson-4-1": RiMapPinLine, // Places in Town
-    "lesson-4-2": RiCompassLine, // Directions
-    "lesson-4-3": RiBusLine, // Transportation
-    "lesson-4-quiz": RiQuestionLine, // Unit 4 Quiz
+  // B2 Units - Upper Intermediate
+  if (unitId === "unit-b2-1") return RiHistoryFill; // Past Perfect
+  if (unitId === "unit-b2-2") return RiPencilLine; // Passive Voice
+  if (unitId === "unit-b2-3") return RiSpeakLine; // Reported Speech
+  if (unitId === "unit-b2-4") return RiPencilLine; // Relative Clauses
+  if (unitId === "unit-b2-5") return RiBookOpenLine; // Formal vs Informal
+  if (unitId === "unit-b2-6") return RiBriefcaseLine; // Business Spanish
+  if (unitId === "unit-b2-7") return RiFlaskLine; // Science & Innovation
+  if (unitId === "unit-b2-8") return RiScalesLine; // Social Issues
+  if (unitId === "unit-b2-9") return RiPaintBrushLine; // Arts & Literature
+  if (unitId === "unit-b2-10") return RiMegaphoneLine; // Politics & Society
+  if (unitId === "unit-b2-11") return RiHeartPulseLine; // Health & Lifestyle
+  if (unitId === "unit-b2-12") return RiLightbulbLine; // Abstract Concepts
 
-    // Unit 5: Shopping & Money
-    "lesson-5-1": RiShoppingCartLine, // At the Store
-    "lesson-5-2": RiNumbersLine, // Numbers 20-100
-    "lesson-5-3": RiShirtLine, // Clothing
-    "lesson-5-quiz": RiQuestionLine, // Unit 5 Quiz
+  // C1 Units - Advanced
+  if (unitId === "unit-c1-1") return RiStarLine; // Subjunctive Present
+  if (unitId === "unit-c1-2") return RiStarFill; // Subjunctive Past
+  if (unitId === "unit-c1-3") return RiQuestionLine; // Complex Conditionals
+  if (unitId === "unit-c1-4") return RiQuillPenLine; // Idiomatic Expressions
+  if (unitId === "unit-c1-5") return RiBook2Line; // Academic Writing
+  if (unitId === "unit-c1-6") return RiBriefcaseLine; // Professional Communication
+  if (unitId === "unit-c1-7") return RiMegaphoneLine; // Debate & Argumentation
+  if (unitId === "unit-c1-8") return RiGlobalLine; // Cultural Analysis
+  if (unitId === "unit-c1-9") return RiQuillPenLine; // Literary Techniques
+  if (unitId === "unit-c1-10") return RiSpeakLine; // Advanced Discourse
 
-    // Unit 6: Colors & Descriptions
-    "lesson-6-1": RiPaletteLine, // Colors
-    "lesson-6-2": RiEmotionLine, // Physical Descriptions
-    "lesson-6-3": RiEmotionLine, // Personality Traits
-    "lesson-6-quiz": RiQuestionLine, // Unit 6 Quiz
+  // C2 Units - Mastery
+  if (unitId === "unit-c2-1") return RiStarFill; // Native Idioms
+  if (unitId === "unit-c2-2") return RiGlobalLine; // Regional Variations
+  if (unitId === "unit-c2-3") return RiQuillPenLine; // Stylistic Mastery
+  if (unitId === "unit-c2-4") return RiPaintBrushLine; // Rhetorical Devices
+  if (unitId === "unit-c2-5") return RiBook2Line; // Specialized Vocabulary
+  if (unitId === "unit-c2-6") return RiLightbulbLine; // Subtle Nuances
+  if (unitId === "unit-c2-7") return RiEarthLine; // Cultural Expertise
+  if (unitId === "unit-c2-8") return RiTrophyLine; // Near-Native Fluency
 
-    // Unit 7: Hobbies & Free Time
-    "lesson-7-1": RiFootballLine, // Sports & Exercise
-    "lesson-7-2": RiMusicLine, // Music & Entertainment
-    "lesson-7-3": RiBook2Line, // Reading & Arts
-    "lesson-7-quiz": RiQuestionLine, // Unit 7 Quiz
+  return RiBookOpenLine; // Default fallback
+};
 
-    // Unit 8: Past Experiences
-    "lesson-8-1": RiHistoryLine, // Preterite Tense Intro
-    "lesson-8-2": RiCalendarLine, // Weekend Activities
-    "lesson-8-3": RiSuitcaseLine, // Travel Stories
-    "lesson-8-quiz": RiQuestionLine, // Unit 8 Quiz
+// Get icon for individual lessons based on lesson type and unit
+const getLessonIcon = (lessonId, unitId) => {
+  // Quiz lessons always get the question mark icon
+  if (lessonId.includes("-quiz")) return RiQuestionLine;
 
-    // Unit 9: Ongoing Past
-    "lesson-9-1": RiHistoryFill, // Imperfect Tense
-    "lesson-9-2": RiHistoryLine, // Childhood Memories
-    "lesson-9-3": RiCloudyLine, // Weather & Seasons
-    "lesson-9-quiz": RiQuestionLine, // Unit 9 Quiz
-
-    // Unit 10: Future Plans
-    "lesson-10-1": RiCalendarLine, // Future with Ir + a
-    "lesson-10-2": RiCalendarLine, // Simple Future Tense
-    "lesson-10-3": RiBriefcaseLine, // Career Goals
-    "lesson-10-quiz": RiQuestionLine, // Unit 10 Quiz
-
-    // Unit 11: Health & Body
-    "lesson-11-1": RiBodyScanLine, // Body Parts
-    "lesson-11-2": RiHeartPulseLine, // At the Doctor
-    "lesson-11-3": RiHeartPulseLine, // Healthy Habits
-    "lesson-11-quiz": RiQuestionLine, // Unit 11 Quiz
-
-    // Unit 12: Environment & Nature
-    "lesson-12-1": RiPlantLine, // Animals & Plants
-    "lesson-12-2": RiGlobalLine, // Environmental Issues
-    "lesson-12-3": RiEarthLine, // Geography & Landscapes
-    "lesson-12-quiz": RiQuestionLine, // Unit 12 Quiz
-
-    // Unit 13: Subjunctive Mood
-    "lesson-13-1": RiLightbulbLine, // Present Subjunctive Intro
-    "lesson-13-2": RiStarLine, // Wishes & Desires
-    "lesson-13-3": RiQuestionLine, // Doubts & Denials
-    "lesson-13-quiz": RiQuestionLine, // Unit 13 Quiz
-
-    // Unit 14: Complex Conversations
-    "lesson-14-1": RiMegaphoneLine, // Debate & Persuasion
-    "lesson-14-2": RiNewspaperLine, // Current Events
-    "lesson-14-3": RiBriefcaseLine, // Professional Communication
-    "lesson-14-quiz": RiQuestionLine, // Unit 14 Quiz
-
-    // Unit 15: Literature & Arts
-    "lesson-15-1": RiQuillPenLine, // Poetry & Prose
-    "lesson-15-2": RiPaintBrushLine, // Visual Arts
-    "lesson-15-3": RiClapperboardLine, // Cinema & Theater
-    "lesson-15-quiz": RiQuestionLine, // Unit 15 Quiz
-
-    // Unit 16: Technology & Innovation
-    "lesson-16-1": RiSmartphoneLine, // Digital Communication
-    "lesson-16-2": RiFlaskLine, // Science & Progress
-    "lesson-16-3": RiBitCoinLine, // Digital Economy
-    "lesson-16-quiz": RiQuestionLine, // Unit 16 Quiz
-
-    // Unit 17: Social Issues & Ethics
-    "lesson-17-1": RiScalesLine, // Social Justice
-    "lesson-17-2": RiEarthLine, // Global Challenges
-    "lesson-17-quiz": RiQuestionLine, // Unit 17 Quiz
-  };
-
-  return iconMap[lessonId] || RiBookOpenLine; // Default fallback
+  // Get the base icon from the unit's topic
+  return getUnitTopicIcon(unitId);
 };
 
 /**
@@ -250,7 +249,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   const getNodeIcon = () => {
     if (status === SKILL_STATUS.COMPLETED) return RiCheckLine;
     if (status === SKILL_STATUS.LOCKED) return RiLockLine;
-    return getLessonIcon(lesson.id);
+    return getLessonIcon(lesson.id, unit.id);
   };
 
   const Icon = getNodeIcon();
