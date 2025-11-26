@@ -46,12 +46,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-1-1",
           title: {
-            en: "First Words - Vocabulary",
-            es: "Primeras Palabras - Vocabulario",
+            en: "Hello and Goodbye",
+            es: "Hola y Adiós",
           },
           description: {
-            en: "Learn key vocabulary for first words",
-            es: "Aprende vocabulario clave para primeras palabras",
+            en: "Learn essential greetings and farewells",
+            es: "Aprende saludos y despedidas esenciales",
           },
           xpRequired: 0,
           xpReward: 15,
@@ -69,12 +69,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-1-2",
           title: {
-            en: "First Words - Practice",
-            es: "Primeras Palabras - Práctica",
+            en: "Meeting Someone New",
+            es: "Conocer a Alguien Nuevo",
           },
           description: {
-            en: "Practice first words in conversation",
-            es: "Practica primeras palabras en conversación",
+            en: "Practice greetings in real conversations",
+            es: "Practica saludos en conversaciones reales",
           },
           xpRequired: 15,
           xpReward: 15,
@@ -93,12 +93,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-1-3",
           title: {
-            en: "First Words - Application",
-            es: "Primeras Palabras - Aplicación",
+            en: "Polite Conversations",
+            es: "Conversaciones Corteses",
           },
           description: {
-            en: "Apply first words skills",
-            es: "Aplica habilidades de primeras palabras",
+            en: "Master greeting etiquette and social niceties",
+            es: "Domina la etiqueta de saludos y cortesías sociales",
           },
           xpRequired: 30,
           xpReward: 15,
@@ -160,12 +160,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-2-1",
           title: {
-            en: "Introducing Yourself - Vocabulary",
-            es: "Presentándote - Vocabulario",
+            en: "What's Your Name?",
+            es: "¿Cómo Te Llamas?",
           },
           description: {
-            en: "Learn key vocabulary for introducing yourself",
-            es: "Aprende vocabulario clave para presentándote",
+            en: "Learn to introduce yourself and ask others' names",
+            es: "Aprende a presentarte y preguntar nombres",
           },
           xpRequired: 75,
           xpReward: 15,
@@ -183,12 +183,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-2-2",
           title: {
-            en: "Introducing Yourself - Practice",
-            es: "Presentándote - Práctica",
+            en: "Nice to Meet You",
+            es: "Mucho Gusto",
           },
           description: {
-            en: "Practice introducing yourself in conversation",
-            es: "Practica presentándote en conversación",
+            en: "Practice introductions in real conversations",
+            es: "Practica presentaciones en conversaciones reales",
           },
           xpRequired: 90,
           xpReward: 15,
@@ -207,12 +207,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-2-3",
           title: {
-            en: "Introducing Yourself - Application",
-            es: "Presentándote - Aplicación",
+            en: "Tell Me About Yourself",
+            es: "Cuéntame Sobre Ti",
           },
           description: {
-            en: "Apply introducing yourself skills",
-            es: "Aplica habilidades de presentándote",
+            en: "Share personal information and ask about others",
+            es: "Comparte información personal y pregunta sobre otros",
           },
           xpRequired: 105,
           xpReward: 15,
@@ -274,12 +274,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-3-1",
           title: {
-            en: "Numbers 0-20 - Vocabulary",
-            es: "Números 0-20 - Vocabulario",
+            en: "Counting to Twenty",
+            es: "Contando hasta Veinte",
           },
           description: {
-            en: "Learn key vocabulary for numbers 0-20",
-            es: "Aprende vocabulario clave para números 0-20",
+            en: "Learn to count from zero to twenty",
+            es: "Aprende a contar desde cero hasta veinte",
           },
           xpRequired: 150,
           xpReward: 15,
@@ -297,12 +297,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-3-2",
           title: {
-            en: "Numbers 0-20 - Practice",
-            es: "Números 0-20 - Práctica",
+            en: "Using Numbers Daily",
+            es: "Usando Números Diariamente",
           },
           description: {
-            en: "Practice numbers 0-20 in conversation",
-            es: "Practica números 0-20 en conversación",
+            en: "Practice numbers in everyday situations",
+            es: "Practica números en situaciones cotidianas",
           },
           xpRequired: 165,
           xpReward: 15,
@@ -321,12 +321,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-3-3",
           title: {
-            en: "Numbers 0-20 - Application",
-            es: "Números 0-20 - Aplicación",
+            en: "Phone Numbers and Ages",
+            es: "Números de Teléfono y Edades",
           },
           description: {
-            en: "Apply numbers 0-20 skills",
-            es: "Aplica habilidades de números 0-20",
+            en: "Apply numbers to phone numbers and ages",
+            es: "Aplica números a teléfonos y edades",
           },
           xpRequired: 180,
           xpReward: 15,
@@ -388,12 +388,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-4-1",
           title: {
-            en: "Numbers 21-100 - Vocabulary",
-            es: "Números 21-100 - Vocabulario",
+            en: "Counting to One Hundred",
+            es: "Contando hasta Cien",
           },
           description: {
-            en: "Learn key vocabulary for numbers 21-100",
-            es: "Aprende vocabulario clave para números 21-100",
+            en: "Learn to count from twenty-one to one hundred",
+            es: "Aprende a contar desde veintiuno hasta cien",
           },
           xpRequired: 225,
           xpReward: 15,
@@ -411,12 +411,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-4-2",
           title: {
-            en: "Numbers 21-100 - Practice",
-            es: "Números 21-100 - Práctica",
+            en: "Prices and Money",
+            es: "Precios y Dinero",
           },
           description: {
-            en: "Practice numbers 21-100 in conversation",
-            es: "Practica números 21-100 en conversación",
+            en: "Practice using larger numbers with prices and money",
+            es: "Practica usando números grandes con precios y dinero",
           },
           xpRequired: 240,
           xpReward: 15,
@@ -435,12 +435,12 @@ const baseLearningPath = {
         {
           id: "lesson-a1-4-3",
           title: {
-            en: "Numbers 21-100 - Application",
-            es: "Números 21-100 - Aplicación",
+            en: "Big Numbers in Context",
+            es: "Números Grandes en Contexto",
           },
           description: {
-            en: "Apply numbers 21-100 skills",
-            es: "Aplica habilidades de números 21-100",
+            en: "Apply larger numbers in real-life contexts",
+            es: "Aplica números grandes en contextos de la vida real",
           },
           xpRequired: 255,
           xpReward: 15,
@@ -502,8 +502,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-5-1",
           title: {
-            en: "Days of Week - Vocabulary",
-            es: "Días de la Semana - Vocabulario",
+            en: "Monday to Sunday",
+            es: "Lunes a Domingo",
           },
           description: {
             en: "Learn key vocabulary for days of week",
@@ -525,8 +525,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-5-2",
           title: {
-            en: "Days of Week - Practice",
-            es: "Días de la Semana - Práctica",
+            en: "What Day Is It?",
+            es: "¿Qué Día Es?",
           },
           description: {
             en: "Practice days of week in conversation",
@@ -549,8 +549,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-5-3",
           title: {
-            en: "Days of Week - Application",
-            es: "Días de la Semana - Aplicación",
+            en: "Planning Your Week",
+            es: "Planificando Tu Semana",
           },
           description: {
             en: "Apply days of week skills",
@@ -616,8 +616,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-6-1",
           title: {
-            en: "Months & Dates - Vocabulary",
-            es: "Meses y Fechas - Vocabulario",
+            en: "Twelve Months",
+            es: "Doce Meses",
           },
           description: {
             en: "Learn key vocabulary for months & dates",
@@ -639,8 +639,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-6-2",
           title: {
-            en: "Months & Dates - Practice",
-            es: "Meses y Fechas - Práctica",
+            en: "When's Your Birthday?",
+            es: "¿Cuándo Es Tu Cumpleaños?",
           },
           description: {
             en: "Practice months & dates in conversation",
@@ -663,8 +663,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-6-3",
           title: {
-            en: "Months & Dates - Application",
-            es: "Meses y Fechas - Aplicación",
+            en: "Important Dates",
+            es: "Fechas Importantes",
           },
           description: {
             en: "Apply months & dates skills",
@@ -730,8 +730,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-7-1",
           title: {
-            en: "Telling Time - Vocabulary",
-            es: "Decir la Hora - Vocabulario",
+            en: "What Time Is It?",
+            es: "¿Qué Hora Es?",
           },
           description: {
             en: "Learn key vocabulary for telling time",
@@ -753,8 +753,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-7-2",
           title: {
-            en: "Telling Time - Practice",
-            es: "Decir la Hora - Práctica",
+            en: "Daily Schedule",
+            es: "Horario Diario",
           },
           description: {
             en: "Practice telling time in conversation",
@@ -777,8 +777,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-7-3",
           title: {
-            en: "Telling Time - Application",
-            es: "Decir la Hora - Aplicación",
+            en: "Making Appointments",
+            es: "Haciendo Citas",
           },
           description: {
             en: "Apply telling time skills",
@@ -844,8 +844,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-8-1",
           title: {
-            en: "Family Members - Vocabulary",
-            es: "Familia - Vocabulario",
+            en: "My Family Tree",
+            es: "Mi Árbol Genealógico",
           },
           description: {
             en: "Learn key vocabulary for family members",
@@ -867,8 +867,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-8-2",
           title: {
-            en: "Family Members - Practice",
-            es: "Familia - Práctica",
+            en: "Talking About Family",
+            es: "Hablando de la Familia",
           },
           description: {
             en: "Practice family members in conversation",
@@ -891,8 +891,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-8-3",
           title: {
-            en: "Family Members - Application",
-            es: "Familia - Aplicación",
+            en: "Family Relationships",
+            es: "Relaciones Familiares",
           },
           description: {
             en: "Apply family members skills",
@@ -958,8 +958,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-9-1",
           title: {
-            en: "Colors & Shapes - Vocabulary",
-            es: "Colores y Formas - Vocabulario",
+            en: "Rainbow Colors",
+            es: "Colores del Arcoíris",
           },
           description: {
             en: "Learn key vocabulary for colors & shapes",
@@ -981,8 +981,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-9-2",
           title: {
-            en: "Colors & Shapes - Practice",
-            es: "Colores y Formas - Práctica",
+            en: "Describing Things",
+            es: "Describiendo Cosas",
           },
           description: {
             en: "Practice colors & shapes in conversation",
@@ -1005,8 +1005,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-9-3",
           title: {
-            en: "Colors & Shapes - Application",
-            es: "Colores y Formas - Aplicación",
+            en: "Colors Everywhere",
+            es: "Colores por Todas Partes",
           },
           description: {
             en: "Apply colors & shapes skills",
@@ -1072,8 +1072,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-10-1",
           title: {
-            en: "Food & Drinks - Vocabulary",
-            es: "Comida y Bebidas - Vocabulario",
+            en: "Food Vocabulary",
+            es: "Vocabulario de Comida",
           },
           description: {
             en: "Learn key vocabulary for food & drinks",
@@ -1095,8 +1095,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-10-2",
           title: {
-            en: "Food & Drinks - Practice",
-            es: "Comida y Bebidas - Práctica",
+            en: "I'm Hungry!",
+            es: "¡Tengo Hambre!",
           },
           description: {
             en: "Practice food & drinks in conversation",
@@ -1119,8 +1119,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-10-3",
           title: {
-            en: "Food & Drinks - Application",
-            es: "Comida y Bebidas - Aplicación",
+            en: "My Favorite Foods",
+            es: "Mis Comidas Favoritas",
           },
           description: {
             en: "Apply food & drinks skills",
@@ -1186,8 +1186,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-11-1",
           title: {
-            en: "At the Restaurant - Vocabulary",
-            es: "En el Restaurante - Vocabulario",
+            en: "Restaurant Words",
+            es: "Palabras de Restaurante",
           },
           description: {
             en: "Learn key vocabulary for at the restaurant",
@@ -1209,8 +1209,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-11-2",
           title: {
-            en: "At the Restaurant - Practice",
-            es: "En el Restaurante - Práctica",
+            en: "Ordering a Meal",
+            es: "Pidiendo una Comida",
           },
           description: {
             en: "Practice at the restaurant in conversation",
@@ -1233,8 +1233,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-11-3",
           title: {
-            en: "At the Restaurant - Application",
-            es: "En el Restaurante - Aplicación",
+            en: "Paying the Bill",
+            es: "Pagando la Cuenta",
           },
           description: {
             en: "Apply at the restaurant skills",
@@ -1300,8 +1300,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-12-1",
           title: {
-            en: "Common Objects - Vocabulary",
-            es: "Objetos Comunes - Vocabulario",
+            en: "Everyday Items",
+            es: "Objetos Cotidianos",
           },
           description: {
             en: "Learn key vocabulary for common objects",
@@ -1323,8 +1323,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-12-2",
           title: {
-            en: "Common Objects - Practice",
-            es: "Objetos Comunes - Práctica",
+            en: "What Is This?",
+            es: "¿Qué Es Esto?",
           },
           description: {
             en: "Practice common objects in conversation",
@@ -1347,8 +1347,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-12-3",
           title: {
-            en: "Common Objects - Application",
-            es: "Objetos Comunes - Aplicación",
+            en: "Objects Around Us",
+            es: "Objetos a Nuestro Alrededor",
           },
           description: {
             en: "Apply common objects skills",
@@ -1414,8 +1414,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-13-1",
           title: {
-            en: "In the House - Vocabulary",
-            es: "En la Casa - Vocabulario",
+            en: "Rooms of the House",
+            es: "Cuartos de la Casa",
           },
           description: {
             en: "Learn key vocabulary for in the house",
@@ -1437,8 +1437,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-13-2",
           title: {
-            en: "In the House - Practice",
-            es: "En la Casa - Práctica",
+            en: "Where Is It?",
+            es: "¿Dónde Está?",
           },
           description: {
             en: "Practice in the house in conversation",
@@ -1461,8 +1461,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-13-3",
           title: {
-            en: "In the House - Application",
-            es: "En la Casa - Aplicación",
+            en: "At Home",
+            es: "En Casa",
           },
           description: {
             en: "Apply in the house skills",
@@ -1528,8 +1528,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-14-1",
           title: {
-            en: "Clothing - Vocabulary",
-            es: "Ropa - Vocabulario",
+            en: "What to Wear",
+            es: "Qué Ponerse",
           },
           description: {
             en: "Learn key vocabulary for clothing",
@@ -1551,8 +1551,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-14-2",
           title: {
-            en: "Clothing - Practice",
-            es: "Ropa - Práctica",
+            en: "Shopping for Clothes",
+            es: "Comprando Ropa",
           },
           description: {
             en: "Practice clothing in conversation",
@@ -1575,8 +1575,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-14-3",
           title: {
-            en: "Clothing - Application",
-            es: "Ropa - Aplicación",
+            en: "My Wardrobe",
+            es: "Mi Guardarropa",
           },
           description: {
             en: "Apply clothing skills",
@@ -1642,8 +1642,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-15-1",
           title: {
-            en: "Daily Routine - Vocabulary",
-            es: "Rutina Diaria - Vocabulario",
+            en: "My Day",
+            es: "Mi Día",
           },
           description: {
             en: "Learn key vocabulary for daily routine",
@@ -1665,8 +1665,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-15-2",
           title: {
-            en: "Daily Routine - Practice",
-            es: "Rutina Diaria - Práctica",
+            en: "Daily Activities",
+            es: "Actividades Diarias",
           },
           description: {
             en: "Practice daily routine in conversation",
@@ -1689,8 +1689,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-15-3",
           title: {
-            en: "Daily Routine - Application",
-            es: "Rutina Diaria - Aplicación",
+            en: "From Morning to Night",
+            es: "De la Mañana a la Noche",
           },
           description: {
             en: "Apply daily routine skills",
@@ -1756,8 +1756,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-16-1",
           title: {
-            en: "Weather - Vocabulary",
-            es: "Clima - Vocabulario",
+            en: "How's the Weather?",
+            es: "¿Cómo Está el Clima?",
           },
           description: {
             en: "Learn key vocabulary for weather",
@@ -1779,8 +1779,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-16-2",
           title: {
-            en: "Weather - Practice",
-            es: "Clima - Práctica",
+            en: "Four Seasons",
+            es: "Cuatro Estaciones",
           },
           description: {
             en: "Practice weather in conversation",
@@ -1803,8 +1803,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-16-3",
           title: {
-            en: "Weather - Application",
-            es: "Clima - Aplicación",
+            en: "Weather Reports",
+            es: "Reportes del Clima",
           },
           description: {
             en: "Apply weather skills",
@@ -1870,8 +1870,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-17-1",
           title: {
-            en: "Likes & Dislikes - Vocabulary",
-            es: "Gustos - Vocabulario",
+            en: "I Like, I Love",
+            es: "Me Gusta, Me Encanta",
           },
           description: {
             en: "Learn key vocabulary for likes & dislikes",
@@ -1893,8 +1893,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-17-2",
           title: {
-            en: "Likes & Dislikes - Practice",
-            es: "Gustos - Práctica",
+            en: "Expressing Preferences",
+            es: "Expresando Preferencias",
           },
           description: {
             en: "Practice likes & dislikes in conversation",
@@ -1917,8 +1917,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-17-3",
           title: {
-            en: "Likes & Dislikes - Application",
-            es: "Gustos - Aplicación",
+            en: "Favorites and Dislikes",
+            es: "Favoritos y Disgustos",
           },
           description: {
             en: "Apply likes & dislikes skills",
@@ -1984,8 +1984,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-18-1",
           title: {
-            en: "Basic Questions - Vocabulary",
-            es: "Preguntas - Vocabulario",
+            en: "Question Words",
+            es: "Palabras de Pregunta",
           },
           description: {
             en: "Learn key vocabulary for basic questions",
@@ -2007,8 +2007,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-18-2",
           title: {
-            en: "Basic Questions - Practice",
-            es: "Preguntas - Práctica",
+            en: "Asking Questions",
+            es: "Haciendo Preguntas",
           },
           description: {
             en: "Practice basic questions in conversation",
@@ -2031,8 +2031,8 @@ const baseLearningPath = {
         {
           id: "lesson-a1-18-3",
           title: {
-            en: "Basic Questions - Application",
-            es: "Preguntas - Aplicación",
+            en: "Getting Information",
+            es: "Obteniendo Información",
           },
           description: {
             en: "Apply basic questions skills",
@@ -2100,8 +2100,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-1-1",
           title: {
-            en: "Describing People - Vocabulary",
-            es: "Describir Personas - Vocabulario",
+            en: "Appearance Words",
+            es: "Palabras de Apariencia",
           },
           description: {
             en: "Learn key vocabulary for describing people",
@@ -2123,8 +2123,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-1-2",
           title: {
-            en: "Describing People - Practice",
-            es: "Describir Personas - Práctica",
+            en: "How Do They Look?",
+            es: "¿Cómo Se Ven?",
           },
           description: {
             en: "Practice describing people in conversation",
@@ -2147,8 +2147,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-1-3",
           title: {
-            en: "Describing People - Application",
-            es: "Describir Personas - Aplicación",
+            en: "Detailed Descriptions",
+            es: "Descripciones Detalladas",
           },
           description: {
             en: "Apply describing people skills",
@@ -2214,8 +2214,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-2-1",
           title: {
-            en: "Describing Places - Vocabulary",
-            es: "Describir Lugares - Vocabulario",
+            en: "Places Around Town",
+            es: "Lugares en la Ciudad",
           },
           description: {
             en: "Learn key vocabulary for describing places",
@@ -2237,8 +2237,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-2-2",
           title: {
-            en: "Describing Places - Practice",
-            es: "Describir Lugares - Práctica",
+            en: "My Neighborhood",
+            es: "Mi Vecindario",
           },
           description: {
             en: "Practice describing places in conversation",
@@ -2261,8 +2261,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-2-3",
           title: {
-            en: "Describing Places - Application",
-            es: "Describir Lugares - Aplicación",
+            en: "Dream Destinations",
+            es: "Destinos Soñados",
           },
           description: {
             en: "Apply describing places skills",
@@ -2328,8 +2328,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-3-1",
           title: {
-            en: "Shopping & Money - Vocabulary",
-            es: "Compras y Dinero - Vocabulario",
+            en: "At the Store",
+            es: "En la Tienda",
           },
           description: {
             en: "Learn key vocabulary for shopping & money",
@@ -2351,8 +2351,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-3-2",
           title: {
-            en: "Shopping & Money - Practice",
-            es: "Compras y Dinero - Práctica",
+            en: "Bargain Hunting",
+            es: "Buscando Ofertas",
           },
           description: {
             en: "Practice shopping & money in conversation",
@@ -2375,8 +2375,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-3-3",
           title: {
-            en: "Shopping & Money - Application",
-            es: "Compras y Dinero - Aplicación",
+            en: "Smart Shopping",
+            es: "Comprando Inteligentemente",
           },
           description: {
             en: "Apply shopping & money skills",
@@ -2442,8 +2442,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-4-1",
           title: {
-            en: "At the Market - Vocabulary",
-            es: "En el Mercado - Vocabulario",
+            en: "Fresh Produce",
+            es: "Productos Frescos",
           },
           description: {
             en: "Learn key vocabulary for at the market",
@@ -2465,8 +2465,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-4-2",
           title: {
-            en: "At the Market - Practice",
-            es: "En el Mercado - Práctica",
+            en: "Buying Groceries",
+            es: "Comprando Comestibles",
           },
           description: {
             en: "Practice at the market in conversation",
@@ -2489,8 +2489,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-4-3",
           title: {
-            en: "At the Market - Application",
-            es: "En el Mercado - Aplicación",
+            en: "Market Day",
+            es: "Día de Mercado",
           },
           description: {
             en: "Apply at the market skills",
@@ -2556,8 +2556,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-5-1",
           title: {
-            en: "Transportation - Vocabulary",
-            es: "Transporte - Vocabulario",
+            en: "Getting Around",
+            es: "Moviéndose",
           },
           description: {
             en: "Learn key vocabulary for transportation",
@@ -2579,8 +2579,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-5-2",
           title: {
-            en: "Transportation - Practice",
-            es: "Transporte - Práctica",
+            en: "Taking the Bus",
+            es: "Tomando el Autobús",
           },
           description: {
             en: "Practice transportation in conversation",
@@ -2603,8 +2603,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-5-3",
           title: {
-            en: "Transportation - Application",
-            es: "Transporte - Aplicación",
+            en: "Travel Options",
+            es: "Opciones de Viaje",
           },
           description: {
             en: "Apply transportation skills",
@@ -2670,8 +2670,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-6-1",
           title: {
-            en: "Directions - Vocabulary",
-            es: "Direcciones - Vocabulario",
+            en: "Left and Right",
+            es: "Izquierda y Derecha",
           },
           description: {
             en: "Learn key vocabulary for directions",
@@ -2693,8 +2693,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-6-2",
           title: {
-            en: "Directions - Practice",
-            es: "Direcciones - Práctica",
+            en: "How Do I Get There?",
+            es: "¿Cómo Llego Ahí?",
           },
           description: {
             en: "Practice directions in conversation",
@@ -2717,8 +2717,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-6-3",
           title: {
-            en: "Directions - Application",
-            es: "Direcciones - Aplicación",
+            en: "Finding Your Way",
+            es: "Encontrando Tu Camino",
           },
           description: {
             en: "Apply directions skills",
@@ -2784,8 +2784,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-7-1",
           title: {
-            en: "Making Plans - Vocabulary",
-            es: "Hacer Planes - Vocabulario",
+            en: "Future Activities",
+            es: "Actividades Futuras",
           },
           description: {
             en: "Learn key vocabulary for making plans",
@@ -2807,8 +2807,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-7-2",
           title: {
-            en: "Making Plans - Practice",
-            es: "Hacer Planes - Práctica",
+            en: "Let's Meet Up!",
+            es: "¡Vamos a Reunirnos!",
           },
           description: {
             en: "Practice making plans in conversation",
@@ -2831,8 +2831,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-7-3",
           title: {
-            en: "Making Plans - Application",
-            es: "Hacer Planes - Aplicación",
+            en: "Scheduling Events",
+            es: "Programando Eventos",
           },
           description: {
             en: "Apply making plans skills",
@@ -2898,7 +2898,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-8-1",
           title: {
-            en: "Hobbies & Interests - Vocabulary",
+            en: "Free Time Fun",
             es: "Pasatiempos - Vocabulario",
           },
           description: {
@@ -2921,7 +2921,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-8-2",
           title: {
-            en: "Hobbies & Interests - Practice",
+            en: "What Do You Enjoy?",
             es: "Pasatiempos - Práctica",
           },
           description: {
@@ -2945,7 +2945,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-8-3",
           title: {
-            en: "Hobbies & Interests - Application",
+            en: "Sharing Interests",
             es: "Pasatiempos - Aplicación",
           },
           description: {
@@ -3012,7 +3012,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-9-1",
           title: {
-            en: "Sports & Exercise - Vocabulary",
+            en: "Playing Sports",
             es: "Deportes - Vocabulario",
           },
           description: {
@@ -3035,7 +3035,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-9-2",
           title: {
-            en: "Sports & Exercise - Practice",
+            en: "Staying Active",
             es: "Deportes - Práctica",
           },
           description: {
@@ -3059,7 +3059,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-9-3",
           title: {
-            en: "Sports & Exercise - Application",
+            en: "Fitness Goals",
             es: "Deportes - Aplicación",
           },
           description: {
@@ -3126,8 +3126,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-10-1",
           title: {
-            en: "Past Tense Regular - Vocabulary",
-            es: "Pasado Regular - Vocabulario",
+            en: "Yesterday's Actions",
+            es: "Acciones de Ayer",
           },
           description: {
             en: "Learn key vocabulary for past tense regular",
@@ -3149,8 +3149,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-10-2",
           title: {
-            en: "Past Tense Regular - Practice",
-            es: "Pasado Regular - Práctica",
+            en: "What Did You Do?",
+            es: "¿Qué Hiciste?",
           },
           description: {
             en: "Practice past tense regular in conversation",
@@ -3173,8 +3173,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-10-3",
           title: {
-            en: "Past Tense Regular - Application",
-            es: "Pasado Regular - Aplicación",
+            en: "Recent Events",
+            es: "Eventos Recientes",
           },
           description: {
             en: "Apply past tense regular skills",
@@ -3240,8 +3240,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-11-1",
           title: {
-            en: "Past Tense Irregular - Vocabulary",
-            es: "Pasado Irregular - Vocabulario",
+            en: "Common Irregular Verbs",
+            es: "Verbos Irregulares Comunes",
           },
           description: {
             en: "Learn key vocabulary for past tense irregular",
@@ -3263,8 +3263,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-11-2",
           title: {
-            en: "Past Tense Irregular - Practice",
-            es: "Pasado Irregular - Práctica",
+            en: "Last Week",
+            es: "La Semana Pasada",
           },
           description: {
             en: "Practice past tense irregular in conversation",
@@ -3287,8 +3287,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-11-3",
           title: {
-            en: "Past Tense Irregular - Application",
-            es: "Pasado Irregular - Aplicación",
+            en: "Life Stories",
+            es: "Historias de Vida",
           },
           description: {
             en: "Apply past tense irregular skills",
@@ -3354,8 +3354,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-12-1",
           title: {
-            en: "Telling Stories - Vocabulary",
-            es: "Contar Historias - Vocabulario",
+            en: "Story Elements",
+            es: "Elementos de Historia",
           },
           description: {
             en: "Learn key vocabulary for telling stories",
@@ -3377,8 +3377,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-12-2",
           title: {
-            en: "Telling Stories - Practice",
-            es: "Contar Historias - Práctica",
+            en: "Once Upon a Time",
+            es: "Érase Una Vez",
           },
           description: {
             en: "Practice telling stories in conversation",
@@ -3401,8 +3401,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-12-3",
           title: {
-            en: "Telling Stories - Application",
-            es: "Contar Historias - Aplicación",
+            en: "My Story",
+            es: "Mi Historia",
           },
           description: {
             en: "Apply telling stories skills",
@@ -3468,8 +3468,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-13-1",
           title: {
-            en: "Future Plans - Vocabulary",
-            es: "Planes Futuros - Vocabulario",
+            en: "Dreams and Goals",
+            es: "Sueños y Metas",
           },
           description: {
             en: "Learn key vocabulary for future plans",
@@ -3491,8 +3491,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-13-2",
           title: {
-            en: "Future Plans - Practice",
-            es: "Planes Futuros - Práctica",
+            en: "What Will You Do?",
+            es: "¿Qué Harás?",
           },
           description: {
             en: "Practice future plans in conversation",
@@ -3515,8 +3515,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-13-3",
           title: {
-            en: "Future Plans - Application",
-            es: "Planes Futuros - Aplicación",
+            en: "Planning Ahead",
+            es: "Planificando el Futuro",
           },
           description: {
             en: "Apply future plans skills",
@@ -3582,8 +3582,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-14-1",
           title: {
-            en: "Health & Body - Vocabulary",
-            es: "Salud y Cuerpo - Vocabulario",
+            en: "Body Parts",
+            es: "Partes del Cuerpo",
           },
           description: {
             en: "Learn key vocabulary for health & body",
@@ -3605,8 +3605,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-14-2",
           title: {
-            en: "Health & Body - Practice",
-            es: "Salud y Cuerpo - Práctica",
+            en: "How Do You Feel?",
+            es: "¿Cómo Te Sientes?",
           },
           description: {
             en: "Practice health & body in conversation",
@@ -3629,8 +3629,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-14-3",
           title: {
-            en: "Health & Body - Application",
-            es: "Salud y Cuerpo - Aplicación",
+            en: "Healthy Living",
+            es: "Vida Saludable",
           },
           description: {
             en: "Apply health & body skills",
@@ -3696,8 +3696,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-15-1",
           title: {
-            en: "At the Doctor's - Vocabulary",
-            es: "En el Médico - Vocabulario",
+            en: "Medical Terms",
+            es: "Términos Médicos",
           },
           description: {
             en: "Learn key vocabulary for at the doctor's",
@@ -3719,8 +3719,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-15-2",
           title: {
-            en: "At the Doctor's - Practice",
-            es: "En el Médico - Práctica",
+            en: "Visiting the Doctor",
+            es: "Visitando al Doctor",
           },
           description: {
             en: "Practice at the doctor's in conversation",
@@ -3743,8 +3743,8 @@ const baseLearningPath = {
         {
           id: "lesson-a2-15-3",
           title: {
-            en: "At the Doctor's - Application",
-            es: "En el Médico - Aplicación",
+            en: "Health Concerns",
+            es: "Preocupaciones de Salud",
           },
           description: {
             en: "Apply at the doctor's skills",
@@ -3810,7 +3810,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-16-1",
           title: {
-            en: "Jobs & Professions - Vocabulary",
+            en: "Career Words",
             es: "Trabajos - Vocabulario",
           },
           description: {
@@ -3833,7 +3833,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-16-2",
           title: {
-            en: "Jobs & Professions - Practice",
+            en: "What Do You Do?",
             es: "Trabajos - Práctica",
           },
           description: {
@@ -3857,7 +3857,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-16-3",
           title: {
-            en: "Jobs & Professions - Application",
+            en: "Dream Job",
             es: "Trabajos - Aplicación",
           },
           description: {
@@ -3924,7 +3924,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-17-1",
           title: {
-            en: "School & Education - Vocabulary",
+            en: "In the Classroom",
             es: "Escuela - Vocabulario",
           },
           description: {
@@ -3947,7 +3947,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-17-2",
           title: {
-            en: "School & Education - Practice",
+            en: "School Life",
             es: "Escuela - Práctica",
           },
           description: {
@@ -3971,7 +3971,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-17-3",
           title: {
-            en: "School & Education - Application",
+            en: "Learning Journey",
             es: "Escuela - Aplicación",
           },
           description: {
@@ -4038,7 +4038,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-18-1",
           title: {
-            en: "Technology Basics - Vocabulary",
+            en: "Digital Devices",
             es: "Tecnología - Vocabulario",
           },
           description: {
@@ -4061,7 +4061,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-18-2",
           title: {
-            en: "Technology Basics - Practice",
+            en: "Using Technology",
             es: "Tecnología - Práctica",
           },
           description: {
@@ -4085,7 +4085,7 @@ const baseLearningPath = {
         {
           id: "lesson-a2-18-3",
           title: {
-            en: "Technology Basics - Application",
+            en: "Connected Life",
             es: "Tecnología - Aplicación",
           },
           description: {
@@ -4154,7 +4154,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-1-1",
           title: {
-            en: "Present Perfect - Vocabulary",
+            en: "Have You Ever?",
             es: "Pretérito Perfecto - Vocabulario",
           },
           description: {
@@ -4177,7 +4177,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-1-2",
           title: {
-            en: "Present Perfect - Practice",
+            en: "Life Experiences",
             es: "Pretérito Perfecto - Práctica",
           },
           description: {
@@ -4201,7 +4201,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-1-3",
           title: {
-            en: "Present Perfect - Application",
+            en: "Achievements",
             es: "Pretérito Perfecto - Aplicación",
           },
           description: {
@@ -4268,8 +4268,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-2-1",
           title: {
-            en: "Past Continuous - Vocabulary",
-            es: "Pasado Continuo - Vocabulario",
+            en: "While It Was Happening",
+            es: "Mientras Sucedía",
           },
           description: {
             en: "Learn key vocabulary for past continuous",
@@ -4291,8 +4291,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-2-2",
           title: {
-            en: "Past Continuous - Practice",
-            es: "Pasado Continuo - Práctica",
+            en: "Background Actions",
+            es: "Acciones de Fondo",
           },
           description: {
             en: "Practice past continuous in conversation",
@@ -4315,8 +4315,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-2-3",
           title: {
-            en: "Past Continuous - Application",
-            es: "Pasado Continuo - Aplicación",
+            en: "Setting the Scene",
+            es: "Ambientando la Escena",
           },
           description: {
             en: "Apply past continuous skills",
@@ -4382,7 +4382,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-3-1",
           title: {
-            en: "Future Tense - Vocabulary",
+            en: "Tomorrow's World",
             es: "Futuro - Vocabulario",
           },
           description: {
@@ -4405,7 +4405,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-3-2",
           title: {
-            en: "Future Tense - Practice",
+            en: "Predictions",
             es: "Futuro - Práctica",
           },
           description: {
@@ -4429,7 +4429,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-3-3",
           title: {
-            en: "Future Tense - Application",
+            en: "Future Possibilities",
             es: "Futuro - Aplicación",
           },
           description: {
@@ -4496,8 +4496,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-4-1",
           title: {
-            en: "Comparisons - Vocabulary",
-            es: "Comparaciones - Vocabulario",
+            en: "Better or Worse",
+            es: "Mejor o Peor",
           },
           description: {
             en: "Learn key vocabulary for comparisons",
@@ -4519,8 +4519,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-4-2",
           title: {
-            en: "Comparisons - Practice",
-            es: "Comparaciones - Práctica",
+            en: "Making Comparisons",
+            es: "Haciendo Comparaciones",
           },
           description: {
             en: "Practice comparisons in conversation",
@@ -4543,8 +4543,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-4-3",
           title: {
-            en: "Comparisons - Application",
-            es: "Comparaciones - Aplicación",
+            en: "Superlatives",
+            es: "Superlativos",
           },
           description: {
             en: "Apply comparisons skills",
@@ -4610,8 +4610,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-5-1",
           title: {
-            en: "Giving Advice - Vocabulary",
-            es: "Dar Consejos - Vocabulario",
+            en: "Should and Shouldn't",
+            es: "Deberías y No Deberías",
           },
           description: {
             en: "Learn key vocabulary for giving advice",
@@ -4633,8 +4633,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-5-2",
           title: {
-            en: "Giving Advice - Practice",
-            es: "Dar Consejos - Práctica",
+            en: "Helpful Suggestions",
+            es: "Sugerencias Útiles",
           },
           description: {
             en: "Practice giving advice in conversation",
@@ -4657,8 +4657,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-5-3",
           title: {
-            en: "Giving Advice - Application",
-            es: "Dar Consejos - Aplicación",
+            en: "Problem Solving",
+            es: "Resolviendo Problemas",
           },
           description: {
             en: "Apply giving advice skills",
@@ -4724,8 +4724,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-6-1",
           title: {
-            en: "Making Suggestions - Vocabulary",
-            es: "Hacer Sugerencias - Vocabulario",
+            en: "Why Don't We?",
+            es: "¿Por Qué No?",
           },
           description: {
             en: "Learn key vocabulary for making suggestions",
@@ -4747,8 +4747,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-6-2",
           title: {
-            en: "Making Suggestions - Practice",
-            es: "Hacer Sugerencias - Práctica",
+            en: "Let's Try This",
+            es: "Intentemos Esto",
           },
           description: {
             en: "Practice making suggestions in conversation",
@@ -4771,8 +4771,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-6-3",
           title: {
-            en: "Making Suggestions - Application",
-            es: "Hacer Sugerencias - Aplicación",
+            en: "Collaborative Ideas",
+            es: "Ideas Colaborativas",
           },
           description: {
             en: "Apply making suggestions skills",
@@ -4838,7 +4838,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-7-1",
           title: {
-            en: "Conditional Would - Vocabulary",
+            en: "If I Were You",
             es: "Condicional - Vocabulario",
           },
           description: {
@@ -4861,7 +4861,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-7-2",
           title: {
-            en: "Conditional Would - Practice",
+            en: "Hypothetical Situations",
             es: "Condicional - Práctica",
           },
           description: {
@@ -4885,7 +4885,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-7-3",
           title: {
-            en: "Conditional Would - Application",
+            en: "Imagining Possibilities",
             es: "Condicional - Aplicación",
           },
           description: {
@@ -4952,8 +4952,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-8-1",
           title: {
-            en: "Travel & Tourism - Vocabulary",
-            es: "Viajes y Turismo - Vocabulario",
+            en: "Trip Planning",
+            es: "Planeando Viajes",
           },
           description: {
             en: "Learn key vocabulary for travel & tourism",
@@ -4975,8 +4975,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-8-2",
           title: {
-            en: "Travel & Tourism - Practice",
-            es: "Viajes y Turismo - Práctica",
+            en: "Booking a Trip",
+            es: "Reservando un Viaje",
           },
           description: {
             en: "Practice travel & tourism in conversation",
@@ -4999,8 +4999,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-8-3",
           title: {
-            en: "Travel & Tourism - Application",
-            es: "Viajes y Turismo - Aplicación",
+            en: "Adventure Awaits",
+            es: "La Aventura Espera",
           },
           description: {
             en: "Apply travel & tourism skills",
@@ -5066,8 +5066,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-9-1",
           title: {
-            en: "Environment - Vocabulary",
-            es: "Medio Ambiente - Vocabulario",
+            en: "Our Planet",
+            es: "Nuestro Planeta",
           },
           description: {
             en: "Learn key vocabulary for environment",
@@ -5089,8 +5089,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-9-2",
           title: {
-            en: "Environment - Practice",
-            es: "Medio Ambiente - Práctica",
+            en: "Going Green",
+            es: "Siendo Ecológico",
           },
           description: {
             en: "Practice environment in conversation",
@@ -5113,8 +5113,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-9-3",
           title: {
-            en: "Environment - Application",
-            es: "Medio Ambiente - Aplicación",
+            en: "Saving Earth",
+            es: "Salvando la Tierra",
           },
           description: {
             en: "Apply environment skills",
@@ -5180,8 +5180,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-10-1",
           title: {
-            en: "Culture & Traditions - Vocabulary",
-            es: "Cultura y Tradiciones - Vocabulario",
+            en: "Cultural Heritage",
+            es: "Patrimonio Cultural",
           },
           description: {
             en: "Learn key vocabulary for culture & traditions",
@@ -5203,8 +5203,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-10-2",
           title: {
-            en: "Culture & Traditions - Practice",
-            es: "Cultura y Tradiciones - Práctica",
+            en: "Customs and Festivals",
+            es: "Costumbres y Festivales",
           },
           description: {
             en: "Practice culture & traditions in conversation",
@@ -5227,8 +5227,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-10-3",
           title: {
-            en: "Culture & Traditions - Application",
-            es: "Cultura y Tradiciones - Aplicación",
+            en: "Celebrating Diversity",
+            es: "Celebrando la Diversidad",
           },
           description: {
             en: "Apply culture & traditions skills",
@@ -5294,8 +5294,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-11-1",
           title: {
-            en: "Media & News - Vocabulary",
-            es: "Medios y Noticias - Vocabulario",
+            en: "Headlines",
+            es: "Titulares",
           },
           description: {
             en: "Learn key vocabulary for media & news",
@@ -5317,8 +5317,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-11-2",
           title: {
-            en: "Media & News - Practice",
-            es: "Medios y Noticias - Práctica",
+            en: "Current Events",
+            es: "Eventos Actuales",
           },
           description: {
             en: "Practice media & news in conversation",
@@ -5341,8 +5341,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-11-3",
           title: {
-            en: "Media & News - Application",
-            es: "Medios y Noticias - Aplicación",
+            en: "Informed Citizen",
+            es: "Ciudadano Informado",
           },
           description: {
             en: "Apply media & news skills",
@@ -5408,8 +5408,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-12-1",
           title: {
-            en: "Expressing Opinions - Vocabulary",
-            es: "Expresar Opiniones - Vocabulario",
+            en: "I Think That...",
+            es: "Creo Que...",
           },
           description: {
             en: "Learn key vocabulary for expressing opinions",
@@ -5431,8 +5431,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-12-2",
           title: {
-            en: "Expressing Opinions - Practice",
-            es: "Expresar Opiniones - Práctica",
+            en: "Sharing Views",
+            es: "Compartiendo Puntos de Vista",
           },
           description: {
             en: "Practice expressing opinions in conversation",
@@ -5455,8 +5455,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-12-3",
           title: {
-            en: "Expressing Opinions - Application",
-            es: "Expresar Opiniones - Aplicación",
+            en: "Respectful Debate",
+            es: "Debate Respetuoso",
           },
           description: {
             en: "Apply expressing opinions skills",
@@ -5522,7 +5522,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-13-1",
           title: {
-            en: "Making Complaints - Vocabulary",
+            en: "Something's Wrong",
             es: "Quejas - Vocabulario",
           },
           description: {
@@ -5545,7 +5545,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-13-2",
           title: {
-            en: "Making Complaints - Practice",
+            en: "I'm Not Satisfied",
             es: "Quejas - Práctica",
           },
           description: {
@@ -5569,7 +5569,7 @@ const baseLearningPath = {
         {
           id: "lesson-b1-13-3",
           title: {
-            en: "Making Complaints - Application",
+            en: "Resolving Issues",
             es: "Quejas - Aplicación",
           },
           description: {
@@ -5636,8 +5636,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-14-1",
           title: {
-            en: "Experiences - Vocabulary",
-            es: "Experiencias - Vocabulario",
+            en: "Memorable Moments",
+            es: "Momentos Memorables",
           },
           description: {
             en: "Learn key vocabulary for experiences",
@@ -5659,8 +5659,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-14-2",
           title: {
-            en: "Experiences - Practice",
-            es: "Experiencias - Práctica",
+            en: "Sharing Experiences",
+            es: "Compartiendo Experiencias",
           },
           description: {
             en: "Practice experiences in conversation",
@@ -5683,8 +5683,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-14-3",
           title: {
-            en: "Experiences - Application",
-            es: "Experiencias - Aplicación",
+            en: "Learning from Life",
+            es: "Aprendiendo de la Vida",
           },
           description: {
             en: "Apply experiences skills",
@@ -5750,8 +5750,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-15-1",
           title: {
-            en: "Probability - Vocabulary",
-            es: "Probabilidad - Vocabulario",
+            en: "Maybe and Perhaps",
+            es: "Quizás y Tal Vez",
           },
           description: {
             en: "Learn key vocabulary for probability",
@@ -5773,8 +5773,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-15-2",
           title: {
-            en: "Probability - Practice",
-            es: "Probabilidad - Práctica",
+            en: "Likely or Unlikely",
+            es: "Probable o Improbable",
           },
           description: {
             en: "Practice probability in conversation",
@@ -5797,8 +5797,8 @@ const baseLearningPath = {
         {
           id: "lesson-b1-15-3",
           title: {
-            en: "Probability - Application",
-            es: "Probabilidad - Aplicación",
+            en: "Making Predictions",
+            es: "Haciendo Predicciones",
           },
           description: {
             en: "Apply probability skills",
@@ -5866,7 +5866,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-1-1",
           title: {
-            en: "Past Perfect - Vocabulary",
+            en: "Before It Happened",
             es: "Pluscuamperfecto - Vocabulario",
           },
           description: {
@@ -5889,7 +5889,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-1-2",
           title: {
-            en: "Past Perfect - Practice",
+            en: "Earlier Actions",
             es: "Pluscuamperfecto - Práctica",
           },
           description: {
@@ -5913,7 +5913,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-1-3",
           title: {
-            en: "Past Perfect - Application",
+            en: "Complex Timelines",
             es: "Pluscuamperfecto - Aplicación",
           },
           description: {
@@ -5980,8 +5980,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-2-1",
           title: {
-            en: "Passive Voice - Vocabulary",
-            es: "Voz Pasiva - Vocabulario",
+            en: "It Was Done",
+            es: "Fue Hecho",
           },
           description: {
             en: "Learn key vocabulary for passive voice",
@@ -6003,8 +6003,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-2-2",
           title: {
-            en: "Passive Voice - Practice",
-            es: "Voz Pasiva - Práctica",
+            en: "Formal Writing",
+            es: "Escritura Formal",
           },
           description: {
             en: "Practice passive voice in conversation",
@@ -6027,8 +6027,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-2-3",
           title: {
-            en: "Passive Voice - Application",
-            es: "Voz Pasiva - Aplicación",
+            en: "Professional Tone",
+            es: "Tono Profesional",
           },
           description: {
             en: "Apply passive voice skills",
@@ -6094,7 +6094,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-3-1",
           title: {
-            en: "Reported Speech - Vocabulary",
+            en: "She Said That...",
             es: "Discurso Indirecto - Vocabulario",
           },
           description: {
@@ -6117,7 +6117,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-3-2",
           title: {
-            en: "Reported Speech - Practice",
+            en: "Quoting Others",
             es: "Discurso Indirecto - Práctica",
           },
           description: {
@@ -6141,7 +6141,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-3-3",
           title: {
-            en: "Reported Speech - Application",
+            en: "Retelling Stories",
             es: "Discurso Indirecto - Aplicación",
           },
           description: {
@@ -6208,8 +6208,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-4-1",
           title: {
-            en: "Relative Clauses - Vocabulary",
-            es: "Cláusulas Relativas - Vocabulario",
+            en: "Who, Which, That",
+            es: "Quien, Cual, Que",
           },
           description: {
             en: "Learn key vocabulary for relative clauses",
@@ -6231,8 +6231,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-4-2",
           title: {
-            en: "Relative Clauses - Practice",
-            es: "Cláusulas Relativas - Práctica",
+            en: "Connecting Ideas",
+            es: "Conectando Ideas",
           },
           description: {
             en: "Practice relative clauses in conversation",
@@ -6255,8 +6255,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-4-3",
           title: {
-            en: "Relative Clauses - Application",
-            es: "Cláusulas Relativas - Aplicación",
+            en: "Complex Sentences",
+            es: "Oraciones Complejas",
           },
           description: {
             en: "Apply relative clauses skills",
@@ -6322,7 +6322,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-5-1",
           title: {
-            en: "Formal vs Informal - Vocabulary",
+            en: "Registers of Speech",
             es: "Formal e Informal - Vocabulario",
           },
           description: {
@@ -6345,7 +6345,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-5-2",
           title: {
-            en: "Formal vs Informal - Practice",
+            en: "Appropriate Language",
             es: "Formal e Informal - Práctica",
           },
           description: {
@@ -6369,7 +6369,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-5-3",
           title: {
-            en: "Formal vs Informal - Application",
+            en: "Context Matters",
             es: "Formal e Informal - Aplicación",
           },
           description: {
@@ -6436,8 +6436,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-6-1",
           title: {
-            en: "Business Spanish - Vocabulary",
-            es: "Español de Negocios - Vocabulario",
+            en: "Corporate World",
+            es: "Mundo Corporativo",
           },
           description: {
             en: "Learn key vocabulary for business spanish",
@@ -6459,8 +6459,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-6-2",
           title: {
-            en: "Business Spanish - Practice",
-            es: "Español de Negocios - Práctica",
+            en: "Professional Meetings",
+            es: "Reuniones Profesionales",
           },
           description: {
             en: "Practice business spanish in conversation",
@@ -6483,8 +6483,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-6-3",
           title: {
-            en: "Business Spanish - Application",
-            es: "Español de Negocios - Aplicación",
+            en: "Business Communication",
+            es: "Comunicación Empresarial",
           },
           description: {
             en: "Apply business spanish skills",
@@ -6550,8 +6550,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-7-1",
           title: {
-            en: "Science & Innovation - Vocabulary",
-            es: "Ciencia e Innovación - Vocabulario",
+            en: "Scientific Terms",
+            es: "Términos Científicos",
           },
           description: {
             en: "Learn key vocabulary for science & innovation",
@@ -6573,8 +6573,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-7-2",
           title: {
-            en: "Science & Innovation - Practice",
-            es: "Ciencia e Innovación - Práctica",
+            en: "Technological Advances",
+            es: "Avances Tecnológicos",
           },
           description: {
             en: "Practice science & innovation in conversation",
@@ -6597,8 +6597,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-7-3",
           title: {
-            en: "Science & Innovation - Application",
-            es: "Ciencia e Innovación - Aplicación",
+            en: "Future of Science",
+            es: "Futuro de la Ciencia",
           },
           description: {
             en: "Apply science & innovation skills",
@@ -6664,7 +6664,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-8-1",
           title: {
-            en: "Social Issues - Vocabulary",
+            en: "Society Today",
             es: "Problemas Sociales - Vocabulario",
           },
           description: {
@@ -6687,7 +6687,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-8-2",
           title: {
-            en: "Social Issues - Practice",
+            en: "Discussing Problems",
             es: "Problemas Sociales - Práctica",
           },
           description: {
@@ -6711,7 +6711,7 @@ const baseLearningPath = {
         {
           id: "lesson-b2-8-3",
           title: {
-            en: "Social Issues - Application",
+            en: "Making Change",
             es: "Problemas Sociales - Aplicación",
           },
           description: {
@@ -6778,8 +6778,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-9-1",
           title: {
-            en: "Arts & Literature - Vocabulary",
-            es: "Artes y Literatura - Vocabulario",
+            en: "Creative Expression",
+            es: "Expresión Creativa",
           },
           description: {
             en: "Learn key vocabulary for arts & literature",
@@ -6801,8 +6801,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-9-2",
           title: {
-            en: "Arts & Literature - Practice",
-            es: "Artes y Literatura - Práctica",
+            en: "Artistic Movements",
+            es: "Movimientos Artísticos",
           },
           description: {
             en: "Practice arts & literature in conversation",
@@ -6825,8 +6825,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-9-3",
           title: {
-            en: "Arts & Literature - Application",
-            es: "Artes y Literatura - Aplicación",
+            en: "Cultural Analysis",
+            es: "Análisis Cultural",
           },
           description: {
             en: "Apply arts & literature skills",
@@ -6892,8 +6892,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-10-1",
           title: {
-            en: "Politics & Society - Vocabulary",
-            es: "Política y Sociedad - Vocabulario",
+            en: "Civic Engagement",
+            es: "Participación Cívica",
           },
           description: {
             en: "Learn key vocabulary for politics & society",
@@ -6915,8 +6915,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-10-2",
           title: {
-            en: "Politics & Society - Practice",
-            es: "Política y Sociedad - Práctica",
+            en: "Political Discourse",
+            es: "Discurso Político",
           },
           description: {
             en: "Practice politics & society in conversation",
@@ -6939,8 +6939,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-10-3",
           title: {
-            en: "Politics & Society - Application",
-            es: "Política y Sociedad - Aplicación",
+            en: "Active Citizenship",
+            es: "Ciudadanía Activa",
           },
           description: {
             en: "Apply politics & society skills",
@@ -7006,8 +7006,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-11-1",
           title: {
-            en: "Health & Lifestyle - Vocabulary",
-            es: "Salud y Estilo de Vida - Vocabulario",
+            en: "Wellness Choices",
+            es: "Elecciones de Bienestar",
           },
           description: {
             en: "Learn key vocabulary for health & lifestyle",
@@ -7029,8 +7029,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-11-2",
           title: {
-            en: "Health & Lifestyle - Practice",
-            es: "Salud y Estilo de Vida - Práctica",
+            en: "Balanced Living",
+            es: "Vida Equilibrada",
           },
           description: {
             en: "Practice health & lifestyle in conversation",
@@ -7053,8 +7053,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-11-3",
           title: {
-            en: "Health & Lifestyle - Application",
-            es: "Salud y Estilo de Vida - Aplicación",
+            en: "Holistic Health",
+            es: "Salud Holística",
           },
           description: {
             en: "Apply health & lifestyle skills",
@@ -7120,8 +7120,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-12-1",
           title: {
-            en: "Abstract Concepts - Vocabulary",
-            es: "Conceptos Abstractos - Vocabulario",
+            en: "Philosophical Ideas",
+            es: "Ideas Filosóficas",
           },
           description: {
             en: "Learn key vocabulary for abstract concepts",
@@ -7143,8 +7143,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-12-2",
           title: {
-            en: "Abstract Concepts - Practice",
-            es: "Conceptos Abstractos - Práctica",
+            en: "Deep Thinking",
+            es: "Pensamiento Profundo",
           },
           description: {
             en: "Practice abstract concepts in conversation",
@@ -7167,8 +7167,8 @@ const baseLearningPath = {
         {
           id: "lesson-b2-12-3",
           title: {
-            en: "Abstract Concepts - Application",
-            es: "Conceptos Abstractos - Aplicación",
+            en: "Theoretical Discussion",
+            es: "Discusión Teórica",
           },
           description: {
             en: "Apply abstract concepts skills",
@@ -7236,8 +7236,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-1-1",
           title: {
-            en: "Subjunctive Present - Vocabulary",
-            es: "Subjuntivo Presente - Vocabulario",
+            en: "Doubt and Desire",
+            es: "Duda y Deseo",
           },
           description: {
             en: "Learn key vocabulary for subjunctive present",
@@ -7259,8 +7259,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-1-2",
           title: {
-            en: "Subjunctive Present - Practice",
-            es: "Subjuntivo Presente - Práctica",
+            en: "Expressing Wishes",
+            es: "Expresando Deseos",
           },
           description: {
             en: "Practice subjunctive present in conversation",
@@ -7283,8 +7283,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-1-3",
           title: {
-            en: "Subjunctive Present - Application",
-            es: "Subjuntivo Presente - Aplicación",
+            en: "Nuanced Meaning",
+            es: "Significado Matizado",
           },
           description: {
             en: "Apply subjunctive present skills",
@@ -7350,8 +7350,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-2-1",
           title: {
-            en: "Subjunctive Past - Vocabulary",
-            es: "Subjuntivo Pasado - Vocabulario",
+            en: "If Only...",
+            es: "Si Tan Solo...",
           },
           description: {
             en: "Learn key vocabulary for subjunctive past",
@@ -7373,8 +7373,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-2-2",
           title: {
-            en: "Subjunctive Past - Practice",
-            es: "Subjuntivo Pasado - Práctica",
+            en: "Contrary to Fact",
+            es: "Contrario a la Realidad",
           },
           description: {
             en: "Practice subjunctive past in conversation",
@@ -7397,8 +7397,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-2-3",
           title: {
-            en: "Subjunctive Past - Application",
-            es: "Subjuntivo Pasado - Aplicación",
+            en: "Complex Emotions",
+            es: "Emociones Complejas",
           },
           description: {
             en: "Apply subjunctive past skills",
@@ -7464,8 +7464,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-3-1",
           title: {
-            en: "Complex Conditionals - Vocabulary",
-            es: "Condicionales Complejos - Vocabulario",
+            en: "Advanced If Clauses",
+            es: "Cláusulas If Avanzadas",
           },
           description: {
             en: "Learn key vocabulary for complex conditionals",
@@ -7487,8 +7487,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-3-2",
           title: {
-            en: "Complex Conditionals - Practice",
-            es: "Condicionales Complejos - Práctica",
+            en: "Mixed Conditionals",
+            es: "Condicionales Mixtos",
           },
           description: {
             en: "Practice complex conditionals in conversation",
@@ -7511,8 +7511,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-3-3",
           title: {
-            en: "Complex Conditionals - Application",
-            es: "Condicionales Complejos - Aplicación",
+            en: "Sophisticated Logic",
+            es: "Lógica Sofisticada",
           },
           description: {
             en: "Apply complex conditionals skills",
@@ -7578,8 +7578,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-4-1",
           title: {
-            en: "Idiomatic Expressions - Vocabulary",
-            es: "Expresiones Idiomáticas - Vocabulario",
+            en: "Native Phrases",
+            es: "Frases Nativas",
           },
           description: {
             en: "Learn key vocabulary for idiomatic expressions",
@@ -7601,8 +7601,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-4-2",
           title: {
-            en: "Idiomatic Expressions - Practice",
-            es: "Expresiones Idiomáticas - Práctica",
+            en: "Sound Natural",
+            es: "Sonar Natural",
           },
           description: {
             en: "Practice idiomatic expressions in conversation",
@@ -7625,8 +7625,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-4-3",
           title: {
-            en: "Idiomatic Expressions - Application",
-            es: "Expresiones Idiomáticas - Aplicación",
+            en: "Cultural Fluency",
+            es: "Fluidez Cultural",
           },
           description: {
             en: "Apply idiomatic expressions skills",
@@ -7692,8 +7692,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-5-1",
           title: {
-            en: "Academic Writing - Vocabulary",
-            es: "Escritura Académica - Vocabulario",
+            en: "Scholarly Language",
+            es: "Lenguaje Académico",
           },
           description: {
             en: "Learn key vocabulary for academic writing",
@@ -7715,8 +7715,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-5-2",
           title: {
-            en: "Academic Writing - Practice",
-            es: "Escritura Académica - Práctica",
+            en: "Research Papers",
+            es: "Trabajos de Investigación",
           },
           description: {
             en: "Practice academic writing in conversation",
@@ -7739,8 +7739,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-5-3",
           title: {
-            en: "Academic Writing - Application",
-            es: "Escritura Académica - Aplicación",
+            en: "Critical Analysis",
+            es: "Análisis Crítico",
           },
           description: {
             en: "Apply academic writing skills",
@@ -7806,8 +7806,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-6-1",
           title: {
-            en: "Professional Communication - Vocabulary",
-            es: "Comunicación Profesional - Vocabulario",
+            en: "Business Etiquette",
+            es: "Etiqueta Empresarial",
           },
           description: {
             en: "Learn key vocabulary for professional communication",
@@ -7829,8 +7829,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-6-2",
           title: {
-            en: "Professional Communication - Practice",
-            es: "Comunicación Profesional - Práctica",
+            en: "Executive Presence",
+            es: "Presencia Ejecutiva",
           },
           description: {
             en: "Practice professional communication in conversation",
@@ -7853,8 +7853,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-6-3",
           title: {
-            en: "Professional Communication - Application",
-            es: "Comunicación Profesional - Aplicación",
+            en: "Leadership Language",
+            es: "Lenguaje de Liderazgo",
           },
           description: {
             en: "Apply professional communication skills",
@@ -7920,8 +7920,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-7-1",
           title: {
-            en: "Debate & Argumentation - Vocabulary",
-            es: "Debate y Argumentación - Vocabulario",
+            en: "Persuasive Language",
+            es: "Lenguaje Persuasivo",
           },
           description: {
             en: "Learn key vocabulary for debate & argumentation",
@@ -7943,8 +7943,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-7-2",
           title: {
-            en: "Debate & Argumentation - Practice",
-            es: "Debate y Argumentación - Práctica",
+            en: "Building Arguments",
+            es: "Construyendo Argumentos",
           },
           description: {
             en: "Practice debate & argumentation in conversation",
@@ -7967,8 +7967,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-7-3",
           title: {
-            en: "Debate & Argumentation - Application",
-            es: "Debate y Argumentación - Aplicación",
+            en: "Winning Debates",
+            es: "Ganando Debates",
           },
           description: {
             en: "Apply debate & argumentation skills",
@@ -8034,8 +8034,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-8-1",
           title: {
-            en: "Cultural Analysis - Vocabulary",
-            es: "Análisis Cultural - Vocabulario",
+            en: "Cultural Studies",
+            es: "Estudios Culturales",
           },
           description: {
             en: "Learn key vocabulary for cultural analysis",
@@ -8057,8 +8057,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-8-2",
           title: {
-            en: "Cultural Analysis - Practice",
-            es: "Análisis Cultural - Práctica",
+            en: "Interpreting Culture",
+            es: "Interpretando Cultura",
           },
           description: {
             en: "Practice cultural analysis in conversation",
@@ -8081,8 +8081,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-8-3",
           title: {
-            en: "Cultural Analysis - Application",
-            es: "Análisis Cultural - Aplicación",
+            en: "Cross-Cultural Understanding",
+            es: "Comprensión Intercultural",
           },
           description: {
             en: "Apply cultural analysis skills",
@@ -8148,8 +8148,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-9-1",
           title: {
-            en: "Literary Techniques - Vocabulary",
-            es: "Técnicas Literarias - Vocabulario",
+            en: "Literary Devices",
+            es: "Dispositivos Literarios",
           },
           description: {
             en: "Learn key vocabulary for literary techniques",
@@ -8171,8 +8171,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-9-2",
           title: {
-            en: "Literary Techniques - Practice",
-            es: "Técnicas Literarias - Práctica",
+            en: "Analyzing Texts",
+            es: "Analizando Textos",
           },
           description: {
             en: "Practice literary techniques in conversation",
@@ -8195,8 +8195,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-9-3",
           title: {
-            en: "Literary Techniques - Application",
-            es: "Técnicas Literarias - Aplicación",
+            en: "Literary Criticism",
+            es: "Crítica Literaria",
           },
           description: {
             en: "Apply literary techniques skills",
@@ -8262,8 +8262,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-10-1",
           title: {
-            en: "Advanced Discourse - Vocabulary",
-            es: "Discurso Avanzado - Vocabulario",
+            en: "Discourse Markers",
+            es: "Marcadores del Discurso",
           },
           description: {
             en: "Learn key vocabulary for advanced discourse",
@@ -8285,8 +8285,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-10-2",
           title: {
-            en: "Advanced Discourse - Practice",
-            es: "Discurso Avanzado - Práctica",
+            en: "Coherent Arguments",
+            es: "Argumentos Coherentes",
           },
           description: {
             en: "Practice advanced discourse in conversation",
@@ -8309,8 +8309,8 @@ const baseLearningPath = {
         {
           id: "lesson-c1-10-3",
           title: {
-            en: "Advanced Discourse - Application",
-            es: "Discurso Avanzado - Aplicación",
+            en: "Fluent Expression",
+            es: "Expresión Fluida",
           },
           description: {
             en: "Apply advanced discourse skills",
@@ -8378,8 +8378,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-1-1",
           title: {
-            en: "Native Idioms - Vocabulary",
-            es: "Modismos Nativos - Vocabulario",
+            en: "Advanced Expressions",
+            es: "Expresiones Avanzadas",
           },
           description: {
             en: "Learn key vocabulary for native idioms",
@@ -8401,8 +8401,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-1-2",
           title: {
-            en: "Native Idioms - Practice",
-            es: "Modismos Nativos - Práctica",
+            en: "Speaking Like a Native",
+            es: "Hablando Como Nativo",
           },
           description: {
             en: "Practice native idioms in conversation",
@@ -8425,8 +8425,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-1-3",
           title: {
-            en: "Native Idioms - Application",
-            es: "Modismos Nativos - Aplicación",
+            en: "Cultural Mastery",
+            es: "Maestría Cultural",
           },
           description: {
             en: "Apply native idioms skills",
@@ -8492,8 +8492,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-2-1",
           title: {
-            en: "Regional Variations - Vocabulary",
-            es: "Variaciones Regionales - Vocabulario",
+            en: "Dialects",
+            es: "Dialectos",
           },
           description: {
             en: "Learn key vocabulary for regional variations",
@@ -8515,8 +8515,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-2-2",
           title: {
-            en: "Regional Variations - Practice",
-            es: "Variaciones Regionales - Práctica",
+            en: "Accent and Usage",
+            es: "Acento y Uso",
           },
           description: {
             en: "Practice regional variations in conversation",
@@ -8539,8 +8539,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-2-3",
           title: {
-            en: "Regional Variations - Application",
-            es: "Variaciones Regionales - Aplicación",
+            en: "Linguistic Diversity",
+            es: "Diversidad Lingüística",
           },
           description: {
             en: "Apply regional variations skills",
@@ -8606,7 +8606,7 @@ const baseLearningPath = {
         {
           id: "lesson-c2-3-1",
           title: {
-            en: "Stylistic Mastery - Vocabulary",
+            en: "Refined Language",
             es: "Dominio Estilístico - Vocabulario",
           },
           description: {
@@ -8629,7 +8629,7 @@ const baseLearningPath = {
         {
           id: "lesson-c2-3-2",
           title: {
-            en: "Stylistic Mastery - Practice",
+            en: "Elegant Expression",
             es: "Dominio Estilístico - Práctica",
           },
           description: {
@@ -8653,7 +8653,7 @@ const baseLearningPath = {
         {
           id: "lesson-c2-3-3",
           title: {
-            en: "Stylistic Mastery - Application",
+            en: "Artistic Language",
             es: "Dominio Estilístico - Aplicación",
           },
           description: {
@@ -8720,8 +8720,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-4-1",
           title: {
-            en: "Rhetorical Devices - Vocabulary",
-            es: "Dispositivos Retóricos - Vocabulario",
+            en: "Persuasive Techniques",
+            es: "Técnicas Persuasivas",
           },
           description: {
             en: "Learn key vocabulary for rhetorical devices",
@@ -8743,8 +8743,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-4-2",
           title: {
-            en: "Rhetorical Devices - Practice",
-            es: "Dispositivos Retóricos - Práctica",
+            en: "Powerful Speech",
+            es: "Discurso Poderoso",
           },
           description: {
             en: "Practice rhetorical devices in conversation",
@@ -8767,8 +8767,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-4-3",
           title: {
-            en: "Rhetorical Devices - Application",
-            es: "Dispositivos Retóricos - Aplicación",
+            en: "Master Rhetoric",
+            es: "Maestría Retórica",
           },
           description: {
             en: "Apply rhetorical devices skills",
@@ -8834,8 +8834,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-5-1",
           title: {
-            en: "Specialized Vocabulary - Vocabulary",
-            es: "Vocabulario Especializado - Vocabulario",
+            en: "Expert Terminology",
+            es: "Terminología Experta",
           },
           description: {
             en: "Learn key vocabulary for specialized vocabulary",
@@ -8857,8 +8857,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-5-2",
           title: {
-            en: "Specialized Vocabulary - Practice",
-            es: "Vocabulario Especializado - Práctica",
+            en: "Professional Fields",
+            es: "Campos Profesionales",
           },
           description: {
             en: "Practice specialized vocabulary in conversation",
@@ -8881,8 +8881,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-5-3",
           title: {
-            en: "Specialized Vocabulary - Application",
-            es: "Vocabulario Especializado - Aplicación",
+            en: "Domain Expertise",
+            es: "Experiencia en el Dominio",
           },
           description: {
             en: "Apply specialized vocabulary skills",
@@ -8948,8 +8948,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-6-1",
           title: {
-            en: "Subtle Nuances - Vocabulary",
-            es: "Matices Sutiles - Vocabulario",
+            en: "Fine Distinctions",
+            es: "Distinciones Finas",
           },
           description: {
             en: "Learn key vocabulary for subtle nuances",
@@ -8971,8 +8971,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-6-2",
           title: {
-            en: "Subtle Nuances - Practice",
-            es: "Matices Sutiles - Práctica",
+            en: "Precise Meaning",
+            es: "Significado Preciso",
           },
           description: {
             en: "Practice subtle nuances in conversation",
@@ -8995,8 +8995,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-6-3",
           title: {
-            en: "Subtle Nuances - Application",
-            es: "Matices Sutiles - Aplicación",
+            en: "Mastery of Detail",
+            es: "Maestría del Detalle",
           },
           description: {
             en: "Apply subtle nuances skills",
@@ -9062,8 +9062,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-7-1",
           title: {
-            en: "Cultural Expertise - Vocabulary",
-            es: "Experiencia Cultural - Vocabulario",
+            en: "Cultural Intelligence",
+            es: "Inteligencia Cultural",
           },
           description: {
             en: "Learn key vocabulary for cultural expertise",
@@ -9085,8 +9085,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-7-2",
           title: {
-            en: "Cultural Expertise - Practice",
-            es: "Experiencia Cultural - Práctica",
+            en: "Cultural Navigator",
+            es: "Navegador Cultural",
           },
           description: {
             en: "Practice cultural expertise in conversation",
@@ -9109,8 +9109,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-7-3",
           title: {
-            en: "Cultural Expertise - Application",
-            es: "Experiencia Cultural - Aplicación",
+            en: "Cultural Ambassador",
+            es: "Embajador Cultural",
           },
           description: {
             en: "Apply cultural expertise skills",
@@ -9176,8 +9176,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-8-1",
           title: {
-            en: "Near-Native Fluency - Vocabulary",
-            es: "Fluidez Casi Nativa - Vocabulario",
+            en: "Native-Like Skills",
+            es: "Habilidades Nativas",
           },
           description: {
             en: "Learn key vocabulary for near-native fluency",
@@ -9199,8 +9199,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-8-2",
           title: {
-            en: "Near-Native Fluency - Practice",
-            es: "Fluidez Casi Nativa - Práctica",
+            en: "Perfect Fluency",
+            es: "Fluidez Perfecta",
           },
           description: {
             en: "Practice near-native fluency in conversation",
@@ -9223,8 +9223,8 @@ const baseLearningPath = {
         {
           id: "lesson-c2-8-3",
           title: {
-            en: "Near-Native Fluency - Application",
-            es: "Fluidez Casi Nativa - Aplicación",
+            en: "Complete Mastery",
+            es: "Maestría Completa",
           },
           description: {
             en: "Apply near-native fluency skills",

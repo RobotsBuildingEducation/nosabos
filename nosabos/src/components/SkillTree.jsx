@@ -72,6 +72,158 @@ import {
   RiBitCoinLine,
   RiScalesLine,
   RiEarthLine,
+  // Additional icons for more variety
+  RiUserAddLine,
+  RiChatSmileLine,
+  RiPhoneLine,
+  RiMoneyDollarCircleLine,
+  RiCakeLine,
+  RiSunLine,
+  RiMoonLine,
+  RiShoppingBag3Line,
+  RiHome4Line,
+  RiFlightTakeoffLine,
+  RiWalkLine,
+  RiRunLine,
+  RiBikeLine,
+  RiRoadMapLine,
+  RiDirectionLine,
+  RiPinDistanceLine,
+  RiStore2Line,
+  RiShoppingBasketLine,
+  RiAppleLine,
+  RiLeafLine,
+  RiTShirt2Line,
+  RiDoorLine,
+  RiAlarmLine,
+  RiCalendarCheckLine,
+  RiCalendarEventLine,
+  RiCalendar2Line,
+  RiTimer2Line,
+  RiHourglassLine,
+  RiParentLine,
+  RiUserHeartLine,
+  RiGroupLine,
+  RiBrushLine,
+  RiContrastLine,
+  RiDropLine,
+  RiCupLine,
+  RiFridgeLine,
+  RiKnifeLine,
+  RiBookReadLine,
+  RiBook3Line,
+  RiBookletLine,
+  RiArticleLine,
+  RiFileTextLine,
+  RiDraftLine,
+  RiFileList3Line,
+  RiHospitalLine,
+  RiStethoscopeLine,
+  RiMentalHealthLine,
+  RiHeartAddLine,
+  RiFirstAidKitLine,
+  RiGraduationCapLine,
+  RiSchoolLine,
+  RiPencilRulerLine,
+  RiGovernmentLine,
+  RiAuctionLine,
+  RiBarChartLine,
+  RiLineChartLine,
+  RiPieChartLine,
+  RiPresentationLine,
+  RiMicLine,
+  RiVoiceprintLine,
+  RiSpeakerLine,
+  RiChatQuoteLine,
+  RiMessageLine,
+  RiQuestionAnswerFill,
+  RiFeedbackFill,
+  RiDiscussFill,
+  RiChatCheckLine,
+  RiUserSmileLine,
+  RiEmotionHappyLine,
+  RiEmotionNormalLine,
+  RiEmotionUnhappyLine,
+  RiThumbUpLine,
+  RiThumbDownLine,
+  RiHeart3Line,
+  RiDislikeLine,
+  RiEye2Line,
+  RiEyeLine,
+  RiUserLine,
+  RiUser3Line,
+  RiAccountCircleLine,
+  RiMapLine,
+  RiMap2Line,
+  RiBuilding4Line,
+  RiBuildingLine,
+  RiCommunityLine,
+  RiRoadsterLine,
+  RiCarLine,
+  RiTaxiLine,
+  RiSubwayLine,
+  RiTrainLine,
+  RiShipLine,
+  RiSailboatLine,
+  RiCompass3Line,
+  RiNavigationLine,
+  RiSignpostLine,
+  RiRestaurant2Line,
+  RiEBike2Line,
+  RiGamepadLine,
+  RiBasketballLine,
+  RiPingPongLine,
+  RiBoxingLine,
+  RiMovie2Line,
+  RiFilmLine,
+  RiVideoLine,
+  RiCameraLine,
+  RiGalleryLine,
+  RiImage2Line,
+  RiMedalLine,
+  RiAwardLine,
+  RiVipCrownLine,
+  RiCopyrightLine,
+  RiCreativeCommonsLine,
+  RiLightbulbFlashLine,
+  RiNodeTree,
+  RiFocus3Line,
+  RiTargetLine,
+  RiCheckboxCircleLine,
+  RiTodoLine,
+  RiListCheck2Line,
+  RiPlayListAddLine,
+  RiFileEditLine,
+  RiEditLine,
+  RiEdit2Line,
+  RiInkBottleLine,
+  RiPenNibLine,
+  RiMarkPenLine,
+  RiArtboardLine,
+  RiDashboardLine,
+  RiPieChart2Line,
+  RiStockLine,
+  RiBriefcase4Line,
+  RiBriefcase5Line,
+  RiSuitcase2Line,
+  RiSuitcase3Line,
+  RiAncientGateLine,
+  RiBuilding2Line,
+  RiSparklingLine,
+  RiSparklingFill,
+  RiStarSmileLine,
+  RiFireLine,
+  RiFireFill,
+  RiTreeLine,
+  RiFlowerLine,
+  RiSeedlingLine,
+  RiRecycleLine,
+  RiGlobeLine,
+  RiCompass2Line,
+  RiFlagLine,
+  RiFlag2Line,
+  RiMedalFill,
+  RiAwardFill,
 } from "react-icons/ri";
 import {
   getLearningPath,
@@ -120,112 +272,462 @@ const MODE_ICONS = {
   reading: RiBookOpenLine,
 };
 
-// Lesson-specific icon mapping
-const getLessonIcon = (lessonId) => {
-  const iconMap = {
-    // Unit 1: Basics 1
-    "lesson-1-1": RiHandHeartLine, // Hello & Goodbye
-    "lesson-1-2": RiUserVoiceLine, // Introduce Yourself
-    "lesson-1-3": RiQuestionAnswerLine, // Basic Questions
-    "lesson-1-quiz": RiQuestionLine, // Unit 1 Quiz
+// Map vocabulary library topics to contextual icons
+const TOPIC_ICON_MAP = {
+  // Basic communication
+  greetings: RiHandHeartLine,
+  introductions: RiUserVoiceLine,
+  "question words": RiQuestionAnswerLine,
 
-    // Unit 2: Basics 2
-    "lesson-2-1": RiHeartLine, // Likes & Dislikes
-    "lesson-2-2": RiNumbersLine, // Numbers 1-20
-    "lesson-2-3": RiRestaurantLine, // Food & Drinks
-    "lesson-2-quiz": RiQuestionLine, // Unit 2 Quiz
+  // Numbers and counting
+  numbers: RiNumbersLine,
 
-    // Unit 3: Daily Life
-    "lesson-3-1": RiTimeLine, // Telling Time
-    "lesson-3-2": RiCalendarLine, // Daily Routine
-    "lesson-3-3": RiTeamLine, // Family Members
-    "lesson-3-quiz": RiQuestionLine, // Unit 3 Quiz
+  // Time and dates
+  time: RiTimeLine,
+  "time expressions": RiHistoryLine,
+  "days of week": RiCalendarLine,
 
-    // Unit 4: Getting Around
-    "lesson-4-1": RiMapPinLine, // Places in Town
-    "lesson-4-2": RiCompassLine, // Directions
-    "lesson-4-3": RiBusLine, // Transportation
-    "lesson-4-quiz": RiQuestionLine, // Unit 4 Quiz
+  // Food and dining
+  "food and drinks": RiRestaurantLine,
 
-    // Unit 5: Shopping & Money
-    "lesson-5-1": RiShoppingCartLine, // At the Store
-    "lesson-5-2": RiNumbersLine, // Numbers 20-100
-    "lesson-5-3": RiShirtLine, // Clothing
-    "lesson-5-quiz": RiQuestionLine, // Unit 5 Quiz
+  // Daily life
+  "daily activities": RiTimeLine,
+  preferences: RiHeartLine,
 
-    // Unit 6: Colors & Descriptions
-    "lesson-6-1": RiPaletteLine, // Colors
-    "lesson-6-2": RiEmotionLine, // Physical Descriptions
-    "lesson-6-3": RiEmotionLine, // Personality Traits
-    "lesson-6-quiz": RiQuestionLine, // Unit 6 Quiz
+  // People and relationships
+  family: RiTeamLine,
+  "physical descriptions": RiEmotionLine,
+  personality: RiEmotionLine,
 
-    // Unit 7: Hobbies & Free Time
-    "lesson-7-1": RiFootballLine, // Sports & Exercise
-    "lesson-7-2": RiMusicLine, // Music & Entertainment
-    "lesson-7-3": RiBook2Line, // Reading & Arts
-    "lesson-7-quiz": RiQuestionLine, // Unit 7 Quiz
+  // Places and navigation
+  places: RiMapPinLine,
+  directions: RiCompassLine,
+  transportation: RiBusLine,
 
-    // Unit 8: Past Experiences
-    "lesson-8-1": RiHistoryLine, // Preterite Tense Intro
-    "lesson-8-2": RiCalendarLine, // Weekend Activities
-    "lesson-8-3": RiSuitcaseLine, // Travel Stories
-    "lesson-8-quiz": RiQuestionLine, // Unit 8 Quiz
+  // Shopping and commerce
+  shopping: RiShoppingCartLine,
+  clothing: RiShirtLine,
 
-    // Unit 9: Ongoing Past
-    "lesson-9-1": RiHistoryFill, // Imperfect Tense
-    "lesson-9-2": RiHistoryLine, // Childhood Memories
-    "lesson-9-3": RiCloudyLine, // Weather & Seasons
-    "lesson-9-quiz": RiQuestionLine, // Unit 9 Quiz
+  // Colors and appearance
+  colors: RiPaletteLine,
 
-    // Unit 10: Future Plans
-    "lesson-10-1": RiCalendarLine, // Future with Ir + a
-    "lesson-10-2": RiCalendarLine, // Simple Future Tense
-    "lesson-10-3": RiBriefcaseLine, // Career Goals
-    "lesson-10-quiz": RiQuestionLine, // Unit 10 Quiz
+  // Sports and hobbies
+  sports: RiFootballLine,
+  entertainment: RiMusicLine,
+  "arts and reading": RiBook2Line,
 
-    // Unit 11: Health & Body
-    "lesson-11-1": RiBodyScanLine, // Body Parts
-    "lesson-11-2": RiHeartPulseLine, // At the Doctor
-    "lesson-11-3": RiHeartPulseLine, // Healthy Habits
-    "lesson-11-quiz": RiQuestionLine, // Unit 11 Quiz
+  // Travel
+  travel: RiSuitcaseLine,
 
-    // Unit 12: Environment & Nature
-    "lesson-12-1": RiPlantLine, // Animals & Plants
-    "lesson-12-2": RiGlobalLine, // Environmental Issues
-    "lesson-12-3": RiEarthLine, // Geography & Landscapes
-    "lesson-12-quiz": RiQuestionLine, // Unit 12 Quiz
+  // Weather and nature
+  weather: RiCloudyLine,
+  nature: RiPlantLine,
+  environment: RiEarthLine,
+  geography: RiGlobalLine,
 
-    // Unit 13: Subjunctive Mood
-    "lesson-13-1": RiLightbulbLine, // Present Subjunctive Intro
-    "lesson-13-2": RiStarLine, // Wishes & Desires
-    "lesson-13-3": RiQuestionLine, // Doubts & Denials
-    "lesson-13-quiz": RiQuestionLine, // Unit 13 Quiz
+  // Work and education
+  careers: RiBriefcaseLine,
+  professional: RiBriefcaseLine,
 
-    // Unit 14: Complex Conversations
-    "lesson-14-1": RiMegaphoneLine, // Debate & Persuasion
-    "lesson-14-2": RiNewspaperLine, // Current Events
-    "lesson-14-3": RiBriefcaseLine, // Professional Communication
-    "lesson-14-quiz": RiQuestionLine, // Unit 14 Quiz
+  // Health and wellness
+  "body parts": RiBodyScanLine,
+  health: RiHeartPulseLine,
+  wellness: RiHeartPulseLine,
 
-    // Unit 15: Literature & Arts
-    "lesson-15-1": RiQuillPenLine, // Poetry & Prose
-    "lesson-15-2": RiPaintBrushLine, // Visual Arts
-    "lesson-15-3": RiClapperboardLine, // Cinema & Theater
-    "lesson-15-quiz": RiQuestionLine, // Unit 15 Quiz
+  // Advanced topics
+  debate: RiMegaphoneLine,
+  "current events": RiNewspaperLine,
+  literature: RiQuillPenLine,
+  "visual arts": RiPaintBrushLine,
+  cinema: RiClapperboardLine,
+  "digital communication": RiSmartphoneLine,
+  science: RiFlaskLine,
+  "digital economy": RiBitCoinLine,
+  "social justice": RiScalesLine,
+  "global issues": RiEarthLine,
 
-    // Unit 16: Technology & Innovation
-    "lesson-16-1": RiSmartphoneLine, // Digital Communication
-    "lesson-16-2": RiFlaskLine, // Science & Progress
-    "lesson-16-3": RiBitCoinLine, // Digital Economy
-    "lesson-16-quiz": RiQuestionLine, // Unit 16 Quiz
+  // Common objects and spaces
+  "common objects": RiBookOpenLine,
+  "house and rooms": RiMapPinLine,
+};
 
-    // Unit 17: Social Issues & Ethics
-    "lesson-17-1": RiScalesLine, // Social Justice
-    "lesson-17-2": RiEarthLine, // Global Challenges
-    "lesson-17-quiz": RiQuestionLine, // Unit 17 Quiz
-  };
+// Get icon based on lesson's vocabulary topic
+const getIconFromTopic = (topic) => {
+  if (!topic) return RiBookOpenLine;
 
-  return iconMap[lessonId] || RiBookOpenLine; // Default fallback
+  // Normalize topic string (lowercase, trim)
+  const normalizedTopic = topic.toLowerCase().trim();
+
+  // Direct match
+  if (TOPIC_ICON_MAP[normalizedTopic]) {
+    return TOPIC_ICON_MAP[normalizedTopic];
+  }
+
+  // Partial match for compound topics (e.g., "greetings structures" -> "greetings")
+  for (const [key, icon] of Object.entries(TOPIC_ICON_MAP)) {
+    if (normalizedTopic.includes(key)) {
+      return icon;
+    }
+  }
+
+  return RiBookOpenLine; // Default fallback
+};
+
+// Direct mapping of all unique lesson titles to contextual icons
+const LESSON_TITLE_ICONS = {
+  // A1 - Greetings & Introductions
+  "Hello and Goodbye": RiHandHeartLine,
+  "Meeting Someone New": RiUserAddLine,
+  "Polite Conversations": RiChatSmileLine,
+  "What's Your Name?": RiAccountCircleLine,
+  "Nice to Meet You": RiUserSmileLine,
+  "Tell Me About Yourself": RiMessageLine,
+
+  // A1 - Numbers
+  "Counting to Twenty": RiNumbersLine,
+  "Using Numbers Daily": RiAlarmLine,
+  "Phone Numbers and Ages": RiPhoneLine,
+  "Counting to One Hundred": RiBarChartLine,
+  "Prices and Money": RiMoneyDollarCircleLine,
+  "Big Numbers in Context": RiLineChartLine,
+
+  // A1 - Days & Time
+  "Monday to Sunday": RiCalendarLine,
+  "What Day Is It?": RiCalendarCheckLine,
+  "Planning Your Week": RiCalendarEventLine,
+  "Twelve Months": RiCalendar2Line,
+  "When's Your Birthday?": RiCakeLine,
+  "Important Dates": RiCalendarEventLine,
+  "What Time Is It?": RiTimeLine,
+  "Daily Schedule": RiTimer2Line,
+  "Making Appointments": RiTodoLine,
+
+  // A1 - Family & Colors
+  "My Family Tree": RiTreeLine,
+  "Talking About Family": RiParentLine,
+  "Family Relationships": RiUserHeartLine,
+  "Rainbow Colors": RiContrastLine,
+  "Describing Things": RiEyeLine,
+  "Colors Everywhere": RiDropLine,
+
+  // A1 - Food & Dining
+  "Food Vocabulary": RiAppleLine,
+  "I'm Hungry!": RiEmotionUnhappyLine,
+  "My Favorite Foods": RiHeart3Line,
+  "Restaurant Words": RiRestaurant2Line,
+  "Ordering a Meal": RiKnifeLine,
+  "Paying the Bill": RiBitCoinLine,
+
+  // A1 - Objects & Spaces
+  "Everyday Items": RiBookOpenLine,
+  "What Is This?": RiQuestionLine,
+  "Objects Around Us": RiEye2Line,
+  "Rooms of the House": RiDoorLine,
+  "Where Is It?": RiCompass3Line,
+  "At Home": RiHome4Line,
+
+  // A1 - Clothing & Daily Life
+  "What to Wear": RiTShirt2Line,
+  "Shopping for Clothes": RiShoppingBag3Line,
+  "My Wardrobe": RiShirtLine,
+  "My Day": RiSunLine,
+  "Daily Activities": RiWalkLine,
+  "From Morning to Night": RiMoonLine,
+
+  // A1 - Weather & Preferences
+  "How's the Weather?": RiCloudyLine,
+  "Four Seasons": RiLeafLine,
+  "Weather Reports": RiSunLine,
+  "I Like, I Love": RiThumbUpLine,
+  "Expressing Preferences": RiEmotionHappyLine,
+  "Favorites and Dislikes": RiThumbDownLine,
+
+  // A1 - Questions & Descriptions
+  "Question Words": RiQuestionAnswerFill,
+  "Asking Questions": RiChatQuoteLine,
+  "Getting Information": RiFeedbackFill,
+  "Appearance Words": RiUserLine,
+  "How Do They Look?": RiUser3Line,
+  "Detailed Descriptions": RiEyeLine,
+
+  // A1 - Places & Shopping
+  "Places Around Town": RiBuildingLine,
+  "My Neighborhood": RiCommunityLine,
+  "Dream Destinations": RiFlightTakeoffLine,
+  "At the Store": RiStore2Line,
+  "Bargain Hunting": RiAuctionLine,
+  "Smart Shopping": RiShoppingBasketLine,
+  "Fresh Produce": RiLeafLine,
+  "Buying Groceries": RiShoppingCartLine,
+  "Market Day": RiFridgeLine,
+
+  // A1 - Transportation & Directions
+  "Getting Around": RiRoadMapLine,
+  "Taking the Bus": RiBusLine,
+  "Travel Options": RiCarLine,
+  "Left and Right": RiDirectionLine,
+  "How Do I Get There?": RiNavigationLine,
+  "Finding Your Way": RiSignpostLine,
+
+  // A2 - Future & Hobbies
+  "Future Activities": RiCalendarEventLine,
+  "Let's Meet Up!": RiGroupLine,
+  "Scheduling Events": RiCalendarCheckLine,
+  "Free Time Fun": RiGamepadLine,
+  "What Do You Enjoy?": RiEmotionHappyLine,
+  "Sharing Interests": RiDiscussFill,
+  "Playing Sports": RiBasketballLine,
+  "Staying Active": RiRunLine,
+  "Fitness Goals": RiTargetLine,
+
+  // A2 - Past Tense & Stories
+  "Yesterday's Actions": RiHistoryLine,
+  "What Did You Do?": RiChatCheckLine,
+  "Recent Events": RiCalendar2Line,
+  "Common Irregular Verbs": RiEditLine,
+  "Last Week": RiHistoryFill,
+  "Life Stories": RiBookReadLine,
+  "Story Elements": RiFileList3Line,
+  "Once Upon a Time": RiBook3Line,
+  "My Story": RiDraftLine,
+
+  // A2 - Future & Health
+  "Dreams and Goals": RiLightbulbFlashLine,
+  "What Will You Do?": RiFocus3Line,
+  "Planning Ahead": RiRoadMapLine,
+  "Body Parts": RiBodyScanLine,
+  "How Do You Feel?": RiMentalHealthLine,
+  "Healthy Living": RiHeartAddLine,
+  "Medical Terms": RiStethoscopeLine,
+  "Visiting the Doctor": RiHospitalLine,
+  "Health Concerns": RiFirstAidKitLine,
+
+  // A2 - Work & Education
+  "Career Words": RiBriefcase4Line,
+  "What Do You Do?": RiBriefcase5Line,
+  "Dream Job": RiSuitcase2Line,
+  "In the Classroom": RiSchoolLine,
+  "School Life": RiGraduationCapLine,
+  "Learning Journey": RiPencilRulerLine,
+
+  // A2 - Technology
+  "Digital Devices": RiSmartphoneLine,
+  "Using Technology": RiLightbulbFlashLine,
+  "Connected Life": RiGlobalLine,
+
+  // B1 - Present Perfect & Continuous
+  "Have You Ever?": RiQuestionAnswerLine,
+  "Life Experiences": RiSuitcaseLine,
+  "Achievements": RiMedalLine,
+  "While It Was Happening": RiHourglassLine,
+  "Background Actions": RiFileEditLine,
+  "Setting the Scene": RiCameraLine,
+
+  // B1 - Future & Comparisons
+  "Tomorrow's World": RiGlobeLine,
+  "Predictions": RiLightbulbFlashLine,
+  "Future Possibilities": RiSparklingLine,
+  "Better or Worse": RiBarChartLine,
+  "Making Comparisons": RiPieChart2Line,
+  "Superlatives": RiAwardLine,
+
+  // B1 - Modals & Suggestions
+  "Should and Shouldn't": RiCheckboxCircleLine,
+  "Helpful Suggestions": RiLightbulbLine,
+  "Problem Solving": RiNodeTree,
+  "Why Don't We?": RiGroupLine,
+  "Let's Try This": RiPlayListAddLine,
+  "Collaborative Ideas": RiTeamLine,
+
+  // B1 - Conditionals & Travel
+  "If I Were You": RiQuestionAnswerLine,
+  "Hypothetical Situations": RiLightbulbLine,
+  "Imagining Possibilities": RiSparklingFill,
+  "Trip Planning": RiMapLine,
+  "Booking a Trip": RiFlightTakeoffLine,
+  "Adventure Awaits": RiSailboatLine,
+
+  // B1 - Environment & Culture
+  "Our Planet": RiEarthLine,
+  "Going Green": RiRecycleLine,
+  "Saving Earth": RiSeedlingLine,
+  "Cultural Heritage": RiAncientGateLine,
+  "Customs and Festivals": RiFlagLine,
+  "Celebrating Diversity": RiFlag2Line,
+
+  // B1 - Media & Opinions
+  "Headlines": RiNewspaperLine,
+  "Current Events": RiArticleLine,
+  "Informed Citizen": RiGovernmentLine,
+  "I Think That...": RiChatQuoteLine,
+  "Sharing Views": RiDiscussFill,
+  "Respectful Debate": RiScalesLine,
+
+  // B1 - Complaints & Anecdotes
+  "Something's Wrong": RiEmotionUnhappyLine,
+  "I'm Not Satisfied": RiDislikeLine,
+  "Resolving Issues": RiListCheck2Line,
+  "Memorable Moments": RiStarSmileLine,
+  "Sharing Experiences": RiMessageLine,
+  "Learning from Life": RiBookletLine,
+
+  // B2 - Modal Verbs & Past Perfect
+  "Maybe and Perhaps": RiQuestionLine,
+  "Likely or Unlikely": RiPieChartLine,
+  "Making Predictions": RiLineChartLine,
+  "Before It Happened": RiHistoryFill,
+  "Earlier Actions": RiTimeLine,
+  "Complex Timelines": RiCalendar2Line,
+
+  // B2 - Passive & Reported Speech
+  "It Was Done": RiCheckboxCircleLine,
+  "Formal Writing": RiPenNibLine,
+  "Professional Tone": RiFileTextLine,
+  "She Said That...": RiVoiceprintLine,
+  "Quoting Others": RiChatCheckLine,
+  "Retelling Stories": RiBookReadLine,
+
+  // B2 - Relative Clauses & Register
+  "Who, Which, That": RiEdit2Line,
+  "Connecting Ideas": RiNodeTree,
+  "Complex Sentences": RiFileList3Line,
+  "Registers of Speech": RiMicLine,
+  "Appropriate Language": RiSpeakerLine,
+  "Context Matters": RiFocus3Line,
+
+  // B2 - Business & Science
+  "Corporate World": RiBuilding4Line,
+  "Professional Meetings": RiPresentationLine,
+  "Business Communication": RiBriefcaseLine,
+  "Scientific Terms": RiFlaskLine,
+  "Technological Advances": RiLightbulbFlashLine,
+  "Future of Science": RiStockLine,
+
+  // B2 - Social Issues & Arts
+  "Society Today": RiCommunityLine,
+  "Discussing Problems": RiFeedbackFill,
+  "Making Change": RiFireLine,
+  "Creative Expression": RiBrushLine,
+  "Artistic Movements": RiGalleryLine,
+  "Cultural Analysis": RiImage2Line,
+
+  // B2 - Politics & Wellness
+  "Civic Engagement": RiGovernmentLine,
+  "Political Discourse": RiMegaphoneLine,
+  "Active Citizenship": RiFlagLine,
+  "Wellness Choices": RiHeartPulseLine,
+  "Balanced Living": RiMentalHealthLine,
+  "Holistic Health": RiHeartAddLine,
+
+  // B2 - Philosophy
+  "Philosophical Ideas": RiNodeTree,
+  "Deep Thinking": RiLightbulbFlashLine,
+  "Theoretical Discussion": RiArticleLine,
+
+  // C1 - Subjunctive & Conditionals
+  "Doubt and Desire": RiEmotionNormalLine,
+  "Expressing Wishes": RiStarLine,
+  "Nuanced Meaning": RiInkBottleLine,
+  "If Only...": RiEmotionLine,
+  "Contrary to Fact": RiQuestionLine,
+  "Complex Emotions": RiMentalHealthLine,
+  "Advanced If Clauses": RiMarkPenLine,
+  "Mixed Conditionals": RiEdit2Line,
+  "Sophisticated Logic": RiNodeTree,
+
+  // C1 - Idioms & Academic
+  "Native Phrases": RiChatSmileLine,
+  "Sound Natural": RiVoiceprintLine,
+  "Cultural Fluency": RiCompass2Line,
+  "Scholarly Language": RiQuillPenLine,
+  "Research Papers": RiDraftLine,
+  "Critical Analysis": RiFileTextLine,
+
+  // C1 - Business & Debate
+  "Business Etiquette": RiBriefcase4Line,
+  "Executive Presence": RiVipCrownLine,
+  "Leadership Language": RiBriefcase5Line,
+  "Persuasive Language": RiSpeakerLine,
+  "Building Arguments": RiArtboardLine,
+  "Winning Debates": RiAwardFill,
+
+  // C1 - Culture & Literature
+  "Cultural Studies": RiBuilding2Line,
+  "Interpreting Culture": RiCompass2Line,
+  "Cross-Cultural Understanding": RiGlobeLine,
+  "Literary Devices": RiPenNibLine,
+  "Analyzing Texts": RiBookReadLine,
+  "Literary Criticism": RiInkBottleLine,
+
+  // C1 - Discourse
+  "Discourse Markers": RiMarkPenLine,
+  "Coherent Arguments": RiDashboardLine,
+  "Fluent Expression": RiMicLine,
+
+  // C2 - Near-Native Fluency
+  "Advanced Expressions": RiQuillPenLine,
+  "Speaking Like a Native": RiVipCrownLine,
+  "Cultural Mastery": RiAwardFill,
+  "Dialects": RiVoiceprintLine,
+  "Accent and Usage": RiSpeakerLine,
+  "Linguistic Diversity": RiGlobeLine,
+
+  // C2 - Refined Language
+  "Refined Language": RiPenNibLine,
+  "Elegant Expression": RiInkBottleLine,
+  "Artistic Language": RiArtboardLine,
+
+  // C2 - Rhetoric & Mastery
+  "Persuasive Techniques": RiMegaphoneLine,
+  "Powerful Speech": RiMicLine,
+  "Master Rhetoric": RiPresentationLine,
+  "Expert Terminology": RiFileTextLine,
+  "Professional Fields": RiBriefcase5Line,
+  "Domain Expertise": RiTrophyLine,
+
+  // C2 - Precision & Cultural Intelligence
+  "Fine Distinctions": RiContrastLine,
+  "Precise Meaning": RiTargetLine,
+  "Mastery of Detail": RiFocus3Line,
+  "Cultural Intelligence": RiCompass2Line,
+  "Cultural Navigator": RiNavigationLine,
+  "Cultural Ambassador": RiEarthLine,
+
+  // C2 - Ultimate Mastery
+  "Native-Like Skills": RiMedalFill,
+  "Perfect Fluency": RiSparklingFill,
+  "Complete Mastery": RiTrophyLine,
+};
+
+// Get icon based on exact lesson title match
+const getTitleBasedIcon = (title) => {
+  if (!title) return RiBookOpenLine;
+
+  // Direct lookup from comprehensive title mapping
+  return LESSON_TITLE_ICONS[title] || RiBookOpenLine;
+};
+
+// Get unique icon for each individual lesson based on lesson content
+const getLessonIcon = (lesson, unitId) => {
+  // Quiz lessons always get the question mark icon
+  if (lesson.id.includes("-quiz")) return RiQuestionLine;
+
+  // Get icon based on lesson title (primary method)
+  const titleEn = lesson.title?.en || "";
+  const titleIcon = getTitleBasedIcon(titleEn);
+
+  // If we got a non-default icon from the title, use it
+  if (titleIcon !== RiBookOpenLine) {
+    return titleIcon;
+  }
+
+  // Fallback: try vocabulary topic if title didn't produce a specific icon
+  if (lesson.content?.vocabulary?.topic) {
+    return getIconFromTopic(lesson.content.vocabulary.topic);
+  }
+
+  // Final fallback
+  return RiBookOpenLine;
 };
 
 /**
@@ -250,7 +752,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   const getNodeIcon = () => {
     if (status === SKILL_STATUS.COMPLETED) return RiCheckLine;
     if (status === SKILL_STATUS.LOCKED) return RiLockLine;
-    return getLessonIcon(lesson.id);
+    return getLessonIcon(lesson, unit.id);
   };
 
   const Icon = getNodeIcon();
