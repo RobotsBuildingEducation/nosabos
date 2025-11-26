@@ -74,10 +74,10 @@ import {
   RiEarthLine,
   // Additional icons for more variety
   RiUserAddLine,
-  RiChatLine,
+  RiChatSmileLine,
   RiPhoneLine,
   RiMoneyDollarCircleLine,
-  RiCake2Line,
+  RiCakeLine,
   RiSunLine,
   RiMoonLine,
   RiShoppingBag3Line,
@@ -134,12 +134,12 @@ import {
   RiMicLine,
   RiVoiceprintLine,
   RiSpeakerLine,
-  RiChat3Line,
-  RiMessage2Line,
+  RiChatQuoteLine,
+  RiMessageLine,
   RiQuestionAnswerFill,
-  RiFeedbackLine,
-  RiDiscussLine,
-  RiChat1Line,
+  RiFeedbackFill,
+  RiDiscussFill,
+  RiChatCheckLine,
   RiUserSmileLine,
   RiEmotionHappyLine,
   RiEmotionNormalLine,
@@ -378,10 +378,10 @@ const LESSON_TITLE_ICONS = {
   // A1 - Greetings & Introductions
   "Hello and Goodbye": RiHandHeartLine,
   "Meeting Someone New": RiUserAddLine,
-  "Polite Conversations": RiChatLine,
+  "Polite Conversations": RiChatSmileLine,
   "What's Your Name?": RiAccountCircleLine,
   "Nice to Meet You": RiUserSmileLine,
-  "Tell Me About Yourself": RiMessage2Line,
+  "Tell Me About Yourself": RiMessageLine,
 
   // A1 - Numbers
   "Counting to Twenty": RiNumbersLine,
@@ -396,7 +396,7 @@ const LESSON_TITLE_ICONS = {
   "What Day Is It?": RiCalendarCheckLine,
   "Planning Your Week": RiCalendarEventLine,
   "Twelve Months": RiCalendar2Line,
-  "When's Your Birthday?": RiCake2Line,
+  "When's Your Birthday?": RiCakeLine,
   "Important Dates": RiCalendarEventLine,
   "What Time Is It?": RiTimeLine,
   "Daily Schedule": RiTimer2Line,
@@ -444,8 +444,8 @@ const LESSON_TITLE_ICONS = {
 
   // A1 - Questions & Descriptions
   "Question Words": RiQuestionAnswerFill,
-  "Asking Questions": RiChat3Line,
-  "Getting Information": RiFeedbackLine,
+  "Asking Questions": RiChatQuoteLine,
+  "Getting Information": RiFeedbackFill,
   "Appearance Words": RiUserLine,
   "How Do They Look?": RiUser3Line,
   "Detailed Descriptions": RiEyeLine,
@@ -475,14 +475,14 @@ const LESSON_TITLE_ICONS = {
   "Scheduling Events": RiCalendarCheckLine,
   "Free Time Fun": RiGamepadLine,
   "What Do You Enjoy?": RiEmotionHappyLine,
-  "Sharing Interests": RiDiscussLine,
+  "Sharing Interests": RiDiscussFill,
   "Playing Sports": RiBasketballLine,
   "Staying Active": RiRunLine,
   "Fitness Goals": RiTargetLine,
 
   // A2 - Past Tense & Stories
   "Yesterday's Actions": RiHistoryLine,
-  "What Did You Do?": RiChat1Line,
+  "What Did You Do?": RiChatCheckLine,
   "Recent Events": RiCalendar2Line,
   "Common Irregular Verbs": RiEditLine,
   "Last Week": RiHistoryFill,
@@ -559,8 +559,8 @@ const LESSON_TITLE_ICONS = {
   "Headlines": RiNewspaperLine,
   "Current Events": RiArticleLine,
   "Informed Citizen": RiGovernmentLine,
-  "I Think That...": RiChat3Line,
-  "Sharing Views": RiDiscussLine,
+  "I Think That...": RiChatQuoteLine,
+  "Sharing Views": RiDiscussFill,
   "Respectful Debate": RiScalesLine,
 
   // B1 - Complaints & Anecdotes
@@ -568,7 +568,7 @@ const LESSON_TITLE_ICONS = {
   "I'm Not Satisfied": RiDislikeLine,
   "Resolving Issues": RiListCheck2Line,
   "Memorable Moments": RiStarSmileLine,
-  "Sharing Experiences": RiMessage2Line,
+  "Sharing Experiences": RiMessageLine,
   "Learning from Life": RiBookletLine,
 
   // B2 - Modal Verbs & Past Perfect
@@ -584,7 +584,7 @@ const LESSON_TITLE_ICONS = {
   "Formal Writing": RiPenNibLine,
   "Professional Tone": RiFileTextLine,
   "She Said That...": RiVoiceprintLine,
-  "Quoting Others": RiChat1Line,
+  "Quoting Others": RiChatCheckLine,
   "Retelling Stories": RiBookReadLine,
 
   // B2 - Relative Clauses & Register
@@ -605,7 +605,7 @@ const LESSON_TITLE_ICONS = {
 
   // B2 - Social Issues & Arts
   "Society Today": RiCommunityLine,
-  "Discussing Problems": RiFeedbackLine,
+  "Discussing Problems": RiFeedbackFill,
   "Making Change": RiFireLine,
   "Creative Expression": RiBrushLine,
   "Artistic Movements": RiGalleryLine,
@@ -636,7 +636,7 @@ const LESSON_TITLE_ICONS = {
   "Sophisticated Logic": RiNodeTree,
 
   // C1 - Idioms & Academic
-  "Native Phrases": RiChatLine,
+  "Native Phrases": RiChatSmileLine,
   "Sound Natural": RiVoiceprintLine,
   "Cultural Fluency": RiCompass2Line,
   "Scholarly Language": RiQuillPenLine,
