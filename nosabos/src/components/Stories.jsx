@@ -217,7 +217,7 @@ async function saveStoryTurn(npub, payload) {
 =================================== */
 function useUIText(uiLang, level, translationsObj) {
   return useMemo(() => {
-    const t = translationsObj[uiLang] || translationsObj.en;
+    const translate = translationsObj[uiLang] || translationsObj.en;
     return {
       header: uiLang === "es" ? "Juego de roles" : "Role Play",
       rolePrompt:
@@ -264,7 +264,7 @@ function useUIText(uiLang, level, translationsObj) {
         uiLang === "es" ? "Casi — inténtalo otra vez" : "Almost — try again",
       wellDone: uiLang === "es" ? "¡Bien hecho!" : "Well done!",
       score: uiLang === "es" ? "Puntuación" : "Score",
-      xp: t?.ra_label_xp || "XP",
+      xp: translate?.ra_label_xp || "XP",
       levelLabel: uiLang === "es" ? "Nivel" : "Level",
       levelValue:
         uiLang === "es"
@@ -278,6 +278,9 @@ function useUIText(uiLang, level, translationsObj) {
               intermediate: translationsObj.en.onboarding_level_intermediate,
               advanced: translationsObj.en.onboarding_level_advanced,
             }[level] || level,
+      tts_synthesizing:
+        translate?.tts_synthesizing ||
+        (uiLang === "es" ? "Sintetizando…" : "Synthesizing…"),
     };
   }, [uiLang, level, translationsObj]);
 }
