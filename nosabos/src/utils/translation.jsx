@@ -336,7 +336,7 @@ export const translations = {
     bannedBody:
       "You have been banned and the passcode has been changed. Contact the application owner on Patreon if this is a mistake.",
     skill_tree_learning_activities: "Learning Activities:",
-    skill_tree_xp_reward: "XP Reward:",
+    skill_tree_xp_reward: "XP to complete:",
     skill_tree_start_lesson: "Start Lesson",
     skill_tree_unlock_at: "Unlock at {xpRequired} XP",
     skill_tree_level: "Level {level}",
@@ -692,7 +692,7 @@ export const translations = {
     app_cefr_error: "Vuelve a intentarlo más tarde.",
     toast_save_lang_failed: "Fallo al guardar idioma",
     skill_tree_learning_activities: "Actividades de Aprendizaje:",
-    skill_tree_xp_reward: "Recompensa de XP:",
+    skill_tree_xp_reward: "XP para terminar:",
     skill_tree_start_lesson: "Comenzar Lección",
     skill_tree_unlock_at: "Desbloquear con {xpRequired} XP",
     skill_tree_level: "Nivel {level}",
