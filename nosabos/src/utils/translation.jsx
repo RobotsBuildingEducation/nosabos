@@ -39,6 +39,7 @@ export const translations = {
       "Drag or select each correct answer into the matching blank.",
     practice_drag_blank_label: "Blank {index}",
     practice_play: "Play",
+    practice_next_ready: "Great work! Keep the streak going.",
     quiz_correct: "Correct",
     quiz_try_again: "Try again",
     quiz_checked: "Checked",
@@ -388,6 +389,7 @@ export const translations = {
       "Arrastra cada respuesta correcta al espacio correspondiente.",
     practice_drag_blank_label: "Espacio {index}",
     practice_play: "Reproducir",
+    practice_next_ready: "¡Buen trabajo! Sigue con la racha.",
     generic_loading: "Cargando...",
     intro:
       "¡Gracias por probar la app! Actualmente está en desarrollo y mejorará a diario.",
