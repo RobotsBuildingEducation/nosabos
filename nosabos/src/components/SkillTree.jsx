@@ -1135,14 +1135,12 @@ function UnitSection({
                 {unit.cefrLevel && (
                   <Tooltip
                     hasArrow
-                    label={
-                      getTranslation(
-                        supportLang,
-                        CEFR_LEVEL_DESCRIPTION_KEYS[unit.cefrLevel] ||
-                          "skill_tree_cefr_default_desc",
-                        {}
-                      )
-                    }
+                    label={getTranslation(
+                      supportLang,
+                      CEFR_LEVEL_DESCRIPTION_KEYS[unit.cefrLevel] ||
+                        "skill_tree_cefr_default_desc",
+                      {}
+                    )}
                     bg="gray.800"
                     color="white"
                     borderRadius="md"
@@ -1159,8 +1157,10 @@ function UnitSection({
                       height="auto"
                       borderRadius="md"
                       fontWeight="bold"
-                      bg="whiteAlpha.100"
+                      bg={unit.color}
+                      textShadow="0px 1px 1px black"
                       _hover={{ bg: "whiteAlpha.200" }}
+                      boxShadow={"0px 0.5px 0.5px 1px darkgray"}
                     >
                       {unit.cefrLevel}
                     </Button>
