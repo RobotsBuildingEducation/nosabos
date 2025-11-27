@@ -34,6 +34,7 @@ import {
   ModalCloseButton,
 } from "@chakra-ui/react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { AnimatePresence, motion } from "framer-motion";
 import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
@@ -1084,18 +1085,24 @@ YES or NO
       setCorrectAnswers((prev) => prev + 1);
     }
 
-    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
-      // Quiz complete
-      setTimeout(() => {
-        setShowResults(true);
-      }, 1500);
-    } else {
-      // Next question
-      setTimeout(() => {
-        setLastOk(null);
-        generateRandom();
-      }, 1500);
+    const totalAnswered = questionsAnswered + 1;
+    const willFinish = totalAnswered >= TOTAL_QUESTIONS;
+    setNextAction(willFinish ? "finish" : "next");
+  }
+
+  function handleAdvanceFromFeedback() {
+    const finishing = nextAction === "finish" || questionsAnswered >= TOTAL_QUESTIONS;
+
+    if (finishing) {
+      setShowResults(true);
+      setLastOk(null);
+      setNextAction(null);
+      return;
     }
+
+    setLastOk(null);
+    setNextAction(null);
+    generateRandom();
   }
 
   function handleSubmit() {
@@ -1111,6 +1118,7 @@ YES or NO
     setQuestionsAnswered(0);
     setCorrectAnswers(0);
     setLastOk(null);
+    setNextAction(null);
     generateRandom();
   }
 
@@ -1466,24 +1474,78 @@ YES or NO
           )}
 
           {/* Feedback */}
-          {lastOk !== null && (
-            <Box
-              mt={4}
-              p={4}
-              bg={lastOk ? "green.500" : "red.500"}
-              borderRadius="md"
-              color="white"
-              textAlign="center"
-            >
-              {lastOk
-                ? userLanguage === "es"
-                  ? "✓ ¡Correcto!"
-                  : "✓ Correct!"
-                : userLanguage === "es"
-                ? "✗ Incorrecto"
-                : "✗ Incorrect"}
-            </Box>
-          )}
+          <AnimatePresence mode="wait">
+            {lastOk !== null && (
+              <motion.div
+                key={lastOk ? "feedback-ok" : "feedback-bad"}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 16 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+              >
+                <Box
+                  mt={5}
+                  p={5}
+                  borderRadius="xl"
+                  bgGradient={
+                    lastOk
+                      ? "linear(to-r, green.400, teal.500)"
+                      : "linear(to-r, red.500, orange.400)"
+                  }
+                  boxShadow="0 12px 30px rgba(0,0,0,0.28)"
+                  color="white"
+                  border="1px solid rgba(255,255,255,0.18)"
+                >
+                  <HStack spacing={3} align="center" mb={3}>
+                    <Badge
+                      colorScheme={lastOk ? "green" : "red"}
+                      variant="solid"
+                      px={3}
+                      py={1}
+                      borderRadius="full"
+                      fontSize="sm"
+                      boxShadow="sm"
+                    >
+                      {lastOk
+                        ? userLanguage === "es"
+                          ? "✓ Correcto"
+                          : "✓ Correct"
+                        : userLanguage === "es"
+                        ? "✗ Incorrecto"
+                        : "✗ Incorrect"}
+                    </Badge>
+                    <Text fontWeight="semibold">
+                      {lastOk
+                        ? userLanguage === "es"
+                          ? "¡Bien hecho!"
+                          : "Great job!"
+                        : userLanguage === "es"
+                        ? "Revisa y vuelve a intentarlo"
+                        : "Check your answer and try again"}
+                    </Text>
+                  </HStack>
+                  <Button
+                    w="full"
+                    size="lg"
+                    colorScheme={lastOk ? "whiteAlpha" : "yellow"}
+                    variant={lastOk ? "outline" : "solid"}
+                    bg={lastOk ? "rgba(255,255,255,0.12)" : undefined}
+                    _hover={{ transform: "translateY(-1px)", shadow: "lg" }}
+                    transition="all 0.2s ease"
+                    onClick={handleAdvanceFromFeedback}
+                  >
+                    {nextAction === "finish"
+                      ? userLanguage === "es"
+                        ? "Ver resultados"
+                        : "See results"
+                      : userLanguage === "es"
+                      ? "Siguiente pregunta"
+                      : "Next question"}
+                  </Button>
+                </Box>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Submit Button */}
           {lastOk === null && !isLoading && (

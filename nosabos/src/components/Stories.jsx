@@ -342,7 +342,7 @@ export default function StoryMode({
   const [isRecording, setIsRecording] = useState(false);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
 
-  // accumulate this session, but award only at end
+  // Track normalized XP for the session (awarded only once at the end)
   const [sessionXp, setSessionXp] = useState(0);
   const [passedCount, setPassedCount] = useState(0);
 
@@ -1436,9 +1436,18 @@ export default function StoryMode({
       return;
     }
 
-    // Passed — accumulate XP and advance (no award yet)
-    const delta = 5; // ✅ normalized to 4-7 XP range
-    setSessionXp((p) => p + delta);
+    // Passed — normalize XP to a 4-7 range based on completion
+    const totalSentences = storyData?.sentences?.length || 1;
+    const completedCount = passedCount + 1;
+    const normalizedXp = Math.max(
+      4,
+      Math.min(
+        7,
+        Math.round(4 + (completedCount / Math.max(1, totalSentences)) * 3)
+      )
+    );
+
+    setSessionXp(normalizedXp);
     setPassedCount((c) => c + 1);
 
     // log passing attempt with 0 awarded now (we award at session end)

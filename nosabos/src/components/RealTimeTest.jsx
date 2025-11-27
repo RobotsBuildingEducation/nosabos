@@ -1253,10 +1253,19 @@ export default function RealTimeTest({
   }
 
   async function handleNextGoal() {
-    if (!currentGoal || goalBusyRef.current) return;
+    if (goalBusyRef.current) return;
 
     goalBusyRef.current = true;
     try {
+      if (onSkip && typeof onSkip === "function") {
+        onSkip();
+        setGoalFeedback("");
+        setGoalCompleted(false);
+        return;
+      }
+
+      if (!currentGoal) return;
+
       // Generate next goal based on conversation history
       const nextGoal = await generateNextGoal(currentGoal);
       setCurrentGoal(nextGoal);
