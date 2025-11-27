@@ -6,6 +6,7 @@ import {
   Button,
   Center,
   HStack,
+  Spacer,
   Text,
   VStack,
   Wrap,
@@ -1295,154 +1296,6 @@ export default function RealTimeTest({
   //   } catch {}
   // }
 
-  async function generateNextGoal(prevGoal) {
-    const SNIPPET_MAX = 240;
-    function snippet(s, n = SNIPPET_MAX) {
-      return String(s || "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, n);
-    }
-    function latestTurn(role) {
-      // Merge ephemerals + persisted, pick the newest turn for the role
-      const all = [...(messagesRef.current || []), ...(history || [])];
-      const items = all
-        .filter(
-          (x) =>
-            x.role === role &&
-            (String(x.textFinal || "").trim() ||
-              String(x.textStream || "").trim())
-        )
-        .sort((a, b) => (b.ts || 0) - (a.ts || 0));
-      if (!items.length) return null;
-      const t = items[0];
-      const text = ((t.textFinal || "") + " " + (t.textStream || "")).trim();
-      const lang =
-        t.lang || (role === "assistant" ? targetLangRef.current : "en");
-      return { text, lang };
-    }
-    // Profile & context
-    const profile = {
-      level: levelRef.current,
-      help: helpRequestRef.current || "",
-      targetLang: targetLangRef.current,
-    };
-
-    // Pull the most recent user/assistant turns
-    const lastUser = latestTurn("user");
-    const lastAI = latestTurn("assistant");
-
-    const userLine = lastUser
-      ? `Previous user request (${lastUser.lang}): """${snippet(
-          lastUser.text
-        )}"""`
-      : "Previous user request: (none)";
-    const aiLine = lastAI
-      ? `Previous AI reply (${lastAI.lang}): """${snippet(lastAI.text)}"""`
-      : "Previous AI reply: (none)";
-
-    const systemAsk = `
-You are a language micro-goal planner. Propose the next tiny **speaking** goal so it feels like a natural continuation of the **previous user–assistant exchange** and is progressive from the prior goal.
-
-Constraints:
-- Keep titles ≤ 7 words.
-- Keep it practical and conversational.
-- Fit the user's level: ${profile.level}.
-- Target language: ${profile.targetLang}.
-- User focus: ${profile.help || "(none)"}.
-Return ONLY JSON (no prose, no markdown):
-
-{
-  "title_en": "...",
-  "title_es": "...",
-  "rubric_en": "... one-sentence success criteria ...",
-  "rubric_es": "... una frase con criterios de éxito ..."
-}
-  `.trim();
-
-    const body = {
-      model: TRANSLATE_MODEL,
-      text: { format: { type: "text" } },
-      input: `${systemAsk}
-
-Previous goal (EN): ${prevGoal?.title_en || ""}
-Previous goal (ES): ${prevGoal?.title_es || ""}
-${userLine}
-${aiLine}
-`,
-    };
-
-    try {
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: {
-          // No Authorization; backend adds server key
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      const ct = r.headers.get("content-type") || "";
-      const payload = ct.includes("application/json")
-        ? await r.json()
-        : await r.text();
-
-      const mergedText =
-        (typeof payload?.output_text === "string" && payload.output_text) ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-        (Array.isArray(payload?.choices) &&
-          (payload.choices[0]?.message?.content || "")) ||
-        "";
-
-      const parsed = safeParseJson(mergedText) || {};
-      const title_en = (parsed.title_en || "").trim();
-      const title_es = (parsed.title_es || "").trim();
-      const rubric_en = (parsed.rubric_en || "").trim();
-      const rubric_es = (parsed.rubric_es || "").trim();
-
-      if (title_en || title_es) {
-        return {
-          id: `goal_${Date.now()}`,
-          title_en: title_en || "Ask a follow-up question.",
-          title_es: title_es || "Haz una pregunta de seguimiento.",
-          rubric_en:
-            rubric_en ||
-            "One short follow-up question that is on-topic and natural.",
-          rubric_es:
-            rubric_es ||
-            "Una pregunta breve de seguimiento, natural y relacionada.",
-          attempts: 0,
-          status: "active",
-          createdAt: isoNow(),
-          updatedAt: isoNow(),
-        };
-      }
-    } catch (e) {
-      console.warn("Next goal generation failed:", e?.message || e);
-    }
-
-    // Fallback
-    return {
-      id: `goal_${Date.now()}`,
-      title_en: "Ask a follow-up question.",
-      title_es: "Haz una pregunta de seguimiento.",
-      rubric_en: "One short follow-up question that is on-topic and natural.",
-      rubric_es: "Una pregunta breve de seguimiento, natural y relacionada.",
-      attempts: 0,
-      status: "active",
-      createdAt: isoNow(),
-      updatedAt: isoNow(),
-    };
-  }
-
   async function evaluateAndMaybeAdvanceGoal(userUtterance) {
     const goal = goalRef.current;
     if (!goal || goalBusyRef.current) return;
@@ -2663,7 +2516,7 @@ Do not return the whole sentence as a single chunk.`;
           zIndex={30}
           px={4}
         >
-          <HStack spacing={3} w="100%" maxW="560px" justify="center">
+          <Flex w="100%" maxW="620px" align="center" gap={3}>
             <Button
               onClick={skipGoal}
               size="md"
@@ -2678,6 +2531,7 @@ Do not return the whole sentence as a single chunk.`;
             >
               {uiLang === "es" ? "Saltar" : "Skip"}
             </Button>
+            <Spacer />
             <Button
               onClick={status === "connected" ? stop : start}
               size="lg"
@@ -2700,12 +2554,14 @@ Do not return the whole sentence as a single chunk.`;
                 </>
               )}
             </Button>
-            {goalCompleted && (
+            <Spacer />
+            {goalCompleted ? (
               <Button
                 onClick={handleNextGoal}
                 size="lg"
                 height="64px"
                 px="8"
+                minW="140px"
                 rounded="full"
                 colorScheme="green"
                 color="white"
@@ -2714,8 +2570,10 @@ Do not return the whole sentence as a single chunk.`;
               >
                 {uiLang === "es" ? "Siguiente" : "Next"}
               </Button>
+            ) : (
+              <Box minW="140px" />
             )}
-          </HStack>
+          </Flex>
         </Center>
 
         {err && (

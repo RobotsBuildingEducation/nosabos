@@ -366,6 +366,7 @@ export default function StoryMode({
   const currentAudioRef = useRef(null);
   const eventSourceRef = useRef(null);
   const audioCacheRef = useRef(new Map());
+  const sessionAwardedRef = useRef(false);
   const evalRef = useRef({
     inProgress: false,
     speechDone: false,
@@ -578,6 +579,7 @@ export default function StoryMode({
       setCurrentSentenceIndex(0);
       setSessionXp(0);
       setPassedCount(0);
+      sessionAwardedRef.current = false;
       setShowFullStory(true);
       setHighlightedWordIndex(-1);
     } catch (error) {
@@ -1375,6 +1377,9 @@ export default function StoryMode({
     const npubLive = strongNpub(useUserStore.getState().user);
     if (!npubLive) return;
 
+    if (sessionAwardedRef.current) return;
+    sessionAwardedRef.current = true;
+
     if (awardedXp > 0) {
       await awardXp(npubLive, Math.round(awardedXp)).catch(() => {});
     }
@@ -1822,6 +1827,7 @@ export default function StoryMode({
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);
                         setSessionXp(0);
+                        sessionAwardedRef.current = false;
                         setPassedCount(0);
                         setHighlightedWordIndex(-1);
                         setIsRecording(false);
