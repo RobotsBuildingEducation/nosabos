@@ -1580,7 +1580,6 @@ function LessonDetailModal({
             {/* XP Goal */}
             <Box
               p={5}
-              bgGradient="linear(135deg, yellow.900, orange.900)"
               borderRadius="xl"
               position="relative"
               overflow="hidden"
@@ -1594,7 +1593,6 @@ function LessonDetailModal({
                 right="-20%"
                 w="150px"
                 h="150px"
-                bgGradient="radial(circle, yellow.400, transparent 70%)"
                 filter="blur(40px)"
                 opacity={0.3}
               />
@@ -1613,14 +1611,13 @@ function LessonDetailModal({
                   </Text>
                 </HStack>
                 <Badge
-                  bgGradient="linear(to-r, yellow.400, orange.400)"
-                  color="gray.900"
+                  bg="transparent"
+                  color="white"
                   fontSize="xl"
                   px={5}
                   py={2}
                   borderRadius="full"
                   fontWeight="black"
-                  boxShadow="0 4px 15px rgba(251, 191, 36, 0.5)"
                 >
                   +{lesson.xpReward} XP
                 </Badge>
