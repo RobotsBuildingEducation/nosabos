@@ -263,6 +263,24 @@ const getTranslation = (supportLang = "en", key, params = {}) => {
   );
 };
 
+const CEFR_LEVEL_DESCRIPTION_KEYS = {
+  A1: "skill_tree_cefr_a1_desc",
+  A2: "skill_tree_cefr_a2_desc",
+  B1: "skill_tree_cefr_b1_desc",
+  B2: "skill_tree_cefr_b2_desc",
+  C1: "skill_tree_cefr_c1_desc",
+  C2: "skill_tree_cefr_c2_desc",
+};
+
+const CEFR_LEVEL_COLORS = {
+  A1: "green",
+  A2: "blue",
+  B1: "purple",
+  B2: "orange",
+  C1: "red",
+  C2: "pink",
+};
+
 // Icon mapping for different learning modes
 const MODE_ICONS = {
   vocabulary: RiBook2Line,
@@ -1115,28 +1133,38 @@ function UnitSection({
                 </Heading>
                 {/* CEFR Level Badge */}
                 {unit.cefrLevel && (
-                  <Badge
-                    colorScheme={
-                      unit.cefrLevel === "A1"
-                        ? "green"
-                        : unit.cefrLevel === "A2"
-                        ? "blue"
-                        : unit.cefrLevel === "B1"
-                        ? "purple"
-                        : unit.cefrLevel === "B2"
-                        ? "orange"
-                        : unit.cefrLevel === "C1"
-                        ? "red"
-                        : "pink"
-                    }
-                    fontSize="xs"
-                    px={2}
-                    py={1}
+                  <Tooltip
+                    hasArrow
+                    label={getTranslation(
+                      supportLang,
+                      CEFR_LEVEL_DESCRIPTION_KEYS[unit.cefrLevel] ||
+                        "skill_tree_cefr_default_desc",
+                      {}
+                    )}
+                    bg="gray.800"
+                    color="white"
                     borderRadius="md"
-                    fontWeight="bold"
+                    px={3}
+                    py={2}
+                    boxShadow="lg"
                   >
-                    {unit.cefrLevel}
-                  </Badge>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      colorScheme={CEFR_LEVEL_COLORS[unit.cefrLevel] || "gray"}
+                      px={3}
+                      py={1}
+                      height="auto"
+                      borderRadius="md"
+                      fontWeight="bold"
+                      bg={unit.color}
+                      textShadow="0px 1px 1px black"
+                      _hover={{ bg: "whiteAlpha.200" }}
+                      boxShadow={"0px 0.5px 0.5px 1px darkgray"}
+                    >
+                      {unit.cefrLevel}
+                    </Button>
+                  </Tooltip>
                 )}
               </HStack>
               <Text fontSize="sm" color="gray.300" ml={8}>

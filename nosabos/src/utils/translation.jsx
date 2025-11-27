@@ -346,6 +346,19 @@ export const translations = {
     skill_tree_collapse: "Collapse",
     skill_tree_expand: "Expand",
     skill_tree_lesson_active: "Lesson Active",
+    skill_tree_cefr_a1_desc:
+      "Absolute beginner level focused on basic survival language and essential exchanges.",
+    skill_tree_cefr_a2_desc:
+      "Elementary level to handle simple routines and everyday communication needs.",
+    skill_tree_cefr_b1_desc:
+      "Intermediate level for sustaining conversations about experiences and plans.",
+    skill_tree_cefr_b2_desc:
+      "Upper-intermediate level to discuss abstract topics and complex ideas with detail.",
+    skill_tree_cefr_c1_desc:
+      "Advanced level enabling flexible, structured, and nuanced language use.",
+    skill_tree_cefr_c2_desc:
+      "Mastery level demonstrating near-native control, nuance, and stylistic range.",
+    skill_tree_cefr_default_desc: "CEFR proficiency level",
   },
   es: {
     dailyGoalProgress: "Meta",
@@ -690,6 +703,19 @@ export const translations = {
     skill_tree_collapse: "Contraer",
     skill_tree_expand: "Expandir",
     skill_tree_lesson_active: "Lección Activa",
+    skill_tree_cefr_a1_desc:
+      "Nivel inicial centrado en lenguaje de supervivencia y los intercambios esenciales.",
+    skill_tree_cefr_a2_desc:
+      "Nivel elemental para manejar rutinas simples y necesidades cotidianas de comunicación.",
+    skill_tree_cefr_b1_desc:
+      "Nivel intermedio para mantener conversaciones sobre experiencias y planes.",
+    skill_tree_cefr_b2_desc:
+      "Nivel intermedio alto para tratar temas abstractos e ideas complejas con detalle.",
+    skill_tree_cefr_c1_desc:
+      "Nivel avanzado que permite un uso flexible, estructurado y matizado del idioma.",
+    skill_tree_cefr_c2_desc:
+      "Nivel de dominio con control casi nativo, matiz y amplitud estilística.",
+    skill_tree_cefr_default_desc: "Nivel de competencia CEFR",
   },
 };
 
