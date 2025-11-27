@@ -25,9 +25,9 @@ import {
   TagLabel,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { FaArrowLeft, FaVolumeUp, FaStop, FaPen } from "react-icons/fa";
+import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import { PiMicrophoneStageDuotone } from "react-icons/pi";
+import { PiMicrophoneStageDuotone, PiSpeakerHighDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -40,7 +40,7 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
-import { translations } from "../utils/translation";
+import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
@@ -215,9 +215,8 @@ async function saveStoryTurn(npub, payload) {
 /* ================================
    UI text (driven by APP UI language only)
 =================================== */
-function useUIText(uiLang, level, translationsObj) {
+function useUIText(uiLang, level) {
   return useMemo(() => {
-    const t = translationsObj[uiLang] || translationsObj.en;
     return {
       header: uiLang === "es" ? "Juego de roles" : "Role Play",
       rolePrompt:
@@ -264,22 +263,25 @@ function useUIText(uiLang, level, translationsObj) {
         uiLang === "es" ? "Casi — inténtalo otra vez" : "Almost — try again",
       wellDone: uiLang === "es" ? "¡Bien hecho!" : "Well done!",
       score: uiLang === "es" ? "Puntuación" : "Score",
-      xp: t?.ra_label_xp || "XP",
+      xp: t(uiLang, "ra_label_xp") || "XP",
       levelLabel: uiLang === "es" ? "Nivel" : "Level",
       levelValue:
         uiLang === "es"
           ? {
-              beginner: translationsObj.es.onboarding_level_beginner,
-              intermediate: translationsObj.es.onboarding_level_intermediate,
-              advanced: translationsObj.es.onboarding_level_advanced,
+              beginner: t("es", "onboarding_level_beginner"),
+              intermediate: t("es", "onboarding_level_intermediate"),
+              advanced: t("es", "onboarding_level_advanced"),
             }[level] || level
           : {
-              beginner: translationsObj.en.onboarding_level_beginner,
-              intermediate: translationsObj.en.onboarding_level_intermediate,
-              advanced: translationsObj.en.onboarding_level_advanced,
+              beginner: t("en", "onboarding_level_beginner"),
+              intermediate: t("en", "onboarding_level_intermediate"),
+              advanced: t("en", "onboarding_level_advanced"),
             }[level] || level,
+      tts_synthesizing:
+        t(uiLang, "tts_synthesizing") ||
+        (uiLang === "es" ? "Sintetizando…" : "Synthesizing…"),
     };
-  }, [uiLang, level, translationsObj]);
+  }, [uiLang, level]);
 }
 
 /* ================================
@@ -303,7 +305,7 @@ export default function StoryMode({
 
   // APP UI language (drives all UI copy)
   const uiLang = getAppUILang();
-  const uiText = useUIText(uiLang, progress.level, translations);
+  const uiText = useUIText(uiLang, progress.level);
 
   // Content languages
   const targetLang = progress.targetLang; // 'es' | 'en' | 'nah'
@@ -335,6 +337,8 @@ export default function StoryMode({
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
+  const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
+  const [isSynthesizingSupport, setIsSynthesizingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
 
@@ -525,6 +529,8 @@ export default function StoryMode({
     }
     setIsPlayingTarget(false);
     setIsPlayingSupport(false);
+    setIsSynthesizingTarget(false);
+    setIsSynthesizingSupport(false);
     setIsAutoPlaying(false);
     setHighlightedWordIndex(-1);
   }, []);
@@ -940,7 +946,12 @@ export default function StoryMode({
   const playWithOpenAITTS = async (
     text,
     langTag,
-    { alignToText = false, onStart = () => {}, onEnd = () => {} } = {}
+    {
+      alignToText = false,
+      onStart = () => {},
+      onEnd = () => {},
+      setSynthesizing,
+    } = {}
   ) => {
     try {
       if (currentAudioRef.current) {
@@ -950,6 +961,8 @@ export default function StoryMode({
       const voice = progress.voice || "alloy";
       const cacheKey = `${text}-${voice}-${langTag}`;
       let audioUrl = audioCacheRef.current.get(cacheKey);
+
+      setSynthesizing?.(true);
 
       if (!audioUrl) {
         usageStatsRef.current.ttsCalls++;
@@ -996,17 +1009,21 @@ export default function StoryMode({
       audio.onended = () => {
         stopHighlighter?.();
         onEnd?.();
+        setSynthesizing?.(false);
         currentAudioRef.current = null;
       };
       audio.onerror = (e) => {
         stopHighlighter?.();
         console.error("Audio playback error", e);
         onEnd?.();
+        setSynthesizing?.(false);
         currentAudioRef.current = null;
       };
 
       await audio.play();
+      setSynthesizing?.(false);
     } catch (e) {
+      setSynthesizing?.(false);
       onEnd?.();
       throw e;
     }
@@ -1019,7 +1036,10 @@ export default function StoryMode({
     try {
       const langTag = (BCP47[targetLang] || BCP47.es).tts;
       if (text.length < 50) {
-        await playEnhancedWebSpeech(text, langTag);
+        setIsSynthesizingTarget(true);
+        await playEnhancedWebSpeech(text, langTag, {
+          setSynthesizing: setIsSynthesizingTarget,
+        });
         return;
       }
       await playWithOpenAITTS(text, langTag, {
@@ -1029,6 +1049,7 @@ export default function StoryMode({
           setIsPlayingTarget(false);
           setIsAutoPlaying(false);
         },
+        setSynthesizing: setIsSynthesizingTarget,
       });
     } catch (err) {
       console.error("TTS failed; falling back:", err);
@@ -1045,10 +1066,14 @@ export default function StoryMode({
       await playWithOpenAITTS(text, (BCP47[targetLang] || BCP47.es).tts, {
         alignToText: false,
         onEnd: () => setIsPlayingTarget(false),
+        setSynthesizing: setIsSynthesizingTarget,
       });
     } catch {
       stopAllAudio();
-      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts);
+      setIsSynthesizingTarget(true);
+      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts, {
+        setSynthesizing: setIsSynthesizingTarget,
+      });
     }
   };
 
@@ -1060,14 +1085,15 @@ export default function StoryMode({
       await playWithOpenAITTS(text, (BCP47[supportLang] || BCP47.en).tts, {
         alignToText: false,
         onEnd: () => setIsPlayingSupport(false),
+        setSynthesizing: setIsSynthesizingSupport,
       });
     } catch (e) {
       console.error("Support TTS failed; falling back to Web Speech", e);
-      await playEnhancedWebSpeech(
-        text,
-        (BCP47[supportLang] || BCP47.en).tts,
-        () => setIsPlayingSupport(false)
-      );
+      setIsSynthesizingSupport(true);
+      await playEnhancedWebSpeech(text, (BCP47[supportLang] || BCP47.en).tts, {
+        setSynthesizing: setIsSynthesizingSupport,
+        onEnd: () => setIsPlayingSupport(false),
+      });
     }
   };
 
@@ -1114,19 +1140,25 @@ export default function StoryMode({
     [createTokenMap, currentWordIndex]
   );
 
-  const playEnhancedWebSpeech = async (text, langTag, onEndCb) => {
+  const playEnhancedWebSpeech = async (
+    text,
+    langTag,
+    { onStart = null, onEnd = null, setSynthesizing = null } = {}
+  ) => {
     const { handleBoundary, fallbackTiming } = setupBoundaryHighlighting(
       text,
       () => {
         setIsAutoPlaying(false);
         setIsPlayingTarget(false);
-        onEndCb?.();
+        onEnd?.();
       }
     );
+    setSynthesizing?.(true);
     if (!("speechSynthesis" in window)) {
       setIsPlayingTarget(false);
       setIsAutoPlaying(false);
-      onEndCb?.();
+      setSynthesizing?.(false);
+      onEnd?.();
       return;
     }
 
@@ -1152,17 +1184,21 @@ export default function StoryMode({
       setIsPlayingTarget(true);
       setBoundarySupported(!!utter.onboundary);
       if (!utter.onboundary) fallbackTiming();
+      setSynthesizing?.(false);
+      onStart?.();
     };
     utter.onboundary = (evt) => handleBoundary(evt);
     utter.onend = () => {
       setIsPlayingTarget(false);
       setIsAutoPlaying(false);
-      onEndCb?.();
+      setSynthesizing?.(false);
+      onEnd?.();
     };
     utter.onerror = () => {
       setIsPlayingTarget(false);
       setIsAutoPlaying(false);
-      onEndCb?.();
+      setSynthesizing?.(false);
+      onEnd?.();
     };
     speechSynthesis.speak(utter);
   };
@@ -1732,9 +1768,15 @@ export default function StoryMode({
                       onClick={() =>
                         playNarrationWithHighlighting(storyData.fullStory?.tgt)
                       }
-                      isLoading={isPlayingTarget || isAutoPlaying}
-                      loadingText={uiText.playing}
-                      leftIcon={<FaVolumeUp />}
+                      isLoading={
+                        isPlayingTarget || isSynthesizingTarget || isAutoPlaying
+                      }
+                      loadingText={
+                        isSynthesizingTarget
+                          ? uiText.tts_synthesizing
+                          : uiText.playing
+                      }
+                      leftIcon={<PiSpeakerHighDuotone />}
                       color="white"
                     >
                       {isAutoPlaying
@@ -1744,9 +1786,13 @@ export default function StoryMode({
                     {!!storyData.fullStory?.sup && (
                       <Button
                         onClick={() => playSupportTTS(storyData.fullStory?.sup)}
-                        isLoading={isPlayingSupport}
-                        loadingText={uiText.playing}
-                        leftIcon={<FaVolumeUp />}
+                        isLoading={isPlayingSupport || isSynthesizingSupport}
+                        loadingText={
+                          isSynthesizingSupport
+                            ? uiText.tts_synthesizing
+                            : uiText.playing
+                        }
+                        leftIcon={<PiSpeakerHighDuotone />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"
@@ -1893,7 +1939,13 @@ export default function StoryMode({
                     <HStack spacing={3} justify="center">
                       <Button
                         onClick={() => playTargetTTS(currentSentence?.tgt)}
-                        leftIcon={<FaVolumeUp />}
+                        isLoading={isPlayingTarget || isSynthesizingTarget}
+                        loadingText={
+                          isSynthesizingTarget
+                            ? uiText.tts_synthesizing
+                            : uiText.playing
+                        }
+                        leftIcon={<PiSpeakerHighDuotone />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"

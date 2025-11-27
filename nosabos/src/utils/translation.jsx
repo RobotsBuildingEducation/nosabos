@@ -38,6 +38,7 @@ export const translations = {
     practice_drag_drop_multi_instruction:
       "Drag or select each correct answer into the matching blank.",
     practice_drag_blank_label: "Blank {index}",
+    practice_play: "Play",
     quiz_correct: "Correct",
     quiz_try_again: "Try again",
     quiz_checked: "Checked",
@@ -283,6 +284,7 @@ export const translations = {
     story_header: "Story Mode",
     story_generate: "Generate Story",
     story_playing: "Playing…",
+    tts_synthesizing: "Synthesizing…",
     story_listen: "Listen",
     story_stop: "Stop",
     story_start_practice: "Start Sentence Practice",
@@ -385,6 +387,7 @@ export const translations = {
     practice_drag_drop_multi_instruction:
       "Arrastra cada respuesta correcta al espacio correspondiente.",
     practice_drag_blank_label: "Espacio {index}",
+    practice_play: "Reproducir",
     generic_loading: "Cargando...",
     intro:
       "¡Gracias por probar la app! Actualmente está en desarrollo y mejorará a diario.",
@@ -408,6 +411,7 @@ export const translations = {
     story_header: "Narrativos",
     story_generate: "Generar narrativo",
     story_playing: "Reproduciendo…",
+    tts_synthesizing: "Sintetizando…",
     story_listen: "Escuchar",
     story_stop: "Detener",
     story_start_practice: "Empezar práctica por oración",

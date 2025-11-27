@@ -990,6 +990,7 @@ export default function Vocabulary({
   const speakAudioRef = useRef(null);
   const speakAudioCacheRef = useRef(new Map());
   const [isSpeakPlaying, setIsSpeakPlaying] = useState(false);
+  const [isSpeakSynthesizing, setIsSpeakSynthesizing] = useState(false);
 
   useEffect(() => {
     const cache = speakAudioCacheRef.current;
@@ -3013,6 +3014,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     (userLanguage === "es" ? "Omitir pregunta" : "skip");
   const speakListenLabel =
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
+  const synthLabel =
+    t("tts_synthesizing") ||
+    (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
 
   const handleToggleSpeakPlayback = useCallback(async () => {
     const text = (sTarget || "").trim();
@@ -3024,10 +3028,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       } catch {}
       speakAudioRef.current = null;
       setIsSpeakPlaying(false);
+      setIsSpeakSynthesizing(false);
       return;
     }
 
     try {
+      setIsSpeakSynthesizing(true);
       setIsSpeakPlaying(true);
       try {
         speakAudioRef.current?.pause?.();
@@ -3058,8 +3064,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         speakAudioRef.current = null;
       };
       await audio.play();
+      setIsSpeakSynthesizing(false);
     } catch (err) {
       console.error("Vocabulary speak playback failed", err);
+      setIsSpeakSynthesizing(false);
       setIsSpeakPlaying(false);
       speakAudioRef.current = null;
       toast({
@@ -3893,18 +3901,22 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   position="relative"
                 >
                   <Tooltip label={speakListenLabel} placement="top">
-                    <IconButton
+                    <Button
                       aria-label={speakListenLabel}
-                      icon={<PiSpeakerHighDuotone />}
+                      leftIcon={<PiSpeakerHighDuotone />}
                       size="sm"
-                      variant="ghost"
+                      variant="solid"
                       colorScheme={isSpeakPlaying ? "teal" : "purple"}
                       position="absolute"
                       top="3"
                       right="3"
                       onClick={handleToggleSpeakPlayback}
                       isDisabled={!sTarget}
-                    />
+                      isLoading={isSpeakSynthesizing}
+                      spinnerPlacement="start"
+                    >
+                      {t("practice_play") || (userLanguage === "es" ? "Reproducir" : "Play")}
+                    </Button>
                   </Tooltip>
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
                     {speakVariantLabel}
@@ -3912,6 +3924,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <Text fontSize="3xl" fontWeight="700">
                     {sStimulus || sTarget || "…"}
                   </Text>
+                  {isSpeakSynthesizing ? (
+                    <HStack spacing={2} justify="center" mt={3} color="gray.200">
+                      <Spinner size="sm" />
+                      <Text fontSize="xs">{synthLabel}</Text>
+                    </HStack>
+                  ) : null}
                 </Box>
 
                 {sHint ? (
