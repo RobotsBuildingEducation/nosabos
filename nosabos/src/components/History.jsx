@@ -1547,6 +1547,10 @@ export default function History({
                     <Button
                       onClick={readTarget}
                       isLoading={isReadingTarget}
+                      loadingText={
+                        t("tts_synthesizing") ||
+                        (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...")
+                      }
                       leftIcon={<FaVolumeUp />}
                       size="sm"
                       isDisabled={!viewLecture?.target}
@@ -1557,6 +1561,12 @@ export default function History({
                       <Button
                         onClick={readSupport}
                         isLoading={isReadingSupport}
+                        loadingText={
+                          t("tts_synthesizing") ||
+                          (userLanguage === "es"
+                            ? "Sintetizando..."
+                            : "Synthesizing...")
+                        }
                         leftIcon={<FaVolumeUp />}
                         size="sm"
                         variant="outline"

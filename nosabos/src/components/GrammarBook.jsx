@@ -810,6 +810,7 @@ export default function GrammarBook({
   const speakAudioRef = useRef(null);
   const speakAudioCacheRef = useRef(new Map());
   const [isSpeakPlaying, setIsSpeakPlaying] = useState(false);
+  const [isSpeakSynthesizing, setIsSpeakSynthesizing] = useState(false);
 
   useEffect(() => {
     const cache = speakAudioCacheRef.current;
@@ -2437,6 +2438,9 @@ Return JSON ONLY:
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
   const speakVariantLabel =
     t("grammar_btn_speak") || (userLanguage === "es" ? "Pronunciar" : "Speak");
+  const synthLabel =
+    t("tts_synthesizing") ||
+    (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
 
   const handleToggleSpeakPlayback = useCallback(async () => {
     const text = (sTarget || "").trim();
@@ -2448,10 +2452,12 @@ Return JSON ONLY:
       } catch {}
       speakAudioRef.current = null;
       setIsSpeakPlaying(false);
+      setIsSpeakSynthesizing(false);
       return;
     }
 
     try {
+      setIsSpeakSynthesizing(true);
       setIsSpeakPlaying(true);
       try {
         speakAudioRef.current?.pause?.();
@@ -2482,8 +2488,10 @@ Return JSON ONLY:
         speakAudioRef.current = null;
       };
       await audio.play();
+      setIsSpeakSynthesizing(false);
     } catch (err) {
       console.error("Grammar speak playback failed", err);
+      setIsSpeakSynthesizing(false);
       setIsSpeakPlaying(false);
       speakAudioRef.current = null;
       toast({
@@ -3475,6 +3483,7 @@ Return JSON ONLY:
                       right="3"
                       onClick={handleToggleSpeakPlayback}
                       isDisabled={!sTarget}
+                      isLoading={isSpeakSynthesizing}
                     />
                   </Tooltip>
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
@@ -3483,6 +3492,12 @@ Return JSON ONLY:
                   <Text fontSize="3xl" fontWeight="700">
                     {sTarget || "…"}
                   </Text>
+                  {isSpeakSynthesizing ? (
+                    <HStack spacing={2} justify="center" mt={3} color="gray.200">
+                      <Spinner size="sm" />
+                      <Text fontSize="xs">{synthLabel}</Text>
+                    </HStack>
+                  ) : null}
                 </Box>
 
                 {sHint ? (

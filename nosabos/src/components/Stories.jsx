@@ -335,6 +335,8 @@ export default function StoryMode({
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
+  const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
+  const [isSynthesizingSupport, setIsSynthesizingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
 
@@ -525,6 +527,8 @@ export default function StoryMode({
     }
     setIsPlayingTarget(false);
     setIsPlayingSupport(false);
+    setIsSynthesizingTarget(false);
+    setIsSynthesizingSupport(false);
     setIsAutoPlaying(false);
     setHighlightedWordIndex(-1);
   }, []);
@@ -940,7 +944,12 @@ export default function StoryMode({
   const playWithOpenAITTS = async (
     text,
     langTag,
-    { alignToText = false, onStart = () => {}, onEnd = () => {} } = {}
+    {
+      alignToText = false,
+      onStart = () => {},
+      onEnd = () => {},
+      setSynthesizing,
+    } = {}
   ) => {
     try {
       if (currentAudioRef.current) {
@@ -950,6 +959,8 @@ export default function StoryMode({
       const voice = progress.voice || "alloy";
       const cacheKey = `${text}-${voice}-${langTag}`;
       let audioUrl = audioCacheRef.current.get(cacheKey);
+
+      setSynthesizing?.(true);
 
       if (!audioUrl) {
         usageStatsRef.current.ttsCalls++;
@@ -996,17 +1007,21 @@ export default function StoryMode({
       audio.onended = () => {
         stopHighlighter?.();
         onEnd?.();
+        setSynthesizing?.(false);
         currentAudioRef.current = null;
       };
       audio.onerror = (e) => {
         stopHighlighter?.();
         console.error("Audio playback error", e);
         onEnd?.();
+        setSynthesizing?.(false);
         currentAudioRef.current = null;
       };
 
       await audio.play();
+      setSynthesizing?.(false);
     } catch (e) {
+      setSynthesizing?.(false);
       onEnd?.();
       throw e;
     }
@@ -1029,6 +1044,7 @@ export default function StoryMode({
           setIsPlayingTarget(false);
           setIsAutoPlaying(false);
         },
+        setSynthesizing: setIsSynthesizingTarget,
       });
     } catch (err) {
       console.error("TTS failed; falling back:", err);
@@ -1045,6 +1061,7 @@ export default function StoryMode({
       await playWithOpenAITTS(text, (BCP47[targetLang] || BCP47.es).tts, {
         alignToText: false,
         onEnd: () => setIsPlayingTarget(false),
+        setSynthesizing: setIsSynthesizingTarget,
       });
     } catch {
       stopAllAudio();
@@ -1060,6 +1077,7 @@ export default function StoryMode({
       await playWithOpenAITTS(text, (BCP47[supportLang] || BCP47.en).tts, {
         alignToText: false,
         onEnd: () => setIsPlayingSupport(false),
+        setSynthesizing: setIsSynthesizingSupport,
       });
     } catch (e) {
       console.error("Support TTS failed; falling back to Web Speech", e);
@@ -1732,8 +1750,14 @@ export default function StoryMode({
                       onClick={() =>
                         playNarrationWithHighlighting(storyData.fullStory?.tgt)
                       }
-                      isLoading={isPlayingTarget || isAutoPlaying}
-                      loadingText={uiText.playing}
+                      isLoading={
+                        isPlayingTarget || isSynthesizingTarget || isAutoPlaying
+                      }
+                      loadingText={
+                        isSynthesizingTarget
+                          ? uiText.tts_synthesizing
+                          : uiText.playing
+                      }
                       leftIcon={<FaVolumeUp />}
                       color="white"
                     >
@@ -1744,8 +1768,14 @@ export default function StoryMode({
                     {!!storyData.fullStory?.sup && (
                       <Button
                         onClick={() => playSupportTTS(storyData.fullStory?.sup)}
-                        isLoading={isPlayingSupport}
-                        loadingText={uiText.playing}
+                        isLoading={
+                          isPlayingSupport || isSynthesizingSupport
+                        }
+                        loadingText={
+                          isSynthesizingSupport
+                            ? uiText.tts_synthesizing
+                            : uiText.playing
+                        }
                         leftIcon={<FaVolumeUp />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
@@ -1893,6 +1923,12 @@ export default function StoryMode({
                     <HStack spacing={3} justify="center">
                       <Button
                         onClick={() => playTargetTTS(currentSentence?.tgt)}
+                        isLoading={isPlayingTarget || isSynthesizingTarget}
+                        loadingText={
+                          isSynthesizingTarget
+                            ? uiText.tts_synthesizing
+                            : uiText.playing
+                        }
                         leftIcon={<FaVolumeUp />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
