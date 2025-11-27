@@ -1585,7 +1585,7 @@ function LessonDetailModal({
               overflow="hidden"
               border="1px solid"
               borderColor="yellow.600"
-              boxShadow="0 4px 20px rgba(251, 191, 36, 0.2)"
+              boxShadow="0 4px 12px rgba(251, 191, 36, 0.2)"
             >
               <Box
                 position="absolute"

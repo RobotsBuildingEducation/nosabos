@@ -54,7 +54,7 @@ const baseLearningPath = {
             es: "Aprende saludos y despedidas esenciales",
           },
           xpRequired: 0,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -77,7 +77,7 @@ const baseLearningPath = {
             es: "Practica saludos en conversaciones reales",
           },
           xpRequired: 15,
-          xpReward: 15,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -101,7 +101,7 @@ const baseLearningPath = {
             es: "Domina la etiqueta de saludos y cortesías sociales",
           },
           xpRequired: 30,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -125,7 +125,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de primeras palabras",
           },
           xpRequired: 45,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -168,7 +168,7 @@ const baseLearningPath = {
             es: "Aprende a presentarte y preguntar nombres",
           },
           xpRequired: 75,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -191,7 +191,7 @@ const baseLearningPath = {
             es: "Practica presentaciones en conversaciones reales",
           },
           xpRequired: 90,
-          xpReward: 15,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -215,7 +215,7 @@ const baseLearningPath = {
             es: "Comparte información personal y pregunta sobre otros",
           },
           xpRequired: 105,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -239,7 +239,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de presentándote",
           },
           xpRequired: 120,
-          xpReward: 30,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -282,7 +282,7 @@ const baseLearningPath = {
             es: "Aprende a contar desde cero hasta veinte",
           },
           xpRequired: 150,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -305,7 +305,7 @@ const baseLearningPath = {
             es: "Practica números en situaciones cotidianas",
           },
           xpRequired: 165,
-          xpReward: 15,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -329,7 +329,7 @@ const baseLearningPath = {
             es: "Aplica números a teléfonos y edades",
           },
           xpRequired: 180,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -353,7 +353,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de números 0-20",
           },
           xpRequired: 195,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -396,7 +396,7 @@ const baseLearningPath = {
             es: "Aprende a contar desde veintiuno hasta cien",
           },
           xpRequired: 225,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -419,7 +419,7 @@ const baseLearningPath = {
             es: "Practica usando números grandes con precios y dinero",
           },
           xpRequired: 240,
-          xpReward: 15,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -443,7 +443,7 @@ const baseLearningPath = {
             es: "Aplica números grandes en contextos de la vida real",
           },
           xpRequired: 255,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -467,7 +467,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de números 21-100",
           },
           xpRequired: 270,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -510,7 +510,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para días de la semana",
           },
           xpRequired: 300,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -533,7 +533,7 @@ const baseLearningPath = {
             es: "Practica días de la semana en conversación",
           },
           xpRequired: 315,
-          xpReward: 15,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -557,7 +557,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de días de la semana",
           },
           xpRequired: 330,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -581,7 +581,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de días de la semana",
           },
           xpRequired: 345,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -624,7 +624,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para meses y fechas",
           },
           xpRequired: 375,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -647,7 +647,7 @@ const baseLearningPath = {
             es: "Practica meses y fechas en conversación",
           },
           xpRequired: 390,
-          xpReward: 15,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -671,7 +671,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de meses y fechas",
           },
           xpRequired: 405,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -695,7 +695,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de meses y fechas",
           },
           xpRequired: 420,
-          xpReward: 30,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -738,7 +738,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para decir la hora",
           },
           xpRequired: 450,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -761,7 +761,7 @@ const baseLearningPath = {
             es: "Practica decir la hora en conversación",
           },
           xpRequired: 465,
-          xpReward: 15,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -785,7 +785,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de decir la hora",
           },
           xpRequired: 480,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -809,7 +809,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de decir la hora",
           },
           xpRequired: 495,
-          xpReward: 30,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -852,7 +852,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para familia",
           },
           xpRequired: 525,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -875,7 +875,7 @@ const baseLearningPath = {
             es: "Practica familia en conversación",
           },
           xpRequired: 540,
-          xpReward: 15,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -899,7 +899,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de familia",
           },
           xpRequired: 555,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -923,7 +923,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de familia",
           },
           xpRequired: 570,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -966,7 +966,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para colores y formas",
           },
           xpRequired: 600,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -989,7 +989,7 @@ const baseLearningPath = {
             es: "Practica colores y formas en conversación",
           },
           xpRequired: 615,
-          xpReward: 15,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1013,7 +1013,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de colores y formas",
           },
           xpRequired: 630,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1037,7 +1037,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de colores y formas",
           },
           xpRequired: 645,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1080,7 +1080,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para comida y bebidas",
           },
           xpRequired: 675,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -1103,7 +1103,7 @@ const baseLearningPath = {
             es: "Practica comida y bebidas en conversación",
           },
           xpRequired: 690,
-          xpReward: 15,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1127,7 +1127,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de comida y bebidas",
           },
           xpRequired: 705,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1151,7 +1151,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de comida y bebidas",
           },
           xpRequired: 720,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1194,7 +1194,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para en el restaurante",
           },
           xpRequired: 750,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -1217,7 +1217,7 @@ const baseLearningPath = {
             es: "Practica en el restaurante en conversación",
           },
           xpRequired: 765,
-          xpReward: 15,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1241,7 +1241,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de en el restaurante",
           },
           xpRequired: 780,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1265,7 +1265,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de en el restaurante",
           },
           xpRequired: 795,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1308,7 +1308,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para objetos comunes",
           },
           xpRequired: 825,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -1331,7 +1331,7 @@ const baseLearningPath = {
             es: "Practica objetos comunes en conversación",
           },
           xpRequired: 840,
-          xpReward: 15,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1355,7 +1355,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de objetos comunes",
           },
           xpRequired: 855,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1379,7 +1379,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de objetos comunes",
           },
           xpRequired: 870,
-          xpReward: 30,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1422,7 +1422,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para en la casa",
           },
           xpRequired: 900,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -1445,7 +1445,7 @@ const baseLearningPath = {
             es: "Practica en la casa en conversación",
           },
           xpRequired: 915,
-          xpReward: 15,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1469,7 +1469,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de en la casa",
           },
           xpRequired: 930,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1493,7 +1493,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de en la casa",
           },
           xpRequired: 945,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1536,7 +1536,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para ropa",
           },
           xpRequired: 975,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -1559,7 +1559,7 @@ const baseLearningPath = {
             es: "Practica ropa en conversación",
           },
           xpRequired: 990,
-          xpReward: 15,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1583,7 +1583,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de ropa",
           },
           xpRequired: 1005,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1607,7 +1607,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de ropa",
           },
           xpRequired: 1020,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1650,7 +1650,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para rutina diaria",
           },
           xpRequired: 1050,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -1673,7 +1673,7 @@ const baseLearningPath = {
             es: "Practica rutina diaria en conversación",
           },
           xpRequired: 1065,
-          xpReward: 15,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1697,7 +1697,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de rutina diaria",
           },
           xpRequired: 1080,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1721,7 +1721,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de rutina diaria",
           },
           xpRequired: 1095,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1764,7 +1764,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para clima",
           },
           xpRequired: 1125,
-          xpReward: 15,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -1787,7 +1787,7 @@ const baseLearningPath = {
             es: "Practica clima en conversación",
           },
           xpRequired: 1140,
-          xpReward: 15,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1811,7 +1811,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de clima",
           },
           xpRequired: 1155,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1835,7 +1835,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de clima",
           },
           xpRequired: 1170,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1878,7 +1878,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para gustos",
           },
           xpRequired: 1200,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -1901,7 +1901,7 @@ const baseLearningPath = {
             es: "Practica gustos en conversación",
           },
           xpRequired: 1215,
-          xpReward: 15,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -1925,7 +1925,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de gustos",
           },
           xpRequired: 1230,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -1949,7 +1949,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de gustos",
           },
           xpRequired: 1245,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -1992,7 +1992,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para preguntas",
           },
           xpRequired: 1275,
-          xpReward: 15,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2015,7 +2015,7 @@ const baseLearningPath = {
             es: "Practica preguntas en conversación",
           },
           xpRequired: 1290,
-          xpReward: 15,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2039,7 +2039,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de preguntas",
           },
           xpRequired: 1305,
-          xpReward: 15,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2063,7 +2063,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de preguntas",
           },
           xpRequired: 1320,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -2108,7 +2108,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para describir personas",
           },
           xpRequired: 1350,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2131,7 +2131,7 @@ const baseLearningPath = {
             es: "Practica describir personas en conversación",
           },
           xpRequired: 1370,
-          xpReward: 20,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2156,7 +2156,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de describir personas",
           },
           xpRequired: 1390,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2181,7 +2181,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de describir personas",
           },
           xpRequired: 1410,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -2224,7 +2224,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para describir lugares",
           },
           xpRequired: 1450,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2247,7 +2247,7 @@ const baseLearningPath = {
             es: "Practica describir lugares en conversación",
           },
           xpRequired: 1470,
-          xpReward: 20,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2271,7 +2271,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de describir lugares",
           },
           xpRequired: 1490,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2338,7 +2338,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para compras y dinero",
           },
           xpRequired: 1550,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2361,7 +2361,7 @@ const baseLearningPath = {
             es: "Practica compras y dinero en conversación",
           },
           xpRequired: 1570,
-          xpReward: 20,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2385,7 +2385,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de compras y dinero",
           },
           xpRequired: 1590,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2452,7 +2452,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para en el mercado",
           },
           xpRequired: 1650,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2475,7 +2475,7 @@ const baseLearningPath = {
             es: "Practica en el mercado en conversación",
           },
           xpRequired: 1670,
-          xpReward: 20,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2499,7 +2499,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de en el mercado",
           },
           xpRequired: 1690,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2523,7 +2523,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de en el mercado",
           },
           xpRequired: 1710,
-          xpReward: 40,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -2566,7 +2566,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para transporte",
           },
           xpRequired: 1750,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2589,7 +2589,7 @@ const baseLearningPath = {
             es: "Practica transporte en conversación",
           },
           xpRequired: 1770,
-          xpReward: 20,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2613,7 +2613,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de transporte",
           },
           xpRequired: 1790,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2680,7 +2680,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para direcciones",
           },
           xpRequired: 1850,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2703,7 +2703,7 @@ const baseLearningPath = {
             es: "Practica direcciones en conversación",
           },
           xpRequired: 1870,
-          xpReward: 20,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2727,7 +2727,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de direcciones",
           },
           xpRequired: 1890,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2751,7 +2751,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de direcciones",
           },
           xpRequired: 1910,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -2794,7 +2794,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para hacer planes",
           },
           xpRequired: 1950,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2817,7 +2817,7 @@ const baseLearningPath = {
             es: "Practica hacer planes en conversación",
           },
           xpRequired: 1970,
-          xpReward: 20,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2841,7 +2841,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de hacer planes",
           },
           xpRequired: 1990,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2908,7 +2908,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para pasatiempos",
           },
           xpRequired: 2050,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -2931,7 +2931,7 @@ const baseLearningPath = {
             es: "Practica pasatiempos en conversación",
           },
           xpRequired: 2070,
-          xpReward: 20,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -2955,7 +2955,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de pasatiempos",
           },
           xpRequired: 2090,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -2979,7 +2979,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de pasatiempos",
           },
           xpRequired: 2110,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -3022,7 +3022,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para deportes",
           },
           xpRequired: 2150,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3045,7 +3045,7 @@ const baseLearningPath = {
             es: "Practica deportes en conversación",
           },
           xpRequired: 2170,
-          xpReward: 20,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3069,7 +3069,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de deportes",
           },
           xpRequired: 2190,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -3093,7 +3093,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de deportes",
           },
           xpRequired: 2210,
-          xpReward: 40,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -3136,7 +3136,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para pasado regular",
           },
           xpRequired: 2250,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3159,7 +3159,7 @@ const baseLearningPath = {
             es: "Practica pasado regular en conversación",
           },
           xpRequired: 2270,
-          xpReward: 20,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3183,7 +3183,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de pasado regular",
           },
           xpRequired: 2290,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -3250,7 +3250,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para pasado irregular",
           },
           xpRequired: 2350,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3273,7 +3273,7 @@ const baseLearningPath = {
             es: "Practica pasado irregular en conversación",
           },
           xpRequired: 2370,
-          xpReward: 20,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3297,7 +3297,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de pasado irregular",
           },
           xpRequired: 2390,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -3364,7 +3364,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para contar historias",
           },
           xpRequired: 2450,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3387,7 +3387,7 @@ const baseLearningPath = {
             es: "Practica contar historias en conversación",
           },
           xpRequired: 2470,
-          xpReward: 20,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3412,7 +3412,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de contar historias",
           },
           xpRequired: 2490,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -3480,7 +3480,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para planes futuros",
           },
           xpRequired: 2550,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3503,7 +3503,7 @@ const baseLearningPath = {
             es: "Practica planes futuros en conversación",
           },
           xpRequired: 2570,
-          xpReward: 20,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3527,7 +3527,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de planes futuros",
           },
           xpRequired: 2590,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -3594,7 +3594,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para salud y cuerpo",
           },
           xpRequired: 2650,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3617,7 +3617,7 @@ const baseLearningPath = {
             es: "Practica salud y cuerpo en conversación",
           },
           xpRequired: 2670,
-          xpReward: 20,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3641,7 +3641,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de salud y cuerpo",
           },
           xpRequired: 2690,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -3665,7 +3665,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de salud y cuerpo",
           },
           xpRequired: 2710,
-          xpReward: 40,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -3708,7 +3708,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para en el médico",
           },
           xpRequired: 2750,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3731,7 +3731,7 @@ const baseLearningPath = {
             es: "Practica en el médico en conversación",
           },
           xpRequired: 2770,
-          xpReward: 20,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3755,7 +3755,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de en el médico",
           },
           xpRequired: 2790,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -3779,7 +3779,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de en el médico",
           },
           xpRequired: 2810,
-          xpReward: 40,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -3822,7 +3822,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para trabajos",
           },
           xpRequired: 2850,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3845,7 +3845,7 @@ const baseLearningPath = {
             es: "Practica trabajos en conversación",
           },
           xpRequired: 2870,
-          xpReward: 20,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3869,7 +3869,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de trabajos",
           },
           xpRequired: 2890,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -3893,7 +3893,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de trabajos",
           },
           xpRequired: 2910,
-          xpReward: 40,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -3936,7 +3936,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para escuela",
           },
           xpRequired: 2950,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -3959,7 +3959,7 @@ const baseLearningPath = {
             es: "Practica escuela en conversación",
           },
           xpRequired: 2970,
-          xpReward: 20,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -3983,7 +3983,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de escuela",
           },
           xpRequired: 2990,
-          xpReward: 20,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4007,7 +4007,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de escuela",
           },
           xpRequired: 3010,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -4050,7 +4050,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para tecnología",
           },
           xpRequired: 3050,
-          xpReward: 20,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4073,7 +4073,7 @@ const baseLearningPath = {
             es: "Practica tecnología en conversación",
           },
           xpRequired: 3070,
-          xpReward: 20,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -4098,7 +4098,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de tecnología",
           },
           xpRequired: 3090,
-          xpReward: 20,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4123,7 +4123,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de tecnología",
           },
           xpRequired: 3110,
-          xpReward: 40,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -4168,7 +4168,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para pretérito perfecto",
           },
           xpRequired: 3150,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4191,7 +4191,7 @@ const baseLearningPath = {
             es: "Practica pretérito perfecto en conversación",
           },
           xpRequired: 3175,
-          xpReward: 25,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -4215,7 +4215,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de pretérito perfecto",
           },
           xpRequired: 3200,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4239,7 +4239,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de pretérito perfecto",
           },
           xpRequired: 3225,
-          xpReward: 50,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -4282,7 +4282,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para pasado continuo",
           },
           xpRequired: 3275,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4305,7 +4305,7 @@ const baseLearningPath = {
             es: "Practica pasado continuo en conversación",
           },
           xpRequired: 3300,
-          xpReward: 25,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -4329,7 +4329,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de pasado continuo",
           },
           xpRequired: 3325,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4353,7 +4353,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de pasado continuo",
           },
           xpRequired: 3350,
-          xpReward: 50,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -4396,7 +4396,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para futuro",
           },
           xpRequired: 3400,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4419,7 +4419,7 @@ const baseLearningPath = {
             es: "Practica futuro en conversación",
           },
           xpRequired: 3425,
-          xpReward: 25,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -4443,7 +4443,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de futuro",
           },
           xpRequired: 3450,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4467,7 +4467,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de futuro",
           },
           xpRequired: 3475,
-          xpReward: 50,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -4510,7 +4510,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para comparaciones",
           },
           xpRequired: 3525,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4533,7 +4533,7 @@ const baseLearningPath = {
             es: "Practica comparaciones en conversación",
           },
           xpRequired: 3550,
-          xpReward: 25,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -4557,7 +4557,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de comparaciones",
           },
           xpRequired: 3575,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4624,7 +4624,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para dar consejos",
           },
           xpRequired: 3650,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4647,7 +4647,7 @@ const baseLearningPath = {
             es: "Practica dar consejos en conversación",
           },
           xpRequired: 3675,
-          xpReward: 25,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -4672,7 +4672,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de dar consejos",
           },
           xpRequired: 3700,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4740,7 +4740,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para hacer sugerencias",
           },
           xpRequired: 3775,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4763,7 +4763,7 @@ const baseLearningPath = {
             es: "Practica hacer sugerencias en conversación",
           },
           xpRequired: 3800,
-          xpReward: 25,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -4788,7 +4788,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de hacer sugerencias",
           },
           xpRequired: 3825,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4813,7 +4813,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de hacer sugerencias",
           },
           xpRequired: 3850,
-          xpReward: 50,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -4856,7 +4856,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para condicional",
           },
           xpRequired: 3900,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4879,7 +4879,7 @@ const baseLearningPath = {
             es: "Practica condicional en conversación",
           },
           xpRequired: 3925,
-          xpReward: 25,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -4903,7 +4903,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de condicional",
           },
           xpRequired: 3950,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -4927,7 +4927,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de condicional",
           },
           xpRequired: 3975,
-          xpReward: 50,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -4970,7 +4970,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para viajes y turismo",
           },
           xpRequired: 4025,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -4993,7 +4993,7 @@ const baseLearningPath = {
             es: "Practica viajes y turismo en conversación",
           },
           xpRequired: 4050,
-          xpReward: 25,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5017,7 +5017,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de viajes y turismo",
           },
           xpRequired: 4075,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5084,7 +5084,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para medio ambiente",
           },
           xpRequired: 4150,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -5107,7 +5107,7 @@ const baseLearningPath = {
             es: "Practica medio ambiente en conversación",
           },
           xpRequired: 4175,
-          xpReward: 25,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5131,7 +5131,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de medio ambiente",
           },
           xpRequired: 4200,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5155,7 +5155,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de medio ambiente",
           },
           xpRequired: 4225,
-          xpReward: 50,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -5198,7 +5198,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para cultura y tradiciones",
           },
           xpRequired: 4275,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -5221,7 +5221,7 @@ const baseLearningPath = {
             es: "Practica cultura y tradiciones en conversación",
           },
           xpRequired: 4300,
-          xpReward: 25,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5245,7 +5245,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de cultura y tradiciones",
           },
           xpRequired: 4325,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5269,7 +5269,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de cultura y tradiciones",
           },
           xpRequired: 4350,
-          xpReward: 50,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -5312,7 +5312,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para medios y noticias",
           },
           xpRequired: 4400,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -5335,7 +5335,7 @@ const baseLearningPath = {
             es: "Practica medios y noticias en conversación",
           },
           xpRequired: 4425,
-          xpReward: 25,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5359,7 +5359,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de medios y noticias",
           },
           xpRequired: 4450,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5383,7 +5383,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de medios y noticias",
           },
           xpRequired: 4475,
-          xpReward: 50,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -5426,7 +5426,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para expresar opiniones",
           },
           xpRequired: 4525,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -5449,7 +5449,7 @@ const baseLearningPath = {
             es: "Practica expresar opiniones en conversación",
           },
           xpRequired: 4550,
-          xpReward: 25,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5473,7 +5473,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de expresar opiniones",
           },
           xpRequired: 4575,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5497,7 +5497,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de expresar opiniones",
           },
           xpRequired: 4600,
-          xpReward: 50,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -5540,7 +5540,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para quejas",
           },
           xpRequired: 4650,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -5563,7 +5563,7 @@ const baseLearningPath = {
             es: "Practica quejas en conversación",
           },
           xpRequired: 4675,
-          xpReward: 25,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5587,7 +5587,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de quejas",
           },
           xpRequired: 4700,
-          xpReward: 25,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5654,7 +5654,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para experiencias",
           },
           xpRequired: 4775,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -5677,7 +5677,7 @@ const baseLearningPath = {
             es: "Practica experiencias en conversación",
           },
           xpRequired: 4800,
-          xpReward: 25,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5701,7 +5701,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de experiencias",
           },
           xpRequired: 4825,
-          xpReward: 25,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5768,7 +5768,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para probabilidad",
           },
           xpRequired: 4900,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -5791,7 +5791,7 @@ const baseLearningPath = {
             es: "Practica probabilidad en conversación",
           },
           xpRequired: 4925,
-          xpReward: 25,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5815,7 +5815,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de probabilidad",
           },
           xpRequired: 4950,
-          xpReward: 25,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5839,7 +5839,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de probabilidad",
           },
           xpRequired: 4975,
-          xpReward: 50,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -5884,7 +5884,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para pluscuamperfecto",
           },
           xpRequired: 5025,
-          xpReward: 30,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -5907,7 +5907,7 @@ const baseLearningPath = {
             es: "Practica pluscuamperfecto en conversación",
           },
           xpRequired: 5055,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -5931,7 +5931,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de pluscuamperfecto",
           },
           xpRequired: 5085,
-          xpReward: 30,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -5955,7 +5955,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de pluscuamperfecto",
           },
           xpRequired: 5115,
-          xpReward: 60,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -5998,7 +5998,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para voz pasiva",
           },
           xpRequired: 5175,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6021,7 +6021,7 @@ const baseLearningPath = {
             es: "Practica voz pasiva en conversación",
           },
           xpRequired: 5205,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6045,7 +6045,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de voz pasiva",
           },
           xpRequired: 5235,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -6069,7 +6069,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de voz pasiva",
           },
           xpRequired: 5265,
-          xpReward: 60,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -6112,7 +6112,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para discurso indirecto",
           },
           xpRequired: 5325,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6135,7 +6135,7 @@ const baseLearningPath = {
             es: "Practica discurso indirecto en conversación",
           },
           xpRequired: 5355,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6160,7 +6160,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de discurso indirecto",
           },
           xpRequired: 5385,
-          xpReward: 30,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -6185,7 +6185,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de discurso indirecto",
           },
           xpRequired: 5415,
-          xpReward: 60,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -6228,7 +6228,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para cláusulas relativas",
           },
           xpRequired: 5475,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6251,7 +6251,7 @@ const baseLearningPath = {
             es: "Practica cláusulas relativas en conversación",
           },
           xpRequired: 5505,
-          xpReward: 30,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6275,7 +6275,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de cláusulas relativas",
           },
           xpRequired: 5535,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -6299,7 +6299,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de cláusulas relativas",
           },
           xpRequired: 5565,
-          xpReward: 60,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -6342,7 +6342,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para formal e informal",
           },
           xpRequired: 5625,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6365,7 +6365,7 @@ const baseLearningPath = {
             es: "Practica formal e informal en conversación",
           },
           xpRequired: 5655,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6389,7 +6389,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de formal e informal",
           },
           xpRequired: 5685,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -6456,7 +6456,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para español de negocios",
           },
           xpRequired: 5775,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6479,7 +6479,7 @@ const baseLearningPath = {
             es: "Practica español de negocios en conversación",
           },
           xpRequired: 5805,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6503,7 +6503,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de español de negocios",
           },
           xpRequired: 5835,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -6527,7 +6527,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de español de negocios",
           },
           xpRequired: 5865,
-          xpReward: 60,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -6570,7 +6570,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para ciencia e innovación",
           },
           xpRequired: 5925,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6593,7 +6593,7 @@ const baseLearningPath = {
             es: "Practica ciencia e innovación en conversación",
           },
           xpRequired: 5955,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6617,7 +6617,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de ciencia e innovación",
           },
           xpRequired: 5985,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -6641,7 +6641,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de ciencia e innovación",
           },
           xpRequired: 6015,
-          xpReward: 60,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -6684,7 +6684,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para problemas sociales",
           },
           xpRequired: 6075,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6707,7 +6707,7 @@ const baseLearningPath = {
             es: "Practica problemas sociales en conversación",
           },
           xpRequired: 6105,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6731,7 +6731,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de problemas sociales",
           },
           xpRequired: 6135,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -6755,7 +6755,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de problemas sociales",
           },
           xpRequired: 6165,
-          xpReward: 60,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -6798,7 +6798,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para artes y literatura",
           },
           xpRequired: 6225,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6821,7 +6821,7 @@ const baseLearningPath = {
             es: "Practica artes y literatura en conversación",
           },
           xpRequired: 6255,
-          xpReward: 30,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6845,7 +6845,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de artes y literatura",
           },
           xpRequired: 6285,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -6912,7 +6912,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para política y sociedad",
           },
           xpRequired: 6375,
-          xpReward: 30,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -6935,7 +6935,7 @@ const baseLearningPath = {
             es: "Practica política y sociedad en conversación",
           },
           xpRequired: 6405,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -6959,7 +6959,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de política y sociedad",
           },
           xpRequired: 6435,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -7026,7 +7026,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para salud y estilo de vida",
           },
           xpRequired: 6525,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -7049,7 +7049,7 @@ const baseLearningPath = {
             es: "Practica salud y estilo de vida en conversación",
           },
           xpRequired: 6555,
-          xpReward: 30,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7073,7 +7073,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de salud y estilo de vida",
           },
           xpRequired: 6585,
-          xpReward: 30,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -7097,7 +7097,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de salud y estilo de vida",
           },
           xpRequired: 6615,
-          xpReward: 60,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -7140,7 +7140,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para conceptos abstractos",
           },
           xpRequired: 6675,
-          xpReward: 30,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -7163,7 +7163,7 @@ const baseLearningPath = {
             es: "Practica conceptos abstractos en conversación",
           },
           xpRequired: 6705,
-          xpReward: 30,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7187,7 +7187,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de conceptos abstractos",
           },
           xpRequired: 6735,
-          xpReward: 30,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -7211,7 +7211,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de conceptos abstractos",
           },
           xpRequired: 6765,
-          xpReward: 60,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -7256,7 +7256,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para subjuntivo presente",
           },
           xpRequired: 6825,
-          xpReward: 35,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -7279,7 +7279,7 @@ const baseLearningPath = {
             es: "Practica subjuntivo presente en conversación",
           },
           xpRequired: 6860,
-          xpReward: 35,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7303,7 +7303,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de subjuntivo presente",
           },
           xpRequired: 6895,
-          xpReward: 35,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -7327,7 +7327,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de subjuntivo presente",
           },
           xpRequired: 6930,
-          xpReward: 70,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -7370,7 +7370,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para subjuntivo pasado",
           },
           xpRequired: 7000,
-          xpReward: 35,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -7393,7 +7393,7 @@ const baseLearningPath = {
             es: "Practica subjuntivo pasado en conversación",
           },
           xpRequired: 7035,
-          xpReward: 35,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7441,7 +7441,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de subjuntivo pasado",
           },
           xpRequired: 7105,
-          xpReward: 70,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -7484,7 +7484,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para condicionales complejos",
           },
           xpRequired: 7175,
-          xpReward: 35,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -7507,7 +7507,7 @@ const baseLearningPath = {
             es: "Practica condicionales complejos en conversación",
           },
           xpRequired: 7210,
-          xpReward: 35,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7531,7 +7531,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de condicionales complejos",
           },
           xpRequired: 7245,
-          xpReward: 35,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -7555,7 +7555,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de condicionales complejos",
           },
           xpRequired: 7280,
-          xpReward: 70,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -7598,7 +7598,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para expresiones idiomáticas",
           },
           xpRequired: 7350,
-          xpReward: 35,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -7621,7 +7621,7 @@ const baseLearningPath = {
             es: "Practica expresiones idiomáticas en conversación",
           },
           xpRequired: 7385,
-          xpReward: 35,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7669,7 +7669,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de expresiones idiomáticas",
           },
           xpRequired: 7455,
-          xpReward: 70,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -7735,7 +7735,7 @@ const baseLearningPath = {
             es: "Practica escritura académica en conversación",
           },
           xpRequired: 7560,
-          xpReward: 35,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7783,7 +7783,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de escritura académica",
           },
           xpRequired: 7630,
-          xpReward: 70,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -7849,7 +7849,7 @@ const baseLearningPath = {
             es: "Practica comunicación profesional en conversación",
           },
           xpRequired: 7735,
-          xpReward: 35,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7873,7 +7873,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de comunicación profesional",
           },
           xpRequired: 7770,
-          xpReward: 35,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -7897,7 +7897,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de comunicación profesional",
           },
           xpRequired: 7805,
-          xpReward: 70,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -7963,7 +7963,7 @@ const baseLearningPath = {
             es: "Practica debate y argumentación en conversación",
           },
           xpRequired: 7910,
-          xpReward: 35,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -7987,7 +7987,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de debate y argumentación",
           },
           xpRequired: 7945,
-          xpReward: 35,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8011,7 +8011,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de debate y argumentación",
           },
           xpRequired: 7980,
-          xpReward: 70,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8054,7 +8054,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para análisis cultural",
           },
           xpRequired: 8050,
-          xpReward: 35,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8077,7 +8077,7 @@ const baseLearningPath = {
             es: "Practica análisis cultural en conversación",
           },
           xpRequired: 8085,
-          xpReward: 35,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -8101,7 +8101,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de análisis cultural",
           },
           xpRequired: 8120,
-          xpReward: 35,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8125,7 +8125,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de análisis cultural",
           },
           xpRequired: 8155,
-          xpReward: 70,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8168,7 +8168,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para técnicas literarias",
           },
           xpRequired: 8225,
-          xpReward: 35,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8191,7 +8191,7 @@ const baseLearningPath = {
             es: "Practica técnicas literarias en conversación",
           },
           xpRequired: 8260,
-          xpReward: 35,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -8215,7 +8215,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de técnicas literarias",
           },
           xpRequired: 8295,
-          xpReward: 35,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8239,7 +8239,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de técnicas literarias",
           },
           xpRequired: 8330,
-          xpReward: 70,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8282,7 +8282,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para discurso avanzado",
           },
           xpRequired: 8400,
-          xpReward: 35,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8305,7 +8305,7 @@ const baseLearningPath = {
             es: "Practica discurso avanzado en conversación",
           },
           xpRequired: 8435,
-          xpReward: 35,
+          xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -8329,7 +8329,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de discurso avanzado",
           },
           xpRequired: 8470,
-          xpReward: 35,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8353,7 +8353,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de discurso avanzado",
           },
           xpRequired: 8505,
-          xpReward: 70,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8398,7 +8398,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para modismos nativos",
           },
           xpRequired: 8575,
-          xpReward: 40,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8446,7 +8446,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de modismos nativos",
           },
           xpRequired: 8655,
-          xpReward: 40,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8472,7 +8472,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de modismos nativos",
           },
           xpRequired: 8695,
-          xpReward: 80,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8515,7 +8515,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para variaciones regionales",
           },
           xpRequired: 8775,
-          xpReward: 40,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8538,7 +8538,7 @@ const baseLearningPath = {
             es: "Practica variaciones regionales en conversación",
           },
           xpRequired: 8815,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -8562,7 +8562,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de variaciones regionales",
           },
           xpRequired: 8855,
-          xpReward: 40,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8586,7 +8586,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de variaciones regionales",
           },
           xpRequired: 8895,
-          xpReward: 80,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8629,7 +8629,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para dominio estilístico",
           },
           xpRequired: 8975,
-          xpReward: 40,
+          xpReward: 55,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8652,7 +8652,7 @@ const baseLearningPath = {
             es: "Practica dominio estilístico en conversación",
           },
           xpRequired: 9015,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -8676,7 +8676,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de dominio estilístico",
           },
           xpRequired: 9055,
-          xpReward: 40,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8700,7 +8700,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de dominio estilístico",
           },
           xpRequired: 9095,
-          xpReward: 80,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8743,7 +8743,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para dispositivos retóricos",
           },
           xpRequired: 9175,
-          xpReward: 40,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8766,7 +8766,7 @@ const baseLearningPath = {
             es: "Practica dispositivos retóricos en conversación",
           },
           xpRequired: 9215,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -8790,7 +8790,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de dispositivos retóricos",
           },
           xpRequired: 9255,
-          xpReward: 40,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8814,7 +8814,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de dispositivos retóricos",
           },
           xpRequired: 9295,
-          xpReward: 80,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8857,7 +8857,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para vocabulario especializado",
           },
           xpRequired: 9375,
-          xpReward: 40,
+          xpReward: 45,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8880,7 +8880,7 @@ const baseLearningPath = {
             es: "Practica vocabulario especializado en conversación",
           },
           xpRequired: 9415,
-          xpReward: 40,
+          xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -8904,7 +8904,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de vocabulario especializado",
           },
           xpRequired: 9455,
-          xpReward: 40,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -8928,7 +8928,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de vocabulario especializado",
           },
           xpRequired: 9495,
-          xpReward: 80,
+          xpReward: 60,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -8971,7 +8971,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para matices sutiles",
           },
           xpRequired: 9575,
-          xpReward: 40,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -8994,7 +8994,7 @@ const baseLearningPath = {
             es: "Practica matices sutiles en conversación",
           },
           xpRequired: 9615,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -9021,7 +9021,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de matices sutiles",
           },
           xpRequired: 9655,
-          xpReward: 40,
+          xpReward: 55,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -9047,7 +9047,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de matices sutiles",
           },
           xpRequired: 9695,
-          xpReward: 80,
+          xpReward: 40,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -9092,7 +9092,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para experiencia cultural",
           },
           xpRequired: 9775,
-          xpReward: 40,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -9115,7 +9115,7 @@ const baseLearningPath = {
             es: "Practica experiencia cultural en conversación",
           },
           xpRequired: 9815,
-          xpReward: 40,
+          xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
             realtime: {
@@ -9139,7 +9139,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de experiencia cultural",
           },
           xpRequired: 9855,
-          xpReward: 40,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -9163,7 +9163,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de experiencia cultural",
           },
           xpRequired: 9895,
-          xpReward: 80,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -9206,7 +9206,7 @@ const baseLearningPath = {
             es: "Aprende vocabulario clave para fluidez casi nativa",
           },
           xpRequired: 9975,
-          xpReward: 40,
+          xpReward: 35,
           modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
@@ -9253,7 +9253,7 @@ const baseLearningPath = {
             es: "Aplica habilidades de fluidez casi nativa",
           },
           xpRequired: 10055,
-          xpReward: 40,
+          xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
             reading: {
@@ -9277,7 +9277,7 @@ const baseLearningPath = {
             es: "Prueba tus conocimientos de fluidez casi nativa",
           },
           xpRequired: 10095,
-          xpReward: 80,
+          xpReward: 50,
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
@@ -9409,7 +9409,7 @@ function addSupplementalLessons(level, unit) {
         es: "Ejercicios breves para consolidar el lenguaje de la unidad antes del cuestionario.",
       },
       xpRequired: maxNonQuizXp + xpStep,
-      xpReward: 15,
+      xpReward: 35,
       modes: ["grammar", "vocabulary"],
       content: {
         grammar: {
@@ -9435,7 +9435,7 @@ function addSupplementalLessons(level, unit) {
         es: "Vincula vocabulario y gramática de la unidad en un escenario guiado.",
       },
       xpRequired: maxNonQuizXp + xpStep * 2,
-      xpReward: 20,
+      xpReward: 60,
       modes: ["realtime", "reading", "stories"],
       content: {
         realtime: {
