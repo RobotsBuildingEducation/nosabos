@@ -1255,6 +1255,13 @@ export default function RealTimeTest({
   async function handleNextGoal() {
     if (!currentGoal || goalBusyRef.current) return;
 
+    // In lesson mode, move to the next module (same behavior as Skip)
+    if (onSkip && typeof onSkip === "function") {
+      setGoalCompleted(false);
+      onSkip();
+      return;
+    }
+
     goalBusyRef.current = true;
     try {
       // Generate next goal based on conversation history

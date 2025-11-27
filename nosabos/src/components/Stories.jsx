@@ -1368,6 +1368,9 @@ export default function StoryMode({
   };
 
   /* ----------------------------- Award once at session end ----------------------------- */
+  const computeStoryXpReward = () =>
+    Math.max(4, Math.min(7, 4 + Math.round(Math.random() * 3)));
+
   const finalizePracticeSession = async (awardedXp) => {
     const npubLive = strongNpub(useUserStore.getState().user);
     if (!npubLive) return;
@@ -1436,9 +1439,7 @@ export default function StoryMode({
       return;
     }
 
-    // Passed — accumulate XP and advance (no award yet)
-    const delta = 5; // ✅ normalized to 4-7 XP range
-    setSessionXp((p) => p + delta);
+    // Passed — advance (XP awarded once at the end of the story)
     setPassedCount((c) => c + 1);
 
     // log passing attempt with 0 awarded now (we award at session end)
@@ -1477,7 +1478,8 @@ export default function StoryMode({
       setCurrentSentenceIndex((p) => p + 1);
       setSentenceCompleted(false);
     } else {
-      const totalSessionXp = sessionXp;
+      const totalSessionXp = computeStoryXpReward();
+      setSessionXp(totalSessionXp);
       await finalizePracticeSession(totalSessionXp);
       toast({
         title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
