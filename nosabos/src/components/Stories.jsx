@@ -1786,9 +1786,7 @@ export default function StoryMode({
                     {!!storyData.fullStory?.sup && (
                       <Button
                         onClick={() => playSupportTTS(storyData.fullStory?.sup)}
-                        isLoading={
-                          isPlayingSupport || isSynthesizingSupport
-                        }
+                        isLoading={isPlayingSupport || isSynthesizingSupport}
                         loadingText={
                           isSynthesizingSupport
                             ? uiText.tts_synthesizing
@@ -1814,15 +1812,6 @@ export default function StoryMode({
                       </Button>
                     )}
                   </HStack>
-
-                  {(isSynthesizingTarget || isSynthesizingSupport) && (
-                    <Center mt={2} color="gray.200">
-                      <HStack spacing={2}>
-                        <Spinner size="sm" />
-                        <Text fontSize="sm">{uiText.tts_synthesizing}</Text>
-                      </HStack>
-                    </Center>
-                  )}
 
                   <Center>
                     <Button
@@ -1966,15 +1955,6 @@ export default function StoryMode({
                         {uiText.listen}
                       </Button>
                     </HStack>
-
-                    {isSynthesizingTarget && (
-                      <Center color="gray.200">
-                        <HStack spacing={2}>
-                          <Spinner size="sm" />
-                          <Text fontSize="sm">{uiText.tts_synthesizing}</Text>
-                        </HStack>
-                      </Center>
-                    )}
                   </VStack>
                 </VStack>
               )}
