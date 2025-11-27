@@ -14,7 +14,8 @@ import {
   Collapse,
   Center,
 } from "@chakra-ui/react";
-import { FaVolumeUp, FaStop } from "react-icons/fa";
+import { FaStop } from "react-icons/fa";
+import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdMenuBook } from "react-icons/md";
 import {
   doc,
@@ -1551,9 +1552,9 @@ export default function History({
                         t("tts_synthesizing") ||
                         (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...")
                       }
-                      leftIcon={<FaVolumeUp />}
+                      leftIcon={<PiSpeakerHighDuotone />}
                       size="sm"
-                      isDisabled={!viewLecture?.target}
+                      isDisabled={!viewLecture?.target || draftLecture || isGenerating}
                     >
                       {t("reading_read_in", { language: targetDisplay })}
                     </Button>
@@ -1567,9 +1568,10 @@ export default function History({
                             ? "Sintetizando..."
                             : "Synthesizing...")
                         }
-                        leftIcon={<FaVolumeUp />}
+                        leftIcon={<PiSpeakerHighDuotone />}
                         size="sm"
                         variant="outline"
+                        isDisabled={draftLecture || isGenerating}
                       >
                         {t("reading_read_in", { language: supportDisplay })}
                       </Button>

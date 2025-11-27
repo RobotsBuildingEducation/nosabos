@@ -3472,11 +3472,11 @@ Return JSON ONLY:
                   position="relative"
                 >
                   <Tooltip label={speakListenLabel} placement="top">
-                    <IconButton
+                    <Button
                       aria-label={speakListenLabel}
-                      icon={<PiSpeakerHighDuotone />}
+                      leftIcon={<PiSpeakerHighDuotone />}
                       size="sm"
-                      variant="ghost"
+                      variant="solid"
                       colorScheme={isSpeakPlaying ? "teal" : "purple"}
                       position="absolute"
                       top="3"
@@ -3484,7 +3484,10 @@ Return JSON ONLY:
                       onClick={handleToggleSpeakPlayback}
                       isDisabled={!sTarget}
                       isLoading={isSpeakSynthesizing}
-                    />
+                      spinnerPlacement="start"
+                    >
+                      {t("practice_play") || (userLanguage === "es" ? "Reproducir" : "Play")}
+                    </Button>
                   </Tooltip>
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
                     {speakVariantLabel}

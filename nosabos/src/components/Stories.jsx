@@ -25,9 +25,9 @@ import {
   TagLabel,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
-import { FaArrowLeft, FaVolumeUp, FaStop, FaPen } from "react-icons/fa";
+import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import { PiMicrophoneStageDuotone } from "react-icons/pi";
+import { PiMicrophoneStageDuotone, PiSpeakerHighDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -1758,7 +1758,7 @@ export default function StoryMode({
                           ? uiText.tts_synthesizing
                           : uiText.playing
                       }
-                      leftIcon={<FaVolumeUp />}
+                      leftIcon={<PiSpeakerHighDuotone />}
                       color="white"
                     >
                       {isAutoPlaying
@@ -1776,7 +1776,7 @@ export default function StoryMode({
                             ? uiText.tts_synthesizing
                             : uiText.playing
                         }
-                        leftIcon={<FaVolumeUp />}
+                        leftIcon={<PiSpeakerHighDuotone />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"
@@ -1796,6 +1796,15 @@ export default function StoryMode({
                       </Button>
                     )}
                   </HStack>
+
+                  {(isSynthesizingTarget || isSynthesizingSupport) && (
+                    <Center mt={2} color="gray.200">
+                      <HStack spacing={2}>
+                        <Spinner size="sm" />
+                        <Text fontSize="sm">{uiText.tts_synthesizing}</Text>
+                      </HStack>
+                    </Center>
+                  )}
 
                   <Center>
                     <Button
@@ -1929,7 +1938,7 @@ export default function StoryMode({
                             ? uiText.tts_synthesizing
                             : uiText.playing
                         }
-                        leftIcon={<FaVolumeUp />}
+                        leftIcon={<PiSpeakerHighDuotone />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"
@@ -1939,6 +1948,15 @@ export default function StoryMode({
                         {uiText.listen}
                       </Button>
                     </HStack>
+
+                    {isSynthesizingTarget && (
+                      <Center color="gray.200">
+                        <HStack spacing={2}>
+                          <Spinner size="sm" />
+                          <Text fontSize="sm">{uiText.tts_synthesizing}</Text>
+                        </HStack>
+                      </Center>
+                    )}
                   </VStack>
                 </VStack>
               )}
