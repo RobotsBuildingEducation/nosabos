@@ -19,6 +19,7 @@ import {
   IconButton,
   useToast,
   Center,
+  SlideFade,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -36,7 +37,7 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
-import { FiCopy } from "react-icons/fi";
+import { FiArrowRight, FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -2406,23 +2407,66 @@ Return JSON ONLY:
     );
   };
 
-  // Result badge (only feedback shown)
-  const ResultBadge = ({ ok, xp }) => {
+  // Animated feedback rail that blends the badge + next button
+  const FeedbackRail = ({ ok, xp, showNext, onNext, nextLabel }) => {
     if (ok === null) return null;
     const label = ok
       ? t("correct") || "Correct!"
       : t("try_again") || "Try again";
+
     return (
-      <Badge
-        colorScheme={ok ? "green" : "red"}
-        variant="solid"
-        borderRadius="full"
-        px={3}
-        py={1}
-      >
-        {ok ? "✓" : "✖"} {label}
-        {xp > 0 ? ` · +${xp} XP 🎉` : ""}
-      </Badge>
+      <SlideFade in={true} offsetY="10px">
+        <Flex
+          align={{ base: "flex-start", md: "center" }}
+          direction={{ base: "column", md: "row" }}
+          gap={3}
+          p={4}
+          borderRadius="xl"
+          bg={
+            ok
+              ? "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
+              : "linear-gradient(90deg, rgba(245,101,101,0.16), rgba(229,62,62,0.08))"
+          }
+          borderWidth="1px"
+          borderColor={ok ? "green.400" : "red.300"}
+          boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+        >
+          <HStack spacing={3} flex="1" align="center">
+            <Flex
+              w="44px"
+              h="44px"
+              rounded="full"
+              align="center"
+              justify="center"
+              bg={ok ? "green.500" : "red.500"}
+              color="white"
+              fontWeight="bold"
+              fontSize="lg"
+              boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+            >
+              {ok ? "✓" : "✖"}
+            </Flex>
+            <Box>
+              <Text fontWeight="semibold">{label}</Text>
+              <Text fontSize="sm" color="whiteAlpha.800">
+                {xp > 0 ? `+${xp} XP 🎉` : ok ? (t("practice_next_ready") || "Great work! Keep the streak going.") : t("practice_try_again_hint") || "Review and try again."}
+              </Text>
+            </Box>
+          </HStack>
+          {ok && showNext ? (
+            <Button
+              rightIcon={<FiArrowRight />}
+              colorScheme="cyan"
+              variant="solid"
+              onClick={onNext}
+              shadow="md"
+              w={{ base: "100%", md: "auto" }}
+            >
+              {nextLabel}
+            </Button>
+          ) : null}
+        </Flex>
+      </SlideFade>
     );
   };
 
@@ -2438,6 +2482,8 @@ Return JSON ONLY:
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
   const speakVariantLabel =
     t("grammar_btn_speak") || (userLanguage === "es" ? "Pronunciar" : "Speak");
+  const nextQuestionLabel =
+    t("practice_next_question") || "Next question";
   const synthLabel =
     t("tts_synthesizing") ||
     (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
@@ -2790,6 +2836,14 @@ Return JSON ONLY:
               </VStack>
             </Box>
 
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={lastOk === true && nextAction}
+              onNext={handleNext}
+              nextLabel={nextQuestionLabel}
+            />
+
             <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -2818,22 +2872,7 @@ Return JSON ONLY:
               >
                 {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
-                <Button
-                  variant="outline"
-                  borderColor="cyan.500"
-                  borderWidth="2px"
-                  onClick={handleNext}
-                  w={{ base: "100%", md: "auto" }}
-                >
-                  {t("practice_next_question") || "Next question"}
-                </Button>
-              ) : null}
             </Stack>
-
-            <HStack spacing={3}>
-              <ResultBadge ok={lastOk} xp={recentXp} />
-            </HStack>
           </VStack>
         ) : null}
 
@@ -2892,12 +2931,19 @@ Return JSON ONLY:
                           (userLanguage === "es"
                             ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
                             : "Drag or select the correct answer into the blank in the sentence.")}
-                      </Text>
-                    </VStack>
-                  </Box>
-                  <Droppable droppableId="mc-bank" direction="horizontal">
-                    {(provided) => (
-                      <Flex
+                    </Text>
+                  </VStack>
+                </Box>
+                <FeedbackRail
+                  ok={lastOk}
+                  xp={recentXp}
+                  showNext={lastOk === true && nextAction}
+                  onNext={handleNext}
+                  nextLabel={nextQuestionLabel}
+                />
+                <Droppable droppableId="mc-bank" direction="horizontal">
+                  {(provided) => (
+                    <Flex
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         align="stretch"
@@ -2990,24 +3036,31 @@ Return JSON ONLY:
                         </Text>
                       </Box>
                     ) : null}
-                    {mcHint ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="cyan.500"
-                        bg="rgba(0, 206, 209, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          💡 {mcHint}
-                        </Text>
-                      </Box>
-                    ) : null}
-                  </VStack>
-                </Box>
-                <Stack spacing={3} align="stretch">
-                  {(mcChoices.length
-                    ? mcChoices
+                  {mcHint ? (
+                    <Box
+                      pl={7}
+                      py={2}
+                      borderLeftWidth="3px"
+                      borderLeftColor="cyan.500"
+                      bg="rgba(0, 206, 209, 0.05)"
+                    >
+                      <Text fontSize="sm" color="gray.400">
+                        💡 {mcHint}
+                      </Text>
+                    </Box>
+                  ) : null}
+                </VStack>
+              </Box>
+              <FeedbackRail
+                ok={lastOk}
+                xp={recentXp}
+                showNext={lastOk === true && nextAction}
+                onNext={handleNext}
+                nextLabel={nextQuestionLabel}
+              />
+              <Stack spacing={3} align="stretch">
+                {(mcChoices.length
+                  ? mcChoices
                     : loadingMCQ
                     ? ["…", "…", "…", "…"]
                     : []
@@ -3101,22 +3154,7 @@ Return JSON ONLY:
               >
                 {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
-                <Button
-                  variant="outline"
-                  borderColor="cyan.500"
-                  borderWidth="2px"
-                  onClick={handleNext}
-                  w={{ base: "100%", md: "auto" }}
-                >
-                  {t("practice_next_question") || "Next question"}
-                </Button>
-              ) : null}
             </Stack>
-
-            <HStack spacing={3} mt={1}>
-              <ResultBadge ok={lastOk} xp={recentXp} />
-            </HStack>
           </>
         ) : null}
         {/* ---- MA UI ---- */}
@@ -3173,16 +3211,23 @@ Return JSON ONLY:
                         {t("grammar_select_all_apply")}
                       </Text>
                       <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                        {t("practice_drag_drop_multi_instruction") ||
-                          (userLanguage === "es"
-                            ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
-                            : "Drag or select each correct answer into its place in the sentence.")}
-                      </Text>
-                    </VStack>
-                  </Box>
-                  <Droppable droppableId="ma-bank" direction="horizontal">
-                    {(provided) => (
-                      <Flex
+                    {t("practice_drag_drop_multi_instruction") ||
+                      (userLanguage === "es"
+                        ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
+                        : "Drag or select each correct answer into its place in the sentence.")}
+                  </Text>
+                </VStack>
+              </Box>
+              <FeedbackRail
+                ok={lastOk}
+                xp={recentXp}
+                showNext={lastOk === true && nextAction}
+                onNext={handleNext}
+                nextLabel={nextQuestionLabel}
+              />
+              <Droppable droppableId="ma-bank" direction="horizontal">
+                {(provided) => (
+                  <Flex
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         align="stretch"
@@ -3288,14 +3333,21 @@ Return JSON ONLY:
                         </Text>
                       </Box>
                     ) : null}
-                    <Text fontSize="xs" color="gray.500" fontWeight="semibold">
-                      {t("grammar_select_all_apply")}
-                    </Text>
-                  </VStack>
-                </Box>
-                <Stack spacing={3} align="stretch">
-                  {(maChoices.length
-                    ? maChoices
+                  <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+                    {t("grammar_select_all_apply")}
+                  </Text>
+                </VStack>
+              </Box>
+              <FeedbackRail
+                ok={lastOk}
+                xp={recentXp}
+                showNext={lastOk === true && nextAction}
+                onNext={handleNext}
+                nextLabel={nextQuestionLabel}
+              />
+              <Stack spacing={3} align="stretch">
+                {(maChoices.length
+                  ? maChoices
                     : loadingMAQ
                     ? ["…", "…", "…", "…", "…"]
                     : []
@@ -3401,22 +3453,7 @@ Return JSON ONLY:
               >
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
-                <Button
-                  variant="outline"
-                  borderColor="cyan.500"
-                  borderWidth="2px"
-                  onClick={handleNext}
-                  w={{ base: "100%", md: "auto" }}
-                >
-                  {t("practice_next_question") || "Next question"}
-                </Button>
-              ) : null}
             </Stack>
-
-            <HStack spacing={3} mt={1}>
-              <ResultBadge ok={lastOk} xp={recentXp} />
-            </HStack>
           </>
         ) : null}
         {/* ---- SPEAK UI ---- */}
@@ -3532,6 +3569,14 @@ Return JSON ONLY:
                     </Text>
                   </Box>
                 ) : null}
+
+                <FeedbackRail
+                  ok={lastOk}
+                  xp={recentXp}
+                  showNext={lastOk === true && nextAction}
+                  onNext={handleNext}
+                  nextLabel={nextQuestionLabel}
+                />
               </>
             )}
 
@@ -3625,17 +3670,6 @@ Return JSON ONLY:
                       ? "Grabar pronunciación"
                       : "Record pronunciation")}
               </Button>
-              {lastOk === true && nextAction ? (
-                <Button
-                  variant="outline"
-                  borderColor="cyan.500"
-                  borderWidth="2px"
-                  onClick={handleNext}
-                  w={{ base: "100%", md: "auto" }}
-                >
-                  {t("practice_next_question") || "Next question"}
-                </Button>
-              ) : null}
             </Stack>
 
             {lastOk === true ? (
@@ -3660,11 +3694,7 @@ Return JSON ONLY:
                 t={t}
                 userLanguage={userLanguage}
               />
-            ) : (
-              <HStack spacing={3} mt={3}>
-                <ResultBadge ok={lastOk} xp={recentXp} />
-              </HStack>
-            )}
+            ) : null}
           </>
         ) : null}
 
@@ -3701,6 +3731,13 @@ Return JSON ONLY:
                 )}
               </VStack>
             </Box>
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={lastOk === true && nextAction}
+              onNext={handleNext}
+              nextLabel={nextQuestionLabel}
+            />
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
@@ -3896,22 +3933,7 @@ Return JSON ONLY:
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
-              {lastOk === true && nextAction ? (
-                <Button
-                  variant="outline"
-                  borderColor="cyan.500"
-                  borderWidth="2px"
-                  onClick={handleNext}
-                  w={{ base: "100%", md: "auto" }}
-                >
-                  {t("practice_next_question") || "Next question"}
-                </Button>
-              ) : null}
             </Stack>
-
-            <HStack spacing={3} mt={1}>
-              <ResultBadge ok={lastOk} xp={recentXp} />
-            </HStack>
           </>
         ) : null}
       </VStack>
