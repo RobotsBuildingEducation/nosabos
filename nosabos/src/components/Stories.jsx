@@ -1036,7 +1036,10 @@ export default function StoryMode({
     try {
       const langTag = (BCP47[targetLang] || BCP47.es).tts;
       if (text.length < 50) {
-        await playEnhancedWebSpeech(text, langTag);
+        setIsSynthesizingTarget(true);
+        await playEnhancedWebSpeech(text, langTag, {
+          setSynthesizing: setIsSynthesizingTarget,
+        });
         return;
       }
       await playWithOpenAITTS(text, langTag, {
@@ -1067,7 +1070,10 @@ export default function StoryMode({
       });
     } catch {
       stopAllAudio();
-      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts);
+      setIsSynthesizingTarget(true);
+      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts, {
+        setSynthesizing: setIsSynthesizingTarget,
+      });
     }
   };
 
@@ -1083,11 +1089,11 @@ export default function StoryMode({
       });
     } catch (e) {
       console.error("Support TTS failed; falling back to Web Speech", e);
-      await playEnhancedWebSpeech(
-        text,
-        (BCP47[supportLang] || BCP47.en).tts,
-        () => setIsPlayingSupport(false)
-      );
+      setIsSynthesizingSupport(true);
+      await playEnhancedWebSpeech(text, (BCP47[supportLang] || BCP47.en).tts, {
+        setSynthesizing: setIsSynthesizingSupport,
+        onEnd: () => setIsPlayingSupport(false),
+      });
     }
   };
 
@@ -1134,19 +1140,25 @@ export default function StoryMode({
     [createTokenMap, currentWordIndex]
   );
 
-  const playEnhancedWebSpeech = async (text, langTag, onEndCb) => {
+  const playEnhancedWebSpeech = async (
+    text,
+    langTag,
+    { onStart = null, onEnd = null, setSynthesizing = null } = {}
+  ) => {
     const { handleBoundary, fallbackTiming } = setupBoundaryHighlighting(
       text,
       () => {
         setIsAutoPlaying(false);
         setIsPlayingTarget(false);
-        onEndCb?.();
+        onEnd?.();
       }
     );
+    setSynthesizing?.(true);
     if (!("speechSynthesis" in window)) {
       setIsPlayingTarget(false);
       setIsAutoPlaying(false);
-      onEndCb?.();
+      setSynthesizing?.(false);
+      onEnd?.();
       return;
     }
 
@@ -1172,17 +1184,21 @@ export default function StoryMode({
       setIsPlayingTarget(true);
       setBoundarySupported(!!utter.onboundary);
       if (!utter.onboundary) fallbackTiming();
+      setSynthesizing?.(false);
+      onStart?.();
     };
     utter.onboundary = (evt) => handleBoundary(evt);
     utter.onend = () => {
       setIsPlayingTarget(false);
       setIsAutoPlaying(false);
-      onEndCb?.();
+      setSynthesizing?.(false);
+      onEnd?.();
     };
     utter.onerror = () => {
       setIsPlayingTarget(false);
       setIsAutoPlaying(false);
-      onEndCb?.();
+      setSynthesizing?.(false);
+      onEnd?.();
     };
     speechSynthesis.speak(utter);
   };
