@@ -40,7 +40,7 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
-import { translations } from "../utils/translation";
+import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
@@ -215,9 +215,8 @@ async function saveStoryTurn(npub, payload) {
 /* ================================
    UI text (driven by APP UI language only)
 =================================== */
-function useUIText(uiLang, level, translationsObj) {
+function useUIText(uiLang, level) {
   return useMemo(() => {
-    const translate = translationsObj[uiLang] || translationsObj.en;
     return {
       header: uiLang === "es" ? "Juego de roles" : "Role Play",
       rolePrompt:
@@ -264,25 +263,25 @@ function useUIText(uiLang, level, translationsObj) {
         uiLang === "es" ? "Casi — inténtalo otra vez" : "Almost — try again",
       wellDone: uiLang === "es" ? "¡Bien hecho!" : "Well done!",
       score: uiLang === "es" ? "Puntuación" : "Score",
-      xp: translate?.ra_label_xp || "XP",
+      xp: t(uiLang, "ra_label_xp") || "XP",
       levelLabel: uiLang === "es" ? "Nivel" : "Level",
       levelValue:
         uiLang === "es"
           ? {
-              beginner: translationsObj.es.onboarding_level_beginner,
-              intermediate: translationsObj.es.onboarding_level_intermediate,
-              advanced: translationsObj.es.onboarding_level_advanced,
+              beginner: t("es", "onboarding_level_beginner"),
+              intermediate: t("es", "onboarding_level_intermediate"),
+              advanced: t("es", "onboarding_level_advanced"),
             }[level] || level
           : {
-              beginner: translationsObj.en.onboarding_level_beginner,
-              intermediate: translationsObj.en.onboarding_level_intermediate,
-              advanced: translationsObj.en.onboarding_level_advanced,
+              beginner: t("en", "onboarding_level_beginner"),
+              intermediate: t("en", "onboarding_level_intermediate"),
+              advanced: t("en", "onboarding_level_advanced"),
             }[level] || level,
       tts_synthesizing:
-        translate?.tts_synthesizing ||
+        t(uiLang, "tts_synthesizing") ||
         (uiLang === "es" ? "Sintetizando…" : "Synthesizing…"),
     };
-  }, [uiLang, level, translationsObj]);
+  }, [uiLang, level]);
 }
 
 /* ================================
@@ -306,7 +305,7 @@ export default function StoryMode({
 
   // APP UI language (drives all UI copy)
   const uiLang = getAppUILang();
-  const uiText = useUIText(uiLang, progress.level, translations);
+  const uiText = useUIText(uiLang, progress.level);
 
   // Content languages
   const targetLang = progress.targetLang; // 'es' | 'en' | 'nah'
