@@ -276,11 +276,16 @@ function buildFillVocabStreamPrompt({
   const diff = vocabDifficulty(level, xp);
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective = lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
-      ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.words || lessonContent?.topic
+      ? lessonContent.words
+        ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
+            lessonContent.words
+          )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+        : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Create ONE short ${TARGET} VOCABULARY sentence with a single blank "___" that targets word choice (not grammar). Difficulty: ${diff}`,
@@ -327,11 +332,16 @@ function buildMCVocabStreamPrompt({
     : `- Stem ≤120 chars with a blank "___" OR a short definition asking for a word.`;
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective = lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
-      ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(lessonContent.words)}. The question must test one of these specific words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.words || lessonContent?.topic
+      ? lessonContent.words
+        ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
+            lessonContent.words
+          )}. The question must test one of these specific words. This is lesson-specific content and you MUST NOT diverge.`
+        : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${diff}`,
@@ -378,11 +388,16 @@ function buildMAVocabStreamPrompt({
     : `- Stem ≤120 chars with context (e.g., "Which words fit the sentence?" or "Select all synonyms for ___").`;
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective = lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
-      ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.words || lessonContent?.topic
+      ? lessonContent.words
+        ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
+            lessonContent.words
+          )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+        : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
@@ -426,11 +441,16 @@ function buildSpeakVocabStreamPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective = lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
-      ? `- STRICT REQUIREMENT: The word/phrase being practiced MUST be from this exact list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-    : `- Consider learner recent successes: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.words || lessonContent?.topic
+      ? lessonContent.words
+        ? `- STRICT REQUIREMENT: The word/phrase being practiced MUST be from this exact list: ${JSON.stringify(
+            lessonContent.words
+          )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+        : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- Consider learner recent successes: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Create ONE ${TARGET} speaking drill (difficulty: ${diff}). Choose VARIANT:`,
@@ -478,11 +498,16 @@ function buildMatchVocabStreamPrompt({
   const diff = vocabDifficulty(level, xp);
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective = lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
-      ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(lessonContent.words)}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.words || lessonContent?.topic
+      ? lessonContent.words
+        ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(
+            lessonContent.words
+          )}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
+        : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${diff}`,
@@ -690,16 +715,16 @@ export default function Vocabulary({
   lessonContent = null,
   isFinalQuiz = false,
   quizConfig = { questionsRequired: 10, passingScore: 8 },
-  onSkip = null
+  onSkip = null,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
   // Debug: Log lesson content to verify it's passed correctly
-  console.log('[Vocabulary Component] lessonContent:', lessonContent);
+  console.log("[Vocabulary Component] lessonContent:", lessonContent);
   if (lessonContent?.words) {
-    console.log('[Vocabulary Component] Specific words:', lessonContent.words);
+    console.log("[Vocabulary Component] Specific words:", lessonContent.words);
   }
 
   // Quiz mode state
@@ -707,7 +732,8 @@ export default function Vocabulary({
   const [quizCorrectAnswers, setQuizCorrectAnswers] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
-  const [quizCurrentQuestionAttempted, setQuizCurrentQuestionAttempted] = useState(false);
+  const [quizCurrentQuestionAttempted, setQuizCurrentQuestionAttempted] =
+    useState(false);
   const [showQuizSuccessModal, setShowQuizSuccessModal] = useState(false);
   const [showQuizFailureModal, setShowQuizFailureModal] = useState(false);
   const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
@@ -824,17 +850,20 @@ export default function Vocabulary({
     setQuizCurrentQuestionAttempted(true);
 
     const newQuestionsAnswered = quizQuestionsAnswered + 1;
-    const newCorrectAnswers = isCorrect ? quizCorrectAnswers + 1 : quizCorrectAnswers;
+    const newCorrectAnswers = isCorrect
+      ? quizCorrectAnswers + 1
+      : quizCorrectAnswers;
     const newWrongAnswers = newQuestionsAnswered - newCorrectAnswers;
 
     // Add to answer history for progress bar animation
-    setQuizAnswerHistory(prev => [...prev, isCorrect]);
+    setQuizAnswerHistory((prev) => [...prev, isCorrect]);
 
     setQuizQuestionsAnswered(newQuestionsAnswered);
     setQuizCorrectAnswers(newCorrectAnswers);
 
     // Check for early failure: if user has 3+ wrong answers, they can't pass anymore
-    const maxAllowedWrong = quizConfig.questionsRequired - quizConfig.passingScore; // 10 - 8 = 2
+    const maxAllowedWrong =
+      quizConfig.questionsRequired - quizConfig.passingScore; // 10 - 8 = 2
     if (newWrongAnswers > maxAllowedWrong) {
       setQuizCompleted(true);
       setQuizPassed(false);
@@ -902,7 +931,9 @@ export default function Vocabulary({
     setRecentXp(0);
     setNextAction(null);
     // Start a new question
-    const runner = lockedType ? generatorFor(lockedType) : pickRandomGenerator();
+    const runner = lockedType
+      ? generatorFor(lockedType)
+      : pickRandomGenerator();
     if (runner) runner();
   }
 
@@ -1472,11 +1503,12 @@ Return EXACTLY:
 
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
     // In quiz mode, always show next button (even on wrong answer)
-    const nextFn = (ok || isFinalQuiz)
-      ? lockedType
-        ? () => generatorFor(lockedType)()
-        : () => generateRandomRef.current()
-      : null;
+    const nextFn =
+      ok || isFinalQuiz
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandomRef.current()
+        : null;
     setNextAction(() => nextFn);
 
     if (ok) {
@@ -1731,11 +1763,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     }
 
     // In quiz mode, always show next button (even on wrong answer)
-    const nextFn = (ok || isFinalQuiz)
-      ? lockedType
-        ? () => generatorFor(lockedType)()
-        : () => generateRandomRef.current()
-      : null;
+    const nextFn =
+      ok || isFinalQuiz
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandomRef.current()
+        : null;
     setNextAction(() => nextFn);
 
     if (ok) {
@@ -2015,11 +2048,12 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     }
 
     // In quiz mode, always show next button (even on wrong answer)
-    const nextFn = (ok || isFinalQuiz)
-      ? lockedType
-        ? () => generatorFor(lockedType)()
-        : () => generateRandomRef.current()
-      : null;
+    const nextFn =
+      ok || isFinalQuiz
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandomRef.current()
+        : null;
     setNextAction(() => nextFn);
 
     if (ok) {
@@ -2487,11 +2521,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     }
 
     // In quiz mode, always show next button (even on wrong answer)
-    const nextFn = (ok || isFinalQuiz)
-      ? lockedType
-        ? () => generatorFor(lockedType)()
-        : () => generateRandom()
-      : null;
+    const nextFn =
+      ok || isFinalQuiz
+        ? lockedType
+          ? () => generatorFor(lockedType)()
+          : () => generateRandom()
+        : null;
     setNextAction(() => nextFn);
 
     setLoadingMJ(false);
@@ -2557,11 +2592,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       }
 
       // In quiz mode, always show next button (even on wrong answer)
-      const nextFn = (ok || isFinalQuiz)
-        ? lockedType
-          ? () => generatorFor(lockedType)()
-          : () => generateRandomRef.current()
-        : null;
+      const nextFn =
+        ok || isFinalQuiz
+          ? lockedType
+            ? () => generatorFor(lockedType)()
+            : () => generateRandomRef.current()
+          : null;
       setNextAction(() => nextFn);
 
       if (ok) {
@@ -2818,7 +2854,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <Box>
               <Text fontWeight="semibold">{label}</Text>
               <Text fontSize="sm" color="whiteAlpha.800">
-                {xp > 0 ? `+${xp} XP 🎉` : ok ? (t("practice_next_ready") || "Great work! Keep the streak going.") : t("practice_try_again_hint") || "Review and try again."}
+                {xp > 0
+                  ? `+${xp} XP 🎉`
+                  : ok
+                  ? t("practice_next_ready") ||
+                    "Great work! Keep the streak going."
+                  : t("practice_try_again_hint") || "Review and try again."}
               </Text>
             </Box>
           </HStack>
@@ -3153,54 +3194,77 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <Badge colorScheme="purple" fontSize="md">
                     {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
                   </Badge>
-                  <Badge colorScheme={quizCorrectAnswers >= quizConfig.passingScore ? "green" : "yellow"} fontSize="md">
+                  <Badge
+                    colorScheme={
+                      quizCorrectAnswers >= quizConfig.passingScore
+                        ? "green"
+                        : "yellow"
+                    }
+                    fontSize="md"
+                  >
                     {quizQuestionsAnswered}/{quizConfig.questionsRequired}
                   </Badge>
                 </HStack>
 
                 {/* Animated progress bar showing correct (blue) and wrong (red) answers */}
                 <HStack spacing="2px" w="100%" h="16px">
-                  {Array.from({ length: quizConfig.questionsRequired }).map((_, i) => {
-                    const hasAnswer = i < quizAnswerHistory.length;
-                    const isCorrect = hasAnswer ? quizAnswerHistory[i] : null;
+                  {Array.from({ length: quizConfig.questionsRequired }).map(
+                    (_, i) => {
+                      const hasAnswer = i < quizAnswerHistory.length;
+                      const isCorrect = hasAnswer ? quizAnswerHistory[i] : null;
 
-                    return (
-                      <Box
-                        key={i}
-                        flex="1"
-                        h="100%"
-                        bg={!hasAnswer ? "gray.700" : (isCorrect ? "blue.400" : "red.400")}
-                        borderRadius="sm"
-                        position="relative"
-                        overflow="hidden"
-                        opacity={hasAnswer ? 1 : 0.5}
-                        transition="all 0.3s ease-out"
-                        sx={hasAnswer ? {
-                          animation: `${isCorrect ? 'slideFromRight' : 'slideFromLeft'} 0.4s ease-out`,
-                          "@keyframes slideFromRight": {
-                            "0%": {
-                              transform: "translateX(100%)",
-                              opacity: 0
-                            },
-                            "100%": {
-                              transform: "translateX(0)",
-                              opacity: 1
-                            }
-                          },
-                          "@keyframes slideFromLeft": {
-                            "0%": {
-                              transform: "translateX(-100%)",
-                              opacity: 0
-                            },
-                            "100%": {
-                              transform: "translateX(0)",
-                              opacity: 1
-                            }
+                      return (
+                        <Box
+                          key={i}
+                          flex="1"
+                          h="100%"
+                          bg={
+                            !hasAnswer
+                              ? "gray.700"
+                              : isCorrect
+                              ? "blue.400"
+                              : "red.400"
                           }
-                        } : {}}
-                      />
-                    );
-                  })}
+                          borderRadius="sm"
+                          position="relative"
+                          overflow="hidden"
+                          opacity={hasAnswer ? 1 : 0.5}
+                          transition="all 0.3s ease-out"
+                          sx={
+                            hasAnswer
+                              ? {
+                                  animation: `${
+                                    isCorrect
+                                      ? "slideFromRight"
+                                      : "slideFromLeft"
+                                  } 0.4s ease-out`,
+                                  "@keyframes slideFromRight": {
+                                    "0%": {
+                                      transform: "translateX(100%)",
+                                      opacity: 0,
+                                    },
+                                    "100%": {
+                                      transform: "translateX(0)",
+                                      opacity: 1,
+                                    },
+                                  },
+                                  "@keyframes slideFromLeft": {
+                                    "0%": {
+                                      transform: "translateX(-100%)",
+                                      opacity: 0,
+                                    },
+                                    "100%": {
+                                      transform: "translateX(0)",
+                                      opacity: 1,
+                                    },
+                                  },
+                                }
+                              : {}
+                          }
+                        />
+                      );
+                    }
+                  )}
                 </HStack>
 
                 <Text fontSize="xs" color="gray.400" textAlign="center">
@@ -3236,8 +3300,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             >
               <VStack align="stretch" spacing={3}>
                 <HStack align="start" spacing={2}>
-                  <CopyAllBtn q={qFill} h={hFill} tr={showTRFill ? trFill : ""} />
-                  <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                  <CopyAllBtn
+                    q={qFill}
+                    h={hFill}
+                    tr={showTRFill ? trFill : ""}
+                  />
+                  <Text
+                    fontSize="lg"
+                    fontWeight="medium"
+                    flex="1"
+                    lineHeight="tall"
+                  >
                     {qFill || (loadingQFill ? "…" : "")}
                   </Text>
                 </HStack>
@@ -3273,7 +3346,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
               onNext={handleNext}
               nextLabel={nextLabel}
             />
@@ -3303,7 +3379,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitFill}
-                isDisabled={loadingGFill || !ansFill.trim() || !qFill || (isFinalQuiz && quizCurrentQuestionAttempted)}
+                isDisabled={
+                  loadingGFill ||
+                  !ansFill.trim() ||
+                  !qFill ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                }
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
@@ -3328,7 +3409,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
                         <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-                        <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                        <Text
+                          fontSize="lg"
+                          fontWeight="medium"
+                          flex="1"
+                          lineHeight="tall"
+                        >
                           {renderMcPrompt() || (loadingQMC ? "…" : "")}
                         </Text>
                       </HStack>
@@ -3369,7 +3455,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <FeedbackRail
                     ok={lastOk}
                     xp={recentXp}
-                    showNext={(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction}
+                    showNext={
+                      (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                      nextAction
+                    }
                     onNext={handleNext}
                     nextLabel={nextLabel}
                   />
@@ -3447,7 +3536,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <VStack align="stretch" spacing={3}>
                     <HStack align="start" spacing={2}>
                       <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-                      <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                      <Text
+                        fontSize="lg"
+                        fontWeight="medium"
+                        flex="1"
+                        lineHeight="tall"
+                      >
                         {qMC || (loadingQMC ? "…" : "")}
                       </Text>
                     </HStack>
@@ -3482,7 +3576,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <FeedbackRail
                   ok={lastOk}
                   xp={recentXp}
-                  showNext={(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction}
+                  showNext={
+                    (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                    nextAction
+                  }
                   onNext={handleNext}
                   nextLabel={nextLabel}
                 />
@@ -3579,7 +3676,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitMC}
-                isDisabled={loadingGMC || !pickMC || !choicesMC.length || (isFinalQuiz && quizCurrentQuestionAttempted)}
+                isDisabled={
+                  loadingGMC ||
+                  !pickMC ||
+                  !choicesMC.length ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                }
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
@@ -3604,7 +3706,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
                         <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-                        <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                        <Text
+                          fontSize="lg"
+                          fontWeight="medium"
+                          flex="1"
+                          lineHeight="tall"
+                        >
                           {renderMaPrompt() || (loadingQMA ? "…" : "")}
                         </Text>
                       </HStack>
@@ -3634,7 +3741,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           </Text>
                         </Box>
                       ) : null}
-                      <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+                      <Text
+                        fontSize="xs"
+                        color="gray.500"
+                        fontWeight="semibold"
+                      >
                         {t("vocab_select_all_apply")}
                       </Text>
                       <Text fontSize="xs" color="gray.500" fontStyle="italic">
@@ -3648,7 +3759,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <FeedbackRail
                     ok={lastOk}
                     xp={recentXp}
-                    showNext={(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction}
+                    showNext={
+                      (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                      nextAction
+                    }
                     onNext={handleNext}
                     nextLabel={nextLabel}
                   />
@@ -3726,7 +3840,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <VStack align="stretch" spacing={3}>
                     <HStack align="start" spacing={2}>
                       <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-                      <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                      <Text
+                        fontSize="lg"
+                        fontWeight="medium"
+                        flex="1"
+                        lineHeight="tall"
+                      >
                         {qMA || (loadingQMA ? "…" : "")}
                       </Text>
                     </HStack>
@@ -3764,7 +3883,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <FeedbackRail
                   ok={lastOk}
                   xp={recentXp}
-                  showNext={(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction}
+                  showNext={
+                    (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                    nextAction
+                  }
                   onNext={handleNext}
                   nextLabel={nextLabel}
                 />
@@ -3873,7 +3995,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitMA}
-                isDisabled={loadingGMA || !choicesMA.length || !maReady || (isFinalQuiz && quizCurrentQuestionAttempted)}
+                isDisabled={
+                  loadingGMA ||
+                  !choicesMA.length ||
+                  !maReady ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                }
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
@@ -3889,7 +4016,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Box textAlign="center" py={12}>
                 <RobotBuddyPro palette="ocean" variant="abstract" />
                 <Text mt={4} fontSize="sm" opacity={0.7}>
-                  {userLanguage === "es" ? "Generando pregunta..." : "Generating question..."}
+                  {userLanguage === "es"
+                    ? "Generando pregunta..."
+                    : "Generating question..."}
                 </Text>
               </Box>
             ) : (
@@ -3919,7 +4048,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                               : "Follow the prompt and say it aloud.")}
                         </Text>
                         {sPrompt && (
-                          <Text fontSize="lg" fontWeight="medium" lineHeight="tall">
+                          <Text
+                            fontSize="lg"
+                            fontWeight="medium"
+                            lineHeight="tall"
+                          >
                             {sPrompt}
                           </Text>
                         )}
@@ -3951,7 +4084,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       isLoading={isSpeakSynthesizing}
                       spinnerPlacement="start"
                     >
-                      {t("practice_play") || (userLanguage === "es" ? "Reproducir" : "Play")}
+                      {t("practice_play") ||
+                        (userLanguage === "es" ? "Reproducir" : "Play")}
                     </Button>
                   </Tooltip>
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
@@ -3961,7 +4095,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {sStimulus || sTarget || "…"}
                   </Text>
                   {isSpeakSynthesizing ? (
-                    <HStack spacing={2} justify="center" mt={3} color="gray.200">
+                    <HStack
+                      spacing={2}
+                      justify="center"
+                      mt={3}
+                      color="gray.200"
+                    >
                       <Spinner size="sm" />
                       <Text fontSize="xs">{synthLabel}</Text>
                     </HStack>
@@ -4001,7 +4140,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <FeedbackRail
                   ok={lastOk}
                   xp={recentXp}
-                  showNext={(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction}
+                  showNext={
+                    (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                    nextAction
+                  }
                   onNext={handleNext}
                   nextLabel={nextLabel}
                 />
@@ -4142,7 +4284,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <VStack align="stretch" spacing={3}>
                 <HStack align="start" spacing={2}>
                   <CopyAllBtn q={mStem} h={mHint} tr="" />
-                  <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                  <Text
+                    fontSize="lg"
+                    fontWeight="medium"
+                    flex="1"
+                    lineHeight="tall"
+                  >
                     {mStem || (loadingMG ? "…" : "")}
                   </Text>
                 </HStack>
@@ -4164,7 +4311,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
               onNext={handleNext}
               nextLabel={nextLabel}
             />
@@ -4360,7 +4510,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length || (isFinalQuiz && quizCurrentQuestionAttempted)}
+                isDisabled={
+                  !canSubmitMatch() ||
+                  loadingMJ ||
+                  !mLeft.length ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                }
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
@@ -4408,16 +4563,23 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     "@keyframes pulse": {
                       "0%, 100%": {
                         transform: "translate(-50%, -50%) scale(1)",
-                        boxShadow: "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+                        boxShadow:
+                          "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)",
                       },
                       "50%": {
                         transform: "translate(-50%, -50%) scale(1.1)",
-                        boxShadow: "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)"
+                        boxShadow:
+                          "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)",
                       },
                     },
                   }}
                 >
-                  <Box fontSize="3xl" color="white" fontWeight="black" textShadow="0 2px 4px rgba(0,0,0,0.3)">
+                  <Box
+                    fontSize="3xl"
+                    color="white"
+                    fontWeight="black"
+                    textShadow="0 2px 4px rgba(0,0,0,0.3)"
+                  >
                     ★
                   </Box>
                 </Box>
@@ -4429,7 +4591,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   {userLanguage === "es" ? "¡Prueba Aprobada!" : "Quiz Passed!"}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
-                  {userLanguage === "es" ? "¡Felicitaciones!" : "Congratulations!"}
+                  {userLanguage === "es"
+                    ? "¡Felicitaciones!"
+                    : "Congratulations!"}
                 </Text>
               </VStack>
 
@@ -4444,7 +4608,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 borderColor="whiteAlpha.400"
               >
                 <VStack spacing={2}>
-                  <Text fontSize="sm" textTransform="uppercase" letterSpacing="wide" opacity={0.8}>
+                  <Text
+                    fontSize="sm"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                    opacity={0.8}
+                  >
                     {userLanguage === "es" ? "Puntuación" : "Score"}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
@@ -4521,7 +4690,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {userLanguage === "es" ? "Prueba No Aprobada" : "Quiz Not Passed"}
+                  {userLanguage === "es"
+                    ? "Prueba No Aprobada"
+                    : "Quiz Not Passed"}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
                   {userLanguage === "es" ? "Inténtalo de nuevo" : "Try again"}
@@ -4539,7 +4710,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 borderColor="whiteAlpha.400"
               >
                 <VStack spacing={2}>
-                  <Text fontSize="sm" textTransform="uppercase" letterSpacing="wide" opacity={0.8}>
+                  <Text
+                    fontSize="sm"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                    opacity={0.8}
+                  >
                     {userLanguage === "es" ? "Puntuación" : "Score"}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="red.200">
@@ -4582,7 +4758,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   fontSize="lg"
                   py={6}
                 >
-                  {userLanguage === "es" ? "Volver al Árbol" : "Back to Skill Tree"}
+                  {userLanguage === "es"
+                    ? "Volver al Árbol"
+                    : "Back to Skill Tree"}
                 </Button>
               </VStack>
             </VStack>
