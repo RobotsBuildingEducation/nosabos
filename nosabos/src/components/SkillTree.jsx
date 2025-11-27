@@ -1635,7 +1635,6 @@ function LessonDetailModal({
                 onStartLesson(lesson);
                 onClose();
               }}
-              leftIcon={<RiStarLine size={24} />}
               bgGradient={`linear(135deg, ${unit.color}, ${unit.color}dd)`}
               color="white"
               fontSize="lg"
