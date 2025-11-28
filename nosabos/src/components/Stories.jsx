@@ -23,9 +23,12 @@ import {
   Input,
   Tag,
   TagLabel,
+  Flex,
+  SlideFade,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
+import { FiArrowRight } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { PiMicrophoneStageDuotone, PiSpeakerHighDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
@@ -51,6 +54,7 @@ import {
   computeAudioMetricsFromBlob,
   speechReasonTips,
 } from "../utils/speechEvaluation";
+import { SpeakSuccessCard } from "./SpeakSuccessCard";
 
 /* ================================
    ENV / API
@@ -341,9 +345,12 @@ export default function StoryMode({
   const [isSynthesizingSupport, setIsSynthesizingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
+  const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
 
   // accumulate this session, but award only at end
   const [sessionXp, setSessionXp] = useState(0);
+  const [sessionComplete, setSessionComplete] = useState(false);
+  const [sessionSummary, setSessionSummary] = useState({ passed: 0, total: 0 });
   const [passedCount, setPassedCount] = useState(0);
 
   const [showFullStory, setShowFullStory] = useState(true);
@@ -366,6 +373,7 @@ export default function StoryMode({
   const currentAudioRef = useRef(null);
   const eventSourceRef = useRef(null);
   const audioCacheRef = useRef(new Map());
+  const sessionAwardedRef = useRef(false);
   const evalRef = useRef({
     inProgress: false,
     speechDone: false,
@@ -577,9 +585,13 @@ export default function StoryMode({
       storyCacheRef.current = validated;
       setCurrentSentenceIndex(0);
       setSessionXp(0);
+      setSessionComplete(false);
+      setSessionSummary({ passed: 0, total: validated?.sentences?.length || 0 });
       setPassedCount(0);
+      sessionAwardedRef.current = false;
       setShowFullStory(true);
       setHighlightedWordIndex(-1);
+      setLastSuccessInfo(null);
     } catch (error) {
       // Bilingual fallback (ES/EN) that respects target/support languages
       const fallback = {
@@ -886,6 +898,11 @@ export default function StoryMode({
         storyCacheRef.current = validated;
         setCurrentSentenceIndex(0);
         setSessionXp(0);
+        setSessionComplete(false);
+        setSessionSummary({
+          passed: 0,
+          total: validated?.sentences?.length || 0,
+        });
         setPassedCount(0);
         setShowFullStory(true);
         setHighlightedWordIndex(-1);
@@ -1205,6 +1222,14 @@ export default function StoryMode({
 
   /* ----------------------------- Recording + strict scoring ----------------------------- */
   const currentSentence = storyData?.sentences?.[currentSentenceIndex];
+  const totalSentences = storyData?.sentences?.length || 0;
+  const isLastSentence = currentSentenceIndex >= totalSentences - 1;
+
+  const nextSentenceLabel =
+    t(uiLang, "stories_next_sentence") ||
+    (uiLang === "es" ? "Siguiente Oración" : "Next Sentence");
+  const finishLabel =
+    t(uiLang, "stories_finish") || (uiLang === "es" ? "Terminar" : "Finish");
 
   const startRecording = async () => {
     if (evalRef.current.inProgress) return;
@@ -1368,9 +1393,15 @@ export default function StoryMode({
   };
 
   /* ----------------------------- Award once at session end ----------------------------- */
+  const computeStoryXpReward = () =>
+    Math.max(4, Math.min(7, 4 + Math.round(Math.random() * 3)));
+
   const finalizePracticeSession = async (awardedXp) => {
     const npubLive = strongNpub(useUserStore.getState().user);
     if (!npubLive) return;
+
+    if (sessionAwardedRef.current) return;
+    sessionAwardedRef.current = true;
 
     if (awardedXp > 0) {
       await awardXp(npubLive, Math.round(awardedXp)).catch(() => {});
@@ -1411,6 +1442,8 @@ export default function StoryMode({
         targetLabel: targetDisplayName,
       });
 
+      setLastSuccessInfo(null);
+
       toast({
         title: uiText.almost,
         description: tips.join(" "),
@@ -1436,9 +1469,7 @@ export default function StoryMode({
       return;
     }
 
-    // Passed — accumulate XP and advance (no award yet)
-    const delta = 5; // ✅ normalized to 4-7 XP range
-    setSessionXp((p) => p + delta);
+    // Passed — advance (XP awarded once at the end of the story)
     setPassedCount((c) => c + 1);
 
     // log passing attempt with 0 awarded now (we award at session end)
@@ -1456,11 +1487,10 @@ export default function StoryMode({
       xpAwarded: 0,
     }).catch(() => {});
 
-    toast({
-      title: uiText.wellDone,
-      description: `${uiText.score}: ${evalOut.score}%`,
-      status: "success",
-      duration: 2200,
+    setLastSuccessInfo({
+      score: evalOut.score,
+      recognizedText,
+      translation: currentSentence?.sup || "",
     });
 
     // Mark sentence as completed, wait for user to click "Next"
@@ -1476,21 +1506,19 @@ export default function StoryMode({
     if (!isLast) {
       setCurrentSentenceIndex((p) => p + 1);
       setSentenceCompleted(false);
+      setLastSuccessInfo(null);
     } else {
-      const totalSessionXp = sessionXp;
+      const totalSentences = storyData?.sentences?.length || 0;
+      const latestPassed = Math.min(totalSentences || passedCount + 1, passedCount + 1);
+      const totalSessionXp = computeStoryXpReward();
+      setSessionXp(totalSessionXp);
+      setSessionSummary({ passed: latestPassed, total: totalSentences });
+      setSessionComplete(true);
       await finalizePracticeSession(totalSessionXp);
-      toast({
-        title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
-        description:
-          uiLang === "es"
-            ? `¡Completaste el juego de roles! Ganaste ${totalSessionXp} ${uiText.xp} en esta sesión.`
-            : `Role play completed! You earned ${totalSessionXp} ${uiText.xp} this session.`,
-        status: "success",
-        duration: 3000,
-      });
       setShowFullStory(true);
       setCurrentSentenceIndex(0);
       setSentenceCompleted(false);
+      setLastSuccessInfo(null);
     }
   };
 
@@ -1820,6 +1848,12 @@ export default function StoryMode({
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);
                         setSessionXp(0);
+                        setSessionComplete(false);
+                        setSessionSummary({
+                          passed: 0,
+                          total: storyData?.sentences?.length || 0,
+                        });
+                        sessionAwardedRef.current = false;
                         setPassedCount(0);
                         setHighlightedWordIndex(-1);
                         setIsRecording(false);
@@ -1878,33 +1912,7 @@ export default function StoryMode({
 
                   <VStack spacing={4}>
                     <Center>
-                      {sentenceCompleted ? (
-                        <Button
-                          onClick={handleNextSentence}
-                          size="lg"
-                          height="60px"
-                          px={8}
-                          rounded="full"
-                          bg="linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                          color="white"
-                          fontWeight="600"
-                          fontSize="lg"
-                          _hover={{
-                            bg: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                            transform: "translateY(-2px)",
-                          }}
-                          _active={{ transform: "translateY(0)" }}
-                          transition="all 0.2s ease"
-                        >
-                          {currentSentenceIndex < storyData.sentences.length - 1
-                            ? uiLang === "es"
-                              ? "Siguiente Oración"
-                              : "Next Sentence"
-                            : uiLang === "es"
-                            ? "Terminar"
-                            : "Finish"}
-                        </Button>
-                      ) : (
+                      <HStack spacing={4}>
                         <Button
                           onClick={() => {
                             if (isRecording) return stopRecording();
@@ -1934,7 +1942,7 @@ export default function StoryMode({
                         >
                           {isRecording ? uiText.stopRecording : uiText.record}
                         </Button>
-                      )}
+                      </HStack>
                     </Center>
                     <HStack spacing={3} justify="center">
                       <Button
@@ -1955,6 +1963,81 @@ export default function StoryMode({
                         {uiText.listen}
                       </Button>
                     </HStack>
+                    {sentenceCompleted && lastSuccessInfo ? (
+                      <SlideFade in={true} offsetY="10px">
+                        <Flex
+                          direction={{ base: "column", md: "row" }}
+                          gap={3}
+                          p={4}
+                          borderRadius="xl"
+                          bg="linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
+                          borderWidth="1px"
+                          borderColor="green.400"
+                          boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+                          align={{ base: "stretch", md: "center" }}
+                        >
+                          <HStack spacing={3} flex="1" align="center">
+                            <Flex
+                              w="44px"
+                              h="44px"
+                              rounded="full"
+                              align="center"
+                              justify="center"
+                              bg="green.500"
+                              color="white"
+                              fontWeight="bold"
+                              fontSize="lg"
+                              boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                            >
+                              ✓
+                            </Flex>
+                            <Box>
+                              <Text fontWeight="semibold">
+                                {t(uiLang, "stories_sentence_success_title") ||
+                                  uiText.wellDone}
+                              </Text>
+                              <Text fontSize="sm" color="whiteAlpha.800">
+                                {typeof lastSuccessInfo.score === "number"
+                                  ?
+                                      t(uiLang, "stories_sentence_success_score", {
+                                        score: lastSuccessInfo.score,
+                                      }) ||
+                                    `${uiText.score}: ${lastSuccessInfo.score}%`
+                                  : t(uiLang, "practice_next_ready") ||
+                                    (uiLang === "es"
+                                      ? "¡Listo para continuar!"
+                                      : "Ready to continue!")}
+                              </Text>
+                            </Box>
+                          </HStack>
+                          <Button
+                            rightIcon={<FiArrowRight />}
+                            colorScheme="teal"
+                            variant="solid"
+                            onClick={handleNextSentence}
+                            shadow="md"
+                            w={{ base: "100%", md: "auto" }}
+                          >
+                            {isLastSentence ? finishLabel : nextSentenceLabel}
+                          </Button>
+                        </Flex>
+                      </SlideFade>
+                    ) : null}
+                    {sessionComplete && sessionXp > 0 && sessionSummary.total > 0 ? (
+                      <SpeakSuccessCard
+                        title={
+                          uiLang === "es"
+                            ? "¡Juego de roles completado!"
+                            : "Role play completed!"
+                        }
+                        scoreLabel={`${sessionSummary.passed}/${sessionSummary.total} ${
+                          uiLang === "es" ? "oraciones" : "sentences"
+                        }`}
+                        xp={sessionXp}
+                        t={t}
+                        userLanguage={uiLang}
+                      />
+                    ) : null}
                   </VStack>
                 </VStack>
               )}

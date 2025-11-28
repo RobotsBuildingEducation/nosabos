@@ -587,6 +587,18 @@ export default function RealTimeTest({
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalBusyRef = useRef(false);
   const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
+  const goalXpAwardedRef = useRef(false);
+
+  // Track when XP has been granted for the active goal to avoid duplicates
+  const lastGoalIdRef = useRef(null);
+  useEffect(() => {
+    const gid = currentGoal?.id || null;
+    if (gid && gid !== lastGoalIdRef.current) {
+      goalXpAwardedRef.current = false;
+      setGoalCompleted(false);
+      lastGoalIdRef.current = gid;
+    }
+  }, [currentGoal]);
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
@@ -1147,6 +1159,7 @@ export default function RealTimeTest({
       data.currentGoal.title_es &&
       (!lessonScenario || data.currentGoal.lessonScenario === lessonScenario)
     ) {
+      goalXpAwardedRef.current = false;
       return { ...data.currentGoal, attempts: data.currentGoal.attempts || 0 };
     }
 
@@ -1173,6 +1186,7 @@ export default function RealTimeTest({
       { currentGoal: seed, lastGoal: seed.title_en },
       { merge: true }
     );
+    goalXpAwardedRef.current = false;
     return seed;
   }
 
@@ -1252,28 +1266,18 @@ export default function RealTimeTest({
     });
   }
 
-  async function handleNextGoal() {
-    if (!currentGoal || goalBusyRef.current) return;
+  function handleNextGoal() {
+    if (goalBusyRef.current) return;
 
-    goalBusyRef.current = true;
-    try {
-      // Generate next goal based on conversation history
-      const nextGoal = await generateNextGoal(currentGoal);
-      setCurrentGoal(nextGoal);
-      goalRef.current = nextGoal;
-      await persistCurrentGoal(nextGoal);
-      setGoalFeedback("");
+    // In lesson mode, move to the next module (same behavior as Skip)
+    if (onSkip && typeof onSkip === "function") {
       setGoalCompleted(false);
-
-      // Update session with new goal if connected
-      if (status === "connected") {
-        scheduleSessionUpdate();
-      }
-    } catch (error) {
-      console.warn("Failed to generate next goal:", error);
-    } finally {
-      goalBusyRef.current = false;
+      onSkip();
+      return;
     }
+
+    // Not in lesson mode - show the same info as Skip
+    skipGoal();
   }
 
   // XP helpers - normalized to 4-7 XP range
@@ -1304,154 +1308,6 @@ export default function RealTimeTest({
   //     }
   //   } catch {}
   // }
-
-  async function generateNextGoal(prevGoal) {
-    const SNIPPET_MAX = 240;
-    function snippet(s, n = SNIPPET_MAX) {
-      return String(s || "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, n);
-    }
-    function latestTurn(role) {
-      // Merge ephemerals + persisted, pick the newest turn for the role
-      const all = [...(messagesRef.current || []), ...(history || [])];
-      const items = all
-        .filter(
-          (x) =>
-            x.role === role &&
-            (String(x.textFinal || "").trim() ||
-              String(x.textStream || "").trim())
-        )
-        .sort((a, b) => (b.ts || 0) - (a.ts || 0));
-      if (!items.length) return null;
-      const t = items[0];
-      const text = ((t.textFinal || "") + " " + (t.textStream || "")).trim();
-      const lang =
-        t.lang || (role === "assistant" ? targetLangRef.current : "en");
-      return { text, lang };
-    }
-    // Profile & context
-    const profile = {
-      level: levelRef.current,
-      help: helpRequestRef.current || "",
-      targetLang: targetLangRef.current,
-    };
-
-    // Pull the most recent user/assistant turns
-    const lastUser = latestTurn("user");
-    const lastAI = latestTurn("assistant");
-
-    const userLine = lastUser
-      ? `Previous user request (${lastUser.lang}): """${snippet(
-          lastUser.text
-        )}"""`
-      : "Previous user request: (none)";
-    const aiLine = lastAI
-      ? `Previous AI reply (${lastAI.lang}): """${snippet(lastAI.text)}"""`
-      : "Previous AI reply: (none)";
-
-    const systemAsk = `
-You are a language micro-goal planner. Propose the next tiny **speaking** goal so it feels like a natural continuation of the **previous user–assistant exchange** and is progressive from the prior goal.
-
-Constraints:
-- Keep titles ≤ 7 words.
-- Keep it practical and conversational.
-- Fit the user's level: ${profile.level}.
-- Target language: ${profile.targetLang}.
-- User focus: ${profile.help || "(none)"}.
-Return ONLY JSON (no prose, no markdown):
-
-{
-  "title_en": "...",
-  "title_es": "...",
-  "rubric_en": "... one-sentence success criteria ...",
-  "rubric_es": "... una frase con criterios de éxito ..."
-}
-  `.trim();
-
-    const body = {
-      model: TRANSLATE_MODEL,
-      text: { format: { type: "text" } },
-      input: `${systemAsk}
-
-Previous goal (EN): ${prevGoal?.title_en || ""}
-Previous goal (ES): ${prevGoal?.title_es || ""}
-${userLine}
-${aiLine}
-`,
-    };
-
-    try {
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: {
-          // No Authorization; backend adds server key
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(body),
-      });
-
-      const ct = r.headers.get("content-type") || "";
-      const payload = ct.includes("application/json")
-        ? await r.json()
-        : await r.text();
-
-      const mergedText =
-        (typeof payload?.output_text === "string" && payload.output_text) ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-        (Array.isArray(payload?.choices) &&
-          (payload.choices[0]?.message?.content || "")) ||
-        "";
-
-      const parsed = safeParseJson(mergedText) || {};
-      const title_en = (parsed.title_en || "").trim();
-      const title_es = (parsed.title_es || "").trim();
-      const rubric_en = (parsed.rubric_en || "").trim();
-      const rubric_es = (parsed.rubric_es || "").trim();
-
-      if (title_en || title_es) {
-        return {
-          id: `goal_${Date.now()}`,
-          title_en: title_en || "Ask a follow-up question.",
-          title_es: title_es || "Haz una pregunta de seguimiento.",
-          rubric_en:
-            rubric_en ||
-            "One short follow-up question that is on-topic and natural.",
-          rubric_es:
-            rubric_es ||
-            "Una pregunta breve de seguimiento, natural y relacionada.",
-          attempts: 0,
-          status: "active",
-          createdAt: isoNow(),
-          updatedAt: isoNow(),
-        };
-      }
-    } catch (e) {
-      console.warn("Next goal generation failed:", e?.message || e);
-    }
-
-    // Fallback
-    return {
-      id: `goal_${Date.now()}`,
-      title_en: "Ask a follow-up question.",
-      title_es: "Haz una pregunta de seguimiento.",
-      rubric_en: "One short follow-up question that is on-topic and natural.",
-      rubric_es: "Una pregunta breve de seguimiento, natural y relacionada.",
-      attempts: 0,
-      status: "active",
-      createdAt: isoNow(),
-      updatedAt: isoNow(),
-    };
-  }
 
   async function evaluateAndMaybeAdvanceGoal(userUtterance) {
     const goal = goalRef.current;
@@ -1522,7 +1378,7 @@ Return ONLY JSON:
       const fbUI = (parsed.feedback_ui || "").trim();
       if (fbUI || fbTL) setGoalFeedback(fbUI || fbTL);
 
-      if (met) {
+      if (met && !goalXpAwardedRef.current) {
         const xpGain = computeXpDelta({
           met: true,
           conf,
@@ -1531,6 +1387,7 @@ Return ONLY JSON:
         });
         setXp((v) => v + xpGain);
         await awardXp(currentNpub, xpGain, targetLangRef.current);
+        goalXpAwardedRef.current = true;
       }
 
       if (met) {
@@ -2674,62 +2531,57 @@ Do not return the whole sentence as a single chunk.`;
           px={4}
         >
           <HStack spacing={3} w="100%" maxW="560px" justify="center">
+            <Button
+              onClick={skipGoal}
+              size="md"
+              height="48px"
+              px="6"
+              rounded="full"
+              colorScheme="orange"
+              variant="outline"
+              color="white"
+              textShadow="0px 0px 20px black"
+              mb={20}
+            >
+              {uiLang === "es" ? "Saltar" : "Skip"}
+            </Button>
+            <Button
+              onClick={status === "connected" ? stop : start}
+              size="lg"
+              height="64px"
+              px="8"
+              rounded="full"
+              colorScheme={status === "connected" ? "red" : "cyan"}
+              color="white"
+              textShadow="0px 0px 20px black"
+              mb={20}
+            >
+              {status === "connected" ? (
+                <>
+                  <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                </>
+              ) : (
+                <>
+                  <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                  {status === "connecting" ? ui.ra_btn_connecting : ui.ra_btn_connect}
+                </>
+              )}
+            </Button>
             {goalCompleted ? (
               <Button
                 onClick={handleNextGoal}
-                size="lg"
-                height="64px"
-                px="8"
+                size="md"
+                height="48px"
+                px="6"
                 rounded="full"
                 colorScheme="green"
                 color="white"
                 textShadow="0px 0px 20px black"
                 mb={20}
               >
-                {uiLang === "es" ? "Siguiente Meta" : "Next Goal"}
+                {uiLang === "es" ? "Siguiente" : "Next"}
               </Button>
-            ) : (
-              <>
-                <Button
-                  onClick={skipGoal}
-                  size="md"
-                  height="48px"
-                  px="6"
-                  rounded="full"
-                  colorScheme="orange"
-                  variant="outline"
-                  color="white"
-                  textShadow="0px 0px 20px black"
-                  mb={20}
-                >
-                  {uiLang === "es" ? "Saltar" : "Skip"}
-                </Button>
-                <Button
-                  onClick={status === "connected" ? stop : start}
-                  size="lg"
-                  height="64px"
-                  px="8"
-                  rounded="full"
-                  colorScheme={status === "connected" ? "red" : "cyan"}
-                  color="white"
-                  textShadow="0px 0px 20px black"
-                  mb={20}
-                >
-                  {status === "connected" ? (
-                    <>
-                      <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-                    </>
-                  ) : (
-                    <>
-                      <PiMicrophoneStageDuotone /> &nbsp;{" "}
-                      {status === "connecting"
-                        ? ui.ra_btn_connecting
-                        : ui.ra_btn_connect}
-                    </>
-                  )}
-                </Button>
-              </>
-            )}
+            ) : null}
           </HStack>
         </Center>
 
