@@ -40,6 +40,7 @@ export const translations = {
     practice_drag_blank_label: "Blank {index}",
     practice_play: "Play",
     practice_next_ready: "Great work! Keep the streak going.",
+    practice_try_again_hint: "Review the prompt and try again.",
     quiz_correct: "Correct",
     quiz_try_again: "Try again",
     quiz_checked: "Checked",
@@ -394,6 +395,7 @@ export const translations = {
     practice_drag_blank_label: "Espacio {index}",
     practice_play: "Reproducir",
     practice_next_ready: "¡Buen trabajo! Sigue con la racha.",
+    practice_try_again_hint: "Revisa la consigna y vuelve a intentarlo.",
     generic_loading: "Cargando...",
     intro:
       "¡Gracias por probar la app! Actualmente está en desarrollo y mejorará a diario.",

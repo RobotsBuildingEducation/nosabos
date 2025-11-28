@@ -2789,11 +2789,11 @@ Return JSON ONLY:
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
           <VStack align="stretch" spacing={4}>
-            <Box
-              bg="rgba(255, 255, 255, 0.02)"
-              borderRadius="lg"
-              borderWidth="1px"
-              borderColor="whiteAlpha.100"
+              <Box
+                bg="rgba(255, 255, 255, 0.02)"
+                borderRadius="lg"
+                borderWidth="1px"
+                borderColor="whiteAlpha.100"
               p={5}
             >
               <VStack align="stretch" spacing={3}>
@@ -2832,17 +2832,9 @@ Return JSON ONLY:
                       💡 {hint}
                     </Text>
                   </Box>
-                ) : null}
-              </VStack>
-            </Box>
-
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={lastOk === true && nextAction}
-              onNext={handleNext}
-              nextLabel={nextQuestionLabel}
-            />
+                  ) : null}
+                </VStack>
+              </Box>
 
             <Input
               value={input}
@@ -2875,6 +2867,14 @@ Return JSON ONLY:
                 {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
             </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={lastOk === true && nextAction}
+              onNext={handleNext}
+              nextLabel={nextQuestionLabel}
+            />
           </VStack>
         ) : null}
 
@@ -2936,13 +2936,6 @@ Return JSON ONLY:
                     </Text>
                   </VStack>
                 </Box>
-                <FeedbackRail
-                  ok={lastOk}
-                  xp={recentXp}
-                  showNext={lastOk === true && nextAction}
-                  onNext={handleNext}
-                  nextLabel={nextQuestionLabel}
-                />
                 <Droppable droppableId="mc-bank" direction="horizontal">
                   {(provided) => (
                     <Flex
@@ -3159,6 +3152,14 @@ Return JSON ONLY:
                 {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
             </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={lastOk === true && nextAction}
+              onNext={handleNext}
+              nextLabel={nextQuestionLabel}
+            />
           </>
         ) : null}
         {/* ---- MA UI ---- */}
@@ -3342,13 +3343,6 @@ Return JSON ONLY:
                   </Text>
                 </VStack>
               </Box>
-              <FeedbackRail
-                ok={lastOk}
-                xp={recentXp}
-                showNext={lastOk === true && nextAction}
-                onNext={handleNext}
-                nextLabel={nextQuestionLabel}
-              />
               <Stack spacing={3} align="stretch">
                 {(maChoices.length
                   ? maChoices
@@ -3460,6 +3454,14 @@ Return JSON ONLY:
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
             </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={lastOk === true && nextAction}
+              onNext={handleNext}
+              nextLabel={nextQuestionLabel}
+            />
           </>
         ) : null}
         {/* ---- SPEAK UI ---- */}
@@ -3575,14 +3577,6 @@ Return JSON ONLY:
                     </Text>
                   </Box>
                 ) : null}
-
-                <FeedbackRail
-                  ok={lastOk}
-                  xp={recentXp}
-                  showNext={lastOk === true && nextAction}
-                  onNext={handleNext}
-                  nextLabel={nextQuestionLabel}
-                />
               </>
             )}
 
@@ -3737,13 +3731,6 @@ Return JSON ONLY:
                 )}
               </VStack>
             </Box>
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={lastOk === true && nextAction}
-              onNext={handleNext}
-              nextLabel={nextQuestionLabel}
-            />
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
@@ -3942,6 +3929,14 @@ Return JSON ONLY:
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
             </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={lastOk === true && nextAction}
+              onNext={handleNext}
+              nextLabel={nextQuestionLabel}
+            />
           </>
         ) : null}
       </VStack>

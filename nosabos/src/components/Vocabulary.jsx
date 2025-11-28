@@ -3343,17 +3343,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </VStack>
             </Box>
 
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
-              }
-              onNext={handleNext}
-              nextLabel={nextLabel}
-            />
-
             <Input
               value={ansFill}
               onChange={(e) => setAnsFill(e.target.value)}
@@ -3391,6 +3380,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
             </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              onNext={handleNext}
+              nextLabel={nextLabel}
+            />
           </VStack>
         ) : null}
 
@@ -3453,16 +3453,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       </Text>
                     </VStack>
                   </Box>
-                  <FeedbackRail
-                    ok={lastOk}
-                    xp={recentXp}
-                    showNext={
-                      (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                      nextAction
-                    }
-                    onNext={handleNext}
-                    nextLabel={nextLabel}
-                  />
                   <Droppable droppableId="mc-bank" direction="horizontal">
                     {(provided) => (
                       <Flex
@@ -3574,16 +3564,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     ) : null}
                   </VStack>
                 </Box>
-                <FeedbackRail
-                  ok={lastOk}
-                  xp={recentXp}
-                  showNext={
-                    (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                    nextAction
-                  }
-                  onNext={handleNext}
-                  nextLabel={nextLabel}
-                />
                 <Stack spacing={3} align="stretch">
                   {(choicesMC.length
                     ? choicesMC
@@ -3689,6 +3669,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
             </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              onNext={handleNext}
+              nextLabel={nextLabel}
+            />
           </>
         ) : null}
 
@@ -3758,16 +3749,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       </Text>
                     </VStack>
                   </Box>
-                  <FeedbackRail
-                    ok={lastOk}
-                    xp={recentXp}
-                    showNext={
-                      (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                      nextAction
-                    }
-                    onNext={handleNext}
-                    nextLabel={nextLabel}
-                  />
                   <Droppable droppableId="ma-bank" direction="horizontal">
                     {(provided) => (
                       <Flex
@@ -3882,16 +3863,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     </Text>
                   </VStack>
                 </Box>
-                <FeedbackRail
-                  ok={lastOk}
-                  xp={recentXp}
-                  showNext={
-                    (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                    nextAction
-                  }
-                  onNext={handleNext}
-                  nextLabel={nextLabel}
-                />
                 <Stack spacing={3} align="stretch">
                   {(choicesMA.length
                     ? choicesMA
@@ -4009,6 +3980,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
             </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              onNext={handleNext}
+              nextLabel={nextLabel}
+            />
           </>
         ) : null}
 
@@ -4140,16 +4122,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   </Box>
                 ) : null}
 
-                <FeedbackRail
-                  ok={lastOk}
-                  xp={recentXp}
-                  showNext={
-                    (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                    nextAction
-                  }
-                  onNext={handleNext}
-                  nextLabel={nextLabel}
-                />
               </>
             )}
 
@@ -4240,15 +4212,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 {isSpeakRecording
                   ? t("vocab_speak_stop") ||
                     (userLanguage === "es" ? "Detener" : "Stop")
-                  : t("vocab_speak_record") ||
-                    (userLanguage === "es"
-                      ? "Grabar pronunciación"
-                      : "Record pronunciation")}
-              </Button>
-            </Stack>
+              : t("vocab_speak_record") ||
+                (userLanguage === "es"
+                  ? "Grabar pronunciación"
+                  : "Record pronunciation")}
+          </Button>
+        </Stack>
 
-            {lastOk === true ? (
-              <SpeakSuccessCard
+        <FeedbackRail
+          ok={lastOk}
+          xp={recentXp}
+          showNext={
+            (lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction
+          }
+          onNext={handleNext}
+          nextLabel={nextLabel}
+        />
+
+        {lastOk === true ? (
+          <SpeakSuccessCard
                 title={
                   t("vocab_speak_success_title") ||
                   (userLanguage === "es"
