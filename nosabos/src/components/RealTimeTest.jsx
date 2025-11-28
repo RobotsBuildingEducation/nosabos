@@ -2408,7 +2408,11 @@ Do not return the whole sentence as a single chunk.`;
               <Box flex={1}>
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack>
-                    <Badge colorScheme="yellow" variant="subtle" fontSize={"10px"}>
+                    <Badge
+                      colorScheme="yellow"
+                      variant="subtle"
+                      fontSize={"10px"}
+                    >
                       {tGoalLabel}
                     </Badge>
                     <Text fontSize="xs" opacity={0.9}>
@@ -2563,25 +2567,28 @@ Do not return the whole sentence as a single chunk.`;
               ) : (
                 <>
                   <PiMicrophoneStageDuotone /> &nbsp;{" "}
-                  {status === "connecting" ? ui.ra_btn_connecting : ui.ra_btn_connect}
+                  {status === "connecting"
+                    ? ui.ra_btn_connecting
+                    : ui.ra_btn_connect}
                 </>
               )}
             </Button>
-            {goalCompleted ? (
-              <Button
-                onClick={handleNextGoal}
-                size="md"
-                height="48px"
-                px="6"
-                rounded="full"
-                colorScheme="green"
-                color="white"
-                textShadow="0px 0px 20px black"
-                mb={20}
-              >
-                {uiLang === "es" ? "Siguiente" : "Next"}
-              </Button>
-            ) : null}
+
+            <Button
+              onClick={handleNextGoal}
+              size="md"
+              height="48px"
+              px="6"
+              rounded="full"
+              color="white"
+              textShadow="0px 0px 20px black"
+              mb={20}
+              bg="gray.800"
+              border="1px solid cyan"
+              disabled={!goalCompleted}
+            >
+              {uiLang === "es" ? "Siguiente" : "Next"}
+            </Button>
           </HStack>
         </Center>
 
