@@ -811,9 +811,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
       <Tooltip
         label={
           status === SKILL_STATUS.LOCKED
-            ? getTranslation(supportLang, "skill_tree_unlock_at", {
-                xpRequired: lesson.xpRequired,
-              })
+            ? getTranslation(supportLang, "skill_tree_unlock_sequential")
             : lessonDescription
         }
         placement="right"
@@ -1035,6 +1033,7 @@ function UnitSection({
   index,
   supportLang,
   hasNextUnit,
+  previousUnit,
 }) {
   const bgColor = "gray.800";
   const borderColor = "gray.700";
@@ -1290,11 +1289,30 @@ function UnitSection({
               status = SKILL_STATUS.COMPLETED;
             } else if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
               status = SKILL_STATUS.IN_PROGRESS;
-            } else if (
-              isTestUnlocked ||
-              userProgress.totalXp >= lesson.xpRequired
-            ) {
-              status = SKILL_STATUS.AVAILABLE;
+            } else {
+              // Sequential unlock logic: check if previous lesson is completed
+              let isPreviousLessonCompleted = false;
+
+              if (lessonIndex === 0) {
+                // First lesson of the unit
+                if (index === 0) {
+                  // First lesson of first unit - always available
+                  isPreviousLessonCompleted = true;
+                } else if (previousUnit) {
+                  // First lesson of subsequent units - check if last lesson of previous unit is completed
+                  const previousUnitLastLesson = previousUnit.lessons[previousUnit.lessons.length - 1];
+                  isPreviousLessonCompleted =
+                    userProgress.lessons?.[previousUnitLastLesson.id]?.status === SKILL_STATUS.COMPLETED;
+                }
+              } else {
+                // Not the first lesson - check if previous lesson in same unit is completed
+                isPreviousLessonCompleted =
+                  userProgress.lessons?.[unit.lessons[lessonIndex - 1].id]?.status === SKILL_STATUS.COMPLETED;
+              }
+
+              if (isTestUnlocked || isPreviousLessonCompleted) {
+                status = SKILL_STATUS.AVAILABLE;
+              }
             }
 
             // Create zigzag pattern - alternating positions
@@ -1877,6 +1895,7 @@ export default function SkillTree({
                 index={index}
                 supportLang={supportLang}
                 hasNextUnit={index < units.length - 1}
+                previousUnit={index > 0 ? units[index - 1] : null}
               />
             ))
           ) : (
