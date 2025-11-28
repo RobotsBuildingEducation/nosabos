@@ -23,6 +23,7 @@ import {
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { LuBlocks, LuSparkles } from "react-icons/lu";
 import {
   RiLockLine,
   RiCheckLine,
@@ -735,8 +736,16 @@ const getLessonIcon = (lesson, unitId) => {
   // Quiz lessons always get the question mark icon
   if (lesson.id.includes("-quiz")) return RiQuestionLine;
 
-  // Get icon based on lesson title (primary method)
+  // Get title for pattern matching
   const titleEn = lesson.title?.en || "";
+
+  // Skill Builder lessons get blocks icon
+  if (titleEn.endsWith("Skill Builder")) return LuBlocks;
+
+  // Integrated Practice lessons get sparkles icon
+  if (titleEn.endsWith("Integrated Practice")) return LuSparkles;
+
+  // Get icon based on lesson title (primary method)
   const titleIcon = getTitleBasedIcon(titleEn);
 
   // If we got a non-default icon from the title, use it
