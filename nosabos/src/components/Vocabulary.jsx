@@ -4121,7 +4121,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     </Text>
                   </Box>
                 ) : null}
-
               </>
             )}
 
@@ -4212,25 +4211,26 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 {isSpeakRecording
                   ? t("vocab_speak_stop") ||
                     (userLanguage === "es" ? "Detener" : "Stop")
-              : t("vocab_speak_record") ||
-                (userLanguage === "es"
-                  ? "Grabar pronunciación"
-                  : "Record pronunciation")}
-          </Button>
-        </Stack>
+                  : t("vocab_speak_record") ||
+                    (userLanguage === "es"
+                      ? "Grabar pronunciación"
+                      : "Record pronunciation")}
+              </Button>
+            </Stack>
 
-        <FeedbackRail
-          ok={lastOk}
-          xp={recentXp}
-          showNext={
-            (lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction
-          }
-          onNext={handleNext}
-          nextLabel={nextLabel}
-        />
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              onNext={handleNext}
+              nextLabel={nextLabel}
+            />
 
-        {lastOk === true ? (
-          <SpeakSuccessCard
+            {lastOk === true ? (
+              <SpeakSuccessCard
                 title={
                   t("vocab_speak_success_title") ||
                   (userLanguage === "es"
