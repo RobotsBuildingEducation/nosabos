@@ -2531,12 +2531,12 @@ Do not return the whole sentence as a single chunk.`;
           zIndex={30}
           px={4}
         >
-          <Flex
+          <Box
+            position="relative"
             w="100%"
             maxW="620px"
-            align="center"
-            justify="center"
-            gap={2}
+            minH="64px"
+            pb={5}
           >
             <Button
               onClick={skipGoal}
@@ -2548,51 +2548,54 @@ Do not return the whole sentence as a single chunk.`;
               variant="outline"
               color="white"
               textShadow="0px 0px 20px black"
-              mb={20}
+              position="absolute"
+              left={0}
+              top={0}
             >
               {uiLang === "es" ? "Saltar" : "Skip"}
             </Button>
-            <Button
-              onClick={status === "connected" ? stop : start}
-              size="lg"
-              height="64px"
-              px="8"
-              rounded="full"
-              colorScheme={status === "connected" ? "red" : "cyan"}
-              color="white"
-              textShadow="0px 0px 20px black"
-              mb={20}
-            >
-              {status === "connected" ? (
-                <>
-                  <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-                </>
-              ) : (
-                <>
-                  <PiMicrophoneStageDuotone /> &nbsp;{" "}
-                  {status === "connecting" ? ui.ra_btn_connecting : ui.ra_btn_connect}
-                </>
-              )}
-            </Button>
-            {goalCompleted ? (
+            <Center>
               <Button
-                onClick={handleNextGoal}
+                onClick={status === "connected" ? stop : start}
                 size="lg"
                 height="64px"
                 px="8"
-                minW="140px"
+                rounded="full"
+                colorScheme={status === "connected" ? "red" : "cyan"}
+                color="white"
+                textShadow="0px 0px 20px black"
+              >
+                {status === "connected" ? (
+                  <>
+                    <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                  </>
+                ) : (
+                  <>
+                    <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                    {status === "connecting" ? ui.ra_btn_connecting : ui.ra_btn_connect}
+                  </>
+                )}
+              </Button>
+            </Center>
+            {goalCompleted ? (
+              <Button
+                onClick={handleNextGoal}
+                size="md"
+                height="48px"
+                px="6"
+                minW="120px"
                 rounded="full"
                 colorScheme="green"
                 color="white"
                 textShadow="0px 0px 20px black"
-                mb={20}
+                position="absolute"
+                right={0}
+                top={0}
               >
                 {uiLang === "es" ? "Siguiente" : "Next"}
               </Button>
-            ) : (
-              <Box minW="140px" />
-            )}
-          </Flex>
+            ) : null}
+          </Box>
         </Center>
 
         {err && (
