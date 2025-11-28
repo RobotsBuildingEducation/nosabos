@@ -2528,7 +2528,7 @@ Do not return the whole sentence as a single chunk.`;
           bottom="22px"
           left="0"
           right="0"
-          zIndex={30}
+          zIndex={120}
           px={4}
         >
           <Box
