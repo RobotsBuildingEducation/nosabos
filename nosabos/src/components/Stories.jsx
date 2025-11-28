@@ -51,6 +51,7 @@ import {
   computeAudioMetricsFromBlob,
   speechReasonTips,
 } from "../utils/speechEvaluation";
+import { SpeakSuccessCard } from "./SpeakSuccessCard";
 
 /* ================================
    ENV / API
@@ -344,6 +345,8 @@ export default function StoryMode({
 
   // accumulate this session, but award only at end
   const [sessionXp, setSessionXp] = useState(0);
+  const [sessionComplete, setSessionComplete] = useState(false);
+  const [sessionSummary, setSessionSummary] = useState({ passed: 0, total: 0 });
   const [passedCount, setPassedCount] = useState(0);
 
   const [showFullStory, setShowFullStory] = useState(true);
@@ -578,6 +581,8 @@ export default function StoryMode({
       storyCacheRef.current = validated;
       setCurrentSentenceIndex(0);
       setSessionXp(0);
+      setSessionComplete(false);
+      setSessionSummary({ passed: 0, total: validated?.sentences?.length || 0 });
       setPassedCount(0);
       sessionAwardedRef.current = false;
       setShowFullStory(true);
@@ -888,6 +893,11 @@ export default function StoryMode({
         storyCacheRef.current = validated;
         setCurrentSentenceIndex(0);
         setSessionXp(0);
+        setSessionComplete(false);
+        setSessionSummary({
+          passed: 0,
+          total: validated?.sentences?.length || 0,
+        });
         setPassedCount(0);
         setShowFullStory(true);
         setHighlightedWordIndex(-1);
@@ -1483,18 +1493,13 @@ export default function StoryMode({
       setCurrentSentenceIndex((p) => p + 1);
       setSentenceCompleted(false);
     } else {
+      const totalSentences = storyData?.sentences?.length || 0;
+      const latestPassed = Math.min(totalSentences || passedCount + 1, passedCount + 1);
       const totalSessionXp = computeStoryXpReward();
       setSessionXp(totalSessionXp);
+      setSessionSummary({ passed: latestPassed, total: totalSentences });
+      setSessionComplete(true);
       await finalizePracticeSession(totalSessionXp);
-      toast({
-        title: uiLang === "es" ? "¡Felicidades!" : "Congrats!",
-        description:
-          uiLang === "es"
-            ? `¡Completaste el juego de roles! Ganaste ${totalSessionXp} ${uiText.xp} en esta sesión.`
-            : `Role play completed! You earned ${totalSessionXp} ${uiText.xp} this session.`,
-        status: "success",
-        duration: 3000,
-      });
       setShowFullStory(true);
       setCurrentSentenceIndex(0);
       setSentenceCompleted(false);
@@ -1827,6 +1832,11 @@ export default function StoryMode({
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);
                         setSessionXp(0);
+                        setSessionComplete(false);
+                        setSessionSummary({
+                          passed: 0,
+                          total: storyData?.sentences?.length || 0,
+                        });
                         sessionAwardedRef.current = false;
                         setPassedCount(0);
                         setHighlightedWordIndex(-1);
@@ -1963,6 +1973,21 @@ export default function StoryMode({
                         {uiText.listen}
                       </Button>
                     </HStack>
+                    {sessionComplete && sessionXp > 0 && sessionSummary.total > 0 ? (
+                      <SpeakSuccessCard
+                        title={
+                          uiLang === "es"
+                            ? "¡Juego de roles completado!"
+                            : "Role play completed!"
+                        }
+                        scoreLabel={`${sessionSummary.passed}/${sessionSummary.total} ${
+                          uiLang === "es" ? "oraciones" : "sentences"
+                        }`}
+                        xp={sessionXp}
+                        t={t}
+                        userLanguage={uiLang}
+                      />
+                    ) : null}
                   </VStack>
                 </VStack>
               )}

@@ -3380,6 +3380,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 colorScheme="purple"
                 onClick={submitFill}
                 isDisabled={
+                  lastOk === true ||
                   loadingGFill ||
                   !ansFill.trim() ||
                   !qFill ||
@@ -3677,6 +3678,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 colorScheme="purple"
                 onClick={submitMC}
                 isDisabled={
+                  lastOk === true ||
                   loadingGMC ||
                   !pickMC ||
                   !choicesMC.length ||
@@ -3996,6 +3998,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 colorScheme="purple"
                 onClick={submitMA}
                 isDisabled={
+                  lastOk === true ||
                   loadingGMA ||
                   !choicesMA.length ||
                   !maReady ||
@@ -4511,6 +4514,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 colorScheme="purple"
                 onClick={submitMatch}
                 isDisabled={
+                  lastOk === true ||
                   !canSubmitMatch() ||
                   loadingMJ ||
                   !mLeft.length ||

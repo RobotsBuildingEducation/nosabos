@@ -2867,7 +2867,9 @@ Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitFill}
-                isDisabled={loadingG || !input.trim() || !question}
+                isDisabled={
+                  lastOk === true || loadingG || !input.trim() || !question
+                }
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
@@ -3149,7 +3151,9 @@ Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitMC}
-                isDisabled={loadingMCG || !mcPick || !mcChoices.length}
+                isDisabled={
+                  lastOk === true || loadingMCG || !mcPick || !mcChoices.length
+                }
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
@@ -3448,7 +3452,9 @@ Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitMA}
-                isDisabled={loadingMAG || !maChoices.length || !maReady}
+                isDisabled={
+                  lastOk === true || loadingMAG || !maChoices.length || !maReady
+                }
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
@@ -3928,7 +3934,9 @@ Return JSON ONLY:
               <Button
                 colorScheme="purple"
                 onClick={submitMatch}
-                isDisabled={!canSubmitMatch() || loadingMJ || !mLeft.length}
+                isDisabled={
+                  lastOk === true || !canSubmitMatch() || loadingMJ || !mLeft.length
+                }
                 w={{ base: "100%", md: "auto" }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}

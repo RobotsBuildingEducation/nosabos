@@ -582,12 +582,24 @@ export default function RealTimeTest({
     helpRequestRef.current = helpRequest;
   }, [helpRequest]);
 
+  // Track when XP has been granted for the active goal to avoid duplicates
+  const lastGoalIdRef = useRef(null);
+  useEffect(() => {
+    const gid = currentGoal?.id || null;
+    if (gid && gid !== lastGoalIdRef.current) {
+      goalXpAwardedRef.current = false;
+      setGoalCompleted(false);
+      lastGoalIdRef.current = gid;
+    }
+  }, [currentGoal]);
+
   // 🎯 Goal engine state
   const [currentGoal, setCurrentGoal] = useState(null);
   const goalRef = useRef(null);
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalBusyRef = useRef(false);
   const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
+  const goalXpAwardedRef = useRef(false);
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
@@ -1148,6 +1160,7 @@ export default function RealTimeTest({
       data.currentGoal.title_es &&
       (!lessonScenario || data.currentGoal.lessonScenario === lessonScenario)
     ) {
+      goalXpAwardedRef.current = false;
       return { ...data.currentGoal, attempts: data.currentGoal.attempts || 0 };
     }
 
@@ -1174,6 +1187,7 @@ export default function RealTimeTest({
       { currentGoal: seed, lastGoal: seed.title_en },
       { merge: true }
     );
+    goalXpAwardedRef.current = false;
     return seed;
   }
 
@@ -1365,7 +1379,7 @@ Return ONLY JSON:
       const fbUI = (parsed.feedback_ui || "").trim();
       if (fbUI || fbTL) setGoalFeedback(fbUI || fbTL);
 
-      if (met) {
+      if (met && !goalXpAwardedRef.current) {
         const xpGain = computeXpDelta({
           met: true,
           conf,
@@ -1374,6 +1388,7 @@ Return ONLY JSON:
         });
         setXp((v) => v + xpGain);
         await awardXp(currentNpub, xpGain, targetLangRef.current);
+        goalXpAwardedRef.current = true;
       }
 
       if (met) {
@@ -2516,7 +2531,13 @@ Do not return the whole sentence as a single chunk.`;
           zIndex={30}
           px={4}
         >
-          <Flex w="100%" maxW="620px" align="center" gap={3}>
+          <Flex
+            w="100%"
+            maxW="620px"
+            align="center"
+            justify="center"
+            gap={2}
+          >
             <Button
               onClick={skipGoal}
               size="md"
@@ -2531,7 +2552,6 @@ Do not return the whole sentence as a single chunk.`;
             >
               {uiLang === "es" ? "Saltar" : "Skip"}
             </Button>
-            <Spacer />
             <Button
               onClick={status === "connected" ? stop : start}
               size="lg"
@@ -2554,7 +2574,6 @@ Do not return the whole sentence as a single chunk.`;
                 </>
               )}
             </Button>
-            <Spacer />
             {goalCompleted ? (
               <Button
                 onClick={handleNextGoal}
