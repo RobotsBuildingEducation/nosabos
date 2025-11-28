@@ -2537,6 +2537,9 @@ Do not return the whole sentence as a single chunk.`;
             maxW="620px"
             minH="64px"
             pb={5}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
           >
             <Button
               onClick={skipGoal}
@@ -2554,29 +2557,27 @@ Do not return the whole sentence as a single chunk.`;
             >
               {uiLang === "es" ? "Saltar" : "Skip"}
             </Button>
-            <Center>
-              <Button
-                onClick={status === "connected" ? stop : start}
-                size="lg"
-                height="64px"
-                px="8"
-                rounded="full"
-                colorScheme={status === "connected" ? "red" : "cyan"}
-                color="white"
-                textShadow="0px 0px 20px black"
-              >
-                {status === "connected" ? (
-                  <>
-                    <FaStop /> &nbsp; {ui.ra_btn_disconnect}
-                  </>
-                ) : (
-                  <>
-                    <PiMicrophoneStageDuotone /> &nbsp;{" "}
-                    {status === "connecting" ? ui.ra_btn_connecting : ui.ra_btn_connect}
-                  </>
-                )}
-              </Button>
-            </Center>
+            <Button
+              onClick={status === "connected" ? stop : start}
+              size="lg"
+              height="64px"
+              px="8"
+              rounded="full"
+              colorScheme={status === "connected" ? "red" : "cyan"}
+              color="white"
+              textShadow="0px 0px 20px black"
+            >
+              {status === "connected" ? (
+                <>
+                  <FaStop /> &nbsp; {ui.ra_btn_disconnect}
+                </>
+              ) : (
+                <>
+                  <PiMicrophoneStageDuotone /> &nbsp;{" "}
+                  {status === "connecting" ? ui.ra_btn_connecting : ui.ra_btn_connect}
+                </>
+              )}
+            </Button>
             {goalCompleted ? (
               <Button
                 onClick={handleNextGoal}
