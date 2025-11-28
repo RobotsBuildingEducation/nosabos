@@ -1909,27 +1909,7 @@ export default function StoryMode({
 
                   <VStack spacing={4}>
                     <Center>
-                      {sentenceCompleted ? (
-                        <Button
-                          onClick={handleNextSentence}
-                          size="lg"
-                          height="60px"
-                          px={8}
-                          rounded="full"
-                          bg="linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                          color="white"
-                          fontWeight="600"
-                          fontSize="lg"
-                          _hover={{
-                            bg: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                            transform: "translateY(-2px)",
-                          }}
-                          _active={{ transform: "translateY(0)" }}
-                          transition="all 0.2s ease"
-                        >
-                          {isLastSentence ? finishLabel : nextSentenceLabel}
-                        </Button>
-                      ) : (
+                      <HStack spacing={4}>
                         <Button
                           onClick={() => {
                             if (isRecording) return stopRecording();
@@ -1959,7 +1939,28 @@ export default function StoryMode({
                         >
                           {isRecording ? uiText.stopRecording : uiText.record}
                         </Button>
-                      )}
+                        {sentenceCompleted ? (
+                          <Button
+                            onClick={handleNextSentence}
+                            size="lg"
+                            height="60px"
+                            px={8}
+                            rounded="full"
+                            bg="linear-gradient(135deg, #10b981 0%, #059669 100%)"
+                            color="white"
+                            fontWeight="600"
+                            fontSize="lg"
+                            _hover={{
+                              bg: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+                              transform: "translateY(-2px)",
+                            }}
+                            _active={{ transform: "translateY(0)" }}
+                            transition="all 0.2s ease"
+                          >
+                            {isLastSentence ? finishLabel : nextSentenceLabel}
+                          </Button>
+                        ) : null}
+                      </HStack>
                     </Center>
                     <HStack spacing={3} justify="center">
                       <Button
@@ -1994,8 +1995,6 @@ export default function StoryMode({
                               }) || `${uiText.score}: ${lastSuccessInfo.score}%`
                             : ""
                         }
-                        recognizedText={lastSuccessInfo.recognizedText}
-                        translation={lastSuccessInfo.translation}
                         t={t}
                         userLanguage={uiLang}
                       />
