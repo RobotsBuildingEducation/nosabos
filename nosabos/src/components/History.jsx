@@ -35,6 +35,7 @@ import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
+import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 
 /* ---------------------------
    Minimal i18n helper
@@ -336,40 +337,20 @@ function useSharedProgress() {
 /* ---------------------------
    Difficulty + Prompts
 --------------------------- */
-function difficultyHint(level, xp) {
-  const band = xp < 150 ? 0 : xp < 400 ? 1 : 2;
-  if (level === "beginner") {
-    return [
-      "Short, simple syntax.",
-      "Short with a few details.",
-      "Short with transitions.",
-    ][band];
-  }
-  if (level === "intermediate") {
-    return [
-      "Add some connectors.",
-      "Add comparisons & causes.",
-      "Add brief nuance & context.",
-    ][band];
-  }
-  return [
-    "Concise but advanced.",
-    "Analytical with nuance.",
-    "Denser, more academic tone.",
-  ][band];
+function difficultyHint(cefrLevel) {
+  return getCEFRPromptHint(cefrLevel);
 }
 
 // Seed: FIRST lecture based on lesson content
 function buildSeedLecturePrompt({
   targetLang,
   supportLang,
-  level,
-  xp,
+  cefrLevel,
   lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(level, xp);
+  const diff = difficultyHint(cefrLevel);
 
   const topicText =
     lessonContent?.topic ||
@@ -379,7 +360,7 @@ function buildSeedLecturePrompt({
 
   return `
 Write ONE short educational lecture about ${topicText}. ${promptText}
-Suitable for a ${level} learner. Difficulty: ${diff}.
+Suitable for a ${cefrLevel} learner. Difficulty: ${diff}.
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. The target language for learning is: ${TARGET} (language code: ${targetLang})
@@ -419,13 +400,12 @@ function buildLecturePrompt({
   previousTitles,
   targetLang,
   supportLang,
-  level,
-  xp,
+  cefrLevel,
   lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(level, xp);
+  const diff = difficultyHint(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
       ? previousTitles.map((t) => `- ${t}`).join("\n")
@@ -456,7 +436,7 @@ CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
 
 Content requirements:
-- Length: ≈180–260 words, suitable for a ${level} learner
+- Length: ≈180–260 words, suitable for a ${cefrLevel} learner
 - Difficulty: ${diff}
 - Include cultural context and practical vocabulary for language learners
 - Use examples and situations that learners might encounter
@@ -485,7 +465,7 @@ function buildXpPrompt({
   target,
   takeaways,
   previousTitles,
-  level,
+  cefrLevel,
   currentXp,
   hoursSinceLastLecture,
 }) {
@@ -500,7 +480,7 @@ You are an impartial XP rater for a language-learning history app.
 Given the NEW lecture and the list of PREVIOUS lecture titles, assign an XP integer for this session.
 Consider:
 - Novelty vs. previous titles (avoid repetition; reward progression or deepening a thread).
-- Topic granularity/specificity (figures, events, policies), and overall difficulty for the user's level: ${level}.
+- Topic granularity/specificity (figures, events, policies), and overall difficulty for the user's CEFR level: ${cefrLevel}.
 - Coverage balance (people, culture, governments, wars) at least touched.
 - Text density/length (≈180–260 words is ideal).
 - Consistency/streak: if hours_since_last_lecture <= 48, give a small streak bonus.
@@ -532,7 +512,7 @@ async function computeAdaptiveXp({
   target,
   takeaways,
   previousTitles,
-  level,
+  cefrLevel,
   currentXp,
   hoursSinceLastLecture,
 }) {
@@ -545,7 +525,7 @@ async function computeAdaptiveXp({
       target,
       takeaways,
       previousTitles,
-      level,
+      cefrLevel,
       currentXp,
       hoursSinceLastLecture,
     });
@@ -578,8 +558,8 @@ async function computeAdaptiveXp({
   score += looksRepeated ? -1 : 1;
   // Streak bonus
   score += hoursSinceLastLecture != null && hoursSinceLastLecture <= 48 ? 1 : 0;
-  // Level tweak
-  score += level === "advanced" ? 1 : level === "intermediate" ? 0.5 : 0;
+  // CEFR level tweak
+  score += ["C1", "C2"].includes(cefrLevel) ? 1 : ["B1", "B2"].includes(cefrLevel) ? 0.5 : 0;
 
   const xp = Math.max(MIN, Math.min(MAX, score));
   return { xp, reason: "Heuristic fallback scoring." };
@@ -618,13 +598,12 @@ function buildStreamingPrompt({
   previousTitles,
   targetLang,
   supportLang,
-  level,
-  xp,
+  cefrLevel,
   lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT = LANG_NAME(supportLang);
-  const diff = difficultyHint(level, xp);
+  const diff = difficultyHint(cefrLevel);
   const prev =
     previousTitles && previousTitles.length
       ? previousTitles.map((t) => `- ${t}`).join("\n")
@@ -678,11 +657,15 @@ function buildStreamingPrompt({
 --------------------------- */
 export default function History({
   userLanguage = "en",
+  lesson = null,
   lessonContent = null,
   onSkip = null,
 }) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
+
+  // Extract CEFR level from lesson ID
+  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
 
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
@@ -858,16 +841,14 @@ export default function History({
       ? buildSeedLecturePrompt({
           targetLang,
           supportLang,
-          level: progress.level || "beginner",
-          xp,
+          cefrLevel,
           lessonContent,
         })
       : buildLecturePrompt({
           previousTitles,
           targetLang,
           supportLang,
-          level: progress.level || "beginner",
-          xp,
+          cefrLevel,
           lessonContent,
         });
 
@@ -932,7 +913,7 @@ export default function History({
       target: safeTarget,
       takeaways: cleanTakeaways,
       previousTitles,
-      level: progress.level || "beginner",
+      cefrLevel,
       currentXp: xp,
       hoursSinceLastLecture,
     });
@@ -990,8 +971,7 @@ export default function History({
       previousTitles,
       targetLang,
       supportLang,
-      level: progress.level || "beginner",
-      xp,
+      cefrLevel,
       lessonContent,
     });
 
@@ -1138,7 +1118,7 @@ export default function History({
         target: safeTarget,
         takeaways: finalTakeaways,
         previousTitles,
-        level: progress.level || "beginner",
+        cefrLevel,
         currentXp: xp,
         hoursSinceLastLecture,
       });

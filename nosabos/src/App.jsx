@@ -2439,6 +2439,7 @@ export default function App() {
                           practicePronunciation={
                             user?.progress?.practicePronunciation
                           }
+                          lesson={activeLesson}
                           lessonContent={activeLesson?.content?.realtime}
                           onSkip={switchToRandomLessonMode}
                           onSwitchedAccount={async (id, sec) => {
@@ -2463,6 +2464,7 @@ export default function App() {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
+                          lesson={activeLesson}
                           lessonContent={activeLesson?.content?.stories}
                           onSkip={switchToRandomLessonMode}
                         />
@@ -2473,6 +2475,7 @@ export default function App() {
                       <TabPanel key="reading" px={0}>
                         <History
                           userLanguage={appLanguage}
+                          lesson={activeLesson}
                           lessonContent={activeLesson?.content?.reading}
                           onSkip={switchToRandomLessonMode}
                         />
@@ -2485,6 +2488,7 @@ export default function App() {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
+                          lesson={activeLesson}
                           lessonContent={activeLesson?.content?.grammar}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
                           quizConfig={activeLesson?.quizConfig || { questionsRequired: 10, passingScore: 8 }}
@@ -2499,6 +2503,7 @@ export default function App() {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
+                          lesson={activeLesson}
                           lessonContent={activeLesson?.content?.vocabulary}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
                           quizConfig={activeLesson?.quizConfig || { questionsRequired: 10, passingScore: 8 }}

@@ -49,6 +49,7 @@ import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
+import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import {
   evaluateAttemptStrict,
   computeAudioMetricsFromBlob,
@@ -297,12 +298,16 @@ function useUIText(uiLang, level) {
 =================================== */
 export default function StoryMode({
   userLanguage = "en",
+  lesson = null,
   lessonContent = null,
   onSkip = null,
 }) {
   const navigate = useNavigate();
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+
+  // Extract CEFR level from lesson ID
+  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
 
   // Shared settings + XP
   const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
@@ -565,7 +570,7 @@ export default function StoryMode({
           text: { format: { type: "text" } },
           input: {
             uiLanguage: uiLang, // UI language is app UI only
-            level: progress.level || "beginner",
+            cefrLevel, // CEFR-based difficulty level
             targetLang, // content target language
             supportLang, // effective support language (bilingual mirrors UI)
             lessonTopic, // Use lesson context instead of role
@@ -687,7 +692,7 @@ export default function StoryMode({
     }
   }, [
     lessonContent,
-    progress.level,
+    cefrLevel,
     targetLang,
     supportLang,
     uiLang,
@@ -708,11 +713,11 @@ export default function StoryMode({
     stopAllAudio();
     try {
       usageStatsRef.current.storyGenerations++;
-      const lvl = progress.level || "beginner";
       const tLang = targetLang; // 'es' | 'en' | 'nah'
       const sLang = supportLang; // 'en' | 'es'
       const tName = LLM_LANG_NAME(tLang);
       const sName = LLM_LANG_NAME(sLang);
+      const diff = getCEFRPromptHint(cefrLevel);
 
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
       const scenarioDirective =
@@ -724,7 +729,7 @@ export default function StoryMode({
 
       const prompt = [
         "You are a language tutor. Generate a short, engaging conversational story",
-        `for a ${lvl} learner practicing ${tName} (${tLang}).`,
+        `for a learner practicing ${tName} (${tLang}). Difficulty: ${diff}.`,
         `Also provide a brief support translation in ${sName} (${sLang}).`,
         scenarioDirective,
         "",
@@ -921,7 +926,7 @@ export default function StoryMode({
     }
   }, [
     lessonContent,
-    progress.level,
+    cefrLevel,
     targetLang,
     supportLang,
     stopAllAudio,
