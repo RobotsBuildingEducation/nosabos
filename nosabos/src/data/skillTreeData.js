@@ -10629,14 +10629,39 @@ export function getUnitTotalXP(unit) {
 }
 
 /**
- * Get the next available lesson for a user based on their current XP
+ * Get the next available lesson for a user based on sequential completion
  */
 export function getNextLesson(units, userProgress) {
-  for (const unit of units) {
-    for (const lesson of unit.lessons) {
+  for (let unitIndex = 0; unitIndex < units.length; unitIndex++) {
+    const unit = units[unitIndex];
+    for (let lessonIndex = 0; lessonIndex < unit.lessons.length; lessonIndex++) {
+      const lesson = unit.lessons[lessonIndex];
       const lessonProgress = userProgress.lessons?.[lesson.id];
+
       if (!lessonProgress || lessonProgress.status !== SKILL_STATUS.COMPLETED) {
-        if (userProgress.totalXp >= lesson.xpRequired) {
+        // Check if this lesson should be available (sequential unlock)
+        let isPreviousLessonCompleted = false;
+
+        if (lessonIndex === 0) {
+          // First lesson of the unit
+          if (unitIndex === 0) {
+            // First lesson of first unit - always available
+            isPreviousLessonCompleted = true;
+          } else {
+            // First lesson of subsequent units - check if last lesson of previous unit is completed
+            const previousUnit = units[unitIndex - 1];
+            const previousUnitLastLesson = previousUnit.lessons[previousUnit.lessons.length - 1];
+            isPreviousLessonCompleted =
+              userProgress.lessons?.[previousUnitLastLesson.id]?.status === SKILL_STATUS.COMPLETED;
+          }
+        } else {
+          // Not the first lesson - check if previous lesson in same unit is completed
+          const previousLesson = unit.lessons[lessonIndex - 1];
+          isPreviousLessonCompleted =
+            userProgress.lessons?.[previousLesson.id]?.status === SKILL_STATUS.COMPLETED;
+        }
+
+        if (isPreviousLessonCompleted) {
           return { unit, lesson };
         }
         return null; // Next lesson is still locked

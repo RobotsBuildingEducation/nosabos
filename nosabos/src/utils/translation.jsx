@@ -347,6 +347,7 @@ export const translations = {
     skill_tree_xp_reward: "XP to complete:",
     skill_tree_start_lesson: "Start Lesson",
     skill_tree_unlock_at: "Unlock at {xpRequired} XP",
+    skill_tree_unlock_sequential: "Complete the previous lesson to unlock",
     skill_tree_level: "Level {level}",
     skill_tree_no_path: "No learning path available for this language yet.",
     skill_tree_check_back: "Check back soon for structured lessons!",
@@ -711,6 +712,7 @@ export const translations = {
     skill_tree_xp_reward: "XP para terminar:",
     skill_tree_start_lesson: "Comenzar Lección",
     skill_tree_unlock_at: "Desbloquear con {xpRequired} XP",
+    skill_tree_unlock_sequential: "Completa la lección anterior para desbloquear",
     skill_tree_level: "Nivel {level}",
     skill_tree_no_path:
       "Aún no hay una ruta de aprendizaje disponible para este idioma.",
