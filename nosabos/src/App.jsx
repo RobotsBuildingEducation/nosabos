@@ -488,7 +488,12 @@ function TopBar({
           <Box w={{ base: "120px", sm: "150px", md: "180px" }}>
             <WaveBar value={dailyPct} />
           </Box>
-          <Box flexShrink={0} display="flex" alignItems="center" justifyContent="center">
+          <Box
+            flexShrink={0}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
             {dailyDone && (
               <Box
                 display="flex"
@@ -2491,7 +2496,12 @@ export default function App() {
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.grammar}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={activeLesson?.quizConfig || { questionsRequired: 10, passingScore: 8 }}
+                          quizConfig={
+                            activeLesson?.quizConfig || {
+                              questionsRequired: 10,
+                              passingScore: 8,
+                            }
+                          }
                           onSkip={switchToRandomLessonMode}
                         />
                       </TabPanel>
@@ -2506,7 +2516,12 @@ export default function App() {
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.vocabulary}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={activeLesson?.quizConfig || { questionsRequired: 10, passingScore: 8 }}
+                          quizConfig={
+                            activeLesson?.quizConfig || {
+                              questionsRequired: 10,
+                              passingScore: 8,
+                            }
+                          }
                           onSkip={switchToRandomLessonMode}
                         />
                       </TabPanel>
@@ -2636,11 +2651,13 @@ export default function App() {
                     "@keyframes pulse": {
                       "0%, 100%": {
                         transform: "translate(-50%, -50%) scale(1)",
-                        boxShadow: "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+                        boxShadow:
+                          "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)",
                       },
                       "50%": {
                         transform: "translate(-50%, -50%) scale(1.1)",
-                        boxShadow: "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)"
+                        boxShadow:
+                          "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)",
                       },
                     },
                   }}
@@ -2675,7 +2692,9 @@ export default function App() {
                           opacity: 1,
                         },
                         "100%": {
-                          transform: `translate(-50%, -50%) rotate(${angle + 360}deg) translateX(50px) rotate(-${angle - 360}deg)`,
+                          transform: `translate(-50%, -50%) rotate(${
+                            angle + 360
+                          }deg) translateX(50px) rotate(-${angle - 360}deg)`,
                           opacity: 0.4,
                         },
                       },
@@ -2707,11 +2726,15 @@ export default function App() {
                     sx={{
                       [`@keyframes float${i}`]: {
                         "0%, 100%": {
-                          transform: `translate(-50%, -50%) translate(${Math.cos(i * 45 * Math.PI / 180) * 30}px, ${Math.sin(i * 45 * Math.PI / 180) * 30}px)`,
+                          transform: `translate(-50%, -50%) translate(${
+                            Math.cos((i * 45 * Math.PI) / 180) * 30
+                          }px, ${Math.sin((i * 45 * Math.PI) / 180) * 30}px)`,
                           opacity: 0,
                         },
                         "50%": {
-                          transform: `translate(-50%, -50%) translate(${Math.cos(i * 45 * Math.PI / 180) * 60}px, ${Math.sin(i * 45 * Math.PI / 180) * 60}px)`,
+                          transform: `translate(-50%, -50%) translate(${
+                            Math.cos((i * 45 * Math.PI) / 180) * 60
+                          }px, ${Math.sin((i * 45 * Math.PI) / 180) * 60}px)`,
                           opacity: 0.8,
                         },
                       },
