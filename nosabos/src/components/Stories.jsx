@@ -23,9 +23,12 @@ import {
   Input,
   Tag,
   TagLabel,
+  Flex,
+  SlideFade,
 } from "@chakra-ui/react";
 import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
+import { FiArrowRight } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { PiMicrophoneStageDuotone, PiSpeakerHighDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
@@ -1939,27 +1942,6 @@ export default function StoryMode({
                         >
                           {isRecording ? uiText.stopRecording : uiText.record}
                         </Button>
-                        {sentenceCompleted ? (
-                          <Button
-                            onClick={handleNextSentence}
-                            size="lg"
-                            height="60px"
-                            px={8}
-                            rounded="full"
-                            bg="linear-gradient(135deg, #10b981 0%, #059669 100%)"
-                            color="white"
-                            fontWeight="600"
-                            fontSize="lg"
-                            _hover={{
-                              bg: "linear-gradient(135deg, #059669 0%, #047857 100%)",
-                              transform: "translateY(-2px)",
-                            }}
-                            _active={{ transform: "translateY(0)" }}
-                            transition="all 0.2s ease"
-                          >
-                            {isLastSentence ? finishLabel : nextSentenceLabel}
-                          </Button>
-                        ) : null}
                       </HStack>
                     </Center>
                     <HStack spacing={3} justify="center">
@@ -1982,22 +1964,64 @@ export default function StoryMode({
                       </Button>
                     </HStack>
                     {sentenceCompleted && lastSuccessInfo ? (
-                      <SpeakSuccessCard
-                        title={
-                          t(uiLang, "stories_sentence_success_title") ||
-                          uiText.wellDone
-                        }
-                        scoreLabel={
-                          typeof lastSuccessInfo.score === "number"
-                            ?
-                              t(uiLang, "stories_sentence_success_score", {
-                                score: lastSuccessInfo.score,
-                              }) || `${uiText.score}: ${lastSuccessInfo.score}%`
-                            : ""
-                        }
-                        t={t}
-                        userLanguage={uiLang}
-                      />
+                      <SlideFade in={true} offsetY="10px">
+                        <Flex
+                          direction={{ base: "column", md: "row" }}
+                          gap={3}
+                          p={4}
+                          borderRadius="xl"
+                          bg="linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
+                          borderWidth="1px"
+                          borderColor="green.400"
+                          boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+                          align={{ base: "stretch", md: "center" }}
+                        >
+                          <HStack spacing={3} flex="1" align="center">
+                            <Flex
+                              w="44px"
+                              h="44px"
+                              rounded="full"
+                              align="center"
+                              justify="center"
+                              bg="green.500"
+                              color="white"
+                              fontWeight="bold"
+                              fontSize="lg"
+                              boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                            >
+                              ✓
+                            </Flex>
+                            <Box>
+                              <Text fontWeight="semibold">
+                                {t(uiLang, "stories_sentence_success_title") ||
+                                  uiText.wellDone}
+                              </Text>
+                              <Text fontSize="sm" color="whiteAlpha.800">
+                                {typeof lastSuccessInfo.score === "number"
+                                  ?
+                                      t(uiLang, "stories_sentence_success_score", {
+                                        score: lastSuccessInfo.score,
+                                      }) ||
+                                    `${uiText.score}: ${lastSuccessInfo.score}%`
+                                  : t(uiLang, "practice_next_ready") ||
+                                    (uiLang === "es"
+                                      ? "¡Listo para continuar!"
+                                      : "Ready to continue!")}
+                              </Text>
+                            </Box>
+                          </HStack>
+                          <Button
+                            rightIcon={<FiArrowRight />}
+                            colorScheme="teal"
+                            variant="solid"
+                            onClick={handleNextSentence}
+                            shadow="md"
+                            w={{ base: "100%", md: "auto" }}
+                          >
+                            {isLastSentence ? finishLabel : nextSentenceLabel}
+                          </Button>
+                        </Flex>
+                      </SlideFade>
                     ) : null}
                     {sessionComplete && sessionXp > 0 && sessionSummary.total > 0 ? (
                       <SpeakSuccessCard
