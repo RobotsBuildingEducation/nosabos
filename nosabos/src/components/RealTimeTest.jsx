@@ -582,6 +582,14 @@ export default function RealTimeTest({
     helpRequestRef.current = helpRequest;
   }, [helpRequest]);
 
+  // 🎯 Goal engine state
+  const [currentGoal, setCurrentGoal] = useState(null);
+  const goalRef = useRef(null);
+  const [goalFeedback, setGoalFeedback] = useState("");
+  const goalBusyRef = useRef(false);
+  const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
+  const goalXpAwardedRef = useRef(false);
+
   // Track when XP has been granted for the active goal to avoid duplicates
   const lastGoalIdRef = useRef(null);
   useEffect(() => {
@@ -592,14 +600,6 @@ export default function RealTimeTest({
       lastGoalIdRef.current = gid;
     }
   }, [currentGoal]);
-
-  // 🎯 Goal engine state
-  const [currentGoal, setCurrentGoal] = useState(null);
-  const goalRef = useRef(null);
-  const [goalFeedback, setGoalFeedback] = useState("");
-  const goalBusyRef = useRef(false);
-  const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
-  const goalXpAwardedRef = useRef(false);
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
