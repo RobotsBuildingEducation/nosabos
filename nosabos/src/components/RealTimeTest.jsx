@@ -6,7 +6,6 @@ import {
   Button,
   Center,
   HStack,
-  Spacer,
   Text,
   VStack,
   Wrap,
@@ -2528,19 +2527,10 @@ Do not return the whole sentence as a single chunk.`;
           bottom="22px"
           left="0"
           right="0"
-          zIndex={120}
+          zIndex={30}
           px={4}
         >
-          <Box
-            position="relative"
-            w="100%"
-            maxW="620px"
-            minH="64px"
-            pb={5}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-          >
+          <HStack spacing={3} w="100%" maxW="560px" justify="center">
             <Button
               onClick={skipGoal}
               size="md"
@@ -2551,9 +2541,7 @@ Do not return the whole sentence as a single chunk.`;
               variant="outline"
               color="white"
               textShadow="0px 0px 20px black"
-              position="absolute"
-              left={0}
-              top={0}
+              mb={20}
             >
               {uiLang === "es" ? "Saltar" : "Skip"}
             </Button>
@@ -2566,6 +2554,7 @@ Do not return the whole sentence as a single chunk.`;
               colorScheme={status === "connected" ? "red" : "cyan"}
               color="white"
               textShadow="0px 0px 20px black"
+              mb={20}
             >
               {status === "connected" ? (
                 <>
@@ -2584,19 +2573,16 @@ Do not return the whole sentence as a single chunk.`;
                 size="md"
                 height="48px"
                 px="6"
-                minW="120px"
                 rounded="full"
                 colorScheme="green"
                 color="white"
                 textShadow="0px 0px 20px black"
-                position="absolute"
-                right={0}
-                top={0}
+                mb={20}
               >
                 {uiLang === "es" ? "Siguiente" : "Next"}
               </Button>
             ) : null}
-          </Box>
+          </HStack>
         </Center>
 
         {err && (
