@@ -49,6 +49,7 @@ import {
   resolveVoicePreference,
 } from "../utils/tts";
 import { doc, onSnapshot } from "firebase/firestore";
+import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -118,10 +119,9 @@ function resolveSupportLang(support, appUILang) {
     : "en";
 }
 
-function quizDifficulty(xp) {
-  if (xp < 100) return "beginner";
-  if (xp < 300) return "intermediate";
-  return "advanced";
+function quizDifficulty(cefrLevel) {
+  // Use CEFR level instead of XP for more accurate difficulty
+  return getCEFRPromptHint(cefrLevel);
 }
 
 function norm(s) {
@@ -145,6 +145,9 @@ export default function LessonGroupQuiz({
   onComplete = null,
 }) {
   const toast = useToast();
+
+  // Extract CEFR level from lesson ID
+  const cefrLevel = lessonId ? extractCEFRLevel(lessonId) : "A1";
 
   // User state from Firestore
   const [npub, setNpub] = useState("");
@@ -191,7 +194,7 @@ export default function LessonGroupQuiz({
   }, []);
 
   const supportCode = resolveSupportLang(supportLang, userLanguage);
-  const diff = quizDifficulty(xp);
+  const diff = quizDifficulty(cefrLevel);
 
   // Quiz tracking
   const [questionsAnswered, setQuestionsAnswered] = useState(0);

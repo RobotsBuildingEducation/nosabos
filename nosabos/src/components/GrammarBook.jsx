@@ -48,6 +48,7 @@ import {
   fetchTTSBlob,
   resolveVoicePreference,
 } from "../utils/tts";
+import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -190,29 +191,11 @@ function useSharedProgress() {
 }
 
 /* ---------------------------
-   Difficulty routing
+   Difficulty routing (CEFR-based)
 --------------------------- */
-function difficultyHint(level, xp) {
-  const band = xp < 150 ? 0 : xp < 400 ? 1 : 2;
-  if (level === "beginner") {
-    return [
-      "Use frequent present/past forms only.",
-      "Allow simple perfect/continuous.",
-      "Light conditionals or passive allowed.",
-    ][band];
-  }
-  if (level === "intermediate") {
-    return [
-      "Prefer perfect/continuous and modals.",
-      "Use mixed tenses and comparatives.",
-      "Allow conditionals, reported speech.",
-    ][band];
-  }
-  return [
-    "Allow complex clauses; be concise.",
-    "Use conditionals, passive, reduced clauses.",
-    "Allow nuanced aspect/voice choices.",
-  ][band];
+function difficultyHint(cefrLevel) {
+  // Use CEFR level instead of XP for more accurate difficulty
+  return getCEFRPromptHint(cefrLevel);
 }
 
 /* ---------------------------
@@ -229,12 +212,11 @@ const resolveSupportLang = (supportLang, appUILang) =>
 
 /* FILL — stream phases */
 function buildFillStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
   lessonContent = null,
 }) {
@@ -244,7 +226,7 @@ function buildFillStreamPrompt({
   const wantTranslation =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = difficultyHint(level, xp);
+  const diff = difficultyHint(cefrLevel);
 
   // If lesson content is provided, use specific grammar topic/focus
   const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
@@ -296,18 +278,17 @@ YES or NO
 
 /* MATCH — stream with explicit answer map */
 function buildMatchStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
-  const diff = difficultyHint(level, xp);
+  const diff = difficultyHint(cefrLevel);
 
   return [
     `Create ONE ${TARGET} GRAMMAR matching exercise using exactly ONE grammar family (coherent set). Difficulty: ${diff}.`,
@@ -349,12 +330,11 @@ function safeParseJsonLoose(txt = "") {
 }
 
 function buildMCStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
   lessonContent = null,
 }) {
@@ -364,7 +344,7 @@ function buildMCStreamPrompt({
   const wantTranslation =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = difficultyHint(level, xp);
+  const diff = difficultyHint(cefrLevel);
   const preferBlank = Math.random() < 0.6;
   const stemDirective = preferBlank
     ? `- Stem short (≤120 chars) and MUST include a blank "___" in the sentence.`
@@ -427,12 +407,11 @@ YES or NO
 }
 
 function buildMAStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
   lessonContent = null,
 }) {
@@ -442,7 +421,7 @@ function buildMAStreamPrompt({
   const wantTranslation =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = difficultyHint(level, xp);
+  const diff = difficultyHint(cefrLevel);
   const preferBlank = Math.random() < 0.6;
   const stemDirective = preferBlank
     ? `- Stem short (≤120 chars) and MUST include at least one blank "___".`
@@ -475,12 +454,11 @@ function buildMAStreamPrompt({
 }
 
 function buildSpeakGrammarStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
   lessonContent = null,
 }) {
@@ -490,7 +468,7 @@ function buildSpeakGrammarStreamPrompt({
   const wantTranslation =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = difficultyHint(level, xp);
+  const diff = difficultyHint(cefrLevel);
 
   // If lesson content is provided, use specific grammar topic/focus
   const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
@@ -596,6 +574,7 @@ function normalizeMap(map, len) {
 --------------------------- */
 export default function GrammarBook({
   userLanguage = "en",
+  lesson = null,
   lessonContent = null,
   isFinalQuiz = false,
   quizConfig = { questionsRequired: 10, passingScore: 8 },
@@ -604,6 +583,9 @@ export default function GrammarBook({
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+
+  // Extract CEFR level from lesson ID
+  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
 
   // Quiz mode state
   const [quizQuestionsAnswered, setQuizQuestionsAnswered] = useState(0);
@@ -1148,12 +1130,11 @@ export default function GrammarBook({
     setTranslation("");
 
     const prompt = buildFillStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });
@@ -1284,12 +1265,11 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
     setMcTranslation("");
 
     const prompt = buildMCStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });
@@ -1513,12 +1493,11 @@ Create ONE multiple-choice ${LANG_NAME(
     setMaTranslation("");
 
     const prompt = buildMAStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });
@@ -1695,12 +1674,11 @@ Create ONE multiple-answer ${LANG_NAME(
     setSEval(null);
 
     const prompt = buildSpeakGrammarStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });
@@ -1829,12 +1807,11 @@ Create ONE ${LANG_NAME(
     setMAnswerMap([]);
 
     const prompt = buildMatchStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
     });
 

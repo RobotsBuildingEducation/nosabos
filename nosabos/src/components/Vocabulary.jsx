@@ -59,6 +59,7 @@ import {
   fetchTTSBlob,
   resolveVoicePreference,
 } from "../utils/tts";
+import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -212,29 +213,11 @@ async function saveAttempt(npub, payload) {
 }
 
 /* ---------------------------
-   Difficulty routing — vocabulary
+   Difficulty routing — vocabulary (CEFR-based)
 --------------------------- */
-function vocabDifficulty(level, xp) {
-  const band = xp < 150 ? 0 : xp < 400 ? 1 : 2;
-  if (level === "beginner") {
-    return [
-      "High-frequency everyday words; concrete nouns; common verbs.",
-      "Common adjectives/adverbs; basic phrasal verbs; collocations.",
-      "Less common words; simple idioms; multi-word expressions.",
-    ][band];
-  }
-  if (level === "intermediate") {
-    return [
-      "Phrasal verbs & collocations; polysemy disambiguation.",
-      "Nuanced adjectives; precise verbs; common idioms.",
-      "Domain words (travel, health, work); figurative uses.",
-    ][band];
-  }
-  return [
-    "Low-frequency words; idioms; register differences.",
-    "Nuanced synonyms; connotation/usage constraints.",
-    "Collocational strength; subtle sense choices; near-synonyms.",
-  ][band];
+function vocabDifficulty(cefrLevel) {
+  // Use CEFR level instead of XP for more accurate difficulty
+  return getCEFRPromptHint(cefrLevel);
 }
 
 /* ---------------------------
@@ -258,12 +241,11 @@ const resolveSupportLang = (supportLang, appUILang) =>
    3) {"type":"done"}
 */
 function buildFillVocabStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
   lessonContent = null,
 }) {
@@ -273,7 +255,7 @@ function buildFillVocabStreamPrompt({
   const wantTR =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = vocabDifficulty(level, xp);
+  const diff = vocabDifficulty(cefrLevel);
 
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective =
@@ -310,12 +292,11 @@ function buildFillVocabStreamPrompt({
    4) {"type":"done"}
 */
 function buildMCVocabStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
   lessonContent = null,
 }) {
@@ -325,7 +306,7 @@ function buildMCVocabStreamPrompt({
   const wantTR =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = vocabDifficulty(level, xp);
+  const diff = vocabDifficulty(cefrLevel);
   const preferBlank = Math.random() < 0.6;
   const stemDirective = preferBlank
     ? `- Stem ≤120 chars and MUST contain a blank "___" inside a natural sentence.`
@@ -366,12 +347,11 @@ function buildMCVocabStreamPrompt({
    4) {"type":"done"}
 */
 function buildMAVocabStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
   lessonContent = null,
 }) {
@@ -381,7 +361,7 @@ function buildMAVocabStreamPrompt({
   const wantTR =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = vocabDifficulty(level, xp);
+  const diff = vocabDifficulty(cefrLevel);
   const preferBlank = Math.random() < 0.6;
   const stemDirective = preferBlank
     ? `- Stem ≤120 chars and MUST include at least one blank "___" within context.`
@@ -421,12 +401,11 @@ function buildMAVocabStreamPrompt({
    3) {"type":"done"}
 */
 function buildSpeakVocabStreamPrompt({
-  level,
+  cefrLevel,
   targetLang,
   supportLang,
   showTranslations,
   appUILang,
-  xp,
   recentGood,
   lessonContent = null,
 }) {
@@ -436,7 +415,7 @@ function buildSpeakVocabStreamPrompt({
   const wantTR =
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
-  const diff = vocabDifficulty(level, xp);
+  const diff = vocabDifficulty(cefrLevel);
   const allowTranslate =
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
 
@@ -487,15 +466,14 @@ function buildMatchVocabStreamPrompt({
   targetLang,
   supportLang,
   appUILang,
-  level,
-  xp,
+  cefrLevel,
   recentGood,
   lessonContent = null,
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
-  const diff = vocabDifficulty(level, xp);
+  const diff = vocabDifficulty(cefrLevel);
 
   // If lesson content is provided, use specific vocabulary/topic
   const topicDirective =
@@ -712,6 +690,7 @@ function norm(s) {
 --------------------------- */
 export default function Vocabulary({
   userLanguage = "en",
+  lesson = null,
   lessonContent = null,
   isFinalQuiz = false,
   quizConfig = { questionsRequired: 10, passingScore: 8 },
@@ -721,8 +700,12 @@ export default function Vocabulary({
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
+  // Extract CEFR level from lesson ID
+  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
+
   // Debug: Log lesson content to verify it's passed correctly
   console.log("[Vocabulary Component] lessonContent:", lessonContent);
+  console.log("[Vocabulary Component] CEFR Level:", cefrLevel);
   if (lessonContent?.words) {
     console.log("[Vocabulary Component] Specific words:", lessonContent.words);
   }
@@ -1348,12 +1331,11 @@ export default function Vocabulary({
     setTrFill("");
 
     const prompt = buildFillVocabStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });
@@ -1545,12 +1527,11 @@ Return EXACTLY:
     setTrMC("");
 
     const prompt = buildMCVocabStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });
@@ -1842,12 +1823,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     setTrMA("");
 
     const prompt = buildMAVocabStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });
@@ -2080,12 +2060,11 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     setSEval(null);
 
     const prompt = buildSpeakVocabStreamPrompt({
-      level,
+      cefrLevel,
       targetLang,
       supportLang,
       showTranslations,
       appUILang: userLanguage,
-      xp,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });
@@ -2328,8 +2307,7 @@ Return JSON ONLY:
       targetLang,
       supportLang,
       appUILang: userLanguage,
-      level,
-      xp,
+      cefrLevel,
       recentGood: recentCorrectRef.current,
       lessonContent,
     });

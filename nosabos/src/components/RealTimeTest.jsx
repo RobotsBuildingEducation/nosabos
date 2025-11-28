@@ -54,6 +54,7 @@ import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
+import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -467,6 +468,7 @@ export default function RealTimeTest({
   activeNpub = "",
   activeNsec = "",
   onSwitchedAccount,
+  lesson = null,
   lessonContent = null,
   onSkip = null,
 }) {
@@ -482,6 +484,9 @@ export default function RealTimeTest({
   // User id
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
+
+  // Extract CEFR level from lesson
+  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
 
   // Refs for realtime
   const audioRef = useRef(null); // remote stream sink
@@ -545,6 +550,7 @@ export default function RealTimeTest({
   const targetLangRef = useRef(targetLang);
   const pauseMsRef = useRef(pauseMs);
   const practicePronunciationRef = useRef(practicePronunciation);
+  const cefrLevelRef = useRef(cefrLevel);
 
   // hydrate refs on changes
   useEffect(() => {
@@ -568,6 +574,9 @@ export default function RealTimeTest({
   useEffect(() => {
     practicePronunciationRef.current = practicePronunciation;
   }, [practicePronunciation]);
+  useEffect(() => {
+    cefrLevelRef.current = cefrLevel;
+  }, [cefrLevel]);
 
   // ✅ helpRequest (global)
   const initialHelpRequest = (
@@ -1410,7 +1419,7 @@ Return ONLY JSON:
       (prefs?.helpRequest ?? helpRequestRef.current ?? "").slice(0, 240)
     );
     const tLang = prefs?.targetLang ?? targetLangRef.current;
-    const lvl = prefs?.level ?? levelRef.current;
+    const currentCefrLevel = cefrLevelRef.current;
     const pronOn = !!(
       prefs?.practicePronunciation ?? practicePronunciationRef.current
     );
@@ -1434,12 +1443,7 @@ Return ONLY JSON:
       strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
     }
 
-    const levelHint =
-      lvl === "beginner"
-        ? "Simple, clear language; friendly tone."
-        : lvl === "intermediate"
-        ? "Natural and concise language."
-        : "Native-like language; very brief replies.";
+    const levelHint = getCEFRPromptHint(currentCefrLevel);
 
     const focusLine = focus ? `Focus area: ${focus}.` : "";
     const pronLine = pronOn
