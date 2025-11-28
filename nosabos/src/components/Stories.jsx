@@ -342,6 +342,7 @@ export default function StoryMode({
   const [isSynthesizingSupport, setIsSynthesizingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
+  const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
 
   // accumulate this session, but award only at end
   const [sessionXp, setSessionXp] = useState(0);
@@ -587,6 +588,7 @@ export default function StoryMode({
       sessionAwardedRef.current = false;
       setShowFullStory(true);
       setHighlightedWordIndex(-1);
+      setLastSuccessInfo(null);
     } catch (error) {
       // Bilingual fallback (ES/EN) that respects target/support languages
       const fallback = {
@@ -1217,6 +1219,14 @@ export default function StoryMode({
 
   /* ----------------------------- Recording + strict scoring ----------------------------- */
   const currentSentence = storyData?.sentences?.[currentSentenceIndex];
+  const totalSentences = storyData?.sentences?.length || 0;
+  const isLastSentence = currentSentenceIndex >= totalSentences - 1;
+
+  const nextSentenceLabel =
+    t(uiLang, "stories_next_sentence") ||
+    (uiLang === "es" ? "Siguiente Oración" : "Next Sentence");
+  const finishLabel =
+    t(uiLang, "stories_finish") || (uiLang === "es" ? "Terminar" : "Finish");
 
   const startRecording = async () => {
     if (evalRef.current.inProgress) return;
@@ -1429,6 +1439,8 @@ export default function StoryMode({
         targetLabel: targetDisplayName,
       });
 
+      setLastSuccessInfo(null);
+
       toast({
         title: uiText.almost,
         description: tips.join(" "),
@@ -1472,11 +1484,10 @@ export default function StoryMode({
       xpAwarded: 0,
     }).catch(() => {});
 
-    toast({
-      title: uiText.wellDone,
-      description: `${uiText.score}: ${evalOut.score}%`,
-      status: "success",
-      duration: 2200,
+    setLastSuccessInfo({
+      score: evalOut.score,
+      recognizedText,
+      translation: currentSentence?.sup || "",
     });
 
     // Mark sentence as completed, wait for user to click "Next"
@@ -1492,6 +1503,7 @@ export default function StoryMode({
     if (!isLast) {
       setCurrentSentenceIndex((p) => p + 1);
       setSentenceCompleted(false);
+      setLastSuccessInfo(null);
     } else {
       const totalSentences = storyData?.sentences?.length || 0;
       const latestPassed = Math.min(totalSentences || passedCount + 1, passedCount + 1);
@@ -1503,6 +1515,7 @@ export default function StoryMode({
       setShowFullStory(true);
       setCurrentSentenceIndex(0);
       setSentenceCompleted(false);
+      setLastSuccessInfo(null);
     }
   };
 
@@ -1914,13 +1927,7 @@ export default function StoryMode({
                           _active={{ transform: "translateY(0)" }}
                           transition="all 0.2s ease"
                         >
-                          {currentSentenceIndex < storyData.sentences.length - 1
-                            ? uiLang === "es"
-                              ? "Siguiente Oración"
-                              : "Next Sentence"
-                            : uiLang === "es"
-                            ? "Terminar"
-                            : "Finish"}
+                          {isLastSentence ? finishLabel : nextSentenceLabel}
                         </Button>
                       ) : (
                         <Button
@@ -1973,6 +1980,26 @@ export default function StoryMode({
                         {uiText.listen}
                       </Button>
                     </HStack>
+                    {sentenceCompleted && lastSuccessInfo ? (
+                      <SpeakSuccessCard
+                        title={
+                          t(uiLang, "stories_sentence_success_title") ||
+                          uiText.wellDone
+                        }
+                        scoreLabel={
+                          typeof lastSuccessInfo.score === "number"
+                            ?
+                              t(uiLang, "stories_sentence_success_score", {
+                                score: lastSuccessInfo.score,
+                              }) || `${uiText.score}: ${lastSuccessInfo.score}%`
+                            : ""
+                        }
+                        recognizedText={lastSuccessInfo.recognizedText}
+                        translation={lastSuccessInfo.translation}
+                        t={t}
+                        userLanguage={uiLang}
+                      />
+                    ) : null}
                     {sessionComplete && sessionXp > 0 && sessionSummary.total > 0 ? (
                       <SpeakSuccessCard
                         title={
