@@ -227,14 +227,18 @@ function CelebrationOrb({
           sx={{
             [`@keyframes orbit${idx}`]: {
               "0%": {
-                transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(${size / 2}px) rotate(-${angle}deg)`,
+                transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(${
+                  size / 2
+                }px) rotate(-${angle}deg)`,
                 opacity: 0.4,
               },
               "50%": {
                 opacity: 1,
               },
               "100%": {
-                transform: `translate(-50%, -50%) rotate(${angle + 360}deg) translateX(${size / 2}px) rotate(-${angle - 360}deg)`,
+                transform: `translate(-50%, -50%) rotate(${
+                  angle + 360
+                }deg) translateX(${size / 2}px) rotate(-${angle - 360}deg)`,
                 opacity: 0.4,
               },
             },
@@ -2742,7 +2746,9 @@ export default function App() {
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {appLanguage === "es" ? "Progreso diario" : "Daily progress"}
+                    {appLanguage === "es"
+                      ? "Progreso diario"
+                      : "Daily progress"}
                   </Text>
                   <HStack spacing={6} justify="center" flexWrap="wrap">
                     <VStack spacing={1} minW="120px">
@@ -2751,14 +2757,6 @@ export default function App() {
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
                         {dailyGoalTarget || 0} XP
-                      </Text>
-                    </VStack>
-                    <VStack spacing={1} minW="120px">
-                      <Text fontSize="xs" opacity={0.8}>
-                        {appLanguage === "es" ? "XP de hoy" : "XP today"}
-                      </Text>
-                      <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
-                        {dailyXpToday || 0} XP
                       </Text>
                     </VStack>
                   </HStack>
@@ -2773,10 +2771,7 @@ export default function App() {
               <Button
                 size="lg"
                 width="100%"
-                bg="white"
-                color="teal.600"
-                _hover={{ bg: "gray.100" }}
-                _active={{ bg: "gray.200" }}
+                colorScheme="teal"
                 onClick={() => setCelebrateOpen(false)}
                 fontWeight="bold"
                 fontSize="lg"
