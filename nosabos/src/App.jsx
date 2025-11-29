@@ -2418,6 +2418,7 @@ export default function App() {
               userLanguage={appLanguage}
               activeNpub={activeNpub}
               activeNsec={activeNsec}
+              onExitQuiz={handleReturnToSkillTree}
             />
           </>
         );
@@ -2690,6 +2691,7 @@ export default function App() {
                             }
                           }
                           onSkip={switchToRandomLessonMode}
+                          onExitQuiz={handleReturnToSkillTree}
                         />
                       </TabPanel>
                     );

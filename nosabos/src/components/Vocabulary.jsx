@@ -695,6 +695,7 @@ export default function Vocabulary({
   isFinalQuiz = false,
   quizConfig = { questionsRequired: 10, passingScore: 8 },
   onSkip = null,
+  onExitQuiz = null,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -960,8 +961,7 @@ export default function Vocabulary({
   }
 
   // Quiz modal handlers
-  function handleRetryQuiz() {
-    // Reset all quiz state
+  function resetQuizState() {
     setQuizQuestionsAnswered(0);
     setQuizCorrectAnswers(0);
     setQuizCompleted(false);
@@ -973,6 +973,14 @@ export default function Vocabulary({
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
+    if (quizStorageKey && typeof window !== "undefined") {
+      localStorage.removeItem(quizStorageKey);
+    }
+  }
+
+  function handleRetryQuiz() {
+    // Reset all quiz state
+    resetQuizState();
     // Start a new question
     const runner = lockedType
       ? generatorFor(lockedType)
@@ -981,7 +989,12 @@ export default function Vocabulary({
   }
 
   function handleExitQuiz() {
-    // Navigate back to skill tree (this is handled by parent component)
+    resetQuizState();
+    if (onExitQuiz) {
+      onExitQuiz();
+      return;
+    }
+    // Navigate back to skill tree (fallback for legacy navigation)
     if (typeof window !== "undefined") {
       window.history.back();
     }
