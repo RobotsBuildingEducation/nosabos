@@ -2189,6 +2189,23 @@ export default function App() {
       const progressPayload = data?.progress || { totalXp: newXp };
       const newLessonLanguageXp = getLanguageXp(progressPayload, lessonLang);
 
+      // Keep global user store in sync with Firestore changes so all modules
+      // show the latest XP/progress immediately
+      const patch = {
+        xp: newXp,
+        progress: progressPayload,
+      };
+
+      if (typeof data?.streak === "number") patch.streak = data.streak;
+      if (typeof data?.dailyXp === "number") patch.dailyXp = data.dailyXp;
+      if (typeof data?.dailyGoalXp === "number")
+        patch.dailyGoalXp = data.dailyGoalXp;
+      if (data?.stats) patch.stats = data.stats;
+      if (data?.updatedAt) patch.updatedAt = data.updatedAt;
+      if (data?.appLanguage) patch.appLanguage = data.appLanguage;
+
+      patchUser?.(patch);
+
       if (prevXpRef.current == null) {
         prevXpRef.current = newXp;
         return;
@@ -2306,6 +2323,7 @@ export default function App() {
     hasSpendableBalance,
     sendOneSatToNpub,
     pickRandomFeature,
+    patchUser,
     user?.identity,
     maybePostNostrProgress,
     viewMode,
