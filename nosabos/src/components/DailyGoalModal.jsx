@@ -119,7 +119,7 @@ export default function DailyGoalModal({
     }
     try {
       const resetAt = new Date(Date.now() + MS_24H).toISOString();
-      await setDoc(
+      setDoc(
         doc(database, "users", npub),
         {
           dailyGoalXp: parsed,
