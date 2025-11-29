@@ -702,10 +702,13 @@ function TopBar({
             right={4}
           />
           <DrawerHeader pb={2} pr={12}>
-            {t.ra_settings_title || "Conversation settings"}
+            <Box maxW="600px" mx="auto" w="100%">
+              {t.ra_settings_title || "Conversation settings"}
+            </Box>
           </DrawerHeader>
           <DrawerBody pb={2}>
-            <VStack align="stretch" spacing={3}>
+            <Box maxW="600px" mx="auto" w="100%">
+              <VStack align="stretch" spacing={3}>
               <Wrap spacing={2}>
                 <Menu autoSelect={false} isLazy>
                   <MenuButton
@@ -971,8 +974,10 @@ function TopBar({
                 </Text>
               </Box>
             </VStack>
+            </Box>
           </DrawerBody>
           <DrawerFooter borderTop="1px solid" borderColor="gray.800">
+            <Box maxW="600px" mx="auto" w="100%">
             <HStack w="100%" justify="flex-end" spacing={3}>
               <Button variant="ghost" onClick={closeSettings}>
                 {t.app_close || "Close"}
@@ -981,6 +986,7 @@ function TopBar({
                 {appLanguage === "es" ? "Guardar" : "Save"}
               </Button>
             </HStack>
+            </Box>
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
