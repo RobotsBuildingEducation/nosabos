@@ -7,6 +7,7 @@ export async function awardXp(npub, amount, targetLang = "es") {
   const ref = doc(database, "users", npub);
   const delta = Math.max(1, Math.round(amount));
   const now = new Date();
+  let shouldCelebrateGoal = false;
 
   await runTransaction(database, async (tx) => {
     const snap = await tx.get(ref);
@@ -49,6 +50,7 @@ export async function awardXp(npub, amount, targetLang = "es") {
     // Celebrate once per day upon reaching goal
     const goal = data.dailyGoalXp || 0;
     const reached = goal > 0 && nextDaily >= goal && !data.dailyHasCelebrated;
+    if (reached) shouldCelebrateGoal = true;
 
     tx.set(
       ref,
@@ -66,8 +68,13 @@ export async function awardXp(npub, amount, targetLang = "es") {
     );
   });
 
-  // Optional UI ping
-  window.dispatchEvent(
-    new CustomEvent("xp:awarded", { detail: { amount: delta } })
-  );
+  // Optional UI pings
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent("xp:awarded", { detail: { amount: delta } })
+    );
+    if (shouldCelebrateGoal) {
+      window.dispatchEvent(new CustomEvent("daily:goalAchieved"));
+    }
+  }
 }
