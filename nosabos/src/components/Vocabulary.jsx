@@ -4271,16 +4271,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 )}
               </VStack>
             </Box>
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
-              }
-              onNext={handleNext}
-              nextLabel={nextLabel}
-            />
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
@@ -4485,6 +4475,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
             </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              onNext={handleNext}
+              nextLabel={nextLabel}
+            />
           </>
         ) : null}
       </VStack>
