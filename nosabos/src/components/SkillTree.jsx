@@ -11,7 +11,6 @@ import {
   Container,
   Heading,
   IconButton,
-  Tooltip,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -808,26 +807,12 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
     >
-      <Tooltip
-        label={
-          status === SKILL_STATUS.LOCKED
-            ? getTranslation(supportLang, "skill_tree_unlock_sequential")
-            : lessonDescription
-        }
-        placement="right"
-        hasArrow
-        bg="gray.700"
-        color="white"
-        fontSize="sm"
-        p={3}
-        borderRadius="lg"
-      >
-        <Box position="relative">
-          <VStack
-            spacing={2}
-            cursor={isClickable ? "pointer" : "not-allowed"}
-            onClick={isClickable ? onClick : undefined}
-          >
+      <Box position="relative">
+        <VStack
+          spacing={2}
+          cursor={isClickable ? "pointer" : "not-allowed"}
+          onClick={isClickable ? onClick : undefined}
+        >
             {/* Glow Effect for active lessons */}
             {status !== SKILL_STATUS.LOCKED && (
               <Box
@@ -1017,7 +1002,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
             </Text>
           </VStack>
         </Box>
-      </Tooltip>
     </MotionBox>
   );
 }
@@ -1037,6 +1021,13 @@ function UnitSection({
 }) {
   const bgColor = "gray.800";
   const borderColor = "gray.700";
+
+  // State for CEFR level modal
+  const {
+    isOpen: isCEFRModalOpen,
+    onOpen: onCEFRModalOpen,
+    onClose: onCEFRModalClose,
+  } = useDisclosure();
 
   // Responsive horizontal offset for zigzag pattern
   const zigzagOffset =
@@ -1140,38 +1131,31 @@ function UnitSection({
                 </Heading>
                 {/* CEFR Level Badge */}
                 {unit.cefrLevel && (
-                  <Tooltip
-                    hasArrow
-                    label={getTranslation(
-                      supportLang,
-                      CEFR_LEVEL_DESCRIPTION_KEYS[unit.cefrLevel] ||
-                        "skill_tree_cefr_default_desc",
-                      {}
-                    )}
-                    bg="gray.800"
-                    color="white"
-                    borderRadius="md"
+                  <Button
+                    size="xs"
                     px={3}
-                    py={2}
-                    boxShadow="lg"
+                    py={1}
+                    height="auto"
+                    borderRadius="md"
+                    fontWeight="bold"
+                    bg={unit.color}
+                    color="white"
+                    textShadow="0px 1px 1px black"
+                    boxShadow={"0px 0.5px 0.5px 1px darkgray"}
+                    _hover={{
+                      bg: unit.color,
+                      transform: "scale(1.05)",
+                      boxShadow: `0 0 15px ${unit.color}80, 0px 0.5px 0.5px 1px darkgray`,
+                    }}
+                    _active={{
+                      transform: "scale(0.98)",
+                    }}
+                    transition="all 0.2s"
+                    onClick={onCEFRModalOpen}
+                    cursor="pointer"
                   >
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      colorScheme={CEFR_LEVEL_COLORS[unit.cefrLevel] || "gray"}
-                      px={3}
-                      py={1}
-                      height="auto"
-                      borderRadius="md"
-                      fontWeight="bold"
-                      bg={unit.color}
-                      textShadow="0px 1px 1px black"
-                      _hover={{ bg: "whiteAlpha.200" }}
-                      boxShadow={"0px 0.5px 0.5px 1px darkgray"}
-                    >
-                      {unit.cefrLevel}
-                    </Button>
-                  </Tooltip>
+                    {unit.cefrLevel}
+                  </Button>
                 )}
               </HStack>
               <Text fontSize="sm" color="gray.300" ml={8}>
@@ -1477,6 +1461,15 @@ function UnitSection({
             </circle>
           </Box>
         )}
+
+        {/* CEFR Level Information Modal */}
+        <CEFRLevelModal
+          isOpen={isCEFRModalOpen}
+          onClose={onCEFRModalClose}
+          cefrLevel={unit.cefrLevel}
+          color={unit.color}
+          supportLang={supportLang}
+        />
       </VStack>
     </MotionBox>
   );
@@ -1705,6 +1698,132 @@ function LessonDetailModal({
             >
               {getTranslation(supportLang, "skill_tree_start_lesson")}
             </Button>
+          </VStack>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  );
+}
+
+/**
+ * CEFR Level Information Modal
+ * Shows detailed information about a CEFR proficiency level
+ */
+function CEFRLevelModal({ isOpen, onClose, cefrLevel, color, supportLang }) {
+  if (!cefrLevel) return null;
+
+  const levelDescription = getTranslation(
+    supportLang,
+    CEFR_LEVEL_DESCRIPTION_KEYS[cefrLevel] || "skill_tree_cefr_default_desc",
+    {}
+  );
+
+  const levelTitles = {
+    A1: supportLang === "es" ? "Principiante" : "Beginner",
+    A2: supportLang === "es" ? "Elemental" : "Elementary",
+    B1: supportLang === "es" ? "Intermedio" : "Intermediate",
+    B2: supportLang === "es" ? "Intermedio Alto" : "Upper Intermediate",
+    C1: supportLang === "es" ? "Avanzado" : "Advanced",
+    C2: supportLang === "es" ? "Maestría" : "Mastery",
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="lg" isCentered>
+      <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
+      <ModalContent
+        bg="gray.900"
+        color="gray.100"
+        borderRadius="2xl"
+        overflow="hidden"
+        boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${color}40`}
+        border="1px solid"
+        borderColor={`${color}30`}
+      >
+        {/* Decorative gradient background */}
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          h="200px"
+          bgGradient={`linear(135deg, ${color}20, transparent)`}
+          opacity={0.5}
+          pointerEvents="none"
+        />
+
+        <ModalHeader
+          borderBottomWidth="1px"
+          borderColor="whiteAlpha.200"
+          position="relative"
+          pt={6}
+          pb={4}
+        >
+          <HStack spacing={3}>
+            <Box
+              px={4}
+              py={2}
+              borderRadius="lg"
+              bg={color}
+              boxShadow={`0 0 20px ${color}60, 0 4px 12px rgba(0,0,0,0.3)`}
+            >
+              <Text
+                fontSize="2xl"
+                fontWeight="black"
+                color="white"
+                textShadow="0 2px 4px rgba(0,0,0,0.3)"
+              >
+                {cefrLevel}
+              </Text>
+            </Box>
+            <VStack align="start" spacing={0}>
+              <Text
+                fontSize="2xl"
+                fontWeight="bold"
+                bgGradient={`linear(to-r, white, gray.200)`}
+                bgClip="text"
+              >
+                {levelTitles[cefrLevel]}
+              </Text>
+              <Text fontSize="sm" color="gray.400">
+                CEFR {supportLang === "es" ? "Nivel" : "Level"}
+              </Text>
+            </VStack>
+          </HStack>
+        </ModalHeader>
+        <ModalCloseButton
+          color="gray.400"
+          _hover={{ color: "white", bg: "whiteAlpha.200" }}
+          borderRadius="lg"
+          top={4}
+          right={4}
+        />
+        <ModalBody pb={6} pt={6} position="relative">
+          <VStack align="stretch" spacing={4}>
+            <Box
+              bg="whiteAlpha.50"
+              p={5}
+              borderRadius="xl"
+              border="1px solid"
+              borderColor="whiteAlpha.100"
+            >
+              <Text color="gray.200" fontSize="md" lineHeight="tall">
+                {levelDescription}
+              </Text>
+            </Box>
+
+            <Box
+              p={4}
+              borderRadius="xl"
+              bgGradient={`linear(135deg, ${color}15, ${color}05)`}
+              border="1px solid"
+              borderColor={`${color}30`}
+            >
+              <Text fontSize="sm" color="gray.300" fontStyle="italic">
+                {supportLang === "es"
+                  ? "El Marco Común Europeo de Referencia (CEFR) es un estándar internacional para describir la competencia lingüística."
+                  : "The Common European Framework of Reference (CEFR) is an international standard for describing language proficiency."}
+              </Text>
+            </Box>
           </VStack>
         </ModalBody>
       </ModalContent>
