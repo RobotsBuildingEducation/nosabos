@@ -168,6 +168,122 @@ function parseCefrResponse(raw = "") {
   }
 }
 
+function CelebrationOrb({
+  size = 120,
+  accentGradient = "linear(135deg, yellow.300, yellow.400, orange.400)",
+  particleColor = "yellow.200",
+  icon = "★",
+}) {
+  return (
+    <Box position="relative" w={`${size}px`} h={`${size}px`}>
+      <Box
+        position="absolute"
+        top="50%"
+        left="50%"
+        transform="translate(-50%, -50%)"
+        w={`${(size / 3) * 2}px`}
+        h={`${(size / 3) * 2}px`}
+        borderRadius="full"
+        bgGradient={accentGradient}
+        boxShadow="0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        animation="pulse 2s ease-in-out infinite"
+        sx={{
+          "@keyframes pulse": {
+            "0%, 100%": {
+              transform: "translate(-50%, -50%) scale(1)",
+              boxShadow:
+                "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)",
+            },
+            "50%": {
+              transform: "translate(-50%, -50%) scale(1.1)",
+              boxShadow:
+                "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)",
+            },
+          },
+        }}
+      >
+        <Box
+          fontSize="3xl"
+          color="white"
+          fontWeight="black"
+          textShadow="0 2px 4px rgba(0,0,0,0.3)"
+        >
+          {icon}
+        </Box>
+      </Box>
+
+      {[0, 60, 120, 180, 240, 300].map((angle, idx) => (
+        <Box
+          key={idx}
+          position="absolute"
+          top="50%"
+          left="50%"
+          w="12px"
+          h="12px"
+          animation={`orbit${idx} 3s linear infinite`}
+          sx={{
+            [`@keyframes orbit${idx}`]: {
+              "0%": {
+                transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(${size / 2}px) rotate(-${angle}deg)`,
+                opacity: 0.4,
+              },
+              "50%": {
+                opacity: 1,
+              },
+              "100%": {
+                transform: `translate(-50%, -50%) rotate(${angle + 360}deg) translateX(${size / 2}px) rotate(-${angle - 360}deg)`,
+                opacity: 0.4,
+              },
+            },
+          }}
+        >
+          <Box
+            w="100%"
+            h="100%"
+            bgGradient="linear(to-br, yellow.200, yellow.400)"
+            borderRadius="full"
+            boxShadow="0 0 10px rgba(251, 191, 36, 0.8)"
+          />
+        </Box>
+      ))}
+
+      {[...Array(8)].map((_, i) => (
+        <Box
+          key={`particle-${i}`}
+          position="absolute"
+          top="50%"
+          left="50%"
+          w="6px"
+          h="6px"
+          borderRadius="full"
+          bg={particleColor}
+          opacity={0.8}
+          animation={`float${i} ${2 + i * 0.3}s ease-in-out infinite`}
+          sx={{
+            [`@keyframes float${i}`]: {
+              "0%, 100%": {
+                transform: `translate(-50%, -50%) translate(${
+                  Math.cos((i * 45 * Math.PI) / 180) * (size / 4)
+                }px, ${Math.sin((i * 45 * Math.PI) / 180) * (size / 4)}px)`,
+                opacity: 0,
+              },
+              "50%": {
+                transform: `translate(-50%, -50%) translate(${
+                  Math.cos((i * 45 * Math.PI) / 180) * (size / 2)
+                }px, ${Math.sin((i * 45 * Math.PI) / 180) * (size / 2)}px)`,
+                opacity: 0.8,
+              },
+            },
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
 async function ensureOnboardingField(db, id, data) {
   const hasNested = data?.onboarding && typeof data.onboarding === "object";
   const hasCompleted =
@@ -2580,36 +2696,96 @@ export default function App() {
         isOpen={celebrateOpen}
         onClose={() => setCelebrateOpen(false)}
         isCentered
+        size="lg"
       >
-        <ModalOverlay />
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
         <ModalContent
-          bg="gray.900"
-          color="gray.100"
-          maxH="100vh"
-          sx={{
-            "@supports (height: 100dvh)": {
-              maxHeight: "100dvh",
-            },
-          }}
+          bg="linear-gradient(135deg, #0ea5e9 0%, #22c55e 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          maxW={{ base: "90%", sm: "md" }}
         >
-          <ModalHeader pr={12}>
-            {appLanguage === "es"
-              ? "¡Meta diaria lograda!"
-              : "Daily goal reached!"}
-          </ModalHeader>
-          <ModalCloseButton top={4} right={4} />
-          <ModalBody>
-            <Text>
-              {appLanguage === "es"
-                ? "¡Buen trabajo! Has alcanzado tu objetivo de XP de hoy."
-                : "Great job! You reached today’s XP target."}
-            </Text>
+          <ModalBody py={12} px={8}>
+            <VStack spacing={6} textAlign="center">
+              <CelebrationOrb
+                accentGradient="linear(135deg, teal.200, teal.400, green.400)"
+                particleColor="teal.100"
+              />
+
+              <VStack spacing={2}>
+                <Text fontSize="3xl" fontWeight="bold">
+                  {appLanguage === "es"
+                    ? "¡Meta diaria alcanzada!"
+                    : "Daily Goal Complete!"}
+                </Text>
+                <Text fontSize="lg" opacity={0.9}>
+                  {appLanguage === "es"
+                    ? "Alcanzaste tu objetivo de XP de hoy."
+                    : "You hit today’s XP target."}
+                </Text>
+              </VStack>
+
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="xl"
+                py={6}
+                px={8}
+                width="100%"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+              >
+                <VStack spacing={3}>
+                  <Text
+                    fontSize="sm"
+                    textTransform="uppercase"
+                    letterSpacing="wide"
+                    opacity={0.8}
+                  >
+                    {appLanguage === "es" ? "Progreso diario" : "Daily progress"}
+                  </Text>
+                  <HStack spacing={6} justify="center" flexWrap="wrap">
+                    <VStack spacing={1} minW="120px">
+                      <Text fontSize="xs" opacity={0.8}>
+                        {appLanguage === "es" ? "Meta" : "Goal"}
+                      </Text>
+                      <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
+                        {dailyGoalTarget || 0} XP
+                      </Text>
+                    </VStack>
+                    <VStack spacing={1} minW="120px">
+                      <Text fontSize="xs" opacity={0.8}>
+                        {appLanguage === "es" ? "XP de hoy" : "XP today"}
+                      </Text>
+                      <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
+                        {dailyXpToday || 0} XP
+                      </Text>
+                    </VStack>
+                  </HStack>
+                  <Text fontSize="sm" opacity={0.85}>
+                    {appLanguage === "es"
+                      ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
+                      : "Keep the streak going and come back tomorrow for a new goal!"}
+                  </Text>
+                </VStack>
+              </Box>
+
+              <Button
+                size="lg"
+                width="100%"
+                bg="white"
+                color="teal.600"
+                _hover={{ bg: "gray.100" }}
+                _active={{ bg: "gray.200" }}
+                onClick={() => setCelebrateOpen(false)}
+                fontWeight="bold"
+                fontSize="lg"
+                py={6}
+              >
+                {appLanguage === "es" ? "Seguir practicando" : "Keep learning"}
+              </Button>
+            </VStack>
           </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="teal" onClick={() => setCelebrateOpen(false)}>
-              {appLanguage === "es" ? "Seguir" : "Keep going"}
-            </Button>
-          </ModalFooter>
         </ModalContent>
       </Modal>
 
@@ -2630,118 +2806,7 @@ export default function App() {
         >
           <ModalBody py={12} px={8}>
             <VStack spacing={6} textAlign="center">
-              {/* Celebration Icon */}
-              <Box position="relative" w="120px" h="120px">
-                {/* Central Trophy/Star */}
-                <Box
-                  position="absolute"
-                  top="50%"
-                  left="50%"
-                  transform="translate(-50%, -50%)"
-                  w="80px"
-                  h="80px"
-                  borderRadius="full"
-                  bgGradient="linear(135deg, yellow.300, yellow.400, orange.400)"
-                  boxShadow="0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  animation="pulse 2s ease-in-out infinite"
-                  sx={{
-                    "@keyframes pulse": {
-                      "0%, 100%": {
-                        transform: "translate(-50%, -50%) scale(1)",
-                        boxShadow:
-                          "0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.4)",
-                      },
-                      "50%": {
-                        transform: "translate(-50%, -50%) scale(1.1)",
-                        boxShadow:
-                          "0 0 60px rgba(251, 191, 36, 0.8), 0 0 120px rgba(251, 191, 36, 0.6)",
-                      },
-                    },
-                  }}
-                >
-                  <Box
-                    fontSize="3xl"
-                    color="white"
-                    fontWeight="black"
-                    textShadow="0 2px 4px rgba(0,0,0,0.3)"
-                  >
-                    ★
-                  </Box>
-                </Box>
-
-                {/* Orbiting sparkles */}
-                {[0, 60, 120, 180, 240, 300].map((angle, idx) => (
-                  <Box
-                    key={idx}
-                    position="absolute"
-                    top="50%"
-                    left="50%"
-                    w="12px"
-                    h="12px"
-                    animation={`orbit${idx} 3s linear infinite`}
-                    sx={{
-                      [`@keyframes orbit${idx}`]: {
-                        "0%": {
-                          transform: `translate(-50%, -50%) rotate(${angle}deg) translateX(50px) rotate(-${angle}deg)`,
-                          opacity: 0.4,
-                        },
-                        "50%": {
-                          opacity: 1,
-                        },
-                        "100%": {
-                          transform: `translate(-50%, -50%) rotate(${
-                            angle + 360
-                          }deg) translateX(50px) rotate(-${angle - 360}deg)`,
-                          opacity: 0.4,
-                        },
-                      },
-                    }}
-                  >
-                    <Box
-                      w="100%"
-                      h="100%"
-                      bgGradient="linear(to-br, yellow.200, yellow.400)"
-                      borderRadius="full"
-                      boxShadow="0 0 10px rgba(251, 191, 36, 0.8)"
-                    />
-                  </Box>
-                ))}
-
-                {/* Floating particles */}
-                {[...Array(8)].map((_, i) => (
-                  <Box
-                    key={`particle-${i}`}
-                    position="absolute"
-                    top="50%"
-                    left="50%"
-                    w="6px"
-                    h="6px"
-                    borderRadius="full"
-                    bg="white"
-                    opacity={0.8}
-                    animation={`float${i} ${2 + i * 0.3}s ease-in-out infinite`}
-                    sx={{
-                      [`@keyframes float${i}`]: {
-                        "0%, 100%": {
-                          transform: `translate(-50%, -50%) translate(${
-                            Math.cos((i * 45 * Math.PI) / 180) * 30
-                          }px, ${Math.sin((i * 45 * Math.PI) / 180) * 30}px)`,
-                          opacity: 0,
-                        },
-                        "50%": {
-                          transform: `translate(-50%, -50%) translate(${
-                            Math.cos((i * 45 * Math.PI) / 180) * 60
-                          }px, ${Math.sin((i * 45 * Math.PI) / 180) * 60}px)`,
-                          opacity: 0.8,
-                        },
-                      },
-                    }}
-                  />
-                ))}
-              </Box>
+              <CelebrationOrb />
 
               {/* Title */}
               <VStack spacing={2}>
