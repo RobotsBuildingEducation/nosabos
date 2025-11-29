@@ -1087,17 +1087,20 @@ YES or NO
       setCorrectAnswers((prev) => prev + 1);
     }
 
-    if (questionsAnswered + 1 >= TOTAL_QUESTIONS) {
+    // Stop speech recording if active
+    if (isListening && typeof stopListening === 'function') {
+      stopListening();
+    }
+  }
+
+  function handleNext() {
+    if (questionsAnswered >= TOTAL_QUESTIONS) {
       // Quiz complete
-      setTimeout(() => {
-        setShowResults(true);
-      }, 1500);
+      setShowResults(true);
     } else {
       // Next question
-      setTimeout(() => {
-        setLastOk(null);
-        generateRandom();
-      }, 1500);
+      setLastOk(null);
+      generateRandom();
     }
   }
 
@@ -1508,6 +1511,25 @@ YES or NO
               }
             >
               {userLanguage === "es" ? "Enviar Respuesta" : "Submit Answer"}
+            </Button>
+          )}
+
+          {/* Next Button - appears after answering */}
+          {lastOk !== null && !isLoading && (
+            <Button
+              colorScheme="blue"
+              size="lg"
+              w="full"
+              mt={6}
+              onClick={handleNext}
+            >
+              {questionsAnswered >= TOTAL_QUESTIONS
+                ? userLanguage === "es"
+                  ? "Ver Resultados"
+                  : "View Results"
+                : userLanguage === "es"
+                ? "Siguiente Pregunta"
+                : "Next Question"}
             </Button>
           )}
         </Box>
