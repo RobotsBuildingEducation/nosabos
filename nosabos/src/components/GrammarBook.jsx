@@ -4048,7 +4048,7 @@ Return JSON ONLY:
                 nextAction
               }
               onNext={handleNext}
-              nextLabel={nextLabel}
+              nextLabel={nextQuestionLabel}
             />
           </>
         ) : null}
