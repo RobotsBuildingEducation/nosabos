@@ -1606,15 +1606,19 @@ function LessonDetailModal({
               </Flex>
             </Box>
 
-            {/* XP Goal */}
+            {/* XP Goal / Passing Score */}
             <Box
               p={5}
               borderRadius="xl"
               position="relative"
               overflow="hidden"
               border="1px solid"
-              borderColor="yellow.600"
-              boxShadow="0 4px 12px rgba(251, 191, 36, 0.2)"
+              borderColor={lesson.isFinalQuiz ? "purple.600" : "yellow.600"}
+              boxShadow={
+                lesson.isFinalQuiz
+                  ? "0 4px 12px rgba(159, 122, 234, 0.2)"
+                  : "0 4px 12px rgba(251, 191, 36, 0.2)"
+              }
             >
               <Box
                 position="absolute"
@@ -1630,13 +1634,29 @@ function LessonDetailModal({
                   <Box
                     p={2}
                     borderRadius="lg"
-                    bgGradient="linear(135deg, yellow.400, orange.400)"
-                    boxShadow="0 2px 10px rgba(251, 191, 36, 0.4)"
+                    bgGradient={
+                      lesson.isFinalQuiz
+                        ? "linear(135deg, purple.400, purple.600)"
+                        : "linear(135deg, yellow.400, orange.400)"
+                    }
+                    boxShadow={
+                      lesson.isFinalQuiz
+                        ? "0 2px 10px rgba(159, 122, 234, 0.4)"
+                        : "0 2px 10px rgba(251, 191, 36, 0.4)"
+                    }
                   >
-                    <RiStarFill color="white" size={24} />
+                    {lesson.isFinalQuiz ? (
+                      <RiTrophyLine color="white" size={24} />
+                    ) : (
+                      <RiStarFill color="white" size={24} />
+                    )}
                   </Box>
                   <Text fontWeight="bold" color="white" fontSize="md">
-                    {getTranslation(supportLang, "skill_tree_xp_reward")}
+                    {lesson.isFinalQuiz
+                      ? supportLang === "es"
+                        ? "Puntuación Requerida"
+                        : "Passing Score"
+                      : getTranslation(supportLang, "skill_tree_xp_reward")}
                   </Text>
                 </HStack>
                 <Badge
@@ -1648,7 +1668,13 @@ function LessonDetailModal({
                   borderRadius="full"
                   fontWeight="black"
                 >
-                  +{lesson.xpReward} XP
+                  {lesson.isFinalQuiz
+                    ? `${Math.round(
+                        (lesson.quizConfig?.passingScore /
+                          lesson.quizConfig?.questionsRequired) *
+                          100
+                      )}%`
+                    : `+${lesson.xpReward} XP`}
                 </Badge>
               </HStack>
             </Box>

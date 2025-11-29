@@ -130,8 +130,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -244,8 +244,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -358,8 +358,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -472,8 +472,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -586,8 +586,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -700,8 +700,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -814,8 +814,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -928,8 +928,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1042,8 +1042,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1156,8 +1156,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1270,8 +1270,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1384,8 +1384,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1498,8 +1498,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1612,8 +1612,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1726,8 +1726,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1840,8 +1840,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -1954,8 +1954,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2068,8 +2068,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2182,8 +2182,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2300,8 +2300,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2414,8 +2414,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2528,8 +2528,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2642,8 +2642,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2756,8 +2756,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2870,8 +2870,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -2984,8 +2984,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -3098,8 +3098,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -3212,8 +3212,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -3326,8 +3326,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -3440,8 +3440,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -3556,8 +3556,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -3670,8 +3670,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -3784,8 +3784,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -3898,8 +3898,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -4012,8 +4012,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -4126,8 +4126,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
@@ -4242,8 +4242,8 @@ const baseLearningPath = {
           modes: ["vocabulary", "grammar"],
           isFinalQuiz: true,
           quizConfig: {
-            questionsRequired: 8,
-            passingScore: 6,
+            questionsRequired: 10,
+            passingScore: 8,
           },
           content: {
             vocabulary: {
