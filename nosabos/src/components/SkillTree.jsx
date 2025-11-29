@@ -1129,12 +1129,6 @@ function UnitSection({
                   bg={unit.color}
                   boxShadow={`0 0 20px ${unit.color}80`}
                   animation="pulse 3s ease-in-out infinite"
-                  sx={{
-                    "@keyframes pulse": {
-                      "0%, 100%": { boxShadow: `0 0 20px ${unit.color}80` },
-                      "50%": { boxShadow: `0 0 30px ${unit.color}cc` },
-                    },
-                  }}
                 />
                 <Heading
                   size="md"
@@ -1300,14 +1294,17 @@ function UnitSection({
                   isPreviousLessonCompleted = true;
                 } else if (previousUnit) {
                   // First lesson of subsequent units - check if last lesson of previous unit is completed
-                  const previousUnitLastLesson = previousUnit.lessons[previousUnit.lessons.length - 1];
+                  const previousUnitLastLesson =
+                    previousUnit.lessons[previousUnit.lessons.length - 1];
                   isPreviousLessonCompleted =
-                    userProgress.lessons?.[previousUnitLastLesson.id]?.status === SKILL_STATUS.COMPLETED;
+                    userProgress.lessons?.[previousUnitLastLesson.id]
+                      ?.status === SKILL_STATUS.COMPLETED;
                 }
               } else {
                 // Not the first lesson - check if previous lesson in same unit is completed
                 isPreviousLessonCompleted =
-                  userProgress.lessons?.[unit.lessons[lessonIndex - 1].id]?.status === SKILL_STATUS.COMPLETED;
+                  userProgress.lessons?.[unit.lessons[lessonIndex - 1].id]
+                    ?.status === SKILL_STATUS.COMPLETED;
               }
 
               if (isTestUnlocked || isPreviousLessonCompleted) {

@@ -229,12 +229,23 @@ function buildFillStreamPrompt({
   const diff = difficultyHint(cefrLevel);
 
   // If lesson content is provided, use specific grammar topic/focus
-  const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.` : null,
-        lessonContent.focusPoints ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}. These are mandatory lesson objectives.` : null,
-      ].filter(Boolean).join('\n')
-    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.topic || lessonContent?.focusPoints
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints
+              )}. These are mandatory lesson objectives.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Create ONE short ${TARGET} grammar fill-in-the-blank with a single blank "___". Difficulty: ${diff}`,
@@ -351,12 +362,23 @@ function buildMCStreamPrompt({
     : `- Stem short (≤120 chars); may include a blank "___" or pose a concise grammar question.`;
 
   // If lesson content is provided, use specific grammar topic/focus
-  const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.` : null,
-        lessonContent.focusPoints ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}. These are mandatory lesson objectives.` : null,
-      ].filter(Boolean).join('\n')
-    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.topic || lessonContent?.focusPoints
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints
+              )}. These are mandatory lesson objectives.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${diff}`,
@@ -428,12 +450,23 @@ function buildMAStreamPrompt({
     : `- Stem short (≤120 chars), may include "___".`;
 
   // If lesson content is provided, use specific grammar topic/focus
-  const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.` : null,
-        lessonContent.focusPoints ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}. These are mandatory lesson objectives.` : null,
-      ].filter(Boolean).join('\n')
-    : `- Consider learner recent corrects: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.topic || lessonContent?.focusPoints
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints
+              )}. These are mandatory lesson objectives.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider learner recent corrects: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
@@ -471,12 +504,23 @@ function buildSpeakGrammarStreamPrompt({
   const diff = difficultyHint(cefrLevel);
 
   // If lesson content is provided, use specific grammar topic/focus
-  const topicDirective = lessonContent?.topic || lessonContent?.focusPoints
-    ? [
-        lessonContent.topic ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.` : null,
-        lessonContent.focusPoints ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(lessonContent.focusPoints)}. These are mandatory lesson objectives.` : null,
-      ].filter(Boolean).join('\n')
-    : `- Consider recent grammar successes: ${JSON.stringify(recentGood.slice(-3))}`;
+  const topicDirective =
+    lessonContent?.topic || lessonContent?.focusPoints
+      ? [
+          lessonContent.topic
+            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+            : null,
+          lessonContent.focusPoints
+            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+                lessonContent.focusPoints
+              )}. These are mandatory lesson objectives.`
+            : null,
+        ]
+          .filter(Boolean)
+          .join("\n")
+      : `- Consider recent grammar successes: ${JSON.stringify(
+          recentGood.slice(-3)
+        )}`;
 
   return [
     `Craft ONE short ${TARGET} sentence (≤8 words) that showcases a grammar feature. Difficulty: ${diff}`,
@@ -578,7 +622,7 @@ export default function GrammarBook({
   lessonContent = null,
   isFinalQuiz = false,
   quizConfig = { questionsRequired: 10, passingScore: 8 },
-  onSkip = null
+  onSkip = null,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -2426,7 +2470,12 @@ Return JSON ONLY:
             <Box>
               <Text fontWeight="semibold">{label}</Text>
               <Text fontSize="sm" color="whiteAlpha.800">
-                {xp > 0 ? `+${xp} XP 🎉` : ok ? (t("practice_next_ready") || "Great work! Keep the streak going.") : t("practice_try_again_hint") || "Review and try again."}
+                {xp > 0
+                  ? `+${xp} XP`
+                  : ok
+                  ? t("practice_next_ready") ||
+                    "Great work! Keep the streak going."
+                  : t("practice_try_again_hint") || "Review and try again."}
               </Text>
             </Box>
           </HStack>
@@ -2459,8 +2508,7 @@ Return JSON ONLY:
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
   const speakVariantLabel =
     t("grammar_btn_speak") || (userLanguage === "es" ? "Pronunciar" : "Speak");
-  const nextQuestionLabel =
-    t("practice_next_question") || "Next question";
+  const nextQuestionLabel = t("practice_next_question") || "Next question";
   const synthLabel =
     t("tts_synthesizing") ||
     (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
@@ -2766,11 +2814,11 @@ Return JSON ONLY:
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
           <VStack align="stretch" spacing={4}>
-              <Box
-                bg="rgba(255, 255, 255, 0.02)"
-                borderRadius="lg"
-                borderWidth="1px"
-                borderColor="whiteAlpha.100"
+            <Box
+              bg="rgba(255, 255, 255, 0.02)"
+              borderRadius="lg"
+              borderWidth="1px"
+              borderColor="whiteAlpha.100"
               p={5}
             >
               <VStack align="stretch" spacing={3}>
@@ -2780,7 +2828,12 @@ Return JSON ONLY:
                     h={hint}
                     tr={showTRFill ? translation : ""}
                   />
-                  <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                  <Text
+                    fontSize="lg"
+                    fontWeight="medium"
+                    flex="1"
+                    lineHeight="tall"
+                  >
                     {question || (loadingQ ? "…" : "")}
                   </Text>
                 </HStack>
@@ -2809,9 +2862,9 @@ Return JSON ONLY:
                       💡 {hint}
                     </Text>
                   </Box>
-                  ) : null}
-                </VStack>
-              </Box>
+                ) : null}
+              </VStack>
+            </Box>
 
             <Input
               value={input}
@@ -2875,7 +2928,12 @@ Return JSON ONLY:
                           h={mcHint}
                           tr={showTRMC ? mcTranslation : ""}
                         />
-                        <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                        <Text
+                          fontSize="lg"
+                          fontWeight="medium"
+                          flex="1"
+                          lineHeight="tall"
+                        >
                           {renderMcPrompt() || (loadingMCQ ? "…" : "")}
                         </Text>
                       </HStack>
@@ -2910,12 +2968,12 @@ Return JSON ONLY:
                           (userLanguage === "es"
                             ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
                             : "Drag or select the correct answer into the blank in the sentence.")}
-                    </Text>
-                  </VStack>
-                </Box>
-                <Droppable droppableId="mc-bank" direction="horizontal">
-                  {(provided) => (
-                    <Flex
+                      </Text>
+                    </VStack>
+                  </Box>
+                  <Droppable droppableId="mc-bank" direction="horizontal">
+                    {(provided) => (
+                      <Flex
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         align="stretch"
@@ -2991,7 +3049,12 @@ Return JSON ONLY:
                         h={mcHint}
                         tr={showTRMC ? mcTranslation : ""}
                       />
-                      <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                      <Text
+                        fontSize="lg"
+                        fontWeight="medium"
+                        flex="1"
+                        lineHeight="tall"
+                      >
                         {mcQ || (loadingMCQ ? "…" : "")}
                       </Text>
                     </HStack>
@@ -3008,24 +3071,24 @@ Return JSON ONLY:
                         </Text>
                       </Box>
                     ) : null}
-                  {mcHint ? (
-                    <Box
-                      pl={7}
-                      py={2}
-                      borderLeftWidth="3px"
-                      borderLeftColor="cyan.500"
-                      bg="rgba(0, 206, 209, 0.05)"
-                    >
-                      <Text fontSize="sm" color="gray.400">
-                        💡 {mcHint}
-                      </Text>
-                    </Box>
-                  ) : null}
-                </VStack>
-              </Box>
-              <Stack spacing={3} align="stretch">
-                {(mcChoices.length
-                  ? mcChoices
+                    {mcHint ? (
+                      <Box
+                        pl={7}
+                        py={2}
+                        borderLeftWidth="3px"
+                        borderLeftColor="cyan.500"
+                        bg="rgba(0, 206, 209, 0.05)"
+                      >
+                        <Text fontSize="sm" color="gray.400">
+                          💡 {mcHint}
+                        </Text>
+                      </Box>
+                    ) : null}
+                  </VStack>
+                </Box>
+                <Stack spacing={3} align="stretch">
+                  {(mcChoices.length
+                    ? mcChoices
                     : loadingMCQ
                     ? ["…", "…", "…", "…"]
                     : []
@@ -3152,7 +3215,12 @@ Return JSON ONLY:
                           h={maHint}
                           tr={showTRMA ? maTranslation : ""}
                         />
-                        <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                        <Text
+                          fontSize="lg"
+                          fontWeight="medium"
+                          flex="1"
+                          lineHeight="tall"
+                        >
                           {renderMaPrompt() || (loadingMAQ ? "…" : "")}
                         </Text>
                       </HStack>
@@ -3182,20 +3250,24 @@ Return JSON ONLY:
                           </Text>
                         </Box>
                       ) : null}
-                      <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+                      <Text
+                        fontSize="xs"
+                        color="gray.500"
+                        fontWeight="semibold"
+                      >
                         {t("grammar_select_all_apply")}
                       </Text>
                       <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                    {t("practice_drag_drop_multi_instruction") ||
-                      (userLanguage === "es"
-                        ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
-                        : "Drag or select each correct answer into its place in the sentence.")}
-                  </Text>
-                </VStack>
-              </Box>
-              <Droppable droppableId="ma-bank" direction="horizontal">
-                {(provided) => (
-                  <Flex
+                        {t("practice_drag_drop_multi_instruction") ||
+                          (userLanguage === "es"
+                            ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
+                            : "Drag or select each correct answer into its place in the sentence.")}
+                      </Text>
+                    </VStack>
+                  </Box>
+                  <Droppable droppableId="ma-bank" direction="horizontal">
+                    {(provided) => (
+                      <Flex
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         align="stretch"
@@ -3271,7 +3343,12 @@ Return JSON ONLY:
                         h={maHint}
                         tr={showTRMA ? maTranslation : ""}
                       />
-                      <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                      <Text
+                        fontSize="lg"
+                        fontWeight="medium"
+                        flex="1"
+                        lineHeight="tall"
+                      >
                         {maQ || (loadingMAQ ? "…" : "")}
                       </Text>
                     </HStack>
@@ -3301,14 +3378,14 @@ Return JSON ONLY:
                         </Text>
                       </Box>
                     ) : null}
-                  <Text fontSize="xs" color="gray.500" fontWeight="semibold">
-                    {t("grammar_select_all_apply")}
-                  </Text>
-                </VStack>
-              </Box>
-              <Stack spacing={3} align="stretch">
-                {(maChoices.length
-                  ? maChoices
+                    <Text fontSize="xs" color="gray.500" fontWeight="semibold">
+                      {t("grammar_select_all_apply")}
+                    </Text>
+                  </VStack>
+                </Box>
+                <Stack spacing={3} align="stretch">
+                  {(maChoices.length
+                    ? maChoices
                     : loadingMAQ
                     ? ["…", "…", "…", "…", "…"]
                     : []
@@ -3434,7 +3511,9 @@ Return JSON ONLY:
               <Box textAlign="center" py={12}>
                 <RobotBuddyPro palette="ocean" variant="abstract" />
                 <Text mt={4} fontSize="sm" opacity={0.7}>
-                  {userLanguage === "es" ? "Generando pregunta..." : "Generating question..."}
+                  {userLanguage === "es"
+                    ? "Generando pregunta..."
+                    : "Generating question..."}
                 </Text>
               </Box>
             ) : (
@@ -3462,7 +3541,11 @@ Return JSON ONLY:
                               : "Say the sentence aloud to practice the grammar point.")}
                         </Text>
                         {sPrompt && (
-                          <Text fontSize="lg" fontWeight="medium" lineHeight="tall">
+                          <Text
+                            fontSize="lg"
+                            fontWeight="medium"
+                            lineHeight="tall"
+                          >
                             {sPrompt}
                           </Text>
                         )}
@@ -3494,7 +3577,8 @@ Return JSON ONLY:
                       isLoading={isSpeakSynthesizing}
                       spinnerPlacement="start"
                     >
-                      {t("practice_play") || (userLanguage === "es" ? "Reproducir" : "Play")}
+                      {t("practice_play") ||
+                        (userLanguage === "es" ? "Reproducir" : "Play")}
                     </Button>
                   </Tooltip>
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
@@ -3504,7 +3588,12 @@ Return JSON ONLY:
                     {sTarget || "…"}
                   </Text>
                   {isSpeakSynthesizing ? (
-                    <HStack spacing={2} justify="center" mt={3} color="gray.200">
+                    <HStack
+                      spacing={2}
+                      justify="center"
+                      mt={3}
+                      color="gray.200"
+                    >
                       <Spinner size="sm" />
                       <Text fontSize="xs">{synthLabel}</Text>
                     </HStack>
@@ -3675,7 +3764,12 @@ Return JSON ONLY:
               <VStack align="stretch" spacing={3}>
                 <HStack align="start" spacing={2}>
                   <CopyAllBtn q={mStem} h={mHint} tr="" />
-                  <Text fontSize="lg" fontWeight="medium" flex="1" lineHeight="tall">
+                  <Text
+                    fontSize="lg"
+                    fontWeight="medium"
+                    flex="1"
+                    lineHeight="tall"
+                  >
                     {mStem || (loadingMG ? "…" : "")}
                   </Text>
                 </HStack>
@@ -3885,7 +3979,10 @@ Return JSON ONLY:
                 colorScheme="purple"
                 onClick={submitMatch}
                 isDisabled={
-                  lastOk === true || !canSubmitMatch() || loadingMJ || !mLeft.length
+                  lastOk === true ||
+                  !canSubmitMatch() ||
+                  loadingMJ ||
+                  !mLeft.length
                 }
                 w={{ base: "100%", md: "auto" }}
               >

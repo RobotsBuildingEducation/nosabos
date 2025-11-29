@@ -593,7 +593,7 @@ function TopBar({
         zIndex={100}
         wrap="wrap"
         spacing={{ base: 2, md: 3 }}
-        backdropFilter="blur(6px)"
+        backdropFilter="blur(4px)"
       >
         {/* LEFT: Daily WaveBar + % */}
         <HStack
@@ -2902,10 +2902,8 @@ function BottomActionBar({
       left={0}
       right={0}
       zIndex={80}
-      bg="rgba(6, 10, 24, 0.95)"
-      borderTop="1px solid"
-      borderColor="gray.800"
-      backdropFilter="blur(8px)"
+      bg="rgba(6, 10, 24, 0.2)"
+      backdropFilter="blur(4px)"
       py={3}
       px={{ base: 3, md: 6 }}
       width="100%"

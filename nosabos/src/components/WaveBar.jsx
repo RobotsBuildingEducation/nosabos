@@ -25,7 +25,7 @@ export const WaveBar = ({
       overflow="hidden"
       height={`${height}px`}
       border={`1px solid ${border}`}
-      backdropFilter="saturate(120%) blur(4px)"
+      backdropFilter="saturate(120%) blur(0px)"
     >
       <motion.div
         initial={{ width: 0 }}

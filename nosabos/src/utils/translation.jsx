@@ -14,6 +14,7 @@ export function t(lang = "en", key, vars = {}) {
 
 export const translations = {
   en: {
+    correct: "Correct!",
     dailyGoalProgress: "Goal",
     try_again: "Try again",
     tabs_random: "Random",
@@ -370,6 +371,7 @@ export const translations = {
     skill_tree_cefr_default_desc: "CEFR proficiency level",
   },
   es: {
+    correct: "¡Correcto!",
     dailyGoalProgress: "Meta",
     try_again: "Inténtalo de nuevo",
     tabs_random: "Aleatorio",
@@ -712,7 +714,8 @@ export const translations = {
     skill_tree_xp_reward: "XP para terminar:",
     skill_tree_start_lesson: "Comenzar Lección",
     skill_tree_unlock_at: "Desbloquear con {xpRequired} XP",
-    skill_tree_unlock_sequential: "Completa la lección anterior para desbloquear",
+    skill_tree_unlock_sequential:
+      "Completa la lección anterior para desbloquear",
     skill_tree_level: "Nivel {level}",
     skill_tree_no_path:
       "Aún no hay una ruta de aprendizaje disponible para este idioma.",

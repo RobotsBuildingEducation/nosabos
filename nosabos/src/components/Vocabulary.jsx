@@ -2833,7 +2833,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Text fontWeight="semibold">{label}</Text>
               <Text fontSize="sm" color="whiteAlpha.800">
                 {xp > 0
-                  ? `+${xp} XP 🎉`
+                  ? `+${xp} XP`
                   : ok
                   ? t("practice_next_ready") ||
                     "Great work! Keep the streak going."

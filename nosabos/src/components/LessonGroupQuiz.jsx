@@ -1126,8 +1126,7 @@ YES or NO
         await awardXp(npub, xpReward, "lesson");
 
         toast({
-          title:
-            userLanguage === "es" ? "¡Examen aprobado! 🎉" : "Quiz Passed! 🎉",
+          title: userLanguage === "es" ? "¡Examen aprobado!" : "Quiz Passed!",
           description:
             userLanguage === "es"
               ? `Puntuación: ${correctAnswers}/${TOTAL_QUESTIONS}. +${xpReward} XP!`
