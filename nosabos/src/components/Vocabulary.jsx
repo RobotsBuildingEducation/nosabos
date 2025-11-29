@@ -700,7 +700,13 @@ export default function Vocabulary({
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
-  const finalQuizMode = Boolean(isFinalQuiz || lesson?.isFinalQuiz);
+  const finalQuizMode = useMemo(() => {
+    if (isFinalQuiz) return true;
+    if (lesson?.isFinalQuiz) return true;
+    if (lesson?.quizConfig) return true;
+    if (typeof lesson?.id === "string" && lesson.id.includes("quiz")) return true;
+    return false;
+  }, [isFinalQuiz, lesson]);
 
   // Extract CEFR level from lesson ID
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
