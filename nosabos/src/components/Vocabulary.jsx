@@ -703,10 +703,26 @@ export default function Vocabulary({
   const finalQuizMode = useMemo(() => {
     if (isFinalQuiz) return true;
     if (lesson?.isFinalQuiz) return true;
+    if (lesson?.type === "quiz" || lesson?.lessonType === "quiz") return true;
     if (lesson?.quizConfig) return true;
     if (typeof lesson?.id === "string" && lesson.id.includes("quiz")) return true;
     return false;
   }, [isFinalQuiz, lesson]);
+
+  const normalizedQuizConfig = useMemo(() => {
+    const questionsRequired = Math.max(quizConfig?.questionsRequired || 0, 10);
+    const minimumPassing = Math.ceil(questionsRequired * 0.8);
+    const passingScore = Math.max(
+      quizConfig?.passingScore ?? minimumPassing,
+      minimumPassing
+    );
+
+    return {
+      ...quizConfig,
+      questionsRequired,
+      passingScore,
+    };
+  }, [quizConfig]);
 
   // Extract CEFR level from lesson ID
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
@@ -728,9 +744,14 @@ export default function Vocabulary({
   const [showQuizSuccessModal, setShowQuizSuccessModal] = useState(false);
   const [showQuizFailureModal, setShowQuizFailureModal] = useState(false);
   const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
+  const [quizViewReady, setQuizViewReady] = useState(!finalQuizMode);
 
-  const passingPercentage = quizConfig.questionsRequired
-    ? Math.round((quizConfig.passingScore / quizConfig.questionsRequired) * 100)
+  const passingPercentage = normalizedQuizConfig.questionsRequired
+    ? Math.round(
+        (normalizedQuizConfig.passingScore /
+          normalizedQuizConfig.questionsRequired) *
+          100
+      )
     : 0;
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
@@ -858,7 +879,7 @@ export default function Vocabulary({
 
     // Check for early failure: if user has 3+ wrong answers, they can't pass anymore
     const maxAllowedWrong =
-      quizConfig.questionsRequired - quizConfig.passingScore; // 10 - 8 = 2
+      normalizedQuizConfig.questionsRequired - normalizedQuizConfig.passingScore; // 10 - 8 = 2
     if (newWrongAnswers > maxAllowedWrong) {
       setQuizCompleted(true);
       setQuizPassed(false);
@@ -867,7 +888,7 @@ export default function Vocabulary({
     }
 
     // Check for success: user has reached passing score
-    if (newCorrectAnswers >= quizConfig.passingScore) {
+    if (newCorrectAnswers >= normalizedQuizConfig.passingScore) {
       setQuizCompleted(true);
       setQuizPassed(true);
       setShowQuizSuccessModal(true);
@@ -875,8 +896,9 @@ export default function Vocabulary({
     }
 
     // Check if all questions answered (normal completion)
-    if (newQuestionsAnswered >= quizConfig.questionsRequired) {
-      const passed = newCorrectAnswers >= quizConfig.passingScore;
+    if (newQuestionsAnswered >= normalizedQuizConfig.questionsRequired) {
+      const passed =
+        newCorrectAnswers >= normalizedQuizConfig.passingScore;
       setQuizCompleted(true);
       setQuizPassed(passed);
 
@@ -2776,6 +2798,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setQuizPassed(false);
     setQuizCurrentQuestionAttempted(false);
     setQuizAnswerHistory([]);
+    setQuizViewReady(!finalQuizMode);
     autoInitRef.current = null;
   }, [lesson?.id, finalQuizMode]);
   useEffect(() => {
@@ -2784,12 +2807,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     if (!lesson?.id) return;
 
     const initKey = `${lesson.id}-${finalQuizMode ? "quiz" : "lesson"}`;
-    if (autoInitRef.current === initKey) return;
+    if (autoInitRef.current === initKey) {
+      if (finalQuizMode && !quizViewReady) setQuizViewReady(true);
+      return;
+    }
 
     autoInitRef.current = initKey;
     generateRandom();
+    setQuizViewReady(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal, lesson?.id, finalQuizMode]);
+  }, [ready, showPasscodeModal, lesson?.id, finalQuizMode, quizViewReady]);
 
   if (showPasscodeModal) {
     return (
@@ -2797,6 +2824,21 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         userLanguage={user?.appLanguage}
         setShowPasscodeModal={setShowPasscodeModal}
       />
+    );
+  }
+
+  if (finalQuizMode && !quizViewReady) {
+    return (
+      <Box p={6}>
+        <VStack spacing={4} py={12}>
+          <Spinner color="purple.300" size="lg" thickness="4px" />
+          <Text color="gray.200" fontWeight="medium">
+            {userLanguage === "es"
+              ? "Preparando tu prueba..."
+              : "Loading your quiz..."}
+          </Text>
+        </VStack>
+      </Box>
     );
   }
 
@@ -3206,19 +3248,21 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   </Badge>
                   <Badge
                     colorScheme={
-                      quizCorrectAnswers >= quizConfig.passingScore
+                      quizCorrectAnswers >= normalizedQuizConfig.passingScore
                         ? "green"
                         : "yellow"
                     }
                     fontSize="md"
                   >
-                    {quizQuestionsAnswered}/{quizConfig.questionsRequired}
+                    {quizQuestionsAnswered}/{
+                      normalizedQuizConfig.questionsRequired
+                    }
                   </Badge>
                 </HStack>
 
                 {/* Animated progress bar showing correct (blue) and wrong (red) answers */}
                 <HStack spacing="2px" w="100%" h="16px">
-                  {Array.from({ length: quizConfig.questionsRequired }).map(
+                  {Array.from({ length: normalizedQuizConfig.questionsRequired }).map(
                     (_, i) => {
                       const hasAnswer = i < quizAnswerHistory.length;
                       const isCorrect = hasAnswer ? quizAnswerHistory[i] : null;
@@ -4614,7 +4658,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {userLanguage === "es" ? "Puntuación" : "Score"}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
-                    {quizCorrectAnswers}/{quizConfig.questionsRequired}
+                    {quizCorrectAnswers}/{normalizedQuizConfig.questionsRequired}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
                     {userLanguage === "es"
@@ -4716,7 +4760,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {userLanguage === "es" ? "Puntuación" : "Score"}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="red.200">
-                    {quizCorrectAnswers}/{quizConfig.questionsRequired}
+                    {quizCorrectAnswers}/{normalizedQuizConfig.questionsRequired}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
                     {userLanguage === "es"
