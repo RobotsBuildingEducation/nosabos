@@ -369,42 +369,6 @@ export default function Onboarding({
                             _hover={{ bg: "gray.750" }}
                             _active={{ bg: "gray.750" }}
                           >
-                            {level === "beginner" && ui.onboarding_level_beginner}
-                            {level === "intermediate" && ui.onboarding_level_intermediate}
-                            {level === "advanced" && ui.onboarding_level_advanced}
-                          </MenuButton>
-                          <MenuList borderColor="gray.700" bg="gray.900">
-                            <MenuOptionGroup
-                              type="radio"
-                              value={level}
-                              onChange={(value) => setLevel(value)}
-                            >
-                              <MenuItemOption value="beginner">
-                                {ui.onboarding_level_beginner}
-                              </MenuItemOption>
-                              <MenuItemOption value="intermediate">
-                                {ui.onboarding_level_intermediate}
-                              </MenuItemOption>
-                              <MenuItemOption value="advanced">
-                                {ui.onboarding_level_advanced}
-                              </MenuItemOption>
-                            </MenuOptionGroup>
-                          </MenuList>
-                        </Menu>
-                      </WrapItem>
-
-                      <WrapItem>
-                        <Menu autoSelect={false} isLazy>
-                          <MenuButton
-                            as={Button}
-                            rightIcon={<ChevronDownIcon />}
-                            variant="outline"
-                            size="sm"
-                            borderColor="gray.700"
-                            bg="gray.800"
-                            _hover={{ bg: "gray.750" }}
-                            _active={{ bg: "gray.750" }}
-                          >
                             {supportLang === "en" && ui.onboarding_support_en}
                             {supportLang === "bilingual" && ui.onboarding_support_bilingual}
                             {supportLang === "es" && ui.onboarding_support_es}

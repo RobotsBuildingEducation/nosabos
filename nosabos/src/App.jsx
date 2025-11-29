@@ -717,40 +717,7 @@ function TopBar({
                     bg="gray.800"
                     _hover={{ bg: "gray.750" }}
                     _active={{ bg: "gray.750" }}
-                  >
-                    {level === "A1" && "A1 - Beginner"}
-                    {level === "A2" && "A2 - Elementary"}
-                    {level === "B1" && "B1 - Intermediate"}
-                    {level === "B2" && "B2 - Upper Intermediate"}
-                    {level === "C1" && "C1 - Advanced"}
-                    {level === "C2" && "C2 - Mastery"}
-                  </MenuButton>
-                  <MenuList borderColor="gray.700" bg="gray.900">
-                    <MenuOptionGroup
-                      type="radio"
-                      value={level}
-                      onChange={(value) => setLevel(value)}
-                    >
-                      <MenuItemOption value="A1">A1 - Beginner</MenuItemOption>
-                      <MenuItemOption value="A2">A2 - Elementary</MenuItemOption>
-                      <MenuItemOption value="B1">B1 - Intermediate</MenuItemOption>
-                      <MenuItemOption value="B2">B2 - Upper Intermediate</MenuItemOption>
-                      <MenuItemOption value="C1">C1 - Advanced</MenuItemOption>
-                      <MenuItemOption value="C2">C2 - Mastery</MenuItemOption>
-                    </MenuOptionGroup>
-                  </MenuList>
-                </Menu>
-
-                <Menu autoSelect={false} isLazy>
-                  <MenuButton
-                    as={Button}
-                    rightIcon={<ChevronDownIcon />}
-                    variant="outline"
-                    size="sm"
-                    borderColor="gray.700"
-                    bg="gray.800"
-                    _hover={{ bg: "gray.750" }}
-                    _active={{ bg: "gray.750" }}
+                    px={4}
                   >
                     {supportLang === "en" && translations[appLanguage].onboarding_support_en}
                     {supportLang === "bilingual" && translations[appLanguage].onboarding_support_bilingual}
@@ -785,6 +752,7 @@ function TopBar({
                     bg="gray.800"
                     _hover={{ bg: "gray.750" }}
                     _active={{ bg: "gray.750" }}
+                    px={4}
                   >
                     {voice === "alloy" && translations[appLanguage].onboarding_voice_alloy}
                     {voice === "ash" && translations[appLanguage].onboarding_voice_ash}
@@ -839,6 +807,7 @@ function TopBar({
                     bg="gray.800"
                     _hover={{ bg: "gray.750" }}
                     _active={{ bg: "gray.750" }}
+                    px={4}
                     title={translations[appLanguage].onboarding_practice_label_title}
                   >
                     {targetLang === "nah" && translations[appLanguage].onboarding_practice_nah}
