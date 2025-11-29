@@ -18,7 +18,6 @@ import {
   HStack,
   IconButton,
   Input,
-  Select,
   Slider,
   SliderFilledTrack,
   SliderThumb,
@@ -708,101 +707,174 @@ function TopBar({
           <DrawerBody pb={2}>
             <VStack align="stretch" spacing={3}>
               <Wrap spacing={2}>
-                <Select
-                  value={level}
-                  onChange={(e) => setLevel(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="A1">A1 - Beginner</option>
-                  <option value="A2">A2 - Elementary</option>
-                  <option value="B1">B1 - Intermediate</option>
-                  <option value="B2">B2 - Upper Intermediate</option>
-                  <option value="C1">C1 - Advanced</option>
-                  <option value="C2">C2 - Mastery</option>
-                </Select>
+                <Menu autoSelect={false} isLazy>
+                  <MenuButton
+                    as={Button}
+                    rightIcon={<ChevronDownIcon />}
+                    variant="outline"
+                    size="sm"
+                    borderColor="gray.700"
+                    bg="gray.800"
+                    _hover={{ bg: "gray.750" }}
+                    _active={{ bg: "gray.750" }}
+                  >
+                    {level === "A1" && "A1 - Beginner"}
+                    {level === "A2" && "A2 - Elementary"}
+                    {level === "B1" && "B1 - Intermediate"}
+                    {level === "B2" && "B2 - Upper Intermediate"}
+                    {level === "C1" && "C1 - Advanced"}
+                    {level === "C2" && "C2 - Mastery"}
+                  </MenuButton>
+                  <MenuList borderColor="gray.700" bg="gray.900">
+                    <MenuOptionGroup
+                      type="radio"
+                      value={level}
+                      onChange={(value) => setLevel(value)}
+                    >
+                      <MenuItemOption value="A1">A1 - Beginner</MenuItemOption>
+                      <MenuItemOption value="A2">A2 - Elementary</MenuItemOption>
+                      <MenuItemOption value="B1">B1 - Intermediate</MenuItemOption>
+                      <MenuItemOption value="B2">B2 - Upper Intermediate</MenuItemOption>
+                      <MenuItemOption value="C1">C1 - Advanced</MenuItemOption>
+                      <MenuItemOption value="C2">C2 - Mastery</MenuItemOption>
+                    </MenuOptionGroup>
+                  </MenuList>
+                </Menu>
 
-                <Select
-                  value={supportLang}
-                  onChange={(e) => setSupportLang(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="en">
-                    {translations[appLanguage].onboarding_support_en}
-                  </option>
-                  <option value="bilingual">
-                    {translations[appLanguage].onboarding_support_bilingual}
-                  </option>
-                  <option value="es">
-                    {translations[appLanguage].onboarding_support_es}
-                  </option>
-                </Select>
+                <Menu autoSelect={false} isLazy>
+                  <MenuButton
+                    as={Button}
+                    rightIcon={<ChevronDownIcon />}
+                    variant="outline"
+                    size="sm"
+                    borderColor="gray.700"
+                    bg="gray.800"
+                    _hover={{ bg: "gray.750" }}
+                    _active={{ bg: "gray.750" }}
+                  >
+                    {supportLang === "en" && translations[appLanguage].onboarding_support_en}
+                    {supportLang === "bilingual" && translations[appLanguage].onboarding_support_bilingual}
+                    {supportLang === "es" && translations[appLanguage].onboarding_support_es}
+                  </MenuButton>
+                  <MenuList borderColor="gray.700" bg="gray.900">
+                    <MenuOptionGroup
+                      type="radio"
+                      value={supportLang}
+                      onChange={(value) => setSupportLang(value)}
+                    >
+                      <MenuItemOption value="en">
+                        {translations[appLanguage].onboarding_support_en}
+                      </MenuItemOption>
+                      <MenuItemOption value="bilingual">
+                        {translations[appLanguage].onboarding_support_bilingual}
+                      </MenuItemOption>
+                      <MenuItemOption value="es">
+                        {translations[appLanguage].onboarding_support_es}
+                      </MenuItemOption>
+                    </MenuOptionGroup>
+                  </MenuList>
+                </Menu>
 
-                <Select
-                  value={voice}
-                  onChange={(e) => setVoice(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                >
-                  <option value="alloy">
-                    {translations[appLanguage].onboarding_voice_alloy}
-                  </option>
-                  <option value="ash">
-                    {translations[appLanguage].onboarding_voice_ash}
-                  </option>
-                  <option value="ballad">
-                    {translations[appLanguage].onboarding_voice_ballad}
-                  </option>
-                  <option value="coral">
-                    {translations[appLanguage].onboarding_voice_coral}
-                  </option>
-                  <option value="echo">
-                    {translations[appLanguage].onboarding_voice_echo}
-                  </option>
-                  <option value="sage">
-                    {translations[appLanguage].onboarding_voice_sage}
-                  </option>
-                  <option value="shimmer">
-                    {translations[appLanguage].onboarding_voice_shimmer}
-                  </option>
-                  <option value="verse">
-                    {translations[appLanguage].onboarding_voice_verse}
-                  </option>
-                </Select>
+                <Menu autoSelect={false} isLazy>
+                  <MenuButton
+                    as={Button}
+                    rightIcon={<ChevronDownIcon />}
+                    variant="outline"
+                    size="sm"
+                    borderColor="gray.700"
+                    bg="gray.800"
+                    _hover={{ bg: "gray.750" }}
+                    _active={{ bg: "gray.750" }}
+                  >
+                    {voice === "alloy" && translations[appLanguage].onboarding_voice_alloy}
+                    {voice === "ash" && translations[appLanguage].onboarding_voice_ash}
+                    {voice === "ballad" && translations[appLanguage].onboarding_voice_ballad}
+                    {voice === "coral" && translations[appLanguage].onboarding_voice_coral}
+                    {voice === "echo" && translations[appLanguage].onboarding_voice_echo}
+                    {voice === "sage" && translations[appLanguage].onboarding_voice_sage}
+                    {voice === "shimmer" && translations[appLanguage].onboarding_voice_shimmer}
+                    {voice === "verse" && translations[appLanguage].onboarding_voice_verse}
+                  </MenuButton>
+                  <MenuList borderColor="gray.700" bg="gray.900">
+                    <MenuOptionGroup
+                      type="radio"
+                      value={voice}
+                      onChange={(value) => setVoice(value)}
+                    >
+                      <MenuItemOption value="alloy">
+                        {translations[appLanguage].onboarding_voice_alloy}
+                      </MenuItemOption>
+                      <MenuItemOption value="ash">
+                        {translations[appLanguage].onboarding_voice_ash}
+                      </MenuItemOption>
+                      <MenuItemOption value="ballad">
+                        {translations[appLanguage].onboarding_voice_ballad}
+                      </MenuItemOption>
+                      <MenuItemOption value="coral">
+                        {translations[appLanguage].onboarding_voice_coral}
+                      </MenuItemOption>
+                      <MenuItemOption value="echo">
+                        {translations[appLanguage].onboarding_voice_echo}
+                      </MenuItemOption>
+                      <MenuItemOption value="sage">
+                        {translations[appLanguage].onboarding_voice_sage}
+                      </MenuItemOption>
+                      <MenuItemOption value="shimmer">
+                        {translations[appLanguage].onboarding_voice_shimmer}
+                      </MenuItemOption>
+                      <MenuItemOption value="verse">
+                        {translations[appLanguage].onboarding_voice_verse}
+                      </MenuItemOption>
+                    </MenuOptionGroup>
+                  </MenuList>
+                </Menu>
 
-                <Select
-                  value={targetLang}
-                  onChange={(e) => setTargetLang(e.target.value)}
-                  bg="gray.800"
-                  size="md"
-                  w="auto"
-                  title={
-                    translations[appLanguage].onboarding_practice_label_title
-                  }
-                >
-                  <option value="nah">
-                    {translations[appLanguage].onboarding_practice_nah}
-                  </option>
-                  <option value="es">
-                    {translations[appLanguage].onboarding_practice_es}
-                  </option>
-                  <option value="pt">
-                    {translations[appLanguage].onboarding_practice_pt}
-                  </option>
-                  <option value="fr">
-                    {translations[appLanguage].onboarding_practice_fr}
-                  </option>
-                  <option value="it">
-                    {translations[appLanguage].onboarding_practice_it}
-                  </option>
-                  <option value="en">
-                    {translations[appLanguage].onboarding_practice_en}
-                  </option>
-                </Select>
+                <Menu autoSelect={false} isLazy>
+                  <MenuButton
+                    as={Button}
+                    rightIcon={<ChevronDownIcon />}
+                    variant="outline"
+                    size="sm"
+                    borderColor="gray.700"
+                    bg="gray.800"
+                    _hover={{ bg: "gray.750" }}
+                    _active={{ bg: "gray.750" }}
+                    title={translations[appLanguage].onboarding_practice_label_title}
+                  >
+                    {targetLang === "nah" && translations[appLanguage].onboarding_practice_nah}
+                    {targetLang === "es" && translations[appLanguage].onboarding_practice_es}
+                    {targetLang === "pt" && translations[appLanguage].onboarding_practice_pt}
+                    {targetLang === "fr" && translations[appLanguage].onboarding_practice_fr}
+                    {targetLang === "it" && translations[appLanguage].onboarding_practice_it}
+                    {targetLang === "en" && translations[appLanguage].onboarding_practice_en}
+                  </MenuButton>
+                  <MenuList borderColor="gray.700" bg="gray.900">
+                    <MenuOptionGroup
+                      type="radio"
+                      value={targetLang}
+                      onChange={(value) => setTargetLang(value)}
+                    >
+                      <MenuItemOption value="nah">
+                        {translations[appLanguage].onboarding_practice_nah}
+                      </MenuItemOption>
+                      <MenuItemOption value="es">
+                        {translations[appLanguage].onboarding_practice_es}
+                      </MenuItemOption>
+                      <MenuItemOption value="pt">
+                        {translations[appLanguage].onboarding_practice_pt}
+                      </MenuItemOption>
+                      <MenuItemOption value="fr">
+                        {translations[appLanguage].onboarding_practice_fr}
+                      </MenuItemOption>
+                      <MenuItemOption value="it">
+                        {translations[appLanguage].onboarding_practice_it}
+                      </MenuItemOption>
+                      <MenuItemOption value="en">
+                        {translations[appLanguage].onboarding_practice_en}
+                      </MenuItemOption>
+                    </MenuOptionGroup>
+                  </MenuList>
+                </Menu>
               </Wrap>
 
               {/* Pronunciation coaching */}
