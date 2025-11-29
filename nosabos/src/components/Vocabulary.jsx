@@ -4213,6 +4213,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     stopSpeakRecording();
                     return;
                   }
+                  // Clear previous results to prevent UI flickering
+                  setLastOk(null);
+                  setSRecognized("");
+                  setSEval(null);
                   try {
                     await startSpeakRecording();
                   } catch (err) {
