@@ -1280,7 +1280,7 @@ export default function History({
         );
         const amt = Number(activeLecture?.xpAward || 0);
         if (amt > 0) {
-          await awardXp(npub, amt).catch(() => {});
+          await awardXp(npub, amt, targetLang).catch(() => {});
         }
       }
       // Move to the next module

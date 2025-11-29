@@ -1522,7 +1522,7 @@ export default function JobScript({ userLanguage = "en", lessonContent = null })
     if (!npubLive) return;
 
     if (awardedXp > 0) {
-      await awardXp(npubLive, Math.round(awardedXp)).catch(() => {});
+      await awardXp(npubLive, Math.round(awardedXp), targetLang).catch(() => {});
     }
     try {
       await saveStoryTurn(npubLive, {

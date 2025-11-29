@@ -1476,7 +1476,7 @@ Return EXACTLY:
         user_input: ansFill,
         award_xp: delta,
       }).catch(() => {});
-      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setResFill(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
@@ -1736,7 +1736,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
         user_choice: pickMC,
         award_xp: delta,
       }).catch(() => {});
-      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setResMC(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
@@ -2020,7 +2020,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
         user_choices: picksMA,
         award_xp: delta,
       }).catch(() => {});
-      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setResMA(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
@@ -2491,7 +2491,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         user_pairs: userPairs,
         award_xp: delta,
       }).catch(() => {});
-      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setMResult(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
@@ -2563,7 +2563,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           method,
           award_xp: delta,
         }).catch(() => {});
-        if (delta > 0) await awardXp(npub, delta).catch(() => {});
+        if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
         setLastOk(ok);
         setRecentXp(delta);
