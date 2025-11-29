@@ -1123,7 +1123,7 @@ YES or NO
     if (passed && lessonId && npub) {
       try {
         await completeLesson(npub, lessonId, xpReward, targetLang);
-        await awardXp(npub, xpReward, "lesson");
+        await awardXp(npub, xpReward, targetLang);
 
         toast({
           title:
