@@ -1499,6 +1499,13 @@ function LessonDetailModal({
   const lessonTitle = getDisplayText(lesson.title, supportLang);
   const unitTitle = getDisplayText(unit.title, supportLang);
   const lessonDescription = getDisplayText(lesson.description, supportLang);
+  const isQuizLesson = Boolean(lesson.isFinalQuiz);
+  const quizPassingPctRaw = lesson.quizConfig?.questionsRequired
+    ? Math.round(
+        (lesson.quizConfig.passingScore / lesson.quizConfig.questionsRequired) * 100
+      )
+    : 80;
+  const quizPassingPct = Math.max(quizPassingPctRaw || 0, 80);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
@@ -1606,7 +1613,7 @@ function LessonDetailModal({
               </Flex>
             </Box>
 
-            {/* XP Goal */}
+            {/* Completion requirement */}
             <Box
               p={5}
               borderRadius="xl"
@@ -1636,20 +1643,42 @@ function LessonDetailModal({
                     <RiStarFill color="white" size={24} />
                   </Box>
                   <Text fontWeight="bold" color="white" fontSize="md">
-                    {getTranslation(supportLang, "skill_tree_xp_reward")}
+                    {isQuizLesson
+                      ? supportLang === "es"
+                        ? `Necesitas ${quizPassingPct}% para aprobar`
+                        : `Score ${quizPassingPct}% to pass`
+                      : getTranslation(supportLang, "skill_tree_xp_reward")}
                   </Text>
                 </HStack>
-                <Badge
-                  bg="transparent"
-                  color="white"
-                  fontSize="xl"
-                  px={5}
-                  py={2}
-                  borderRadius="full"
-                  fontWeight="black"
-                >
-                  +{lesson.xpReward} XP
-                </Badge>
+                {isQuizLesson ? (
+                  <Badge
+                    bg="whiteAlpha.200"
+                    color="white"
+                    fontSize="md"
+                    px={4}
+                    py={2}
+                    borderRadius="full"
+                    fontWeight="bold"
+                    border="1px solid"
+                    borderColor="whiteAlpha.400"
+                  >
+                    {supportLang === "es"
+                      ? `Aprobar requiere ${quizPassingPct}%`
+                      : `${quizPassingPct}% needed to pass`}
+                  </Badge>
+                ) : (
+                  <Badge
+                    bg="transparent"
+                    color="white"
+                    fontSize="xl"
+                    px={5}
+                    py={2}
+                    borderRadius="full"
+                    fontWeight="black"
+                  >
+                    +{lesson.xpReward} XP
+                  </Badge>
+                )}
               </HStack>
             </Box>
 
