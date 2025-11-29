@@ -3948,6 +3948,10 @@ Return JSON ONLY:
                     stopSpeakRecording();
                     return;
                   }
+                  // Clear previous results to prevent UI flickering
+                  setLastOk(null);
+                  setSRecognized("");
+                  setSEval(null);
                   try {
                     await startSpeakRecording();
                   } catch (err) {
@@ -4035,6 +4039,17 @@ Return JSON ONLY:
                 userLanguage={userLanguage}
               />
             ) : null}
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              onNext={handleNext}
+              nextLabel={nextLabel}
+            />
           </>
         ) : null}
 
