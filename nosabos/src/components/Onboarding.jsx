@@ -286,16 +286,17 @@ export default function Onboarding({
           }}
         >
           <DrawerHeader pb={4}>
-            <IconButton
-              aria-label="Back"
-              icon={<ArrowBackIcon />}
-              onClick={handleBack}
-              isDisabled={currentStepIndex === 0 || isPersisting || isSaving}
-              variant="ghost"
-              colorScheme="teal"
-              mb={2}
-            />
-            <VStack align="stretch" spacing={4}>
+            <Box maxW="600px" mx="auto" w="100%">
+              <IconButton
+                aria-label="Back"
+                icon={<ArrowBackIcon />}
+                onClick={handleBack}
+                isDisabled={currentStepIndex === 0 || isPersisting || isSaving}
+                variant="ghost"
+                colorScheme="teal"
+                mb={2}
+              />
+              <VStack align="stretch" spacing={4}>
               <HStack align="center" w="100%">
                 <VStack align="stretch" spacing={1}>
                   <Text fontWeight="bold" fontSize="lg">
@@ -346,10 +347,12 @@ export default function Onboarding({
                 {stepTitleKeys[currentStepIndex]}
               </Text>
             </VStack>
+            </Box>
           </DrawerHeader>
 
           <DrawerBody pb={6}>
-            <VStack align="stretch" spacing={4}>
+            <Box maxW="600px" mx="auto" w="100%">
+              <VStack align="stretch" spacing={4}>
               {currentStepIndex === 0 && (
                 <VStack align="stretch" spacing={4}>
                   <Box bg="gray.800" p={3} rounded="md">
@@ -619,6 +622,7 @@ export default function Onboarding({
                 </VStack>
               )}
             </VStack>
+            </Box>
           </DrawerBody>
 
           <Box
@@ -628,6 +632,7 @@ export default function Onboarding({
             justifyContent="flex-end"
             alignItems="center"
           >
+            <Box maxW="600px" mx="auto" w="100%">
             {currentStepIndex < totalSteps - 1 ? (
               <Button
                 size="lg"
@@ -651,6 +656,7 @@ export default function Onboarding({
                 {ui.onboarding_cta_start}
               </Button>
             )}
+            </Box>
           </Box>
         </DrawerContent>
       </Drawer>
