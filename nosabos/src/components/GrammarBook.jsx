@@ -1,5 +1,5 @@
 // components/GrammarBook.jsx
-import React, { useRef, useState, useEffect, useCallback } from "react";
+import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
   Badge,
@@ -639,6 +639,65 @@ export default function GrammarBook({
   const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
   const [quizCurrentQuestionAttempted, setQuizCurrentQuestionAttempted] =
     useState(false);
+
+  const quizStorageKey = useMemo(
+    () => (lesson?.id ? `quiz-progress:${lesson.id}` : null),
+    [lesson?.id]
+  );
+
+  useEffect(() => {
+    if (!isFinalQuiz || !quizStorageKey) return;
+    try {
+      const stored = localStorage.getItem(quizStorageKey);
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      if (typeof parsed !== "object" || parsed === null) return;
+
+      const {
+        answered,
+        correct,
+        completed,
+        passed,
+        history,
+        currentAttempted,
+      } = parsed;
+
+      setQuizQuestionsAnswered(Number.isFinite(answered) ? answered : 0);
+      setQuizCorrectAnswers(Number.isFinite(correct) ? correct : 0);
+      setQuizCompleted(Boolean(completed));
+      setQuizPassed(Boolean(passed));
+      setQuizAnswerHistory(Array.isArray(history) ? history : []);
+      setQuizCurrentQuestionAttempted(Boolean(currentAttempted));
+    } catch (error) {
+      console.warn("Failed to load quiz progress", error);
+    }
+  }, [isFinalQuiz, quizStorageKey]);
+
+  useEffect(() => {
+    if (!isFinalQuiz || !quizStorageKey) return;
+    try {
+      const payload = {
+        answered: quizQuestionsAnswered,
+        correct: quizCorrectAnswers,
+        completed: quizCompleted,
+        passed: quizPassed,
+        history: quizAnswerHistory,
+        currentAttempted: quizCurrentQuestionAttempted,
+      };
+      localStorage.setItem(quizStorageKey, JSON.stringify(payload));
+    } catch (error) {
+      console.warn("Failed to save quiz progress", error);
+    }
+  }, [
+    isFinalQuiz,
+    quizStorageKey,
+    quizQuestionsAnswered,
+    quizCorrectAnswers,
+    quizCompleted,
+    quizPassed,
+    quizAnswerHistory,
+    quizCurrentQuestionAttempted,
+  ]);
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
