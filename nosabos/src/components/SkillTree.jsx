@@ -771,6 +771,9 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   const borderColor = "gray.700";
   const lockedColor = "gray.600";
 
+  // Disable tooltips on mobile devices to fix touch responsiveness
+  const disableTooltip = useBreakpointValue({ base: true, md: false }) || false;
+
   const lessonTitle = getDisplayText(lesson.title, supportLang);
   const lessonDescription = getDisplayText(lesson.description, supportLang);
 
@@ -821,6 +824,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
         fontSize="sm"
         p={3}
         borderRadius="lg"
+        isDisabled={disableTooltip}
       >
         <Box position="relative">
           <VStack
