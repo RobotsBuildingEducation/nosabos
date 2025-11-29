@@ -11,7 +11,6 @@ import {
   Container,
   Heading,
   IconButton,
-  Tooltip,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -771,9 +770,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   const borderColor = "gray.700";
   const lockedColor = "gray.600";
 
-  // Disable tooltips on mobile devices to fix touch responsiveness
-  const disableTooltip = useBreakpointValue({ base: true, md: false }) || false;
-
   const lessonTitle = getDisplayText(lesson.title, supportLang);
   const lessonDescription = getDisplayText(lesson.description, supportLang);
 
@@ -811,27 +807,12 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
     >
-      <Tooltip
-        label={
-          status === SKILL_STATUS.LOCKED
-            ? getTranslation(supportLang, "skill_tree_unlock_sequential")
-            : lessonDescription
-        }
-        placement="right"
-        hasArrow
-        bg="gray.700"
-        color="white"
-        fontSize="sm"
-        p={3}
-        borderRadius="lg"
-        isDisabled={disableTooltip}
-      >
-        <Box position="relative">
-          <VStack
-            spacing={2}
-            cursor={isClickable ? "pointer" : "not-allowed"}
-            onClick={isClickable ? onClick : undefined}
-          >
+      <Box position="relative">
+        <VStack
+          spacing={2}
+          cursor={isClickable ? "pointer" : "not-allowed"}
+          onClick={isClickable ? onClick : undefined}
+        >
             {/* Glow Effect for active lessons */}
             {status !== SKILL_STATUS.LOCKED && (
               <Box
@@ -1021,7 +1002,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
             </Text>
           </VStack>
         </Box>
-      </Tooltip>
     </MotionBox>
   );
 }
@@ -1144,38 +1124,19 @@ function UnitSection({
                 </Heading>
                 {/* CEFR Level Badge */}
                 {unit.cefrLevel && (
-                  <Tooltip
-                    hasArrow
-                    label={getTranslation(
-                      supportLang,
-                      CEFR_LEVEL_DESCRIPTION_KEYS[unit.cefrLevel] ||
-                        "skill_tree_cefr_default_desc",
-                      {}
-                    )}
-                    bg="gray.800"
-                    color="white"
-                    borderRadius="md"
+                  <Badge
+                    size="xs"
                     px={3}
-                    py={2}
-                    boxShadow="lg"
+                    py={1}
+                    borderRadius="md"
+                    fontWeight="bold"
+                    bg={unit.color}
+                    color="white"
+                    textShadow="0px 1px 1px black"
+                    boxShadow={"0px 0.5px 0.5px 1px darkgray"}
                   >
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      colorScheme={CEFR_LEVEL_COLORS[unit.cefrLevel] || "gray"}
-                      px={3}
-                      py={1}
-                      height="auto"
-                      borderRadius="md"
-                      fontWeight="bold"
-                      bg={unit.color}
-                      textShadow="0px 1px 1px black"
-                      _hover={{ bg: "whiteAlpha.200" }}
-                      boxShadow={"0px 0.5px 0.5px 1px darkgray"}
-                    >
-                      {unit.cefrLevel}
-                    </Button>
-                  </Tooltip>
+                    {unit.cefrLevel}
+                  </Badge>
                 )}
               </HStack>
               <Text fontSize="sm" color="gray.300" ml={8}>
