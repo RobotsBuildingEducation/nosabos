@@ -3023,13 +3023,6 @@ Return JSON ONLY:
                   ) : null}
                 </VStack>
               </Box>
-              <FeedbackRail
-                ok={lastOk}
-                xp={recentXp}
-                showNext={lastOk === true && nextAction}
-                onNext={handleNext}
-                nextLabel={nextQuestionLabel}
-              />
               <Stack spacing={3} align="stretch">
                 {(mcChoices.length
                   ? mcChoices
@@ -3200,13 +3193,6 @@ Return JSON ONLY:
                   </Text>
                 </VStack>
               </Box>
-              <FeedbackRail
-                ok={lastOk}
-                xp={recentXp}
-                showNext={lastOk === true && nextAction}
-                onNext={handleNext}
-                nextLabel={nextQuestionLabel}
-              />
               <Droppable droppableId="ma-bank" direction="horizontal">
                 {(provided) => (
                   <Flex
