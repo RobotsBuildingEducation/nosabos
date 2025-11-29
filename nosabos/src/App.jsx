@@ -92,7 +92,6 @@ import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
-import BitcoinSupportModal from "./components/BitcoinSupportModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
@@ -1463,8 +1462,6 @@ export default function App() {
      - Only open DailyGoalModal right after onboarding completes
   ----------------------------------- */
   const [dailyGoalOpen, setDailyGoalOpen] = useState(false);
-  const [bitcoinModalQueued, setBitcoinModalQueued] = useState(false);
-  const [bitcoinModalOpen, setBitcoinModalOpen] = useState(false);
   const [celebrateOpen, setCelebrateOpen] = useState(false);
 
   // Celebration listener (fired by awardXp when goal is reached)
@@ -1768,7 +1765,6 @@ export default function App() {
 
       // Prompt for daily goal right after onboarding
       setDailyGoalOpen(true);
-      setBitcoinModalQueued(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -2074,15 +2070,6 @@ export default function App() {
 
   const handleDailyGoalClose = useCallback(() => {
     setDailyGoalOpen(false);
-    if (bitcoinModalQueued) {
-      setBitcoinModalQueued(false);
-      setBitcoinModalOpen(true);
-    }
-  }, [bitcoinModalQueued]);
-
-  const handleBitcoinModalClose = useCallback(() => {
-    setBitcoinModalOpen(false);
-    setBitcoinModalQueued(false);
   }, []);
 
   const pickRandomFeature = useCallback(() => {
@@ -2733,15 +2720,6 @@ export default function App() {
           save: appLanguage === "es" ? "Guardar" : "Save",
           cancel: appLanguage === "es" ? "Cancelar" : "Cancel",
         }}
-      />
-
-      <BitcoinSupportModal
-        isOpen={bitcoinModalOpen}
-        onClose={handleBitcoinModalClose}
-        userLanguage={appLanguage}
-        identity={user?.identity || ""}
-        onSelectIdentity={handleIdentitySelection}
-        isIdentitySaving={isIdentitySaving}
       />
 
       {/* Daily celebration (once per day) */}
