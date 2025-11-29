@@ -1999,7 +1999,7 @@ Return JSON ONLY:
       user_input: input,
       award_xp: delta,
     }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
     setLastOk(ok);
     setRecentXp(delta);
@@ -2050,7 +2050,7 @@ Return JSON ONLY:
       user_choice: mcPick,
       award_xp: delta,
     }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
     setMcResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
@@ -2094,7 +2094,7 @@ Return JSON ONLY:
       user_choices: maPicks,
       award_xp: delta,
     }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
     setMaResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
@@ -2142,7 +2142,7 @@ Return JSON ONLY:
       answer_map: mAnswerMap,
       award_xp: delta,
     }).catch(() => {});
-    if (delta > 0) await awardXp(npub, delta).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
     setLastOk(ok);
     setRecentXp(delta);
@@ -2201,7 +2201,7 @@ Return JSON ONLY:
         method,
         award_xp: delta,
       }).catch(() => {});
-      if (delta > 0) await awardXp(npub, delta).catch(() => {});
+      if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setLastOk(ok);
       setRecentXp(delta);

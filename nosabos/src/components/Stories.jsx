@@ -1409,7 +1409,7 @@ export default function StoryMode({
     sessionAwardedRef.current = true;
 
     if (awardedXp > 0) {
-      await awardXp(npubLive, Math.round(awardedXp)).catch(() => {});
+      await awardXp(npubLive, Math.round(awardedXp), targetLang).catch(() => {});
     }
     try {
       await saveStoryTurn(npubLive, {
