@@ -636,6 +636,7 @@ export default function GrammarBook({
   const [quizCorrectAnswers, setQuizCorrectAnswers] = useState(0);
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
+  const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
@@ -1155,11 +1156,10 @@ export default function GrammarBook({
     if (autoInitRef.current) return;
     if (showPasscodeModal) return;
     if (!ready) return;
-    if (isFinalQuiz) return; // ✅ Don't auto-generate for quiz lessons
     autoInitRef.current = true;
     generateRandom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal, isFinalQuiz]);
+  }, [ready, showPasscodeModal]);
 
   /* ---------- STREAM Generate: Fill ---------- */
   async function generateFill() {
@@ -2801,54 +2801,107 @@ Return JSON ONLY:
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
         {/* Shared progress header */}
         <Box display={"flex"} justifyContent={"center"}>
-          <Box w="50%">
-            <HStack justify="space-between" mb={1}>
-              <Badge variant="subtle">
-                {t("grammar_badge_level", { level: levelNumber })}
-              </Badge>
-              <Badge variant="subtle">{t("grammar_badge_xp", { xp })}</Badge>
-            </HStack>
-            <WaveBar value={progressPct} />
+          <Box w="50%" justifyContent={"center"}>
+            {isFinalQuiz ? (
+              // Quiz progress display with animated bars
+              <VStack spacing={2}>
+                <HStack justify="space-between" w="100%" mb={1}>
+                  <Badge colorScheme="purple" fontSize="md">
+                    {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
+                  </Badge>
+                  <Badge
+                    colorScheme={
+                      quizCorrectAnswers >= quizConfig.passingScore
+                        ? "green"
+                        : "yellow"
+                    }
+                    fontSize="md"
+                  >
+                    {quizQuestionsAnswered}/{quizConfig.questionsRequired}
+                  </Badge>
+                </HStack>
+
+                {/* Animated progress bar showing correct (blue) and wrong (red) answers */}
+                <HStack spacing="2px" w="100%" h="16px">
+                  {Array.from({ length: quizConfig.questionsRequired }).map(
+                    (_, i) => {
+                      const hasAnswer = i < quizAnswerHistory.length;
+                      const isCorrect = hasAnswer ? quizAnswerHistory[i] : null;
+
+                      return (
+                        <Box
+                          key={i}
+                          flex="1"
+                          h="100%"
+                          bg={
+                            !hasAnswer
+                              ? "gray.700"
+                              : isCorrect
+                              ? "blue.400"
+                              : "red.400"
+                          }
+                          borderRadius="sm"
+                          position="relative"
+                          overflow="hidden"
+                          opacity={hasAnswer ? 1 : 0.5}
+                          transition="all 0.3s ease-out"
+                          sx={
+                            hasAnswer
+                              ? {
+                                  animation: `${
+                                    isCorrect
+                                      ? "slideFromRight"
+                                      : "slideFromLeft"
+                                  } 0.4s ease-out`,
+                                  "@keyframes slideFromRight": {
+                                    "0%": {
+                                      transform: "translateX(100%)",
+                                      opacity: 0,
+                                    },
+                                    "100%": {
+                                      transform: "translateX(0)",
+                                      opacity: 1,
+                                    },
+                                  },
+                                  "@keyframes slideFromLeft": {
+                                    "0%": {
+                                      transform: "translateX(-100%)",
+                                      opacity: 0,
+                                    },
+                                    "100%": {
+                                      transform: "translateX(0)",
+                                      opacity: 1,
+                                    },
+                                  },
+                                }
+                              : {}
+                          }
+                        />
+                      );
+                    }
+                  )}
+                </HStack>
+
+                <Text fontSize="xs" color="gray.400" textAlign="center">
+                  {userLanguage === "es"
+                    ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
+                    : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                </Text>
+              </VStack>
+            ) : (
+              // Normal XP progress display
+              <>
+                <HStack justify="space-between" mb={1}>
+                  <Badge variant="subtle">
+                    {t("grammar_badge_level", { level: levelNumber })}
+                  </Badge>
+                  <Badge variant="subtle">{t("grammar_badge_xp", { xp })}</Badge>
+                </HStack>
+                <WaveBar value={progressPct} />
+              </>
+            )}
           </Box>
         </Box>
-
-        {/* ---- START QUIZ BUTTON (for quiz lessons) ---- */}
-        {isFinalQuiz && !question && !mcQ && !maQ && !sTarget && mLeft.length === 0 && !loadingQ && !loadingMCQ && !loadingMAQ && !loadingSpeakQ && !loadingMG ? (
-          <VStack spacing={6} align="center" py={12}>
-            <Box
-              textAlign="center"
-              bg="rgba(159, 122, 234, 0.1)"
-              borderRadius="xl"
-              p={8}
-              borderWidth="2px"
-              borderColor="purple.500"
-            >
-              <VStack spacing={4}>
-                <Text fontSize="2xl" fontWeight="bold" color="purple.300">
-                  {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
-                </Text>
-                <Text fontSize="md" color="gray.400">
-                  {userLanguage === "es"
-                    ? `Responde ${quizConfig.questionsRequired} preguntas. Necesitas ${quizConfig.passingScore} correctas para aprobar.`
-                    : `Answer ${quizConfig.questionsRequired} questions. You need ${quizConfig.passingScore} correct to pass.`}
-                </Text>
-                <Button
-                  size="lg"
-                  colorScheme="purple"
-                  onClick={() => {
-                    const runner = generateRandom;
-                    if (typeof runner === "function") {
-                      runner();
-                    }
-                  }}
-                  mt={4}
-                >
-                  {userLanguage === "es" ? "Comenzar Prueba" : "Start Quiz"}
-                </Button>
-              </VStack>
-            </Box>
-          </VStack>
-        ) : null}
 
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
