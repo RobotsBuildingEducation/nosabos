@@ -2841,7 +2841,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Text>
             </Box>
           </HStack>
-          {ok && showNext ? (
+          {showNext ? (
             <Button
               rightIcon={<FiArrowRight />}
               colorScheme="cyan"

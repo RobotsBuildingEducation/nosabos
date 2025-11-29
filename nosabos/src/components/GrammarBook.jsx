@@ -637,6 +637,8 @@ export default function GrammarBook({
   const [quizCompleted, setQuizCompleted] = useState(false);
   const [quizPassed, setQuizPassed] = useState(false);
   const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
+  const [quizCurrentQuestionAttempted, setQuizCurrentQuestionAttempted] =
+    useState(false);
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
@@ -745,13 +747,49 @@ export default function GrammarBook({
     }
   }
 
+  // Quiz mode helper function
+  function handleQuizAnswer(isCorrect) {
+    setQuizCurrentQuestionAttempted(true);
+
+    const newQuestionsAnswered = quizQuestionsAnswered + 1;
+    const newCorrectAnswers = isCorrect
+      ? quizCorrectAnswers + 1
+      : quizCorrectAnswers;
+    const newWrongAnswers = newQuestionsAnswered - newCorrectAnswers;
+
+    setQuizAnswerHistory((prev) => [...prev, isCorrect]);
+    setQuizQuestionsAnswered(newQuestionsAnswered);
+    setQuizCorrectAnswers(newCorrectAnswers);
+
+    const maxAllowedWrong =
+      quizConfig.questionsRequired - quizConfig.passingScore;
+    if (newWrongAnswers > maxAllowedWrong) {
+      setQuizCompleted(true);
+      setQuizPassed(false);
+      return;
+    }
+
+    if (newCorrectAnswers >= quizConfig.passingScore) {
+      setQuizCompleted(true);
+      setQuizPassed(true);
+      return;
+    }
+
+    if (newQuestionsAnswered >= quizConfig.questionsRequired) {
+      const passed = newCorrectAnswers >= quizConfig.passingScore;
+      setQuizCompleted(true);
+      setQuizPassed(passed);
+    }
+  }
+
   function handleNext() {
     setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
 
     // In lesson mode, move to next module
-    if (onSkip) {
+    if (onSkip && !isFinalQuiz) {
       onSkip();
       return;
     }
@@ -1167,6 +1205,7 @@ export default function GrammarBook({
     setLoadingQ(true);
     setInput("");
     setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
 
@@ -1300,6 +1339,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
     setMcBankOrder([]);
     setMcSlotIndex(null);
     setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
 
@@ -1528,6 +1568,7 @@ Create ONE multiple-choice ${LANG_NAME(
     setMaSlots([]);
     setMaBankOrder([]);
     setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
 
@@ -1713,6 +1754,7 @@ Create ONE multiple-answer ${LANG_NAME(
     setMode("speak");
     setLoadingSpeakQ(true);
     setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
     setSRecognized("");
@@ -1839,6 +1881,7 @@ Create ONE ${LANG_NAME(
     setLoadingMG(true);
     setMResult("");
     setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
 
@@ -2035,6 +2078,20 @@ Return JSON ONLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setLastOk(ok);
+      setRecentXp(0);
+      const nextFn = ok || isFinalQuiz
+        ? modeLocked
+          ? () => generateFill()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
+      setLoadingG(false);
+      return;
+    }
+
     await saveAttempt(npub, {
       ok,
       mode: "fill",
@@ -2084,6 +2141,21 @@ Return JSON ONLY:
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setMcResult(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0);
+      const nextFn = ok || isFinalQuiz
+        ? modeLocked
+          ? () => generateMC()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
+      setLoadingMCG(false);
+      return;
+    }
+
     await saveAttempt(npub, {
       ok,
       mode: "mc",
@@ -2127,6 +2199,21 @@ Return JSON ONLY:
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
+
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setMaResult(ok ? "correct" : "try_again");
+      setLastOk(ok);
+      setRecentXp(0);
+      const nextFn = ok || isFinalQuiz
+        ? modeLocked
+          ? () => generateMA()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
+      setLoadingMAG(false);
+      return;
+    }
 
     await saveAttempt(npub, {
       ok,
@@ -2175,6 +2262,20 @@ Return JSON ONLY:
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     setMResult(ok ? "correct" : "try_again"); // for logs only
+
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setLastOk(ok);
+      setRecentXp(0);
+      const nextFn = ok || isFinalQuiz
+        ? modeLocked
+          ? () => generateMatch()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
+      setLoadingMJ(false);
+      return;
+    }
 
     await saveAttempt(npub, {
       ok,
@@ -2229,11 +2330,24 @@ Return JSON ONLY:
       setSRecognized(recognizedText || "");
       setSEval(evaluation);
 
-      const ok = evaluation.pass;
-      const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
+    const ok = evaluation.pass;
+    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
-      await saveAttempt(npub, {
-        ok,
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setLastOk(ok);
+      setRecentXp(0);
+      const nextFn = ok || isFinalQuiz
+        ? modeLocked
+          ? () => generateSpeak()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
+      return;
+    }
+
+    await saveAttempt(npub, {
+      ok,
         mode: "grammar_speak",
         question: sPrompt,
         target: sTarget,
@@ -2480,7 +2594,7 @@ Return JSON ONLY:
               </Text>
             </Box>
           </HStack>
-          {ok && showNext ? (
+          {showNext ? (
             <Button
               rightIcon={<FiArrowRight />}
               colorScheme="cyan"
@@ -2983,6 +3097,7 @@ Return JSON ONLY:
                 onClick={submitFill}
                 isDisabled={
                   lastOk === true || loadingG || !input.trim() || !question
+                  || (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
@@ -2993,7 +3108,10 @@ Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={lastOk === true && nextAction}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
               onNext={handleNext}
               nextLabel={nextQuestionLabel}
             />
@@ -3270,7 +3388,11 @@ Return JSON ONLY:
                 colorScheme="purple"
                 onClick={submitMC}
                 isDisabled={
-                  lastOk === true || loadingMCG || !mcPick || !mcChoices.length
+                  lastOk === true ||
+                  loadingMCG ||
+                  !mcPick ||
+                  !mcChoices.length ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
@@ -3281,7 +3403,10 @@ Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={lastOk === true && nextAction}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
               onNext={handleNext}
               nextLabel={nextQuestionLabel}
             />
@@ -3579,7 +3704,11 @@ Return JSON ONLY:
                 colorScheme="purple"
                 onClick={submitMA}
                 isDisabled={
-                  lastOk === true || loadingMAG || !maChoices.length || !maReady
+                  lastOk === true ||
+                  loadingMAG ||
+                  !maChoices.length ||
+                  !maReady ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
@@ -3590,7 +3719,10 @@ Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={lastOk === true && nextAction}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
               onNext={handleNext}
               nextLabel={nextQuestionLabel}
             />
@@ -3804,7 +3936,12 @@ Return JSON ONLY:
                     }
                   }
                 }}
-                isDisabled={!supportsSpeak || loadingSpeakQ || !sTarget}
+                isDisabled={
+                  !supportsSpeak ||
+                  loadingSpeakQ ||
+                  !sTarget ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                }
               >
                 {isSpeakRecording
                   ? t("grammar_speak_stop") ||
@@ -4074,7 +4211,8 @@ Return JSON ONLY:
                   lastOk === true ||
                   !canSubmitMatch() ||
                   loadingMJ ||
-                  !mLeft.length
+                  !mLeft.length ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
@@ -4085,7 +4223,10 @@ Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={lastOk === true && nextAction}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
               onNext={handleNext}
               nextLabel={nextQuestionLabel}
             />
