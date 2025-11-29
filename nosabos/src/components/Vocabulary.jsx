@@ -721,6 +721,10 @@ export default function Vocabulary({
   const [showQuizFailureModal, setShowQuizFailureModal] = useState(false);
   const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
 
+  const passingPercentage = quizConfig.questionsRequired
+    ? Math.round((quizConfig.passingScore / quizConfig.questionsRequired) * 100)
+    : 0;
+
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
 
@@ -2749,15 +2753,35 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
      - Wait until 'ready' so target/support languages are applied.
      - Randomize by default; only lock when user picks a type explicitly.
   --------------------------- */
-  const autoInitRef = useRef(false);
+  const autoInitRef = useRef(null);
+
+  // Reset state when switching lessons to avoid carrying over XP-based turns
   useEffect(() => {
-    if (autoInitRef.current) return;
+    setMode("fill");
+    setLastOk(null);
+    setRecentXp(0);
+    setNextAction(null);
+    typeDeckRef.current = [];
+    setQuizQuestionsAnswered(0);
+    setQuizCorrectAnswers(0);
+    setQuizCompleted(false);
+    setQuizPassed(false);
+    setQuizCurrentQuestionAttempted(false);
+    setQuizAnswerHistory([]);
+    autoInitRef.current = null;
+  }, [lesson?.id, isFinalQuiz]);
+  useEffect(() => {
     if (showPasscodeModal) return;
     if (!ready) return; // ✅ wait for user progress to load
-    autoInitRef.current = true;
+    if (!lesson?.id) return;
+
+    const initKey = `${lesson.id}-${isFinalQuiz ? "quiz" : "lesson"}`;
+    if (autoInitRef.current === initKey) return;
+
+    autoInitRef.current = initKey;
     generateRandom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal]);
+  }, [ready, showPasscodeModal, lesson?.id, isFinalQuiz]);
 
   if (showPasscodeModal) {
     return (
@@ -3247,8 +3271,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
                 <Text fontSize="xs" color="gray.400" textAlign="center">
                   {userLanguage === "es"
-                    ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
-                    : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                    ? `${quizCorrectAnswers} correctas • Necesitas ${passingPercentage}% para aprobar`
+                    : `${quizCorrectAnswers} correct • Need ${passingPercentage}% to pass`}
                 </Text>
               </VStack>
             ) : (
@@ -4586,8 +4610,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
                     {userLanguage === "es"
-                      ? `${quizCorrectAnswers} correctas • Necesitabas ${quizConfig.passingScore}`
-                      : `${quizCorrectAnswers} correct • Needed ${quizConfig.passingScore}`}
+                      ? `${quizCorrectAnswers} correctas • Necesitabas ${passingPercentage}%`
+                      : `${quizCorrectAnswers} correct • Needed ${passingPercentage}%`}
                   </Text>
                 </VStack>
               </Box>
@@ -4688,8 +4712,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
                     {userLanguage === "es"
-                      ? `${quizCorrectAnswers} correctas • Necesitas ${quizConfig.passingScore} para aprobar`
-                      : `${quizCorrectAnswers} correct • Need ${quizConfig.passingScore} to pass`}
+                      ? `${quizCorrectAnswers} correctas • Necesitas ${passingPercentage}% para aprobar`
+                      : `${quizCorrectAnswers} correct • Need ${passingPercentage}% to pass`}
                   </Text>
                 </VStack>
               </Box>
