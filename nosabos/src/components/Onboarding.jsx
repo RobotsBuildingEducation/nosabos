@@ -10,7 +10,6 @@ import {
   DrawerOverlay,
   HStack,
   Input,
-  Select,
   Switch,
   Text,
   VStack,
@@ -23,8 +22,13 @@ import {
   SliderFilledTrack,
   SliderThumb,
   IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItemOption,
+  MenuOptionGroup,
 } from "@chakra-ui/react";
-import { ArrowBackIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon, ChevronDownIcon } from "@chakra-ui/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { WaveBar } from "./WaveBar";
@@ -354,69 +358,88 @@ export default function Onboarding({
                     </Text>
                     <Wrap spacing={2}>
                       <WrapItem>
-                        <Select
-                          value={level}
-                          onChange={(e) => setLevel(e.target.value)}
-                          bg="gray.800"
-                          size="md"
-                          w="auto"
-                        >
-                          <option value="beginner">
-                            {ui.onboarding_level_beginner}
-                          </option>
-                          <option value="intermediate">
-                            {ui.onboarding_level_intermediate}
-                          </option>
-                          <option value="advanced">
-                            {ui.onboarding_level_advanced}
-                          </option>
-                        </Select>
+                        <Menu autoSelect={false} isLazy>
+                          <MenuButton
+                            as={Button}
+                            rightIcon={<ChevronDownIcon />}
+                            variant="outline"
+                            size="sm"
+                            borderColor="gray.700"
+                            bg="gray.800"
+                            _hover={{ bg: "gray.750" }}
+                            _active={{ bg: "gray.750" }}
+                          >
+                            {supportLang === "en" && ui.onboarding_support_en}
+                            {supportLang === "bilingual" && ui.onboarding_support_bilingual}
+                            {supportLang === "es" && ui.onboarding_support_es}
+                          </MenuButton>
+                          <MenuList borderColor="gray.700" bg="gray.900">
+                            <MenuOptionGroup
+                              type="radio"
+                              value={supportLang}
+                              onChange={(value) => setSupportLang(value)}
+                            >
+                              <MenuItemOption value="en">
+                                {ui.onboarding_support_en}
+                              </MenuItemOption>
+                              <MenuItemOption value="bilingual">
+                                {ui.onboarding_support_bilingual}
+                              </MenuItemOption>
+                              <MenuItemOption value="es">
+                                {ui.onboarding_support_es}
+                              </MenuItemOption>
+                            </MenuOptionGroup>
+                          </MenuList>
+                        </Menu>
                       </WrapItem>
 
                       <WrapItem>
-                        <Select
-                          value={supportLang}
-                          onChange={(e) => setSupportLang(e.target.value)}
-                          bg="gray.800"
-                          size="md"
-                          w="auto"
-                        >
-                          <option value="en">{ui.onboarding_support_en}</option>
-                          <option value="bilingual">
-                            {ui.onboarding_support_bilingual}
-                          </option>
-                          <option value="es">{ui.onboarding_support_es}</option>
-                        </Select>
-                      </WrapItem>
-
-                      <WrapItem>
-                        <Select
-                          value={targetLang}
-                          onChange={(e) => setTargetLang(e.target.value)}
-                          bg="gray.800"
-                          size="md"
-                          w="auto"
-                          title={ui.onboarding_practice_label_title}
-                        >
-                          <option value="nah">
-                            {ui.onboarding_practice_nah}
-                          </option>
-                          <option value="es">
-                            {ui.onboarding_practice_es}
-                          </option>
-                          <option value="pt">
-                            {ui.onboarding_practice_pt}
-                          </option>
-                          <option value="fr">
-                            {ui.onboarding_practice_fr}
-                          </option>
-                          <option value="it">
-                            {ui.onboarding_practice_it}
-                          </option>
-                          <option value="en">
-                            {ui.onboarding_practice_en}
-                          </option>
-                        </Select>
+                        <Menu autoSelect={false} isLazy>
+                          <MenuButton
+                            as={Button}
+                            rightIcon={<ChevronDownIcon />}
+                            variant="outline"
+                            size="sm"
+                            borderColor="gray.700"
+                            bg="gray.800"
+                            _hover={{ bg: "gray.750" }}
+                            _active={{ bg: "gray.750" }}
+                            title={ui.onboarding_practice_label_title}
+                          >
+                            {targetLang === "nah" && ui.onboarding_practice_nah}
+                            {targetLang === "es" && ui.onboarding_practice_es}
+                            {targetLang === "pt" && ui.onboarding_practice_pt}
+                            {targetLang === "fr" && ui.onboarding_practice_fr}
+                            {targetLang === "it" && ui.onboarding_practice_it}
+                            {targetLang === "en" && ui.onboarding_practice_en}
+                          </MenuButton>
+                          <MenuList borderColor="gray.700" bg="gray.900">
+                            <MenuOptionGroup
+                              type="radio"
+                              value={targetLang}
+                              onChange={(value) => setTargetLang(value)}
+                            >
+                              <MenuItemOption value="nah">
+                                {ui.onboarding_practice_nah}
+                              </MenuItemOption>
+                              <MenuItemOption value="es">
+                                {ui.onboarding_practice_es}
+                              </MenuItemOption>
+                              <MenuItemOption value="pt">
+                                {ui.onboarding_practice_pt}
+                              </MenuItemOption>
+                              <MenuItemOption value="fr">
+                                {ui.onboarding_practice_fr}
+                              </MenuItemOption>
+                              <MenuItemOption value="it">
+                                {ui.onboarding_practice_it}
+                              </MenuItemOption>
+                              <MenuItemOption value="en">
+                                {ui.onboarding_practice_en}
+                              </MenuItemOption>
+                            </MenuOptionGroup>
+                          </MenuList>
+                        </Menu>
                       </WrapItem>
                     </Wrap>
                   </Box>
@@ -454,36 +477,59 @@ export default function Onboarding({
                     </Text>
                     <Wrap spacing={2} mb={2}>
                       <WrapItem>
-                        <Select
-                          value={voice}
-                          onChange={(e) => setVoice(e.target.value)}
-                          bg="gray.800"
-                          size="md"
-                          w="auto"
-                        >
-                          <option value="alloy">
-                            {ui.onboarding_voice_alloy}
-                          </option>
-                          <option value="ash">{ui.onboarding_voice_ash}</option>
-                          <option value="ballad">
-                            {ui.onboarding_voice_ballad}
-                          </option>
-                          <option value="coral">
-                            {ui.onboarding_voice_coral}
-                          </option>
-                          <option value="echo">
-                            {ui.onboarding_voice_echo}
-                          </option>
-                          <option value="sage">
-                            {ui.onboarding_voice_sage}
-                          </option>
-                          <option value="shimmer">
-                            {ui.onboarding_voice_shimmer}
-                          </option>
-                          <option value="verse">
-                            {ui.onboarding_voice_verse}
-                          </option>
-                        </Select>
+                        <Menu autoSelect={false} isLazy>
+                          <MenuButton
+                            as={Button}
+                            rightIcon={<ChevronDownIcon />}
+                            variant="outline"
+                            size="sm"
+                            borderColor="gray.700"
+                            bg="gray.800"
+                            _hover={{ bg: "gray.750" }}
+                            _active={{ bg: "gray.750" }}
+                          >
+                            {voice === "alloy" && ui.onboarding_voice_alloy}
+                            {voice === "ash" && ui.onboarding_voice_ash}
+                            {voice === "ballad" && ui.onboarding_voice_ballad}
+                            {voice === "coral" && ui.onboarding_voice_coral}
+                            {voice === "echo" && ui.onboarding_voice_echo}
+                            {voice === "sage" && ui.onboarding_voice_sage}
+                            {voice === "shimmer" && ui.onboarding_voice_shimmer}
+                            {voice === "verse" && ui.onboarding_voice_verse}
+                          </MenuButton>
+                          <MenuList borderColor="gray.700" bg="gray.900">
+                            <MenuOptionGroup
+                              type="radio"
+                              value={voice}
+                              onChange={(value) => setVoice(value)}
+                            >
+                              <MenuItemOption value="alloy">
+                                {ui.onboarding_voice_alloy}
+                              </MenuItemOption>
+                              <MenuItemOption value="ash">
+                                {ui.onboarding_voice_ash}
+                              </MenuItemOption>
+                              <MenuItemOption value="ballad">
+                                {ui.onboarding_voice_ballad}
+                              </MenuItemOption>
+                              <MenuItemOption value="coral">
+                                {ui.onboarding_voice_coral}
+                              </MenuItemOption>
+                              <MenuItemOption value="echo">
+                                {ui.onboarding_voice_echo}
+                              </MenuItemOption>
+                              <MenuItemOption value="sage">
+                                {ui.onboarding_voice_sage}
+                              </MenuItemOption>
+                              <MenuItemOption value="shimmer">
+                                {ui.onboarding_voice_shimmer}
+                              </MenuItemOption>
+                              <MenuItemOption value="verse">
+                                {ui.onboarding_voice_verse}
+                              </MenuItemOption>
+                            </MenuOptionGroup>
+                          </MenuList>
+                        </Menu>
                       </WrapItem>
                     </Wrap>
 
