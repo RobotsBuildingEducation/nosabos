@@ -745,12 +745,20 @@ export default function Vocabulary({
         currentAttempted,
       } = parsed;
 
-      setQuizQuestionsAnswered(Number.isFinite(answered) ? answered : 0);
-      setQuizCorrectAnswers(Number.isFinite(correct) ? correct : 0);
-      setQuizCompleted(Boolean(completed));
+      const safeAnswered = Number.isFinite(answered) ? answered : 0;
+      const safeCorrect = Number.isFinite(correct) ? correct : 0;
+      const safeCompleted = Boolean(completed);
+
+      setQuizQuestionsAnswered(safeAnswered);
+      setQuizCorrectAnswers(safeCorrect);
+      setQuizCompleted(safeCompleted);
       setQuizPassed(Boolean(passed));
       setQuizAnswerHistory(Array.isArray(history) ? history : []);
-      setQuizCurrentQuestionAttempted(Boolean(currentAttempted));
+
+      // If the quiz was still in progress, allow the learner to answer again
+      // rather than keeping the previous "attempted" lock from localStorage.
+      const attempted = Boolean(currentAttempted);
+      setQuizCurrentQuestionAttempted(safeCompleted ? attempted : false);
     } catch (error) {
       console.warn("Failed to load quiz progress", error);
     }
@@ -3149,6 +3157,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   const skipLabel =
     t("practice_skip_question") ||
     (userLanguage === "es" ? "Omitir pregunta" : "skip");
+  const canSkip = !isFinalQuiz && !quizCompleted;
+  const showNextButton = isFinalQuiz
+    ? Boolean(nextAction)
+    : Boolean(lastOk === true && nextAction);
   const speakListenLabel =
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
   const synthLabel =
@@ -3406,7 +3418,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              {!isFinalQuiz && (
+              {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -3435,10 +3447,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
-              }
+              showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
             />
@@ -3695,7 +3704,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              {!isFinalQuiz && (
+              {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -3724,10 +3733,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
-              }
+              showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
             />
@@ -4006,7 +4012,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              {!isFinalQuiz && (
+              {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -4035,10 +4041,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
-              }
+              showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
             />
@@ -4192,7 +4195,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
               mt={4}
             >
-              {!isFinalQuiz && (
+              {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -4272,10 +4275,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
-              }
+              showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
             />
@@ -4523,7 +4523,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              {!isFinalQuiz && (
+              {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -4552,10 +4552,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             <FeedbackRail
               ok={lastOk}
               xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
-              }
+              showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
             />
