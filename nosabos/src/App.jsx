@@ -2204,7 +2204,21 @@ export default function App() {
       if (data?.updatedAt) patch.updatedAt = data.updatedAt;
       if (data?.appLanguage) patch.appLanguage = data.appLanguage;
 
-      patchUser?.(patch);
+      const patchHasChanges = Object.entries(patch).some(([key, value]) => {
+        const current = user?.[key];
+        if (value && typeof value === "object") {
+          try {
+            return JSON.stringify(current) !== JSON.stringify(value);
+          } catch {
+            return true;
+          }
+        }
+        return current !== value;
+      });
+
+      if (patchHasChanges) {
+        patchUser?.(patch);
+      }
 
       if (prevXpRef.current == null) {
         prevXpRef.current = newXp;
@@ -2324,6 +2338,7 @@ export default function App() {
     sendOneSatToNpub,
     pickRandomFeature,
     patchUser,
+    user,
     user?.identity,
     maybePostNostrProgress,
     viewMode,
