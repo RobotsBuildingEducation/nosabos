@@ -1515,7 +1515,7 @@ YES or NO
           )}
 
           {/* Next Button - appears after answering */}
-          {lastOk !== null && !isLoading && (
+          {lastOk !== null && (
             <Button
               colorScheme="blue"
               size="lg"
