@@ -398,7 +398,14 @@ function buildMCStreamPrompt({
   ].join("\n");
 }
 
-function buildMCJudgePrompt({ targetLang, stem, choices, userChoice, hint }) {
+function buildMCJudgePrompt({
+  targetLang,
+  stem,
+  choices,
+  userChoice,
+  hint,
+  canonicalAnswer = "",
+}) {
   const listed = choices.map((c, i) => `${i + 1}. ${c}`).join("\n");
   return `
 Judge a MULTIPLE-CHOICE grammar question in ${LANG_NAME(targetLang)}.
@@ -412,11 +419,14 @@ ${listed}
 User selected:
 ${userChoice}
 
+Canonical correct answer (author-provided):
+${canonicalAnswer || "(missing)"}
+
 Hint (optional):
 ${hint || ""}
 
 Instructions:
-- Say YES if the selected choice is a grammatically correct, context-appropriate answer to the stem.
+- Say YES if the selected choice matches the canonical answer OR is a grammatically correct, context-appropriate answer to the stem.
 - Use the hint and any time/aspect cues in the stem (e.g., "usually", "yesterday", "for/since").
 - Allow contractions, minor punctuation/casing differences, and natural variation.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
@@ -544,9 +554,14 @@ function buildMAJudgePrompt({
   choices,
   userSelections,
   hint,
+  canonicalAnswers = [],
 }) {
   const listed = choices.map((c, i) => `${i + 1}. ${c}`).join("\n");
   const picked = userSelections.map((c) => `- ${c}`).join("\n");
+  const canonical =
+    canonicalAnswers && canonicalAnswers.length
+      ? canonicalAnswers.map((c) => `- ${c}`).join("\n")
+      : "(missing)";
   return `
 Judge a MULTIPLE-ANSWER grammar question in ${LANG_NAME(targetLang)}.
 
@@ -559,12 +574,16 @@ ${listed}
 User selected (order irrelevant):
 ${picked || "(none)"}
 
+Canonical correct answers (author-provided):
+${canonical}
+
 Hint (optional):
 ${hint || ""}
 
 Instructions:
 - Determine which choices are grammatically correct and context-appropriate answers.
-- Say YES if the user's selection includes ALL correct choices and NO incorrect ones (order doesn't matter).
+- Prioritize the canonical answers: if the user's selection matches them (order-agnostic), say YES.
+- Otherwise, judge grammatically. Say YES if the user's selection includes ALL correct choices and NO incorrect ones (order doesn't matter).
 - Be lenient about contractions and minor surface differences; focus on grammar/meaning fit with the stem + hint.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - If two variants are both acceptable, either may be included.
@@ -1389,6 +1408,26 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
   }
 
   /* ---------- STREAM Generate: MC ---------- */
+  function validateMCItem(parsed) {
+    if (!parsed || typeof parsed.question !== "string") return null;
+    const choices = Array.isArray(parsed.choices)
+      ? parsed.choices.map(String).filter(Boolean).slice(0, 4)
+      : [];
+
+    if (choices.length < 3) return null;
+
+    const alignedAnswer =
+      choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
+
+    return {
+      question: parsed.question,
+      hint: String(parsed.hint || ""),
+      choices,
+      answer: alignedAnswer,
+      translation: String(parsed.translation || ""),
+    };
+  }
+
   async function generateMC() {
     setMode("mc");
     setLoadingMCQ(true);
@@ -1420,6 +1459,11 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
 
     let got = false;
     let pendingAnswer = "";
+    let mcStemLocal = "";
+    let mcHintLocal = "";
+    let mcChoicesLocal = [];
+    let mcAnswerLocal = "";
+    let mcTranslationLocal = "";
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -1440,6 +1484,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "mc" && obj.phase === "q" && obj.question) {
               setMcQ(String(obj.question));
+              mcStemLocal = String(obj.question);
               got = true;
             } else if (
               obj?.type === "mc" &&
@@ -1448,25 +1493,33 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
             ) {
               const choices = obj.choices.slice(0, 4).map(String);
               setMcChoices(choices);
+              mcChoicesLocal = choices;
               // If answer already known, align it
               if (pendingAnswer) {
                 const ans =
                   choices.find((c) => norm(c) === norm(pendingAnswer)) ||
                   choices[0];
                 setMcAnswer(ans);
+                mcAnswerLocal = ans;
               }
               got = true;
             } else if (obj?.type === "mc" && obj.phase === "meta") {
-              if (typeof obj.hint === "string") setMcHint(obj.hint);
-              if (typeof obj.translation === "string")
+              if (typeof obj.hint === "string") {
+                setMcHint(obj.hint);
+                mcHintLocal = obj.hint;
+              }
+              if (typeof obj.translation === "string") {
                 setMcTranslation(obj.translation);
+                mcTranslationLocal = obj.translation;
+              }
               if (typeof obj.answer === "string") {
                 pendingAnswer = obj.answer;
-                if (Array.isArray(mcChoices) && mcChoices.length) {
+                if (Array.isArray(mcChoicesLocal) && mcChoicesLocal.length) {
                   const ans =
-                    mcChoices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    mcChoices[0];
+                    mcChoicesLocal.find((c) => norm(c) === norm(pendingAnswer)) ||
+                    mcChoicesLocal[0];
                   setMcAnswer(ans);
+                  mcAnswerLocal = ans;
                 }
               }
               got = true;
@@ -1488,43 +1541,69 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
           .filter(Boolean)
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
-              if (obj?.type === "mc" && obj.phase === "q" && obj.question) {
-                setMcQ(String(obj.question));
-                got = true;
-              } else if (
-                obj?.type === "mc" &&
-                obj.phase === "choices" &&
-                Array.isArray(obj.choices)
-              ) {
-                const choices = obj.choices.slice(0, 4).map(String);
-                setMcChoices(choices);
-                if (pendingAnswer) {
-                  const ans =
-                    choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    choices[0];
-                  setMcAnswer(ans);
-                }
-                got = true;
-              } else if (obj?.type === "mc" && obj.phase === "meta") {
-                if (typeof obj.hint === "string") setMcHint(obj.hint);
-                if (typeof obj.translation === "string")
-                  setMcTranslation(obj.translation);
-                if (typeof obj.answer === "string") {
-                  pendingAnswer = obj.answer;
-                  if (Array.isArray(mcChoices) && mcChoices.length) {
-                    const ans =
-                      mcChoices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                      mcChoices[0];
-                    setMcAnswer(ans);
-                  }
-                }
-                got = true;
+            if (obj?.type === "mc" && obj.phase === "q" && obj.question) {
+              setMcQ(String(obj.question));
+              mcStemLocal = String(obj.question);
+              got = true;
+            } else if (
+              obj?.type === "mc" &&
+              obj.phase === "choices" &&
+              Array.isArray(obj.choices)
+            ) {
+              const choices = obj.choices.slice(0, 4).map(String);
+              setMcChoices(choices);
+              mcChoicesLocal = choices;
+              if (pendingAnswer) {
+                const ans =
+                  choices.find((c) => norm(c) === norm(pendingAnswer)) ||
+                  choices[0];
+                setMcAnswer(ans);
+                mcAnswerLocal = ans;
               }
-            })
-          );
+              got = true;
+            } else if (obj?.type === "mc" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") {
+                setMcHint(obj.hint);
+                mcHintLocal = obj.hint;
+              }
+              if (typeof obj.translation === "string") {
+                setMcTranslation(obj.translation);
+                mcTranslationLocal = obj.translation;
+              }
+              if (typeof obj.answer === "string") {
+                pendingAnswer = obj.answer;
+                if (Array.isArray(mcChoicesLocal) && mcChoicesLocal.length) {
+                  const ans =
+                    mcChoicesLocal.find((c) => norm(c) === norm(pendingAnswer)) ||
+                    mcChoicesLocal[0];
+                  setMcAnswer(ans);
+                  mcAnswerLocal = ans;
+                }
+              }
+              got = true;
+            }
+          })
+        );
       }
 
-      if (!got) throw new Error("no-mc");
+      const validated = validateMCItem({
+        question: mcStemLocal,
+        hint: mcHintLocal,
+        choices: mcChoicesLocal,
+        answer: mcAnswerLocal || pendingAnswer,
+        translation: mcTranslationLocal,
+      });
+
+      if (validated) {
+        setMcQ(validated.question);
+        setMcHint(validated.hint);
+        setMcChoices(validated.choices);
+        setMcAnswer(validated.answer);
+        setMcTranslation(validated.translation);
+        got = true;
+      }
+
+      if (!got || !validated) throw new Error("no-mc");
     } catch {
       // Fallback (non-stream)
       const fallback = `
@@ -1573,7 +1652,7 @@ Create ONE multiple-choice ${LANG_NAME(
             : ""
         );
       }
-    } finally {
+  } finally {
       setLoadingMCQ(false);
     }
   }
@@ -1649,6 +1728,11 @@ Create ONE multiple-choice ${LANG_NAME(
 
     let got = false;
     let pendingAnswers = [];
+    let maStemLocal = "";
+    let maHintLocal = "";
+    let maChoicesLocal = [];
+    let maAnswersLocal = [];
+    let maTranslationLocal = "";
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -1669,6 +1753,7 @@ Create ONE multiple-choice ${LANG_NAME(
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "ma" && obj.phase === "q" && obj.question) {
               setMaQ(String(obj.question));
+              maStemLocal = String(obj.question);
               got = true;
             } else if (
               obj?.type === "ma" &&
@@ -1677,25 +1762,37 @@ Create ONE multiple-choice ${LANG_NAME(
             ) {
               const choices = obj.choices.slice(0, 6).map(String);
               setMaChoices(choices);
+              maChoicesLocal = choices;
               // If we already have pending answers, align them
               if (pendingAnswers?.length) {
                 const aligned = pendingAnswers.filter((a) =>
                   choices.some((c) => norm(c) === norm(a))
                 );
-                if (aligned.length >= 2) setMaAnswers(aligned);
+                if (aligned.length >= 2) {
+                  setMaAnswers(aligned);
+                  maAnswersLocal = aligned;
+                }
               }
               got = true;
             } else if (obj?.type === "ma" && obj.phase === "meta") {
-              if (typeof obj.hint === "string") setMaHint(obj.hint);
-              if (typeof obj.translation === "string")
+              if (typeof obj.hint === "string") {
+                setMaHint(obj.hint);
+                maHintLocal = obj.hint;
+              }
+              if (typeof obj.translation === "string") {
                 setMaTranslation(obj.translation);
+                maTranslationLocal = obj.translation;
+              }
               if (Array.isArray(obj.answers)) {
                 pendingAnswers = obj.answers.map(String);
-                if (Array.isArray(maChoices) && maChoices.length) {
+                if (Array.isArray(maChoicesLocal) && maChoicesLocal.length) {
                   const aligned = pendingAnswers.filter((a) =>
-                    maChoices.some((c) => norm(c) === norm(a))
+                    maChoicesLocal.some((c) => norm(c) === norm(a))
                   );
-                  if (aligned.length >= 2) setMaAnswers(aligned);
+                  if (aligned.length >= 2) {
+                    setMaAnswers(aligned);
+                    maAnswersLocal = aligned;
+                  }
                 }
               }
               got = true;
@@ -1717,43 +1814,73 @@ Create ONE multiple-choice ${LANG_NAME(
           .filter(Boolean)
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
-              if (obj?.type === "ma" && obj.phase === "q" && obj.question) {
-                setMaQ(String(obj.question));
-                got = true;
-              } else if (
-                obj?.type === "ma" &&
-                obj.phase === "choices" &&
-                Array.isArray(obj.choices)
-              ) {
-                const choices = obj.choices.slice(0, 6).map(String);
-                setMaChoices(choices);
-                if (pendingAnswers?.length) {
-                  const aligned = pendingAnswers.filter((a) =>
-                    choices.some((c) => norm(c) === norm(a))
-                  );
-                  if (aligned.length >= 2) setMaAnswers(aligned);
+            if (obj?.type === "ma" && obj.phase === "q" && obj.question) {
+              setMaQ(String(obj.question));
+              maStemLocal = String(obj.question);
+              got = true;
+            } else if (
+              obj?.type === "ma" &&
+              obj.phase === "choices" &&
+              Array.isArray(obj.choices)
+            ) {
+              const choices = obj.choices.slice(0, 6).map(String);
+              setMaChoices(choices);
+              maChoicesLocal = choices;
+              if (pendingAnswers?.length) {
+                const aligned = pendingAnswers.filter((a) =>
+                  choices.some((c) => norm(c) === norm(a))
+                );
+                if (aligned.length >= 2) {
+                  setMaAnswers(aligned);
+                  maAnswersLocal = aligned;
                 }
-                got = true;
-              } else if (obj?.type === "ma" && obj.phase === "meta") {
-                if (typeof obj.hint === "string") setMaHint(obj.hint);
-                if (typeof obj.translation === "string")
-                  setMaTranslation(obj.translation);
-                if (Array.isArray(obj.answers)) {
-                  pendingAnswers = obj.answers.map(String);
-                  if (Array.isArray(maChoices) && maChoices.length) {
-                    const aligned = pendingAnswers.filter((a) =>
-                      maChoices.some((c) => norm(c) === norm(a))
-                    );
-                    if (aligned.length >= 2) setMaAnswers(aligned);
+              }
+              got = true;
+            } else if (obj?.type === "ma" && obj.phase === "meta") {
+              if (typeof obj.hint === "string") {
+                setMaHint(obj.hint);
+                maHintLocal = obj.hint;
+              }
+              if (typeof obj.translation === "string") {
+                setMaTranslation(obj.translation);
+                maTranslationLocal = obj.translation;
+              }
+              if (Array.isArray(obj.answers)) {
+                pendingAnswers = obj.answers.map(String);
+                if (Array.isArray(maChoicesLocal) && maChoicesLocal.length) {
+                  const aligned = pendingAnswers.filter((a) =>
+                    maChoicesLocal.some((c) => norm(c) === norm(a))
+                  );
+                  if (aligned.length >= 2) {
+                    setMaAnswers(aligned);
+                    maAnswersLocal = aligned;
                   }
                 }
-                got = true;
+              }
+              got = true;
               }
             })
           );
       }
 
-      if (!got) throw new Error("no-ma");
+      const validated = sanitizeMA({
+        question: maStemLocal,
+        hint: maHintLocal,
+        choices: maChoicesLocal,
+        answers: maAnswersLocal.length ? maAnswersLocal : pendingAnswers,
+        translation: maTranslationLocal,
+      });
+
+      if (validated) {
+        setMaQ(validated.question);
+        setMaHint(validated.hint);
+        setMaChoices(validated.choices);
+        setMaAnswers(validated.answers);
+        setMaTranslation(validated.translation);
+        got = true;
+      }
+
+      if (!got || !validated) throw new Error("no-ma");
     } catch {
       // Fallback (non-stream)
       const fallback = `
@@ -2186,16 +2313,22 @@ Return JSON ONLY:
     if (!mcQ || !mcPick) return;
     setLoadingMCG(true);
 
-    const verdictRaw = await callResponses({
-      model: MODEL,
-      input: buildMCJudgePrompt({
-        targetLang,
-        stem: mcQ,
-        choices: mcChoices,
-        userChoice: mcPick,
-        hint: mcHint,
-      }),
-    });
+    const deterministicOk =
+      mcAnswer && norm(mcAnswer) && norm(mcPick) === norm(mcAnswer);
+
+    const verdictRaw = deterministicOk
+      ? "YES"
+      : await callResponses({
+          model: MODEL,
+          input: buildMCJudgePrompt({
+            targetLang,
+            stem: mcQ,
+            choices: mcChoices,
+            userChoice: mcPick,
+            hint: mcHint,
+            canonicalAnswer: mcAnswer,
+          }),
+        });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
@@ -2245,16 +2378,29 @@ Return JSON ONLY:
     if (!maQ || !maPicks.length) return;
     setLoadingMAG(true);
 
-    const verdictRaw = await callResponses({
-      model: MODEL,
-      input: buildMAJudgePrompt({
-        targetLang,
-        stem: maQ,
-        choices: maChoices,
-        userSelections: maPicks,
-        hint: maHint,
-      }),
-    });
+    const normSet = (arr) =>
+      Array.from(new Set(arr.map((s) => norm(s)).filter(Boolean))).sort();
+    const canonical = normSet(maAnswers || []);
+    const picked = normSet(maPicks || []);
+
+    const deterministicOk =
+      canonical.length > 0 &&
+      canonical.length === picked.length &&
+      canonical.every((c, i) => c === picked[i]);
+
+    const verdictRaw = deterministicOk
+      ? "YES"
+      : await callResponses({
+          model: MODEL,
+          input: buildMAJudgePrompt({
+            targetLang,
+            stem: maQ,
+            choices: maChoices,
+            userSelections: maPicks,
+            hint: maHint,
+            canonicalAnswers: maAnswers,
+          }),
+        });
 
     const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
