@@ -700,6 +700,8 @@ export default function Vocabulary({
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
+  const finalQuizMode = Boolean(isFinalQuiz || lesson?.isFinalQuiz);
+
   // Extract CEFR level from lesson ID
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
 
@@ -886,13 +888,13 @@ export default function Vocabulary({
     setNextAction(null);
 
     // In lesson mode (non-quiz), move to next module
-    if (onSkip && !isFinalQuiz) {
+    if (onSkip && !finalQuizMode) {
       onSkip();
       return;
     }
 
     // Reset quiz question attempted flag for next question
-    if (isFinalQuiz) {
+    if (finalQuizMode) {
       setQuizCurrentQuestionAttempted(false);
     }
 
@@ -933,7 +935,7 @@ export default function Vocabulary({
 
   function handleSkip() {
     // Skip button is disabled in quiz mode
-    if (isFinalQuiz) return;
+    if (finalQuizMode) return;
 
     if (isSpeakRecording) {
       try {
@@ -1465,7 +1467,7 @@ Return EXACTLY:
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     // Handle quiz mode differently
-    if (isFinalQuiz) {
+    if (finalQuizMode) {
       handleQuizAnswer(ok);
       setResFill(ok ? "correct" : "try_again");
       setLastOk(ok);
@@ -1490,7 +1492,7 @@ Return EXACTLY:
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
     // In quiz mode, always show next button (even on wrong answer)
     const nextFn =
-      ok || isFinalQuiz
+      ok || finalQuizMode
         ? lockedType
           ? () => generatorFor(lockedType)()
           : () => generateRandomRef.current()
@@ -1723,7 +1725,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     // Handle quiz mode differently
-    if (isFinalQuiz) {
+    if (finalQuizMode) {
       handleQuizAnswer(ok);
       setResMC(ok ? "correct" : "try_again");
       setLastOk(ok);
@@ -1749,7 +1751,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
 
     // In quiz mode, always show next button (even on wrong answer)
     const nextFn =
-      ok || isFinalQuiz
+      ok || finalQuizMode
         ? lockedType
           ? () => generatorFor(lockedType)()
           : () => generateRandomRef.current()
@@ -2007,7 +2009,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     // Handle quiz mode differently
-    if (isFinalQuiz) {
+    if (finalQuizMode) {
       handleQuizAnswer(ok);
       setResMA(ok ? "correct" : "try_again");
       setLastOk(ok);
@@ -2033,7 +2035,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
 
     // In quiz mode, always show next button (even on wrong answer)
     const nextFn =
-      ok || isFinalQuiz
+      ok || finalQuizMode
         ? lockedType
           ? () => generatorFor(lockedType)()
           : () => generateRandomRef.current()
@@ -2479,7 +2481,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     // Handle quiz mode differently
-    if (isFinalQuiz) {
+    if (finalQuizMode) {
       handleQuizAnswer(ok);
       setMResult(ok ? "correct" : "try_again");
       setLastOk(ok);
@@ -2504,7 +2506,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
     // In quiz mode, always show next button (even on wrong answer)
     const nextFn =
-      ok || isFinalQuiz
+      ok || finalQuizMode
         ? lockedType
           ? () => generatorFor(lockedType)()
           : () => generateRandom()
@@ -2546,7 +2548,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
       // Handle quiz mode differently
-      if (isFinalQuiz) {
+      if (finalQuizMode) {
         handleQuizAnswer(ok);
         setLastOk(ok);
         setRecentXp(0); // No XP in quiz mode
@@ -2575,7 +2577,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
       // In quiz mode, always show next button (even on wrong answer)
       const nextFn =
-        ok || isFinalQuiz
+        ok || finalQuizMode
           ? lockedType
             ? () => generatorFor(lockedType)()
             : () => generateRandomRef.current()
@@ -2769,19 +2771,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setQuizCurrentQuestionAttempted(false);
     setQuizAnswerHistory([]);
     autoInitRef.current = null;
-  }, [lesson?.id, isFinalQuiz]);
+  }, [lesson?.id, finalQuizMode]);
   useEffect(() => {
     if (showPasscodeModal) return;
     if (!ready) return; // ✅ wait for user progress to load
     if (!lesson?.id) return;
 
-    const initKey = `${lesson.id}-${isFinalQuiz ? "quiz" : "lesson"}`;
+    const initKey = `${lesson.id}-${finalQuizMode ? "quiz" : "lesson"}`;
     if (autoInitRef.current === initKey) return;
 
     autoInitRef.current = initKey;
     generateRandom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal, lesson?.id, isFinalQuiz]);
+  }, [ready, showPasscodeModal, lesson?.id, finalQuizMode]);
 
   if (showPasscodeModal) {
     return (
@@ -3189,7 +3191,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* Shared progress header */}
         <Box display={"flex"} justifyContent={"center"}>
           <Box w="50%" justifyContent={"center"}>
-            {isFinalQuiz ? (
+            {finalQuizMode ? (
               // Quiz progress display with animated bars
               <VStack spacing={2}>
                 <HStack justify="space-between" w="100%" mb={1}>
@@ -3357,7 +3359,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              {!isFinalQuiz && (
+              {!finalQuizMode && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -3375,7 +3377,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   loadingGFill ||
                   !ansFill.trim() ||
                   !qFill ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                  (finalQuizMode && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
@@ -3387,7 +3389,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               ok={lastOk}
               xp={recentXp}
               showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                (lastOk === true || (finalQuizMode && lastOk === false)) &&
                 nextAction
               }
               onNext={handleNext}
@@ -3646,7 +3648,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              {!isFinalQuiz && (
+              {!finalQuizMode && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -3664,7 +3666,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   loadingGMC ||
                   !pickMC ||
                   !choicesMC.length ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                  (finalQuizMode && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
@@ -3676,7 +3678,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               ok={lastOk}
               xp={recentXp}
               showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                (lastOk === true || (finalQuizMode && lastOk === false)) &&
                 nextAction
               }
               onNext={handleNext}
@@ -3957,7 +3959,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              {!isFinalQuiz && (
+              {!finalQuizMode && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -3975,7 +3977,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   loadingGMA ||
                   !choicesMA.length ||
                   !maReady ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                  (finalQuizMode && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
@@ -3987,7 +3989,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               ok={lastOk}
               xp={recentXp}
               showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                (lastOk === true || (finalQuizMode && lastOk === false)) &&
                 nextAction
               }
               onNext={handleNext}
@@ -4143,7 +4145,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               align={{ base: "stretch", md: "center" }}
               mt={4}
             >
-              {!isFinalQuiz && (
+              {!finalQuizMode && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -4224,7 +4226,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               ok={lastOk}
               xp={recentXp}
               showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                (lastOk === true || (finalQuizMode && lastOk === false)) &&
                 nextAction
               }
               onNext={handleNext}
@@ -4474,7 +4476,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               spacing={3}
               align={{ base: "stretch", md: "center" }}
             >
-              {!isFinalQuiz && (
+              {!finalQuizMode && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
@@ -4492,7 +4494,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   !canSubmitMatch() ||
                   loadingMJ ||
                   !mLeft.length ||
-                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                  (finalQuizMode && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
@@ -4504,7 +4506,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               ok={lastOk}
               xp={recentXp}
               showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                (lastOk === true || (finalQuizMode && lastOk === false)) &&
                 nextAction
               }
               onNext={handleNext}
