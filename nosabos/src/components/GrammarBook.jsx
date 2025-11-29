@@ -1155,10 +1155,11 @@ export default function GrammarBook({
     if (autoInitRef.current) return;
     if (showPasscodeModal) return;
     if (!ready) return;
+    if (isFinalQuiz) return; // ✅ Don't auto-generate for quiz lessons
     autoInitRef.current = true;
     generateRandom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal]);
+  }, [ready, showPasscodeModal, isFinalQuiz]);
 
   /* ---------- STREAM Generate: Fill ---------- */
   async function generateFill() {
@@ -2810,6 +2811,44 @@ Return JSON ONLY:
             <WaveBar value={progressPct} />
           </Box>
         </Box>
+
+        {/* ---- START QUIZ BUTTON (for quiz lessons) ---- */}
+        {isFinalQuiz && !question && !mcQ && !maQ && !sTarget && mLeft.length === 0 && !loadingQ && !loadingMCQ && !loadingMAQ && !loadingSpeakQ && !loadingMG ? (
+          <VStack spacing={6} align="center" py={12}>
+            <Box
+              textAlign="center"
+              bg="rgba(159, 122, 234, 0.1)"
+              borderRadius="xl"
+              p={8}
+              borderWidth="2px"
+              borderColor="purple.500"
+            >
+              <VStack spacing={4}>
+                <Text fontSize="2xl" fontWeight="bold" color="purple.300">
+                  {userLanguage === "es" ? "Prueba Final" : "Final Quiz"}
+                </Text>
+                <Text fontSize="md" color="gray.400">
+                  {userLanguage === "es"
+                    ? `Responde ${quizConfig.questionsRequired} preguntas. Necesitas ${quizConfig.passingScore} correctas para aprobar.`
+                    : `Answer ${quizConfig.questionsRequired} questions. You need ${quizConfig.passingScore} correct to pass.`}
+                </Text>
+                <Button
+                  size="lg"
+                  colorScheme="purple"
+                  onClick={() => {
+                    const runner = generateRandom;
+                    if (typeof runner === "function") {
+                      runner();
+                    }
+                  }}
+                  mt={4}
+                >
+                  {userLanguage === "es" ? "Comenzar Prueba" : "Start Quiz"}
+                </Button>
+              </VStack>
+            </Box>
+          </VStack>
+        ) : null}
 
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
