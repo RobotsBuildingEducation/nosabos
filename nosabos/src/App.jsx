@@ -104,6 +104,7 @@ import {
   completeLesson,
   getLanguageXp,
 } from "./utils/progressTracking";
+import { awardXp } from "./utils/utils";
 import { RiArrowLeftLine } from "react-icons/ri";
 
 /* ---------------------------
@@ -2304,6 +2305,9 @@ export default function App() {
                 lessonLang
               )
                 .then(async () => {
+                  // Award XP to trigger daily goal check
+                  await awardXp(npub, activeLesson.xpReward, "lesson");
+
                   const fresh = await loadUserObjectFromDB(database, npub);
                   if (fresh) setUser?.(fresh);
 
