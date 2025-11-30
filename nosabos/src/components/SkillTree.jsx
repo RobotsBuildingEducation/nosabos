@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import PathSwitcher from "./PathSwitcher";
+import FlashcardSkillTree from "./FlashcardSkillTree";
 import {
   RiLockLine,
   RiCheckLine,
@@ -2044,27 +2045,10 @@ export default function SkillTree({
             )}
           </VStack>
         ) : (
-          <Box
-            textAlign="center"
-            py={20}
-            bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
-            backdropFilter="blur(10px)"
-            borderRadius="2xl"
-            border="1px solid"
-            borderColor="whiteAlpha.200"
-            boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
-          >
-            <VStack spacing={4}>
-              <RiFileList3Line size={64} color="rgba(255, 255, 255, 0.4)" />
-              <Text fontSize="2xl" fontWeight="bold" color="white">
-                Flashcard Path
-              </Text>
-              <Text fontSize="md" color="gray.400" maxW="md">
-                Practice the 1000 most important words and phrases. This
-                feature is coming soon!
-              </Text>
-            </VStack>
-          </Box>
+          <FlashcardSkillTree
+            userProgress={userProgress}
+            onStartFlashcard={onStartLesson}
+          />
         )}
 
         {/* Lesson Detail Modal */}
