@@ -823,7 +823,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               w="100px"
               h="100px"
               borderRadius="full"
-              bgGradient={`radial(${unit.color}40, transparent 70%)`}
               filter="blur(20px)"
               opacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
               animation={
