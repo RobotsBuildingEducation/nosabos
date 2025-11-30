@@ -1240,6 +1240,7 @@ export default function Vocabulary({
         setMcBankOrder(updated);
         setMcSlotIndex(removed);
         setPickMC(choicesMC[removed] || "");
+        setLastOk(null);
         return;
       }
 
@@ -1253,6 +1254,7 @@ export default function Vocabulary({
         setMcBankOrder(updated);
         setMcSlotIndex(null);
         setPickMC("");
+        setLastOk(null);
       }
     },
     [mcLayout, mcBankOrder, mcSlotIndex, choicesMC]
@@ -1299,6 +1301,7 @@ export default function Vocabulary({
           next[destSlot] = removed;
           return next;
         });
+        setLastOk(null);
         return;
       }
 
@@ -1313,6 +1316,7 @@ export default function Vocabulary({
           next[sourceSlot] = null;
           return next;
         });
+        setLastOk(null);
         return;
       }
 
@@ -1324,6 +1328,7 @@ export default function Vocabulary({
           next[destSlot] = temp;
           return next;
         });
+        setLastOk(null);
       }
     },
     [maLayout, maBankOrder, maSlots]
@@ -1346,6 +1351,7 @@ export default function Vocabulary({
       setMcBankOrder(updated);
       setMcSlotIndex(choiceIdx);
       setPickMC(choicesMC[choiceIdx] || "");
+      setLastOk(null);
     },
     [mcLayout, mcBankOrder, mcSlotIndex, choicesMC]
   );
@@ -1373,6 +1379,7 @@ export default function Vocabulary({
         next[firstEmptySlot] = choiceIdx;
         return next;
       });
+      setLastOk(null);
     },
     [maLayout, maBankOrder, maSlots]
   );
@@ -3420,7 +3427,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
             <Input
               value={ansFill}
-              onChange={(e) => setAnsFill(e.target.value)}
+              onChange={(e) => {
+                setAnsFill(e.target.value);
+                setLastOk(null);
+              }}
               placeholder={t("vocab_input_placeholder_word")}
               isDisabled={loadingGFill}
             />
