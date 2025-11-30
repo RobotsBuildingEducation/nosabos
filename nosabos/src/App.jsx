@@ -1186,6 +1186,7 @@ export default function App() {
   const previousXpRef = useRef(null);
   const activeLessonLanguageRef = useRef(resolvedTargetLang);
   const lastTargetLangRef = useRef(resolvedTargetLang);
+  const pendingLessonCompletionRef = useRef(null);
 
   // Random mode switcher for lessons
   const switchToRandomLessonMode = useCallback(() => {
@@ -1464,10 +1465,14 @@ export default function App() {
   ----------------------------------- */
   const [dailyGoalOpen, setDailyGoalOpen] = useState(false);
   const [celebrateOpen, setCelebrateOpen] = useState(false);
+  const dailyGoalModalJustOpenedRef = useRef(false);
 
   // Celebration listener (fired by awardXp when goal is reached)
   useEffect(() => {
-    const onHit = () => setCelebrateOpen(true);
+    const onHit = () => {
+      setCelebrateOpen(true);
+      dailyGoalModalJustOpenedRef.current = true;
+    };
     window.addEventListener("daily:goalAchieved", onHit);
     return () => window.removeEventListener("daily:goalAchieved", onHit);
   }, []);
@@ -1867,6 +1872,18 @@ export default function App() {
 
     // Return to skill tree
     handleReturnToSkillTree();
+  };
+
+  // Handle closing the daily goal celebration modal
+  const handleCloseDailyGoalModal = () => {
+    setCelebrateOpen(false);
+    dailyGoalModalJustOpenedRef.current = false;
+
+    // Show pending lesson completion modal if it exists
+    if (pendingLessonCompletionRef.current) {
+      setShowCompletionModal(true);
+      pendingLessonCompletionRef.current = null;
+    }
   };
 
   // When the user switches practice languages, return them to the skill tree
@@ -2311,14 +2328,26 @@ export default function App() {
                   const fresh = await loadUserObjectFromDB(database, npub);
                   if (fresh) setUser?.(fresh);
 
-                  // Show celebration modal
-                  setCompletedLessonData({
+                  // Store lesson completion data
+                  const lessonData = {
                     title: activeLesson.title,
                     xpEarned: activeLesson.xpReward,
                     lessonId: activeLesson.id,
-                  });
-                  setShowCompletionModal(true);
+                  };
+                  setCompletedLessonData(lessonData);
+                  pendingLessonCompletionRef.current = lessonData;
+
                   handleReturnToSkillTree();
+
+                  // Delay showing lesson completion modal to allow daily goal modal to appear first
+                  setTimeout(() => {
+                    // Only show lesson modal if daily goal modal didn't open
+                    if (pendingLessonCompletionRef.current && !dailyGoalModalJustOpenedRef.current) {
+                      setShowCompletionModal(true);
+                      pendingLessonCompletionRef.current = null;
+                    }
+                    // If daily goal modal opened, keep the pending data to show after it closes
+                  }, 150);
                 })
                 .catch((err) => {
                   console.error("Failed to complete lesson:", err);
@@ -2762,7 +2791,7 @@ export default function App() {
       {/* Daily celebration (once per day) */}
       <Modal
         isOpen={celebrateOpen}
-        onClose={() => setCelebrateOpen(false)}
+        onClose={handleCloseDailyGoalModal}
         isCentered
         size="lg"
       >
@@ -2836,7 +2865,7 @@ export default function App() {
                 size="lg"
                 width="100%"
                 colorScheme="teal"
-                onClick={() => setCelebrateOpen(false)}
+                onClick={handleCloseDailyGoalModal}
                 fontWeight="bold"
                 fontSize="lg"
                 py={6}
