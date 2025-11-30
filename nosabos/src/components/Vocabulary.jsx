@@ -1168,6 +1168,23 @@ export default function Vocabulary({
     return generatorFor(pick)();
   }
 
+  // Reset feedback UI whenever answer state changes (prevent flicker on correction)
+  useEffect(() => {
+    setLastOk(null);
+  }, [ansFill]);
+
+  useEffect(() => {
+    setLastOk(null);
+  }, [answerMC, pickMC, mcSlotIndex]);
+
+  useEffect(() => {
+    setLastOk(null);
+  }, [answersMA, picksMA, JSON.stringify(maSlots)]);
+
+  useEffect(() => {
+    setLastOk(null);
+  }, [JSON.stringify(mSlots), JSON.stringify(mBank)]);
+
   useEffect(() => {
     generateRandomRef.current = generateRandom;
   });

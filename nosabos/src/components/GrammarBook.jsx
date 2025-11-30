@@ -1025,6 +1025,19 @@ export default function GrammarBook({
     generateRandomRef.current = generateRandom;
   });
 
+  // Reset feedback UI whenever answer state changes (prevent flicker on correction)
+  useEffect(() => {
+    setLastOk(null);
+  }, [input]);
+
+  useEffect(() => {
+    setLastOk(null);
+  }, [mcAnswer, mcPick, mcSlotIndex]);
+
+  useEffect(() => {
+    setLastOk(null);
+  }, [maAnswers, maPicks, JSON.stringify(maSlots)]);
+
   useEffect(() => {
     if (!mcQ || !mcChoices.length) return;
     const signature = `${mcQ}||${mcChoices.join("|")}`;
