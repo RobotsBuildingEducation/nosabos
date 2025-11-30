@@ -1785,6 +1785,9 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     if (!qMC || !pickMC) return;
     setLoadingGMC(true);
 
+    const deterministicOk =
+      answerMC && norm(pickMC) === norm(answerMC);
+
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildMCVocabJudgePrompt({
@@ -1796,7 +1799,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       }),
     });
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    const ok =
+      deterministicOk || (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     // Handle quiz mode differently
@@ -2069,6 +2073,13 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     if (!qMA || !picksMA.length) return;
     setLoadingGMA(true);
 
+    const answerSet = new Set((answersMA || []).map((a) => norm(a)));
+    const pickSet = new Set(picksMA.map((a) => norm(a)));
+    const deterministicOk =
+      answerSet.size > 0 &&
+      answerSet.size === pickSet.size &&
+      [...answerSet].every((a) => pickSet.has(a));
+
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildMAVocabJudgePrompt({
@@ -2080,7 +2091,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
       }),
     });
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    const ok =
+      deterministicOk || (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     // Handle quiz mode differently

@@ -2186,6 +2186,9 @@ Return JSON ONLY:
     if (!mcQ || !mcPick) return;
     setLoadingMCG(true);
 
+    const deterministicOk =
+      mcAnswer && norm(mcPick) === norm(mcAnswer);
+
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildMCJudgePrompt({
@@ -2197,7 +2200,8 @@ Return JSON ONLY:
       }),
     });
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    const ok =
+      deterministicOk || (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
@@ -2245,6 +2249,13 @@ Return JSON ONLY:
     if (!maQ || !maPicks.length) return;
     setLoadingMAG(true);
 
+    const answerSet = new Set((maAnswers || []).map((a) => norm(a)));
+    const pickSet = new Set(maPicks.map((a) => norm(a)));
+    const deterministicOk =
+      answerSet.size > 0 &&
+      answerSet.size === pickSet.size &&
+      [...answerSet].every((a) => pickSet.has(a));
+
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildMAJudgePrompt({
@@ -2256,7 +2267,8 @@ Return JSON ONLY:
       }),
     });
 
-    const ok = (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+    const ok =
+      deterministicOk || (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
