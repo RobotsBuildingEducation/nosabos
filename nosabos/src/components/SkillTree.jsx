@@ -23,6 +23,7 @@ import {
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
+import PathSwitcher from "./PathSwitcher";
 import {
   RiLockLine,
   RiCheckLine,
@@ -1824,6 +1825,7 @@ export default function SkillTree({
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
+  const [pathMode, setPathMode] = useState("path"); // "path" or "flashcards"
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Use multi-level path if enabled, otherwise use single level
@@ -1932,6 +1934,16 @@ export default function SkillTree({
         position="relative"
         zIndex={1}
       >
+        {/* Path Mode Switcher */}
+        <MotionBox
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          mb={6}
+        >
+          <PathSwitcher selectedMode={pathMode} onModeChange={setPathMode} />
+        </MotionBox>
+
         {/* Minimal Progress Header */}
         <MotionBox
           initial={{ opacity: 0, y: -10 }}
@@ -2004,32 +2016,56 @@ export default function SkillTree({
           </HStack>
         </MotionBox>
 
-        {/* Skill Tree Units */}
-        <VStack spacing={8} align="stretch">
-          {units.length > 0 ? (
-            units.map((unit, index) => (
-              <UnitSection
-                key={unit.id}
-                unit={unit}
-                userProgress={userProgress}
-                onLessonClick={handleLessonClick}
-                index={index}
-                supportLang={supportLang}
-                hasNextUnit={index < units.length - 1}
-                previousUnit={index > 0 ? units[index - 1] : null}
-              />
-            ))
-          ) : (
-            <Box textAlign="center" py={12}>
-              <Text fontSize="lg" color="gray.400">
-                {getTranslation(supportLang, "skill_tree_no_path")}
+        {/* Skill Tree Units or Flashcards */}
+        {pathMode === "path" ? (
+          <VStack spacing={8} align="stretch">
+            {units.length > 0 ? (
+              units.map((unit, index) => (
+                <UnitSection
+                  key={unit.id}
+                  unit={unit}
+                  userProgress={userProgress}
+                  onLessonClick={handleLessonClick}
+                  index={index}
+                  supportLang={supportLang}
+                  hasNextUnit={index < units.length - 1}
+                  previousUnit={index > 0 ? units[index - 1] : null}
+                />
+              ))
+            ) : (
+              <Box textAlign="center" py={12}>
+                <Text fontSize="lg" color="gray.400">
+                  {getTranslation(supportLang, "skill_tree_no_path")}
+                </Text>
+                <Text fontSize="sm" color="gray.500" mt={2}>
+                  {getTranslation(supportLang, "skill_tree_check_back")}
+                </Text>
+              </Box>
+            )}
+          </VStack>
+        ) : (
+          <Box
+            textAlign="center"
+            py={20}
+            bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
+            backdropFilter="blur(10px)"
+            borderRadius="2xl"
+            border="1px solid"
+            borderColor="whiteAlpha.200"
+            boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
+          >
+            <VStack spacing={4}>
+              <RiFileList3Line size={64} color="rgba(255, 255, 255, 0.4)" />
+              <Text fontSize="2xl" fontWeight="bold" color="white">
+                Flashcard Path
               </Text>
-              <Text fontSize="sm" color="gray.500" mt={2}>
-                {getTranslation(supportLang, "skill_tree_check_back")}
+              <Text fontSize="md" color="gray.400" maxW="md">
+                Practice the 1000 most important words and phrases. This
+                feature is coming soon!
               </Text>
-            </Box>
-          )}
-        </VStack>
+            </VStack>
+          </Box>
+        )}
 
         {/* Lesson Detail Modal */}
         {selectedLesson && selectedUnit && (
