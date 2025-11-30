@@ -1415,9 +1415,11 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
       : [];
 
     if (choices.length < 3) return null;
+    if (!parsed.answer || typeof parsed.answer !== "string") return null;
 
-    const alignedAnswer =
-      choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
+    const alignedAnswer = choices.find((c) => norm(c) === norm(parsed.answer));
+
+    if (!alignedAnswer) return null;
 
     return {
       question: parsed.question,
@@ -1496,9 +1498,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               mcChoicesLocal = choices;
               // If answer already known, align it
               if (pendingAnswer) {
-                const ans =
-                  choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                  choices[0];
+                const ans = choices.find((c) => norm(c) === norm(pendingAnswer));
                 setMcAnswer(ans);
                 mcAnswerLocal = ans;
               }
@@ -1515,9 +1515,9 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               if (typeof obj.answer === "string") {
                 pendingAnswer = obj.answer;
                 if (Array.isArray(mcChoicesLocal) && mcChoicesLocal.length) {
-                  const ans =
-                    mcChoicesLocal.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    mcChoicesLocal[0];
+                  const ans = mcChoicesLocal.find(
+                    (c) => norm(c) === norm(pendingAnswer)
+                  );
                   setMcAnswer(ans);
                   mcAnswerLocal = ans;
                 }
@@ -1554,9 +1554,7 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               setMcChoices(choices);
               mcChoicesLocal = choices;
               if (pendingAnswer) {
-                const ans =
-                  choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                  choices[0];
+                const ans = choices.find((c) => norm(c) === norm(pendingAnswer));
                 setMcAnswer(ans);
                 mcAnswerLocal = ans;
               }
@@ -1573,9 +1571,9 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               if (typeof obj.answer === "string") {
                 pendingAnswer = obj.answer;
                 if (Array.isArray(mcChoicesLocal) && mcChoicesLocal.length) {
-                  const ans =
-                    mcChoicesLocal.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    mcChoicesLocal[0];
+                  const ans = mcChoicesLocal.find(
+                    (c) => norm(c) === norm(pendingAnswer)
+                  );
                   setMcAnswer(ans);
                   mcAnswerLocal = ans;
                 }
@@ -1626,6 +1624,7 @@ Create ONE multiple-choice ${LANG_NAME(
 
       const text = await callResponses({ model: MODEL, input: fallback });
       const parsed = safeParseJSON(text);
+      let applied = false;
       if (
         parsed &&
         parsed.question &&
@@ -1633,14 +1632,18 @@ Create ONE multiple-choice ${LANG_NAME(
         parsed.choices.length >= 3
       ) {
         const choices = parsed.choices.slice(0, 4).map((c) => String(c));
-        const ans =
-          choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
-        setMcQ(String(parsed.question));
-        setMcHint(String(parsed.hint || ""));
-        setMcChoices(choices);
-        setMcAnswer(ans);
-        setMcTranslation(String(parsed.translation || ""));
-      } else {
+        const aligned = choices.find((c) => norm(c) === norm(parsed.answer));
+        if (aligned) {
+          setMcQ(String(parsed.question));
+          setMcHint(String(parsed.hint || ""));
+          setMcChoices(choices);
+          setMcAnswer(aligned);
+          setMcTranslation(String(parsed.translation || ""));
+          applied = true;
+        }
+      }
+
+      if (!applied) {
         setMcQ("Choose the correct past form of 'go'.");
         setMcHint("Simple past");
         const choices = ["go", "went", "gone", "going"];
