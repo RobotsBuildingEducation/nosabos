@@ -740,7 +740,7 @@ export default function GrammarBook({
 
   const recentCorrectRef = useRef([]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
+  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "listen"
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   useEffect(() => {
     if (
@@ -867,6 +867,9 @@ export default function GrammarBook({
         stopSpeakRecording();
       } catch {}
     }
+    try {
+      listenAudioRef.current?.pause?.();
+    } catch {}
     setLastOk(null);
     setRecentXp(0);
     setNextAction(null);
@@ -938,6 +941,23 @@ export default function GrammarBook({
   const [isSpeakPlaying, setIsSpeakPlaying] = useState(false);
   const [isSpeakSynthesizing, setIsSpeakSynthesizing] = useState(false);
 
+  // ---- LISTEN (TTS stimulus + MC/fill response) ----
+  const [lPrompt, setLPrompt] = useState("");
+  const [lTarget, setLTarget] = useState("");
+  const [lHint, setLHint] = useState("");
+  const [lTranslation, setLTranslation] = useState("");
+  const [lVariant, setLVariant] = useState("mc"); // "mc" | "fill"
+  const [lChoices, setLChoices] = useState([]);
+  const [lAnswer, setLAnswer] = useState("");
+  const [lPick, setLPick] = useState("");
+  const [lInput, setLInput] = useState("");
+  const [loadingLQ, setLoadingLQ] = useState(false);
+  const [loadingLG, setLoadingLG] = useState(false);
+  const listenAudioRef = useRef(null);
+  const listenAudioCacheRef = useRef(new Map());
+  const [isListenPlaying, setIsListenPlaying] = useState(false);
+  const [isListenSynthesizing, setIsListenSynthesizing] = useState(false);
+
   useEffect(() => {
     const cache = speakAudioCacheRef.current;
     return () => {
@@ -961,6 +981,30 @@ export default function GrammarBook({
     speakAudioRef.current = null;
     setIsSpeakPlaying(false);
   }, [sTarget]);
+
+  useEffect(() => {
+    const cache = listenAudioCacheRef.current;
+    return () => {
+      try {
+        listenAudioRef.current?.pause?.();
+      } catch {}
+      listenAudioRef.current = null;
+      cache.forEach((url) => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+      });
+      cache.clear();
+    };
+  }, []);
+
+  useEffect(() => {
+    try {
+      listenAudioRef.current?.pause?.();
+    } catch {}
+    listenAudioRef.current = null;
+    setIsListenPlaying(false);
+  }, [lTarget]);
 
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
@@ -991,6 +1035,7 @@ export default function GrammarBook({
         generateMC,
         generateMA,
         generateSpeak,
+        generateListen,
         generateMatch,
       ];
       for (let i = order.length - 1; i > 0; i -= 1) {
@@ -1021,6 +1066,8 @@ export default function GrammarBook({
         return generateMatch;
       case "speak":
         return generateSpeak;
+      case "listen":
+        return generateListen;
       default:
         return generateRandom;
     }
@@ -1053,6 +1100,15 @@ export default function GrammarBook({
     }
     prevMaPicksRef.current = maPicks;
   }, [maPicks]);
+
+  useEffect(() => {
+    if (lVariant === "mc" && lPick && lPick !== prevMcPickRef.current) {
+      setLastOk(null);
+    }
+    if (lVariant === "fill" && lInput && lInput !== prevInputRef.current) {
+      setLastOk(null);
+    }
+  }, [lInput, lPick, lVariant]);
 
   useEffect(() => {
     if (!mcQ || !mcChoices.length) return;
@@ -1963,6 +2019,123 @@ Create ONE ${LANG_NAME(
     }
   }
 
+  async function generateListen() {
+    setMode("listen");
+    setLoadingLQ(true);
+    setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
+    setRecentXp(0);
+    setNextAction(null);
+    setLPick("");
+    setLInput("");
+
+    const variant = Math.random() < 0.5 ? "mc" : "fill";
+    setLVariant(variant);
+
+    const prompt = `Create ONE ${LANG_NAME(
+      targetLang
+    )} listening question that blends a say-it-out-loud stimulus with a ${
+      variant === "mc" ? "multiple-choice answer" : "single missing word"
+    }. Difficulty: ${levelLabel}. Return JSON ONLY:\n` +
+      `{"type":"grammar_listen","variant":"${variant}","phase":"q","target":"<${LANG_NAME(
+        targetLang
+      )} audio text>","prompt":"<${LANG_NAME(
+        targetLang
+      )} instruction to listen>","question":"<${LANG_NAME(
+        resolveSupportLang(supportLang, userLanguage)
+      )} short stem>",${
+        variant === "mc"
+          ? '"choices":["<choice1>","<choice2>","<choice3>","<choice4>"],'
+          : ""
+      }"answer":"<${
+        variant === "mc"
+          ? "exact matching choice"
+          : `${LANG_NAME(targetLang)} single word`
+      }>","hint":"<${LANG_NAME(
+        resolveSupportLang(supportLang, userLanguage)
+      )} hint>","translation":"${
+        showTranslations
+          ? `<${LANG_NAME(resolveSupportLang(supportLang, userLanguage))} translation or empty>`
+          : ""
+      }"}`;
+
+    try {
+      const raw = await callResponses({ model: MODEL, input: prompt });
+      const parsed = safeParseJsonLoose(raw);
+
+      if (parsed?.type === "grammar_listen") {
+        if (typeof parsed.prompt === "string") setLPrompt(parsed.prompt.trim());
+        if (typeof parsed.target === "string") setLTarget(parsed.target.trim());
+        if (typeof parsed.question === "string") setLHint(String(parsed.question));
+        if (typeof parsed.hint === "string") setLHint(parsed.hint);
+        if (typeof parsed.translation === "string") setLTranslation(parsed.translation);
+        if (variant === "mc" && Array.isArray(parsed.choices)) {
+          setLChoices(parsed.choices.slice(0, 4));
+        }
+        if (typeof parsed.answer === "string") setLAnswer(parsed.answer);
+        setLoadingLQ(false);
+        return;
+      }
+    } catch (err) {
+      console.error("Grammar listen generation failed", err);
+    }
+
+    if (variant === "mc") {
+      setLPrompt(
+        targetLang === "es"
+          ? "Escucha y elige el significado correcto."
+          : "Listen and choose the correct meaning."
+      );
+      setLTarget(
+        targetLang === "es"
+          ? "Ella ha estado estudiando toda la mañana."
+          : "She has been studying all morning."
+      );
+      const choices =
+        supportCode === "es"
+          ? [
+              "Ha estado estudiando toda la mañana.",
+              "Estudió anoche solamente.",
+              "Va a estudiar mañana.",
+              "No quiere estudiar hoy.",
+            ]
+          : [
+              "She has been studying all morning.",
+              "She only studied last night.",
+              "She will study tomorrow.",
+              "She does not want to study today.",
+            ];
+      setLChoices(choices);
+      setLAnswer(choices[0]);
+      setLHint(
+        supportCode === "es" ? "tiempo perfecto continuo" : "present perfect continuous"
+      );
+      setLTranslation(
+        showTranslations && supportCode === "es"
+          ? "Escucha y elige la interpretación correcta."
+          : showTranslations
+          ? "Listen and pick the matching meaning."
+          : ""
+      );
+    } else {
+      setLPrompt(
+        targetLang === "es"
+          ? "Escucha y escribe la palabra que oigas."
+          : "Listen and type the word you hear."
+      );
+      setLTarget(
+        targetLang === "es" ? "subjuntivo" : "subjunctive"
+      );
+      setLAnswer(targetLang === "es" ? "subjuntivo" : "subjunctive");
+      setLHint(
+        supportCode === "es" ? "terminación en -ivo" : "ends with -ive"
+      );
+      setLTranslation(showTranslations ? "Grammar keyword" : "");
+    }
+
+    setLoadingLQ(false);
+  }
+
   /* ---------- STREAM Generate: MATCH (Gemini with deterministic map) ---------- */
   async function generateMatch() {
     setMode("match");
@@ -2341,6 +2514,59 @@ Return JSON ONLY:
     setLoadingMAG(false);
   }
 
+  async function submitListen() {
+    if (!lTarget) return;
+    if (lVariant === "mc" && !lPick) return;
+    if (lVariant === "fill" && !lInput.trim()) return;
+
+    setLoadingLG(true);
+
+    const userAnswer = lVariant === "mc" ? lPick : lInput;
+    const ok = lAnswer && norm(userAnswer) === norm(lAnswer);
+    const delta = ok ? 6 : 0;
+
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setLastOk(ok);
+      setRecentXp(0);
+      const nextFn = ok || isFinalQuiz
+        ? modeLocked
+          ? () => generateListen()
+          : () => generateRandomRef.current()
+        : null;
+      setNextAction(() => nextFn);
+      setLoadingLG(false);
+      return;
+    }
+
+    await saveAttempt(npub, {
+      ok,
+      mode: "grammar_listen",
+      variant: lVariant,
+      prompt: lPrompt,
+      target: lTarget,
+      hint: lHint,
+      translation: lTranslation,
+      choices: lVariant === "mc" ? lChoices : [],
+      author_answer: lAnswer,
+      user_choice: lVariant === "mc" ? lPick : undefined,
+      user_input: lVariant === "fill" ? lInput : undefined,
+      award_xp: delta,
+    }).catch(() => {});
+    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+
+    setLastOk(ok);
+    setRecentXp(delta);
+    const nextFn = ok
+      ? modeLocked
+        ? () => generateListen()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
+
+    setLoadingLG(false);
+  }
+
   function canSubmitMatch() {
     return mLeft.length > 0 && mSlots.every((ri) => ri !== null);
   }
@@ -2611,6 +2837,10 @@ Return JSON ONLY:
     showTranslations &&
     sTranslation &&
     supportCode !== (targetLang === "en" ? "en" : targetLang);
+  const showTRListen =
+    showTranslations &&
+    lTranslation &&
+    supportCode !== (targetLang === "en" ? "en" : targetLang);
 
   if (showPasscodeModal) {
     return (
@@ -2723,6 +2953,11 @@ Return JSON ONLY:
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
   const speakVariantLabel =
     t("grammar_btn_speak") || (userLanguage === "es" ? "Pronunciar" : "Speak");
+  const listenVariantLabel =
+    t("grammar_btn_listen") ||
+    (userLanguage === "es" ? "Comprensión auditiva" : "Listen & respond");
+  const listenPlayLabel =
+    userLanguage === "es" ? "Reproducir audio" : "Play audio";
   const nextQuestionLabel = t("practice_next_question") || "Next question";
   const synthLabel =
     t("tts_synthesizing") ||
@@ -2795,6 +3030,79 @@ Return JSON ONLY:
     isSpeakPlaying,
     sTarget,
     speakLangTag,
+    toast,
+    userLanguage,
+    voicePreference,
+  ]);
+
+  const handleToggleListenPlayback = useCallback(async () => {
+    const text = (lTarget || "").trim();
+    if (!text) return;
+
+    if (isListenPlaying && listenAudioRef.current) {
+      try {
+        listenAudioRef.current.pause();
+      } catch {}
+      listenAudioRef.current = null;
+      setIsListenPlaying(false);
+      setIsListenSynthesizing(false);
+      return;
+    }
+
+    try {
+      setIsListenSynthesizing(true);
+      setIsListenPlaying(true);
+      try {
+        listenAudioRef.current?.pause?.();
+      } catch {}
+      listenAudioRef.current = null;
+
+      const cacheKey = `${speakLangTag}::${voicePreference}::${text}`;
+      let audioUrl = listenAudioCacheRef.current.get(cacheKey);
+      if (!audioUrl) {
+        const blob = await fetchTTSBlob({
+          text,
+          voice: voicePreference,
+          lang: targetLang,
+          langTag: speakLangTag,
+        });
+        audioUrl = URL.createObjectURL(blob);
+        listenAudioCacheRef.current.set(cacheKey, audioUrl);
+      }
+
+      const audio = new Audio(audioUrl);
+      listenAudioRef.current = audio;
+      audio.onended = () => {
+        setIsListenPlaying(false);
+        listenAudioRef.current = null;
+      };
+      audio.onerror = () => {
+        setIsListenPlaying(false);
+        listenAudioRef.current = null;
+      };
+      await audio.play();
+      setIsListenSynthesizing(false);
+    } catch (err) {
+      console.error("Grammar listen playback failed", err);
+      setIsListenSynthesizing(false);
+      setIsListenPlaying(false);
+      listenAudioRef.current = null;
+      toast({
+        title:
+          userLanguage === "es"
+            ? "No se pudo reproducir el audio"
+            : "Audio playback failed",
+        description:
+          userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
+        status: "error",
+        duration: 2600,
+      });
+    }
+  }, [
+    isListenPlaying,
+    lTarget,
+    speakLangTag,
+    targetLang,
     toast,
     userLanguage,
     voicePreference,
@@ -3823,6 +4131,232 @@ Return JSON ONLY:
                 (lastOk === true || (isFinalQuiz && lastOk === false)) &&
                 nextAction
               }
+              onNext={handleNext}
+              nextLabel={nextQuestionLabel}
+            />
+          </>
+        ) : null}
+        {/* ---- LISTEN UI ---- */}
+        {mode === "listen" && (lTarget || loadingLQ) ? (
+          <>
+            {loadingLQ ? (
+              <Box textAlign="center" py={12}>
+                <RobotBuddyPro palette="ocean" variant="abstract" />
+                <Text mt={4} fontSize="sm" opacity={0.7}>
+                  {userLanguage === "es"
+                    ? "Generando pregunta de audio..."
+                    : "Generating listening prompt..."}
+                </Text>
+              </Box>
+            ) : (
+              <>
+                <Box
+                  bg="rgba(255, 255, 255, 0.02)"
+                  borderRadius="lg"
+                  borderWidth="1px"
+                  borderColor="whiteAlpha.100"
+                  p={5}
+                  mb={4}
+                >
+                  <VStack align="stretch" spacing={3}>
+                    <HStack align="start" spacing={2}>
+                      <CopyAllBtn
+                        q={`${lPrompt ? `${lPrompt}\n` : ""}${lTarget}`}
+                        h={lHint}
+                        tr={lTranslation}
+                      />
+                      <VStack align="flex-start" spacing={2} flex="1">
+                        <Text fontSize="xs" color="gray.500" fontStyle="italic">
+                          {t("grammar_listen_instruction_label") ||
+                            (userLanguage === "es"
+                              ? "Escucha y responde usando las opciones o escribe la palabra."
+                              : "Listen to the audio, then answer via choices or a word.")}
+                        </Text>
+                        {lPrompt && (
+                          <Text fontSize="lg" fontWeight="medium" lineHeight="tall">
+                            {lPrompt}
+                          </Text>
+                        )}
+                      </VStack>
+                    </HStack>
+                  </VStack>
+                </Box>
+
+                <Box
+                  border="1px solid rgba(255,255,255,0.18)"
+                  rounded="xl"
+                  p={6}
+                  textAlign="center"
+                  bg="rgba(255,255,255,0.04)"
+                  position="relative"
+                >
+                  <Tooltip label={listenPlayLabel} placement="top">
+                    <Button
+                      aria-label={listenPlayLabel}
+                      leftIcon={<PiSpeakerHighDuotone />}
+                      size="sm"
+                      variant="solid"
+                      colorScheme={isListenPlaying ? "teal" : "purple"}
+                      position="absolute"
+                      top="3"
+                      right="3"
+                      onClick={handleToggleListenPlayback}
+                      isDisabled={!lTarget}
+                      isLoading={isListenSynthesizing}
+                      spinnerPlacement="start"
+                    >
+                      {t("practice_play") ||
+                        (userLanguage === "es" ? "Reproducir" : "Play")}
+                    </Button>
+                  </Tooltip>
+                  <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
+                    {listenVariantLabel}
+                  </Badge>
+                  <Text fontSize="3xl" fontWeight="700">
+                    {t("grammar_listen_hear_label") ||
+                      (userLanguage === "es"
+                        ? "(audio en el idioma objetivo)"
+                        : "(audio in target language)")}
+                  </Text>
+                  {isListenSynthesizing ? (
+                    <HStack
+                      spacing={2}
+                      justify="center"
+                      mt={3}
+                      color="gray.200"
+                    >
+                      <Spinner size="sm" />
+                      <Text fontSize="xs">{synthLabel}</Text>
+                    </HStack>
+                  ) : null}
+                </Box>
+
+                {lHint ? (
+                  <Box
+                    pl={7}
+                    py={2}
+                    mt={3}
+                    borderLeftWidth="3px"
+                    borderLeftColor="cyan.500"
+                    bg="rgba(0, 206, 209, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      💡 {lHint}
+                    </Text>
+                  </Box>
+                ) : null}
+
+                {showTRListen ? (
+                  <Box
+                    pl={7}
+                    py={2}
+                    mt={2}
+                    borderLeftWidth="3px"
+                    borderLeftColor="purple.500"
+                    bg="rgba(159, 122, 234, 0.05)"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      {lTranslation}
+                    </Text>
+                  </Box>
+                ) : null}
+
+                {lVariant === "mc" ? (
+                  <Stack spacing={3} mt={4}>
+                    {(lChoices.length ? lChoices : ["…", "…", "…", "…"]).map(
+                      (c, idx) => {
+                        const isSelected = c === lPick;
+                        return (
+                          <Box
+                            key={`listen-mc-${idx}-${c}`}
+                            p={3}
+                            borderWidth="1px"
+                            borderColor={
+                              isSelected ? "teal.300" : "rgba(255,255,255,0.18)"
+                            }
+                            rounded="lg"
+                            cursor={lChoices.length ? "pointer" : "not-allowed"}
+                            onClick={() => (lChoices.length ? setLPick(c) : null)}
+                            _hover={{
+                              borderColor: lChoices.length
+                                ? "teal.400"
+                                : "rgba(255,255,255,0.18)",
+                            }}
+                          >
+                            <HStack spacing={3}>
+                              <Box
+                                w="20px"
+                                h="20px"
+                                rounded="md"
+                                borderWidth="2px"
+                                borderColor={
+                                  isSelected ? "teal.400" : "rgba(255,255,255,0.3)"
+                                }
+                                bg={isSelected ? "teal.500" : "transparent"}
+                                display="flex"
+                                alignItems="center"
+                                justifyContent="center"
+                              >
+                                {isSelected ? "✓" : ""}
+                              </Box>
+                              <Text flex="1">{c}</Text>
+                            </HStack>
+                          </Box>
+                        );
+                      }
+                    )}
+                  </Stack>
+                ) : (
+                  <Box mt={4}>
+                    <Input
+                      placeholder={
+                        userLanguage === "es"
+                          ? "Escribe la palabra que escuches"
+                          : "Type the word you hear"
+                      }
+                      value={lInput}
+                      onChange={(e) => setLInput(e.target.value)}
+                      isDisabled={loadingLG}
+                    />
+                  </Box>
+                )}
+              </>
+            )}
+
+            <Stack
+              direction={{ base: "column", md: "row" }}
+              spacing={3}
+              align={{ base: "stretch", md: "center" }}
+              mt={4}
+            >
+              <Button
+                variant="ghost"
+                onClick={handleSkip}
+                isDisabled={loadingLQ || loadingLG}
+                w={{ base: "100%", md: "auto" }}
+              >
+                {skipLabel}
+              </Button>
+              <Button
+                colorScheme="purple"
+                onClick={submitListen}
+                isDisabled={
+                  loadingLQ ||
+                  loadingLG ||
+                  !lTarget ||
+                  (lVariant === "mc" ? !lPick : !lInput.trim()) ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
+                }
+                w={{ base: "100%", md: "auto" }}
+              >
+                {loadingLG ? <Spinner size="sm" /> : t("grammar_submit")}
+              </Button>
+            </Stack>
+
+            <FeedbackRail
+              ok={lastOk}
+              xp={recentXp}
+              showNext={(lastOk === true || (isFinalQuiz && lastOk === false)) && nextAction}
               onNext={handleNext}
               nextLabel={nextQuestionLabel}
             />
