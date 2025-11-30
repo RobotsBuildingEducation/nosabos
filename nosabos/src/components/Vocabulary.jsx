@@ -60,6 +60,7 @@ import {
   resolveVoicePreference,
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { shuffle } from "./quiz/utils";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -2462,7 +2463,7 @@ Return JSON ONLY:
               setMLeft(left);
               setMRight(right);
               setMSlots(Array(left.length).fill(null));
-              setMBank([...Array(right.length)].map((_, i) => i));
+              setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
               okPayload = true;
             }
           });
@@ -2502,7 +2503,7 @@ Return JSON ONLY:
                 setMLeft(left);
                 setMRight(right);
                 setMSlots(Array(left.length).fill(null));
-                setMBank([...Array(right.length)].map((_, i) => i));
+                setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
                 okPayload = true;
               }
             })
@@ -2554,7 +2555,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       setMLeft(left);
       setMRight(right);
       setMSlots(Array(left.length).fill(null));
-      setMBank([...Array(right.length)].map((_, i) => i));
+      setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
     } finally {
       setLoadingMG(false);
     }
