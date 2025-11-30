@@ -49,6 +49,7 @@ import {
   resolveVoicePreference,
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { shuffle } from "./quiz/utils";
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -2012,7 +2013,7 @@ Create ONE ${LANG_NAME(
               setMLeft(left);
               setMRight(right);
               setMSlots(Array(left.length).fill(null));
-              setMBank([...Array(right.length)].map((_, i) => i));
+              setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
               setMAnswerMap(
                 map.length === left.length ? map : [...left.keys()]
               );
@@ -2055,7 +2056,7 @@ Create ONE ${LANG_NAME(
                 setMLeft(left);
                 setMRight(right);
                 setMSlots(Array(left.length).fill(null));
-                setMBank([...Array(right.length)].map((_, i) => i));
+                setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
                 setMAnswerMap(
                   map.length === left.length ? map : [...left.keys()]
                 );
@@ -2124,7 +2125,7 @@ Return JSON ONLY:
       setMLeft(left);
       setMRight(right);
       setMSlots(Array(left.length).fill(null));
-      setMBank([...Array(right.length)].map((_, i) => i));
+      setMBank(shuffle([...Array(right.length)].map((_, i) => i)));
       setMAnswerMap(map.length === left.length ? map : [...left.keys()]);
     } finally {
       setLoadingMG(false);
