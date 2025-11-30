@@ -825,23 +825,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               borderRadius="full"
               filter="blur(20px)"
               opacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
-              animation={
-                status === SKILL_STATUS.IN_PROGRESS
-                  ? "pulse 2s ease-in-out infinite"
-                  : "none"
-              }
-              sx={{
-                "@keyframes pulse": {
-                  "0%, 100%": {
-                    opacity: 0.5,
-                    transform: "translate(-50%, -50%) scale(1)",
-                  },
-                  "50%": {
-                    opacity: 0.8,
-                    transform: "translate(-50%, -50%) scale(1.1)",
-                  },
-                },
-              }}
               pointerEvents="none"
             />
           )}
