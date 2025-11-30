@@ -1140,11 +1140,10 @@ function UnitSection({
                     bg={unit.color}
                     color="white"
                     textShadow="0px 1px 1px black"
-                    boxShadow={"0px 0.5px 0.5px 1px darkgray"}
+                    boxShadow={`0 0 15px ${unit.color}40, 0px 0.5px 0.5px 4px ${unit.color}40`}
                     _hover={{
                       bg: unit.color,
                       transform: "scale(1.05)",
-                      boxShadow: `0 0 15px ${unit.color}80, 0px 0.5px 0.5px 1px darkgray`,
                     }}
                     _active={{
                       transform: "scale(0.98)",
