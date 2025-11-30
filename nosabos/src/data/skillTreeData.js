@@ -37,8 +37,8 @@ const baseLearningPath = {
         es: "Fundamentos Pre-A1",
       },
       description: {
-        en: "Letters, sounds, and survival phrases",
-        es: "Letras, sonidos y frases de supervivencia",
+        en: "100 must-know words and phrases to start fast",
+        es: "100 palabras y frases imprescindibles para empezar rápido",
       },
       color: "#10B981",
       position: { row: -1, offset: 0 },
@@ -46,100 +46,128 @@ const baseLearningPath = {
         {
           id: "lesson-pre-a1-1",
           title: {
-            en: "Alphabet & Sounds",
-            es: "Alfabeto y Sonidos",
+            en: "Everyday Starters",
+            es: "Arranques Cotidianos",
           },
           description: {
-            en: "Learn the letters and core pronunciation cues",
-            es: "Aprende las letras y las claves de pronunciación",
+            en: "Your first 20 high-frequency words for greetings and basics",
+            es: "Tus primeras 20 palabras de alta frecuencia para saludos y básicos",
           },
           xpRequired: 0,
           xpReward: 25,
           modes: ["vocabulary", "listening"],
           content: {
             vocabulary: {
-              topic: "alphabet",
-              focusPoints: ["letter names", "vowel sounds"],
+              topic: "greetings and starters",
+              focusPoints: ["hello/bye variations", "thanks/please", "yes/no"],
             },
             listening: {
-              topic: "alphabet",
-              focusPoints: ["sound recognition", "stress patterns"],
+              topic: "greetings and starters",
+              focusPoints: [
+                "recognizing common polite phrases",
+                "intonation for greetings",
+              ],
             },
           },
         },
         {
           id: "lesson-pre-a1-2",
           title: {
-            en: "Pronunciation Building Blocks",
-            es: "Bloques de Pronunciación",
+            en: "People & Places",
+            es: "Personas y Lugares",
           },
           description: {
-            en: "Blend letters into common syllables",
-            es: "Combina letras en sílabas comunes",
+            en: "Add 20 words for names, family, and moving around",
+            es: "Suma 20 palabras para nombres, familia y moverte por ahí",
           },
           xpRequired: 15,
           xpReward: 25,
-          modes: ["vocabulary", "listening"],
+          modes: ["vocabulary", "grammar"],
           content: {
             vocabulary: {
-              topic: "phonics",
-              focusPoints: ["syllable patterns", "high-frequency chunks"],
+              topic: "people and places",
+              focusPoints: ["family", "locations", "getting attention"],
             },
-            listening: {
-              topic: "phonics",
-              focusPoints: ["minimal pairs", "rhythm"],
+            grammar: {
+              topic: "formula chunks",
+              focusPoints: ["I am/from", "This is", "Where is?"],
             },
           },
         },
         {
           id: "lesson-pre-a1-3",
           title: {
-            en: "Survival Phrases",
-            es: "Frases de Supervivencia",
+            en: "Actions & Essentials",
+            es: "Acciones y Esenciales",
           },
           description: {
-            en: "Ask for help and handle first interactions",
-            es: "Pide ayuda y gestiona tus primeras interacciones",
+            en: "20 everyday verbs and short requests to get things done",
+            es: "20 verbos cotidianos y peticiones cortas para lograr cosas",
           },
           xpRequired: 40,
           xpReward: 30,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "stories"],
           content: {
             vocabulary: {
-              topic: "survival phrases",
-              focusPoints: ["asking for help", "thank you and sorry"],
+              topic: "actions and needs",
+              focusPoints: ["common verbs", "requests", "need/want"],
             },
-            grammar: {
-              topic: "survival phrase patterns",
-              focusPoints: ["polite particles", "intonation cues"],
+            realtime: {
+              scenario: "quick requests",
+              prompt:
+                "Roleplay asking for help, ordering, or finding something",
             },
           },
         },
         {
-          id: "lesson-pre-a1-quiz",
+          id: "lesson-pre-a1-4",
           title: {
-            en: "Ready to Begin A1?",
-            es: "¿Listo para Empezar A1?",
+            en: "Time, Travel & Directions",
+            es: "Tiempo, Viajes y Direcciones",
           },
           description: {
-            en: "Check letters, sounds, and must-know phrases",
-            es: "Comprueba letras, sonidos y frases imprescindibles",
+            en: "20 words for time, transport, and finding your way",
+            es: "20 palabras para tiempo, transporte y orientarte",
           },
-          xpRequired: 70,
+          xpRequired: 65,
           xpReward: 30,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
+          modes: ["vocabulary", "reading"],
           content: {
             vocabulary: {
-              topic: "survival phrases",
+              topic: "time and movement",
+              focusPoints: ["days and hours", "here/there", "left/right"],
             },
-            grammar: {
-              topics: ["survival phrase patterns"],
-              focusPoints: ["comprehensive review"],
+            reading: {
+              topic: "travel mini-notices",
+              prompt: "Read tiny signs and captions about time and direction",
+            },
+          },
+        },
+        {
+          id: "lesson-pre-a1-5",
+          title: {
+            en: "Social Glue & Questions",
+            es: "Conectores Sociales y Preguntas",
+          },
+          description: {
+            en: "Round out 100 words with connectors, feelings, and quick questions",
+            es: "Completa 100 palabras con conectores, emociones y preguntas rápidas",
+          },
+          xpRequired: 90,
+          xpReward: 35,
+          modes: ["vocabulary", "stories"],
+          content: {
+            vocabulary: {
+              topic: "connectors and questions",
+              focusPoints: [
+                "and/but/because",
+                "how/what/where",
+                "feeling words",
+              ],
+            },
+            stories: {
+              topic: "micro roleplays",
+              prompt: "Act out short meetups using your new question words",
             },
           },
         },

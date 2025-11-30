@@ -27,14 +27,14 @@ export function extractCEFRLevel(id) {
 export const CEFR_DESCRIPTIONS = {
   "PRE-A1": {
     name: "Pre-A1 Foundations",
-    interaction: "Recognize and respond to very basic formulaic expressions",
-    production: "Use memorized alphabet, numbers, and survival phrases",
-    vocabulary: "Ultra-basic survival words (50-100 words)",
-    grammar: "No grammar - only memorized chunks and patterns",
-    sentenceComplexity: "Single words or 2-3 word memorized phrases",
-    readingLevel: "Individual words, numbers, and very short memorized phrases",
-    listeningLevel: "Recognize familiar sounds, alphabet, and numbers",
-    culturalContext: "Basic awareness of greetings and courtesy",
+    interaction: "Recognize and respond to ultra-common social phrases",
+    production: "Use memorized high-frequency words and short requests",
+    vocabulary: "100 most common words and phrases to start conversations",
+    grammar: "Formula chunks only (I am, this is, where is?)",
+    sentenceComplexity: "Single words or 2-4 word memorized phrases",
+    readingLevel: "Individual words and micro phrases on signs and labels",
+    listeningLevel: "Recognize familiar everyday phrases and key words",
+    culturalContext: "Basic courtesy, greetings, and simple questions",
   },
   A1: {
     name: "Beginner",
