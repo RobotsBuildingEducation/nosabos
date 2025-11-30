@@ -9464,7 +9464,11 @@ const CEFR_LEVEL_PROFILES = {
     production: "craft subtle argumentation and stylistic effects",
     mediation: "mediate complex content, positions, or emotions",
     accuracy: "demonstrate near-native control and nuance",
-    discourseSkills: ["stylistic control", "idiomatic range", "critical response"],
+    discourseSkills: [
+      "stylistic control",
+      "idiomatic range",
+      "critical response",
+    ],
   },
 };
 
@@ -9543,7 +9547,9 @@ function addSupplementalLessons(level, unit) {
       id: `${unit.id}-integrated-practice`,
       title: {
         en: `${unit.title?.en || "Unit"} Integrated Practice`,
-        es: `Práctica integrada de ${unit.title?.es || unit.title?.en || "Unidad"}`,
+        es: `Práctica integrada de ${
+          unit.title?.es || unit.title?.en || "Unidad"
+        }`,
       },
       description: {
         en: "Link vocabulary and grammar from the unit in a guided scenario.",
@@ -9587,14 +9593,21 @@ function addSupplementalLessons(level, unit) {
   const coreLessons = lessons.filter((lesson) => !lesson.isFinalQuiz);
   const trailingLessons = lessons.slice(quizIndex + 1);
 
-  return [...coreLessons, ...supplementalLessons, updatedQuiz, ...trailingLessons];
+  return [
+    ...coreLessons,
+    ...supplementalLessons,
+    updatedQuiz,
+    ...trailingLessons,
+  ];
 }
 
 function buildLessonObjectives(level, unit, lesson) {
   const profile = CEFR_LEVEL_PROFILES[level] || CEFR_LEVEL_PROFILES.A1;
   const topic = deriveLessonTopic(unit, lesson);
   const baseAssessment = lesson.isFinalQuiz
-    ? `Meet the ${lesson.title?.en || "lesson"} pass criteria to show readiness for the next sub-stage.`
+    ? `Meet the ${
+        lesson.title?.en || "lesson"
+      } pass criteria to show readiness for the next sub-stage.`
     : `Complete guided practice showing control of ${topic} in ${
         lesson.modes?.join(", ") || "core"
       } tasks.`;
@@ -9603,14 +9616,16 @@ function buildLessonObjectives(level, unit, lesson) {
     cefrLevel: level,
     communicativeObjectives: [
       `Can ${profile.interaction} when discussing ${topic}.`,
-      `Can ${profile.production} while keeping conversation aligned to ${unit.title?.en?.toLowerCase()}.`,
+      `Can ${
+        profile.production
+      } while keeping conversation aligned to ${unit.title?.en?.toLowerCase()}.`,
       `Can ${profile.mediation} related to ${topic} when peers need support.`,
     ],
     successCriteria: [
       `Uses lesson language to ${profile.interaction} with ${profile.accuracy}.`,
-      `Shows ${profile.discourseSkills.join(", ") || "connected speech"} across ${
-        lesson.modes?.length || 1
-      } activity modes.`,
+      `Shows ${
+        profile.discourseSkills.join(", ") || "connected speech"
+      } across ${lesson.modes?.length || 1} activity modes.`,
       baseAssessment,
     ],
   };
@@ -9636,7 +9651,8 @@ function appendAdvancedModes(level, lesson, unit) {
 }
 
 function ensureModeContent(mode, topic, lesson) {
-  const topicLabel = typeof topic === "string" ? topic : String(topic || "topic");
+  const topicLabel =
+    typeof topic === "string" ? topic : String(topic || "topic");
   const updatedContent = { ...(lesson.content || {}) };
 
   if (mode === "vocabulary") {
@@ -9698,16 +9714,22 @@ function normalizeLessonModes(unit, lesson) {
     }
 
     const hasOnlyVocabGrammar =
-      modes.length === 2 && modes.includes("vocabulary") && modes.includes("grammar");
+      modes.length === 2 &&
+      modes.includes("vocabulary") &&
+      modes.includes("grammar");
 
     if (hasOnlyVocabGrammar) {
       modes.push("realtime");
     }
 
     while (modes.length < 3) {
-      const filler = ["vocabulary", "grammar", "reading", "stories", "realtime"].find(
-        (mode) => !modes.includes(mode)
-      );
+      const filler = [
+        "vocabulary",
+        "grammar",
+        "reading",
+        "stories",
+        "realtime",
+      ].find((mode) => !modes.includes(mode));
       if (!filler) break;
       modes.push(filler);
     }
@@ -9745,8 +9767,10 @@ function ensureUnitModuleCoverage(unit, lessons) {
   );
 
   missingModules.forEach((module) => {
-    let targetLesson = eligibleLessons.find((lesson) =>
-      (lesson.modes?.length || 0) < 4 && !(lesson.modes || []).includes(module)
+    let targetLesson = eligibleLessons.find(
+      (lesson) =>
+        (lesson.modes?.length || 0) < 4 &&
+        !(lesson.modes || []).includes(module)
     );
 
     if (!targetLesson) {
@@ -9758,7 +9782,9 @@ function ensureUnitModuleCoverage(unit, lessons) {
       });
 
       if (targetLesson) {
-        const modeToReplace = targetLesson.modes.find((mode) => moduleCounts[mode] > 1);
+        const modeToReplace = targetLesson.modes.find(
+          (mode) => moduleCounts[mode] > 1
+        );
         if (modeToReplace) {
           targetLesson.modes = targetLesson.modes
             .filter((mode) => mode !== modeToReplace)
@@ -9772,7 +9798,9 @@ function ensureUnitModuleCoverage(unit, lessons) {
       return;
     }
 
-    targetLesson.modes = Array.from(new Set([...(targetLesson.modes || []), module]));
+    targetLesson.modes = Array.from(
+      new Set([...(targetLesson.modes || []), module])
+    );
     targetLesson.content = ensureModeContent(
       module,
       deriveLessonTopic(unit, targetLesson),
@@ -9854,7 +9882,11 @@ function applyCEFRScaffolding(path) {
       const enhancedLessons = expandedLessons.map((lesson) =>
         normalizeLessonModes(
           unit,
-          appendAdvancedModes(level, tagLessonWithFunction(level, unit, lesson), unit)
+          appendAdvancedModes(
+            level,
+            tagLessonWithFunction(level, unit, lesson),
+            unit
+          )
         )
       );
       const balancedLessons = ensureUnitModuleCoverage(unit, enhancedLessons);
@@ -9862,10 +9894,12 @@ function applyCEFRScaffolding(path) {
       return {
         ...unit,
         communicativeFunctions: [
-          `Functional focus: ${CEFR_LEVEL_PROFILES[level]?.interaction || "interaction"}.`,
-          `Discourse skills: ${(CEFR_LEVEL_PROFILES[level]?.discourseSkills || []).join(
-            ", "
-          )}.`,
+          `Functional focus: ${
+            CEFR_LEVEL_PROFILES[level]?.interaction || "interaction"
+          }.`,
+          `Discourse skills: ${(
+            CEFR_LEVEL_PROFILES[level]?.discourseSkills || []
+          ).join(", ")}.`,
         ],
         lessons: balancedLessons,
       };
@@ -10576,7 +10610,8 @@ function localizeLearningPath(units, targetLang) {
   return cloned;
 }
 
-const cloneLearningPath = () => JSON.parse(JSON.stringify(cefrAlignedLearningPath));
+const cloneLearningPath = () =>
+  JSON.parse(JSON.stringify(cefrAlignedLearningPath));
 
 export const LEARNING_PATHS = {
   es: cloneLearningPath(), // Spanish
@@ -10634,7 +10669,11 @@ export function getUnitTotalXP(unit) {
 export function getNextLesson(units, userProgress) {
   for (let unitIndex = 0; unitIndex < units.length; unitIndex++) {
     const unit = units[unitIndex];
-    for (let lessonIndex = 0; lessonIndex < unit.lessons.length; lessonIndex++) {
+    for (
+      let lessonIndex = 0;
+      lessonIndex < unit.lessons.length;
+      lessonIndex++
+    ) {
       const lesson = unit.lessons[lessonIndex];
       const lessonProgress = userProgress.lessons?.[lesson.id];
 
@@ -10650,15 +10689,18 @@ export function getNextLesson(units, userProgress) {
           } else {
             // First lesson of subsequent units - check if last lesson of previous unit is completed
             const previousUnit = units[unitIndex - 1];
-            const previousUnitLastLesson = previousUnit.lessons[previousUnit.lessons.length - 1];
+            const previousUnitLastLesson =
+              previousUnit.lessons[previousUnit.lessons.length - 1];
             isPreviousLessonCompleted =
-              userProgress.lessons?.[previousUnitLastLesson.id]?.status === SKILL_STATUS.COMPLETED;
+              userProgress.lessons?.[previousUnitLastLesson.id]?.status ===
+              SKILL_STATUS.COMPLETED;
           }
         } else {
           // Not the first lesson - check if previous lesson in same unit is completed
           const previousLesson = unit.lessons[lessonIndex - 1];
           isPreviousLessonCompleted =
-            userProgress.lessons?.[previousLesson.id]?.status === SKILL_STATUS.COMPLETED;
+            userProgress.lessons?.[previousLesson.id]?.status ===
+            SKILL_STATUS.COMPLETED;
         }
 
         if (isPreviousLessonCompleted) {
