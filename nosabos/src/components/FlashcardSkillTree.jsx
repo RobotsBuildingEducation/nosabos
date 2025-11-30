@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Box, VStack, HStack, Text, Button, Badge } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RiStarLine, RiCheckLine, RiArrowRightLine } from "react-icons/ri";
+import { RiStarLine, RiCheckLine, RiArrowRightLine, RiLockLine } from "react-icons/ri";
 import { FLASHCARD_DATA, CEFR_COLORS } from "../data/flashcardData";
+import FlashcardPractice from "./FlashcardPractice";
 
 const MotionBox = motion(Box);
 
@@ -10,6 +11,7 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const isCompleted = status === "completed";
   const isActive = status === "active";
+  const isLocked = status === "locked";
   const isStacked = stackPosition !== undefined;
 
   // Stacking offset for completed cards
@@ -20,7 +22,7 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
       layout
       initial={{ opacity: 0, x: 100, scale: 0.8 }}
       animate={{
-        opacity: 1,
+        opacity: isLocked ? 0.4 : 1,
         x: 0,
         scale: isStacked ? 0.95 - stackPosition * 0.02 : 1,
         y: isStacked ? stackOffset : 0,
@@ -31,9 +33,9 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
         stiffness: 200,
         damping: 25,
       }}
-      whileHover={!isCompleted ? { scale: 1.05, y: -8 } : {}}
+      whileHover={isActive ? { scale: 1.05, y: -8 } : {}}
       onClick={onClick}
-      cursor={isActive ? "pointer" : "default"}
+      cursor={isActive ? "pointer" : isLocked ? "not-allowed" : "default"}
       position={isStacked ? "absolute" : "relative"}
       left={isStacked ? 0 : "auto"}
       top={isStacked ? 0 : "auto"}
@@ -41,6 +43,7 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
       h="360px"
       flexShrink={0}
       zIndex={isStacked ? 100 - stackPosition : 1}
+      filter={isLocked ? "grayscale(100%)" : "none"}
     >
       <Box
         w="100%"
@@ -86,6 +89,19 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
             opacity={0.3}
           >
             <RiCheckLine size={120} color="white" />
+          </Box>
+        )}
+
+        {/* Lock icon for locked cards */}
+        {isLocked && (
+          <Box
+            position="absolute"
+            top="50%"
+            left="50%"
+            transform="translate(-50%, -50%)"
+            opacity={0.5}
+          >
+            <RiLockLine size={80} color="white" />
           </Box>
         )}
 
@@ -206,20 +222,30 @@ export default function FlashcardSkillTree({
   userProgress = { flashcards: {} },
   onStartFlashcard,
 }) {
-  const [activeCardId, setActiveCardId] = useState(FLASHCARD_DATA[0]?.id);
+  const [practiceCard, setPracticeCard] = useState(null);
+  const [isPracticeOpen, setIsPracticeOpen] = useState(false);
 
   // Determine card status based on user progress
   const getCardStatus = (cardId, index) => {
     if (userProgress.flashcards?.[cardId]?.completed) {
       return "completed";
     }
-    if (cardId === activeCardId) {
+
+    // Find the first uncompleted card
+    const firstUncompletedIndex = FLASHCARD_DATA.findIndex(
+      (card) => !userProgress.flashcards?.[card.id]?.completed
+    );
+
+    // Only the first uncompleted card is active (unlocked)
+    if (index === firstUncompletedIndex) {
       return "active";
     }
-    // First card is always active if nothing is completed
-    if (index === 0 && !userProgress.flashcards) {
-      return "active";
+
+    // Cards after the first uncompleted are locked
+    if (index > firstUncompletedIndex) {
+      return "locked";
     }
+
     return "upcoming";
   };
 
@@ -232,9 +258,26 @@ export default function FlashcardSkillTree({
   );
 
   const handleCardClick = (card, status) => {
-    if (status === "active" && onStartFlashcard) {
+    if (status === "active") {
+      setPracticeCard(card);
+      setIsPracticeOpen(true);
+    }
+  };
+
+  const handleComplete = (card) => {
+    // Mark card as completed and award XP
+    if (onStartFlashcard) {
+      // We'll use onStartFlashcard as onComplete callback
+      // This should update userProgress in the parent component
       onStartFlashcard(card);
     }
+    setIsPracticeOpen(false);
+    setPracticeCard(null);
+  };
+
+  const handleClosePractice = () => {
+    setIsPracticeOpen(false);
+    setPracticeCard(null);
   };
 
   return (
@@ -389,6 +432,16 @@ export default function FlashcardSkillTree({
           })}
         </HStack>
       </Box>
+
+      {/* Practice Modal */}
+      {practiceCard && (
+        <FlashcardPractice
+          card={practiceCard}
+          isOpen={isPracticeOpen}
+          onClose={handleClosePractice}
+          onComplete={handleComplete}
+        />
+      )}
     </Box>
   );
 }
