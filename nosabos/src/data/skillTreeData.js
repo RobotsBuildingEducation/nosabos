@@ -63,7 +63,10 @@ const baseLearningPath = {
             },
             listening: {
               topic: "greetings and starters",
-              focusPoints: ["recognizing common polite phrases", "intonation for greetings"],
+              focusPoints: [
+                "recognizing common polite phrases",
+                "intonation for greetings",
+              ],
             },
           },
         },
@@ -103,7 +106,7 @@ const baseLearningPath = {
           },
           xpRequired: 40,
           xpReward: 30,
-          modes: ["vocabulary", "realtime"],
+          modes: ["vocabulary", "stories"],
           content: {
             vocabulary: {
               topic: "actions and needs",
@@ -111,7 +114,8 @@ const baseLearningPath = {
             },
             realtime: {
               scenario: "quick requests",
-              prompt: "Roleplay asking for help, ordering, or finding something",
+              prompt:
+                "Roleplay asking for help, ordering, or finding something",
             },
           },
         },
@@ -155,7 +159,11 @@ const baseLearningPath = {
           content: {
             vocabulary: {
               topic: "connectors and questions",
-              focusPoints: ["and/but/because", "how/what/where", "feeling words"],
+              focusPoints: [
+                "and/but/because",
+                "how/what/where",
+                "feeling words",
+              ],
             },
             stories: {
               topic: "micro roleplays",
