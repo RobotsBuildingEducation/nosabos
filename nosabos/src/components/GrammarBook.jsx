@@ -1026,17 +1026,23 @@ export default function GrammarBook({
     generateRandomRef.current = generateRandom;
   });
 
-  // Reset feedback UI whenever answer state changes (prevent flicker on correction)
+  // Reset feedback UI only when user actively changes their answer (not when cleared after submission)
   useEffect(() => {
-    setLastOk(null);
+    if (input) {
+      setLastOk(null);
+    }
   }, [input]);
 
   useEffect(() => {
-    setLastOk(null);
+    if (mcAnswer || mcPick) {
+      setLastOk(null);
+    }
   }, [mcAnswer, mcPick, mcSlotIndex]);
 
   useEffect(() => {
-    setLastOk(null);
+    if (maAnswers.length || maPicks.length) {
+      setLastOk(null);
+    }
   }, [maAnswers, maPicks, JSON.stringify(maSlots)]);
 
   useEffect(() => {

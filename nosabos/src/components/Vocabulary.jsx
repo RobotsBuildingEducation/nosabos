@@ -1169,21 +1169,29 @@ export default function Vocabulary({
     return generatorFor(pick)();
   }
 
-  // Reset feedback UI whenever answer state changes (prevent flicker on correction)
+  // Reset feedback UI only when user actively changes their answer (not when cleared after submission)
   useEffect(() => {
-    setLastOk(null);
+    if (ansFill) {
+      setLastOk(null);
+    }
   }, [ansFill]);
 
   useEffect(() => {
-    setLastOk(null);
+    if (answerMC || pickMC) {
+      setLastOk(null);
+    }
   }, [answerMC, pickMC, mcSlotIndex]);
 
   useEffect(() => {
-    setLastOk(null);
+    if (answersMA.length || picksMA.length) {
+      setLastOk(null);
+    }
   }, [answersMA, picksMA, JSON.stringify(maSlots)]);
 
   useEffect(() => {
-    setLastOk(null);
+    if (mSlots.some(s => s !== null) || mBank.some(b => b.placed)) {
+      setLastOk(null);
+    }
   }, [JSON.stringify(mSlots), JSON.stringify(mBank)]);
 
   useEffect(() => {
