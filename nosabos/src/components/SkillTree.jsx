@@ -801,8 +801,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
 
   return (
     <MotionBox
-      whileHover={isClickable ? { scale: 1.02, y: -1 } : {}}
-      whileTap={isClickable ? { scale: 0.99 } : {}}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
