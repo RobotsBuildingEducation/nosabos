@@ -1132,6 +1132,11 @@ export default function Vocabulary({
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
   const maKeyRef = useRef("");
+  // Track previous answer values to detect user input changes
+  const prevAnsFillRef = useRef("");
+  const prevPickMCRef = useRef("");
+  const prevPicksMARef = useRef([]);
+  const prevMSlotsRef = useRef([]);
   function generatorFor(type) {
     switch (type) {
       case "fill":
@@ -1171,28 +1176,37 @@ export default function Vocabulary({
 
   // Reset feedback UI only when user actively changes their answer (not when cleared after submission)
   useEffect(() => {
-    if (ansFill) {
+    if (ansFill && ansFill !== prevAnsFillRef.current) {
       setLastOk(null);
     }
+    prevAnsFillRef.current = ansFill;
   }, [ansFill]);
 
   useEffect(() => {
-    if (answerMC || pickMC) {
+    if (pickMC && pickMC !== prevPickMCRef.current) {
       setLastOk(null);
     }
-  }, [answerMC, pickMC, mcSlotIndex]);
+    prevPickMCRef.current = pickMC;
+  }, [pickMC]);
 
   useEffect(() => {
-    if (answersMA.length || picksMA.length) {
+    const prevPicks = prevPicksMARef.current;
+    const picksChanged = JSON.stringify(picksMA) !== JSON.stringify(prevPicks);
+    if (picksMA.length > 0 && picksChanged) {
       setLastOk(null);
     }
-  }, [answersMA, picksMA, JSON.stringify(maSlots)]);
+    prevPicksMARef.current = picksMA;
+  }, [picksMA]);
 
   useEffect(() => {
-    if (mSlots.some(s => s !== null) || mBank.some(b => b.placed)) {
+    const prevSlots = prevMSlotsRef.current;
+    const slotsChanged = JSON.stringify(mSlots) !== JSON.stringify(prevSlots);
+    const hasContent = mSlots.some(s => s !== null);
+    if (hasContent && slotsChanged) {
       setLastOk(null);
     }
-  }, [JSON.stringify(mSlots), JSON.stringify(mBank)]);
+    prevMSlotsRef.current = mSlots;
+  }, [mSlots]);
 
   useEffect(() => {
     generateRandomRef.current = generateRandom;

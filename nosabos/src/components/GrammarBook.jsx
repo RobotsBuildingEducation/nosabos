@@ -978,6 +978,10 @@ export default function GrammarBook({
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
   const maKeyRef = useRef("");
+  // Track previous answer values to detect user input changes
+  const prevInputRef = useRef("");
+  const prevMcPickRef = useRef("");
+  const prevMaPicksRef = useRef([]);
 
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
@@ -1028,22 +1032,27 @@ export default function GrammarBook({
 
   // Reset feedback UI only when user actively changes their answer (not when cleared after submission)
   useEffect(() => {
-    if (input) {
+    if (input && input !== prevInputRef.current) {
       setLastOk(null);
     }
+    prevInputRef.current = input;
   }, [input]);
 
   useEffect(() => {
-    if (mcAnswer || mcPick) {
+    if (mcPick && mcPick !== prevMcPickRef.current) {
       setLastOk(null);
     }
-  }, [mcAnswer, mcPick, mcSlotIndex]);
+    prevMcPickRef.current = mcPick;
+  }, [mcPick]);
 
   useEffect(() => {
-    if (maAnswers.length || maPicks.length) {
+    const prevPicks = prevMaPicksRef.current;
+    const picksChanged = JSON.stringify(maPicks) !== JSON.stringify(prevPicks);
+    if (maPicks.length > 0 && picksChanged) {
       setLastOk(null);
     }
-  }, [maAnswers, maPicks, JSON.stringify(maSlots)]);
+    prevMaPicksRef.current = maPicks;
+  }, [maPicks]);
 
   useEffect(() => {
     if (!mcQ || !mcChoices.length) return;
