@@ -1025,6 +1025,19 @@ export default function GrammarBook({
     generateRandomRef.current = generateRandom;
   });
 
+  // Reset feedback UI whenever answer state changes (prevent flicker on correction)
+  useEffect(() => {
+    setLastOk(null);
+  }, [input]);
+
+  useEffect(() => {
+    setLastOk(null);
+  }, [mcAnswer, mcPick, mcSlotIndex]);
+
+  useEffect(() => {
+    setLastOk(null);
+  }, [maAnswers, maPicks, JSON.stringify(maSlots)]);
+
   useEffect(() => {
     if (!mcQ || !mcChoices.length) return;
     const signature = `${mcQ}||${mcChoices.join("|")}`;
@@ -1093,7 +1106,6 @@ export default function GrammarBook({
         setMcBankOrder(updated);
         setMcSlotIndex(removed);
         setMcPick(mcChoices[removed] || "");
-        setLastOk(null);
         return;
       }
 
@@ -1107,7 +1119,6 @@ export default function GrammarBook({
         setMcBankOrder(updated);
         setMcSlotIndex(null);
         setMcPick("");
-        setLastOk(null);
       }
     },
     [mcLayout, mcBankOrder, mcSlotIndex, mcChoices]
@@ -1154,7 +1165,6 @@ export default function GrammarBook({
           next[destSlot] = removed;
           return next;
         });
-        setLastOk(null);
         return;
       }
 
@@ -1169,7 +1179,6 @@ export default function GrammarBook({
           next[sourceSlot] = null;
           return next;
         });
-        setLastOk(null);
         return;
       }
 
@@ -1181,7 +1190,6 @@ export default function GrammarBook({
           next[destSlot] = temp;
           return next;
         });
-        setLastOk(null);
       }
     },
     [maLayout, maBankOrder, maSlots]
@@ -1204,7 +1212,6 @@ export default function GrammarBook({
       setMcBankOrder(updated);
       setMcSlotIndex(choiceIdx);
       setMcPick(mcChoices[choiceIdx] || "");
-      setLastOk(null);
     },
     [mcLayout, mcBankOrder, mcSlotIndex, mcChoices]
   );
@@ -1232,7 +1239,6 @@ export default function GrammarBook({
         next[firstEmptySlot] = choiceIdx;
         return next;
       });
-      setLastOk(null);
     },
     [maLayout, maBankOrder, maSlots]
   );
@@ -3152,10 +3158,7 @@ Return JSON ONLY:
 
             <Input
               value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                setLastOk(null);
-              }}
+              onChange={(e) => setInput(e.target.value)}
               placeholder={t("grammar_input_placeholder_answer")}
               isDisabled={loadingG}
             />
