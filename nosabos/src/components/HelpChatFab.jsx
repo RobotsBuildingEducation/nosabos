@@ -238,7 +238,9 @@ export default function HelpChatFab({
         ? "Da la respuesta principal en español (idioma de práctica). Puedes iniciar con una breve nota en el idioma de apoyo si ayuda."
         : primaryLang === "en"
         ? "Give the main answer in English (practice language). You may start with a brief note in the support language if helpful."
-        : `Provide the main answer in ${nameFor(primaryLang)} (${primaryLang}). You may start with a brief note in the support language if helpful.`;
+        : `Provide the main answer in ${nameFor(
+            primaryLang
+          )} (${primaryLang}). You may start with a brief note in the support language if helpful.`;
 
     const levelHint =
       lvl === "beginner"
@@ -254,7 +256,9 @@ export default function HelpChatFab({
     const glossHuman = glossLang ? nameFor(glossLang) : "";
     const supportNote =
       supportLang !== primaryLang
-        ? `Start with 1-2 helpful sentences in ${glossHuman || nameFor(supportLang)} to explain the idea or clear up confusion. Keep it concise.`
+        ? `Start with 1-2 helpful sentences in ${
+            glossHuman || nameFor(supportLang)
+          } to explain the idea or clear up confusion. Keep it concise.`
         : "Start with 1-2 helpful sentences in the learner's language to explain the idea or clear up confusion. Keep it concise.";
 
     const glossLine = glossLang
