@@ -114,11 +114,14 @@ export const getConceptText = (card, supportLang) => {
     return card.concept;
   }
 
-  // Handle bilingual mode - randomly select English or Spanish
+  // Handle bilingual mode - deterministically select language based on card ID
+  // This ensures the same card always shows the same language (no flickering)
   if (supportLang === "bilingual") {
+    // Simple hash: sum of char codes in card.id
+    const hash = (card.id || "").split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
     const languages = ["en", "es"];
-    const randomLang = languages[Math.floor(Math.random() * languages.length)];
-    return card.concept[randomLang] || card.concept.en;
+    const selectedLang = languages[hash % languages.length];
+    return card.concept[selectedLang] || card.concept.en;
   }
 
   // Otherwise use the specified language, fallback to English
