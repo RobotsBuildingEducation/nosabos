@@ -7,12 +7,16 @@ import {
   RiArrowDownLine,
   RiLockLine,
 } from "react-icons/ri";
-import { FLASHCARD_DATA, CEFR_COLORS } from "../data/flashcardData";
+import {
+  FLASHCARD_DATA,
+  CEFR_COLORS,
+  getConceptText,
+} from "../data/flashcardData";
 import FlashcardPractice from "./FlashcardPractice";
 
 const MotionBox = motion(Box);
 
-function FlashcardCard({ card, status, onClick, stackPosition }) {
+function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const isCompleted = status === "completed";
   const isActive = status === "active";
@@ -144,7 +148,7 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
               lineHeight="1.2"
               textShadow="0 2px 12px rgba(0,0,0,0.4)"
             >
-              {card.concept}
+              {getConceptText(card, supportLang)}
             </Text>
           </VStack>
 
@@ -287,6 +291,7 @@ export default function FlashcardSkillTree({
                       onClick={() =>
                         handleCardClick(card, getCardStatus(card))
                       }
+                      supportLang={supportLang}
                     />
                   ))}
                 </AnimatePresence>
@@ -350,6 +355,7 @@ export default function FlashcardSkillTree({
                       card={card}
                       status="completed"
                       stackPosition={index}
+                      supportLang={supportLang}
                     />
                   ))}
                 </AnimatePresence>

@@ -23,7 +23,7 @@ import {
   RiStopCircleLine,
   RiKeyboardLine,
 } from "react-icons/ri";
-import { CEFR_COLORS } from "../data/flashcardData";
+import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 
@@ -90,7 +90,6 @@ export default function FlashcardPractice({
   targetLang = "es",
   supportLang = "en",
 }) {
-  const [inputMode, setInputMode] = useState("speech"); // "speech" or "text"
   const [textAnswer, setTextAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -125,7 +124,7 @@ export default function FlashcardPractice({
       const response = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input: buildFlashcardJudgePrompt({
-          concept: card.concept,
+          concept: getConceptText(card, supportLang),
           userAnswer: answer,
           targetLang,
           supportLang,
@@ -292,101 +291,14 @@ export default function FlashcardPractice({
                 color="white"
                 textAlign="center"
               >
-                {card.concept}
+                {getConceptText(card, supportLang)}
               </Text>
             </VStack>
 
-            {/* Mode Toggle */}
-            {!showResult && !isGrading && (
-              <HStack spacing={2} justify="center">
-                <Button
-                  size="sm"
-                  variant={inputMode === "speech" ? "solid" : "ghost"}
-                  colorScheme={inputMode === "speech" ? "teal" : "gray"}
-                  leftIcon={<RiMicLine />}
-                  onClick={() => setInputMode("speech")}
-                  isDisabled={!supportsSpeech}
-                >
-                  Speak
-                </Button>
-                <Button
-                  size="sm"
-                  variant={inputMode === "text" ? "solid" : "ghost"}
-                  colorScheme={inputMode === "text" ? "purple" : "gray"}
-                  leftIcon={<RiKeyboardLine />}
-                  onClick={() => setInputMode("text")}
-                >
-                  Type
-                </Button>
-              </HStack>
-            )}
-
-            {/* Speech Mode */}
-            {inputMode === "speech" && !showResult && (
+            {/* Unified Input - Show both text and speech */}
+            {!showResult && (
               <VStack spacing={4}>
-                {recognizedText && !isGrading && (
-                  <Box
-                    p={4}
-                    borderRadius="lg"
-                    bg="whiteAlpha.100"
-                    border="1px solid"
-                    borderColor="whiteAlpha.200"
-                    w="100%"
-                  >
-                    <Text fontSize="sm" color="gray.400" mb={1}>
-                      Recognized:
-                    </Text>
-                    <Text fontSize="lg" color="teal.200">
-                      {recognizedText}
-                    </Text>
-                  </Box>
-                )}
-
-                {isGrading ? (
-                  <VStack spacing={3} py={8}>
-                    <Spinner size="lg" color={cefrColor.primary} />
-                    <Text color="gray.400">Grading your answer...</Text>
-                  </VStack>
-                ) : (
-                  <HStack spacing={3} w="100%">
-                    <Button
-                      flex={1}
-                      size="lg"
-                      variant="ghost"
-                      color="gray.400"
-                      onClick={handleClose}
-                      _hover={{ bg: "whiteAlpha.100" }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      flex={1}
-                      size="lg"
-                      colorScheme={isRecording ? "red" : "teal"}
-                      leftIcon={
-                        isRecording ? (
-                          <RiStopCircleLine size={20} />
-                        ) : (
-                          <RiMicLine size={20} />
-                        )
-                      }
-                      onClick={handleRecord}
-                      _hover={{
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 8px 20px ${cefrColor.primary}40`,
-                      }}
-                      _active={{ transform: "translateY(0)" }}
-                    >
-                      {isRecording ? "Stop Recording" : "Start Recording"}
-                    </Button>
-                  </HStack>
-                )}
-              </VStack>
-            )}
-
-            {/* Text Mode */}
-            {inputMode === "text" && !showResult && (
-              <VStack spacing={4}>
+                {/* Text Input */}
                 <Input
                   value={textAnswer}
                   onChange={(e) => setTextAnswer(e.target.value)}
@@ -408,16 +320,78 @@ export default function FlashcardPractice({
                   isDisabled={isGrading}
                 />
 
+                {/* Recognized speech text */}
+                {recognizedText && !isGrading && (
+                  <Box
+                    p={4}
+                    borderRadius="lg"
+                    bg="whiteAlpha.100"
+                    border="1px solid"
+                    borderColor="whiteAlpha.200"
+                    w="100%"
+                  >
+                    <Text fontSize="sm" color="gray.400" mb={1}>
+                      Recognized:
+                    </Text>
+                    <Text fontSize="lg" color="teal.200">
+                      {recognizedText}
+                    </Text>
+                  </Box>
+                )}
+
+                {/* Grading State */}
                 {isGrading ? (
                   <VStack spacing={3} py={4}>
                     <Spinner size="lg" color={cefrColor.primary} />
                     <Text color="gray.400">Grading your answer...</Text>
                   </VStack>
                 ) : (
-                  <HStack spacing={3} w="100%">
+                  <VStack spacing={3} w="100%">
+                    {/* Action Buttons */}
+                    <HStack spacing={3} w="100%">
+                      <Button
+                        flex={1}
+                        size="lg"
+                        colorScheme={isRecording ? "red" : "teal"}
+                        leftIcon={
+                          isRecording ? (
+                            <RiStopCircleLine size={20} />
+                          ) : (
+                            <RiMicLine size={20} />
+                          )
+                        }
+                        onClick={handleRecord}
+                        isDisabled={!supportsSpeech}
+                        _hover={{
+                          transform: "translateY(-2px)",
+                          boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                        }}
+                        _active={{ transform: "translateY(0)" }}
+                      >
+                        {isRecording ? "Stop" : "Record"}
+                      </Button>
+                      <Button
+                        flex={1}
+                        size="lg"
+                        bgGradient={cefrColor.gradient}
+                        color="white"
+                        onClick={handleTextSubmit}
+                        isDisabled={!textAnswer.trim()}
+                        leftIcon={<RiKeyboardLine size={20} />}
+                        _hover={{
+                          transform: "translateY(-2px)",
+                          boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                        }}
+                        _active={{ transform: "translateY(0)" }}
+                      >
+                        Submit
+                      </Button>
+                    </HStack>
+
+                    {/* Cancel button */}
                     <Button
-                      flex={1}
-                      size="lg"
+                      w="100%"
+                      size="md"
                       variant="ghost"
                       color="gray.400"
                       onClick={handleClose}
@@ -425,22 +399,7 @@ export default function FlashcardPractice({
                     >
                       Cancel
                     </Button>
-                    <Button
-                      flex={1}
-                      size="lg"
-                      bgGradient={cefrColor.gradient}
-                      color="white"
-                      onClick={handleTextSubmit}
-                      isDisabled={!textAnswer.trim()}
-                      _hover={{
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 8px 20px ${cefrColor.primary}40`,
-                      }}
-                      _active={{ transform: "translateY(0)" }}
-                    >
-                      Check Answer
-                    </Button>
-                  </HStack>
+                  </VStack>
                 )}
               </VStack>
             )}

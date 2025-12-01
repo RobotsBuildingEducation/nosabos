@@ -7,59 +7,92 @@
 export const FLASHCARD_DATA = [
   {
     id: "flashcard-1",
-    concept: "Hello",
+    concept: {
+      en: "Hello",
+      es: "Hola",
+    },
     cefrLevel: "A1",
   },
   {
     id: "flashcard-2",
-    concept: "Goodbye",
+    concept: {
+      en: "Goodbye",
+      es: "Adiós",
+    },
     cefrLevel: "A1",
   },
   {
     id: "flashcard-3",
-    concept: "Thank you",
+    concept: {
+      en: "Thank you",
+      es: "Gracias",
+    },
     cefrLevel: "A1",
   },
   {
     id: "flashcard-4",
-    concept: "Please",
+    concept: {
+      en: "Please",
+      es: "Por favor",
+    },
     cefrLevel: "A1",
   },
   {
     id: "flashcard-5",
-    concept: "How are you?",
+    concept: {
+      en: "How are you?",
+      es: "¿Cómo estás?",
+    },
     cefrLevel: "A1",
   },
   {
     id: "flashcard-6",
-    concept: "My name is...",
+    concept: {
+      en: "My name is...",
+      es: "Me llamo...",
+    },
     cefrLevel: "A1",
   },
   {
     id: "flashcard-7",
-    concept: "I don't understand",
+    concept: {
+      en: "I don't understand",
+      es: "No entiendo",
+    },
     cefrLevel: "A2",
   },
   {
     id: "flashcard-8",
-    concept: "Where is...?",
+    concept: {
+      en: "Where is...?",
+      es: "¿Dónde está...?",
+    },
     cefrLevel: "A2",
   },
   {
     id: "flashcard-9",
-    concept: "How much does it cost?",
+    concept: {
+      en: "How much does it cost?",
+      es: "¿Cuánto cuesta?",
+    },
     cefrLevel: "A2",
   },
   {
     id: "flashcard-10",
-    concept: "I would like...",
+    concept: {
+      en: "I would like...",
+      es: "Me gustaría...",
+    },
     cefrLevel: "A2",
   },
 ];
 
-// CEFR level colors matching the existing skill tree
+// CEFR level colors - A1 uses beautiful holographic blue
 export const CEFR_COLORS = {
-  A1: { primary: "#22C55E", gradient: "linear(135deg, #22C55E, #16A34A)" },
+  A1: {
+    primary: "#3B82F6",
+    gradient: "linear(135deg, #60A5FA, #3B82F6, #2563EB, #1D4ED8)",
+  },
   A2: { primary: "#3B82F6", gradient: "linear(135deg, #3B82F6, #2563EB)" },
   B1: { primary: "#A855F7", gradient: "linear(135deg, #A855F7, #9333EA)" },
   B2: { primary: "#F97316", gradient: "linear(135deg, #F97316, #EA580C)" },
@@ -73,4 +106,12 @@ export const getFlashcardsByCEFR = (level) => {
 
 export const getAllFlashcards = () => {
   return FLASHCARD_DATA;
+};
+
+// Helper to get concept in the appropriate language
+export const getConceptText = (card, supportLang) => {
+  if (typeof card.concept === "string") {
+    return card.concept;
+  }
+  return card.concept[supportLang] || card.concept.en;
 };
