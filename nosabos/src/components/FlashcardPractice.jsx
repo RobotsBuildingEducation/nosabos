@@ -107,10 +107,21 @@ export default function FlashcardPractice({
     isRecording,
     supportsSpeech,
   } = useSpeechPractice({
-    targetText: "", // We don't use strict matching, AI will grade
+    targetText: "answer", // Placeholder - we use AI grading instead of strict matching
     targetLang: targetLang,
-    onResult: ({ recognizedText: text }) => {
-      setRecognizedText(text || "");
+    onResult: ({ recognizedText, evaluation, error }) => {
+      if (error) {
+        toast({
+          title: "Could not evaluate",
+          description: "Please try again with a stable connection.",
+          status: "error",
+          duration: 2500,
+        });
+        return;
+      }
+
+      const text = recognizedText || "";
+      setRecognizedText(text);
       if (text && text.trim()) {
         checkAnswerWithAI(text);
       }
