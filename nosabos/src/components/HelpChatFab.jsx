@@ -235,10 +235,10 @@ export default function HelpChatFab({
 
     const strict =
       primaryLang === "es"
-        ? "Responde SOLO en español."
+        ? "Da la respuesta principal en español (idioma de práctica). Puedes iniciar con una breve nota en el idioma de apoyo si ayuda."
         : primaryLang === "en"
-        ? "Answer ONLY in English."
-        : `Answer ONLY in ${nameFor(primaryLang)} (${primaryLang}).`;
+        ? "Give the main answer in English (practice language). You may start with a brief note in the support language if helpful."
+        : `Provide the main answer in ${nameFor(primaryLang)} (${primaryLang}). You may start with a brief note in the support language if helpful.`;
 
     const levelHint =
       lvl === "beginner"
@@ -252,6 +252,11 @@ export default function HelpChatFab({
       showTranslations && supportLang !== primaryLang ? supportLang : null;
 
     const glossHuman = glossLang ? nameFor(glossLang) : "";
+    const supportNote =
+      supportLang !== primaryLang
+        ? `Start with 1-2 helpful sentences in ${glossHuman || nameFor(supportLang)} to explain the idea or clear up confusion. Keep it concise.`
+        : "Start with 1-2 helpful sentences in the learner's language to explain the idea or clear up confusion. Keep it concise.";
+
     const glossLine = glossLang
       ? `After your main answer, add one short translation in ${glossHuman}. Put it on a new line starting with "// ".`
       : "Do not add any translation/gloss.";
@@ -261,6 +266,7 @@ export default function HelpChatFab({
       levelHint,
       persona ? `Persona: ${persona}.` : "",
       focus ? `Focus area: ${focus}.` : "",
+      supportNote,
       "Keep replies ≤ 60 words.",
       glossLine,
       "Use concise Markdown when helpful (bullets, **bold**, code, tables).",
@@ -432,8 +438,8 @@ export default function HelpChatFab({
                   borderColor="gray.700"
                 >
                   {appLanguage === "es"
-                    ? "Haz una pregunta rápida. Responderé en tu idioma de práctica y (si está activado) incluiré una breve traducción a tu idioma de apoyo."
-                    : "Ask a quick question. I’ll answer in your practice language and (if enabled) include a short translation into your support language."}
+                    ? "Haz una pregunta rápida. Te daré una breve explicación en tu idioma de apoyo y luego responderé en tu idioma de práctica; si está activado, también incluiré una traducción corta a tu idioma de apoyo."
+                    : "Ask a quick question. I’ll give a short explanation in your support language and then answer in your practice language; if enabled, I’ll also include a brief translation into your support language."}
                 </Box>
               )}
 
