@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { Box, VStack, HStack, Text, Button, Badge } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RiStarLine, RiCheckLine, RiArrowRightLine, RiLockLine } from "react-icons/ri";
+import {
+  RiStarLine,
+  RiCheckLine,
+  RiArrowDownLine,
+  RiLockLine,
+} from "react-icons/ri";
 import { FLASHCARD_DATA, CEFR_COLORS } from "../data/flashcardData";
 import FlashcardPractice from "./FlashcardPractice";
 
@@ -20,10 +25,9 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
   return (
     <MotionBox
       layout
-      initial={{ opacity: 0, x: 100, scale: 0.8 }}
+      initial={{ opacity: 0, scale: 0.8 }}
       animate={{
         opacity: isLocked ? 0.4 : 1,
-        x: 0,
         scale: isStacked ? 0.95 - stackPosition * 0.02 : 1,
         y: isStacked ? stackOffset : 0,
       }}
@@ -37,7 +41,8 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
       onClick={onClick}
       cursor={isActive ? "pointer" : isLocked ? "not-allowed" : "default"}
       position={isStacked ? "absolute" : "relative"}
-      left={isStacked ? 0 : "auto"}
+      left={isStacked ? "50%" : "auto"}
+      transform={isStacked ? "translateX(-50%)" : "none"}
       top={isStacked ? 0 : "auto"}
       w="280px"
       h="360px"
@@ -210,16 +215,22 @@ export default function FlashcardSkillTree({
 }) {
   const [practiceCard, setPracticeCard] = useState(null);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
+  const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
 
-  // Determine card status based on user progress
+  // Determine card status based on user progress and local state
   const getCardStatus = (cardId, index) => {
-    if (userProgress.flashcards?.[cardId]?.completed) {
+    if (
+      userProgress.flashcards?.[cardId]?.completed ||
+      localCompletedCards.has(cardId)
+    ) {
       return "completed";
     }
 
     // Find the first uncompleted card
     const firstUncompletedIndex = FLASHCARD_DATA.findIndex(
-      (card) => !userProgress.flashcards?.[card.id]?.completed
+      (card) =>
+        !userProgress.flashcards?.[card.id]?.completed &&
+        !localCompletedCards.has(card.id)
     );
 
     // Only the first uncompleted card is active (unlocked)
@@ -237,10 +248,14 @@ export default function FlashcardSkillTree({
 
   // Separate completed and upcoming cards
   const completedCards = FLASHCARD_DATA.filter(
-    (card) => userProgress.flashcards?.[card.id]?.completed
+    (card) =>
+      userProgress.flashcards?.[card.id]?.completed ||
+      localCompletedCards.has(card.id)
   );
   const upcomingCards = FLASHCARD_DATA.filter(
-    (card) => !userProgress.flashcards?.[card.id]?.completed
+    (card) =>
+      !userProgress.flashcards?.[card.id]?.completed &&
+      !localCompletedCards.has(card.id)
   );
 
   const handleCardClick = (card, status) => {
@@ -251,12 +266,14 @@ export default function FlashcardSkillTree({
   };
 
   const handleComplete = (card) => {
-    // Mark card as completed and award XP
+    // Add to local completed cards immediately for instant UI update
+    setLocalCompletedCards((prev) => new Set([...prev, card.id]));
+
+    // Call parent callback if provided
     if (onStartFlashcard) {
-      // We'll use onStartFlashcard as onComplete callback
-      // This should update userProgress in the parent component
       onStartFlashcard(card);
     }
+
     setIsPracticeOpen(false);
     setPracticeCard(null);
   };
@@ -268,35 +285,93 @@ export default function FlashcardSkillTree({
 
   return (
     <Box w="100%" minH="500px" position="relative">
-      {/* Main container with horizontal layout */}
-      <HStack
-        spacing={0}
-        align="center"
-        justify="space-between"
-        w="100%"
-        h="500px"
-        position="relative"
-      >
-        {/* Left: Completed Cards Stack */}
-        <Box position="relative" w="320px" h="100%" flexShrink={0}>
-          {completedCards.length > 0 ? (
-            <>
-              <VStack spacing={4} align="start" mb={4}>
-                <Text fontSize="sm" fontWeight="bold" color="gray.400">
-                  COMPLETED
-                </Text>
-                <HStack spacing={2}>
-                  <Text fontSize="3xl" fontWeight="black" color="white">
-                    {completedCards.length}
-                  </Text>
-                  <Text fontSize="lg" color="gray.400">
-                    / {FLASHCARD_DATA.length}
-                  </Text>
-                </HStack>
-              </VStack>
+      {/* Main container with vertical layout */}
+      <VStack spacing={8} align="stretch">
+        {/* Top: Active/Upcoming Cards */}
+        <Box w="100%">
+          <VStack spacing={4} mb={4}>
+            <Text fontSize="sm" fontWeight="bold" color="gray.400">
+              {upcomingCards.length > 0 ? "PRACTICE" : "ALL COMPLETE!"}
+            </Text>
+            <HStack spacing={2}>
+              <Text fontSize="3xl" fontWeight="black" color="white">
+                {completedCards.length}
+              </Text>
+              <Text fontSize="lg" color="gray.400">
+                / {FLASHCARD_DATA.length}
+              </Text>
+            </HStack>
+          </VStack>
 
-              {/* Stacked cards */}
-              <Box position="relative" w="280px" h="360px" mt={8}>
+          {/* Upcoming cards in horizontal scrollable row */}
+          {upcomingCards.length > 0 ? (
+            <Box overflowX="auto" overflowY="hidden" w="100%" pb={4}>
+              <HStack spacing={6} px={4} minW="min-content">
+                <AnimatePresence mode="popLayout">
+                  {upcomingCards.map((card, index) => (
+                    <FlashcardCard
+                      key={card.id}
+                      card={card}
+                      status={getCardStatus(card.id, index)}
+                      onClick={() =>
+                        handleCardClick(card, getCardStatus(card.id, index))
+                      }
+                    />
+                  ))}
+                </AnimatePresence>
+              </HStack>
+            </Box>
+          ) : (
+            <MotionBox
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              <VStack
+                spacing={4}
+                p={12}
+                borderRadius="2xl"
+                bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
+                border="2px solid"
+                borderColor="whiteAlpha.200"
+                backdropFilter="blur(10px)"
+              >
+                <RiCheckLine size={64} color="#22C55E" />
+                <Text fontSize="2xl" fontWeight="black" color="white">
+                  All Done!
+                </Text>
+                <Text fontSize="md" color="gray.400" textAlign="center">
+                  You've completed all flashcards!
+                </Text>
+              </VStack>
+            </MotionBox>
+          )}
+        </Box>
+
+        {/* Arrow indicator */}
+        {completedCards.length > 0 && (
+          <Box textAlign="center" py={2}>
+            <RiArrowDownLine size={32} color="rgba(255, 255, 255, 0.2)" />
+          </Box>
+        )}
+
+        {/* Bottom: Completed Cards Stack */}
+        {completedCards.length > 0 && (
+          <Box w="100%">
+            <VStack spacing={4} mb={6}>
+              <Text fontSize="sm" fontWeight="bold" color="gray.400">
+                COMPLETED
+              </Text>
+            </VStack>
+
+            {/* Stacked cards - centered */}
+            <Box position="relative" w="100%" h="380px">
+              <Box
+                position="relative"
+                w="280px"
+                h="360px"
+                mx="auto"
+              >
                 <AnimatePresence>
                   {completedCards.slice(-5).map((card, index) => (
                     <FlashcardCard
@@ -308,116 +383,40 @@ export default function FlashcardSkillTree({
                   ))}
                 </AnimatePresence>
               </Box>
-            </>
-          ) : (
-            <VStack
-              spacing={4}
-              align="center"
-              justify="center"
-              h="100%"
-              opacity={0.4}
-            >
-              <Box
-                w="280px"
-                h="360px"
-                borderRadius="2xl"
-                border="2px dashed"
-                borderColor="whiteAlpha.200"
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-              >
-                <Text fontSize="sm" color="gray.500" textAlign="center" px={6}>
-                  Completed cards
-                  <br />
-                  will stack here
-                </Text>
-              </Box>
-            </VStack>
-          )}
-        </Box>
+            </Box>
+          </Box>
+        )}
 
-        {/* Center: Arrow indicator */}
-        <Box px={8} flexShrink={0}>
-          <RiArrowRightLine size={40} color="rgba(255, 255, 255, 0.2)" />
-        </Box>
-
-        {/* Right: Upcoming Cards Chain */}
-        <Box flex={1} h="100%" overflowX="auto" overflowY="hidden">
-          <HStack
-            spacing={6}
-            h="100%"
-            align="center"
-            px={4}
-            minW="min-content"
-          >
-            <AnimatePresence mode="popLayout">
-              {upcomingCards.map((card, index) => (
-                <FlashcardCard
+        {/* Progress indicator */}
+        <Box w="100%">
+          <HStack justify="center" spacing={2} flexWrap="wrap">
+            {FLASHCARD_DATA.map((card) => {
+              const isCompleted =
+                userProgress.flashcards?.[card.id]?.completed ||
+                localCompletedCards.has(card.id);
+              return (
+                <Box
                   key={card.id}
-                  card={card}
-                  status={getCardStatus(card.id, index)}
-                  onClick={() => handleCardClick(card, getCardStatus(card.id, index))}
+                  w="40px"
+                  h="6px"
+                  borderRadius="full"
+                  bg={
+                    isCompleted
+                      ? CEFR_COLORS[card.cefrLevel].primary
+                      : "whiteAlpha.200"
+                  }
+                  transition="all 0.3s"
+                  boxShadow={
+                    isCompleted
+                      ? `0 0 10px ${CEFR_COLORS[card.cefrLevel].primary}60`
+                      : "none"
+                  }
                 />
-              ))}
-            </AnimatePresence>
-
-            {upcomingCards.length === 0 && (
-              <MotionBox
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-              >
-                <VStack
-                  spacing={4}
-                  p={12}
-                  borderRadius="2xl"
-                  bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
-                  border="2px solid"
-                  borderColor="whiteAlpha.200"
-                  backdropFilter="blur(10px)"
-                >
-                  <RiCheckLine size={64} color="#22C55E" />
-                  <Text fontSize="2xl" fontWeight="black" color="white">
-                    All Done!
-                  </Text>
-                  <Text fontSize="md" color="gray.400" textAlign="center">
-                    You've completed all flashcards!
-                  </Text>
-                </VStack>
-              </MotionBox>
-            )}
+              );
+            })}
           </HStack>
         </Box>
-      </HStack>
-
-      {/* Progress indicator */}
-      <Box mt={8} w="100%">
-        <HStack justify="center" spacing={2}>
-          {FLASHCARD_DATA.map((card) => {
-            const isCompleted = userProgress.flashcards?.[card.id]?.completed;
-            return (
-              <Box
-                key={card.id}
-                w="40px"
-                h="6px"
-                borderRadius="full"
-                bg={
-                  isCompleted
-                    ? CEFR_COLORS[card.cefrLevel].primary
-                    : "whiteAlpha.200"
-                }
-                transition="all 0.3s"
-                boxShadow={
-                  isCompleted
-                    ? `0 0 10px ${CEFR_COLORS[card.cefrLevel].primary}60`
-                    : "none"
-                }
-              />
-            );
-          })}
-        </HStack>
-      </Box>
+      </VStack>
 
       {/* Practice Modal */}
       {practiceCard && (

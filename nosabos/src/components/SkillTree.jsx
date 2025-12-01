@@ -1853,6 +1853,15 @@ export default function SkillTree({
     }
   };
 
+  // Separate handler for flashcard completion - doesn't trigger lesson logic
+  const handleFlashcardComplete = (card) => {
+    // For now, this is a placeholder
+    // The actual XP awarding and progress tracking should be handled
+    // by a separate callback from the parent component
+    // We just prevent the lesson logic from being triggered
+    console.log("[FlashcardComplete]", card);
+  };
+
   // Calculate overall progress
   const totalLessons = units.reduce(
     (sum, unit) => sum + unit.lessons.length,
@@ -2047,7 +2056,9 @@ export default function SkillTree({
         ) : (
           <FlashcardSkillTree
             userProgress={userProgress}
-            onStartFlashcard={onStartLesson}
+            onStartFlashcard={handleFlashcardComplete}
+            targetLang={targetLang}
+            supportLang={supportLang}
           />
         )}
 
