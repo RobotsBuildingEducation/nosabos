@@ -25,8 +25,62 @@ import {
 } from "react-icons/ri";
 import { CEFR_COLORS } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
+import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 
 const MotionBox = motion(Box);
+
+// Language name helper
+const LANG_NAME = (code) => {
+  const names = {
+    es: "Spanish",
+    en: "English",
+    pt: "Portuguese",
+    fr: "French",
+    it: "Italian",
+    nah: "Nahuatl",
+  };
+  return names[code] || code;
+};
+
+// Build AI grading prompt for flashcard translation
+function buildFlashcardJudgePrompt({
+  concept,
+  userAnswer,
+  targetLang,
+  supportLang,
+  cefrLevel,
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT = LANG_NAME(supportLang);
+
+  return `
+Judge a flashcard translation from ${SUPPORT} to ${TARGET} (CEFR ${cefrLevel}).
+
+Original (${SUPPORT}):
+${concept}
+
+User's translation (${TARGET}):
+${userAnswer}
+
+Policy:
+- Say YES if the translation accurately conveys the meaning in ${TARGET}.
+- Allow natural variations and synonyms that maintain the core meaning.
+- Ignore minor grammatical errors if the meaning is clear.
+- Allow missing or incorrect accent marks/diacritics.
+- For common phrases, accept culturally appropriate equivalents.
+- If the meaning is significantly wrong or incomprehensible, say NO.
+
+Reply with ONE of these formats:
+YES | <xp_amount>
+NO
+
+Where <xp_amount> is 4-7 based on:
+- 7 XP: Perfect translation with natural phrasing
+- 6 XP: Correct meaning with minor imperfections
+- 5 XP: Acceptable translation with some awkwardness
+- 4 XP: Barely acceptable but conveys basic meaning
+`.trim();
+}
 
 export default function FlashcardPractice({
   card,
@@ -41,6 +95,8 @@ export default function FlashcardPractice({
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [recognizedText, setRecognizedText] = useState("");
+  const [xpAwarded, setXpAwarded] = useState(0);
+  const [isGrading, setIsGrading] = useState(false);
   const toast = useToast();
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
@@ -52,38 +108,72 @@ export default function FlashcardPractice({
     isRecording,
     supportsSpeech,
   } = useSpeechPractice({
-    targetText: card.translation,
+    targetText: "", // We don't use strict matching, AI will grade
     targetLang: targetLang,
-    onResult: ({ recognizedText: text, evaluation }) => {
+    onResult: ({ recognizedText: text }) => {
       setRecognizedText(text || "");
-      checkAnswer(text || "");
+      if (text && text.trim()) {
+        checkAnswerWithAI(text);
+      }
     },
   });
 
-  const checkAnswer = (answer) => {
-    // Simple check: compare lowercase trimmed strings
-    const userAnswer = answer.toLowerCase().trim();
-    const correctAnswer = card.translation.toLowerCase().trim();
+  const checkAnswerWithAI = async (answer) => {
+    setIsGrading(true);
 
-    // Allow some flexibility - check if the answer contains the correct answer or vice versa
-    const correct = userAnswer === correctAnswer ||
-                   userAnswer.includes(correctAnswer) ||
-                   correctAnswer.includes(userAnswer);
+    try {
+      const response = await callResponses({
+        model: DEFAULT_RESPONSES_MODEL,
+        input: buildFlashcardJudgePrompt({
+          concept: card.concept,
+          userAnswer: answer,
+          targetLang,
+          supportLang,
+          cefrLevel: card.cefrLevel,
+        }),
+      });
 
-    setIsCorrect(correct);
-    setShowResult(true);
+      // Parse response: "YES | 6" or "NO"
+      const trimmed = (response || "").trim().toUpperCase();
+      const isYes = trimmed.startsWith("YES");
 
-    // If correct, award XP and mark complete after a delay
-    if (correct) {
-      setTimeout(() => {
-        onComplete(card);
-        handleClose();
-      }, 2000);
+      let xp = 5; // default
+      if (isYes && trimmed.includes("|")) {
+        const parts = trimmed.split("|");
+        const xpPart = parseInt(parts[1]?.trim());
+        if (xpPart >= 4 && xpPart <= 7) {
+          xp = xpPart;
+        }
+      }
+
+      setIsCorrect(isYes);
+      setXpAwarded(xp);
+      setShowResult(true);
+
+      // If correct, award XP and mark complete after a delay
+      if (isYes) {
+        setTimeout(() => {
+          onComplete({ ...card, xpReward: xp });
+          handleClose();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error("AI grading error:", error);
+      toast({
+        title: "Grading error",
+        description: "Failed to grade your answer. Please try again.",
+        status: "error",
+        duration: 3000,
+      });
+    } finally {
+      setIsGrading(false);
     }
   };
 
   const handleTextSubmit = () => {
-    checkAnswer(textAnswer);
+    if (textAnswer.trim()) {
+      checkAnswerWithAI(textAnswer);
+    }
   };
 
   const handleTryAgain = () => {
@@ -91,6 +181,7 @@ export default function FlashcardPractice({
     setRecognizedText("");
     setShowResult(false);
     setIsCorrect(false);
+    setXpAwarded(0);
   };
 
   const handleClose = () => {
@@ -98,6 +189,7 @@ export default function FlashcardPractice({
     setRecognizedText("");
     setShowResult(false);
     setIsCorrect(false);
+    setXpAwarded(0);
     if (isRecording) {
       stopRecording();
     }
@@ -105,7 +197,7 @@ export default function FlashcardPractice({
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter" && textAnswer.trim() && !showResult) {
+    if (e.key === "Enter" && textAnswer.trim() && !showResult && !isGrading) {
       handleTextSubmit();
     }
   };
@@ -120,6 +212,7 @@ export default function FlashcardPractice({
     setShowResult(false);
     setRecognizedText("");
     setIsCorrect(false);
+    setXpAwarded(0);
 
     try {
       await startRecording();
@@ -183,18 +276,15 @@ export default function FlashcardPractice({
                 {card.cefrLevel}
               </Badge>
 
-              <HStack spacing={2}>
-                <RiStarLine size={20} color="#FCD34D" />
-                <Text fontSize="lg" fontWeight="bold" color="white">
-                  {card.xpReward} XP
-                </Text>
-              </HStack>
+              <Text fontSize="sm" color="gray.400" fontWeight="medium">
+                {LANG_NAME(supportLang)} → {LANG_NAME(targetLang)}
+              </Text>
             </HStack>
 
             {/* Question */}
             <VStack spacing={3} py={4}>
               <Text fontSize="sm" color="gray.400" fontWeight="medium">
-                Translate to {targetLang === "es" ? "Spanish" : "English"}:
+                Translate to {LANG_NAME(targetLang)}:
               </Text>
               <Text
                 fontSize="4xl"
@@ -207,7 +297,7 @@ export default function FlashcardPractice({
             </VStack>
 
             {/* Mode Toggle */}
-            {!showResult && (
+            {!showResult && !isGrading && (
               <HStack spacing={2} justify="center">
                 <Button
                   size="sm"
@@ -234,7 +324,7 @@ export default function FlashcardPractice({
             {/* Speech Mode */}
             {inputMode === "speech" && !showResult && (
               <VStack spacing={4}>
-                {recognizedText && (
+                {recognizedText && !isGrading && (
                   <Box
                     p={4}
                     borderRadius="lg"
@@ -252,38 +342,45 @@ export default function FlashcardPractice({
                   </Box>
                 )}
 
-                <HStack spacing={3} w="100%">
-                  <Button
-                    flex={1}
-                    size="lg"
-                    variant="ghost"
-                    color="gray.400"
-                    onClick={handleClose}
-                    _hover={{ bg: "whiteAlpha.100" }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    flex={1}
-                    size="lg"
-                    colorScheme={isRecording ? "red" : "teal"}
-                    leftIcon={
-                      isRecording ? (
-                        <RiStopCircleLine size={20} />
-                      ) : (
-                        <RiMicLine size={20} />
-                      )
-                    }
-                    onClick={handleRecord}
-                    _hover={{
-                      transform: "translateY(-2px)",
-                      boxShadow: `0 8px 20px ${cefrColor.primary}40`,
-                    }}
-                    _active={{ transform: "translateY(0)" }}
-                  >
-                    {isRecording ? "Stop Recording" : "Start Recording"}
-                  </Button>
-                </HStack>
+                {isGrading ? (
+                  <VStack spacing={3} py={8}>
+                    <Spinner size="lg" color={cefrColor.primary} />
+                    <Text color="gray.400">Grading your answer...</Text>
+                  </VStack>
+                ) : (
+                  <HStack spacing={3} w="100%">
+                    <Button
+                      flex={1}
+                      size="lg"
+                      variant="ghost"
+                      color="gray.400"
+                      onClick={handleClose}
+                      _hover={{ bg: "whiteAlpha.100" }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      flex={1}
+                      size="lg"
+                      colorScheme={isRecording ? "red" : "teal"}
+                      leftIcon={
+                        isRecording ? (
+                          <RiStopCircleLine size={20} />
+                        ) : (
+                          <RiMicLine size={20} />
+                        )
+                      }
+                      onClick={handleRecord}
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                      }}
+                      _active={{ transform: "translateY(0)" }}
+                    >
+                      {isRecording ? "Stop Recording" : "Start Recording"}
+                    </Button>
+                  </HStack>
+                )}
               </VStack>
             )}
 
@@ -308,35 +405,43 @@ export default function FlashcardPractice({
                     boxShadow: `0 0 0 1px ${cefrColor.primary}`,
                   }}
                   autoFocus
+                  isDisabled={isGrading}
                 />
 
-                <HStack spacing={3} w="100%">
-                  <Button
-                    flex={1}
-                    size="lg"
-                    variant="ghost"
-                    color="gray.400"
-                    onClick={handleClose}
-                    _hover={{ bg: "whiteAlpha.100" }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    flex={1}
-                    size="lg"
-                    bgGradient={cefrColor.gradient}
-                    color="white"
-                    onClick={handleTextSubmit}
-                    isDisabled={!textAnswer.trim()}
-                    _hover={{
-                      transform: "translateY(-2px)",
-                      boxShadow: `0 8px 20px ${cefrColor.primary}40`,
-                    }}
-                    _active={{ transform: "translateY(0)" }}
-                  >
-                    Check Answer
-                  </Button>
-                </HStack>
+                {isGrading ? (
+                  <VStack spacing={3} py={4}>
+                    <Spinner size="lg" color={cefrColor.primary} />
+                    <Text color="gray.400">Grading your answer...</Text>
+                  </VStack>
+                ) : (
+                  <HStack spacing={3} w="100%">
+                    <Button
+                      flex={1}
+                      size="lg"
+                      variant="ghost"
+                      color="gray.400"
+                      onClick={handleClose}
+                      _hover={{ bg: "whiteAlpha.100" }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      flex={1}
+                      size="lg"
+                      bgGradient={cefrColor.gradient}
+                      color="white"
+                      onClick={handleTextSubmit}
+                      isDisabled={!textAnswer.trim()}
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                      }}
+                      _active={{ transform: "translateY(0)" }}
+                    >
+                      Check Answer
+                    </Button>
+                  </HStack>
+                )}
               </VStack>
             )}
 
@@ -367,22 +472,11 @@ export default function FlashcardPractice({
                       </Text>
                     </HStack>
 
-                    {!isCorrect && (
-                      <VStack spacing={2}>
-                        <Text fontSize="sm" color="gray.400">
-                          Correct answer:
-                        </Text>
-                        <Text fontSize="xl" fontWeight="bold" color="white">
-                          {card.translation}
-                        </Text>
-                      </VStack>
-                    )}
-
                     {isCorrect ? (
                       <HStack spacing={2} color="yellow.400">
                         <RiStarLine size={20} />
                         <Text fontSize="lg" fontWeight="bold">
-                          +{card.xpReward} XP
+                          +{xpAwarded} XP
                         </Text>
                       </HStack>
                     ) : (

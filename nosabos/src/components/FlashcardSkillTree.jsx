@@ -119,43 +119,20 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
           zIndex={2}
         >
           {/* CEFR Badge */}
-          <HStack w="100%" justify="space-between" align="start">
-            <Badge
-              px={4}
-              py={2}
-              borderRadius="full"
-              bg={isCompleted ? "whiteAlpha.300" : "whiteAlpha.200"}
-              color="white"
-              fontSize="md"
-              fontWeight="black"
-              border="1px solid"
-              borderColor="whiteAlpha.300"
-              boxShadow="0 2px 8px rgba(0, 0, 0, 0.2)"
-            >
-              {card.cefrLevel}
-            </Badge>
-
-            {/* XP Badge */}
-            <HStack
-              px={3}
-              py={1.5}
-              borderRadius="full"
-              bg="whiteAlpha.200"
-              border="1px solid"
-              borderColor="whiteAlpha.300"
-              spacing={1}
-            >
-              <RiStarLine size={16} color="#FCD34D" />
-              <Text
-                fontSize="sm"
-                fontWeight="bold"
-                color="white"
-                textShadow="0 1px 2px rgba(0,0,0,0.3)"
-              >
-                {card.xpReward} XP
-              </Text>
-            </HStack>
-          </HStack>
+          <Badge
+            px={4}
+            py={2}
+            borderRadius="full"
+            bg={isCompleted ? "whiteAlpha.300" : "whiteAlpha.200"}
+            color="white"
+            fontSize="md"
+            fontWeight="black"
+            border="1px solid"
+            borderColor="whiteAlpha.300"
+            boxShadow="0 2px 8px rgba(0, 0, 0, 0.2)"
+          >
+            {card.cefrLevel}
+          </Badge>
 
           {/* Concept (centered) */}
           <VStack spacing={4} flex={1} justify="center">
@@ -171,19 +148,8 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
             </Text>
           </VStack>
 
-          {/* Category tag */}
-          <Box
-            px={4}
-            py={2}
-            borderRadius="full"
-            bg="blackAlpha.300"
-            border="1px solid"
-            borderColor="whiteAlpha.200"
-          >
-            <Text fontSize="xs" fontWeight="medium" color="whiteAlpha.800">
-              {card.category}
-            </Text>
-          </Box>
+          {/* Empty spacer for layout balance */}
+          <Box h="40px" />
         </VStack>
 
         {/* Active card pulse effect */}

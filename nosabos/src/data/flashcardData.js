@@ -1,88 +1,59 @@
 /**
  * Flashcard data for the 1000 most important words and phrases
- * Starting with 10 cards for initial implementation
+ * Language-agnostic: concept is shown in support language, user translates to target language
+ * AI grades the response and determines XP reward
  */
 
 export const FLASHCARD_DATA = [
   {
     id: "flashcard-1",
     concept: "Hello",
-    translation: "Hola",
     cefrLevel: "A1",
-    xpReward: 5,
-    category: "greetings",
   },
   {
     id: "flashcard-2",
     concept: "Goodbye",
-    translation: "Adiós",
     cefrLevel: "A1",
-    xpReward: 5,
-    category: "greetings",
   },
   {
     id: "flashcard-3",
     concept: "Thank you",
-    translation: "Gracias",
     cefrLevel: "A1",
-    xpReward: 4,
-    category: "courtesy",
   },
   {
     id: "flashcard-4",
     concept: "Please",
-    translation: "Por favor",
     cefrLevel: "A1",
-    xpReward: 4,
-    category: "courtesy",
   },
   {
     id: "flashcard-5",
     concept: "How are you?",
-    translation: "¿Cómo estás?",
     cefrLevel: "A1",
-    xpReward: 6,
-    category: "greetings",
   },
   {
     id: "flashcard-6",
     concept: "My name is...",
-    translation: "Me llamo...",
     cefrLevel: "A1",
-    xpReward: 6,
-    category: "introductions",
   },
   {
     id: "flashcard-7",
     concept: "I don't understand",
-    translation: "No entiendo",
     cefrLevel: "A2",
-    xpReward: 7,
-    category: "communication",
   },
   {
     id: "flashcard-8",
     concept: "Where is...?",
-    translation: "¿Dónde está...?",
     cefrLevel: "A2",
-    xpReward: 6,
-    category: "questions",
   },
   {
     id: "flashcard-9",
     concept: "How much does it cost?",
-    translation: "¿Cuánto cuesta?",
     cefrLevel: "A2",
-    xpReward: 7,
-    category: "shopping",
   },
   {
     id: "flashcard-10",
     concept: "I would like...",
-    translation: "Me gustaría...",
     cefrLevel: "A2",
-    xpReward: 6,
-    category: "requests",
   },
 ];
 
