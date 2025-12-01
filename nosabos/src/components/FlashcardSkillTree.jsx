@@ -48,8 +48,8 @@ function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
       left={isStacked ? "50%" : "auto"}
       transform={isStacked ? "translateX(-50%)" : "none"}
       top={isStacked ? 0 : "auto"}
-      w="280px"
-      h="360px"
+      w="220px"
+      h="280px"
       flexShrink={0}
       zIndex={isStacked ? 100 - stackPosition : 1}
       filter={isLocked ? "grayscale(100%)" : "none"}
@@ -353,11 +353,11 @@ export default function FlashcardSkillTree({
             </VStack>
 
             {/* Stacked cards - centered */}
-            <Box position="relative" w="100%" h="380px">
+            <Box position="relative" w="100%" h="300px">
               <Box
                 position="relative"
-                w="280px"
-                h="360px"
+                w="220px"
+                h="280px"
                 mx="auto"
               >
                 <AnimatePresence>
