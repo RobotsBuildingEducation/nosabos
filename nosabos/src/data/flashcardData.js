@@ -113,5 +113,14 @@ export const getConceptText = (card, supportLang) => {
   if (typeof card.concept === "string") {
     return card.concept;
   }
+
+  // Handle bilingual mode - randomly select English or Spanish
+  if (supportLang === "bilingual") {
+    const languages = ["en", "es"];
+    const randomLang = languages[Math.floor(Math.random() * languages.length)];
+    return card.concept[randomLang] || card.concept.en;
+  }
+
+  // Otherwise use the specified language, fallback to English
   return card.concept[supportLang] || card.concept.en;
 };

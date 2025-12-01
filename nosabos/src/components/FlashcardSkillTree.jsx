@@ -280,7 +280,19 @@ export default function FlashcardSkillTree({
 
           {/* Upcoming cards in horizontal scrollable row */}
           {upcomingCards.length > 0 ? (
-            <Box overflowX="auto" overflowY="hidden" w="100%" pb={4}>
+            <Box
+              overflowX="auto"
+              overflowY="hidden"
+              w="100%"
+              pb={4}
+              sx={{
+                '&::-webkit-scrollbar': {
+                  display: 'none',
+                },
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none',
+              }}
+            >
               <HStack spacing={6} px={4} minW="min-content">
                 <AnimatePresence mode="popLayout">
                   {upcomingCards.map((card) => (

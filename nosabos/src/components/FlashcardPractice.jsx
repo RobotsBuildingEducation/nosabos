@@ -347,46 +347,46 @@ export default function FlashcardPractice({
                   </VStack>
                 ) : (
                   <VStack spacing={3} w="100%">
-                    {/* Action Buttons */}
-                    <HStack spacing={3} w="100%">
-                      <Button
-                        flex={1}
-                        size="lg"
-                        colorScheme={isRecording ? "red" : "teal"}
-                        leftIcon={
-                          isRecording ? (
-                            <RiStopCircleLine size={20} />
-                          ) : (
-                            <RiMicLine size={20} />
-                          )
-                        }
-                        onClick={handleRecord}
-                        isDisabled={!supportsSpeech}
-                        _hover={{
-                          transform: "translateY(-2px)",
-                          boxShadow: `0 8px 20px ${cefrColor.primary}40`,
-                        }}
-                        _active={{ transform: "translateY(0)" }}
-                      >
-                        {isRecording ? "Stop" : "Record"}
-                      </Button>
-                      <Button
-                        flex={1}
-                        size="lg"
-                        bgGradient={cefrColor.gradient}
-                        color="white"
-                        onClick={handleTextSubmit}
-                        isDisabled={!textAnswer.trim()}
-                        leftIcon={<RiKeyboardLine size={20} />}
-                        _hover={{
-                          transform: "translateY(-2px)",
-                          boxShadow: `0 8px 20px ${cefrColor.primary}40`,
-                        }}
-                        _active={{ transform: "translateY(0)" }}
-                      >
-                        Submit
-                      </Button>
-                    </HStack>
+                    {/* Record Button - Top */}
+                    <Button
+                      w="100%"
+                      size="lg"
+                      colorScheme={isRecording ? "red" : "teal"}
+                      leftIcon={
+                        isRecording ? (
+                          <RiStopCircleLine size={20} />
+                        ) : (
+                          <RiMicLine size={20} />
+                        )
+                      }
+                      onClick={handleRecord}
+                      isDisabled={!supportsSpeech}
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                      }}
+                      _active={{ transform: "translateY(0)" }}
+                    >
+                      {isRecording ? "Stop Recording" : "Record Answer"}
+                    </Button>
+
+                    {/* Submit Button */}
+                    <Button
+                      w="100%"
+                      size="lg"
+                      bgGradient={cefrColor.gradient}
+                      color="white"
+                      onClick={handleTextSubmit}
+                      isDisabled={!textAnswer.trim()}
+                      leftIcon={<RiKeyboardLine size={20} />}
+                      _hover={{
+                        transform: "translateY(-2px)",
+                        boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                      }}
+                      _active={{ transform: "translateY(0)" }}
+                    >
+                      Submit Answer
+                    </Button>
 
                     {/* Cancel button */}
                     <Button
