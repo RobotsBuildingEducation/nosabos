@@ -197,13 +197,25 @@ export default function HelpChatFab({
   const textFromChunk = (chunk) => {
     try {
       if (!chunk) return "";
+
+      // Common helpers
       if (typeof chunk.text === "function") return chunk.text() || "";
       if (typeof chunk.text === "string") return chunk.text;
+
       const cand = chunk.candidates?.[0];
+
+      // Newer streaming payloads may deliver deltas under delta.content.parts
+      const deltaParts = cand?.delta?.content?.parts || [];
+      if (deltaParts.length) {
+        return deltaParts.map((p) => p.text || "").join("");
+      }
+
+      // Older/alternative shape: full content parts
       if (cand?.content?.parts?.length) {
         return cand.content.parts.map((p) => p.text || "").join("");
       }
     } catch {}
+
     return "";
   };
 
