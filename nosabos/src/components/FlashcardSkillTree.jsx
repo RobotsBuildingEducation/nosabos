@@ -164,22 +164,6 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
             >
               {card.concept}
             </Text>
-
-            <Box
-              w="80%"
-              h="1px"
-              bgGradient="linear(to-r, transparent, whiteAlpha.400, transparent)"
-            />
-
-            <Text
-              fontSize="xl"
-              fontWeight="semibold"
-              color="whiteAlpha.900"
-              textAlign="center"
-              fontStyle="italic"
-            >
-              {card.translation}
-            </Text>
           </VStack>
 
           {/* Category tag */}
@@ -221,6 +205,8 @@ function FlashcardCard({ card, status, onClick, stackPosition }) {
 export default function FlashcardSkillTree({
   userProgress = { flashcards: {} },
   onStartFlashcard,
+  targetLang = "es",
+  supportLang = "en",
 }) {
   const [practiceCard, setPracticeCard] = useState(null);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
@@ -440,6 +426,8 @@ export default function FlashcardSkillTree({
           isOpen={isPracticeOpen}
           onClose={handleClosePractice}
           onComplete={handleComplete}
+          targetLang={targetLang}
+          supportLang={supportLang}
         />
       )}
     </Box>

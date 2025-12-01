@@ -11,25 +11,64 @@ import {
   ModalContent,
   ModalBody,
   Badge,
+  Spinner,
+  useToast,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { RiCheckLine, RiCloseLine, RiStarLine } from "react-icons/ri";
+import {
+  RiCheckLine,
+  RiCloseLine,
+  RiStarLine,
+  RiMicLine,
+  RiStopCircleLine,
+  RiKeyboardLine,
+} from "react-icons/ri";
 import { CEFR_COLORS } from "../data/flashcardData";
+import { useSpeechPractice } from "../hooks/useSpeechPractice";
 
 const MotionBox = motion(Box);
 
-export default function FlashcardPractice({ card, isOpen, onClose, onComplete }) {
-  const [answer, setAnswer] = useState("");
+export default function FlashcardPractice({
+  card,
+  isOpen,
+  onClose,
+  onComplete,
+  targetLang = "es",
+  supportLang = "en",
+}) {
+  const [inputMode, setInputMode] = useState("speech"); // "speech" or "text"
+  const [textAnswer, setTextAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
+  const [recognizedText, setRecognizedText] = useState("");
+  const toast = useToast();
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
 
-  const handleSubmit = () => {
+  // Speech practice hook
+  const {
+    startRecording,
+    stopRecording,
+    isRecording,
+    supportsSpeech,
+  } = useSpeechPractice({
+    targetText: card.translation,
+    targetLang: targetLang,
+    onResult: ({ recognizedText: text, evaluation }) => {
+      setRecognizedText(text || "");
+      checkAnswer(text || "");
+    },
+  });
+
+  const checkAnswer = (answer) => {
     // Simple check: compare lowercase trimmed strings
     const userAnswer = answer.toLowerCase().trim();
     const correctAnswer = card.translation.toLowerCase().trim();
-    const correct = userAnswer === correctAnswer;
+
+    // Allow some flexibility - check if the answer contains the correct answer or vice versa
+    const correct = userAnswer === correctAnswer ||
+                   userAnswer.includes(correctAnswer) ||
+                   correctAnswer.includes(userAnswer);
 
     setIsCorrect(correct);
     setShowResult(true);
@@ -43,22 +82,64 @@ export default function FlashcardPractice({ card, isOpen, onClose, onComplete })
     }
   };
 
+  const handleTextSubmit = () => {
+    checkAnswer(textAnswer);
+  };
+
   const handleTryAgain = () => {
-    setAnswer("");
+    setTextAnswer("");
+    setRecognizedText("");
     setShowResult(false);
     setIsCorrect(false);
   };
 
   const handleClose = () => {
-    setAnswer("");
+    setTextAnswer("");
+    setRecognizedText("");
     setShowResult(false);
     setIsCorrect(false);
+    if (isRecording) {
+      stopRecording();
+    }
     onClose();
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter" && answer.trim() && !showResult) {
-      handleSubmit();
+    if (e.key === "Enter" && textAnswer.trim() && !showResult) {
+      handleTextSubmit();
+    }
+  };
+
+  const handleRecord = async () => {
+    if (isRecording) {
+      stopRecording();
+      return;
+    }
+
+    // Clear previous results
+    setShowResult(false);
+    setRecognizedText("");
+    setIsCorrect(false);
+
+    try {
+      await startRecording();
+    } catch (err) {
+      const code = err?.code;
+      if (code === "no-speech-recognition") {
+        toast({
+          title: "Speech recognition unavailable",
+          description: "Use a Chromium-based browser with microphone access.",
+          status: "warning",
+          duration: 3200,
+        });
+      } else if (code === "mic-denied") {
+        toast({
+          title: "Microphone denied",
+          description: "Enable microphone access in your browser settings.",
+          status: "error",
+          duration: 3200,
+        });
+      }
     }
   };
 
@@ -111,9 +192,9 @@ export default function FlashcardPractice({ card, isOpen, onClose, onComplete })
             </HStack>
 
             {/* Question */}
-            <VStack spacing={3} py={6}>
+            <VStack spacing={3} py={4}>
               <Text fontSize="sm" color="gray.400" fontWeight="medium">
-                Translate to Spanish:
+                Translate to {targetLang === "es" ? "Spanish" : "English"}:
               </Text>
               <Text
                 fontSize="4xl"
@@ -125,12 +206,93 @@ export default function FlashcardPractice({ card, isOpen, onClose, onComplete })
               </Text>
             </VStack>
 
-            {/* Input field */}
-            {!showResult ? (
+            {/* Mode Toggle */}
+            {!showResult && (
+              <HStack spacing={2} justify="center">
+                <Button
+                  size="sm"
+                  variant={inputMode === "speech" ? "solid" : "ghost"}
+                  colorScheme={inputMode === "speech" ? "teal" : "gray"}
+                  leftIcon={<RiMicLine />}
+                  onClick={() => setInputMode("speech")}
+                  isDisabled={!supportsSpeech}
+                >
+                  Speak
+                </Button>
+                <Button
+                  size="sm"
+                  variant={inputMode === "text" ? "solid" : "ghost"}
+                  colorScheme={inputMode === "text" ? "purple" : "gray"}
+                  leftIcon={<RiKeyboardLine />}
+                  onClick={() => setInputMode("text")}
+                >
+                  Type
+                </Button>
+              </HStack>
+            )}
+
+            {/* Speech Mode */}
+            {inputMode === "speech" && !showResult && (
+              <VStack spacing={4}>
+                {recognizedText && (
+                  <Box
+                    p={4}
+                    borderRadius="lg"
+                    bg="whiteAlpha.100"
+                    border="1px solid"
+                    borderColor="whiteAlpha.200"
+                    w="100%"
+                  >
+                    <Text fontSize="sm" color="gray.400" mb={1}>
+                      Recognized:
+                    </Text>
+                    <Text fontSize="lg" color="teal.200">
+                      {recognizedText}
+                    </Text>
+                  </Box>
+                )}
+
+                <HStack spacing={3} w="100%">
+                  <Button
+                    flex={1}
+                    size="lg"
+                    variant="ghost"
+                    color="gray.400"
+                    onClick={handleClose}
+                    _hover={{ bg: "whiteAlpha.100" }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    flex={1}
+                    size="lg"
+                    colorScheme={isRecording ? "red" : "teal"}
+                    leftIcon={
+                      isRecording ? (
+                        <RiStopCircleLine size={20} />
+                      ) : (
+                        <RiMicLine size={20} />
+                      )
+                    }
+                    onClick={handleRecord}
+                    _hover={{
+                      transform: "translateY(-2px)",
+                      boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                    }}
+                    _active={{ transform: "translateY(0)" }}
+                  >
+                    {isRecording ? "Stop Recording" : "Start Recording"}
+                  </Button>
+                </HStack>
+              </VStack>
+            )}
+
+            {/* Text Mode */}
+            {inputMode === "text" && !showResult && (
               <VStack spacing={4}>
                 <Input
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
+                  value={textAnswer}
+                  onChange={(e) => setTextAnswer(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Type your answer..."
                   size="lg"
@@ -164,8 +326,8 @@ export default function FlashcardPractice({ card, isOpen, onClose, onComplete })
                     size="lg"
                     bgGradient={cefrColor.gradient}
                     color="white"
-                    onClick={handleSubmit}
-                    isDisabled={!answer.trim()}
+                    onClick={handleTextSubmit}
+                    isDisabled={!textAnswer.trim()}
                     _hover={{
                       transform: "translateY(-2px)",
                       boxShadow: `0 8px 20px ${cefrColor.primary}40`,
@@ -176,7 +338,10 @@ export default function FlashcardPractice({ card, isOpen, onClose, onComplete })
                   </Button>
                 </HStack>
               </VStack>
-            ) : (
+            )}
+
+            {/* Result */}
+            {showResult && (
               <AnimatePresence>
                 <MotionBox
                   initial={{ opacity: 0, scale: 0.9 }}
