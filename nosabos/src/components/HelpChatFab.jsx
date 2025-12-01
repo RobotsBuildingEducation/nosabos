@@ -27,14 +27,13 @@ import {
   ListItem,
   Code as ChakraCode,
 } from "@chakra-ui/react";
-import { RiChatSmile2Line } from "react-icons/ri";
 import { FaPaperPlane, FaStop } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
 
-import ReactMarkdown from "react-markdown"; // ✅ NEW
-import remarkGfm from "remark-gfm"; // ✅ NEW
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
-import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ pre-built Gemini model
+import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 
 /**
@@ -44,7 +43,6 @@ function Markdown({ children }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      // linkTarget="_blank"
       components={{
         p: ({ children }) => <Text mb={2}>{children}</Text>,
         a: ({ href, children }) => (
@@ -148,11 +146,7 @@ function Markdown({ children }) {
 }
 
 /**
- * Floating Help Chat (Gemini, client-side streaming)
- *
- * Props:
- *   - progress: user's settings object (level, supportLang, targetLang, voicePersona, helpRequest, showTranslations, ...)
- *   - appLanguage: "en" | "es" (UI language fallback for 'bilingual' support setting)
+ * Floating Help Chat (Gemini, client-side streaming via generateContentStream)
  */
 export default function HelpChatFab({
   progress,
@@ -173,9 +167,8 @@ export default function HelpChatFab({
 
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
-  const [messages, setMessages] = useState([]); // {id, role: 'user'|'assistant', text, done}
-  const chatRef = useRef(null);
-  const stopRef = useRef({ stop: false });
+  const [messages, setMessages] = useState([]); // {id, role, text, done}
+  const stopRef = useRef(false);
 
   // -- helpers ---------------------------------------------------------------
 
@@ -192,20 +185,6 @@ export default function HelpChatFab({
       }
       return next;
     });
-
-  // Extract text from a streaming chunk (be tolerant of shapes)
-  const textFromChunk = (chunk) => {
-    try {
-      if (!chunk) return "";
-      if (typeof chunk.text === "function") return chunk.text() || "";
-      if (typeof chunk.text === "string") return chunk.text;
-      const cand = chunk.candidates?.[0];
-      if (cand?.content?.parts?.length) {
-        return cand.content.parts.map((p) => p.text || "").join("");
-      }
-    } catch {}
-    return "";
-  };
 
   // Split assistant text into main + gloss (lines starting with "// ")
   const splitMainAndGloss = (text) => {
@@ -280,61 +259,49 @@ export default function HelpChatFab({
       focus ? `Focus area: ${focus}.` : "",
       "Keep replies ≤ 60 words.",
       glossLine,
-      // ✅ Encourage Markdown for structure/clarity
       "Use concise Markdown when helpful (bullets, **bold**, code, tables).",
     ]
       .filter(Boolean)
       .join(" ");
   }, [progress, appLanguage]);
 
-  // -- lifecycle -------------------------------------------------------------
-
-  // Initialize the chat session when the modal opens (or lazily in handleSend)
-  useEffect(() => {
-    if (!isOpen) return;
-    if (chatRef.current || !simplemodel) return;
-    try {
-      chatRef.current = simplemodel.startChat({ history: [] });
-    } catch (e) {
-      toast({
-        status: "error",
-        title: "Gemini unavailable",
-        description: String(e?.message || e),
-      });
-    }
-  }, [isOpen, toast]);
+  // Build a simple text history block (last ~6 messages) so we still have some context
+  const buildHistoryBlock = useCallback(() => {
+    const last = messages.slice(-6);
+    if (!last.length) return "";
+    const lines = last.map((m) =>
+      m.role === "user" ? `User: ${m.text}` : `Assistant: ${m.text}`
+    );
+    return lines.join("\n");
+  }, [messages]);
 
   // -- actions ---------------------------------------------------------------
 
   const handleSend = async () => {
     const question = input.trim();
-    if (!question) return;
+    if (!question || sending) return;
 
-    // lazy-create chat if needed
-    if (!chatRef.current) {
-      if (!simplemodel) {
-        return toast({
-          status: "error",
-          title: "Gemini not initialized",
-          description: "simplemodel is unavailable.",
-        });
-      }
-      try {
-        chatRef.current = simplemodel.startChat({ history: [] });
-      } catch (e) {
-        return toast({
-          status: "error",
-          title: "Gemini unavailable",
-          description: String(e?.message || e),
-        });
-      }
+    if (!simplemodel) {
+      return toast({
+        status: "error",
+        title: "Gemini not initialized",
+        description: "simplemodel is unavailable.",
+      });
     }
 
     setInput("");
-    stopRef.current.stop = false;
+    stopRef.current = false;
 
     const instruction = buildInstruction();
-    const prompt = `${instruction}\n\nUser question:\n${question}`;
+    const historyBlock = buildHistoryBlock();
+
+    const prompt =
+      instruction +
+      "\n\n" +
+      (historyBlock
+        ? `Previous conversation (for context, keep answers concise):\n${historyBlock}\n\n`
+        : "") +
+      `User question:\n${question}`;
 
     const userId = crypto.randomUUID?.() || String(Date.now());
     pushMessage({ id: userId, role: "user", text: question, done: true });
@@ -345,26 +312,29 @@ export default function HelpChatFab({
     try {
       setSending(true);
 
-      // Stream from Gemini
-      const res = await chatRef.current.sendMessageStream(prompt);
+      // 🔥 STREAMING – same pattern as your working component
+      const result = await simplemodel.generateContentStream(prompt);
 
-      for await (const chunk of res.stream) {
-        if (stopRef.current.stop) break;
-        const piece = textFromChunk(chunk);
-        if (piece) {
-          patchLastAssistant((m) => ({ ...m, text: m.text + piece }));
-        }
+      let fullText = "";
+
+      for await (const chunk of result.stream) {
+        if (stopRef.current) break;
+
+        const chunkText = typeof chunk.text === "function" ? chunk.text() : "";
+
+        if (!chunkText) continue;
+
+        fullText += chunkText;
+
+        // Update the assistant message every chunk
+        const current = fullText;
+        patchLastAssistant((m) => ({ ...m, text: current }));
       }
 
-      const agg = await res.response;
-      const finalText =
-        (typeof agg?.text === "function" ? agg.text() : agg?.text) || "";
-      patchLastAssistant((m) => ({
-        ...m,
-        text: finalText || m.text,
-        done: true,
-      }));
+      // Mark as done (don't overwrite text; we've already streamed it)
+      patchLastAssistant((m) => ({ ...m, done: true }));
     } catch (e) {
+      console.error("HelpChat streaming error:", e);
       patchLastAssistant((m) => ({
         ...m,
         text:
@@ -385,7 +355,7 @@ export default function HelpChatFab({
   };
 
   const handleStop = () => {
-    stopRef.current.stop = true;
+    stopRef.current = true;
     setSending(false);
   };
 
@@ -437,7 +407,6 @@ export default function HelpChatFab({
           </ModalHeader>
           <ModalCloseButton />
 
-          {/* Body should take remaining space and scroll; hide scrollbar visually */}
           <ModalBody
             flex="1"
             overflowY="auto"
@@ -476,7 +445,6 @@ export default function HelpChatFab({
                       maxW="85%"
                       boxShadow="0 6px 20px rgba(0,0,0,0.25)"
                     >
-                      {/* Render user's Markdown too (nice for code snippets) */}
                       <Markdown>{m.text}</Markdown>
                     </Box>
                   </HStack>
@@ -494,7 +462,6 @@ export default function HelpChatFab({
                         {!m.done && <Spinner size="xs" speed="0.6s" />}
                       </HStack>
 
-                      {/* ✅ Assistant Markdown */}
                       <Markdown>{main}</Markdown>
 
                       {!!gloss && (
