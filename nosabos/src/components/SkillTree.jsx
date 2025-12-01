@@ -799,6 +799,10 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
       ? "gray.600"
       : `${unit.color}88`;
 
+  const handleClick = () => {
+    if (!isClickable) return;
+    onClick?.();
+  };
   return (
     <MotionBox
       initial={{ opacity: 0, y: 20 }}
@@ -806,11 +810,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
       transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
     >
       <Box position="relative">
-        <VStack
-          spacing={2}
-          cursor={isClickable ? "pointer" : "not-allowed"}
-          onClick={isClickable ? onClick : undefined}
-        >
+        <VStack spacing={2} cursor={isClickable ? "pointer" : "not-allowed"}>
           {/* Glow Effect for active lessons */}
           {status !== SKILL_STATUS.LOCKED && (
             <Box
@@ -829,6 +829,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
 
           {/* Lesson Circle */}
           <Button
+            onClick={handleClick} // 👈 make the button the tap target
             w="90px"
             h="90px"
             borderRadius="full"
