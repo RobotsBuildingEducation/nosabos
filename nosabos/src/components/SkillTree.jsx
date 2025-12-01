@@ -764,21 +764,16 @@ const getLessonIcon = (lesson, unitId) => {
 /**
  * Individual Lesson Node Component
  * Represents a single lesson in the skill tree
+ *
+ * This version is optimized for mobile taps:
+ * - Single real <button> element (VStack as="button")
+ * - No Framer whileTap / whileHover
+ * - touchAction: "manipulation" to avoid scroll interference
  */
 function LessonNode({ lesson, unit, status, onClick, supportLang }) {
-  const bgColor = "gray.800";
-  const borderColor = "gray.700";
   const lockedColor = "gray.600";
 
   const lessonTitle = getDisplayText(lesson.title, supportLang);
-  const lessonDescription = getDisplayText(lesson.description, supportLang);
-
-  const getNodeColor = () => {
-    if (status === SKILL_STATUS.COMPLETED) return unit.color;
-    if (status === SKILL_STATUS.IN_PROGRESS) return unit.color;
-    if (status === SKILL_STATUS.AVAILABLE) return unit.color;
-    return lockedColor;
-  };
 
   const getNodeIcon = () => {
     if (status === SKILL_STATUS.COMPLETED) return RiCheckLine;
@@ -787,22 +782,17 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   };
 
   const Icon = getNodeIcon();
+
   const isClickable =
     status === SKILL_STATUS.AVAILABLE ||
     status === SKILL_STATUS.IN_PROGRESS ||
     status === SKILL_STATUS.COMPLETED;
 
-  const baseBorderColor =
-    status === SKILL_STATUS.COMPLETED
-      ? unit.color
-      : status === SKILL_STATUS.LOCKED
-      ? "gray.600"
-      : `${unit.color}88`;
-
-  const handleClick = () => {
+  const handlePress = () => {
     if (!isClickable) return;
     onClick?.();
   };
+
   return (
     <MotionBox
       initial={{ opacity: 0, y: 20 }}
@@ -810,161 +800,186 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
       transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
     >
       <Box position="relative">
-        <VStack spacing={2} cursor={isClickable ? "pointer" : "not-allowed"}>
-          {/* Glow Effect for active lessons */}
-          {status !== SKILL_STATUS.LOCKED && (
-            <Box
-              position="absolute"
-              top="50%"
-              left="50%"
-              transform="translate(-50%, -50%)"
-              w="100px"
-              h="100px"
-              borderRadius="full"
-              filter="blur(20px)"
-              opacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
-              pointerEvents="none"
-            />
-          )}
-
-          {/* Lesson Circle */}
-          <Button
-            onClick={handleClick} // 👈 make the button the tap target
-            w="90px"
-            h="90px"
-            borderRadius="full"
-            bgGradient={
-              status === SKILL_STATUS.LOCKED
-                ? "linear(to-br, gray.700, gray.800)"
-                : status === SKILL_STATUS.COMPLETED
-                ? `linear(135deg, ${unit.color}, ${unit.color}dd)`
-                : `linear(135deg, ${unit.color}dd, ${unit.color})`
-            }
-            border="4px solid"
-            borderColor="transparent"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            position="relative"
-            boxShadow={
-              status !== SKILL_STATUS.LOCKED
-                ? `0 8px 0px ${unit.color}AA` // darker shadow version of unit.color
-                : `0 8px 0px rgba(0,0,0,0.4)`
-            }
-            opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
-            transition="all 0.3s ease"
-          >
-            <Icon
-              size={36}
-              color={status === SKILL_STATUS.LOCKED ? "gray" : "white"}
-              style={{
-                filter:
-                  status !== SKILL_STATUS.LOCKED
-                    ? "drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
-                    : "none",
-              }}
-            />
-
-            {/* Progress ring for in-progress lessons */}
-            {status === SKILL_STATUS.IN_PROGRESS && (
+        <VStack
+          as="button"
+          type="button"
+          spacing={2}
+          onClick={handlePress}
+          disabled={!isClickable}
+          cursor={isClickable ? "pointer" : "not-allowed"}
+          bg="transparent"
+          border="none"
+          _focus={{ outline: "none" }}
+          _focusVisible={
+            isClickable ? { boxShadow: `0 0 0 3px ${unit.color}` } : {}
+          }
+          _active={
+            isClickable ? { transform: "translateY(2px) scale(0.97)" } : {}
+          }
+          sx={{
+            touchAction: "manipulation",
+            WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          <Box position="relative">
+            {/* Glow Effect for active lessons */}
+            {status !== SKILL_STATUS.LOCKED && (
               <Box
                 position="absolute"
-                top="-6px"
-                left="-6px"
-                right="-6px"
-                bottom="-6px"
+                top="50%"
+                left="50%"
+                transform="translate(-50%, -50%)"
+                w="100px"
+                h="100px"
                 borderRadius="full"
-                border="3px dashed"
-                borderColor={unit.color}
-                animation="spin 4s linear infinite"
-                sx={{
-                  "@keyframes spin": {
-                    "0%": { transform: "rotate(0deg)" },
-                    "100%": { transform: "rotate(360deg)" },
-                  },
-                }}
+                filter="blur(20px)"
+                opacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
+                pointerEvents="none"
               />
             )}
 
-            {/* Sparkle effect for completed lessons */}
-            {status === SKILL_STATUS.COMPLETED && (
-              <>
+            {/* Lesson Circle */}
+            <Box
+              w="90px"
+              h="90px"
+              borderRadius="full"
+              bgGradient={
+                status === SKILL_STATUS.LOCKED
+                  ? "linear(to-br, gray.700, gray.800)"
+                  : status === SKILL_STATUS.COMPLETED
+                  ? `linear(135deg, ${unit.color}, ${unit.color}dd)`
+                  : `linear(135deg, ${unit.color}dd, ${unit.color})`
+              }
+              border="4px solid"
+              borderColor="transparent"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              position="relative"
+              boxShadow={
+                status !== SKILL_STATUS.LOCKED
+                  ? `0 8px 0px ${unit.color}AA`
+                  : `0 8px 0px rgba(0,0,0,0.4)`
+              }
+              opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
+              transition="transform 0.15s ease, box-shadow 0.15s ease"
+            >
+              <Icon
+                size={36}
+                color={status === SKILL_STATUS.LOCKED ? "gray" : "white"}
+                style={{
+                  filter:
+                    status !== SKILL_STATUS.LOCKED
+                      ? "drop-shadow(0 2px 4px rgba(0,0,0,0.3))"
+                      : "none",
+                }}
+              />
+
+              {/* Progress ring for in-progress lessons */}
+              {status === SKILL_STATUS.IN_PROGRESS && (
                 <Box
+                  pointerEvents="none"
                   position="absolute"
-                  top="10%"
-                  right="15%"
-                  w="10px"
-                  h="10px"
+                  top="-6px"
+                  left="-6px"
+                  right="-6px"
+                  bottom="-6px"
                   borderRadius="full"
-                  bg="white"
-                  boxShadow="0 0 12px 4px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.6)"
-                  animation="sparkle 2.4s ease-in-out infinite"
+                  border="3px dashed"
+                  borderColor={unit.color}
+                  animation="spin 4s linear infinite"
                   sx={{
-                    "@keyframes sparkle": {
-                      "0%, 100%": {
-                        opacity: 0,
-                        transform: "scale(0.5) rotate(0deg)",
-                      },
-                      "50%": {
-                        opacity: 0.6,
-                        transform: "scale(0.6) rotate(15deg)",
-                        filter:
-                          "drop-shadow(0 0 10px rgba(255, 255, 255, 0.9))",
-                      },
+                    "@keyframes spin": {
+                      "0%": { transform: "rotate(0deg)" },
+                      "100%": { transform: "rotate(360deg)" },
                     },
                   }}
                 />
-                <Box
-                  position="absolute"
-                  bottom="15%"
-                  left="10%"
-                  w="8px"
-                  h="8px"
-                  borderRadius="full"
-                  bg="white"
-                  boxShadow="0 0 10px 3px rgba(255,255,255,0.7), 0 0 18px rgba(255,255,255,0.5)"
-                  animation="sparkle 2.7s ease-in-out infinite 1.2s"
-                  sx={{
-                    "@keyframes sparkle": {
-                      "0%, 100%": {
-                        opacity: 0,
-                        transform: "scale(0.4) rotate(0deg)",
+              )}
+
+              {/* Sparkle effect for completed lessons */}
+              {status === SKILL_STATUS.COMPLETED && (
+                <>
+                  <Box
+                    pointerEvents="none"
+                    position="absolute"
+                    top="10%"
+                    right="15%"
+                    w="10px"
+                    h="10px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 12px 4px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.6)"
+                    animation="sparkle 2.4s ease-in-out infinite"
+                    sx={{
+                      "@keyframes sparkle": {
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.5) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 0.6,
+                          transform: "scale(0.6) rotate(15deg)",
+                          filter:
+                            "drop-shadow(0 0 10px rgba(255, 255, 255, 0.9))",
+                        },
                       },
-                      "50%": {
-                        opacity: 1,
-                        transform: "scale(1.4) rotate(-10deg)",
-                        filter: "drop-shadow(0 0 8px rgba(255,255,255,0.9))",
+                    }}
+                  />
+                  <Box
+                    pointerEvents="none"
+                    position="absolute"
+                    bottom="15%"
+                    left="10%"
+                    w="8px"
+                    h="8px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 10px 3px rgba(255,255,255,0.7), 0 0 18px rgba(255,255,255,0.5)"
+                    animation="sparkle 2.7s ease-in-out infinite 1.2s"
+                    sx={{
+                      "@keyframes sparkle": {
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.4) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 1,
+                          transform: "scale(1.4) rotate(-10deg)",
+                          filter: "drop-shadow(0 0 8px rgba(255,255,255,0.9))",
+                        },
                       },
-                    },
-                  }}
-                />
-                <Box
-                  position="absolute"
-                  top="45%"
-                  left="60%"
-                  w="6px"
-                  h="6px"
-                  borderRadius="full"
-                  bg="white"
-                  boxShadow="0 0 10px 3px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.6)"
-                  animation="sparkle 2.2s ease-in-out infinite 0.6s"
-                  sx={{
-                    "@keyframes sparkle": {
-                      "0%, 100%": {
-                        opacity: 0,
-                        transform: "scale(0.3) rotate(0deg)",
+                    }}
+                  />
+                  <Box
+                    pointerEvents="none"
+                    position="absolute"
+                    top="45%"
+                    left="60%"
+                    w="6px"
+                    h="6px"
+                    borderRadius="full"
+                    bg="white"
+                    boxShadow="0 0 10px 3px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.6)"
+                    animation="sparkle 2.2s ease-in-out infinite 0.6s"
+                    sx={{
+                      "@keyframes sparkle": {
+                        "0%, 100%": {
+                          opacity: 0,
+                          transform: "scale(0.3) rotate(0deg)",
+                        },
+                        "50%": {
+                          opacity: 1,
+                          transform: "scale(1.2) rotate(8deg)",
+                          filter: "drop-shadow(0 0 9px rgba(255,255,255,0.9))",
+                        },
                       },
-                      "50%": {
-                        opacity: 1,
-                        transform: "scale(1.2) rotate(8deg)",
-                        filter: "drop-shadow(0 0 9px rgba(255,255,255,0.9))",
-                      },
-                    },
-                  }}
-                />
-              </>
-            )}
-          </Button>
+                    }}
+                  />
+                </>
+              )}
+            </Box>
+          </Box>
 
           {/* Lesson Title */}
           <Text
