@@ -197,24 +197,25 @@ export default function HelpChatFab({
     };
   };
 
-  // Build system instruction — PRIMARY ANSWER IS IN SUPPORT LANGUAGE
+  // Build system instruction — PRIMARY ANSWER IS IN THE PRACTICE/TARGET LANGUAGE
   const buildInstruction = useCallback(() => {
     const lvl = progress?.level || "beginner";
 
-    // Primary reply language = support language (if 'bilingual', fall back to UI language)
+    // Resolve support language (what the learner already speaks)
     const supportRaw =
       ["en", "es", "bilingual"].includes(progress?.supportLang) &&
       progress?.supportLang
         ? progress.supportLang
         : "en";
-    const primaryLang =
+    const supportLang =
       supportRaw === "bilingual"
         ? appLanguage === "es"
           ? "es"
           : "en"
         : supportRaw;
 
-    const targetLang = progress?.targetLang || "es"; // used for gloss preference
+    const targetLang = progress?.targetLang || "es"; // practice language
+    const primaryLang = targetLang;
     const persona = (progress?.voicePersona || "").slice(0, 200);
     const focus = (progress?.helpRequest || "").slice(0, 200);
     const showTranslations =
@@ -222,10 +223,22 @@ export default function HelpChatFab({
         ? progress.showTranslations
         : true;
 
+    const nameFor = (code) =>
+      ({
+        es: "Spanish (español)",
+        en: "English",
+        pt: "Portuguese (português brasileiro)",
+        fr: "French (français)",
+        it: "Italian (italiano)",
+        nah: "Nahuatl (nàhuatl)",
+      }[code] || code);
+
     const strict =
       primaryLang === "es"
-        ? "Responde SOLO en español."
-        : "Answer ONLY in English.";
+        ? "Da la respuesta principal en español (idioma de práctica). Puedes iniciar con una breve nota en el idioma de apoyo si ayuda."
+        : primaryLang === "en"
+        ? "Give the main answer in English (practice language). You may start with a brief note in the support language if helpful."
+        : `Provide the main answer in ${nameFor(primaryLang)} (${primaryLang}). You may start with a brief note in the support language if helpful.`;
 
     const levelHint =
       lvl === "beginner"
@@ -234,21 +247,17 @@ export default function HelpChatFab({
         ? "Be concise and natural."
         : "Be very succinct and native-like.";
 
-    // Gloss (secondary) language: prefer the target language if it's EN/ES and differs from primary; else the opposite of primary
+    // Gloss (secondary) language: translate to the learner's support language when different
     const glossLang =
-      (targetLang === "en" || targetLang === "es") && targetLang !== primaryLang
-        ? targetLang
-        : primaryLang === "en"
-        ? "es"
-        : "en";
+      showTranslations && supportLang !== primaryLang ? supportLang : null;
 
-    const glossHuman =
-      glossLang === "es"
-        ? "Spanish (español)"
-        : glossLang === "pt"
-        ? "Portuguese (português brasileiro)"
-        : "English";
-    const glossLine = showTranslations
+    const glossHuman = glossLang ? nameFor(glossLang) : "";
+    const supportNote =
+      supportLang !== primaryLang
+        ? `Start with 1-2 helpful sentences in ${glossHuman || nameFor(supportLang)} to explain the idea or clear up confusion. Keep it concise.`
+        : "Start with 1-2 helpful sentences in the learner's language to explain the idea or clear up confusion. Keep it concise.";
+
+    const glossLine = glossLang
       ? `After your main answer, add one short translation in ${glossHuman}. Put it on a new line starting with "// ".`
       : "Do not add any translation/gloss.";
     return [
@@ -257,6 +266,7 @@ export default function HelpChatFab({
       levelHint,
       persona ? `Persona: ${persona}.` : "",
       focus ? `Focus area: ${focus}.` : "",
+      supportNote,
       "Keep replies ≤ 60 words.",
       glossLine,
       "Use concise Markdown when helpful (bullets, **bold**, code, tables).",
@@ -428,8 +438,8 @@ export default function HelpChatFab({
                   borderColor="gray.700"
                 >
                   {appLanguage === "es"
-                    ? "Haz una pregunta rápida. Responderé en tu idioma de apoyo y (si está activado) incluiré una breve traducción."
-                    : "Ask a quick question. I’ll answer in your support language and (if enabled) include a short translation."}
+                    ? "Haz una pregunta rápida. Te daré una breve explicación en tu idioma de apoyo y luego responderé en tu idioma de práctica; si está activado, también incluiré una traducción corta a tu idioma de apoyo."
+                    : "Ask a quick question. I’ll give a short explanation in your support language and then answer in your practice language; if enabled, I’ll also include a brief translation into your support language."}
                 </Box>
               )}
 
