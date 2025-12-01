@@ -218,28 +218,33 @@ export default function FlashcardSkillTree({
   const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
 
   // Determine card status based on user progress and local state
-  const getCardStatus = (cardId, index) => {
+  const getCardStatus = (card) => {
     if (
-      userProgress.flashcards?.[cardId]?.completed ||
-      localCompletedCards.has(cardId)
+      userProgress.flashcards?.[card.id]?.completed ||
+      localCompletedCards.has(card.id)
     ) {
       return "completed";
     }
 
-    // Find the first uncompleted card
-    const firstUncompletedIndex = FLASHCARD_DATA.findIndex(
-      (card) =>
-        !userProgress.flashcards?.[card.id]?.completed &&
-        !localCompletedCards.has(card.id)
+    // Find the first uncompleted card in the original data array
+    const firstUncompletedCard = FLASHCARD_DATA.find(
+      (c) =>
+        !userProgress.flashcards?.[c.id]?.completed &&
+        !localCompletedCards.has(c.id)
     );
 
     // Only the first uncompleted card is active (unlocked)
-    if (index === firstUncompletedIndex) {
+    if (card.id === firstUncompletedCard?.id) {
       return "active";
     }
 
     // Cards after the first uncompleted are locked
-    if (index > firstUncompletedIndex) {
+    const cardIndex = FLASHCARD_DATA.findIndex((c) => c.id === card.id);
+    const firstUncompletedIndex = FLASHCARD_DATA.findIndex(
+      (c) => c.id === firstUncompletedCard?.id
+    );
+
+    if (cardIndex > firstUncompletedIndex) {
       return "locked";
     }
 
@@ -308,13 +313,13 @@ export default function FlashcardSkillTree({
             <Box overflowX="auto" overflowY="hidden" w="100%" pb={4}>
               <HStack spacing={6} px={4} minW="min-content">
                 <AnimatePresence mode="popLayout">
-                  {upcomingCards.map((card, index) => (
+                  {upcomingCards.map((card) => (
                     <FlashcardCard
                       key={card.id}
                       card={card}
-                      status={getCardStatus(card.id, index)}
+                      status={getCardStatus(card)}
                       onClick={() =>
-                        handleCardClick(card, getCardStatus(card.id, index))
+                        handleCardClick(card, getCardStatus(card))
                       }
                     />
                   ))}
