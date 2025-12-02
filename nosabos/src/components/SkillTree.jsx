@@ -23,6 +23,8 @@ import {
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
+import PathSwitcher from "./PathSwitcher";
+import FlashcardSkillTree from "./FlashcardSkillTree";
 import {
   RiLockLine,
   RiCheckLine,
@@ -1840,6 +1842,7 @@ export default function SkillTree({
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
+  const [pathMode, setPathMode] = useState("path"); // "path" or "flashcards"
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Use multi-level path if enabled, otherwise use single level
@@ -1864,6 +1867,15 @@ export default function SkillTree({
     if (onStartLesson) {
       onStartLesson(lesson);
     }
+  };
+
+  // Separate handler for flashcard completion - doesn't trigger lesson logic
+  const handleFlashcardComplete = (card) => {
+    // For now, this is a placeholder
+    // The actual XP awarding and progress tracking should be handled
+    // by a separate callback from the parent component
+    // We just prevent the lesson logic from being triggered
+    console.log("[FlashcardComplete]", card);
   };
 
   // Calculate overall progress
@@ -1948,6 +1960,16 @@ export default function SkillTree({
         position="relative"
         zIndex={1}
       >
+        {/* Path Mode Switcher */}
+        <MotionBox
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          mb={6}
+        >
+          <PathSwitcher selectedMode={pathMode} onModeChange={setPathMode} />
+        </MotionBox>
+
         {/* Minimal Progress Header */}
         <MotionBox
           initial={{ opacity: 0, y: -10 }}
@@ -2020,32 +2042,41 @@ export default function SkillTree({
           </HStack>
         </MotionBox>
 
-        {/* Skill Tree Units */}
-        <VStack spacing={8} align="stretch">
-          {units.length > 0 ? (
-            units.map((unit, index) => (
-              <UnitSection
-                key={unit.id}
-                unit={unit}
-                userProgress={userProgress}
-                onLessonClick={handleLessonClick}
-                index={index}
-                supportLang={supportLang}
-                hasNextUnit={index < units.length - 1}
-                previousUnit={index > 0 ? units[index - 1] : null}
-              />
-            ))
-          ) : (
-            <Box textAlign="center" py={12}>
-              <Text fontSize="lg" color="gray.400">
-                {getTranslation(supportLang, "skill_tree_no_path")}
-              </Text>
-              <Text fontSize="sm" color="gray.500" mt={2}>
-                {getTranslation(supportLang, "skill_tree_check_back")}
-              </Text>
-            </Box>
-          )}
-        </VStack>
+        {/* Skill Tree Units or Flashcards */}
+        {pathMode === "path" ? (
+          <VStack spacing={8} align="stretch">
+            {units.length > 0 ? (
+              units.map((unit, index) => (
+                <UnitSection
+                  key={unit.id}
+                  unit={unit}
+                  userProgress={userProgress}
+                  onLessonClick={handleLessonClick}
+                  index={index}
+                  supportLang={supportLang}
+                  hasNextUnit={index < units.length - 1}
+                  previousUnit={index > 0 ? units[index - 1] : null}
+                />
+              ))
+            ) : (
+              <Box textAlign="center" py={12}>
+                <Text fontSize="lg" color="gray.400">
+                  {getTranslation(supportLang, "skill_tree_no_path")}
+                </Text>
+                <Text fontSize="sm" color="gray.500" mt={2}>
+                  {getTranslation(supportLang, "skill_tree_check_back")}
+                </Text>
+              </Box>
+            )}
+          </VStack>
+        ) : (
+          <FlashcardSkillTree
+            userProgress={userProgress}
+            onStartFlashcard={handleFlashcardComplete}
+            targetLang={targetLang}
+            supportLang={supportLang}
+          />
+        )}
 
         {/* Lesson Detail Modal */}
         {selectedLesson && selectedUnit && (
