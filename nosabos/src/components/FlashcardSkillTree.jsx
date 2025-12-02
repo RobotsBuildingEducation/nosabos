@@ -375,35 +375,6 @@ export default function FlashcardSkillTree({
           </Box>
         )}
 
-        {/* Progress indicator */}
-        <Box w="100%">
-          <HStack justify="center" spacing={2} flexWrap="wrap">
-            {FLASHCARD_DATA.map((card) => {
-              const isCompleted =
-                userProgress.flashcards?.[card.id]?.completed ||
-                localCompletedCards.has(card.id);
-              return (
-                <Box
-                  key={card.id}
-                  w="40px"
-                  h="6px"
-                  borderRadius="full"
-                  bg={
-                    isCompleted
-                      ? CEFR_COLORS[card.cefrLevel].primary
-                      : "whiteAlpha.200"
-                  }
-                  transition="all 0.3s"
-                  boxShadow={
-                    isCompleted
-                      ? `0 0 10px ${CEFR_COLORS[card.cefrLevel].primary}60`
-                      : "none"
-                  }
-                />
-              );
-            })}
-          </HStack>
-        </Box>
       </VStack>
 
       {/* Practice Modal */}
