@@ -45,7 +45,7 @@ function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
       onClick={onClick}
       cursor={isActive ? "pointer" : isLocked ? "not-allowed" : "default"}
       position={isStacked ? "absolute" : "relative"}
-      left={isStacked ? "50%" : "auto"}
+      // left={isStacked ? "50%" : "auto"}
       transform={isStacked ? "translateX(-50%)" : "none"}
       top={isStacked ? 0 : "auto"}
       w="220px"
@@ -284,7 +284,10 @@ export default function FlashcardSkillTree({
               />
             </Box>
             <Text fontSize="sm" color="gray.400" fontWeight="medium">
-              {Math.round((completedCards.length / FLASHCARD_DATA.length) * 100)}% completed
+              {Math.round(
+                (completedCards.length / FLASHCARD_DATA.length) * 100
+              )}
+              % completed
             </Text>
           </VStack>
 
@@ -296,11 +299,11 @@ export default function FlashcardSkillTree({
               w="100%"
               pb={4}
               sx={{
-                '&::-webkit-scrollbar': {
-                  display: 'none',
+                "&::-webkit-scrollbar": {
+                  display: "none",
                 },
-                msOverflowStyle: 'none',
-                scrollbarWidth: 'none',
+                msOverflowStyle: "none",
+                scrollbarWidth: "none",
               }}
             >
               <HStack spacing={6} px={4} minW="min-content">
@@ -310,9 +313,7 @@ export default function FlashcardSkillTree({
                       key={card.id}
                       card={card}
                       status={getCardStatus(card)}
-                      onClick={() =>
-                        handleCardClick(card, getCardStatus(card))
-                      }
+                      onClick={() => handleCardClick(card, getCardStatus(card))}
                       supportLang={supportLang}
                     />
                   ))}
@@ -356,20 +357,15 @@ export default function FlashcardSkillTree({
         {/* Bottom: Completed Cards Stack */}
         {completedCards.length > 0 && (
           <Box w="100%">
-            <VStack spacing={4} mb={6}>
-              <Text fontSize="sm" fontWeight="bold" color="gray.400">
-                COMPLETED
-              </Text>
-            </VStack>
-
             {/* Stacked cards - centered */}
-            <Box position="relative" w="100%" h="300px">
-              <Box
-                position="relative"
-                w="220px"
-                h="280px"
-                mx="auto"
-              >
+            <Box
+              position="relative"
+              w="100%"
+              h="300px"
+              display="flex"
+              justifyContent={"center"}
+            >
+              <Box position="relative" w="220px" h="280px">
                 <AnimatePresence>
                   {completedCards.slice(-5).map((card, index) => (
                     <FlashcardCard
@@ -385,7 +381,6 @@ export default function FlashcardSkillTree({
             </Box>
           </Box>
         )}
-
       </VStack>
 
       {/* Practice Modal */}
