@@ -1851,6 +1851,43 @@ export default function App() {
     }
   };
 
+  // Handle flashcard completion and award XP
+  const handleCompleteFlashcard = async (card) => {
+    const npub = resolveNpub();
+    if (!npub || !card) return;
+
+    try {
+      // Award XP (card.xpReward is set by the FlashcardPractice component)
+      const xpAmount = card.xpReward || 5;
+      await awardXp(npub, xpAmount, resolvedTargetLang);
+
+      // Update flashcard progress in Firestore
+      const userRef = doc(database, "users", npub);
+      await updateDoc(userRef, {
+        [`progress.flashcards.${card.id}.completed`]: true,
+        [`progress.flashcards.${card.id}.completedAt`]: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Refresh user data to get updated progress
+      const fresh = await loadUserObjectFromDB(database, npub);
+      if (fresh) setUser?.(fresh);
+
+      console.log("[FlashcardComplete] Awarded", xpAmount, "XP for flashcard:", card.id);
+    } catch (error) {
+      console.error("Failed to complete flashcard:", error);
+      toast({
+        title: appLanguage === "es" ? "Error" : "Error",
+        description:
+          appLanguage === "es"
+            ? "No se pudo guardar el progreso"
+            : "Failed to save progress",
+        status: "error",
+        duration: 3000,
+      });
+    }
+  };
+
   // Handle returning to skill tree
   const handleReturnToSkillTree = useCallback(() => {
     setViewMode("skillTree");
@@ -2626,6 +2663,7 @@ export default function App() {
             supportLang={resolvedSupportLang}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
+            onCompleteFlashcard={handleCompleteFlashcard}
             showMultipleLevels={true}
             levels={["A1", "A2", "B1", "B2", "C1", "C2"]}
           />

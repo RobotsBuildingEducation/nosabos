@@ -13,6 +13,7 @@ import {
   getConceptText,
 } from "../data/flashcardData";
 import FlashcardPractice from "./FlashcardPractice";
+import { WaveBar } from "./WaveBar";
 
 const MotionBox = motion(Box);
 
@@ -267,14 +268,19 @@ export default function FlashcardSkillTree({
             <Text fontSize="sm" fontWeight="bold" color="gray.400">
               {upcomingCards.length > 0 ? "PRACTICE" : "ALL COMPLETE!"}
             </Text>
-            <HStack spacing={2}>
-              <Text fontSize="3xl" fontWeight="black" color="white">
-                {completedCards.length}
-              </Text>
-              <Text fontSize="lg" color="gray.400">
-                / {FLASHCARD_DATA.length}
-              </Text>
-            </HStack>
+            <Box w="100%" maxW="400px">
+              <WaveBar
+                value={(completedCards.length / FLASHCARD_DATA.length) * 100}
+                height={20}
+                start="#43e97b"
+                end="#38f9d7"
+                bg="rgba(255,255,255,0.1)"
+                border="rgba(255,255,255,0.2)"
+              />
+            </Box>
+            <Text fontSize="sm" color="gray.400" fontWeight="medium">
+              {completedCards.length} / {FLASHCARD_DATA.length} completed
+            </Text>
           </VStack>
 
           {/* Upcoming cards in horizontal scrollable row */}
