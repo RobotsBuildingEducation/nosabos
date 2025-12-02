@@ -1861,11 +1861,11 @@ export default function App() {
       const xpAmount = card.xpReward || 5;
       await awardXp(npub, xpAmount, resolvedTargetLang);
 
-      // Update flashcard progress in Firestore
+      // Update flashcard progress in Firestore (language-specific)
       const userRef = doc(database, "users", npub);
       await updateDoc(userRef, {
-        [`progress.flashcards.${card.id}.completed`]: true,
-        [`progress.flashcards.${card.id}.completedAt`]: new Date().toISOString(),
+        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: true,
+        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
@@ -2582,6 +2582,15 @@ export default function App() {
   const lessonsForLanguage = hasLanguageLessons
     ? languageLessons?.[resolvedTargetLang] || {}
     : user?.progress?.lessons || {};
+
+  // Get language-specific flashcards
+  const languageFlashcards = user?.progress?.languageFlashcards;
+  const hasLanguageFlashcards =
+    languageFlashcards && typeof languageFlashcards === "object";
+  const flashcardsForLanguage = hasLanguageFlashcards
+    ? languageFlashcards?.[resolvedTargetLang] || {}
+    : user?.progress?.flashcards || {};
+
   const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
   const userProgress = {
     totalXp: skillTreeXp,
@@ -2589,7 +2598,7 @@ export default function App() {
     languageXp: languageXpMap,
     languageLessons: hasLanguageLessons ? languageLessons : undefined,
     targetLang: resolvedTargetLang,
-    flashcards: user?.progress?.flashcards || {},
+    flashcards: flashcardsForLanguage,
   };
 
   return (
