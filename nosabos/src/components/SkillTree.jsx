@@ -1837,13 +1837,29 @@ export default function SkillTree({
   supportLang = "en",
   userProgress = { totalXp: 0, lessons: {} },
   onStartLesson,
+  onCompleteFlashcard, // Callback for flashcard completion with XP
   showMultipleLevels = true, // New prop to show multiple levels
   levels = ["A1", "A2", "B1", "B2", "C1", "C2"], // Default to showing all CEFR levels A1 through C2
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
-  const [pathMode, setPathMode] = useState("path"); // "path" or "flashcards"
+
+  // Load pathMode from localStorage on mount
+  const [pathMode, setPathMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("pathMode") || "path";
+    }
+    return "path";
+  });
+
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Save pathMode to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("pathMode", pathMode);
+    }
+  }, [pathMode]);
 
   // Use multi-level path if enabled, otherwise use single level
   const units = showMultipleLevels
@@ -1871,11 +1887,10 @@ export default function SkillTree({
 
   // Separate handler for flashcard completion - doesn't trigger lesson logic
   const handleFlashcardComplete = (card) => {
-    // For now, this is a placeholder
-    // The actual XP awarding and progress tracking should be handled
-    // by a separate callback from the parent component
-    // We just prevent the lesson logic from being triggered
-    console.log("[FlashcardComplete]", card);
+    // Call parent callback to award XP and update progress
+    if (onCompleteFlashcard) {
+      onCompleteFlashcard(card);
+    }
   };
 
   // Calculate overall progress

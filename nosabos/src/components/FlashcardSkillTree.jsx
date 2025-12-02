@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, VStack, HStack, Text, Button, Badge } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,6 +13,7 @@ import {
   getConceptText,
 } from "../data/flashcardData";
 import FlashcardPractice from "./FlashcardPractice";
+import { WaveBar } from "./WaveBar";
 
 const MotionBox = motion(Box);
 
@@ -186,6 +187,11 @@ export default function FlashcardSkillTree({
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
   const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
 
+  // Reset local completed cards when language changes
+  useEffect(() => {
+    setLocalCompletedCards(new Set());
+  }, [targetLang]);
+
   // Determine card status based on user progress and local state
   const getCardStatus = (card) => {
     if (
@@ -267,14 +273,19 @@ export default function FlashcardSkillTree({
             <Text fontSize="sm" fontWeight="bold" color="gray.400">
               {upcomingCards.length > 0 ? "PRACTICE" : "ALL COMPLETE!"}
             </Text>
-            <HStack spacing={2}>
-              <Text fontSize="3xl" fontWeight="black" color="white">
-                {completedCards.length}
-              </Text>
-              <Text fontSize="lg" color="gray.400">
-                / {FLASHCARD_DATA.length}
-              </Text>
-            </HStack>
+            <Box w="100%" maxW="400px">
+              <WaveBar
+                value={(completedCards.length / FLASHCARD_DATA.length) * 100}
+                height={20}
+                start="#43e97b"
+                end="#38f9d7"
+                bg="rgba(255,255,255,0.1)"
+                border="rgba(255,255,255,0.2)"
+              />
+            </Box>
+            <Text fontSize="sm" color="gray.400" fontWeight="medium">
+              {Math.round((completedCards.length / FLASHCARD_DATA.length) * 100)}% completed
+            </Text>
           </VStack>
 
           {/* Upcoming cards in horizontal scrollable row */}
@@ -375,35 +386,6 @@ export default function FlashcardSkillTree({
           </Box>
         )}
 
-        {/* Progress indicator */}
-        <Box w="100%">
-          <HStack justify="center" spacing={2} flexWrap="wrap">
-            {FLASHCARD_DATA.map((card) => {
-              const isCompleted =
-                userProgress.flashcards?.[card.id]?.completed ||
-                localCompletedCards.has(card.id);
-              return (
-                <Box
-                  key={card.id}
-                  w="40px"
-                  h="6px"
-                  borderRadius="full"
-                  bg={
-                    isCompleted
-                      ? CEFR_COLORS[card.cefrLevel].primary
-                      : "whiteAlpha.200"
-                  }
-                  transition="all 0.3s"
-                  boxShadow={
-                    isCompleted
-                      ? `0 0 10px ${CEFR_COLORS[card.cefrLevel].primary}60`
-                      : "none"
-                  }
-                />
-              );
-            })}
-          </HStack>
-        </Box>
       </VStack>
 
       {/* Practice Modal */}

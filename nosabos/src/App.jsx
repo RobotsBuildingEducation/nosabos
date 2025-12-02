@@ -1851,6 +1851,43 @@ export default function App() {
     }
   };
 
+  // Handle flashcard completion and award XP
+  const handleCompleteFlashcard = async (card) => {
+    const npub = resolveNpub();
+    if (!npub || !card) return;
+
+    try {
+      // Award XP (card.xpReward is set by the FlashcardPractice component)
+      const xpAmount = card.xpReward || 5;
+      await awardXp(npub, xpAmount, resolvedTargetLang);
+
+      // Update flashcard progress in Firestore (language-specific)
+      const userRef = doc(database, "users", npub);
+      await updateDoc(userRef, {
+        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: true,
+        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Refresh user data to get updated progress
+      const fresh = await loadUserObjectFromDB(database, npub);
+      if (fresh) setUser?.(fresh);
+
+      console.log("[FlashcardComplete] Awarded", xpAmount, "XP for flashcard:", card.id);
+    } catch (error) {
+      console.error("Failed to complete flashcard:", error);
+      toast({
+        title: appLanguage === "es" ? "Error" : "Error",
+        description:
+          appLanguage === "es"
+            ? "No se pudo guardar el progreso"
+            : "Failed to save progress",
+        status: "error",
+        duration: 3000,
+      });
+    }
+  };
+
   // Handle returning to skill tree
   const handleReturnToSkillTree = useCallback(() => {
     setViewMode("skillTree");
@@ -2484,6 +2521,35 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
+  // Compute userProgress - must be before any conditional returns to maintain hook order
+  const userProgress = useMemo(() => {
+    const languageXpMap = user?.progress?.languageXp || {};
+    const languageLessons = user?.progress?.languageLessons;
+    const hasLanguageLessons =
+      languageLessons && typeof languageLessons === "object";
+    const lessonsForLanguage = hasLanguageLessons
+      ? languageLessons?.[resolvedTargetLang] || {}
+      : user?.progress?.lessons || {};
+
+    // Get language-specific flashcards
+    const languageFlashcards = user?.progress?.languageFlashcards;
+    const hasLanguageFlashcards =
+      languageFlashcards && typeof languageFlashcards === "object";
+    const flashcardsForLanguage = hasLanguageFlashcards
+      ? languageFlashcards?.[resolvedTargetLang] || {}
+      : user?.progress?.flashcards || {};
+
+    const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
+    return {
+      totalXp: skillTreeXp,
+      lessons: lessonsForLanguage,
+      languageXp: languageXpMap,
+      languageLessons: hasLanguageLessons ? languageLessons : undefined,
+      targetLang: resolvedTargetLang,
+      flashcards: flashcardsForLanguage,
+    };
+  }, [user?.progress, resolvedTargetLang]);
+
   /* -----------------------------------
      Loading / Onboarding gates
   ----------------------------------- */
@@ -2537,22 +2603,6 @@ export default function App() {
   /* -----------------------------------
      Main App (dropdown + panels)
   ----------------------------------- */
-
-  const languageXpMap = user?.progress?.languageXp || {};
-  const languageLessons = user?.progress?.languageLessons;
-  const hasLanguageLessons =
-    languageLessons && typeof languageLessons === "object";
-  const lessonsForLanguage = hasLanguageLessons
-    ? languageLessons?.[resolvedTargetLang] || {}
-    : user?.progress?.lessons || {};
-  const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
-  const userProgress = {
-    totalXp: skillTreeXp,
-    lessons: lessonsForLanguage,
-    languageXp: languageXpMap,
-    languageLessons: hasLanguageLessons ? languageLessons : undefined,
-    targetLang: resolvedTargetLang,
-  };
 
   return (
     <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
@@ -2626,6 +2676,7 @@ export default function App() {
             supportLang={resolvedSupportLang}
             userProgress={userProgress}
             onStartLesson={handleStartLesson}
+            onCompleteFlashcard={handleCompleteFlashcard}
             showMultipleLevels={true}
             levels={["A1", "A2", "B1", "B2", "C1", "C2"]}
           />
