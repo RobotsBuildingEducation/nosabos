@@ -265,67 +265,10 @@ export default function FlashcardSkillTree({
 
   return (
     <Box w="100%" minH="500px" position="relative">
-      {/* Main container with responsive layout */}
-      <Flex
-        direction={{ base: "column", md: "row" }}
-        align={{ base: "stretch", md: "flex-start" }}
-        gap={{ base: 8, md: 12 }}
-      >
-        {/* Completed Cards Stack - Left on desktop, Bottom on mobile */}
-        {completedCards.length > 0 && (
-          <Box
-            w={{ base: "100%", md: "220px" }}
-            order={{ base: 2, md: 1 }}
-            flexShrink={0}
-            overflow="hidden"
-          >
-            <VStack spacing={4} mb={6}>
-              <Text fontSize="sm" fontWeight="bold" color="gray.400">
-                COMPLETED
-              </Text>
-            </VStack>
-
-            {/* Stacked cards */}
-            <Box
-              position="relative"
-              w="220px"
-              h="280px"
-              mx={{ base: "auto", md: 0 }}
-              overflow="hidden"
-            >
-              <AnimatePresence>
-                {completedCards.slice(-5).map((card, index) => (
-                  <FlashcardCard
-                    key={card.id}
-                    card={card}
-                    status="completed"
-                    stackPosition={index}
-                    supportLang={supportLang}
-                  />
-                ))}
-              </AnimatePresence>
-            </Box>
-          </Box>
-        )}
-
-        {/* Arrow indicator - only on mobile */}
-        {completedCards.length > 0 && (
-          <Box
-            textAlign="center"
-            py={2}
-            order={{ base: 1.5, md: 0 }}
-            display={{ base: "block", md: "none" }}
-          >
-            <RiArrowDownLine size={32} color="rgba(255, 255, 255, 0.2)" />
-          </Box>
-        )}
-
-        {/* Active/Upcoming Cards - Right on desktop, Top on mobile */}
-        <Box
-          w="100%"
-          flex={1}
-          order={{ base: 1, md: 2 }}
-        >
+      {/* Main container with vertical layout */}
+      <VStack spacing={8} align="stretch">
+        {/* Top: Active/Upcoming Cards */}
+        <Box w="100%">
           <VStack spacing={4} mb={4}>
             <Text fontSize="sm" fontWeight="bold" color="gray.400">
               {upcomingCards.length > 0 ? "PRACTICE" : "ALL COMPLETE!"}
@@ -345,65 +288,118 @@ export default function FlashcardSkillTree({
             </Text>
           </VStack>
 
-          {/* Upcoming cards in horizontal scrollable row */}
-          {upcomingCards.length > 0 ? (
-            <Box
-              overflowX="auto"
-              overflowY="hidden"
-              w="100%"
-              pb={4}
-              sx={{
-                '&::-webkit-scrollbar': {
-                  display: 'none',
-                },
-                msOverflowStyle: 'none',
-                scrollbarWidth: 'none',
-              }}
-            >
-              <HStack spacing={6} px={4} minW="min-content">
-                <AnimatePresence mode="popLayout">
-                  {upcomingCards.map((card) => (
-                    <FlashcardCard
-                      key={card.id}
-                      card={card}
-                      status={getCardStatus(card)}
-                      onClick={() =>
-                        handleCardClick(card, getCardStatus(card))
-                      }
-                      supportLang={supportLang}
-                    />
-                  ))}
-                </AnimatePresence>
-              </HStack>
-            </Box>
-          ) : (
-            <MotionBox
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              <VStack
-                spacing={4}
-                p={12}
-                borderRadius="2xl"
-                bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
-                border="2px solid"
-                borderColor="whiteAlpha.200"
-                backdropFilter="blur(10px)"
+          {/* Desktop: Flex row, Mobile: Stack */}
+          <Flex
+            direction={{ base: "column", md: "row" }}
+            align={{ base: "stretch", md: "flex-start" }}
+            gap={8}
+          >
+            {/* Completed Cards Stack - Left on desktop, Bottom on mobile */}
+            {completedCards.length > 0 && (
+              <Box
+                w={{ base: "100%", md: "auto" }}
+                flexShrink={0}
+                order={{ base: 2, md: 1 }}
               >
-                <RiCheckLine size={64} color="#22C55E" />
-                <Text fontSize="2xl" fontWeight="black" color="white">
-                  All Done!
-                </Text>
-                <Text fontSize="md" color="gray.400" textAlign="center">
-                  You've completed all flashcards!
-                </Text>
-              </VStack>
-            </MotionBox>
-          )}
-        </Box>
+                <VStack spacing={4} mb={6} display={{ base: "flex", md: "none" }}>
+                  <Box textAlign="center" py={2}>
+                    <RiArrowDownLine size={32} color="rgba(255, 255, 255, 0.2)" />
+                  </Box>
+                  <Text fontSize="sm" fontWeight="bold" color="gray.400">
+                    COMPLETED
+                  </Text>
+                </VStack>
+                <VStack spacing={4} mb={6} display={{ base: "none", md: "flex" }}>
+                  <Text fontSize="sm" fontWeight="bold" color="gray.400">
+                    COMPLETED
+                  </Text>
+                </VStack>
 
-      </Flex>
+                {/* Stacked cards - centered */}
+                <Box position="relative" w="100%" h="300px">
+                  <Box
+                    position="relative"
+                    w="220px"
+                    h="280px"
+                    mx="auto"
+                  >
+                    <AnimatePresence>
+                      {completedCards.slice(-5).map((card, index) => (
+                        <FlashcardCard
+                          key={card.id}
+                          card={card}
+                          status="completed"
+                          stackPosition={index}
+                          supportLang={supportLang}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+
+            {/* Upcoming cards */}
+            <Box flex={1} order={{ base: 1, md: 2 }}>
+              {upcomingCards.length > 0 ? (
+                <Box
+                  overflowX="auto"
+                  overflowY="hidden"
+                  w="100%"
+                  pb={4}
+                  sx={{
+                    '&::-webkit-scrollbar': {
+                      display: 'none',
+                    },
+                    msOverflowStyle: 'none',
+                    scrollbarWidth: 'none',
+                  }}
+                >
+                  <HStack spacing={6} px={4} minW="min-content">
+                    <AnimatePresence mode="popLayout">
+                      {upcomingCards.map((card) => (
+                        <FlashcardCard
+                          key={card.id}
+                          card={card}
+                          status={getCardStatus(card)}
+                          onClick={() =>
+                            handleCardClick(card, getCardStatus(card))
+                          }
+                          supportLang={supportLang}
+                        />
+                      ))}
+                    </AnimatePresence>
+                  </HStack>
+                </Box>
+              ) : (
+                <MotionBox
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                >
+                  <VStack
+                    spacing={4}
+                    p={12}
+                    borderRadius="2xl"
+                    bgGradient="linear(135deg, whiteAlpha.100, whiteAlpha.50)"
+                    border="2px solid"
+                    borderColor="whiteAlpha.200"
+                    backdropFilter="blur(10px)"
+                  >
+                    <RiCheckLine size={64} color="#22C55E" />
+                    <Text fontSize="2xl" fontWeight="black" color="white">
+                      All Done!
+                    </Text>
+                    <Text fontSize="md" color="gray.400" textAlign="center">
+                      You've completed all flashcards!
+                    </Text>
+                  </VStack>
+                </MotionBox>
+              )}
+            </Box>
+          </Flex>
+        </Box>
+      </VStack>
 
       {/* Practice Modal */}
       {practiceCard && (
