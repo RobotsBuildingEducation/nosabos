@@ -2575,31 +2575,33 @@ export default function App() {
      Main App (dropdown + panels)
   ----------------------------------- */
 
-  const languageXpMap = user?.progress?.languageXp || {};
-  const languageLessons = user?.progress?.languageLessons;
-  const hasLanguageLessons =
-    languageLessons && typeof languageLessons === "object";
-  const lessonsForLanguage = hasLanguageLessons
-    ? languageLessons?.[resolvedTargetLang] || {}
-    : user?.progress?.lessons || {};
+  const userProgress = useMemo(() => {
+    const languageXpMap = user?.progress?.languageXp || {};
+    const languageLessons = user?.progress?.languageLessons;
+    const hasLanguageLessons =
+      languageLessons && typeof languageLessons === "object";
+    const lessonsForLanguage = hasLanguageLessons
+      ? languageLessons?.[resolvedTargetLang] || {}
+      : user?.progress?.lessons || {};
 
-  // Get language-specific flashcards
-  const languageFlashcards = user?.progress?.languageFlashcards;
-  const hasLanguageFlashcards =
-    languageFlashcards && typeof languageFlashcards === "object";
-  const flashcardsForLanguage = hasLanguageFlashcards
-    ? languageFlashcards?.[resolvedTargetLang] || {}
-    : user?.progress?.flashcards || {};
+    // Get language-specific flashcards
+    const languageFlashcards = user?.progress?.languageFlashcards;
+    const hasLanguageFlashcards =
+      languageFlashcards && typeof languageFlashcards === "object";
+    const flashcardsForLanguage = hasLanguageFlashcards
+      ? languageFlashcards?.[resolvedTargetLang] || {}
+      : user?.progress?.flashcards || {};
 
-  const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
-  const userProgress = {
-    totalXp: skillTreeXp,
-    lessons: lessonsForLanguage,
-    languageXp: languageXpMap,
-    languageLessons: hasLanguageLessons ? languageLessons : undefined,
-    targetLang: resolvedTargetLang,
-    flashcards: flashcardsForLanguage,
-  };
+    const skillTreeXp = getLanguageXp(user?.progress || {}, resolvedTargetLang);
+    return {
+      totalXp: skillTreeXp,
+      lessons: lessonsForLanguage,
+      languageXp: languageXpMap,
+      languageLessons: hasLanguageLessons ? languageLessons : undefined,
+      targetLang: resolvedTargetLang,
+      flashcards: flashcardsForLanguage,
+    };
+  }, [user?.progress, resolvedTargetLang]);
 
   return (
     <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
