@@ -41,7 +41,6 @@ function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
         stiffness: 200,
         damping: 25,
       }}
-      whileHover={isActive ? { scale: 1.05, y: -8 } : {}}
       onClick={onClick}
       cursor={isActive ? "pointer" : isLocked ? "not-allowed" : "default"}
       position={isStacked ? "absolute" : "relative"}
