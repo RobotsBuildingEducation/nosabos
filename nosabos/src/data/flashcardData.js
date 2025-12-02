@@ -1173,6 +1173,77 @@ export const FLASHCARD_DATA = [
   { id: "c1-subtle-8", concept: { en: "In a manner of speaking...", es: "En cierto modo..." }, cefrLevel: "C1", category: "subtle", type: "phrase" },
   { id: "c1-subtle-9", concept: { en: "To coin a phrase...", es: "Por acuñar una frase..." }, cefrLevel: "C1", category: "subtle", type: "phrase" },
   { id: "c1-subtle-10", concept: { en: "If I may say so...", es: "Si se me permite decirlo..." }, cefrLevel: "C1", category: "subtle", type: "phrase" },
+
+  // ============================================
+  // C2 LEVEL - NEAR-NATIVE MASTERY (50 flashcards)
+  // Focus: Sophisticated vocabulary, proverbs, refined expression
+  // ============================================
+
+  // ============================================
+  // C2 - Category 1: Sophisticated Vocabulary (20)
+  // ============================================
+  { id: "c2-vocab-1", concept: { en: "Ubiquitous", es: "Ubicuo" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-2", concept: { en: "Quintessential", es: "Quintaesencial" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-3", concept: { en: "Esoteric", es: "Esotérico" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-4", concept: { en: "Ephemeral", es: "Efímero" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-5", concept: { en: "Serendipity", es: "Serendipia" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-6", concept: { en: "Paradigm", es: "Paradigma" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-7", concept: { en: "Juxtaposition", es: "Yuxtaposición" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-8", concept: { en: "Cognizant", es: "Consciente" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-9", concept: { en: "Conundrum", es: "Enigma" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-10", concept: { en: "Intrinsic", es: "Intrínseco" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-11", concept: { en: "Ambivalent", es: "Ambivalente" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-12", concept: { en: "Scrutinize", es: "Escudriñar" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-13", concept: { en: "Alleviate", es: "Aliviar" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-14", concept: { en: "Perpetuate", es: "Perpetuar" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-15", concept: { en: "Superfluous", es: "Superfluo" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-16", concept: { en: "Delineate", es: "Delinear" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-17", concept: { en: "Exacerbate", es: "Exacerbar" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-18", concept: { en: "Dichotomy", es: "Dicotomía" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-19", concept: { en: "Epitome", es: "Epítome" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+  { id: "c2-vocab-20", concept: { en: "Proliferate", es: "Proliferar" }, cefrLevel: "C2", category: "vocabulary", type: "word" },
+
+  // ============================================
+  // C2 - Category 2: Proverbs & Universal Sayings (15)
+  // ============================================
+  { id: "c2-proverb-1", concept: { en: "Where there's smoke, there's fire", es: "Donde hay humo, hay fuego" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-2", concept: { en: "The grass is always greener on the other side", es: "El pasto siempre es más verde del otro lado" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-3", concept: { en: "Don't put all your eggs in one basket", es: "No pongas todos los huevos en una canasta" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-4", concept: { en: "A picture is worth a thousand words", es: "Una imagen vale más que mil palabras" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-5", concept: { en: "Rome wasn't built in a day", es: "Roma no se construyó en un día" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-6", concept: { en: "The pen is mightier than the sword", es: "La pluma es más poderosa que la espada" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-7", concept: { en: "You can't judge a book by its cover", es: "No juzgues un libro por su portada" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-8", concept: { en: "Two heads are better than one", es: "Dos cabezas piensan mejor que una" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-9", concept: { en: "Time heals all wounds", es: "El tiempo cura todas las heridas" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-10", concept: { en: "Honesty is the best policy", es: "La honestidad es la mejor política" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-11", concept: { en: "Practice makes perfect", es: "La práctica hace al maestro" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-12", concept: { en: "Good things come to those who wait", es: "Las cosas buenas llegan a los que esperan" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-13", concept: { en: "All's fair in love and war", es: "En el amor y la guerra todo vale" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-14", concept: { en: "The best of both worlds", es: "Lo mejor de ambos mundos" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+  { id: "c2-proverb-15", concept: { en: "Beauty is in the eye of the beholder", es: "La belleza está en el ojo del espectador" }, cefrLevel: "C2", category: "proverb", type: "phrase" },
+
+  // ============================================
+  // C2 - Category 3: Refined Language Register (10)
+  // ============================================
+  { id: "c2-refined-1", concept: { en: "If you don't mind my saying...", es: "Si no te importa que lo diga..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-2", concept: { en: "I couldn't help but notice...", es: "No pude evitar notar..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-3", concept: { en: "Forgive me for saying so...", es: "Perdóname por decirlo..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-4", concept: { en: "Without wishing to offend...", es: "Sin querer ofender..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-5", concept: { en: "I hope you won't take this the wrong way...", es: "Espero que no lo tomes a mal..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-6", concept: { en: "Not to put too fine a point on it...", es: "Sin entrar en detalles..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-7", concept: { en: "To be perfectly frank...", es: "Para ser perfectamente franco..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-8", concept: { en: "Between you and me...", es: "Entre tú y yo..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-9", concept: { en: "Off the record...", es: "Extraoficialmente..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+  { id: "c2-refined-10", concept: { en: "Strictly confidential...", es: "Estrictamente confidencial..." }, cefrLevel: "C2", category: "refined", type: "phrase" },
+
+  // ============================================
+  // C2 - Category 4: Literary & Formal Expressions (5)
+  // ============================================
+  { id: "c2-literary-1", concept: { en: "To whom it may concern", es: "A quien corresponda" }, cefrLevel: "C2", category: "literary", type: "phrase" },
+  { id: "c2-literary-2", concept: { en: "Pursuant to our discussion", es: "De acuerdo con nuestra discusión" }, cefrLevel: "C2", category: "literary", type: "phrase" },
+  { id: "c2-literary-3", concept: { en: "In accordance with", es: "De acuerdo con" }, cefrLevel: "C2", category: "literary", type: "phrase" },
+  { id: "c2-literary-4", concept: { en: "Notwithstanding the foregoing", es: "Sin perjuicio de lo anterior" }, cefrLevel: "C2", category: "literary", type: "phrase" },
+  { id: "c2-literary-5", concept: { en: "Herein lies the problem", es: "Aquí radica el problema" }, cefrLevel: "C2", category: "literary", type: "phrase" },
 ];
 
 // CEFR level colors - A1 uses beautiful holographic blue
