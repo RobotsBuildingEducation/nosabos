@@ -66,10 +66,10 @@ function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
         borderColor={isCompleted ? "whiteAlpha.200" : `${cefrColor.primary}80`}
         boxShadow={
           isActive
-            ? `0 20px 60px ${cefrColor.primary}40, 0 0 0 2px ${cefrColor.primary}30`
+            ? `0 4px 12px ${cefrColor.primary}30`
             : isCompleted
-            ? "0 10px 30px rgba(0, 0, 0, 0.3)"
-            : "0 15px 40px rgba(0, 0, 0, 0.4)"
+            ? "0 2px 8px rgba(0, 0, 0, 0.2)"
+            : "0 4px 12px rgba(0, 0, 0, 0.25)"
         }
         backdropFilter="blur(10px)"
         position="relative"
