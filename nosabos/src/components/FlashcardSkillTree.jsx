@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, VStack, HStack, Text, Button, Badge } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -186,6 +186,11 @@ export default function FlashcardSkillTree({
   const [practiceCard, setPracticeCard] = useState(null);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
   const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
+
+  // Reset local completed cards when language changes
+  useEffect(() => {
+    setLocalCompletedCards(new Set());
+  }, [targetLang]);
 
   // Determine card status based on user progress and local state
   const getCardStatus = (card) => {
