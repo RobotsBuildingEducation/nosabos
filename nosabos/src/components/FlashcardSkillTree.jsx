@@ -275,7 +275,7 @@ export default function FlashcardSkillTree({
         {/* Completed Cards Stack - Left on desktop, Bottom on mobile */}
         {completedCards.length > 0 && (
           <Box
-            w={{ base: "100%", md: "auto" }}
+            w={{ base: "100%", md: "220px" }}
             order={{ base: 2, md: 1 }}
             flexShrink={0}
           >
@@ -285,26 +285,19 @@ export default function FlashcardSkillTree({
               </Text>
             </VStack>
 
-            {/* Stacked cards - centered */}
-            <Box position="relative" w="100%" h="300px">
-              <Box
-                position="relative"
-                w="220px"
-                h="280px"
-                mx="auto"
-              >
-                <AnimatePresence>
-                  {completedCards.slice(-5).map((card, index) => (
-                    <FlashcardCard
-                      key={card.id}
-                      card={card}
-                      status="completed"
-                      stackPosition={index}
-                      supportLang={supportLang}
-                    />
-                  ))}
-                </AnimatePresence>
-              </Box>
+            {/* Stacked cards */}
+            <Box position="relative" w="220px" h="280px" mx={{ base: "auto", md: 0 }}>
+              <AnimatePresence>
+                {completedCards.slice(-5).map((card, index) => (
+                  <FlashcardCard
+                    key={card.id}
+                    card={card}
+                    status="completed"
+                    stackPosition={index}
+                    supportLang={supportLang}
+                  />
+                ))}
+              </AnimatePresence>
             </Box>
           </Box>
         )}
