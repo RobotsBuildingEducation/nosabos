@@ -279,7 +279,7 @@ export default function FlashcardSkillTree({
               />
             </Box>
             <Text fontSize="sm" color="gray.400" fontWeight="medium">
-              {completedCards.length} / {FLASHCARD_DATA.length} completed
+              {Math.round((completedCards.length / FLASHCARD_DATA.length) * 100)}% completed
             </Text>
           </VStack>
 

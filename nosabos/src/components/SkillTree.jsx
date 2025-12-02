@@ -1843,8 +1843,23 @@ export default function SkillTree({
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
-  const [pathMode, setPathMode] = useState("path"); // "path" or "flashcards"
+
+  // Load pathMode from localStorage on mount
+  const [pathMode, setPathMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("pathMode") || "path";
+    }
+    return "path";
+  });
+
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  // Save pathMode to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("pathMode", pathMode);
+    }
+  }, [pathMode]);
 
   // Use multi-level path if enabled, otherwise use single level
   const units = showMultipleLevels

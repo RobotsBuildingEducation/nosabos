@@ -2589,6 +2589,7 @@ export default function App() {
     languageXp: languageXpMap,
     languageLessons: hasLanguageLessons ? languageLessons : undefined,
     targetLang: resolvedTargetLang,
+    flashcards: user?.progress?.flashcards || {},
   };
 
   return (
