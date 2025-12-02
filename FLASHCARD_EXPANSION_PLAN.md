@@ -4,8 +4,10 @@
 ### Current Status
 - **Before**: 10 flashcards (basic survival phrases)
 - **After**: 1000 flashcards (9900% expansion!)
-- **Focus**: Practical vocabulary and phrases for real-world communication
-- **Target User**: Someone visiting a Spanish-speaking country who wants to communicate with locals
+- **Focus**: Essential vocabulary (words) and practical phrases for real-world communication
+- **Multi-language**: Applicable across all target languages (EN, ES, PT, FR, IT, NAH)
+- **Target User**: Someone visiting a country speaking the target language who wants to communicate with locals
+- **Balance**: ~60% individual words, ~40% practical phrases
 
 ---
 
@@ -201,8 +203,8 @@
   - "What does that mean?"
   - "How do you say...?"
   - "Do you understand me?"
-  - "I speak a little Spanish"
-  - "I'm learning Spanish"
+  - "I speak a little"
+  - "I'm learning"
   - "Could you write it down?"
   - "Can you help me with...?"
   - "I think so"
@@ -370,6 +372,7 @@
   - "How do I get to the city center?"
 
 #### Category 2: Making Plans & Social Invitations (30 flashcards)
+- **Words**: Invite, Plan, Schedule, Appointment, Date, Event, Party, Celebration, Gathering, Cancel, Confirm
 - **Phrases**:
   - "What are you doing tonight?"
   - "Do you have plans?"
@@ -530,28 +533,38 @@
 ## B2 Level (150 flashcards)
 ### Focus: Nuanced Communication & Abstract Topics
 
-#### Category 1: Idiomatic Expressions (30 flashcards)
+#### Category 1: Common Idioms & Fixed Expressions (30 flashcards)
 - **Phrases**:
-  - "It costs an arm and a leg" → "Costar un ojo de la cara"
-  - "Break a leg" → "Mucha mierda"
-  - "It's raining cats and dogs" → "Llueve a cántaros"
-  - "Beat around the bush" → "Andar con rodeos"
-  - "Get the ball rolling" → "Poner manos a la obra"
-  - "Hit the nail on the head" → "Dar en el clavo"
-  - "Once in a blue moon" → "De vez en cuando / De uvas a peras"
-  - "Piece of cake" → "Ser pan comido"
-  - "When pigs fly" → "Cuando las ranas críen pelo"
-  - "Better late than never" → "Más vale tarde que nunca"
-  - "Actions speak louder than words" → "Del dicho al hecho hay mucho trecho"
-  - "Kill two birds with one stone" → "Matar dos pájaros de un tiro"
-  - "The early bird catches the worm" → "Al que madruga Dios le ayuda"
-  - "Don't count your chickens before they hatch" → "No vendas la piel del oso antes de cazarlo"
-  - "Every cloud has a silver lining" → "No hay mal que por bien no venga"
-  - "You can't have your cake and eat it too" → "No se puede estar en misa y repicando"
-  - "The ball is in your court" → "La pelota está en tu tejado"
-  - "Bite off more than you can chew" → "Abarcar más de lo que puede"
-  - "Burn the midnight oil" → "Quemarse las pestañas"
-  - "Call it a day" → "Dar por terminado"
+  - "It costs an arm and a leg"
+  - "Break a leg"
+  - "It's raining cats and dogs"
+  - "Beat around the bush"
+  - "Get the ball rolling"
+  - "Hit the nail on the head"
+  - "Once in a blue moon"
+  - "Piece of cake"
+  - "When pigs fly"
+  - "Better late than never"
+  - "Actions speak louder than words"
+  - "Kill two birds with one stone"
+  - "The early bird catches the worm"
+  - "Don't count your chickens before they hatch"
+  - "Every cloud has a silver lining"
+  - "You can't have your cake and eat it too"
+  - "The ball is in your court"
+  - "Bite off more than you can chew"
+  - "Burn the midnight oil"
+  - "Call it a day"
+  - "Cut to the chase"
+  - "Under the weather"
+  - "Spill the beans"
+  - "Let the cat out of the bag"
+  - "Break the ice"
+  - "Cost a fortune"
+  - "In a nutshell"
+  - "Get cold feet"
+  - "On the same page"
+  - "Back to square one"
 
 #### Category 2: Professional & Business Context (30 flashcards)
 - **Words**: Deadline, Project, Client, Contract, Agreement, Negotiate, Strategy, Goal, Objective, Achievement, Performance, Productivity, Efficiency, Budget, Investment, Profit, Loss, Revenue, Competition, Market
@@ -744,51 +757,31 @@
 ---
 
 ## C2 Level (50 flashcards)
-### Focus: Native-Level Mastery & Cultural Nuances
+### Focus: Near-Native Mastery & Sophisticated Expression
 
-#### Category 1: Regional Expressions (15 flashcards)
-- **Spanish (Spain)**:
-  - "Vale" (Okay/Alright)
-  - "Tío/Tía" (Dude/Girl - slang)
-  - "Molar" (To be cool)
-  - "Guay" (Cool)
-  - "Flipar" (To be amazed)
-- **Mexican Spanish**:
-  - "¿Qué onda?" (What's up?)
-  - "Padre/Padrísimo" (Cool/Awesome)
-  - "Órale" (Wow/Come on)
-  - "Chido" (Cool)
-  - "No manches" (No way)
-- **Argentine Spanish**:
-  - "Che" (Hey/Dude)
-  - "Boludo/Boluda" (Dude - can be offensive)
-  - "Copado" (Cool)
-  - "Laburar" (To work)
-  - "Morfar" (To eat)
+#### Category 1: Sophisticated Vocabulary (20 flashcards)
+- **Words**: Ubiquitous, Quintessential, Esoteric, Ephemeral, Serendipity, Paradigm, Juxtaposition, Cognizant, Conundrum, Pragmatic, Meticulous, Eloquent, Intrinsic, Ambivalent, Scrutinize, Alleviate, Perpetuate, Superfluous, Delineate, Exacerbate
+- These are advanced words that demonstrate mastery-level vocabulary
 
-#### Category 2: Advanced Idioms & Sayings (20 flashcards)
-- "Estar en las nubes" (Head in the clouds)
-- "Tomar el pelo" (To pull someone's leg)
-- "Meter la pata" (Put your foot in your mouth)
-- "Estar como una cabra" (To be crazy)
-- "Ser un cero a la izquierda" (To be worthless/nobody)
-- "Tirar la casa por la ventana" (To spare no expense)
-- "Estar sin blanca" (To be broke)
-- "Hacer la vista gorda" (To turn a blind eye)
-- "Dormirse en los laureles" (Rest on one's laurels)
-- "Estar entre la espada y la pared" (Between a rock and a hard place)
-- "Ser pan comido" (Piece of cake)
-- "Costar un ojo de la cara" (Cost an arm and a leg)
-- "A lo hecho, pecho" (What's done is done)
-- "Camarón que se duerme se lo lleva la corriente" (Snooze you lose)
-- "Más vale prevenir que lamentar" (Better safe than sorry)
-- "No hay mal que dure cien años" (This too shall pass)
-- "A caballo regalado no se le mira el diente" (Don't look a gift horse in the mouth)
-- "Aunque la mona se vista de seda, mona se queda" (You can't make a silk purse out of a sow's ear)
-- "En boca cerrada no entran moscas" (Silence is golden)
-- "Dime con quién andas y te diré quién eres" (You are the company you keep)
+#### Category 2: Proverbs & Universal Sayings (15 flashcards)
+- **Phrases**:
+  - "Better late than never"
+  - "Where there's smoke, there's fire"
+  - "The grass is always greener on the other side"
+  - "Don't put all your eggs in one basket"
+  - "A picture is worth a thousand words"
+  - "Rome wasn't built in a day"
+  - "The pen is mightier than the sword"
+  - "You can't judge a book by its cover"
+  - "Two heads are better than one"
+  - "Time heals all wounds"
+  - "Honesty is the best policy"
+  - "Practice makes perfect"
+  - "Good things come to those who wait"
+  - "All's fair in love and war"
+  - "The best of both worlds"
 
-#### Category 3: Subtle Language Register (10 flashcards)
+#### Category 3: Refined Language Register (10 flashcards)
 - **Phrases**:
   - "If you don't mind my saying..."
   - "I couldn't help but notice..."
@@ -801,12 +794,13 @@
   - "Off the record..."
   - "Strictly confidential..."
 
-#### Category 4: Cultural References (5 flashcards)
-- "No todo es Jauja" (reference to mythical land of abundance)
-- "Más perdido que Adán en el día de la madre" (More lost than Adam on Mother's Day)
-- "Ser más pesado que una vaca en brazos" (To be really annoying)
-- "Quedarse con los crespos hechos" (To be left high and dry)
-- "Poner a alguien de vuelta y media" (To criticize someone harshly)
+#### Category 4: Literary & Formal Expressions (5 flashcards)
+- **Phrases**:
+  - "To whom it may concern"
+  - "Pursuant to our discussion"
+  - "In accordance with"
+  - "Notwithstanding the foregoing"
+  - "Herein lies the problem"
 
 ---
 
@@ -906,19 +900,29 @@
 
 **Current Total**: 10/1000 flashcards (1%)
 
-**Target**: 1000 flashcards covering practical vocabulary and phrases for real-world Spanish communication
+**Target**: 1000 flashcards covering essential vocabulary (words) and practical phrases for real-world communication
 
 ---
 
 ## Notes
 
-- Prioritize phrases over isolated vocabulary where possible
-- Include variations for formal/informal contexts (tú vs usted)
-- Consider regional differences but don't overwhelm
-- Focus on tourist/traveler perspective for lower levels
-- Move to resident/professional perspective for higher levels
-- Include cultural notes where necessary
-- Ensure gender-neutral language where appropriate
-- Include pronunciation tips for difficult words (future enhancement)
-- Add audio support (future enhancement)
-- Consider adding visual aids for concrete nouns (future enhancement)
+### Content Guidelines
+- **Balance words and phrases**: ~60% individual vocabulary words, ~40% practical phrases
+- **Avoid slang**: Focus on standard language that translates well across all supported languages (EN, ES, PT, FR, IT, NAH)
+- **Universal applicability**: All flashcards should work across multiple languages, not just Spanish
+- **Individual words**: Include essential nouns, verbs, adjectives, and adverbs
+- **Practical phrases**: Focus on complete, useful expressions for real-world situations
+- **No regional slang**: Stick to formal and informal standard language, avoiding colloquialisms that don't translate
+- **Cultural neutrality**: Avoid culture-specific references that won't work across languages
+
+### Level-Specific Approach
+- **A1-A2**: Focus on tourist/traveler perspective - survival needs and basic communication
+- **B1-B2**: Move to resident perspective - daily life, work, complex situations
+- **C1-C2**: Professional/academic perspective - sophisticated expression and mastery
+
+### Future Enhancements
+- Include variations for formal/informal contexts where grammatically relevant
+- Add pronunciation tips for difficult words
+- Add audio support
+- Consider adding visual aids for concrete nouns
+- Provide usage examples for ambiguous terms
