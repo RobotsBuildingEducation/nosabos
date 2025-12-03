@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, VStack, HStack, Text, Button, Badge } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -192,50 +192,73 @@ export default function FlashcardSkillTree({
     setLocalCompletedCards(new Set());
   }, [targetLang]);
 
-  // Determine card status based on user progress and local state
-  const getCardStatus = (card) => {
-    if (
-      userProgress.flashcards?.[card.id]?.completed ||
-      localCompletedCards.has(card.id)
-    ) {
-      return "completed";
-    }
+  // Memoize card index map for O(1) lookups instead of O(n) findIndex calls
+  const cardIndexMap = useMemo(() => {
+    const map = new Map();
+    FLASHCARD_DATA.forEach((card, index) => {
+      map.set(card.id, index);
+    });
+    return map;
+  }, []); // FLASHCARD_DATA is static
 
-    // Find the first uncompleted card in the original data array
-    const firstUncompletedCard = FLASHCARD_DATA.find(
-      (c) =>
-        !userProgress.flashcards?.[c.id]?.completed &&
-        !localCompletedCards.has(c.id)
-    );
+  // Memoize completed and upcoming cards to avoid filtering on every render
+  const { completedCards, upcomingCards, firstUncompletedCard } = useMemo(() => {
+    const completed = [];
+    const upcoming = [];
+    let firstUncompleted = null;
 
-    // Only the first uncompleted card is active (unlocked)
-    if (card.id === firstUncompletedCard?.id) {
-      return "active";
-    }
+    FLASHCARD_DATA.forEach((card) => {
+      const isCompleted =
+        userProgress.flashcards?.[card.id]?.completed ||
+        localCompletedCards.has(card.id);
 
-    // Cards after the first uncompleted are locked
-    const cardIndex = FLASHCARD_DATA.findIndex((c) => c.id === card.id);
-    const firstUncompletedIndex = FLASHCARD_DATA.findIndex(
-      (c) => c.id === firstUncompletedCard?.id
-    );
+      if (isCompleted) {
+        completed.push(card);
+      } else {
+        upcoming.push(card);
+        if (!firstUncompleted) {
+          firstUncompleted = card;
+        }
+      }
+    });
 
-    if (cardIndex > firstUncompletedIndex) {
-      return "locked";
-    }
+    return {
+      completedCards: completed,
+      upcomingCards: upcoming,
+      firstUncompletedCard: firstUncompleted,
+    };
+  }, [userProgress.flashcards, localCompletedCards]);
 
-    return "upcoming";
-  };
+  // Memoized function to determine card status - much faster with cached data
+  const getCardStatus = useCallback(
+    (card) => {
+      if (
+        userProgress.flashcards?.[card.id]?.completed ||
+        localCompletedCards.has(card.id)
+      ) {
+        return "completed";
+      }
 
-  // Separate completed and upcoming cards
-  const completedCards = FLASHCARD_DATA.filter(
-    (card) =>
-      userProgress.flashcards?.[card.id]?.completed ||
-      localCompletedCards.has(card.id)
-  );
-  const upcomingCards = FLASHCARD_DATA.filter(
-    (card) =>
-      !userProgress.flashcards?.[card.id]?.completed &&
-      !localCompletedCards.has(card.id)
+      // Only the first uncompleted card is active (unlocked)
+      if (card.id === firstUncompletedCard?.id) {
+        return "active";
+      }
+
+      // Cards after the first uncompleted are locked - O(1) lookup
+      const cardIndex = cardIndexMap.get(card.id);
+      const firstUncompletedIndex = cardIndexMap.get(firstUncompletedCard?.id);
+
+      if (
+        cardIndex !== undefined &&
+        firstUncompletedIndex !== undefined &&
+        cardIndex > firstUncompletedIndex
+      ) {
+        return "locked";
+      }
+
+      return "upcoming";
+    },
+    [userProgress.flashcards, localCompletedCards, firstUncompletedCard, cardIndexMap]
   );
 
   const handleCardClick = (card, status) => {

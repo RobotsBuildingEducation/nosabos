@@ -1025,6 +1025,10 @@ export default function App() {
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
 
+  // Memoized handlers for teams drawer to prevent re-renders
+  const handleOpenTeams = useCallback(() => setTeamsOpen(true), []);
+  const handleCloseTeams = useCallback(() => setTeamsOpen(false), []);
+
   const [isLoadingApp, setIsLoadingApp] = useState(true);
 
   // Zustand store
@@ -2521,6 +2525,12 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
+  // Memoized handlers for drawer controls to prevent re-renders
+  const handleOpenSettings = useCallback(() => setSettingsOpen(true), []);
+  const handleCloseSettings = useCallback(() => setSettingsOpen(false), []);
+  const handleOpenAccount = useCallback(() => setAccountOpen(true), []);
+  const handleCloseAccount = useCallback(() => setAccountOpen(false), []);
+
   // Compute userProgress - must be before any conditional returns to maintain hook order
   const userProgress = useMemo(() => {
     const languageXpMap = user?.progress?.languageXp || {};
@@ -2626,10 +2636,10 @@ export default function App() {
         onSelectLanguage={handleSelectAppLanguage}
         // controlled drawers
         settingsOpen={settingsOpen}
-        openSettings={() => setSettingsOpen(true)}
-        closeSettings={() => setSettingsOpen(false)}
+        openSettings={handleOpenSettings}
+        closeSettings={handleCloseSettings}
         accountOpen={accountOpen}
-        closeAccount={() => setAccountOpen(false)}
+        closeAccount={handleCloseAccount}
         onRunCefrAnalysis={runCefrAnalysis}
         onSelectIdentity={handleIdentitySelection}
         isIdentitySaving={isIdentitySaving}
@@ -2643,7 +2653,7 @@ export default function App() {
 
       <TeamsDrawer
         isOpen={teamsOpen}
-        onClose={() => setTeamsOpen(false)}
+        onClose={handleCloseTeams}
         userLanguage={appLanguage}
         t={t}
         pendingInviteCount={pendingTeamInviteCount}
@@ -2653,9 +2663,9 @@ export default function App() {
 
       <BottomActionBar
         t={t}
-        onOpenIdentity={() => setAccountOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenTeams={() => setTeamsOpen(true)}
+        onOpenIdentity={handleOpenAccount}
+        onOpenSettings={handleOpenSettings}
+        onOpenTeams={handleOpenTeams}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -3013,7 +3023,7 @@ export default function App() {
   );
 }
 
-function BottomActionBar({
+const BottomActionBar = React.memo(function BottomActionBar({
   t,
   onOpenIdentity,
   onOpenSettings,
@@ -3133,4 +3143,4 @@ function BottomActionBar({
       </Flex>
     </Box>
   );
-}
+});
