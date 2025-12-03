@@ -3498,7 +3498,7 @@ export default function App() {
             <VStack spacing={6} textAlign="center">
               <CelebrationOrb
                 size={140}
-                icon="🎉"
+                icon="★"
                 accentGradient="linear(135deg, green.300, green.400, teal.400)"
                 particleColor="green.200"
               />
