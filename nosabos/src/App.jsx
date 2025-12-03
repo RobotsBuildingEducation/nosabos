@@ -2567,9 +2567,9 @@ export default function App() {
     const lessons = userProgress.lessons || {};
 
     CEFR_LEVELS.forEach((level) => {
-      // Count completed lessons for this level
+      // Count completed lessons for this level (including pre-level lessons)
       const completedLessons = Object.keys(lessons).filter((lessonId) => {
-        const match = lessonId.match(/lesson-([a-z]\d+)/i);
+        const match = lessonId.match(/lesson-(?:pre-)?([a-z]\d+)/i);
         return match && match[1].toUpperCase() === level && lessons[lessonId]?.status === 'completed';
       }).length;
 
