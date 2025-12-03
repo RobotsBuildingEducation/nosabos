@@ -234,6 +234,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
+import FLASHCARD_DATA from "../data/flashcardData";
 import { translations } from "../utils/translation";
 import { FiTarget } from "react-icons/fi";
 
@@ -1857,6 +1858,8 @@ export default function SkillTree({
     return "path";
   });
 
+  const CEFR_LEVELS = useMemo(() => ["A1", "A2", "B1", "B2", "C1", "C2"], []);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Save pathMode to localStorage when it changes
@@ -1875,6 +1878,64 @@ export default function SkillTree({
 
   const bgColor = "gray.950";
 
+  const flashcardLevelCompletionStatus = useMemo(() => {
+    const status = {};
+
+    CEFR_LEVELS.forEach((level) => {
+      const cardsForLevel = FLASHCARD_DATA.filter(
+        (card) => card.cefrLevel?.toUpperCase() === level
+      );
+      const completedFlashcards = cardsForLevel.filter((card) =>
+        userProgress.flashcards?.[card.id]?.completed
+      ).length;
+      const totalFlashcards = cardsForLevel.length;
+
+      status[level] = {
+        completedFlashcards,
+        totalFlashcards,
+        isComplete: totalFlashcards > 0 && completedFlashcards >= totalFlashcards,
+        flashcardsProgress:
+          totalFlashcards > 0 ? (completedFlashcards / totalFlashcards) * 100 : 0,
+      };
+    });
+
+    return status;
+  }, [CEFR_LEVELS, userProgress.flashcards]);
+
+  const currentFlashcardLevel = useMemo(() => {
+    let unlockedLevel = "A1";
+
+    for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
+      const currentLevel = CEFR_LEVELS[i];
+      const nextLevel = CEFR_LEVELS[i + 1];
+
+      if (flashcardLevelCompletionStatus[currentLevel]?.isComplete) {
+        unlockedLevel = nextLevel;
+      } else {
+        break;
+      }
+    }
+
+    return unlockedLevel;
+  }, [CEFR_LEVELS, flashcardLevelCompletionStatus]);
+
+  const [flashcardActiveLevel, setFlashcardActiveLevel] = useState(
+    currentFlashcardLevel
+  );
+
+  useEffect(() => {
+    setFlashcardActiveLevel(currentFlashcardLevel);
+  }, [currentFlashcardLevel]);
+
+  const effectiveActiveCEFRLevel =
+    pathMode === "flashcards" ? flashcardActiveLevel : activeCEFRLevel;
+  const effectiveCurrentLevel =
+    pathMode === "flashcards" ? currentFlashcardLevel : currentCEFRLevel;
+  const effectiveLevelCompletionStatus =
+    pathMode === "flashcards"
+      ? flashcardLevelCompletionStatus
+      : levelCompletionStatus;
+
   const handleLessonClick = (lesson, unit, status) => {
     if (
       status === SKILL_STATUS.AVAILABLE ||
@@ -1890,6 +1951,33 @@ export default function SkillTree({
   const handleStartLesson = (lesson) => {
     if (onStartLesson) {
       onStartLesson(lesson);
+    }
+  };
+
+  const handleActiveLevelChange = (newLevel) => {
+    if (pathMode === "flashcards") {
+      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+      let isUnlocked = newLevel === "A1";
+
+      if (!isUnlocked) {
+        isUnlocked = true;
+        for (let i = 0; i < newLevelIndex; i++) {
+          const prevLevel = CEFR_LEVELS[i];
+          if (!flashcardLevelCompletionStatus[prevLevel]?.isComplete) {
+            isUnlocked = false;
+            break;
+          }
+        }
+      }
+
+      if (isUnlocked) {
+        setFlashcardActiveLevel(newLevel);
+      }
+      return;
+    }
+
+    if (onLevelChange) {
+      onLevelChange(newLevel);
     }
   };
 
@@ -1920,7 +2008,9 @@ export default function SkillTree({
 
   // Calculate current level progress (for the active CEFR level)
   const levelProgress = useMemo(() => {
-    const levelUnits = units.filter(unit => unit.cefrLevel === activeCEFRLevel);
+    const levelUnits = units.filter(
+      (unit) => unit.cefrLevel === effectiveActiveCEFRLevel
+    );
     if (levelUnits.length === 0) return 0;
 
     const levelTotalLessons = levelUnits.reduce(
@@ -1938,7 +2028,12 @@ export default function SkillTree({
     );
 
     return levelTotalLessons > 0 ? (levelCompletedLessons / levelTotalLessons) * 100 : 0;
-  }, [units, activeCEFRLevel, userProgress.lessons]);
+  }, [units, effectiveActiveCEFRLevel, userProgress.lessons]);
+
+  const cefrLevelProgress =
+    pathMode === "flashcards"
+      ? flashcardLevelCompletionStatus[flashcardActiveLevel]?.flashcardsProgress || 0
+      : levelProgress;
 
   return (
     <Box bg={bgColor} minH="100vh" position="relative" overflow="hidden">
@@ -2016,14 +2111,14 @@ export default function SkillTree({
         </MotionBox>
 
         {/* CEFR Level Navigator */}
-        {onLevelChange && (
+        {(onLevelChange || pathMode === "flashcards") && (
           <CEFRLevelNavigator
-            currentLevel={currentCEFRLevel}
-            activeCEFRLevel={activeCEFRLevel}
-            onLevelChange={onLevelChange}
-            levelProgress={levelProgress}
+            currentLevel={effectiveCurrentLevel}
+            activeCEFRLevel={effectiveActiveCEFRLevel}
+            onLevelChange={handleActiveLevelChange}
+            levelProgress={cefrLevelProgress}
             supportLang={supportLang}
-            levelCompletionStatus={levelCompletionStatus}
+            levelCompletionStatus={effectiveLevelCompletionStatus}
           />
         )}
 
@@ -2132,7 +2227,7 @@ export default function SkillTree({
             onStartFlashcard={handleFlashcardComplete}
             targetLang={targetLang}
             supportLang={supportLang}
-            activeCEFRLevel={activeCEFRLevel}
+            activeCEFRLevel={flashcardActiveLevel}
           />
         )}
 
