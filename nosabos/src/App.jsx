@@ -2699,26 +2699,15 @@ export default function App() {
   }, [levelCompletionStatus]);
 
   // State for which CEFR level is currently being viewed (separate for each mode)
+  // Initialize once, but don't auto-update when levels unlock
   const [activeLessonLevel, setActiveLessonLevel] = useState(currentLessonLevel);
   const [activeFlashcardLevel, setActiveFlashcardLevel] = useState(currentFlashcardLevel);
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
 
-  // Update active lesson level when user progress changes
-  useEffect(() => {
-    setActiveLessonLevel(currentLessonLevel);
-  }, [currentLessonLevel]);
-
-  // Update active flashcard level when user progress changes
-  useEffect(() => {
-    setActiveFlashcardLevel(currentFlashcardLevel);
-  }, [currentFlashcardLevel]);
-
-  // Update combined active level when user progress changes
-  useEffect(() => {
-    setActiveCEFRLevel(currentCEFRLevel);
-  }, [currentCEFRLevel]);
+  // Note: We deliberately do NOT auto-update active levels when new levels unlock
+  // Users should stay at their current level until they manually navigate
 
   // Handler for lesson level navigation with lock checking
   const handleLessonLevelChange = useCallback((newLevel) => {
