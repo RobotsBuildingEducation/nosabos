@@ -1,7 +1,6 @@
 // components/ProgressBarBlock.jsx
 import React from "react";
 import { Box, HStack, Badge } from "@chakra-ui/react";
-import { WaveBar } from "./WaveBar";
 
 export default function ProgressBarBlock({
   xp,
@@ -18,7 +17,7 @@ export default function ProgressBarBlock({
       border="1px solid"
       borderColor="gray.700"
     >
-      <HStack justify="space-between" mb={1}>
+      <HStack justify="space-between">
         <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
           {levelLabel} {levelNumber}
         </Badge>
@@ -26,7 +25,6 @@ export default function ProgressBarBlock({
           {xpLabel} {xp}
         </Badge>
       </HStack>
-      <WaveBar value={progressPct} />
     </Box>
   );
 }
