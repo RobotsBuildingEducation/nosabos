@@ -1889,6 +1889,11 @@ export default function SkillTree({
       : getLearningPath(targetLang, level);
   }, [showMultipleLevels, targetLang, levels, level]);
 
+  // Filter units to show only the effective active level for the current mode
+  const visibleUnits = useMemo(() => {
+    return units.filter(unit => unit.cefrLevel === effectiveActiveLevel);
+  }, [units, effectiveActiveLevel]);
+
   const bgColor = "gray.950";
 
   const handleLessonClick = (lesson, unit, status) => {
@@ -1936,14 +1941,13 @@ export default function SkillTree({
 
   // Calculate current level progress (for the active CEFR level)
   const levelProgress = useMemo(() => {
-    const levelUnits = units.filter(unit => unit.cefrLevel === effectiveActiveLevel);
-    if (levelUnits.length === 0) return 0;
+    if (visibleUnits.length === 0) return 0;
 
-    const levelTotalLessons = levelUnits.reduce(
+    const levelTotalLessons = visibleUnits.reduce(
       (sum, unit) => sum + unit.lessons.length,
       0
     );
-    const levelCompletedLessons = levelUnits.reduce(
+    const levelCompletedLessons = visibleUnits.reduce(
       (sum, unit) =>
         sum +
         unit.lessons.filter(
@@ -1954,7 +1958,7 @@ export default function SkillTree({
     );
 
     return levelTotalLessons > 0 ? (levelCompletedLessons / levelTotalLessons) * 100 : 0;
-  }, [units, effectiveActiveLevel, userProgress.lessons]);
+  }, [visibleUnits, userProgress.lessons]);
 
   return (
     <Box bg={bgColor} minH="100vh" position="relative" overflow="hidden">
@@ -2118,8 +2122,8 @@ export default function SkillTree({
         {/* Skill Tree Units or Flashcards */}
         {pathMode === "path" ? (
           <VStack spacing={8} align="stretch">
-            {units.length > 0 ? (
-              units.map((unit, index) => (
+            {visibleUnits.length > 0 ? (
+              visibleUnits.map((unit, index) => (
                 <UnitSection
                   key={unit.id}
                   unit={unit}
@@ -2127,8 +2131,8 @@ export default function SkillTree({
                   onLessonClick={handleLessonClick}
                   index={index}
                   supportLang={supportLang}
-                  hasNextUnit={index < units.length - 1}
-                  previousUnit={index > 0 ? units[index - 1] : null}
+                  hasNextUnit={index < visibleUnits.length - 1}
+                  previousUnit={index > 0 ? visibleUnits[index - 1] : null}
                 />
               ))
             ) : (
