@@ -10638,17 +10638,30 @@ function localizeLearningPath(units, targetLang) {
   return cloned;
 }
 
-const cloneLearningPath = () =>
-  JSON.parse(JSON.stringify(cefrAlignedLearningPath));
+// Lazy-loaded cache to avoid cloning all languages on import
+// This improves initial load time significantly
+const learningPathCache = {};
 
-export const LEARNING_PATHS = {
-  es: cloneLearningPath(), // Spanish
-  en: cloneLearningPath(), // English
-  pt: cloneLearningPath(), // Portuguese
-  fr: cloneLearningPath(), // French
-  it: cloneLearningPath(), // Italian
-  nah: cloneLearningPath(), // Nahuatl
+const getLearningPathForLanguage = (lang) => {
+  // Return cached version if available
+  if (learningPathCache[lang]) {
+    return learningPathCache[lang];
+  }
+
+  // Clone only when first requested for this language
+  learningPathCache[lang] = JSON.parse(JSON.stringify(cefrAlignedLearningPath));
+  return learningPathCache[lang];
 };
+
+// Legacy export for backwards compatibility - now lazy-loaded
+export const LEARNING_PATHS = new Proxy({}, {
+  get(target, lang) {
+    if (!SUPPORTED_TARGET_LANGS.has(lang)) {
+      return undefined;
+    }
+    return getLearningPathForLanguage(lang);
+  }
+});
 
 /**
  * Get the learning path for a specific language and level
