@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   VStack,
@@ -1008,7 +1008,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
  * Unit Component
  * Represents a unit containing multiple lessons
  */
-function UnitSection({
+const UnitSection = React.memo(function UnitSection({
   unit,
   userProgress,
   onLessonClick,
@@ -1470,7 +1470,7 @@ function UnitSection({
       </VStack>
     </MotionBox>
   );
-}
+});
 
 /**
  * Lesson Detail Modal
@@ -1861,10 +1861,13 @@ export default function SkillTree({
     }
   }, [pathMode]);
 
-  // Use multi-level path if enabled, otherwise use single level
-  const units = showMultipleLevels
-    ? getMultiLevelLearningPath(targetLang, levels)
-    : getLearningPath(targetLang, level);
+  // Memoize units to prevent unnecessary recalculations
+  const units = useMemo(() => {
+    return showMultipleLevels
+      ? getMultiLevelLearningPath(targetLang, levels)
+      : getLearningPath(targetLang, level);
+  }, [showMultipleLevels, targetLang, levels, level]);
+
   const bgColor = "gray.950";
 
   const handleLessonClick = (lesson, unit, status) => {

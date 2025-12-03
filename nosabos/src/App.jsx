@@ -2550,6 +2550,43 @@ export default function App() {
     };
   }, [user?.progress, resolvedTargetLang]);
 
+  // Determine which CEFR levels to load based on user progress
+  const relevantLevels = useMemo(() => {
+    const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const lessons = userProgress.lessons || {};
+
+    // Find the highest CEFR level the user has started
+    let highestStartedLevel = 'A1';
+    for (const lessonId in lessons) {
+      // Extract CEFR level from lesson ID (assumes format like "lesson-a1-1", "lesson-b2-3", etc.)
+      const match = lessonId.match(/lesson-([a-z]\d+)/i);
+      if (match) {
+        const level = match[1].toUpperCase();
+        const levelIndex = CEFR_LEVELS.indexOf(level);
+        const currentHighestIndex = CEFR_LEVELS.indexOf(highestStartedLevel);
+        if (levelIndex > currentHighestIndex) {
+          highestStartedLevel = level;
+        }
+      }
+    }
+
+    // Load current level + next level for smooth progression
+    const currentLevelIndex = CEFR_LEVELS.indexOf(highestStartedLevel);
+    const levelsToLoad = [highestStartedLevel];
+
+    // Add next level if available
+    if (currentLevelIndex < CEFR_LEVELS.length - 1) {
+      levelsToLoad.push(CEFR_LEVELS[currentLevelIndex + 1]);
+    }
+
+    // Always ensure at least A1 is included
+    if (!levelsToLoad.includes('A1')) {
+      levelsToLoad.unshift('A1');
+    }
+
+    return levelsToLoad;
+  }, [userProgress.lessons]);
+
   /* -----------------------------------
      Loading / Onboarding gates
   ----------------------------------- */
@@ -2678,7 +2715,7 @@ export default function App() {
             onStartLesson={handleStartLesson}
             onCompleteFlashcard={handleCompleteFlashcard}
             showMultipleLevels={true}
-            levels={["A1", "A2", "B1", "B2", "C1", "C2"]}
+            levels={relevantLevels}
           />
         </Box>
       )}
