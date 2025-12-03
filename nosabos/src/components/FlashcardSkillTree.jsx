@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Box, VStack, HStack, Text, Button, Badge } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -9,15 +9,16 @@ import {
 } from "react-icons/ri";
 import {
   FLASHCARD_DATA,
-  CEFR_COLORS,
-  getConceptText,
+  loadRelevantFlashcards,
+  getUserProgressLevel,
 } from "../data/flashcardData";
+import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { WaveBar } from "./WaveBar";
 
 const MotionBox = motion(Box);
 
-function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
+const FlashcardCard = React.memo(function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const isCompleted = status === "completed";
   const isActive = status === "active";
@@ -175,77 +176,158 @@ function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
       </Box>
     </MotionBox>
   );
-}
+});
 
 export default function FlashcardSkillTree({
   userProgress = { flashcards: {} },
   onStartFlashcard,
   targetLang = "es",
   supportLang = "en",
+  activeCEFRLevel = null, // Filter flashcards by CEFR level
 }) {
   const [practiceCard, setPracticeCard] = useState(null);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
   const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
+  const [flashcardData, setFlashcardData] = useState(FLASHCARD_DATA);
+  const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
 
   // Reset local completed cards when language changes
   useEffect(() => {
     setLocalCompletedCards(new Set());
   }, [targetLang]);
 
-  // Determine card status based on user progress and local state
-  const getCardStatus = (card) => {
-    if (
-      userProgress.flashcards?.[card.id]?.completed ||
-      localCompletedCards.has(card.id)
-    ) {
-      return "completed";
+  // Load relevant flashcards based on user progress (lazy loading)
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadFlashcards() {
+      setIsLoadingFlashcards(true);
+      try {
+        // For better performance, load only relevant flashcards
+        // Fall back to all flashcards if loading fails
+        const relevantFlashcards = await loadRelevantFlashcards(userProgress);
+
+        if (isMounted && relevantFlashcards.length > 0) {
+          // Filter by active CEFR level if specified
+          const filteredFlashcards = activeCEFRLevel
+            ? relevantFlashcards.filter(card => card.cefrLevel === activeCEFRLevel)
+            : relevantFlashcards;
+
+          setFlashcardData(filteredFlashcards);
+        } else if (isMounted) {
+          // If no relevant flashcards loaded, use all data (filtered by level)
+          const filteredFlashcards = activeCEFRLevel
+            ? FLASHCARD_DATA.filter(card => card.cefrLevel === activeCEFRLevel)
+            : FLASHCARD_DATA;
+
+          setFlashcardData(filteredFlashcards);
+        }
+      } catch (error) {
+        console.error('Error loading flashcards:', error);
+        if (isMounted) {
+          // Fall back to full dataset on error (filtered by level)
+          const filteredFlashcards = activeCEFRLevel
+            ? FLASHCARD_DATA.filter(card => card.cefrLevel === activeCEFRLevel)
+            : FLASHCARD_DATA;
+
+          setFlashcardData(filteredFlashcards);
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingFlashcards(false);
+        }
+      }
     }
 
-    // Find the first uncompleted card in the original data array
-    const firstUncompletedCard = FLASHCARD_DATA.find(
-      (c) =>
-        !userProgress.flashcards?.[c.id]?.completed &&
-        !localCompletedCards.has(c.id)
-    );
-
-    // Only the first uncompleted card is active (unlocked)
-    if (card.id === firstUncompletedCard?.id) {
-      return "active";
+    // Only use lazy loading if we have split data available
+    // Otherwise fall back to the full FLASHCARD_DATA
+    if (loadRelevantFlashcards) {
+      loadFlashcards();
     }
 
-    // Cards after the first uncompleted are locked
-    const cardIndex = FLASHCARD_DATA.findIndex((c) => c.id === card.id);
-    const firstUncompletedIndex = FLASHCARD_DATA.findIndex(
-      (c) => c.id === firstUncompletedCard?.id
-    );
+    return () => {
+      isMounted = false;
+    };
+  }, [userProgress, activeCEFRLevel]);
 
-    if (cardIndex > firstUncompletedIndex) {
-      return "locked";
-    }
+  // Memoized completion status map for O(1) lookups
+  const completionMap = useMemo(() => {
+    const map = new Map();
+    flashcardData.forEach((card) => {
+      const isCompleted =
+        userProgress.flashcards?.[card.id]?.completed ||
+        localCompletedCards.has(card.id);
+      map.set(card.id, isCompleted);
+    });
+    return map;
+  }, [userProgress.flashcards, localCompletedCards, flashcardData]);
 
-    return "upcoming";
-  };
+  // Memoized card index map for O(1) lookups
+  const cardIndexMap = useMemo(() => {
+    const map = new Map();
+    flashcardData.forEach((card, index) => {
+      map.set(card.id, index);
+    });
+    return map;
+  }, [flashcardData]);
 
-  // Separate completed and upcoming cards
-  const completedCards = FLASHCARD_DATA.filter(
-    (card) =>
-      userProgress.flashcards?.[card.id]?.completed ||
-      localCompletedCards.has(card.id)
+  // Find first uncompleted card (memoized)
+  const firstUncompletedCard = useMemo(() => {
+    return flashcardData.find((card) => !completionMap.get(card.id));
+  }, [completionMap, flashcardData]);
+
+  // Memoized first uncompleted index
+  const firstUncompletedIndex = useMemo(() => {
+    return firstUncompletedCard
+      ? cardIndexMap.get(firstUncompletedCard.id)
+      : -1;
+  }, [firstUncompletedCard, cardIndexMap]);
+
+  // Separate completed and upcoming cards (memoized)
+  const completedCards = useMemo(() => {
+    return flashcardData.filter((card) => completionMap.get(card.id));
+  }, [completionMap, flashcardData]);
+
+  const upcomingCards = useMemo(() => {
+    return flashcardData.filter((card) => !completionMap.get(card.id));
+  }, [completionMap, flashcardData]);
+
+  // Memoized card status lookup
+  const cardStatusMap = useMemo(() => {
+    const statusMap = new Map();
+    flashcardData.forEach((card) => {
+      if (completionMap.get(card.id)) {
+        statusMap.set(card.id, "completed");
+      } else if (card.id === firstUncompletedCard?.id) {
+        statusMap.set(card.id, "active");
+      } else {
+        const cardIndex = cardIndexMap.get(card.id);
+        if (cardIndex > firstUncompletedIndex && firstUncompletedIndex !== -1) {
+          statusMap.set(card.id, "locked");
+        } else {
+          statusMap.set(card.id, "upcoming");
+        }
+      }
+    });
+    return statusMap;
+  }, [completionMap, firstUncompletedCard, cardIndexMap, firstUncompletedIndex, flashcardData]);
+
+  // Get card status - now just a lookup
+  const getCardStatus = useCallback(
+    (card) => {
+      return cardStatusMap.get(card.id) || "upcoming";
+    },
+    [cardStatusMap]
   );
-  const upcomingCards = FLASHCARD_DATA.filter(
-    (card) =>
-      !userProgress.flashcards?.[card.id]?.completed &&
-      !localCompletedCards.has(card.id)
-  );
 
-  const handleCardClick = (card, status) => {
+  const handleCardClick = useCallback((card, status) => {
     if (status === "active") {
       setPracticeCard(card);
       setIsPracticeOpen(true);
     }
-  };
+  }, []);
 
-  const handleComplete = (card) => {
+  const handleComplete = useCallback((card) => {
     // Add to local completed cards immediately for instant UI update
     setLocalCompletedCards((prev) => new Set([...prev, card.id]));
 
@@ -256,12 +338,12 @@ export default function FlashcardSkillTree({
 
     setIsPracticeOpen(false);
     setPracticeCard(null);
-  };
+  }, [onStartFlashcard]);
 
-  const handleClosePractice = () => {
+  const handleClosePractice = useCallback(() => {
     setIsPracticeOpen(false);
     setPracticeCard(null);
-  };
+  }, []);
 
   return (
     <Box w="100%" minH="500px" position="relative">
@@ -275,7 +357,7 @@ export default function FlashcardSkillTree({
             </Text>
             <Box w="100%" maxW="400px">
               <WaveBar
-                value={(completedCards.length / FLASHCARD_DATA.length) * 100}
+                value={(completedCards.length / flashcardData.length) * 100}
                 height={20}
                 start="#43e97b"
                 end="#38f9d7"
@@ -285,7 +367,7 @@ export default function FlashcardSkillTree({
             </Box>
             <Text fontSize="sm" color="gray.400" fontWeight="medium">
               {Math.round(
-                (completedCards.length / FLASHCARD_DATA.length) * 100
+                (completedCards.length / flashcardData.length) * 100
               )}
               % completed
             </Text>

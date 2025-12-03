@@ -10751,3 +10751,15 @@ export function getUnitProgress(unit, userProgress) {
   );
   return (completedLessons.length / unit.lessons.length) * 100;
 }
+
+// Re-export lazy-loading utilities for better performance
+// These allow components to load only the skill tree data they need
+export {
+  loadSkillTreeForLevel,
+  loadSkillTreeForLevels,
+  loadRelevantSkillTree,
+  loadAllSkillTree,
+  getLevelsToLoad,
+  clearSkillTreeCache,
+  getSkillTreeCacheStats,
+} from './skillTree/index.js';
