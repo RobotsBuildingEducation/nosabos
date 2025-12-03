@@ -12,9 +12,10 @@ import {
   loadRelevantFlashcards,
   getUserProgressLevel,
 } from "../data/flashcardData";
-import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
+import { CEFR_COLORS, getConceptText, CEFR_LEVELS } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { WaveBar } from "./WaveBar";
+import { getAllFlashcardProgress } from "../utils/cefrProgress";
 
 const MotionBox = motion(Box);
 
@@ -379,6 +380,47 @@ export default function FlashcardSkillTree({
               )}
               % completed
             </Text>
+
+            {/* CEFR Level Progress Bars */}
+            <Box w="100%" maxW="400px" mt={4}>
+              <VStack spacing={3} align="stretch">
+                {(() => {
+                  const flashcardProgress = getAllFlashcardProgress(userProgress, targetLang);
+                  return CEFR_LEVELS.map((level, index) => {
+                    const progress = flashcardProgress[level];
+                    return (
+                      <Box key={level}>
+                        <HStack justify="space-between" mb={1}>
+                          <Text
+                            fontSize="xs"
+                            fontWeight="semibold"
+                            color="white"
+                          >
+                            {level}
+                          </Text>
+                          <Text
+                            fontSize="xs"
+                            fontWeight="bold"
+                            color="blue.300"
+                          >
+                            {progress.percentage}%
+                          </Text>
+                        </HStack>
+                        <WaveBar
+                          value={progress.percentage}
+                          height={10}
+                          start="#60A5FA"
+                          end="#2563EB"
+                          delay={index * 0.05}
+                          bg="rgba(255,255,255,0.05)"
+                          border="rgba(255,255,255,0.1)"
+                        />
+                      </Box>
+                    );
+                  });
+                })()}
+              </VStack>
+            </Box>
           </VStack>
 
           {/* Upcoming cards in horizontal scrollable row */}
