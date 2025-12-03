@@ -2090,32 +2090,6 @@ export default function SkillTree({
                 </Text>
               </VStack>
             </HStack>
-
-            <HStack spacing={4}>
-              <VStack spacing={0} align="end">
-                <Text fontSize="sm" fontWeight="bold" color="white">
-                  {Math.round(overallProgress)}%
-                </Text>
-                <Text fontSize="xs" color="gray.400">
-                  {completedLessons}/{totalLessons}
-                </Text>
-              </VStack>
-              <Box w="120px">
-                <Progress
-                  value={overallProgress}
-                  borderRadius="full"
-                  size="sm"
-                  bg="whiteAlpha.200"
-                  sx={{
-                    "& > div": {
-                      bgGradient:
-                        "linear(to-r, teal.400, blue.400, purple.400)",
-                      boxShadow: "0 0 10px rgba(56, 178, 172, 0.5)",
-                    },
-                  }}
-                />
-              </Box>
-            </HStack>
           </HStack>
         </MotionBox>
 

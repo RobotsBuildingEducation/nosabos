@@ -1,5 +1,5 @@
 import React from "react";
-import { Box, HStack, VStack, Text, Button, Badge, Progress } from "@chakra-ui/react";
+import { Box, HStack, VStack, Text, Button, Badge } from "@chakra-ui/react";
 import { RiArrowLeftLine, RiArrowRightLine, RiLockLine, RiTrophyLine } from "react-icons/ri";
 import { motion } from "framer-motion";
 
@@ -115,31 +115,18 @@ export default function CEFRLevelNavigator({
 
           {/* Current Level Badge */}
           <VStack spacing={2} flex={1} align="center">
-            <HStack spacing={3}>
-              <Badge
-                px={6}
-                py={3}
-                borderRadius="full"
-                bgGradient={levelInfo.gradient}
-                color="white"
-                fontSize="2xl"
-                fontWeight="black"
-                boxShadow={`0 4px 14px ${levelInfo.color}40`}
-              >
-                {activeCEFRLevel}
-              </Badge>
-              {isCurrentUserLevel && (
-                <Badge
-                  colorScheme="green"
-                  variant="solid"
-                  fontSize="xs"
-                  px={2}
-                  py={1}
-                >
-                  Current
-                </Badge>
-              )}
-            </HStack>
+            <Badge
+              px={6}
+              py={3}
+              borderRadius="full"
+              bgGradient={levelInfo.gradient}
+              color="white"
+              fontSize="2xl"
+              fontWeight="black"
+              boxShadow={`0 4px 14px ${levelInfo.color}40`}
+            >
+              {activeCEFRLevel}
+            </Badge>
             <Text fontSize="lg" fontWeight="bold" color="white">
               {levelInfo.name[supportLang]}
             </Text>
@@ -161,31 +148,6 @@ export default function CEFRLevelNavigator({
             {hasNext ? nextLevel : ""}
           </Button>
         </HStack>
-
-        {/* Progress Bar */}
-        {isCurrentUserLevel && (
-          <Box>
-            <HStack justify="space-between" mb={2}>
-              <Text fontSize="xs" color="gray.500" fontWeight="medium">
-                Level Progress
-              </Text>
-              <Text fontSize="xs" color="gray.400" fontWeight="bold">
-                {Math.round(levelProgress)}%
-              </Text>
-            </HStack>
-            <Progress
-              value={levelProgress}
-              size="sm"
-              borderRadius="full"
-              bgColor="whiteAlpha.100"
-              sx={{
-                "& > div": {
-                  background: levelInfo.gradient,
-                },
-              }}
-            />
-          </Box>
-        )}
 
         {/* Completion Badge */}
         {levelProgress >= 100 && isCurrentUserLevel && (
