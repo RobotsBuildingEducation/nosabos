@@ -18,7 +18,13 @@ import { WaveBar } from "./WaveBar";
 
 const MotionBox = motion(Box);
 
-const FlashcardCard = React.memo(function FlashcardCard({ card, status, onClick, stackPosition, supportLang }) {
+const FlashcardCard = React.memo(function FlashcardCard({
+  card,
+  status,
+  onClick,
+  stackPosition,
+  supportLang,
+}) {
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const isCompleted = status === "completed";
   const isActive = status === "active";
@@ -156,23 +162,6 @@ const FlashcardCard = React.memo(function FlashcardCard({ card, status, onClick,
           {/* Empty spacer for layout balance */}
           <Box h="40px" />
         </VStack>
-
-        {/* Active card pulse effect */}
-        {isActive && !isCompleted && (
-          <Box
-            position="absolute"
-            inset="-2px"
-            borderRadius="2xl"
-            bgGradient={`linear(135deg, ${cefrColor.primary}40, transparent)`}
-            animation="pulse 2s ease-in-out infinite"
-            sx={{
-              "@keyframes pulse": {
-                "0%, 100%": { opacity: 0.3 },
-                "50%": { opacity: 0.6 },
-              },
-            }}
-          />
-        )}
       </Box>
     </MotionBox>
   );
@@ -210,13 +199,15 @@ export default function FlashcardSkillTree({
         if (isMounted && relevantFlashcards.length > 0) {
           // Filter by active CEFR level if specified
           const filteredFlashcards = activeCEFRLevel
-            ? relevantFlashcards.filter(card => card.cefrLevel === activeCEFRLevel)
+            ? relevantFlashcards.filter(
+                (card) => card.cefrLevel === activeCEFRLevel
+              )
             : relevantFlashcards;
 
           // If filtering produced empty results, fall back to full dataset
           if (filteredFlashcards.length === 0 && activeCEFRLevel) {
             const fallbackFlashcards = FLASHCARD_DATA.filter(
-              card => card.cefrLevel === activeCEFRLevel
+              (card) => card.cefrLevel === activeCEFRLevel
             );
             setFlashcardData(fallbackFlashcards);
           } else {
@@ -225,17 +216,21 @@ export default function FlashcardSkillTree({
         } else if (isMounted) {
           // If no relevant flashcards loaded, use all data (filtered by level)
           const filteredFlashcards = activeCEFRLevel
-            ? FLASHCARD_DATA.filter(card => card.cefrLevel === activeCEFRLevel)
+            ? FLASHCARD_DATA.filter(
+                (card) => card.cefrLevel === activeCEFRLevel
+              )
             : FLASHCARD_DATA;
 
           setFlashcardData(filteredFlashcards);
         }
       } catch (error) {
-        console.error('Error loading flashcards:', error);
+        console.error("Error loading flashcards:", error);
         if (isMounted) {
           // Fall back to full dataset on error (filtered by level)
           const filteredFlashcards = activeCEFRLevel
-            ? FLASHCARD_DATA.filter(card => card.cefrLevel === activeCEFRLevel)
+            ? FLASHCARD_DATA.filter(
+                (card) => card.cefrLevel === activeCEFRLevel
+              )
             : FLASHCARD_DATA;
 
           setFlashcardData(filteredFlashcards);
@@ -318,7 +313,13 @@ export default function FlashcardSkillTree({
       }
     });
     return statusMap;
-  }, [completionMap, firstUncompletedCard, cardIndexMap, firstUncompletedIndex, flashcardData]);
+  }, [
+    completionMap,
+    firstUncompletedCard,
+    cardIndexMap,
+    firstUncompletedIndex,
+    flashcardData,
+  ]);
 
   // Get card status - now just a lookup
   const getCardStatus = useCallback(
@@ -335,18 +336,21 @@ export default function FlashcardSkillTree({
     }
   }, []);
 
-  const handleComplete = useCallback((card) => {
-    // Add to local completed cards immediately for instant UI update
-    setLocalCompletedCards((prev) => new Set([...prev, card.id]));
+  const handleComplete = useCallback(
+    (card) => {
+      // Add to local completed cards immediately for instant UI update
+      setLocalCompletedCards((prev) => new Set([...prev, card.id]));
 
-    // Call parent callback if provided
-    if (onStartFlashcard) {
-      onStartFlashcard(card);
-    }
+      // Call parent callback if provided
+      if (onStartFlashcard) {
+        onStartFlashcard(card);
+      }
 
-    setIsPracticeOpen(false);
-    setPracticeCard(null);
-  }, [onStartFlashcard]);
+      setIsPracticeOpen(false);
+      setPracticeCard(null);
+    },
+    [onStartFlashcard]
+  );
 
   const handleClosePractice = useCallback(() => {
     setIsPracticeOpen(false);
@@ -374,9 +378,7 @@ export default function FlashcardSkillTree({
               />
             </Box>
             <Text fontSize="sm" color="gray.400" fontWeight="medium">
-              {Math.round(
-                (completedCards.length / flashcardData.length) * 100
-              )}
+              {Math.round((completedCards.length / flashcardData.length) * 100)}
               % completed
             </Text>
           </VStack>

@@ -1197,8 +1197,10 @@ export default function App() {
   const [completedLessonData, setCompletedLessonData] = useState(null);
 
   // Proficiency level completion celebration modal
-  const [showProficiencyCompletionModal, setShowProficiencyCompletionModal] = useState(false);
-  const [completedProficiencyData, setCompletedProficiencyData] = useState(null);
+  const [showProficiencyCompletionModal, setShowProficiencyCompletionModal] =
+    useState(false);
+  const [completedProficiencyData, setCompletedProficiencyData] =
+    useState(null);
 
   // Helper mapping for keys/index
   const TAB_KEYS = [
@@ -1962,9 +1964,9 @@ export default function App() {
 
     // Navigate to next level if available
     if (data?.nextLevel) {
-      if (data.mode === 'lesson') {
+      if (data.mode === "lesson") {
         setActiveLessonLevel(data.nextLevel);
-      } else if (data.mode === 'flashcard') {
+      } else if (data.mode === "flashcard") {
         setActiveFlashcardLevel(data.nextLevel);
       }
     }
@@ -2850,12 +2852,15 @@ export default function App() {
       if (!wasComplete && isNowComplete && level === activeLessonLevel) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
-        const nextLevel = levelIndex < CEFR_LEVELS.length - 1 ? CEFR_LEVELS[levelIndex + 1] : null;
+        const nextLevel =
+          levelIndex < CEFR_LEVELS.length - 1
+            ? CEFR_LEVELS[levelIndex + 1]
+            : null;
 
         setCompletedProficiencyData({
           level,
           nextLevel,
-          mode: 'lesson',
+          mode: "lesson",
         });
         setShowProficiencyCompletionModal(true);
       }
@@ -2878,12 +2883,15 @@ export default function App() {
       if (!wasComplete && isNowComplete && level === activeFlashcardLevel) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
-        const nextLevel = levelIndex < CEFR_LEVELS.length - 1 ? CEFR_LEVELS[levelIndex + 1] : null;
+        const nextLevel =
+          levelIndex < CEFR_LEVELS.length - 1
+            ? CEFR_LEVELS[levelIndex + 1]
+            : null;
 
         setCompletedProficiencyData({
           level,
           nextLevel,
-          mode: 'flashcard',
+          mode: "flashcard",
         });
         setShowProficiencyCompletionModal(true);
       }
@@ -3486,9 +3494,12 @@ export default function App() {
       >
         <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
         <ModalContent
-          bg={completedProficiencyData?.level
-            ? CEFR_LEVEL_INFO[completedProficiencyData.level]?.gradient || "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-            : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"}
+          bg={
+            completedProficiencyData?.level
+              ? CEFR_LEVEL_INFO[completedProficiencyData.level]?.gradient ||
+                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+              : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          }
           color="white"
           borderRadius="2xl"
           boxShadow="2xl"
@@ -3511,7 +3522,12 @@ export default function App() {
                     : "Level Complete!"}
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
-                  {completedProficiencyData?.level} - {CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[appLanguage]}
+                  {completedProficiencyData?.level} -{" "}
+                  {
+                    CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[
+                      appLanguage
+                    ]
+                  }
                 </Text>
               </VStack>
 
@@ -3532,15 +3548,13 @@ export default function App() {
                       : "Congratulations!"}
                   </Text>
                   <Text fontSize="md" opacity={0.9}>
-                    {completedProficiencyData?.nextLevel ? (
-                      appLanguage === "es"
+                    {completedProficiencyData?.nextLevel
+                      ? appLanguage === "es"
                         ? `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`
                         : `You've unlocked level ${completedProficiencyData.nextLevel}`
-                    ) : (
-                      appLanguage === "es"
-                        ? "¡Has completado todos los niveles!"
-                        : "You've completed all levels!"
-                    )}
+                      : appLanguage === "es"
+                      ? "¡Has completado todos los niveles!"
+                      : "You've completed all levels!"}
                   </Text>
                 </VStack>
               </Box>
@@ -3550,9 +3564,12 @@ export default function App() {
                 size="lg"
                 width="100%"
                 bg="white"
-                color={completedProficiencyData?.level
-                  ? CEFR_LEVEL_INFO[completedProficiencyData.level]?.color || "purple.600"
-                  : "purple.600"}
+                color={
+                  completedProficiencyData?.level
+                    ? CEFR_LEVEL_INFO[completedProficiencyData.level]?.color ||
+                      "purple.600"
+                    : "purple.600"
+                }
                 _hover={{ bg: "gray.100" }}
                 _active={{ bg: "gray.200" }}
                 onClick={handleCloseProficiencyCompletionModal}
@@ -3561,8 +3578,12 @@ export default function App() {
                 py={6}
               >
                 {completedProficiencyData?.nextLevel
-                  ? (appLanguage === "es" ? "Ir al Siguiente Nivel" : "Go to Next Level")
-                  : (appLanguage === "es" ? "Continuar" : "Continue")}
+                  ? appLanguage === "es"
+                    ? "Ir al Siguiente Nivel"
+                    : "Go to Next Level"
+                  : appLanguage === "es"
+                  ? "Continuar"
+                  : "Continue"}
               </Button>
             </VStack>
           </ModalBody>
