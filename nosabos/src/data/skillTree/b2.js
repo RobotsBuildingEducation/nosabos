@@ -3,7 +3,8 @@
  */
 
 export const SKILL_TREE_B2 = [
-id: "unit-b2-1",
+  {
+    id: "unit-b2-1",
       title: {
         en: "Past Perfect",
         es: "Pluscuamperfecto",

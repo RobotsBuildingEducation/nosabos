@@ -3,7 +3,8 @@
  */
 
 export const SKILL_TREE_C1 = [
-id: "unit-c1-1",
+  {
+    id: "unit-c1-1",
       title: {
         en: "Subjunctive Present",
         es: "Subjuntivo Presente",

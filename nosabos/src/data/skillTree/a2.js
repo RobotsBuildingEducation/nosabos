@@ -3,7 +3,8 @@
  */
 
 export const SKILL_TREE_A2 = [
-id: "unit-a2-1",
+  {
+    id: "unit-a2-1",
       title: {
         en: "Describing People",
         es: "Describir Personas",

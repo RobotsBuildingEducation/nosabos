@@ -3,7 +3,8 @@
  */
 
 export const SKILL_TREE_C2 = [
-id: "unit-c2-1",
+  {
+    id: "unit-c2-1",
       title: {
         en: "Native Idioms",
         es: "Modismos Nativos",
@@ -924,8 +925,7 @@ id: "unit-c2-1",
         },
       ],
     },
-  ],
-};
+];
 
 const SUB_LEVEL_SEGMENTS = {
   A1: ["A1.1", "A1.2", "A1.3"],
@@ -2133,4 +2133,4 @@ export const LEARNING_PATHS = {
   fr: cloneLearningPath(), // French
   it: cloneLearningPath(), // Italian
   nah: cloneLearningPath(), // Nahuatl
-];
+};
