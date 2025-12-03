@@ -52,25 +52,40 @@ export default function CEFRLevelNavigator({
   onLevelChange,
   levelProgress = 0,
   supportLang = "en",
+  levelCompletionStatus = {},
 }) {
   const currentLevelIndex = CEFR_LEVELS.indexOf(activeCEFRLevel);
-  const userLevelIndex = CEFR_LEVELS.indexOf(currentLevel);
   const hasPrevious = currentLevelIndex > 0;
   const hasNext = currentLevelIndex < CEFR_LEVELS.length - 1;
-  const nextLevelUnlocked = userLevelIndex >= currentLevelIndex; // Next level unlocked if user has reached current level
+
+  // Check if next level is unlocked based on completion status
+  const nextLevel = hasNext ? CEFR_LEVELS[currentLevelIndex + 1] : null;
+  const previousLevel = hasPrevious ? CEFR_LEVELS[currentLevelIndex - 1] : null;
+
+  // A level is unlocked if all previous levels are complete
+  const isNextLevelUnlocked = nextLevel ? (() => {
+    // Check all levels before the next level
+    for (let i = 0; i < currentLevelIndex + 1; i++) {
+      const level = CEFR_LEVELS[i];
+      if (!levelCompletionStatus[level]?.isComplete) {
+        return false;
+      }
+    }
+    return true;
+  })() : false;
 
   const levelInfo = CEFR_LEVEL_INFO[activeCEFRLevel];
   const isCurrentUserLevel = activeCEFRLevel === currentLevel;
 
   const handlePrevious = () => {
-    if (hasPrevious) {
-      onLevelChange(CEFR_LEVELS[currentLevelIndex - 1]);
+    if (hasPrevious && previousLevel) {
+      onLevelChange(previousLevel);
     }
   };
 
   const handleNext = () => {
-    if (hasNext && nextLevelUnlocked) {
-      onLevelChange(CEFR_LEVELS[currentLevelIndex + 1]);
+    if (hasNext && nextLevel && isNextLevelUnlocked) {
+      onLevelChange(nextLevel);
     }
   };
 
@@ -95,7 +110,7 @@ export default function CEFRLevelNavigator({
             _hover={{ bg: "whiteAlpha.100", color: "white" }}
             size="sm"
           >
-            {hasPrevious ? CEFR_LEVELS[currentLevelIndex - 1] : ""}
+            {hasPrevious ? previousLevel : ""}
           </Button>
 
           {/* Current Level Badge */}
@@ -135,15 +150,15 @@ export default function CEFRLevelNavigator({
 
           {/* Next Level Button */}
           <Button
-            rightIcon={nextLevelUnlocked ? <RiArrowRightLine /> : <RiLockLine />}
+            rightIcon={isNextLevelUnlocked ? <RiArrowRightLine /> : <RiLockLine />}
             onClick={handleNext}
-            isDisabled={!hasNext || !nextLevelUnlocked}
+            isDisabled={!hasNext || !isNextLevelUnlocked}
             variant="ghost"
-            color={nextLevelUnlocked ? "gray.400" : "gray.600"}
-            _hover={nextLevelUnlocked ? { bg: "whiteAlpha.100", color: "white" } : {}}
+            color={isNextLevelUnlocked ? "gray.400" : "gray.600"}
+            _hover={isNextLevelUnlocked ? { bg: "whiteAlpha.100", color: "white" } : {}}
             size="sm"
           >
-            {hasNext ? CEFR_LEVELS[currentLevelIndex + 1] : ""}
+            {hasNext ? nextLevel : ""}
           </Button>
         </HStack>
 

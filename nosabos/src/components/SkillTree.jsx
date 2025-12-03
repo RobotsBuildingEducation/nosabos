@@ -1844,6 +1844,7 @@ export default function SkillTree({
   activeCEFRLevel = "A1", // Currently active/visible CEFR level
   currentCEFRLevel = "A1", // User's current progress level
   onLevelChange, // Callback when user navigates to different level
+  levelCompletionStatus = {}, // Status of all levels (unlocked/locked, progress, etc.)
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -2022,6 +2023,7 @@ export default function SkillTree({
             onLevelChange={onLevelChange}
             levelProgress={levelProgress}
             supportLang={supportLang}
+            levelCompletionStatus={levelCompletionStatus}
           />
         )}
 

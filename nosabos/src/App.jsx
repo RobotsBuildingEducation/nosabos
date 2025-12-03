@@ -2550,28 +2550,77 @@ export default function App() {
     };
   }, [user?.progress, resolvedTargetLang]);
 
-  // Determine current CEFR level based on user progress
+  // Calculate which CEFR levels are unlocked based on completion
+  const levelCompletionStatus = useMemo(() => {
+    const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const CEFR_LEVEL_COUNTS = {
+      A1: { flashcards: 300, lessons: 30 },
+      A2: { flashcards: 250, lessons: 35 },
+      B1: { flashcards: 200, lessons: 40 },
+      B2: { flashcards: 150, lessons: 35 },
+      C1: { flashcards: 100, lessons: 30 },
+      C2: { flashcards: 50, lessons: 20 },
+    };
+
+    const status = {};
+    const lessons = userProgress.lessons || {};
+    const flashcards = userProgress.flashcards || {};
+
+    CEFR_LEVELS.forEach((level) => {
+      // Count completed lessons for this level
+      const completedLessons = Object.keys(lessons).filter((lessonId) => {
+        const match = lessonId.match(/lesson-([a-z]\d+)/i);
+        return match && match[1].toUpperCase() === level && lessons[lessonId]?.status === 'completed';
+      }).length;
+
+      // Count completed flashcards for this level
+      const completedFlashcards = Object.keys(flashcards).filter((cardId) => {
+        return cardId.startsWith(level.toLowerCase() + '-') && flashcards[cardId]?.completed;
+      }).length;
+
+      const totalLessons = CEFR_LEVEL_COUNTS[level]?.lessons || 0;
+      const totalFlashcards = CEFR_LEVEL_COUNTS[level]?.flashcards || 0;
+
+      // Level is complete if BOTH lessons and flashcards are 100% done
+      const isComplete =
+        completedLessons >= totalLessons &&
+        completedFlashcards >= totalFlashcards;
+
+      status[level] = {
+        completedLessons,
+        totalLessons,
+        completedFlashcards,
+        totalFlashcards,
+        isComplete,
+        lessonsProgress: totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0,
+        flashcardsProgress: totalFlashcards > 0 ? (completedFlashcards / totalFlashcards) * 100 : 0,
+      };
+    });
+
+    return status;
+  }, [userProgress.lessons, userProgress.flashcards]);
+
+  // Determine current unlocked CEFR level (highest level user can access)
   const currentCEFRLevel = useMemo(() => {
     const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-    const lessons = userProgress.lessons || {};
 
-    // Find the highest CEFR level the user has started
-    let highestStartedLevel = 'A1';
-    for (const lessonId in lessons) {
-      // Extract CEFR level from lesson ID (assumes format like "lesson-a1-1", "lesson-b2-3", etc.)
-      const match = lessonId.match(/lesson-([a-z]\d+)/i);
-      if (match) {
-        const level = match[1].toUpperCase();
-        const levelIndex = CEFR_LEVELS.indexOf(level);
-        const currentHighestIndex = CEFR_LEVELS.indexOf(highestStartedLevel);
-        if (levelIndex > currentHighestIndex) {
-          highestStartedLevel = level;
-        }
+    // Find the highest level that's unlocked
+    // A level is unlocked if the previous level is complete
+    let unlockedLevel = 'A1'; // A1 is always unlocked
+
+    for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
+      const currentLevel = CEFR_LEVELS[i];
+      const nextLevel = CEFR_LEVELS[i + 1];
+
+      if (levelCompletionStatus[currentLevel]?.isComplete) {
+        unlockedLevel = nextLevel;
+      } else {
+        break; // Stop at first incomplete level
       }
     }
 
-    return highestStartedLevel;
-  }, [userProgress.lessons]);
+    return unlockedLevel;
+  }, [levelCompletionStatus]);
 
   // State for which CEFR level is currently being viewed
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
@@ -2580,6 +2629,37 @@ export default function App() {
   useEffect(() => {
     setActiveCEFRLevel(currentCEFRLevel);
   }, [currentCEFRLevel]);
+
+  // Handler for level navigation with lock checking
+  const handleLevelChange = useCallback((newLevel) => {
+    const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+    const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+
+    // Check if this level is unlocked
+    // A level is unlocked if:
+    // 1. It's A1 (always unlocked)
+    // 2. All previous levels are complete
+    let isUnlocked = newLevel === 'A1';
+
+    if (!isUnlocked) {
+      // Check all levels before this one are complete
+      isUnlocked = true;
+      for (let i = 0; i < newLevelIndex; i++) {
+        const prevLevel = CEFR_LEVELS[i];
+        if (!levelCompletionStatus[prevLevel]?.isComplete) {
+          isUnlocked = false;
+          break;
+        }
+      }
+    }
+
+    // Only navigate if unlocked
+    if (isUnlocked) {
+      setActiveCEFRLevel(newLevel);
+    } else {
+      console.log(`Level ${newLevel} is locked. Complete previous levels first.`);
+    }
+  }, [levelCompletionStatus]);
 
   // Load only the active level (single level pagination)
   const relevantLevels = useMemo(() => {
@@ -2717,7 +2797,8 @@ export default function App() {
             levels={relevantLevels}
             activeCEFRLevel={activeCEFRLevel}
             currentCEFRLevel={currentCEFRLevel}
-            onLevelChange={setActiveCEFRLevel}
+            onLevelChange={handleLevelChange}
+            levelCompletionStatus={levelCompletionStatus}
           />
         </Box>
       )}
