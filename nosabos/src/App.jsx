@@ -709,283 +709,315 @@ function TopBar({
           <DrawerBody pb={2}>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={3}>
-              <Wrap spacing={2}>
-                <Menu autoSelect={false} isLazy>
-                  <MenuButton
-                    as={Button}
-                    rightIcon={<ChevronDownIcon />}
-                    variant="outline"
-                    size="sm"
-                    borderColor="gray.700"
-                    bg="gray.800"
-                    _hover={{ bg: "gray.750" }}
-                    _active={{ bg: "gray.750" }}
-                    px={4}
-                  >
-                    {supportLang === "en" && translations[appLanguage].onboarding_support_en}
-                    {supportLang === "bilingual" && translations[appLanguage].onboarding_support_bilingual}
-                    {supportLang === "es" && translations[appLanguage].onboarding_support_es}
-                  </MenuButton>
-                  <MenuList borderColor="gray.700" bg="gray.900">
-                    <MenuOptionGroup
-                      type="radio"
-                      value={supportLang}
-                      onChange={(value) => setSupportLang(value)}
+                <Wrap spacing={2}>
+                  <Menu autoSelect={false} isLazy>
+                    <MenuButton
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                      variant="outline"
+                      size="sm"
+                      borderColor="gray.700"
+                      bg="gray.800"
+                      _hover={{ bg: "gray.750" }}
+                      _active={{ bg: "gray.750" }}
+                      px={4}
                     >
-                      <MenuItemOption value="en">
-                        {translations[appLanguage].onboarding_support_en}
-                      </MenuItemOption>
-                      <MenuItemOption value="bilingual">
-                        {translations[appLanguage].onboarding_support_bilingual}
-                      </MenuItemOption>
-                      <MenuItemOption value="es">
-                        {translations[appLanguage].onboarding_support_es}
-                      </MenuItemOption>
-                    </MenuOptionGroup>
-                  </MenuList>
-                </Menu>
+                      {supportLang === "en" &&
+                        translations[appLanguage].onboarding_support_en}
+                      {supportLang === "bilingual" &&
+                        translations[appLanguage].onboarding_support_bilingual}
+                      {supportLang === "es" &&
+                        translations[appLanguage].onboarding_support_es}
+                    </MenuButton>
+                    <MenuList borderColor="gray.700" bg="gray.900">
+                      <MenuOptionGroup
+                        type="radio"
+                        value={supportLang}
+                        onChange={(value) => setSupportLang(value)}
+                      >
+                        <MenuItemOption value="en">
+                          {translations[appLanguage].onboarding_support_en}
+                        </MenuItemOption>
+                        <MenuItemOption value="bilingual">
+                          {
+                            translations[appLanguage]
+                              .onboarding_support_bilingual
+                          }
+                        </MenuItemOption>
+                        <MenuItemOption value="es">
+                          {translations[appLanguage].onboarding_support_es}
+                        </MenuItemOption>
+                      </MenuOptionGroup>
+                    </MenuList>
+                  </Menu>
 
-                <Menu autoSelect={false} isLazy>
-                  <MenuButton
-                    as={Button}
-                    rightIcon={<ChevronDownIcon />}
-                    variant="outline"
-                    size="sm"
-                    borderColor="gray.700"
-                    bg="gray.800"
-                    _hover={{ bg: "gray.750" }}
-                    _active={{ bg: "gray.750" }}
-                    px={4}
-                  >
-                    {voice === "alloy" && translations[appLanguage].onboarding_voice_alloy}
-                    {voice === "ash" && translations[appLanguage].onboarding_voice_ash}
-                    {voice === "ballad" && translations[appLanguage].onboarding_voice_ballad}
-                    {voice === "coral" && translations[appLanguage].onboarding_voice_coral}
-                    {voice === "echo" && translations[appLanguage].onboarding_voice_echo}
-                    {voice === "sage" && translations[appLanguage].onboarding_voice_sage}
-                    {voice === "shimmer" && translations[appLanguage].onboarding_voice_shimmer}
-                    {voice === "verse" && translations[appLanguage].onboarding_voice_verse}
-                  </MenuButton>
-                  <MenuList borderColor="gray.700" bg="gray.900">
-                    <MenuOptionGroup
-                      type="radio"
-                      value={voice}
-                      onChange={(value) => setVoice(value)}
+                  <Menu autoSelect={false} isLazy>
+                    <MenuButton
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                      variant="outline"
+                      size="sm"
+                      borderColor="gray.700"
+                      bg="gray.800"
+                      _hover={{ bg: "gray.750" }}
+                      _active={{ bg: "gray.750" }}
+                      px={4}
                     >
-                      <MenuItemOption value="alloy">
-                        {translations[appLanguage].onboarding_voice_alloy}
-                      </MenuItemOption>
-                      <MenuItemOption value="ash">
-                        {translations[appLanguage].onboarding_voice_ash}
-                      </MenuItemOption>
-                      <MenuItemOption value="ballad">
-                        {translations[appLanguage].onboarding_voice_ballad}
-                      </MenuItemOption>
-                      <MenuItemOption value="coral">
-                        {translations[appLanguage].onboarding_voice_coral}
-                      </MenuItemOption>
-                      <MenuItemOption value="echo">
-                        {translations[appLanguage].onboarding_voice_echo}
-                      </MenuItemOption>
-                      <MenuItemOption value="sage">
-                        {translations[appLanguage].onboarding_voice_sage}
-                      </MenuItemOption>
-                      <MenuItemOption value="shimmer">
-                        {translations[appLanguage].onboarding_voice_shimmer}
-                      </MenuItemOption>
-                      <MenuItemOption value="verse">
-                        {translations[appLanguage].onboarding_voice_verse}
-                      </MenuItemOption>
-                    </MenuOptionGroup>
-                  </MenuList>
-                </Menu>
+                      {voice === "alloy" &&
+                        translations[appLanguage].onboarding_voice_alloy}
+                      {voice === "ash" &&
+                        translations[appLanguage].onboarding_voice_ash}
+                      {voice === "ballad" &&
+                        translations[appLanguage].onboarding_voice_ballad}
+                      {voice === "coral" &&
+                        translations[appLanguage].onboarding_voice_coral}
+                      {voice === "echo" &&
+                        translations[appLanguage].onboarding_voice_echo}
+                      {voice === "sage" &&
+                        translations[appLanguage].onboarding_voice_sage}
+                      {voice === "shimmer" &&
+                        translations[appLanguage].onboarding_voice_shimmer}
+                      {voice === "verse" &&
+                        translations[appLanguage].onboarding_voice_verse}
+                    </MenuButton>
+                    <MenuList borderColor="gray.700" bg="gray.900">
+                      <MenuOptionGroup
+                        type="radio"
+                        value={voice}
+                        onChange={(value) => setVoice(value)}
+                      >
+                        <MenuItemOption value="alloy">
+                          {translations[appLanguage].onboarding_voice_alloy}
+                        </MenuItemOption>
+                        <MenuItemOption value="ash">
+                          {translations[appLanguage].onboarding_voice_ash}
+                        </MenuItemOption>
+                        <MenuItemOption value="ballad">
+                          {translations[appLanguage].onboarding_voice_ballad}
+                        </MenuItemOption>
+                        <MenuItemOption value="coral">
+                          {translations[appLanguage].onboarding_voice_coral}
+                        </MenuItemOption>
+                        <MenuItemOption value="echo">
+                          {translations[appLanguage].onboarding_voice_echo}
+                        </MenuItemOption>
+                        <MenuItemOption value="sage">
+                          {translations[appLanguage].onboarding_voice_sage}
+                        </MenuItemOption>
+                        <MenuItemOption value="shimmer">
+                          {translations[appLanguage].onboarding_voice_shimmer}
+                        </MenuItemOption>
+                        <MenuItemOption value="verse">
+                          {translations[appLanguage].onboarding_voice_verse}
+                        </MenuItemOption>
+                      </MenuOptionGroup>
+                    </MenuList>
+                  </Menu>
 
-                <Menu autoSelect={false} isLazy>
-                  <MenuButton
-                    as={Button}
-                    rightIcon={<ChevronDownIcon />}
-                    variant="outline"
-                    size="sm"
-                    borderColor="gray.700"
-                    bg="gray.800"
-                    _hover={{ bg: "gray.750" }}
-                    _active={{ bg: "gray.750" }}
-                    px={4}
-                    title={translations[appLanguage].onboarding_practice_label_title}
-                  >
-                    {targetLang === "nah" && translations[appLanguage].onboarding_practice_nah}
-                    {targetLang === "es" && translations[appLanguage].onboarding_practice_es}
-                    {targetLang === "pt" && translations[appLanguage].onboarding_practice_pt}
-                    {targetLang === "fr" && translations[appLanguage].onboarding_practice_fr}
-                    {targetLang === "it" && translations[appLanguage].onboarding_practice_it}
-                    {targetLang === "en" && translations[appLanguage].onboarding_practice_en}
-                  </MenuButton>
-                  <MenuList borderColor="gray.700" bg="gray.900">
-                    <MenuOptionGroup
-                      type="radio"
-                      value={targetLang}
-                      onChange={(value) => setTargetLang(value)}
+                  <Menu autoSelect={false} isLazy>
+                    <MenuButton
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                      variant="outline"
+                      size="sm"
+                      borderColor="gray.700"
+                      bg="gray.800"
+                      _hover={{ bg: "gray.750" }}
+                      _active={{ bg: "gray.750" }}
+                      px={4}
+                      title={
+                        translations[appLanguage]
+                          .onboarding_practice_label_title
+                      }
                     >
-                      <MenuItemOption value="nah">
-                        {translations[appLanguage].onboarding_practice_nah}
-                      </MenuItemOption>
-                      <MenuItemOption value="es">
-                        {translations[appLanguage].onboarding_practice_es}
-                      </MenuItemOption>
-                      <MenuItemOption value="pt">
-                        {translations[appLanguage].onboarding_practice_pt}
-                      </MenuItemOption>
-                      <MenuItemOption value="fr">
-                        {translations[appLanguage].onboarding_practice_fr}
-                      </MenuItemOption>
-                      <MenuItemOption value="it">
-                        {translations[appLanguage].onboarding_practice_it}
-                      </MenuItemOption>
-                      <MenuItemOption value="en">
-                        {translations[appLanguage].onboarding_practice_en}
-                      </MenuItemOption>
-                    </MenuOptionGroup>
-                  </MenuList>
-                </Menu>
-              </Wrap>
+                      {targetLang === "nah" &&
+                        translations[appLanguage].onboarding_practice_nah}
+                      {targetLang === "es" &&
+                        translations[appLanguage].onboarding_practice_es}
+                      {targetLang === "pt" &&
+                        translations[appLanguage].onboarding_practice_pt}
+                      {targetLang === "fr" &&
+                        translations[appLanguage].onboarding_practice_fr}
+                      {targetLang === "it" &&
+                        translations[appLanguage].onboarding_practice_it}
+                      {targetLang === "en" &&
+                        translations[appLanguage].onboarding_practice_en}
+                    </MenuButton>
+                    <MenuList borderColor="gray.700" bg="gray.900">
+                      <MenuOptionGroup
+                        type="radio"
+                        value={targetLang}
+                        onChange={(value) => setTargetLang(value)}
+                      >
+                        <MenuItemOption value="nah">
+                          {translations[appLanguage].onboarding_practice_nah}
+                        </MenuItemOption>
+                        <MenuItemOption value="es">
+                          {translations[appLanguage].onboarding_practice_es}
+                        </MenuItemOption>
+                        <MenuItemOption value="pt">
+                          {translations[appLanguage].onboarding_practice_pt}
+                        </MenuItemOption>
+                        <MenuItemOption value="fr">
+                          {translations[appLanguage].onboarding_practice_fr}
+                        </MenuItemOption>
+                        <MenuItemOption value="it">
+                          {translations[appLanguage].onboarding_practice_it}
+                        </MenuItemOption>
+                        <MenuItemOption value="en">
+                          {translations[appLanguage].onboarding_practice_en}
+                        </MenuItemOption>
+                      </MenuOptionGroup>
+                    </MenuList>
+                  </Menu>
+                </Wrap>
 
-              {/* Pronunciation coaching */}
-              <HStack bg="gray.800" p={3} rounded="md" justify="space-between">
-                <Box>
-                  <Text fontSize="sm" mb={0.5}>
-                    {t.ra_pron_label ||
-                      (appLanguage === "es"
-                        ? "Practicar pronunciación"
-                        : "Practice pronunciation")}
+                {/* Pronunciation coaching */}
+                <HStack
+                  bg="gray.800"
+                  p={3}
+                  rounded="md"
+                  justify="space-between"
+                >
+                  <Box>
+                    <Text fontSize="sm" mb={0.5}>
+                      {t.ra_pron_label ||
+                        (appLanguage === "es"
+                          ? "Practicar pronunciación"
+                          : "Practice pronunciation")}
+                    </Text>
+                    <Text fontSize="xs" opacity={0.7}>
+                      {t.ra_pron_help ||
+                        (appLanguage === "es"
+                          ? "Añade una micro-pista y una repetición lenta en cada turno."
+                          : "Adds a tiny cue and one slow repetition each turn.")}
+                    </Text>
+                  </Box>
+                  <Switch
+                    isChecked={practicePronunciation}
+                    onChange={(e) => setPracticePronunciation(e.target.checked)}
+                  />
+                </HStack>
+
+                {/* Persona */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" mb={2}>
+                    {t.ra_persona_label || "Persona"}
                   </Text>
-                  <Text fontSize="xs" opacity={0.7}>
-                    {t.ra_pron_help ||
-                      (appLanguage === "es"
-                        ? "Añade una micro-pista y una repetición lenta en cada turno."
-                        : "Adds a tiny cue and one slow repetition each turn.")}
+                  <Input
+                    value={voicePersona}
+                    onChange={(e) =>
+                      setVoicePersona(e.target.value.slice(0, 240))
+                    }
+                    bg="gray.700"
+                    placeholder={
+                      (t.ra_persona_placeholder &&
+                        t.ra_persona_placeholder.replace(
+                          "{example}",
+                          translations[appLanguage]
+                            .onboarding_persona_default_example
+                        )) ||
+                      `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
+                    }
+                  />
+                  <Text fontSize="xs" opacity={0.7} mt={1}>
+                    {t.ra_persona_help ||
+                      "A short vibe/style hint for the AI voice."}
                   </Text>
                 </Box>
-                <Switch
-                  isChecked={practicePronunciation}
-                  onChange={(e) => setPracticePronunciation(e.target.checked)}
-                />
-              </HStack>
 
-              {/* Persona */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={2}>
-                  {t.ra_persona_label || "Persona"}
-                </Text>
-                <Input
-                  value={voicePersona}
-                  onChange={(e) =>
-                    setVoicePersona(e.target.value.slice(0, 240))
-                  }
-                  bg="gray.700"
-                  placeholder={
-                    (t.ra_persona_placeholder &&
-                      t.ra_persona_placeholder.replace(
-                        "{example}",
-                        translations[appLanguage]
-                          .onboarding_persona_default_example
-                      )) ||
-                    `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
-                  }
-                />
-                <Text fontSize="xs" opacity={0.7} mt={1}>
-                  {t.ra_persona_help ||
-                    "A short vibe/style hint for the AI voice."}
-                </Text>
-              </Box>
-
-              {/* Help Request */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={2}>
-                  {t.ra_help_label ||
-                    (appLanguage === "es"
-                      ? "¿En qué te gustaría ayuda?"
-                      : "What would you like help with?")}
-                </Text>
-                <Textarea
-                  value={helpRequest}
-                  onChange={(e) => setHelpRequest(e.target.value.slice(0, 600))}
-                  bg="gray.700"
-                  minH="100px"
-                  placeholder={
-                    t.ra_help_placeholder ||
-                    (appLanguage === "es"
-                      ? "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…"
-                      : "e.g., conversational practice for job interviews; past tenses review; travel Spanish…")
-                  }
-                />
-                <Text fontSize="xs" opacity={0.7} mt={1}>
-                  {t.ra_help_help ||
-                    (appLanguage === "es"
-                      ? "Describe tu meta o contexto (esto guía la experiencia)."
-                      : "Describe your goal or context (this guides the experience).")}
-                </Text>
-              </Box>
-
-              {/* VAD slider */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <HStack justifyContent="space-between" mb={2}>
-                  <Text fontSize="sm">
-                    {t.ra_vad_label || "Voice activity pause (ms)"}
+                {/* Help Request */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" mb={2}>
+                    {t.ra_help_label ||
+                      (appLanguage === "es"
+                        ? "¿En qué te gustaría ayuda?"
+                        : "What would you like help with?")}
                   </Text>
-                  <Text fontSize="sm" opacity={0.8}>
-                    {pauseMs} ms
+                  <Textarea
+                    value={helpRequest}
+                    onChange={(e) =>
+                      setHelpRequest(e.target.value.slice(0, 600))
+                    }
+                    bg="gray.700"
+                    minH="100px"
+                    placeholder={
+                      t.ra_help_placeholder ||
+                      (appLanguage === "es"
+                        ? "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…"
+                        : "e.g., conversational practice for job interviews; past tenses review; travel Spanish…")
+                    }
+                  />
+                  <Text fontSize="xs" opacity={0.7} mt={1}>
+                    {t.ra_help_help ||
+                      (appLanguage === "es"
+                        ? "Describe tu meta o contexto (esto guía la experiencia)."
+                        : "Describe your goal or context (this guides the experience).")}
                   </Text>
-                </HStack>
-                <Slider
-                  aria-label="pause-slider"
-                  min={200}
-                  max={4000}
-                  step={100}
-                  value={pauseMs}
-                  onChange={setPauseMs}
-                >
-                  <SliderTrack>
-                    <SliderFilledTrack />
-                  </SliderTrack>
-                  <SliderThumb />
-                </Slider>
-              </Box>
+                </Box>
 
-              {/* Daily XP Goal (part of single Save) */}
-              <Box bg="gray.800" p={3} rounded="md">
-                <Text fontSize="sm" mb={1}>
-                  {appLanguage === "es" ? "Meta diaria de XP" : "Daily XP goal"}
-                </Text>
-                <Input
-                  type="number"
-                  min={0}
-                  value={goalDraft}
-                  onChange={(e) => setGoalDraft(e.target.value)}
-                  bg="gray.700"
-                  w="160px"
-                  placeholder={
-                    appLanguage === "es" ? "XP por día" : "XP per day"
-                  }
-                />
-                <Text fontSize="xs" opacity={0.7} mt={1}>
-                  {appLanguage === "es"
-                    ? "Cada nivel equivale a 100 XP. Cambiar este valor no reinicia tu progreso de hoy."
-                    : "Each level is 100 XP. Changing this won’t reset today’s progress or timer."}
-                </Text>
-              </Box>
-            </VStack>
+                {/* VAD slider */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <HStack justifyContent="space-between" mb={2}>
+                    <Text fontSize="sm">
+                      {t.ra_vad_label || "Voice activity pause (ms)"}
+                    </Text>
+                    <Text fontSize="sm" opacity={0.8}>
+                      {pauseMs} ms
+                    </Text>
+                  </HStack>
+                  <Slider
+                    aria-label="pause-slider"
+                    min={200}
+                    max={4000}
+                    step={100}
+                    value={pauseMs}
+                    onChange={setPauseMs}
+                  >
+                    <SliderTrack>
+                      <SliderFilledTrack />
+                    </SliderTrack>
+                    <SliderThumb />
+                  </Slider>
+                </Box>
+
+                {/* Daily XP Goal (part of single Save) */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" mb={1}>
+                    {appLanguage === "es"
+                      ? "Meta diaria de XP"
+                      : "Daily XP goal"}
+                  </Text>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={goalDraft}
+                    onChange={(e) => setGoalDraft(e.target.value)}
+                    bg="gray.700"
+                    w="160px"
+                    placeholder={
+                      appLanguage === "es" ? "XP por día" : "XP per day"
+                    }
+                  />
+                  <Text fontSize="xs" opacity={0.7} mt={1}>
+                    {appLanguage === "es"
+                      ? "Cada nivel equivale a 100 XP. Cambiar este valor no reinicia tu progreso de hoy."
+                      : "Each level is 100 XP. Changing this won’t reset today’s progress or timer."}
+                  </Text>
+                </Box>
+              </VStack>
             </Box>
           </DrawerBody>
           <DrawerFooter borderTop="1px solid" borderColor="gray.800">
             <Box maxW="600px" mx="auto" w="100%">
-            <HStack w="100%" justify="flex-end" spacing={3}>
-              <Button variant="ghost" onClick={closeSettings}>
-                {t.app_close || "Close"}
-              </Button>
-              <Button colorScheme="teal" onClick={handleSaveSettings}>
-                {appLanguage === "es" ? "Guardar" : "Save"}
-              </Button>
-            </HStack>
+              <HStack w="100%" justify="flex-end" spacing={3}>
+                <Button variant="ghost" onClick={closeSettings}>
+                  {t.app_close || "Close"}
+                </Button>
+                <Button colorScheme="teal" onClick={handleSaveSettings}>
+                  {appLanguage === "es" ? "Guardar" : "Save"}
+                </Button>
+              </HStack>
             </Box>
           </DrawerFooter>
         </DrawerContent>
@@ -1865,7 +1897,8 @@ export default function App() {
       const userRef = doc(database, "users", npub);
       await updateDoc(userRef, {
         [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: true,
-        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]: new Date().toISOString(),
+        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]:
+          new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       });
 
@@ -1873,7 +1906,12 @@ export default function App() {
       const fresh = await loadUserObjectFromDB(database, npub);
       if (fresh) setUser?.(fresh);
 
-      console.log("[FlashcardComplete] Awarded", xpAmount, "XP for flashcard:", card.id);
+      console.log(
+        "[FlashcardComplete] Awarded",
+        xpAmount,
+        "XP for flashcard:",
+        card.id
+      );
     } catch (error) {
       console.error("Failed to complete flashcard:", error);
       toast({
@@ -2379,7 +2417,10 @@ export default function App() {
                   // Delay showing lesson completion modal to allow daily goal modal to appear first
                   setTimeout(() => {
                     // Only show lesson modal if daily goal modal didn't open
-                    if (pendingLessonCompletionRef.current && !dailyGoalModalJustOpenedRef.current) {
+                    if (
+                      pendingLessonCompletionRef.current &&
+                      !dailyGoalModalJustOpenedRef.current
+                    ) {
                       setShowCompletionModal(true);
                       pendingLessonCompletionRef.current = null;
                     }
@@ -2551,9 +2592,9 @@ export default function App() {
   }, [user?.progress, resolvedTargetLang]);
 
   // CEFR level configuration (shared across modes)
-  const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const CEFR_LEVEL_COUNTS = {
-    A1: { flashcards: 300, lessons: 1 }, // Flashcard count matches common.js, lesson kept at 1 for testing
+    A1: { flashcards: 1, lessons: 1 }, // Flashcard count matches common.js, lesson kept at 1 for testing
     A2: { flashcards: 250, lessons: 35 },
     B1: { flashcards: 200, lessons: 40 },
     B2: { flashcards: 150, lessons: 35 },
@@ -2570,7 +2611,11 @@ export default function App() {
       // Count completed lessons for this level (including pre-level lessons)
       const completedLessons = Object.keys(lessons).filter((lessonId) => {
         const match = lessonId.match(/lesson-(?:pre-)?([a-z]\d+)/i);
-        return match && match[1].toUpperCase() === level && lessons[lessonId]?.status === 'completed';
+        return (
+          match &&
+          match[1].toUpperCase() === level &&
+          lessons[lessonId]?.status === "completed"
+        );
       }).length;
 
       const totalLessons = CEFR_LEVEL_COUNTS[level]?.lessons || 0;
@@ -2582,7 +2627,8 @@ export default function App() {
         completedLessons,
         totalLessons,
         isComplete,
-        lessonsProgress: totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0,
+        lessonsProgress:
+          totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0,
       };
     });
 
@@ -2597,7 +2643,10 @@ export default function App() {
     CEFR_LEVELS.forEach((level) => {
       // Count completed flashcards for this level
       const completedFlashcards = Object.keys(flashcards).filter((cardId) => {
-        return cardId.startsWith(level.toLowerCase() + '-') && flashcards[cardId]?.completed;
+        return (
+          cardId.startsWith(level.toLowerCase() + "-") &&
+          flashcards[cardId]?.completed
+        );
       }).length;
 
       const totalFlashcards = CEFR_LEVEL_COUNTS[level]?.flashcards || 0;
@@ -2609,7 +2658,10 @@ export default function App() {
         completedFlashcards,
         totalFlashcards,
         isComplete,
-        flashcardsProgress: totalFlashcards > 0 ? (completedFlashcards / totalFlashcards) * 100 : 0,
+        flashcardsProgress:
+          totalFlashcards > 0
+            ? (completedFlashcards / totalFlashcards) * 100
+            : 0,
       };
     });
 
@@ -2642,7 +2694,7 @@ export default function App() {
   const currentLessonLevel = useMemo(() => {
     // Find the highest level that's unlocked for lessons
     // A level is unlocked if the previous level is complete
-    let unlockedLevel = 'A1'; // A1 is always unlocked
+    let unlockedLevel = "A1"; // A1 is always unlocked
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
@@ -2662,7 +2714,7 @@ export default function App() {
   const currentFlashcardLevel = useMemo(() => {
     // Find the highest level that's unlocked for flashcards
     // A level is unlocked if the previous level is complete
-    let unlockedLevel = 'A1'; // A1 is always unlocked
+    let unlockedLevel = "A1"; // A1 is always unlocked
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
@@ -2682,7 +2734,7 @@ export default function App() {
   const currentCEFRLevel = useMemo(() => {
     // Find the highest level that's unlocked in both modes
     // A level is unlocked if the previous level is complete in BOTH modes
-    let unlockedLevel = 'A1'; // A1 is always unlocked
+    let unlockedLevel = "A1"; // A1 is always unlocked
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
@@ -2700,8 +2752,11 @@ export default function App() {
 
   // State for which CEFR level is currently being viewed (separate for each mode)
   // Initialize once, but don't auto-update when levels unlock
-  const [activeLessonLevel, setActiveLessonLevel] = useState(currentLessonLevel);
-  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState(currentFlashcardLevel);
+  const [activeLessonLevel, setActiveLessonLevel] =
+    useState(currentLessonLevel);
+  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState(
+    currentFlashcardLevel
+  );
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
@@ -2710,85 +2765,100 @@ export default function App() {
   // Users should stay at their current level until they manually navigate
 
   // Handler for lesson level navigation with lock checking
-  const handleLessonLevelChange = useCallback((newLevel) => {
-    const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+  const handleLessonLevelChange = useCallback(
+    (newLevel) => {
+      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
 
-    // Check if this level is unlocked in lesson mode
-    let isUnlocked = newLevel === 'A1';
+      // Check if this level is unlocked in lesson mode
+      let isUnlocked = newLevel === "A1";
 
-    if (!isUnlocked) {
-      // Check all levels before this one are complete in lesson mode
-      isUnlocked = true;
-      for (let i = 0; i < newLevelIndex; i++) {
-        const prevLevel = CEFR_LEVELS[i];
-        if (!lessonLevelCompletionStatus[prevLevel]?.isComplete) {
-          isUnlocked = false;
-          break;
+      if (!isUnlocked) {
+        // Check all levels before this one are complete in lesson mode
+        isUnlocked = true;
+        for (let i = 0; i < newLevelIndex; i++) {
+          const prevLevel = CEFR_LEVELS[i];
+          if (!lessonLevelCompletionStatus[prevLevel]?.isComplete) {
+            isUnlocked = false;
+            break;
+          }
         }
       }
-    }
 
-    // Only navigate if unlocked
-    if (isUnlocked) {
-      setActiveLessonLevel(newLevel);
-    } else {
-      console.log(`Lesson level ${newLevel} is locked. Complete previous levels first.`);
-    }
-  }, [lessonLevelCompletionStatus]);
+      // Only navigate if unlocked
+      if (isUnlocked) {
+        setActiveLessonLevel(newLevel);
+      } else {
+        console.log(
+          `Lesson level ${newLevel} is locked. Complete previous levels first.`
+        );
+      }
+    },
+    [lessonLevelCompletionStatus]
+  );
 
   // Handler for flashcard level navigation with lock checking
-  const handleFlashcardLevelChange = useCallback((newLevel) => {
-    const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+  const handleFlashcardLevelChange = useCallback(
+    (newLevel) => {
+      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
 
-    // Check if this level is unlocked in flashcard mode
-    let isUnlocked = newLevel === 'A1';
+      // Check if this level is unlocked in flashcard mode
+      let isUnlocked = newLevel === "A1";
 
-    if (!isUnlocked) {
-      // Check all levels before this one are complete in flashcard mode
-      isUnlocked = true;
-      for (let i = 0; i < newLevelIndex; i++) {
-        const prevLevel = CEFR_LEVELS[i];
-        if (!flashcardLevelCompletionStatus[prevLevel]?.isComplete) {
-          isUnlocked = false;
-          break;
+      if (!isUnlocked) {
+        // Check all levels before this one are complete in flashcard mode
+        isUnlocked = true;
+        for (let i = 0; i < newLevelIndex; i++) {
+          const prevLevel = CEFR_LEVELS[i];
+          if (!flashcardLevelCompletionStatus[prevLevel]?.isComplete) {
+            isUnlocked = false;
+            break;
+          }
         }
       }
-    }
 
-    // Only navigate if unlocked
-    if (isUnlocked) {
-      setActiveFlashcardLevel(newLevel);
-    } else {
-      console.log(`Flashcard level ${newLevel} is locked. Complete previous levels first.`);
-    }
-  }, [flashcardLevelCompletionStatus]);
+      // Only navigate if unlocked
+      if (isUnlocked) {
+        setActiveFlashcardLevel(newLevel);
+      } else {
+        console.log(
+          `Flashcard level ${newLevel} is locked. Complete previous levels first.`
+        );
+      }
+    },
+    [flashcardLevelCompletionStatus]
+  );
 
   // Legacy: Combined handler for level navigation
-  const handleLevelChange = useCallback((newLevel) => {
-    const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+  const handleLevelChange = useCallback(
+    (newLevel) => {
+      const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
 
-    // Check if this level is unlocked
-    let isUnlocked = newLevel === 'A1';
+      // Check if this level is unlocked
+      let isUnlocked = newLevel === "A1";
 
-    if (!isUnlocked) {
-      // Check all levels before this one are complete
-      isUnlocked = true;
-      for (let i = 0; i < newLevelIndex; i++) {
-        const prevLevel = CEFR_LEVELS[i];
-        if (!levelCompletionStatus[prevLevel]?.isComplete) {
-          isUnlocked = false;
-          break;
+      if (!isUnlocked) {
+        // Check all levels before this one are complete
+        isUnlocked = true;
+        for (let i = 0; i < newLevelIndex; i++) {
+          const prevLevel = CEFR_LEVELS[i];
+          if (!levelCompletionStatus[prevLevel]?.isComplete) {
+            isUnlocked = false;
+            break;
+          }
         }
       }
-    }
 
-    // Only navigate if unlocked
-    if (isUnlocked) {
-      setActiveCEFRLevel(newLevel);
-    } else {
-      console.log(`Level ${newLevel} is locked. Complete previous levels first.`);
-    }
-  }, [levelCompletionStatus]);
+      // Only navigate if unlocked
+      if (isUnlocked) {
+        setActiveCEFRLevel(newLevel);
+      } else {
+        console.log(
+          `Level ${newLevel} is locked. Complete previous levels first.`
+        );
+      }
+    },
+    [levelCompletionStatus]
+  );
 
   // Load only the active levels (include both lesson and flashcard levels for mode switching)
   const relevantLevels = useMemo(() => {
