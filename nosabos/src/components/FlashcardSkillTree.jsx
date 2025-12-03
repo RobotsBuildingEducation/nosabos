@@ -213,7 +213,15 @@ export default function FlashcardSkillTree({
             ? relevantFlashcards.filter(card => card.cefrLevel === activeCEFRLevel)
             : relevantFlashcards;
 
-          setFlashcardData(filteredFlashcards);
+          // If filtering produced empty results, fall back to full dataset
+          if (filteredFlashcards.length === 0 && activeCEFRLevel) {
+            const fallbackFlashcards = FLASHCARD_DATA.filter(
+              card => card.cefrLevel === activeCEFRLevel
+            );
+            setFlashcardData(fallbackFlashcards);
+          } else {
+            setFlashcardData(filteredFlashcards);
+          }
         } else if (isMounted) {
           // If no relevant flashcards loaded, use all data (filtered by level)
           const filteredFlashcards = activeCEFRLevel
