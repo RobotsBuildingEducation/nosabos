@@ -257,18 +257,6 @@ export default function FlashcardPractice({
         border="2px solid"
         borderColor={`${cefrColor.primary}30`}
       >
-        {/* Decorative gradient background */}
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          h="200px"
-          bgGradient={`linear(135deg, ${cefrColor.primary}20, transparent)`}
-          opacity={0.5}
-          pointerEvents="none"
-        />
-
         <ModalBody p={8} position="relative">
           <VStack spacing={6} align="stretch">
             {/* Header */}
@@ -360,7 +348,7 @@ export default function FlashcardPractice({
                     )}
 
                     {/* Text Input and Submit Group */}
-                    <VStack spacing={3} w="100%" pt={2}>
+                    <VStack spacing={3} w="100%" pt={6}>
                       {/* Text Input */}
                       <Input
                         value={textAnswer}
