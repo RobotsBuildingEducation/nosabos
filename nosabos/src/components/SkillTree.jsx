@@ -237,7 +237,7 @@ import {
 import { translations } from "../utils/translation";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
-import { getAllLessonProgress } from "../utils/cefrProgress";
+import { getAllLessonProgress, getAllFlashcardProgress } from "../utils/cefrProgress";
 import { CEFR_LEVELS } from "../data/flashcards/common";
 
 const MotionBox = motion(Box);
@@ -2093,56 +2093,38 @@ export default function SkillTree({
                 </Text>
               </VStack>
             </HStack>
+
+            {/* CEFR Level Progress Bar */}
+            {(() => {
+              const progress = pathMode === "path"
+                ? getAllLessonProgress(userProgress, targetLang)
+                : getAllFlashcardProgress(userProgress, targetLang);
+              const currentLevelProgress = progress[effectiveActiveLevel];
+              return (
+                <VStack spacing={1} align="end" minW="200px">
+                  <HStack spacing={2}>
+                    <Text fontSize="xs" fontWeight="semibold" color="white">
+                      {effectiveActiveLevel}
+                    </Text>
+                    <Text fontSize="xs" fontWeight="bold" color="blue.300">
+                      {currentLevelProgress.percentage}%
+                    </Text>
+                  </HStack>
+                  <Box w="full">
+                    <WaveBar
+                      value={currentLevelProgress.percentage}
+                      height={12}
+                      start="#60A5FA"
+                      end="#2563EB"
+                      bg="rgba(255,255,255,0.05)"
+                      border="rgba(255,255,255,0.1)"
+                    />
+                  </Box>
+                </VStack>
+              );
+            })()}
           </HStack>
         </MotionBox>
-
-        {/* CEFR Level Progress Bars */}
-        {pathMode === "path" && (() => {
-          const lessonProgress = getAllLessonProgress(userProgress, targetLang);
-          return (
-            <MotionBox
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              mb={8}
-            >
-              <VStack spacing={3} align="stretch">
-                {CEFR_LEVELS.map((level, index) => {
-                  const progress = lessonProgress[level];
-                  return (
-                    <Box key={level}>
-                      <HStack justify="space-between" mb={1}>
-                        <Text
-                          fontSize="sm"
-                          fontWeight="semibold"
-                          color="white"
-                        >
-                          {level}
-                        </Text>
-                        <Text
-                          fontSize="sm"
-                          fontWeight="bold"
-                          color="blue.300"
-                        >
-                          {progress.percentage}%
-                        </Text>
-                      </HStack>
-                      <WaveBar
-                        value={progress.percentage}
-                        height={12}
-                        start="#60A5FA"
-                        end="#2563EB"
-                        delay={index * 0.05}
-                        bg="rgba(255,255,255,0.05)"
-                        border="rgba(255,255,255,0.1)"
-                      />
-                    </Box>
-                  );
-                })}
-              </VStack>
-            </MotionBox>
-          );
-        })()}
 
         {/* Skill Tree Units or Flashcards */}
         {pathMode === "path" ? (
