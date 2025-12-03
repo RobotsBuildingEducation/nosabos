@@ -1330,9 +1330,21 @@ export default function App() {
     return template.replace("{language}", languageName(targetNameKey));
   }, [appLanguage, user?.progress]);
 
-  const handleToggleTranslations = () => {
+  const handleToggleTranslations = useCallback(() => {
     saveGlobalSettings({ showTranslations: !showTranslationsEnabled });
-  };
+  }, [showTranslationsEnabled, saveGlobalSettings]);
+
+  const handleOpenIdentity = useCallback(() => {
+    setAccountOpen(true);
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    setSettingsOpen(true);
+  }, []);
+
+  const handleOpenTeams = useCallback(() => {
+    setTeamsOpen(true);
+  }, []);
 
   const handleSelectTab = useCallback((value) => {
     const next = String(value || "realtime");
@@ -2653,9 +2665,9 @@ export default function App() {
 
       <BottomActionBar
         t={t}
-        onOpenIdentity={() => setAccountOpen(true)}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenTeams={() => setTeamsOpen(true)}
+        onOpenIdentity={handleOpenIdentity}
+        onOpenSettings={handleOpenSettings}
+        onOpenTeams={handleOpenTeams}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -3013,7 +3025,7 @@ export default function App() {
   );
 }
 
-function BottomActionBar({
+const BottomActionBar = React.memo(function BottomActionBar({
   t,
   onOpenIdentity,
   onOpenSettings,
@@ -3133,4 +3145,4 @@ function BottomActionBar({
       </Flex>
     </Box>
   );
-}
+});
