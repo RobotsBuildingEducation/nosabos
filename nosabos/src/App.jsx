@@ -2562,6 +2562,28 @@ export default function App() {
       C2: { flashcards: 50, lessons: 20 },
     };
 
+    // Admin/test account bypass - unlock all levels
+    const adminNsec = "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+    const currentNsec = typeof window !== "undefined" ? localStorage.getItem("local_nsec") : "";
+    const isAdmin = currentNsec === adminNsec;
+
+    if (isAdmin) {
+      // Admin account has all levels unlocked
+      const adminStatus = {};
+      CEFR_LEVELS.forEach((level) => {
+        adminStatus[level] = {
+          completedLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0,
+          totalLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0,
+          completedFlashcards: CEFR_LEVEL_COUNTS[level]?.flashcards || 0,
+          totalFlashcards: CEFR_LEVEL_COUNTS[level]?.flashcards || 0,
+          isComplete: true, // All levels marked as complete
+          lessonsProgress: 100,
+          flashcardsProgress: 100,
+        };
+      });
+      return adminStatus;
+    }
+
     const status = {};
     const lessons = userProgress.lessons || {};
     const flashcards = userProgress.flashcards || {};
