@@ -1202,6 +1202,28 @@ export default function App() {
   const [completedProficiencyData, setCompletedProficiencyData] =
     useState(null);
 
+  // Helper functions for tracking shown proficiency celebrations in localStorage
+  const getCelebrationKey = (level, mode) => `${level}-${mode}`;
+  const getShownCelebrations = useCallback(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const stored = localStorage.getItem("shownProficiencyCelebrations");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  }, []);
+  const markCelebrationShown = useCallback((level, mode) => {
+    if (typeof window === "undefined") return;
+    const shown = getShownCelebrations();
+    shown[getCelebrationKey(level, mode)] = true;
+    localStorage.setItem("shownProficiencyCelebrations", JSON.stringify(shown));
+  }, [getShownCelebrations]);
+  const wasCelebrationShown = useCallback((level, mode) => {
+    const shown = getShownCelebrations();
+    return shown[getCelebrationKey(level, mode)] === true;
+  }, [getShownCelebrations]);
+
   // Helper mapping for keys/index
   const TAB_KEYS = [
     "realtime",
@@ -1959,6 +1981,11 @@ export default function App() {
   const handleCloseProficiencyCompletionModal = useCallback(() => {
     const data = completedProficiencyData;
 
+    // Mark this celebration as shown so it won't appear again on refresh
+    if (data?.level && data?.mode) {
+      markCelebrationShown(data.level, data.mode);
+    }
+
     setShowProficiencyCompletionModal(false);
     setCompletedProficiencyData(null);
 
@@ -1970,7 +1997,7 @@ export default function App() {
         setActiveFlashcardLevel(data.nextLevel);
       }
     }
-  }, [completedProficiencyData]);
+  }, [completedProficiencyData, markCelebrationShown]);
 
   // Handle closing the daily goal celebration modal
   const handleCloseDailyGoalModal = () => {
@@ -2847,9 +2874,11 @@ export default function App() {
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevLessonCompletionRef.current[level];
       const isNowComplete = lessonLevelCompletionStatus[level]?.isComplete;
+      const alreadyCelebrated = wasCelebrationShown(level, "lesson");
 
       // Check if level was just completed (transition from false/undefined to true)
-      if (!wasComplete && isNowComplete && level === activeLessonLevel) {
+      // and hasn't been celebrated before
+      if (!wasComplete && isNowComplete && level === activeLessonLevel && !alreadyCelebrated) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
         const nextLevel =
@@ -2871,16 +2900,18 @@ export default function App() {
       acc[level] = lessonLevelCompletionStatus[level]?.isComplete || false;
       return acc;
     }, {});
-  }, [lessonLevelCompletionStatus, activeLessonLevel]);
+  }, [lessonLevelCompletionStatus, activeLessonLevel, wasCelebrationShown]);
 
   // Detect flashcard level completion and show celebration modal
   useEffect(() => {
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevFlashcardCompletionRef.current[level];
       const isNowComplete = flashcardLevelCompletionStatus[level]?.isComplete;
+      const alreadyCelebrated = wasCelebrationShown(level, "flashcard");
 
       // Check if level was just completed (transition from false/undefined to true)
-      if (!wasComplete && isNowComplete && level === activeFlashcardLevel) {
+      // and hasn't been celebrated before
+      if (!wasComplete && isNowComplete && level === activeFlashcardLevel && !alreadyCelebrated) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
         const nextLevel =
@@ -2902,7 +2933,7 @@ export default function App() {
       acc[level] = flashcardLevelCompletionStatus[level]?.isComplete || false;
       return acc;
     }, {});
-  }, [flashcardLevelCompletionStatus, activeFlashcardLevel]);
+  }, [flashcardLevelCompletionStatus, activeFlashcardLevel, wasCelebrationShown]);
 
   // Note: We deliberately do NOT auto-update active levels when new levels unlock
   // Users should stay at their current level until they manually navigate
