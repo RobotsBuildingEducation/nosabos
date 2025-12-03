@@ -41,7 +41,7 @@ export function calculateLessonCompletion(userProgress, cefrLevel, targetLang = 
     return isInLevel && isCompleted;
   }).length;
 
-  return Math.round((completedCount / totalLessonsInLevel) * 100);
+  return Number(((completedCount / totalLessonsInLevel) * 100).toFixed(2));
 }
 
 /**
@@ -68,7 +68,7 @@ export function calculateFlashcardCompletion(userProgress, cefrLevel, targetLang
     return isInLevel && isCompleted;
   }).length;
 
-  return Math.round((completedCount / totalFlashcardsInLevel) * 100);
+  return Number(((completedCount / totalFlashcardsInLevel) * 100).toFixed(2));
 }
 
 /**
