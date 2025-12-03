@@ -7864,3 +7864,15 @@ export const getConceptText = (card, supportLang) => {
   // Otherwise use the specified language, fallback to English
   return card.concept[supportLang] || card.concept.en;
 };
+
+// Re-export lazy-loading utilities for better performance
+// These allow components to load only the flashcard data they need
+export {
+  loadFlashcardsForLevel,
+  loadFlashcardsForLevels,
+  loadRelevantFlashcards,
+  loadAllFlashcards,
+  getUserProgressLevel,
+  clearFlashcardCache,
+  getCacheStats,
+} from './flashcards/index.js';
