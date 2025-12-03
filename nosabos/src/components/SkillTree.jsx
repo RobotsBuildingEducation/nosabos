@@ -234,7 +234,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
-import FLASHCARD_DATA from "../data/flashcardData";
+import { FLASHCARD_DATA } from "../data/flashcardData";
 import { translations } from "../utils/translation";
 import { FiTarget } from "react-icons/fi";
 

@@ -97,6 +97,7 @@ export async function awardFlashcardXp(npub, amount, targetLang = "es") {
         ? data.progress.targetLang
         : "es";
     const existingProgress = data?.progress || {};
+    const existingLangXp = existingProgress?.languageXp?.[langKey] || 0;
     const existingLangFlashcardXp =
       existingProgress?.flashcardXp?.[langKey] || 0;
 
@@ -116,8 +117,14 @@ export async function awardFlashcardXp(npub, amount, targetLang = "es") {
 
     const nextDaily = (needsReset ? 0 : data.dailyXp || 0) + delta;
     const nextFlashcardTotal = (data.flashcardXp || 0) + delta;
+    const nextTotal = (data.xp || 0) + delta;
     const nextProgress = {
       ...existingProgress,
+      totalXp: (existingProgress?.totalXp || 0) + delta,
+      languageXp: {
+        ...(existingProgress?.languageXp || {}),
+        [langKey]: existingLangXp + delta,
+      },
       flashcardXp: {
         ...(existingProgress?.flashcardXp || {}),
         [langKey]: existingLangFlashcardXp + delta,
@@ -132,6 +139,7 @@ export async function awardFlashcardXp(npub, amount, targetLang = "es") {
       ref,
       {
         ...base,
+        xp: nextTotal,
         flashcardXp: nextFlashcardTotal,
         dailyXp: nextDaily,
         updatedAt: now.toISOString(),
