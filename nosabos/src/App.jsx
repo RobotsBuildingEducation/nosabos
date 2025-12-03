@@ -104,7 +104,7 @@ import {
   completeLesson,
   getLanguageXp,
 } from "./utils/progressTracking";
-import { awardXp } from "./utils/utils";
+import { awardFlashcardXp, awardXp } from "./utils/utils";
 import { RiArrowLeftLine } from "react-icons/ri";
 
 /* ---------------------------
@@ -1857,9 +1857,9 @@ export default function App() {
     if (!npub || !card) return;
 
     try {
-      // Award XP (card.xpReward is set by the FlashcardPractice component)
+      // Award flashcard XP without impacting skill tree progression
       const xpAmount = card.xpReward || 5;
-      await awardXp(npub, xpAmount, resolvedTargetLang);
+      await awardFlashcardXp(npub, xpAmount, resolvedTargetLang);
 
       // Update flashcard progress in Firestore (language-specific)
       const userRef = doc(database, "users", npub);
@@ -2617,10 +2617,8 @@ export default function App() {
       const totalLessons = CEFR_LEVEL_COUNTS[level]?.lessons || 0;
       const totalFlashcards = CEFR_LEVEL_COUNTS[level]?.flashcards || 0;
 
-      // Level is complete if BOTH lessons and flashcards are 100% done
-      const isComplete =
-        completedLessons >= totalLessons &&
-        completedFlashcards >= totalFlashcards;
+      // Skill tree progression should depend only on lesson completion
+      const isComplete = totalLessons > 0 && completedLessons >= totalLessons;
 
       status[level] = {
         completedLessons,
