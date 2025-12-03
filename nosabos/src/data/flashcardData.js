@@ -7822,6 +7822,9 @@ export const FLASHCARD_DATA = [
   },
 ];
 
+// Provide a default export for compatibility with legacy imports
+export default FLASHCARD_DATA;
+
 // CEFR level colors - A1 uses beautiful holographic blue
 export const CEFR_COLORS = {
   A1: {
