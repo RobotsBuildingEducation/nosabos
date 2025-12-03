@@ -257,18 +257,6 @@ export default function FlashcardPractice({
         border="2px solid"
         borderColor={`${cefrColor.primary}30`}
       >
-        {/* Decorative gradient background */}
-        <Box
-          position="absolute"
-          top="0"
-          left="0"
-          right="0"
-          h="200px"
-          bgGradient={`linear(135deg, ${cefrColor.primary}20, transparent)`}
-          opacity={0.5}
-          pointerEvents="none"
-        />
-
         <ModalBody p={8} position="relative">
           <VStack spacing={6} align="stretch">
             {/* Header */}
@@ -309,47 +297,6 @@ export default function FlashcardPractice({
             {/* Unified Input - Show both text and speech */}
             {!showResult && (
               <VStack spacing={4}>
-                {/* Text Input */}
-                <Input
-                  value={textAnswer}
-                  onChange={(e) => setTextAnswer(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Type your answer..."
-                  size="lg"
-                  fontSize="2xl"
-                  textAlign="center"
-                  bg="whiteAlpha.100"
-                  border="2px solid"
-                  borderColor="whiteAlpha.200"
-                  color="white"
-                  _placeholder={{ color: "gray.500" }}
-                  _focus={{
-                    borderColor: cefrColor.primary,
-                    boxShadow: `0 0 0 1px ${cefrColor.primary}`,
-                  }}
-                  autoFocus
-                  isDisabled={isGrading}
-                />
-
-                {/* Recognized speech text */}
-                {recognizedText && !isGrading && (
-                  <Box
-                    p={4}
-                    borderRadius="lg"
-                    bg="whiteAlpha.100"
-                    border="1px solid"
-                    borderColor="whiteAlpha.200"
-                    w="100%"
-                  >
-                    <Text fontSize="sm" color="gray.400" mb={1}>
-                      Recognized:
-                    </Text>
-                    <Text fontSize="lg" color="teal.200">
-                      {recognizedText}
-                    </Text>
-                  </Box>
-                )}
-
                 {/* Grading State */}
                 {isGrading ? (
                   <VStack spacing={3} py={4}>
@@ -357,7 +304,7 @@ export default function FlashcardPractice({
                     <Text color="gray.400">Grading your answer...</Text>
                   </VStack>
                 ) : (
-                  <VStack spacing={3} w="100%">
+                  <VStack spacing={4} w="100%">
                     {/* Record Button - Top */}
                     <Button
                       w="100%"
@@ -381,23 +328,66 @@ export default function FlashcardPractice({
                       {isRecording ? "Stop Recording" : "Record Answer"}
                     </Button>
 
-                    {/* Submit Button */}
-                    <Button
-                      w="100%"
-                      size="lg"
-                      bgGradient={cefrColor.gradient}
-                      color="white"
-                      onClick={handleTextSubmit}
-                      isDisabled={!textAnswer.trim()}
-                      leftIcon={<RiKeyboardLine size={20} />}
-                      _hover={{
-                        transform: "translateY(-2px)",
-                        boxShadow: `0 8px 20px ${cefrColor.primary}40`,
-                      }}
-                      _active={{ transform: "translateY(0)" }}
-                    >
-                      Submit Answer
-                    </Button>
+                    {/* Recognized speech text */}
+                    {recognizedText && (
+                      <Box
+                        p={4}
+                        borderRadius="lg"
+                        bg="whiteAlpha.100"
+                        border="1px solid"
+                        borderColor="whiteAlpha.200"
+                        w="100%"
+                      >
+                        <Text fontSize="sm" color="gray.400" mb={1}>
+                          Recognized:
+                        </Text>
+                        <Text fontSize="lg" color="teal.200">
+                          {recognizedText}
+                        </Text>
+                      </Box>
+                    )}
+
+                    {/* Text Input and Submit Group */}
+                    <VStack spacing={3} w="100%" pt={6}>
+                      {/* Text Input */}
+                      <Input
+                        value={textAnswer}
+                        onChange={(e) => setTextAnswer(e.target.value)}
+                        onKeyPress={handleKeyPress}
+                        placeholder="Type your answer..."
+                        size="lg"
+                        fontSize="2xl"
+                        textAlign="center"
+                        bg="whiteAlpha.100"
+                        border="2px solid"
+                        borderColor="whiteAlpha.200"
+                        color="white"
+                        _placeholder={{ color: "gray.500" }}
+                        _focus={{
+                          borderColor: cefrColor.primary,
+                          boxShadow: `0 0 0 1px ${cefrColor.primary}`,
+                        }}
+                        autoFocus
+                      />
+
+                      {/* Submit Button */}
+                      <Button
+                        w="100%"
+                        size="lg"
+                        bgGradient={cefrColor.gradient}
+                        color="white"
+                        onClick={handleTextSubmit}
+                        isDisabled={!textAnswer.trim()}
+                        leftIcon={<RiKeyboardLine size={20} />}
+                        _hover={{
+                          transform: "translateY(-2px)",
+                          boxShadow: `0 8px 20px ${cefrColor.primary}40`,
+                        }}
+                        _active={{ transform: "translateY(0)" }}
+                      >
+                        Submit Answer
+                      </Button>
+                    </VStack>
 
                     {/* Cancel button */}
                     <Button

@@ -1196,6 +1196,12 @@ export default function App() {
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
 
+  // Proficiency level completion celebration modal
+  const [showProficiencyCompletionModal, setShowProficiencyCompletionModal] =
+    useState(false);
+  const [completedProficiencyData, setCompletedProficiencyData] =
+    useState(null);
+
   // Helper mapping for keys/index
   const TAB_KEYS = [
     "realtime",
@@ -1949,6 +1955,23 @@ export default function App() {
     handleReturnToSkillTree();
   };
 
+  // Handle closing the proficiency completion modal and navigating to next level
+  const handleCloseProficiencyCompletionModal = useCallback(() => {
+    const data = completedProficiencyData;
+
+    setShowProficiencyCompletionModal(false);
+    setCompletedProficiencyData(null);
+
+    // Navigate to next level if available
+    if (data?.nextLevel) {
+      if (data.mode === "lesson") {
+        setActiveLessonLevel(data.nextLevel);
+      } else if (data.mode === "flashcard") {
+        setActiveFlashcardLevel(data.nextLevel);
+      }
+    }
+  }, [completedProficiencyData]);
+
   // Handle closing the daily goal celebration modal
   const handleCloseDailyGoalModal = () => {
     setCelebrateOpen(false);
@@ -2602,6 +2625,60 @@ export default function App() {
     C2: { flashcards: 50, lessons: 20 },
   };
 
+  const CEFR_LEVEL_INFO = {
+    A1: {
+      name: { en: "Beginner", es: "Principiante" },
+      color: "#3B82F6",
+      gradient: "linear(135deg, #60A5FA, #3B82F6)",
+      description: {
+        en: "Basic survival language",
+        es: "Lenguaje básico de supervivencia",
+      },
+    },
+    A2: {
+      name: { en: "Elementary", es: "Elemental" },
+      color: "#8B5CF6",
+      gradient: "linear(135deg, #A78BFA, #8B5CF6)",
+      description: {
+        en: "Simple everyday communication",
+        es: "Comunicación cotidiana simple",
+      },
+    },
+    B1: {
+      name: { en: "Intermediate", es: "Intermedio" },
+      color: "#A855F7",
+      gradient: "linear(135deg, #C084FC, #A855F7)",
+      description: {
+        en: "Handle everyday situations",
+        es: "Manejo de situaciones cotidianas",
+      },
+    },
+    B2: {
+      name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+      color: "#F97316",
+      gradient: "linear(135deg, #FB923C, #F97316)",
+      description: { en: "Complex discussions", es: "Discusiones complejas" },
+    },
+    C1: {
+      name: { en: "Advanced", es: "Avanzado" },
+      color: "#EF4444",
+      gradient: "linear(135deg, #F87171, #EF4444)",
+      description: {
+        en: "Sophisticated language use",
+        es: "Uso sofisticado del idioma",
+      },
+    },
+    C2: {
+      name: { en: "Mastery", es: "Maestría" },
+      color: "#EC4899",
+      gradient: "linear(135deg, #F472B6, #EC4899)",
+      description: {
+        en: "Near-native proficiency",
+        es: "Competencia casi nativa",
+      },
+    },
+  };
+
   // Calculate lesson mode completion status (independent from flashcards)
   const lessonLevelCompletionStatus = useMemo(() => {
     const status = {};
@@ -2760,6 +2837,72 @@ export default function App() {
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
+
+  // Track previous completion status to detect newly completed levels
+  const prevLessonCompletionRef = useRef({});
+  const prevFlashcardCompletionRef = useRef({});
+
+  // Detect lesson level completion and show celebration modal
+  useEffect(() => {
+    CEFR_LEVELS.forEach((level) => {
+      const wasComplete = prevLessonCompletionRef.current[level];
+      const isNowComplete = lessonLevelCompletionStatus[level]?.isComplete;
+
+      // Check if level was just completed (transition from false/undefined to true)
+      if (!wasComplete && isNowComplete && level === activeLessonLevel) {
+        // Find the next level for the modal
+        const levelIndex = CEFR_LEVELS.indexOf(level);
+        const nextLevel =
+          levelIndex < CEFR_LEVELS.length - 1
+            ? CEFR_LEVELS[levelIndex + 1]
+            : null;
+
+        setCompletedProficiencyData({
+          level,
+          nextLevel,
+          mode: "lesson",
+        });
+        setShowProficiencyCompletionModal(true);
+      }
+    });
+
+    // Update ref for next comparison
+    prevLessonCompletionRef.current = CEFR_LEVELS.reduce((acc, level) => {
+      acc[level] = lessonLevelCompletionStatus[level]?.isComplete || false;
+      return acc;
+    }, {});
+  }, [lessonLevelCompletionStatus, activeLessonLevel]);
+
+  // Detect flashcard level completion and show celebration modal
+  useEffect(() => {
+    CEFR_LEVELS.forEach((level) => {
+      const wasComplete = prevFlashcardCompletionRef.current[level];
+      const isNowComplete = flashcardLevelCompletionStatus[level]?.isComplete;
+
+      // Check if level was just completed (transition from false/undefined to true)
+      if (!wasComplete && isNowComplete && level === activeFlashcardLevel) {
+        // Find the next level for the modal
+        const levelIndex = CEFR_LEVELS.indexOf(level);
+        const nextLevel =
+          levelIndex < CEFR_LEVELS.length - 1
+            ? CEFR_LEVELS[levelIndex + 1]
+            : null;
+
+        setCompletedProficiencyData({
+          level,
+          nextLevel,
+          mode: "flashcard",
+        });
+        setShowProficiencyCompletionModal(true);
+      }
+    });
+
+    // Update ref for next comparison
+    prevFlashcardCompletionRef.current = CEFR_LEVELS.reduce((acc, level) => {
+      acc[level] = flashcardLevelCompletionStatus[level]?.isComplete || false;
+      return acc;
+    }, {});
+  }, [flashcardLevelCompletionStatus, activeFlashcardLevel]);
 
   // Note: We deliberately do NOT auto-update active levels when new levels unlock
   // Users should stay at their current level until they manually navigate
@@ -3335,6 +3478,112 @@ export default function App() {
                 py={6}
               >
                 {appLanguage === "es" ? "Continuar" : "Continue"}
+              </Button>
+            </VStack>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Proficiency Level Completion Celebration Modal */}
+      <Modal
+        isOpen={showProficiencyCompletionModal}
+        onClose={handleCloseProficiencyCompletionModal}
+        isCentered
+        size="lg"
+        closeOnOverlayClick={false}
+      >
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg={
+            completedProficiencyData?.level
+              ? CEFR_LEVEL_INFO[completedProficiencyData.level]?.gradient ||
+                "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+              : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+          }
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          maxW={{ base: "90%", sm: "md" }}
+        >
+          <ModalBody py={12} px={8}>
+            <VStack spacing={6} textAlign="center">
+              <CelebrationOrb
+                size={140}
+                icon="★"
+                accentGradient="linear(135deg, green.300, green.400, teal.400)"
+                particleColor="green.200"
+              />
+
+              {/* Title */}
+              <VStack spacing={2}>
+                <Text fontSize="3xl" fontWeight="bold">
+                  {appLanguage === "es"
+                    ? "¡Nivel Completado!"
+                    : "Level Complete!"}
+                </Text>
+                <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
+                  {completedProficiencyData?.level} -{" "}
+                  {
+                    CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[
+                      appLanguage
+                    ]
+                  }
+                </Text>
+              </VStack>
+
+              {/* Completion Message */}
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="xl"
+                py={6}
+                px={8}
+                width="100%"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+              >
+                <VStack spacing={3}>
+                  <Text fontSize="lg" fontWeight="bold">
+                    {appLanguage === "es"
+                      ? "¡Felicitaciones!"
+                      : "Congratulations!"}
+                  </Text>
+                  <Text fontSize="md" opacity={0.9}>
+                    {completedProficiencyData?.nextLevel
+                      ? appLanguage === "es"
+                        ? `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`
+                        : `You've unlocked level ${completedProficiencyData.nextLevel}`
+                      : appLanguage === "es"
+                      ? "¡Has completado todos los niveles!"
+                      : "You've completed all levels!"}
+                  </Text>
+                </VStack>
+              </Box>
+
+              {/* Continue Button */}
+              <Button
+                size="lg"
+                width="100%"
+                bg="white"
+                color={
+                  completedProficiencyData?.level
+                    ? CEFR_LEVEL_INFO[completedProficiencyData.level]?.color ||
+                      "purple.600"
+                    : "purple.600"
+                }
+                _hover={{ bg: "gray.100" }}
+                _active={{ bg: "gray.200" }}
+                onClick={handleCloseProficiencyCompletionModal}
+                fontWeight="bold"
+                fontSize="lg"
+                py={6}
+              >
+                {completedProficiencyData?.nextLevel
+                  ? appLanguage === "es"
+                    ? "Ir al Siguiente Nivel"
+                    : "Go to Next Level"
+                  : appLanguage === "es"
+                  ? "Continuar"
+                  : "Continue"}
               </Button>
             </VStack>
           </ModalBody>
