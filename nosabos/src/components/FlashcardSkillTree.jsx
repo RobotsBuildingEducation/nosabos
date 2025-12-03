@@ -183,6 +183,7 @@ export default function FlashcardSkillTree({
   onStartFlashcard,
   targetLang = "es",
   supportLang = "en",
+  activeCEFRLevel = null, // Filter flashcards by CEFR level
 }) {
   const [practiceCard, setPracticeCard] = useState(null);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
@@ -207,16 +208,29 @@ export default function FlashcardSkillTree({
         const relevantFlashcards = await loadRelevantFlashcards(userProgress);
 
         if (isMounted && relevantFlashcards.length > 0) {
-          setFlashcardData(relevantFlashcards);
+          // Filter by active CEFR level if specified
+          const filteredFlashcards = activeCEFRLevel
+            ? relevantFlashcards.filter(card => card.cefrLevel === activeCEFRLevel)
+            : relevantFlashcards;
+
+          setFlashcardData(filteredFlashcards);
         } else if (isMounted) {
-          // If no relevant flashcards loaded, use all data
-          setFlashcardData(FLASHCARD_DATA);
+          // If no relevant flashcards loaded, use all data (filtered by level)
+          const filteredFlashcards = activeCEFRLevel
+            ? FLASHCARD_DATA.filter(card => card.cefrLevel === activeCEFRLevel)
+            : FLASHCARD_DATA;
+
+          setFlashcardData(filteredFlashcards);
         }
       } catch (error) {
         console.error('Error loading flashcards:', error);
         if (isMounted) {
-          // Fall back to full dataset on error
-          setFlashcardData(FLASHCARD_DATA);
+          // Fall back to full dataset on error (filtered by level)
+          const filteredFlashcards = activeCEFRLevel
+            ? FLASHCARD_DATA.filter(card => card.cefrLevel === activeCEFRLevel)
+            : FLASHCARD_DATA;
+
+          setFlashcardData(filteredFlashcards);
         }
       } finally {
         if (isMounted) {
@@ -234,7 +248,7 @@ export default function FlashcardSkillTree({
     return () => {
       isMounted = false;
     };
-  }, [userProgress]);
+  }, [userProgress, activeCEFRLevel]);
 
   // Memoized completion status map for O(1) lookups
   const completionMap = useMemo(() => {

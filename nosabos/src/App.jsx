@@ -2550,8 +2550,8 @@ export default function App() {
     };
   }, [user?.progress, resolvedTargetLang]);
 
-  // Determine which CEFR levels to load based on user progress
-  const relevantLevels = useMemo(() => {
+  // Determine current CEFR level based on user progress
+  const currentCEFRLevel = useMemo(() => {
     const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
     const lessons = userProgress.lessons || {};
 
@@ -2570,22 +2570,21 @@ export default function App() {
       }
     }
 
-    // Load current level + next level for smooth progression
-    const currentLevelIndex = CEFR_LEVELS.indexOf(highestStartedLevel);
-    const levelsToLoad = [highestStartedLevel];
-
-    // Add next level if available
-    if (currentLevelIndex < CEFR_LEVELS.length - 1) {
-      levelsToLoad.push(CEFR_LEVELS[currentLevelIndex + 1]);
-    }
-
-    // Always ensure at least A1 is included
-    if (!levelsToLoad.includes('A1')) {
-      levelsToLoad.unshift('A1');
-    }
-
-    return levelsToLoad;
+    return highestStartedLevel;
   }, [userProgress.lessons]);
+
+  // State for which CEFR level is currently being viewed
+  const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
+
+  // Update active level when user progress changes
+  useEffect(() => {
+    setActiveCEFRLevel(currentCEFRLevel);
+  }, [currentCEFRLevel]);
+
+  // Load only the active level (single level pagination)
+  const relevantLevels = useMemo(() => {
+    return [activeCEFRLevel];
+  }, [activeCEFRLevel]);
 
   /* -----------------------------------
      Loading / Onboarding gates
@@ -2716,6 +2715,9 @@ export default function App() {
             onCompleteFlashcard={handleCompleteFlashcard}
             showMultipleLevels={true}
             levels={relevantLevels}
+            activeCEFRLevel={activeCEFRLevel}
+            currentCEFRLevel={currentCEFRLevel}
+            onLevelChange={setActiveCEFRLevel}
           />
         </Box>
       )}

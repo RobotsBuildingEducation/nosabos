@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import PathSwitcher from "./PathSwitcher";
 import FlashcardSkillTree from "./FlashcardSkillTree";
+import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import {
   RiLockLine,
   RiCheckLine,
@@ -1840,6 +1841,9 @@ export default function SkillTree({
   onCompleteFlashcard, // Callback for flashcard completion with XP
   showMultipleLevels = true, // New prop to show multiple levels
   levels = ["A1", "A2", "B1", "B2", "C1", "C2"], // Default to showing all CEFR levels A1 through C2
+  activeCEFRLevel = "A1", // Currently active/visible CEFR level
+  currentCEFRLevel = "A1", // User's current progress level
+  onLevelChange, // Callback when user navigates to different level
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -1912,6 +1916,28 @@ export default function SkillTree({
   );
   const overallProgress =
     totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+  // Calculate current level progress (for the active CEFR level)
+  const levelProgress = useMemo(() => {
+    const levelUnits = units.filter(unit => unit.cefrLevel === activeCEFRLevel);
+    if (levelUnits.length === 0) return 0;
+
+    const levelTotalLessons = levelUnits.reduce(
+      (sum, unit) => sum + unit.lessons.length,
+      0
+    );
+    const levelCompletedLessons = levelUnits.reduce(
+      (sum, unit) =>
+        sum +
+        unit.lessons.filter(
+          (lesson) =>
+            userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
+        ).length,
+      0
+    );
+
+    return levelTotalLessons > 0 ? (levelCompletedLessons / levelTotalLessons) * 100 : 0;
+  }, [units, activeCEFRLevel, userProgress.lessons]);
 
   return (
     <Box bg={bgColor} minH="100vh" position="relative" overflow="hidden">
@@ -1987,6 +2013,17 @@ export default function SkillTree({
         >
           <PathSwitcher selectedMode={pathMode} onModeChange={setPathMode} />
         </MotionBox>
+
+        {/* CEFR Level Navigator */}
+        {onLevelChange && (
+          <CEFRLevelNavigator
+            currentLevel={currentCEFRLevel}
+            activeCEFRLevel={activeCEFRLevel}
+            onLevelChange={onLevelChange}
+            levelProgress={levelProgress}
+            supportLang={supportLang}
+          />
+        )}
 
         {/* Minimal Progress Header */}
         <MotionBox
@@ -2093,6 +2130,7 @@ export default function SkillTree({
             onStartFlashcard={handleFlashcardComplete}
             targetLang={targetLang}
             supportLang={supportLang}
+            activeCEFRLevel={activeCEFRLevel}
           />
         )}
 
