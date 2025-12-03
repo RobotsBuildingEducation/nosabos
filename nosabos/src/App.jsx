@@ -2568,18 +2568,32 @@ export default function App() {
     const isAdmin = currentNsec === adminNsec;
 
     if (isAdmin) {
-      // Admin account has all levels unlocked
+      // Admin account: A1 almost complete (testing UI), rest locked
       const adminStatus = {};
       CEFR_LEVELS.forEach((level) => {
-        adminStatus[level] = {
-          completedLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0,
-          totalLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0,
-          completedFlashcards: CEFR_LEVEL_COUNTS[level]?.flashcards || 0,
-          totalFlashcards: CEFR_LEVEL_COUNTS[level]?.flashcards || 0,
-          isComplete: true, // All levels marked as complete
-          lessonsProgress: 100,
-          flashcardsProgress: 100,
-        };
+        if (level === 'A1') {
+          // A1: All lessons complete, but missing last flashcard
+          adminStatus[level] = {
+            completedLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0, // 30/30
+            totalLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0,
+            completedFlashcards: (CEFR_LEVEL_COUNTS[level]?.flashcards || 0) - 1, // 299/300
+            totalFlashcards: CEFR_LEVEL_COUNTS[level]?.flashcards || 0,
+            isComplete: false, // Not complete - missing 1 flashcard
+            lessonsProgress: 100,
+            flashcardsProgress: 99.67, // 299/300
+          };
+        } else {
+          // All other levels: locked (no progress)
+          adminStatus[level] = {
+            completedLessons: 0,
+            totalLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0,
+            completedFlashcards: 0,
+            totalFlashcards: CEFR_LEVEL_COUNTS[level]?.flashcards || 0,
+            isComplete: false,
+            lessonsProgress: 0,
+            flashcardsProgress: 0,
+          };
+        }
       });
       return adminStatus;
     }
