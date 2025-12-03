@@ -2844,12 +2844,24 @@ export default function App() {
 
   // Detect lesson level completion and show celebration modal
   useEffect(() => {
+    // Check if this is the first run (ref not initialized)
+    const isFirstRun = Object.keys(prevLessonCompletionRef.current).length === 0;
+
+    // If first run, just initialize the ref without showing celebration
+    if (isFirstRun) {
+      prevLessonCompletionRef.current = CEFR_LEVELS.reduce((acc, level) => {
+        acc[level] = lessonLevelCompletionStatus[level]?.isComplete || false;
+        return acc;
+      }, {});
+      return;
+    }
+
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevLessonCompletionRef.current[level];
       const isNowComplete = lessonLevelCompletionStatus[level]?.isComplete;
 
-      // Check if level was just completed (transition from false/undefined to true)
-      if (!wasComplete && isNowComplete && level === activeLessonLevel) {
+      // Check if level was just completed (transition from false to true)
+      if (wasComplete === false && isNowComplete === true && level === activeLessonLevel) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
         const nextLevel =
@@ -2875,12 +2887,24 @@ export default function App() {
 
   // Detect flashcard level completion and show celebration modal
   useEffect(() => {
+    // Check if this is the first run (ref not initialized)
+    const isFirstRun = Object.keys(prevFlashcardCompletionRef.current).length === 0;
+
+    // If first run, just initialize the ref without showing celebration
+    if (isFirstRun) {
+      prevFlashcardCompletionRef.current = CEFR_LEVELS.reduce((acc, level) => {
+        acc[level] = flashcardLevelCompletionStatus[level]?.isComplete || false;
+        return acc;
+      }, {});
+      return;
+    }
+
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevFlashcardCompletionRef.current[level];
       const isNowComplete = flashcardLevelCompletionStatus[level]?.isComplete;
 
-      // Check if level was just completed (transition from false/undefined to true)
-      if (!wasComplete && isNowComplete && level === activeFlashcardLevel) {
+      // Check if level was just completed (transition from false to true)
+      if (wasComplete === false && isNowComplete === true && level === activeFlashcardLevel) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
         const nextLevel =
