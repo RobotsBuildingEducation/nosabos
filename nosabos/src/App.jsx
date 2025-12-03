@@ -2550,57 +2550,21 @@ export default function App() {
     };
   }, [user?.progress, resolvedTargetLang]);
 
-  // Calculate which CEFR levels are unlocked based on completion
-  const levelCompletionStatus = useMemo(() => {
-    const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
-    const CEFR_LEVEL_COUNTS = {
-      A1: { flashcards: 1, lessons: 0 }, // TEST MODE: 1 flashcard, 0 lessons required
-      A2: { flashcards: 250, lessons: 35 },
-      B1: { flashcards: 200, lessons: 40 },
-      B2: { flashcards: 150, lessons: 35 },
-      C1: { flashcards: 100, lessons: 30 },
-      C2: { flashcards: 50, lessons: 20 },
-    };
+  // CEFR level configuration (shared across modes)
+  const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  const CEFR_LEVEL_COUNTS = {
+    A1: { flashcards: 1, lessons: 0 }, // TEST MODE: 1 flashcard, 0 lessons required
+    A2: { flashcards: 250, lessons: 35 },
+    B1: { flashcards: 200, lessons: 40 },
+    B2: { flashcards: 150, lessons: 35 },
+    C1: { flashcards: 100, lessons: 30 },
+    C2: { flashcards: 50, lessons: 20 },
+  };
 
-    // Admin/test account bypass - DISABLED for testing real progress
-    // const adminNsec = "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
-    // const currentNsec = typeof window !== "undefined" ? localStorage.getItem("local_nsec") : "";
-    // const isAdmin = currentNsec === adminNsec;
-    //
-    // if (isAdmin) {
-    //   // Admin account: A1 almost complete (testing UI), rest locked
-    //   const adminStatus = {};
-    //   CEFR_LEVELS.forEach((level) => {
-    //     if (level === 'A1') {
-    //       // A1: All lessons complete, but missing last flashcard
-    //       adminStatus[level] = {
-    //         completedLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0, // 30/30
-    //         totalLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0,
-    //         completedFlashcards: (CEFR_LEVEL_COUNTS[level]?.flashcards || 0) - 1, // 299/300
-    //         totalFlashcards: CEFR_LEVEL_COUNTS[level]?.flashcards || 0,
-    //         isComplete: false, // Not complete - missing 1 flashcard
-    //         lessonsProgress: 100,
-    //         flashcardsProgress: 99.67, // 299/300
-    //       };
-    //     } else {
-    //       // All other levels: locked (no progress)
-    //       adminStatus[level] = {
-    //         completedLessons: 0,
-    //         totalLessons: CEFR_LEVEL_COUNTS[level]?.lessons || 0,
-    //         completedFlashcards: 0,
-    //         totalFlashcards: CEFR_LEVEL_COUNTS[level]?.flashcards || 0,
-    //         isComplete: false,
-    //         lessonsProgress: 0,
-    //         flashcardsProgress: 0,
-    //       };
-    //     }
-    //   });
-    //   return adminStatus;
-    // }
-
+  // Calculate lesson mode completion status (independent from flashcards)
+  const lessonLevelCompletionStatus = useMemo(() => {
     const status = {};
     const lessons = userProgress.lessons || {};
-    const flashcards = userProgress.flashcards || {};
 
     CEFR_LEVELS.forEach((level) => {
       // Count completed lessons for this level
@@ -2609,39 +2573,115 @@ export default function App() {
         return match && match[1].toUpperCase() === level && lessons[lessonId]?.status === 'completed';
       }).length;
 
+      const totalLessons = CEFR_LEVEL_COUNTS[level]?.lessons || 0;
+
+      // Level is complete if all lessons are done (ignore flashcards)
+      const isComplete = completedLessons >= totalLessons;
+
+      status[level] = {
+        completedLessons,
+        totalLessons,
+        isComplete,
+        lessonsProgress: totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0,
+      };
+    });
+
+    return status;
+  }, [userProgress.lessons]);
+
+  // Calculate flashcard mode completion status (independent from lessons)
+  const flashcardLevelCompletionStatus = useMemo(() => {
+    const status = {};
+    const flashcards = userProgress.flashcards || {};
+
+    CEFR_LEVELS.forEach((level) => {
       // Count completed flashcards for this level
       const completedFlashcards = Object.keys(flashcards).filter((cardId) => {
         return cardId.startsWith(level.toLowerCase() + '-') && flashcards[cardId]?.completed;
       }).length;
 
-      const totalLessons = CEFR_LEVEL_COUNTS[level]?.lessons || 0;
       const totalFlashcards = CEFR_LEVEL_COUNTS[level]?.flashcards || 0;
 
-      // Level is complete if BOTH lessons and flashcards are 100% done
-      const isComplete =
-        completedLessons >= totalLessons &&
-        completedFlashcards >= totalFlashcards;
+      // Level is complete if all flashcards are done (ignore lessons)
+      const isComplete = completedFlashcards >= totalFlashcards;
 
       status[level] = {
-        completedLessons,
-        totalLessons,
         completedFlashcards,
         totalFlashcards,
         isComplete,
-        lessonsProgress: totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0,
         flashcardsProgress: totalFlashcards > 0 ? (completedFlashcards / totalFlashcards) * 100 : 0,
       };
     });
 
     return status;
-  }, [userProgress.lessons, userProgress.flashcards]);
+  }, [userProgress.flashcards]);
 
-  // Determine current unlocked CEFR level (highest level user can access)
-  const currentCEFRLevel = useMemo(() => {
-    const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+  // Legacy: Combined completion status (for backwards compatibility)
+  const levelCompletionStatus = useMemo(() => {
+    const status = {};
 
-    // Find the highest level that's unlocked
+    CEFR_LEVELS.forEach((level) => {
+      const lessonStatus = lessonLevelCompletionStatus[level];
+      const flashcardStatus = flashcardLevelCompletionStatus[level];
+
+      status[level] = {
+        completedLessons: lessonStatus.completedLessons,
+        totalLessons: lessonStatus.totalLessons,
+        completedFlashcards: flashcardStatus.completedFlashcards,
+        totalFlashcards: flashcardStatus.totalFlashcards,
+        isComplete: lessonStatus.isComplete && flashcardStatus.isComplete,
+        lessonsProgress: lessonStatus.lessonsProgress,
+        flashcardsProgress: flashcardStatus.flashcardsProgress,
+      };
+    });
+
+    return status;
+  }, [lessonLevelCompletionStatus, flashcardLevelCompletionStatus]);
+
+  // Determine current unlocked lesson level (highest level user can access in lesson mode)
+  const currentLessonLevel = useMemo(() => {
+    // Find the highest level that's unlocked for lessons
     // A level is unlocked if the previous level is complete
+    let unlockedLevel = 'A1'; // A1 is always unlocked
+
+    for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
+      const currentLevel = CEFR_LEVELS[i];
+      const nextLevel = CEFR_LEVELS[i + 1];
+
+      if (lessonLevelCompletionStatus[currentLevel]?.isComplete) {
+        unlockedLevel = nextLevel;
+      } else {
+        break; // Stop at first incomplete level
+      }
+    }
+
+    return unlockedLevel;
+  }, [lessonLevelCompletionStatus]);
+
+  // Determine current unlocked flashcard level (highest level user can access in flashcard mode)
+  const currentFlashcardLevel = useMemo(() => {
+    // Find the highest level that's unlocked for flashcards
+    // A level is unlocked if the previous level is complete
+    let unlockedLevel = 'A1'; // A1 is always unlocked
+
+    for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
+      const currentLevel = CEFR_LEVELS[i];
+      const nextLevel = CEFR_LEVELS[i + 1];
+
+      if (flashcardLevelCompletionStatus[currentLevel]?.isComplete) {
+        unlockedLevel = nextLevel;
+      } else {
+        break; // Stop at first incomplete level
+      }
+    }
+
+    return unlockedLevel;
+  }, [flashcardLevelCompletionStatus]);
+
+  // Legacy: Combined current level (for backwards compatibility)
+  const currentCEFRLevel = useMemo(() => {
+    // Find the highest level that's unlocked in both modes
+    // A level is unlocked if the previous level is complete in BOTH modes
     let unlockedLevel = 'A1'; // A1 is always unlocked
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
@@ -2658,23 +2698,87 @@ export default function App() {
     return unlockedLevel;
   }, [levelCompletionStatus]);
 
-  // State for which CEFR level is currently being viewed
+  // State for which CEFR level is currently being viewed (separate for each mode)
+  const [activeLessonLevel, setActiveLessonLevel] = useState(currentLessonLevel);
+  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState(currentFlashcardLevel);
+
+  // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
 
-  // Update active level when user progress changes
+  // Update active lesson level when user progress changes
+  useEffect(() => {
+    setActiveLessonLevel(currentLessonLevel);
+  }, [currentLessonLevel]);
+
+  // Update active flashcard level when user progress changes
+  useEffect(() => {
+    setActiveFlashcardLevel(currentFlashcardLevel);
+  }, [currentFlashcardLevel]);
+
+  // Update combined active level when user progress changes
   useEffect(() => {
     setActiveCEFRLevel(currentCEFRLevel);
   }, [currentCEFRLevel]);
 
-  // Handler for level navigation with lock checking
+  // Handler for lesson level navigation with lock checking
+  const handleLessonLevelChange = useCallback((newLevel) => {
+    const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+
+    // Check if this level is unlocked in lesson mode
+    let isUnlocked = newLevel === 'A1';
+
+    if (!isUnlocked) {
+      // Check all levels before this one are complete in lesson mode
+      isUnlocked = true;
+      for (let i = 0; i < newLevelIndex; i++) {
+        const prevLevel = CEFR_LEVELS[i];
+        if (!lessonLevelCompletionStatus[prevLevel]?.isComplete) {
+          isUnlocked = false;
+          break;
+        }
+      }
+    }
+
+    // Only navigate if unlocked
+    if (isUnlocked) {
+      setActiveLessonLevel(newLevel);
+    } else {
+      console.log(`Lesson level ${newLevel} is locked. Complete previous levels first.`);
+    }
+  }, [lessonLevelCompletionStatus]);
+
+  // Handler for flashcard level navigation with lock checking
+  const handleFlashcardLevelChange = useCallback((newLevel) => {
+    const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+
+    // Check if this level is unlocked in flashcard mode
+    let isUnlocked = newLevel === 'A1';
+
+    if (!isUnlocked) {
+      // Check all levels before this one are complete in flashcard mode
+      isUnlocked = true;
+      for (let i = 0; i < newLevelIndex; i++) {
+        const prevLevel = CEFR_LEVELS[i];
+        if (!flashcardLevelCompletionStatus[prevLevel]?.isComplete) {
+          isUnlocked = false;
+          break;
+        }
+      }
+    }
+
+    // Only navigate if unlocked
+    if (isUnlocked) {
+      setActiveFlashcardLevel(newLevel);
+    } else {
+      console.log(`Flashcard level ${newLevel} is locked. Complete previous levels first.`);
+    }
+  }, [flashcardLevelCompletionStatus]);
+
+  // Legacy: Combined handler for level navigation
   const handleLevelChange = useCallback((newLevel) => {
-    const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
     const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
 
     // Check if this level is unlocked
-    // A level is unlocked if:
-    // 1. It's A1 (always unlocked)
-    // 2. All previous levels are complete
     let isUnlocked = newLevel === 'A1';
 
     if (!isUnlocked) {
@@ -2697,10 +2801,12 @@ export default function App() {
     }
   }, [levelCompletionStatus]);
 
-  // Load only the active level (single level pagination)
+  // Load only the active levels (include both lesson and flashcard levels for mode switching)
   const relevantLevels = useMemo(() => {
-    return [activeCEFRLevel];
-  }, [activeCEFRLevel]);
+    // Include both lesson and flashcard active levels to support mode switching
+    const levelsSet = new Set([activeLessonLevel, activeFlashcardLevel]);
+    return Array.from(levelsSet);
+  }, [activeLessonLevel, activeFlashcardLevel]);
 
   /* -----------------------------------
      Loading / Onboarding gates
@@ -2831,6 +2937,16 @@ export default function App() {
             onCompleteFlashcard={handleCompleteFlashcard}
             showMultipleLevels={true}
             levels={relevantLevels}
+            // Mode-specific level props
+            activeLessonLevel={activeLessonLevel}
+            activeFlashcardLevel={activeFlashcardLevel}
+            currentLessonLevel={currentLessonLevel}
+            currentFlashcardLevel={currentFlashcardLevel}
+            onLessonLevelChange={handleLessonLevelChange}
+            onFlashcardLevelChange={handleFlashcardLevelChange}
+            lessonLevelCompletionStatus={lessonLevelCompletionStatus}
+            flashcardLevelCompletionStatus={flashcardLevelCompletionStatus}
+            // Legacy props (for backwards compatibility)
             activeCEFRLevel={activeCEFRLevel}
             currentCEFRLevel={currentCEFRLevel}
             onLevelChange={handleLevelChange}

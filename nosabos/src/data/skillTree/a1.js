@@ -3,7 +3,8 @@
  */
 
 export const SKILL_TREE_A1 = [
-id: "unit-pre-a1-1",
+  {
+    id: "unit-pre-a1-1",
       title: {
         en: "Pre-A1 Foundations",
         es: "Fundamentos Pre-A1",
