@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Box, VStack, HStack, Text, Button, Badge } from "@chakra-ui/react";
+import { Box, VStack, HStack, Text, Button, Badge, Spinner } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RiStarLine,
@@ -404,7 +404,30 @@ export default function FlashcardSkillTree({
 
   return (
     <Box w="100%" minH="500px" position="relative">
+      {/* Loading indicator */}
+      {isLoadingFlashcards && (
+        <VStack
+          spacing={4}
+          justify="center"
+          align="center"
+          minH="400px"
+          py={12}
+        >
+          <Spinner
+            size="xl"
+            thickness="4px"
+            speed="0.65s"
+            color="blue.400"
+            emptyColor="whiteAlpha.200"
+          />
+          <Text color="gray.400" fontSize="md" fontWeight="medium">
+            {getTranslation("flashcard_loading")}
+          </Text>
+        </VStack>
+      )}
+
       {/* Main container with vertical layout */}
+      {!isLoadingFlashcards && (
       <VStack spacing={8} align="stretch">
         {/* Top: Active/Upcoming Cards */}
         <Box w="100%">
@@ -501,6 +524,7 @@ export default function FlashcardSkillTree({
           </Box>
         )}
       </VStack>
+      )}
 
       {/* Practice Modal */}
       {practiceCard && (
