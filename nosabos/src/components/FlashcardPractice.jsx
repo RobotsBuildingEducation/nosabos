@@ -125,6 +125,7 @@ export default function FlashcardPractice({
   onComplete,
   targetLang = "es",
   supportLang = "en",
+  pauseMs = 2000,
 }) {
   const [textAnswer, setTextAnswer] = useState("");
   const [showResult, setShowResult] = useState(false);
@@ -166,6 +167,7 @@ export default function FlashcardPractice({
         checkAnswerWithAI(text);
       }
     },
+    timeoutMs: pauseMs,
   });
 
   const checkAnswerWithAI = async (answer) => {

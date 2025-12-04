@@ -301,6 +301,7 @@ export default function StoryMode({
   lesson = null,
   lessonContent = null,
   onSkip = null,
+  pauseMs = 2000,
 }) {
   const navigate = useNavigate();
   const toast = useToast();
@@ -1340,7 +1341,7 @@ export default function StoryMode({
         try {
           mr.stop();
         } catch {}
-      }, 15000);
+      }, pauseMs);
     } catch (err) {
       evalRef.current.inProgress = false;
       console.error("Mic error:", err);

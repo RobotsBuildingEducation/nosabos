@@ -2585,6 +2585,7 @@ export default function App() {
               userLanguage={appLanguage}
               activeNpub={activeNpub}
               activeNsec={activeNsec}
+              pauseMs={user?.progress?.pauseMs}
             />
           </>
         );
@@ -3258,6 +3259,7 @@ export default function App() {
               userProgress={userProgress}
               onStartLesson={handleStartLesson}
               onCompleteFlashcard={handleCompleteFlashcard}
+              pauseMs={user?.progress?.pauseMs}
               showMultipleLevels={true}
               levels={relevantLevels}
               // Mode-specific level props
@@ -3337,6 +3339,7 @@ export default function App() {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
+                          pauseMs={user?.progress?.pauseMs}
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.stories}
                           onSkip={switchToRandomLessonMode}
@@ -3361,6 +3364,7 @@ export default function App() {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
+                          pauseMs={user?.progress?.pauseMs}
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.grammar}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
@@ -3381,6 +3385,7 @@ export default function App() {
                           userLanguage={appLanguage}
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
+                          pauseMs={user?.progress?.pauseMs}
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.vocabulary}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
