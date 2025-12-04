@@ -1595,9 +1595,7 @@ function LessonDetailModal({
                   </Box>
                   <Text fontWeight="bold" color="white" fontSize="md">
                     {lesson.isFinalQuiz
-                      ? supportLang === "es"
-                        ? "Puntuación Requerida"
-                        : "Passing Score"
+                      ? getTranslation(supportLang, "skill_tree_passing_score")
                       : getTranslation(supportLang, "skill_tree_xp_reward")}
                   </Text>
                 </HStack>

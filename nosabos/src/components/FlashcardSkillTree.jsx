@@ -14,6 +14,18 @@ import {
 } from "../data/flashcardData";
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
+import { translations } from "../utils/translation";
+
+// Translation helper for UI strings
+const getTranslation = (supportLang = "en", key, params = {}) => {
+  const lang = supportLang === "bilingual" ? "en" : supportLang;
+  const dict = translations[lang] || translations.en;
+  const raw = dict[key] || key;
+  if (typeof raw !== "string") return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) =>
+    params[k] != null ? String(params[k]) : `{${k}}`
+  );
+};
 
 const MotionBox = motion(Box);
 
@@ -408,10 +420,10 @@ export default function FlashcardSkillTree({
               >
                 <RiCheckLine size={64} color="#22C55E" />
                 <Text fontSize="2xl" fontWeight="black" color="white">
-                  All Done!
+                  {getTranslation(supportLang, "flashcard_all_done")}
                 </Text>
                 <Text fontSize="md" color="gray.400" textAlign="center">
-                  You've completed all flashcards!
+                  {getTranslation(supportLang, "flashcard_all_completed")}
                 </Text>
               </VStack>
             </MotionBox>
