@@ -697,6 +697,7 @@ export default function Vocabulary({
   quizConfig = { questionsRequired: 10, passingScore: 8 },
   onSkip = null,
   onExitQuiz = null,
+  pauseMs = 2000,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -2757,6 +2758,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     targetText: sTarget,
     targetLang,
     onResult: handleSpeakEvaluation,
+    timeoutMs: pauseMs,
   });
 
   /* ---------------------------

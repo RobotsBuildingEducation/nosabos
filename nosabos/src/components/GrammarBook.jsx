@@ -624,6 +624,7 @@ export default function GrammarBook({
   isFinalQuiz = false,
   quizConfig = { questionsRequired: 10, passingScore: 8 },
   onSkip = null,
+  pauseMs = 2000,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -2515,6 +2516,7 @@ Return JSON ONLY:
     targetText: sTarget,
     targetLang,
     onResult: handleSpeakEvaluation,
+    timeoutMs: pauseMs,
   });
 
   /* ---------------------------

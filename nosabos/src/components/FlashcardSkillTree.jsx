@@ -206,6 +206,7 @@ export default function FlashcardSkillTree({
   targetLang = "es",
   supportLang = "en",
   activeCEFRLevel = null, // Filter flashcards by CEFR level
+  pauseMs = 2000,
 }) {
   const [practiceCard, setPracticeCard] = useState(null);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
@@ -497,6 +498,7 @@ export default function FlashcardSkillTree({
           onComplete={handleComplete}
           targetLang={targetLang}
           supportLang={supportLang}
+          pauseMs={pauseMs}
         />
       )}
     </Box>
