@@ -32,9 +32,17 @@ import { translations } from "../utils/translation";
 
 const MotionBox = motion(Box);
 
-// Translation helper for UI strings
-const getTranslation = (supportLang = "en", key, params = {}) => {
-  const lang = supportLang === "bilingual" ? "en" : supportLang;
+// Get app language from localStorage (UI language setting)
+const getAppLanguage = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("appLanguage") || "en";
+  }
+  return "en";
+};
+
+// Translation helper for UI strings - uses appLanguage for UI text
+const getTranslation = (key, params = {}) => {
+  const lang = getAppLanguage();
   const dict = translations[lang] || translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
@@ -130,8 +138,8 @@ export default function FlashcardPractice({
     onResult: ({ recognizedText, evaluation, error }) => {
       if (error) {
         toast({
-          title: getTranslation(supportLang, "flashcard_eval_error_title"),
-          description: getTranslation(supportLang, "flashcard_eval_error_desc"),
+          title: getTranslation("flashcard_eval_error_title"),
+          description: getTranslation("flashcard_eval_error_desc"),
           status: "error",
           duration: 2500,
         });
@@ -188,8 +196,8 @@ export default function FlashcardPractice({
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
-        title: getTranslation(supportLang, "flashcard_grading_error_title"),
-        description: getTranslation(supportLang, "flashcard_grading_error_desc"),
+        title: getTranslation("flashcard_grading_error_title"),
+        description: getTranslation("flashcard_grading_error_desc"),
         status: "error",
         duration: 3000,
       });
@@ -252,15 +260,15 @@ export default function FlashcardPractice({
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
-          title: getTranslation(supportLang, "flashcard_speech_unavailable_title"),
-          description: getTranslation(supportLang, "flashcard_speech_unavailable_desc"),
+          title: getTranslation("flashcard_speech_unavailable_title"),
+          description: getTranslation("flashcard_speech_unavailable_desc"),
           status: "warning",
           duration: 3200,
         });
       } else if (code === "mic-denied") {
         toast({
-          title: getTranslation(supportLang, "flashcard_mic_denied_title"),
-          description: getTranslation(supportLang, "flashcard_mic_denied_desc"),
+          title: getTranslation("flashcard_mic_denied_title"),
+          description: getTranslation("flashcard_mic_denied_desc"),
           status: "error",
           duration: 3200,
         });
@@ -294,7 +302,7 @@ export default function FlashcardPractice({
       }
     } catch (error) {
       console.error("Gemini streaming error:", error);
-      setStreamedAnswer(getTranslation(supportLang, "flashcard_error_loading"));
+      setStreamedAnswer(getTranslation("flashcard_error_loading"));
     } finally {
       setIsStreaming(false);
       streamingRef.current = false;
@@ -374,7 +382,7 @@ export default function FlashcardPractice({
                   boxShadow="0 8px 32px rgba(37, 99, 235, 0.3)"
                 >
                   <Text fontSize="xs" color="whiteAlpha.800" fontWeight="medium" mb={1}>
-                    {getTranslation(supportLang, "flashcard_translate_to", { language: LANG_NAME(targetLang) })}
+                    {getTranslation("flashcard_translate_to", { language: LANG_NAME(targetLang) })}
                   </Text>
                   <Text
                     fontSize="3xl"
@@ -398,7 +406,7 @@ export default function FlashcardPractice({
                     _hover={{ bg: "whiteAlpha.300" }}
                     fontSize="xs"
                   >
-                    {getTranslation(supportLang, "flashcard_show_answer")}
+                    {getTranslation("flashcard_show_answer")}
                   </Button>
                 </Box>
 
@@ -425,7 +433,7 @@ export default function FlashcardPractice({
                   onClick={handleFlipBack}
                 >
                   <Text fontSize="xs" color="blue.200" fontWeight="medium" mb={1}>
-                    {getTranslation(supportLang, "flashcard_answer_label")}
+                    {getTranslation("flashcard_answer_label")}
                   </Text>
                   {isStreaming && !streamedAnswer ? (
                     <Spinner size="md" color="blue.200" />
@@ -447,7 +455,7 @@ export default function FlashcardPractice({
                     fontSize="xs"
                     color="blue.300"
                   >
-                    {getTranslation(supportLang, "flashcard_tap_to_flip")}
+                    {getTranslation("flashcard_tap_to_flip")}
                   </Text>
                 </Box>
               </MotionBox>
@@ -460,7 +468,7 @@ export default function FlashcardPractice({
                 {isGrading ? (
                   <VStack spacing={3} py={4}>
                     <Spinner size="lg" color={cefrColor.primary} />
-                    <Text color="gray.400">{getTranslation(supportLang, "flashcard_grading")}</Text>
+                    <Text color="gray.400">{getTranslation("flashcard_grading")}</Text>
                   </VStack>
                 ) : (
                   <VStack spacing={4} w="100%">
@@ -484,7 +492,7 @@ export default function FlashcardPractice({
                       }}
                       _active={{ transform: "translateY(0)" }}
                     >
-                      {isRecording ? getTranslation(supportLang, "flashcard_stop_recording") : getTranslation(supportLang, "flashcard_record_answer")}
+                      {isRecording ? getTranslation("flashcard_stop_recording") : getTranslation("flashcard_record_answer")}
                     </Button>
 
                     {/* Recognized speech text */}
@@ -498,7 +506,7 @@ export default function FlashcardPractice({
                         w="100%"
                       >
                         <Text fontSize="sm" color="gray.400" mb={1}>
-                          {getTranslation(supportLang, "flashcard_recognized")}
+                          {getTranslation("flashcard_recognized")}
                         </Text>
                         <Text fontSize="lg" color="teal.200">
                           {recognizedText}
@@ -513,7 +521,7 @@ export default function FlashcardPractice({
                         value={textAnswer}
                         onChange={(e) => setTextAnswer(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder={getTranslation(supportLang, "flashcard_type_placeholder")}
+                        placeholder={getTranslation("flashcard_type_placeholder")}
                         size="lg"
                         fontSize="2xl"
                         textAlign="center"
@@ -544,7 +552,7 @@ export default function FlashcardPractice({
                         }}
                         _active={{ transform: "translateY(0)" }}
                       >
-                        {getTranslation(supportLang, "flashcard_submit")}
+                        {getTranslation("flashcard_submit")}
                       </Button>
                     </VStack>
 
@@ -557,7 +565,7 @@ export default function FlashcardPractice({
                       onClick={handleClose}
                       _hover={{ bg: "whiteAlpha.100" }}
                     >
-                      {getTranslation(supportLang, "flashcard_cancel")}
+                      {getTranslation("flashcard_cancel")}
                     </Button>
                   </VStack>
                 )}
@@ -587,7 +595,7 @@ export default function FlashcardPractice({
                         <RiCloseLine size={32} color="#EF4444" />
                       )}
                       <Text fontSize="2xl" fontWeight="bold" color="white">
-                        {isCorrect ? getTranslation(supportLang, "flashcard_correct") : getTranslation(supportLang, "flashcard_incorrect")}
+                        {isCorrect ? getTranslation("flashcard_correct") : getTranslation("flashcard_incorrect")}
                       </Text>
                     </HStack>
 
@@ -606,7 +614,7 @@ export default function FlashcardPractice({
                         onClick={handleTryAgain}
                         mt={2}
                       >
-                        {getTranslation(supportLang, "flashcard_try_again")}
+                        {getTranslation("flashcard_try_again")}
                       </Button>
                     )}
                   </VStack>
