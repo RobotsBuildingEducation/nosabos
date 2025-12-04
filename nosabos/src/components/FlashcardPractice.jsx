@@ -349,17 +349,17 @@ export default function FlashcardPractice({
                   position="absolute"
                   w="100%"
                   h="100%"
-                  bgGradient="linear(135deg, #0D9488, #14B8A6, #2DD4BF, #14B8A6)"
+                  bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
                   borderRadius="xl"
                   border="2px solid"
-                  borderColor="teal.400"
+                  borderColor="blue.400"
                   p={4}
                   display="flex"
                   flexDirection="column"
                   justifyContent="center"
                   alignItems="center"
                   sx={{ backfaceVisibility: "hidden" }}
-                  boxShadow="0 8px 32px rgba(20, 184, 166, 0.3)"
+                  boxShadow="0 8px 32px rgba(37, 99, 235, 0.3)"
                 >
                   <Text fontSize="xs" color="whiteAlpha.800" fontWeight="medium" mb={1}>
                     Translate to {LANG_NAME(targetLang)}:
@@ -395,10 +395,10 @@ export default function FlashcardPractice({
                   position="absolute"
                   w="100%"
                   h="100%"
-                  bgGradient="linear(135deg, #134E4A, #0F766E, #115E59, #0D9488)"
+                  bgGradient="linear(135deg, #1E1B4B, #312E81, #3730A3, #4338CA)"
                   borderRadius="xl"
                   border="2px solid"
-                  borderColor="teal.500"
+                  borderColor="blue.500"
                   p={4}
                   display="flex"
                   flexDirection="column"
@@ -408,15 +408,15 @@ export default function FlashcardPractice({
                     backfaceVisibility: "hidden",
                     transform: "rotateY(180deg)",
                   }}
-                  boxShadow="0 8px 32px rgba(13, 148, 136, 0.3)"
+                  boxShadow="0 8px 32px rgba(67, 56, 202, 0.3)"
                   cursor="pointer"
                   onClick={handleFlipBack}
                 >
-                  <Text fontSize="xs" color="teal.200" fontWeight="medium" mb={1}>
+                  <Text fontSize="xs" color="blue.200" fontWeight="medium" mb={1}>
                     Answer:
                   </Text>
                   {isStreaming && !streamedAnswer ? (
-                    <Spinner size="md" color="teal.200" />
+                    <Spinner size="md" color="blue.200" />
                   ) : (
                     <Text
                       fontSize="3xl"
@@ -433,7 +433,7 @@ export default function FlashcardPractice({
                     bottom={3}
                     right={3}
                     fontSize="xs"
-                    color="teal.300"
+                    color="blue.300"
                   >
                     Tap to flip back
                   </Text>
