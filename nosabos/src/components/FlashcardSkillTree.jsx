@@ -57,6 +57,7 @@ const FlashcardCard = React.memo(function FlashcardCard({
   onClick,
   stackPosition,
   supportLang,
+  skipInitialAnimation = false,
 }) {
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const isCompleted = status === "completed";
@@ -69,19 +70,19 @@ const FlashcardCard = React.memo(function FlashcardCard({
 
   return (
     <MotionBox
-      layout
-      initial={{ opacity: 0, scale: 0.8 }}
+      layout={!skipInitialAnimation}
+      initial={skipInitialAnimation ? false : { opacity: 0, scale: 0.8 }}
       animate={{
         opacity: isLocked ? 0.4 : 1,
         scale: isStacked ? 0.95 - stackPosition * 0.02 : 1,
         y: isStacked ? stackOffset : 0,
       }}
       exit={{ opacity: 0, scale: 0.8 }}
-      transition={{
-        type: "spring",
-        stiffness: 200,
-        damping: 25,
-      }}
+      transition={
+        skipInitialAnimation
+          ? { duration: 0 }
+          : { type: "spring", stiffness: 200, damping: 25 }
+      }
       onClick={onClick}
       cursor={isActive ? "pointer" : isLocked ? "not-allowed" : "default"}
       position={isStacked ? "absolute" : "relative"}
@@ -213,6 +214,16 @@ export default function FlashcardSkillTree({
   const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
   const [flashcardData, setFlashcardData] = useState(FLASHCARD_DATA);
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  // Skip initial animation on first render to prevent stutter
+  useEffect(() => {
+    // Use requestAnimationFrame to ensure we're past the first paint
+    const frame = requestAnimationFrame(() => {
+      setHasMounted(true);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   // Reset local completed cards when language changes
   useEffect(() => {
@@ -421,6 +432,7 @@ export default function FlashcardSkillTree({
                       status={getCardStatus(card)}
                       onClick={() => handleCardClick(card, getCardStatus(card))}
                       supportLang={supportLang}
+                      skipInitialAnimation={!hasMounted}
                     />
                   ))}
                 </AnimatePresence>
@@ -480,6 +492,7 @@ export default function FlashcardSkillTree({
                       status="completed"
                       stackPosition={index}
                       supportLang={supportLang}
+                      skipInitialAnimation={!hasMounted}
                     />
                   ))}
                 </AnimatePresence>
