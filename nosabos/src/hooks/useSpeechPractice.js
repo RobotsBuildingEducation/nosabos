@@ -159,22 +159,25 @@ export function useSpeechPractice({
     const recog = new SR();
     recognitionRef.current = recog;
     recog.lang = BCP47[targetLang] || BCP47.es;
-    recog.continuous = false;
-    recog.interimResults = false;
+    recog.continuous = true; // Enable continuous mode for manual silence detection
+    recog.interimResults = true; // Enable interim results to detect speech activity
     recog.maxAlternatives = 5;
 
-    recog.onresult = async (evt) => {
+    let finalTranscript = "";
+    let finalConfidence = 0;
+    let silenceTimeoutId = null;
+    let hasReceivedSpeech = false;
+
+    const finishRecording = async () => {
       if (!evalRef.current.inProgress) return;
       evalRef.current.speechDone = true;
       if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
       evalRef.current.timeoutId = null;
+      if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
 
-      const result = evt.results?.[0];
-      const best = result?.[0];
       await report({
-        recognizedText: best?.transcript || "",
-        confidence:
-          typeof best?.confidence === "number" ? best.confidence : 0,
+        recognizedText: finalTranscript,
+        confidence: finalConfidence,
         audioMetrics: null,
         method: "live-speech-api",
       });
@@ -187,14 +190,44 @@ export function useSpeechPractice({
       } catch {}
     };
 
+    recog.onresult = async (evt) => {
+      if (!evalRef.current.inProgress) return;
+
+      // Clear any existing silence timeout
+      if (silenceTimeoutId) {
+        clearTimeout(silenceTimeoutId);
+        silenceTimeoutId = null;
+      }
+
+      // Process results to build up the transcript
+      for (let i = 0; i < evt.results.length; i++) {
+        const result = evt.results[i];
+        if (result.isFinal) {
+          hasReceivedSpeech = true;
+          finalTranscript = result[0].transcript;
+          finalConfidence =
+            typeof result[0].confidence === "number" ? result[0].confidence : 0;
+        }
+      }
+
+      // Start silence detection timer - wait for pauseMs of silence before finishing
+      if (hasReceivedSpeech) {
+        silenceTimeoutId = setTimeout(() => {
+          finishRecording();
+        }, timeoutMs);
+      }
+    };
+
     recog.onerror = () => {
       evalRef.current.speechDone = false;
+      if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
       try {
         mr.stop();
       } catch {}
     };
 
     recog.onend = () => {
+      if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
       if (evalRef.current.inProgress && !evalRef.current.speechDone) {
         try {
           mr.stop();
@@ -213,21 +246,12 @@ export function useSpeechPractice({
     mr.start();
     setIsRecording(true);
 
+    // Maximum timeout as a safety measure (30 seconds)
     evalRef.current.timeoutId = setTimeout(() => {
       if (!evalRef.current.inProgress) return;
-      evalRef.current.speechDone = false;
-      try {
-        recognitionRef.current?.stop?.();
-      } catch {}
-      try {
-        if (
-          mediaRecorderRef.current &&
-          mediaRecorderRef.current.state === "recording"
-        ) {
-          mediaRecorderRef.current.stop();
-        }
-      } catch {}
-    }, Math.max(4000, timeoutMs));
+      if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
+      finishRecording();
+    }, 30000);
   }, [report, targetLang, targetText, timeoutMs, onResult]);
 
   const stopRecording = useCallback(() => {

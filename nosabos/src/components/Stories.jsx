@@ -1284,22 +1284,25 @@ export default function StoryMode({
         const recog = new SR();
         recognitionRef.current = recog;
         recog.lang = (BCP47[targetLang] || BCP47.es).stt;
-        recog.continuous = false;
-        recog.interimResults = false;
+        recog.continuous = true; // Enable continuous mode for manual silence detection
+        recog.interimResults = true; // Enable interim results to detect speech activity
         recog.maxAlternatives = 5;
 
-        recog.onresult = (evt) => {
+        let finalTranscript = "";
+        let finalConfidence = 0;
+        let silenceTimeoutId = null;
+        let hasReceivedSpeech = false;
+
+        const finishRecording = () => {
           if (!evalRef.current.inProgress) return;
           evalRef.current.speechDone = true;
-          clearTimeout(evalRef.current.timeoutId);
-
-          const result = evt.results[0];
-          const best = result[0];
+          if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
+          evalRef.current.timeoutId = null;
+          if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
 
           handleEvaluationResult({
-            recognizedText: best?.transcript || "",
-            confidence:
-              typeof best?.confidence === "number" ? best.confidence : 0,
+            recognizedText: finalTranscript,
+            confidence: finalConfidence,
             method: "live-speech-api",
           });
 
@@ -1310,13 +1313,44 @@ export default function StoryMode({
             mr.stop();
           } catch {}
         };
+
+        recog.onresult = (evt) => {
+          if (!evalRef.current.inProgress) return;
+
+          // Clear any existing silence timeout
+          if (silenceTimeoutId) {
+            clearTimeout(silenceTimeoutId);
+            silenceTimeoutId = null;
+          }
+
+          // Process results to build up the transcript
+          for (let i = 0; i < evt.results.length; i++) {
+            const result = evt.results[i];
+            if (result.isFinal) {
+              hasReceivedSpeech = true;
+              finalTranscript = result[0].transcript;
+              finalConfidence =
+                typeof result[0].confidence === "number" ? result[0].confidence : 0;
+            }
+          }
+
+          // Start silence detection timer - wait for pauseMs of silence before finishing
+          if (hasReceivedSpeech) {
+            silenceTimeoutId = setTimeout(() => {
+              finishRecording();
+            }, pauseMs);
+          }
+        };
+
         recog.onerror = () => {
           evalRef.current.speechDone = false;
+          if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
           try {
             mr.stop();
           } catch {}
         };
         recog.onend = () => {
+          if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
           if (evalRef.current.inProgress && !evalRef.current.speechDone) {
             try {
               mr.stop();
@@ -1331,7 +1365,7 @@ export default function StoryMode({
       mr.start();
       setIsRecording(true);
 
-      // global timeout safety
+      // Maximum timeout as a safety measure (30 seconds)
       evalRef.current.timeoutId = setTimeout(() => {
         if (!evalRef.current.inProgress) return;
         evalRef.current.speechDone = false;
@@ -1341,7 +1375,7 @@ export default function StoryMode({
         try {
           mr.stop();
         } catch {}
-      }, pauseMs);
+      }, 30000);
     } catch (err) {
       evalRef.current.inProgress = false;
       console.error("Mic error:", err);
