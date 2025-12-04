@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, Suspense, lazy } from "react";
 import {
   Box,
   VStack,
@@ -20,11 +20,14 @@ import {
   useDisclosure,
   Flex,
   useBreakpointValue,
+  Spinner,
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import PathSwitcher from "./PathSwitcher";
-import FlashcardSkillTree from "./FlashcardSkillTree";
+
+// Lazy load FlashcardSkillTree for instant tab switching
+const FlashcardSkillTree = lazy(() => import("./FlashcardSkillTree"));
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import {
   RiLockLine,
@@ -1996,14 +1999,31 @@ export default function SkillTree({
             )}
           </VStack>
         ) : (
-          <FlashcardSkillTree
-            userProgress={userProgress}
-            onStartFlashcard={handleFlashcardComplete}
-            targetLang={targetLang}
-            supportLang={supportLang}
-            activeCEFRLevel={effectiveActiveLevel}
-            pauseMs={pauseMs}
-          />
+          <Suspense
+            fallback={
+              <VStack spacing={4} justify="center" align="center" minH="400px" py={12}>
+                <Spinner
+                  size="xl"
+                  thickness="4px"
+                  speed="0.65s"
+                  color="blue.400"
+                  emptyColor="whiteAlpha.200"
+                />
+                <Text color="gray.400" fontSize="md" fontWeight="medium">
+                  {getTranslation("flashcard_loading")}
+                </Text>
+              </VStack>
+            }
+          >
+            <FlashcardSkillTree
+              userProgress={userProgress}
+              onStartFlashcard={handleFlashcardComplete}
+              targetLang={targetLang}
+              supportLang={supportLang}
+              activeCEFRLevel={effectiveActiveLevel}
+              pauseMs={pauseMs}
+            />
+          </Suspense>
         )}
 
         {/* Lesson Detail Modal */}
