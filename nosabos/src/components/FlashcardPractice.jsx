@@ -28,8 +28,42 @@ import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
+import { translations } from "../utils/translation";
 
 const MotionBox = motion(Box);
+
+// Get app language from localStorage (UI language setting)
+const getAppLanguage = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("appLanguage") || "en";
+  }
+  return "en";
+};
+
+// Translation helper for UI strings - uses appLanguage for UI text
+const getTranslation = (key, params = {}) => {
+  const lang = getAppLanguage();
+  const dict = translations[lang] || translations.en;
+  const raw = dict[key] || key;
+  if (typeof raw !== "string") return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) =>
+    params[k] != null ? String(params[k]) : `{${k}}`
+  );
+};
+
+// Get effective language for flashcard content display
+// supportLang (from conversation settings) takes precedence if explicitly set
+// Otherwise fall back to appLanguage (from account settings)
+const getEffectiveCardLanguage = (supportLang) => {
+  const appLang = getAppLanguage();
+  // If supportLang is set to something other than default "en", use it
+  // This means user explicitly chose a support language in conversation settings
+  if (supportLang && supportLang !== "en") {
+    return supportLang;
+  }
+  // Otherwise use the app language preference
+  return appLang;
+};
 
 // Language name helper
 const LANG_NAME = (code) => {
@@ -118,8 +152,8 @@ export default function FlashcardPractice({
     onResult: ({ recognizedText, evaluation, error }) => {
       if (error) {
         toast({
-          title: "Could not evaluate",
-          description: "Please try again with a stable connection.",
+          title: getTranslation("flashcard_eval_error_title"),
+          description: getTranslation("flashcard_eval_error_desc"),
           status: "error",
           duration: 2500,
         });
@@ -141,7 +175,7 @@ export default function FlashcardPractice({
       const response = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input: buildFlashcardJudgePrompt({
-          concept: getConceptText(card, supportLang),
+          concept: getConceptText(card, getEffectiveCardLanguage(supportLang)),
           userAnswer: answer,
           targetLang,
           supportLang,
@@ -176,8 +210,8 @@ export default function FlashcardPractice({
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
-        title: "Grading error",
-        description: "Failed to grade your answer. Please try again.",
+        title: getTranslation("flashcard_grading_error_title"),
+        description: getTranslation("flashcard_grading_error_desc"),
         status: "error",
         duration: 3000,
       });
@@ -240,15 +274,15 @@ export default function FlashcardPractice({
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
-          title: "Speech recognition unavailable",
-          description: "Use a Chromium-based browser with microphone access.",
+          title: getTranslation("flashcard_speech_unavailable_title"),
+          description: getTranslation("flashcard_speech_unavailable_desc"),
           status: "warning",
           duration: 3200,
         });
       } else if (code === "mic-denied") {
         toast({
-          title: "Microphone denied",
-          description: "Enable microphone access in your browser settings.",
+          title: getTranslation("flashcard_mic_denied_title"),
+          description: getTranslation("flashcard_mic_denied_desc"),
           status: "error",
           duration: 3200,
         });
@@ -264,7 +298,7 @@ export default function FlashcardPractice({
     setStreamedAnswer("");
     streamingRef.current = true;
 
-    const sourceText = getConceptText(card, supportLang);
+    const sourceText = getConceptText(card, getEffectiveCardLanguage(supportLang));
     const prompt = `Translate "${sourceText}" to ${LANG_NAME(targetLang)}. Reply with ONLY the translated word or phrase, nothing else. No explanations, no quotes, no punctuation unless part of the translation.`;
 
     try {
@@ -282,7 +316,7 @@ export default function FlashcardPractice({
       }
     } catch (error) {
       console.error("Gemini streaming error:", error);
-      setStreamedAnswer("Error loading answer");
+      setStreamedAnswer(getTranslation("flashcard_error_loading"));
     } finally {
       setIsStreaming(false);
       streamingRef.current = false;
@@ -362,7 +396,7 @@ export default function FlashcardPractice({
                   boxShadow="0 8px 32px rgba(37, 99, 235, 0.3)"
                 >
                   <Text fontSize="xs" color="whiteAlpha.800" fontWeight="medium" mb={1}>
-                    Translate to {LANG_NAME(targetLang)}:
+                    {getTranslation("flashcard_translate_to", { language: LANG_NAME(targetLang) })}
                   </Text>
                   <Text
                     fontSize="3xl"
@@ -371,7 +405,7 @@ export default function FlashcardPractice({
                     textAlign="center"
                     textShadow="0 2px 4px rgba(0,0,0,0.2)"
                   >
-                    {getConceptText(card, supportLang)}
+                    {getConceptText(card, getEffectiveCardLanguage(supportLang))}
                   </Text>
                   <Button
                     position="absolute"
@@ -386,7 +420,7 @@ export default function FlashcardPractice({
                     _hover={{ bg: "whiteAlpha.300" }}
                     fontSize="xs"
                   >
-                    Show answer
+                    {getTranslation("flashcard_show_answer")}
                   </Button>
                 </Box>
 
@@ -413,7 +447,7 @@ export default function FlashcardPractice({
                   onClick={handleFlipBack}
                 >
                   <Text fontSize="xs" color="blue.200" fontWeight="medium" mb={1}>
-                    Answer:
+                    {getTranslation("flashcard_answer_label")}
                   </Text>
                   {isStreaming && !streamedAnswer ? (
                     <Spinner size="md" color="blue.200" />
@@ -435,7 +469,7 @@ export default function FlashcardPractice({
                     fontSize="xs"
                     color="blue.300"
                   >
-                    Tap to flip back
+                    {getTranslation("flashcard_tap_to_flip")}
                   </Text>
                 </Box>
               </MotionBox>
@@ -448,7 +482,7 @@ export default function FlashcardPractice({
                 {isGrading ? (
                   <VStack spacing={3} py={4}>
                     <Spinner size="lg" color={cefrColor.primary} />
-                    <Text color="gray.400">Grading your answer...</Text>
+                    <Text color="gray.400">{getTranslation("flashcard_grading")}</Text>
                   </VStack>
                 ) : (
                   <VStack spacing={4} w="100%">
@@ -472,7 +506,7 @@ export default function FlashcardPractice({
                       }}
                       _active={{ transform: "translateY(0)" }}
                     >
-                      {isRecording ? "Stop Recording" : "Record Answer"}
+                      {isRecording ? getTranslation("flashcard_stop_recording") : getTranslation("flashcard_record_answer")}
                     </Button>
 
                     {/* Recognized speech text */}
@@ -486,7 +520,7 @@ export default function FlashcardPractice({
                         w="100%"
                       >
                         <Text fontSize="sm" color="gray.400" mb={1}>
-                          Recognized:
+                          {getTranslation("flashcard_recognized")}
                         </Text>
                         <Text fontSize="lg" color="teal.200">
                           {recognizedText}
@@ -501,7 +535,7 @@ export default function FlashcardPractice({
                         value={textAnswer}
                         onChange={(e) => setTextAnswer(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder="Type your answer..."
+                        placeholder={getTranslation("flashcard_type_placeholder")}
                         size="lg"
                         fontSize="2xl"
                         textAlign="center"
@@ -532,7 +566,7 @@ export default function FlashcardPractice({
                         }}
                         _active={{ transform: "translateY(0)" }}
                       >
-                        Submit Answer
+                        {getTranslation("flashcard_submit")}
                       </Button>
                     </VStack>
 
@@ -545,7 +579,7 @@ export default function FlashcardPractice({
                       onClick={handleClose}
                       _hover={{ bg: "whiteAlpha.100" }}
                     >
-                      Cancel
+                      {getTranslation("flashcard_cancel")}
                     </Button>
                   </VStack>
                 )}
@@ -575,7 +609,7 @@ export default function FlashcardPractice({
                         <RiCloseLine size={32} color="#EF4444" />
                       )}
                       <Text fontSize="2xl" fontWeight="bold" color="white">
-                        {isCorrect ? "Correct!" : "Not quite..."}
+                        {isCorrect ? getTranslation("flashcard_correct") : getTranslation("flashcard_incorrect")}
                       </Text>
                     </HStack>
 
@@ -594,7 +628,7 @@ export default function FlashcardPractice({
                         onClick={handleTryAgain}
                         mt={2}
                       >
-                        Try Again
+                        {getTranslation("flashcard_try_again")}
                       </Button>
                     )}
                   </VStack>

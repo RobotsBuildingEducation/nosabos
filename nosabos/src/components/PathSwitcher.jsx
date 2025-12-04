@@ -2,20 +2,36 @@ import React from "react";
 import { HStack, Button, Box, Text } from "@chakra-ui/react";
 import { RiRoadMapLine, RiFileList3Line } from "react-icons/ri";
 import { motion } from "framer-motion";
+import { translations } from "../utils/translation";
 
 const MotionButton = motion(Button);
+
+// Get app language from localStorage (UI language setting)
+const getAppLanguage = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("appLanguage") || "en";
+  }
+  return "en";
+};
+
+// Translation helper for UI strings
+const getTranslation = (key) => {
+  const lang = getAppLanguage();
+  const dict = translations[lang] || translations.en;
+  return dict[key] || key;
+};
 
 export default function PathSwitcher({ selectedMode, onModeChange }) {
   const modes = [
     {
       id: "path",
-      label: "Path",
+      label: getTranslation("path_switcher_path"),
       icon: RiRoadMapLine,
       description: "Learning path",
     },
     {
       id: "flashcards",
-      label: "Flashcards",
+      label: getTranslation("path_switcher_flashcards"),
       icon: RiFileList3Line,
       description: "Practice cards",
     },

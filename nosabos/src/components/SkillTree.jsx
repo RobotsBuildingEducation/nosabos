@@ -258,9 +258,26 @@ const getDisplayText = (textObj, supportLang = "en") => {
   return textObj[supportLang] || fallback;
 };
 
-// Helper to get translations for UI elements
-const getTranslation = (supportLang = "en", key, params = {}) => {
-  const lang = supportLang === "bilingual" ? "en" : supportLang;
+// Get app language from localStorage (UI language setting)
+const getAppLanguage = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("appLanguage") || "en";
+  }
+  return "en";
+};
+
+// Helper to get UI display text using appLanguage (for titles, descriptions, etc.)
+const getUIDisplayText = (textObj) => {
+  if (!textObj) return "";
+  if (typeof textObj === "string") return textObj;
+  const lang = getAppLanguage();
+  const fallback = textObj.en || textObj.es || Object.values(textObj)[0] || "";
+  return textObj[lang] || fallback;
+};
+
+// Helper to get translations for UI elements - uses appLanguage for UI text
+const getTranslation = (key, params = {}) => {
+  const lang = getAppLanguage();
   const dict = translations[lang] || translations.en;
   const raw = dict[key] || key;
   if (typeof raw !== "string") return raw;
@@ -770,7 +787,7 @@ const getLessonIcon = (lesson, unitId) => {
 function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   const lockedColor = "gray.600";
 
-  const lessonTitle = getDisplayText(lesson.title, supportLang);
+  const lessonTitle = getUIDisplayText(lesson.title);
 
   const getNodeIcon = () => {
     if (status === SKILL_STATUS.COMPLETED) return RiCheckLine;
@@ -1039,8 +1056,8 @@ const UnitSection = React.memo(function UnitSection({
       userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
   ).length;
 
-  const unitTitle = getDisplayText(unit.title, supportLang);
-  const unitDescription = getDisplayText(unit.description, supportLang);
+  const unitTitle = getUIDisplayText(unit.title);
+  const unitDescription = getUIDisplayText(unit.description);
 
   return (
     <MotionBox
@@ -1438,9 +1455,9 @@ function LessonDetailModal({
 }) {
   if (!lesson) return null;
 
-  const lessonTitle = getDisplayText(lesson.title, supportLang);
-  const unitTitle = getDisplayText(unit.title, supportLang);
-  const lessonDescription = getDisplayText(lesson.description, supportLang);
+  const lessonTitle = getUIDisplayText(lesson.title);
+  const unitTitle = getUIDisplayText(unit.title);
+  const lessonDescription = getUIDisplayText(lesson.description);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
@@ -1518,11 +1535,15 @@ function LessonDetailModal({
               borderColor="whiteAlpha.100"
             >
               <Text fontWeight="bold" mb={3} color="white" fontSize="sm">
-                {getTranslation(supportLang, "skill_tree_learning_activities")}
+                {getTranslation("skill_tree_learning_activities")}
               </Text>
               <Flex gap={2} flexWrap="wrap">
                 {lesson.modes.map((mode) => {
                   const Icon = MODE_ICONS[mode] || RiStarLine;
+                  const modeKey = `mode_${mode}`;
+                  const modeName = getTranslation(modeKey) !== modeKey
+                    ? getTranslation(modeKey)
+                    : mode;
                   return (
                     <Badge
                       key={mode}
@@ -1541,7 +1562,7 @@ function LessonDetailModal({
                       boxShadow="0 2px 8px rgba(0, 0, 0, 0.3)"
                     >
                       <Icon size={16} />
-                      <Text textTransform="capitalize">{mode}</Text>
+                      <Text textTransform="capitalize">{modeName}</Text>
                     </Badge>
                   );
                 })}
@@ -1595,10 +1616,8 @@ function LessonDetailModal({
                   </Box>
                   <Text fontWeight="bold" color="white" fontSize="md">
                     {lesson.isFinalQuiz
-                      ? supportLang === "es"
-                        ? "Puntuación Requerida"
-                        : "Passing Score"
-                      : getTranslation(supportLang, "skill_tree_xp_reward")}
+                      ? getTranslation("skill_tree_passing_score")
+                      : getTranslation("skill_tree_xp_reward")}
                   </Text>
                 </HStack>
                 <Badge
@@ -1645,7 +1664,7 @@ function LessonDetailModal({
               }}
               transition="all 0.2s"
             >
-              {getTranslation(supportLang, "skill_tree_start_lesson")}
+              {getTranslation("skill_tree_start_lesson")}
             </Button>
           </VStack>
         </ModalBody>
@@ -1909,7 +1928,7 @@ export default function SkillTree({
                   {userProgress.totalXp || 0} XP
                 </Text>
                 <Text fontSize="xs" color="gray.400" fontWeight="medium">
-                  {getTranslation(supportLang, "skill_tree_level", {
+                  {getTranslation("skill_tree_level", {
                     level: Math.floor((userProgress.totalXp || 0) / 100) + 1,
                   })}
                 </Text>
@@ -1967,10 +1986,10 @@ export default function SkillTree({
             ) : (
               <Box textAlign="center" py={12}>
                 <Text fontSize="lg" color="gray.400">
-                  {getTranslation(supportLang, "skill_tree_no_path")}
+                  {getTranslation("skill_tree_no_path")}
                 </Text>
                 <Text fontSize="sm" color="gray.500" mt={2}>
-                  {getTranslation(supportLang, "skill_tree_check_back")}
+                  {getTranslation("skill_tree_check_back")}
                 </Text>
               </Box>
             )}

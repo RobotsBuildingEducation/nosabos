@@ -7,8 +7,28 @@ import {
   RiTrophyLine,
 } from "react-icons/ri";
 import { motion } from "framer-motion";
+import { translations } from "../utils/translation";
 
 const MotionBox = motion(Box);
+
+// Get app language from localStorage (UI language setting)
+const getAppLanguage = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("appLanguage") || "en";
+  }
+  return "en";
+};
+
+// Translation helper for UI strings
+const getTranslation = (key, params = {}) => {
+  const lang = getAppLanguage();
+  const dict = translations[lang] || translations.en;
+  const raw = dict[key] || key;
+  if (typeof raw !== "string") return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) =>
+    params[k] != null ? String(params[k]) : `{${k}}`
+  );
+};
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -150,10 +170,10 @@ export default function CEFRLevelNavigator({
               {activeCEFRLevel}
             </Badge>
             <Text fontSize="lg" fontWeight="bold" color="white">
-              {levelInfo.name[supportLang]}
+              {levelInfo.name[getAppLanguage()] || levelInfo.name.en}
             </Text>
             <Text fontSize="sm" color="gray.400" textAlign="center">
-              {levelInfo.description[supportLang]}
+              {levelInfo.description[getAppLanguage()] || levelInfo.description.en}
             </Text>
           </VStack>
 
@@ -193,9 +213,7 @@ export default function CEFRLevelNavigator({
             >
               <RiTrophyLine size={20} />
               <Text fontWeight="bold" fontSize="sm">
-                {supportLang === "es"
-                  ? "¡Nivel Completado!"
-                  : "Level Completed!"}
+                {getTranslation("cefr_level_completed")}
               </Text>
             </HStack>
           </MotionBox>

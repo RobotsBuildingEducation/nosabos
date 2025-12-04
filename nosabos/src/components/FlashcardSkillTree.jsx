@@ -14,6 +14,40 @@ import {
 } from "../data/flashcardData";
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
+import { translations } from "../utils/translation";
+
+// Get app language from localStorage (UI language setting)
+const getAppLanguage = () => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("appLanguage") || "en";
+  }
+  return "en";
+};
+
+// Translation helper for UI strings - uses appLanguage for UI text
+const getTranslation = (key, params = {}) => {
+  const lang = getAppLanguage();
+  const dict = translations[lang] || translations.en;
+  const raw = dict[key] || key;
+  if (typeof raw !== "string") return raw;
+  return raw.replace(/\{(\w+)\}/g, (_, k) =>
+    params[k] != null ? String(params[k]) : `{${k}}`
+  );
+};
+
+// Get effective language for flashcard content display
+// supportLang (from conversation settings) takes precedence if explicitly set
+// Otherwise fall back to appLanguage (from account settings)
+const getEffectiveCardLanguage = (supportLang) => {
+  const appLang = getAppLanguage();
+  // If supportLang is set to something other than default "en", use it
+  // This means user explicitly chose a support language in conversation settings
+  if (supportLang && supportLang !== "en") {
+    return supportLang;
+  }
+  // Otherwise use the app language preference
+  return appLang;
+};
 
 const MotionBox = motion(Box);
 
@@ -154,7 +188,7 @@ const FlashcardCard = React.memo(function FlashcardCard({
               lineHeight="1.2"
               textShadow="0 2px 12px rgba(0,0,0,0.4)"
             >
-              {getConceptText(card, supportLang)}
+              {getConceptText(card, getEffectiveCardLanguage(supportLang))}
             </Text>
           </VStack>
 
@@ -408,10 +442,10 @@ export default function FlashcardSkillTree({
               >
                 <RiCheckLine size={64} color="#22C55E" />
                 <Text fontSize="2xl" fontWeight="black" color="white">
-                  All Done!
+                  {getTranslation("flashcard_all_done")}
                 </Text>
                 <Text fontSize="md" color="gray.400" textAlign="center">
-                  You've completed all flashcards!
+                  {getTranslation("flashcard_all_completed")}
                 </Text>
               </VStack>
             </MotionBox>
