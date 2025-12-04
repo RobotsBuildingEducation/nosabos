@@ -349,18 +349,19 @@ export default function FlashcardPractice({
                   position="absolute"
                   w="100%"
                   h="100%"
-                  bg="whiteAlpha.100"
+                  bgGradient="linear(135deg, #0D9488, #14B8A6, #2DD4BF, #14B8A6)"
                   borderRadius="xl"
                   border="2px solid"
-                  borderColor={`${cefrColor.primary}40`}
+                  borderColor="teal.400"
                   p={4}
                   display="flex"
                   flexDirection="column"
                   justifyContent="center"
                   alignItems="center"
                   sx={{ backfaceVisibility: "hidden" }}
+                  boxShadow="0 8px 32px rgba(20, 184, 166, 0.3)"
                 >
-                  <Text fontSize="xs" color="gray.500" fontWeight="medium" mb={1}>
+                  <Text fontSize="xs" color="whiteAlpha.800" fontWeight="medium" mb={1}>
                     Translate to {LANG_NAME(targetLang)}:
                   </Text>
                   <Text
@@ -368,6 +369,7 @@ export default function FlashcardPractice({
                     fontWeight="black"
                     color="white"
                     textAlign="center"
+                    textShadow="0 2px 4px rgba(0,0,0,0.2)"
                   >
                     {getConceptText(card, supportLang)}
                   </Text>
@@ -376,11 +378,12 @@ export default function FlashcardPractice({
                     bottom={3}
                     right={3}
                     size="sm"
-                    variant="ghost"
-                    color="gray.400"
+                    variant="solid"
+                    bg="whiteAlpha.200"
+                    color="white"
                     rightIcon={<RiEyeLine size={14} />}
                     onClick={handleShowAnswer}
-                    _hover={{ color: "white", bg: "whiteAlpha.200" }}
+                    _hover={{ bg: "whiteAlpha.300" }}
                     fontSize="xs"
                   >
                     Show answer
@@ -392,10 +395,10 @@ export default function FlashcardPractice({
                   position="absolute"
                   w="100%"
                   h="100%"
-                  bg={`${cefrColor.primary}20`}
+                  bgGradient="linear(135deg, #134E4A, #0F766E, #115E59, #0D9488)"
                   borderRadius="xl"
                   border="2px solid"
-                  borderColor={cefrColor.primary}
+                  borderColor="teal.500"
                   p={4}
                   display="flex"
                   flexDirection="column"
@@ -405,20 +408,22 @@ export default function FlashcardPractice({
                     backfaceVisibility: "hidden",
                     transform: "rotateY(180deg)",
                   }}
+                  boxShadow="0 8px 32px rgba(13, 148, 136, 0.3)"
                   cursor="pointer"
                   onClick={handleFlipBack}
                 >
-                  <Text fontSize="xs" color="gray.400" fontWeight="medium" mb={1}>
+                  <Text fontSize="xs" color="teal.200" fontWeight="medium" mb={1}>
                     Answer:
                   </Text>
                   {isStreaming && !streamedAnswer ? (
-                    <Spinner size="md" color={cefrColor.primary} />
+                    <Spinner size="md" color="teal.200" />
                   ) : (
                     <Text
                       fontSize="3xl"
                       fontWeight="black"
-                      color={cefrColor.primary}
+                      color="white"
                       textAlign="center"
+                      textShadow="0 2px 4px rgba(0,0,0,0.3)"
                     >
                       {streamedAnswer || "..."}
                     </Text>
@@ -428,7 +433,7 @@ export default function FlashcardPractice({
                     bottom={3}
                     right={3}
                     fontSize="xs"
-                    color="gray.500"
+                    color="teal.300"
                   >
                     Tap to flip back
                   </Text>
