@@ -396,6 +396,7 @@ export const translations = {
     flashcard_mic_denied_desc: "Enable microphone access in your browser settings.",
     flashcard_all_done: "All Done!",
     flashcard_all_completed: "You've completed all flashcards!",
+    flashcard_loading: "Loading flashcards...",
     cefr_level_completed: "Level Completed!",
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulary",
@@ -801,6 +802,7 @@ export const translations = {
     flashcard_mic_denied_desc: "Habilita el acceso al micrófono en la configuración de tu navegador.",
     flashcard_all_done: "¡Terminado!",
     flashcard_all_completed: "¡Has completado todas las tarjetas!",
+    flashcard_loading: "Cargando tarjetas...",
     cefr_level_completed: "¡Nivel Completado!",
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulario",
