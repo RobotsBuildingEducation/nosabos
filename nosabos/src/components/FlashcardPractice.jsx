@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Box,
   VStack,
@@ -22,10 +22,12 @@ import {
   RiMicLine,
   RiStopCircleLine,
   RiKeyboardLine,
+  RiEyeLine,
 } from "react-icons/ri";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
+import { simplemodel } from "../firebaseResources/firebaseResources";
 
 const MotionBox = motion(Box);
 
@@ -96,6 +98,10 @@ export default function FlashcardPractice({
   const [recognizedText, setRecognizedText] = useState("");
   const [xpAwarded, setXpAwarded] = useState(0);
   const [isGrading, setIsGrading] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [streamedAnswer, setStreamedAnswer] = useState("");
+  const [isStreaming, setIsStreaming] = useState(false);
+  const streamingRef = useRef(false);
   const toast = useToast();
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
@@ -200,6 +206,10 @@ export default function FlashcardPractice({
     setShowResult(false);
     setIsCorrect(false);
     setXpAwarded(0);
+    setIsFlipped(false);
+    setStreamedAnswer("");
+    setIsStreaming(false);
+    streamingRef.current = false;
     if (isRecording) {
       stopRecording();
     }
@@ -246,6 +256,46 @@ export default function FlashcardPractice({
     }
   };
 
+  const handleShowAnswer = async () => {
+    if (isFlipped || isStreaming) return;
+
+    setIsFlipped(true);
+    setIsStreaming(true);
+    setStreamedAnswer("");
+    streamingRef.current = true;
+
+    const sourceText = getConceptText(card, supportLang);
+    const prompt = `Translate "${sourceText}" to ${LANG_NAME(targetLang)}. Reply with ONLY the translated word or phrase, nothing else. No explanations, no quotes, no punctuation unless part of the translation.`;
+
+    try {
+      const result = await simplemodel.generateContentStream(prompt);
+
+      let fullText = "";
+      for await (const chunk of result.stream) {
+        if (!streamingRef.current) break;
+
+        const chunkText = typeof chunk.text === "function" ? chunk.text() : "";
+        if (!chunkText) continue;
+
+        fullText += chunkText;
+        setStreamedAnswer(fullText.trim());
+      }
+    } catch (error) {
+      console.error("Gemini streaming error:", error);
+      setStreamedAnswer("Error loading answer");
+    } finally {
+      setIsStreaming(false);
+      streamingRef.current = false;
+    }
+  };
+
+  const handleFlipBack = () => {
+    streamingRef.current = false;
+    setIsFlipped(false);
+    setStreamedAnswer("");
+    setIsStreaming(false);
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="xl" isCentered>
       <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.700" />
@@ -279,20 +329,117 @@ export default function FlashcardPractice({
               </Text>
             </HStack>
 
-            {/* Question */}
-            <VStack spacing={3} py={4}>
-              <Text fontSize="sm" color="gray.400" fontWeight="medium">
-                Translate to {LANG_NAME(targetLang)}:
-              </Text>
-              <Text
-                fontSize="4xl"
-                fontWeight="black"
-                color="white"
-                textAlign="center"
+            {/* Flip Card */}
+            <Box
+              position="relative"
+              w="100%"
+              h="140px"
+              sx={{ perspective: "1000px" }}
+            >
+              <MotionBox
+                position="absolute"
+                w="100%"
+                h="100%"
+                style={{ transformStyle: "preserve-3d" }}
+                animate={{ rotateY: isFlipped ? 180 : 0 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
               >
-                {getConceptText(card, supportLang)}
-              </Text>
-            </VStack>
+                {/* Front Side */}
+                <Box
+                  position="absolute"
+                  w="100%"
+                  h="100%"
+                  bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
+                  borderRadius="xl"
+                  border="2px solid"
+                  borderColor="blue.400"
+                  p={4}
+                  display="flex"
+                  flexDirection="column"
+                  justifyContent="center"
+                  alignItems="center"
+                  sx={{ backfaceVisibility: "hidden" }}
+                  boxShadow="0 8px 32px rgba(37, 99, 235, 0.3)"
+                >
+                  <Text fontSize="xs" color="whiteAlpha.800" fontWeight="medium" mb={1}>
+                    Translate to {LANG_NAME(targetLang)}:
+                  </Text>
+                  <Text
+                    fontSize="3xl"
+                    fontWeight="black"
+                    color="white"
+                    textAlign="center"
+                    textShadow="0 2px 4px rgba(0,0,0,0.2)"
+                  >
+                    {getConceptText(card, supportLang)}
+                  </Text>
+                  <Button
+                    position="absolute"
+                    bottom={3}
+                    right={3}
+                    size="sm"
+                    variant="solid"
+                    bg="whiteAlpha.200"
+                    color="white"
+                    rightIcon={<RiEyeLine size={14} />}
+                    onClick={handleShowAnswer}
+                    _hover={{ bg: "whiteAlpha.300" }}
+                    fontSize="xs"
+                  >
+                    Show answer
+                  </Button>
+                </Box>
+
+                {/* Back Side */}
+                <Box
+                  position="absolute"
+                  w="100%"
+                  h="100%"
+                  bgGradient="linear(135deg, #1E1B4B, #312E81, #3730A3, #4338CA)"
+                  borderRadius="xl"
+                  border="2px solid"
+                  borderColor="blue.500"
+                  p={4}
+                  display="flex"
+                  flexDirection="column"
+                  justifyContent="center"
+                  alignItems="center"
+                  sx={{
+                    backfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                  }}
+                  boxShadow="0 8px 32px rgba(67, 56, 202, 0.3)"
+                  cursor="pointer"
+                  onClick={handleFlipBack}
+                >
+                  <Text fontSize="xs" color="blue.200" fontWeight="medium" mb={1}>
+                    Answer:
+                  </Text>
+                  {isStreaming && !streamedAnswer ? (
+                    <Spinner size="md" color="blue.200" />
+                  ) : (
+                    <Text
+                      fontSize="3xl"
+                      fontWeight="black"
+                      color="white"
+                      textAlign="center"
+                      textShadow="0 2px 4px rgba(0,0,0,0.3)"
+                    >
+                      {streamedAnswer || "..."}
+                    </Text>
+                  )}
+                  <Text
+                    position="absolute"
+                    bottom={3}
+                    right={3}
+                    fontSize="xs"
+                    color="blue.300"
+                  >
+                    Tap to flip back
+                  </Text>
+                </Box>
+              </MotionBox>
+            </Box>
 
             {/* Unified Input - Show both text and speech */}
             {!showResult && (
