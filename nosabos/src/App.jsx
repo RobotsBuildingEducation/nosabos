@@ -2855,15 +2855,42 @@ export default function App() {
   }, [levelCompletionStatus]);
 
   // State for which CEFR level is currently being viewed (separate for each mode)
-  // Initialize once, but don't auto-update when levels unlock
-  const [activeLessonLevel, setActiveLessonLevel] =
-    useState(currentLessonLevel);
-  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState(
-    currentFlashcardLevel
-  );
+  // Initialize from localStorage if available, otherwise use computed current level
+  const [activeLessonLevel, setActiveLessonLevel] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("activeLessonLevel");
+      if (stored && CEFR_LEVELS.includes(stored)) {
+        return stored;
+      }
+    }
+    return currentLessonLevel;
+  });
+  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("activeFlashcardLevel");
+      if (stored && CEFR_LEVELS.includes(stored)) {
+        return stored;
+      }
+    }
+    return currentFlashcardLevel;
+  });
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
+
+  // Persist active lesson level to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined" && activeLessonLevel) {
+      localStorage.setItem("activeLessonLevel", activeLessonLevel);
+    }
+  }, [activeLessonLevel]);
+
+  // Persist active flashcard level to localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined" && activeFlashcardLevel) {
+      localStorage.setItem("activeFlashcardLevel", activeFlashcardLevel);
+    }
+  }, [activeFlashcardLevel]);
 
   // Track previous completion status to detect newly completed levels
   const prevLessonCompletionRef = useRef({});
