@@ -266,6 +266,15 @@ const getAppLanguage = () => {
   return "en";
 };
 
+// Helper to get UI display text using appLanguage (for titles, descriptions, etc.)
+const getUIDisplayText = (textObj) => {
+  if (!textObj) return "";
+  if (typeof textObj === "string") return textObj;
+  const lang = getAppLanguage();
+  const fallback = textObj.en || textObj.es || Object.values(textObj)[0] || "";
+  return textObj[lang] || fallback;
+};
+
 // Helper to get translations for UI elements - uses appLanguage for UI text
 const getTranslation = (key, params = {}) => {
   const lang = getAppLanguage();
@@ -778,7 +787,7 @@ const getLessonIcon = (lesson, unitId) => {
 function LessonNode({ lesson, unit, status, onClick, supportLang }) {
   const lockedColor = "gray.600";
 
-  const lessonTitle = getDisplayText(lesson.title, supportLang);
+  const lessonTitle = getUIDisplayText(lesson.title);
 
   const getNodeIcon = () => {
     if (status === SKILL_STATUS.COMPLETED) return RiCheckLine;
@@ -1047,8 +1056,8 @@ const UnitSection = React.memo(function UnitSection({
       userProgress.lessons?.[lesson.id]?.status === SKILL_STATUS.COMPLETED
   ).length;
 
-  const unitTitle = getDisplayText(unit.title, supportLang);
-  const unitDescription = getDisplayText(unit.description, supportLang);
+  const unitTitle = getUIDisplayText(unit.title);
+  const unitDescription = getUIDisplayText(unit.description);
 
   return (
     <MotionBox
@@ -1446,9 +1455,9 @@ function LessonDetailModal({
 }) {
   if (!lesson) return null;
 
-  const lessonTitle = getDisplayText(lesson.title, supportLang);
-  const unitTitle = getDisplayText(unit.title, supportLang);
-  const lessonDescription = getDisplayText(lesson.description, supportLang);
+  const lessonTitle = getUIDisplayText(lesson.title);
+  const unitTitle = getUIDisplayText(unit.title);
+  const lessonDescription = getUIDisplayText(lesson.description);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>

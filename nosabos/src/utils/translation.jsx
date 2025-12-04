@@ -403,6 +403,9 @@ export const translations = {
     mode_reading: "Reading",
     mode_realtime: "Chat",
     mode_stories: "Stories",
+    // PathSwitcher tabs
+    path_switcher_path: "Path",
+    path_switcher_flashcards: "Flashcards",
   },
   es: {
     correct: "¡Correcto!",
@@ -805,6 +808,9 @@ export const translations = {
     mode_reading: "Lectura",
     mode_realtime: "Platicar",
     mode_stories: "Narrativos",
+    // PathSwitcher tabs
+    path_switcher_path: "Ruta",
+    path_switcher_flashcards: "Tarjetas",
   },
 };
 
