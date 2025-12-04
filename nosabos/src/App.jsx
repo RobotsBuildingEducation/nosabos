@@ -1207,29 +1207,38 @@ export default function App() {
   const getShownCelebrations = useCallback(() => {
     return user?.shownProficiencyCelebrations || {};
   }, [user?.shownProficiencyCelebrations]);
-  const markCelebrationShown = useCallback(async (level, mode) => {
-    if (!activeNpub) return;
-    const key = getCelebrationKey(level, mode);
-    const currentShown = user?.shownProficiencyCelebrations || {};
-    const updated = { ...currentShown, [key]: true };
+  const markCelebrationShown = useCallback(
+    async (level, mode) => {
+      if (!activeNpub) return;
+      const key = getCelebrationKey(level, mode);
+      const currentShown = user?.shownProficiencyCelebrations || {};
+      const updated = { ...currentShown, [key]: true };
 
-    // Update Firestore
-    try {
-      await setDoc(
-        doc(database, "users", activeNpub),
-        { shownProficiencyCelebrations: updated, updatedAt: new Date().toISOString() },
-        { merge: true }
-      );
-      // Update local state
-      patchUser?.({ shownProficiencyCelebrations: updated });
-    } catch (e) {
-      console.error("Failed to save celebration state:", e);
-    }
-  }, [activeNpub, user?.shownProficiencyCelebrations, patchUser]);
-  const wasCelebrationShown = useCallback((level, mode) => {
-    const shown = getShownCelebrations();
-    return shown[getCelebrationKey(level, mode)] === true;
-  }, [getShownCelebrations]);
+      // Update Firestore
+      try {
+        await setDoc(
+          doc(database, "users", activeNpub),
+          {
+            shownProficiencyCelebrations: updated,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+        // Update local state
+        patchUser?.({ shownProficiencyCelebrations: updated });
+      } catch (e) {
+        console.error("Failed to save celebration state:", e);
+      }
+    },
+    [activeNpub, user?.shownProficiencyCelebrations, patchUser]
+  );
+  const wasCelebrationShown = useCallback(
+    (level, mode) => {
+      const shown = getShownCelebrations();
+      return shown[getCelebrationKey(level, mode)] === true;
+    },
+    [getShownCelebrations]
+  );
 
   // Helper mapping for keys/index
   const TAB_KEYS = [
@@ -2651,7 +2660,7 @@ export default function App() {
   // CEFR level configuration (shared across modes)
   const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const CEFR_LEVEL_COUNTS = {
-    A1: { flashcards: 1, lessons: 1 }, // Flashcard count matches common.js, lesson kept at 1 for testing
+    A1: { flashcards: 1, lessons: 1 },
     A2: { flashcards: 250, lessons: 35 },
     B1: { flashcards: 200, lessons: 40 },
     B2: { flashcards: 150, lessons: 35 },
@@ -2872,10 +2881,16 @@ export default function App() {
     if (!user || hasInitializedLevels) return;
 
     // Initialize from user document if available
-    if (user.activeLessonLevel && CEFR_LEVELS.includes(user.activeLessonLevel)) {
+    if (
+      user.activeLessonLevel &&
+      CEFR_LEVELS.includes(user.activeLessonLevel)
+    ) {
       setActiveLessonLevel(user.activeLessonLevel);
     }
-    if (user.activeFlashcardLevel && CEFR_LEVELS.includes(user.activeFlashcardLevel)) {
+    if (
+      user.activeFlashcardLevel &&
+      CEFR_LEVELS.includes(user.activeFlashcardLevel)
+    ) {
       setActiveFlashcardLevel(user.activeFlashcardLevel);
     }
     setHasInitializedLevels(true);
@@ -2929,7 +2944,12 @@ export default function App() {
 
       // Check if level was just completed (transition from false/undefined to true)
       // and hasn't been celebrated before
-      if (!wasComplete && isNowComplete && level === activeLessonLevel && !alreadyCelebrated) {
+      if (
+        !wasComplete &&
+        isNowComplete &&
+        level === activeLessonLevel &&
+        !alreadyCelebrated
+      ) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
         const nextLevel =
@@ -2962,7 +2982,12 @@ export default function App() {
 
       // Check if level was just completed (transition from false/undefined to true)
       // and hasn't been celebrated before
-      if (!wasComplete && isNowComplete && level === activeFlashcardLevel && !alreadyCelebrated) {
+      if (
+        !wasComplete &&
+        isNowComplete &&
+        level === activeFlashcardLevel &&
+        !alreadyCelebrated
+      ) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
         const nextLevel =
@@ -2984,7 +3009,11 @@ export default function App() {
       acc[level] = flashcardLevelCompletionStatus[level]?.isComplete || false;
       return acc;
     }, {});
-  }, [flashcardLevelCompletionStatus, activeFlashcardLevel, wasCelebrationShown]);
+  }, [
+    flashcardLevelCompletionStatus,
+    activeFlashcardLevel,
+    wasCelebrationShown,
+  ]);
 
   // Note: We deliberately do NOT auto-update active levels when new levels unlock
   // Users should stay at their current level until they manually navigate
