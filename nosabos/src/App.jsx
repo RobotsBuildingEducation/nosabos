@@ -2865,11 +2865,11 @@ export default function App() {
   // Initialize with default, will be synced from user document when loaded
   const [activeLessonLevel, setActiveLessonLevel] = useState("A1");
   const [activeFlashcardLevel, setActiveFlashcardLevel] = useState("A1");
-  const hasInitializedLevelsRef = useRef(false);
+  const [hasInitializedLevels, setHasInitializedLevels] = useState(false);
 
   // Sync active levels from user document when it loads
   useEffect(() => {
-    if (!user || hasInitializedLevelsRef.current) return;
+    if (!user || hasInitializedLevels) return;
 
     // Initialize from user document if available
     if (user.activeLessonLevel && CEFR_LEVELS.includes(user.activeLessonLevel)) {
@@ -2878,8 +2878,8 @@ export default function App() {
     if (user.activeFlashcardLevel && CEFR_LEVELS.includes(user.activeFlashcardLevel)) {
       setActiveFlashcardLevel(user.activeFlashcardLevel);
     }
-    hasInitializedLevelsRef.current = true;
-  }, [user]);
+    setHasInitializedLevels(true);
+  }, [user, hasInitializedLevels]);
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
@@ -2888,7 +2888,7 @@ export default function App() {
   const prevLessonLevelRef = useRef(null);
   useEffect(() => {
     // Skip if not initialized yet or no change
-    if (!hasInitializedLevelsRef.current || !activeNpub) return;
+    if (!hasInitializedLevels || !activeNpub) return;
     if (prevLessonLevelRef.current === activeLessonLevel) return;
     prevLessonLevelRef.current = activeLessonLevel;
 
@@ -2898,13 +2898,13 @@ export default function App() {
       { activeLessonLevel, updatedAt: new Date().toISOString() },
       { merge: true }
     ).catch((e) => console.error("Failed to save activeLessonLevel:", e));
-  }, [activeLessonLevel, activeNpub]);
+  }, [activeLessonLevel, activeNpub, hasInitializedLevels]);
 
   // Persist active flashcard level to Firestore
   const prevFlashcardLevelRef = useRef(null);
   useEffect(() => {
     // Skip if not initialized yet or no change
-    if (!hasInitializedLevelsRef.current || !activeNpub) return;
+    if (!hasInitializedLevels || !activeNpub) return;
     if (prevFlashcardLevelRef.current === activeFlashcardLevel) return;
     prevFlashcardLevelRef.current = activeFlashcardLevel;
 
@@ -2914,7 +2914,7 @@ export default function App() {
       { activeFlashcardLevel, updatedAt: new Date().toISOString() },
       { merge: true }
     ).catch((e) => console.error("Failed to save activeFlashcardLevel:", e));
-  }, [activeFlashcardLevel, activeNpub]);
+  }, [activeFlashcardLevel, activeNpub, hasInitializedLevels]);
 
   // Track previous completion status to detect newly completed levels
   const prevLessonCompletionRef = useRef({});
@@ -3212,30 +3212,41 @@ export default function App() {
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
-          <SkillTree
-            targetLang={resolvedTargetLang}
-            level={resolvedLevel}
-            supportLang={resolvedSupportLang}
-            userProgress={userProgress}
-            onStartLesson={handleStartLesson}
-            onCompleteFlashcard={handleCompleteFlashcard}
-            showMultipleLevels={true}
-            levels={relevantLevels}
-            // Mode-specific level props
-            activeLessonLevel={activeLessonLevel}
-            activeFlashcardLevel={activeFlashcardLevel}
-            currentLessonLevel={currentLessonLevel}
-            currentFlashcardLevel={currentFlashcardLevel}
-            onLessonLevelChange={handleLessonLevelChange}
-            onFlashcardLevelChange={handleFlashcardLevelChange}
-            lessonLevelCompletionStatus={lessonLevelCompletionStatus}
-            flashcardLevelCompletionStatus={flashcardLevelCompletionStatus}
-            // Legacy props (for backwards compatibility)
-            activeCEFRLevel={activeCEFRLevel}
-            currentCEFRLevel={currentCEFRLevel}
-            onLevelChange={handleLevelChange}
-            levelCompletionStatus={levelCompletionStatus}
-          />
+          {!hasInitializedLevels ? (
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minH="60vh"
+            >
+              <RobotBuddyPro state="thinking" />
+            </Box>
+          ) : (
+            <SkillTree
+              targetLang={resolvedTargetLang}
+              level={resolvedLevel}
+              supportLang={resolvedSupportLang}
+              userProgress={userProgress}
+              onStartLesson={handleStartLesson}
+              onCompleteFlashcard={handleCompleteFlashcard}
+              showMultipleLevels={true}
+              levels={relevantLevels}
+              // Mode-specific level props
+              activeLessonLevel={activeLessonLevel}
+              activeFlashcardLevel={activeFlashcardLevel}
+              currentLessonLevel={currentLessonLevel}
+              currentFlashcardLevel={currentFlashcardLevel}
+              onLessonLevelChange={handleLessonLevelChange}
+              onFlashcardLevelChange={handleFlashcardLevelChange}
+              lessonLevelCompletionStatus={lessonLevelCompletionStatus}
+              flashcardLevelCompletionStatus={flashcardLevelCompletionStatus}
+              // Legacy props (for backwards compatibility)
+              activeCEFRLevel={activeCEFRLevel}
+              currentCEFRLevel={currentCEFRLevel}
+              onLevelChange={handleLevelChange}
+              levelCompletionStatus={levelCompletionStatus}
+            />
+          )}
         </Box>
       )}
 
