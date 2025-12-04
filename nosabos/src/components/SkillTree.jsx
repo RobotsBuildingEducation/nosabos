@@ -1969,42 +1969,60 @@ export default function SkillTree({
         </MotionBox>
 
         {/* Skill Tree Units or Flashcards */}
-        {pathMode === "path" ? (
-          <VStack spacing={8} align="stretch">
-            {visibleUnits.length > 0 ? (
-              visibleUnits.map((unit, index) => (
-                <UnitSection
-                  key={unit.id}
-                  unit={unit}
-                  userProgress={userProgress}
-                  onLessonClick={handleLessonClick}
-                  index={index}
-                  supportLang={supportLang}
-                  hasNextUnit={index < visibleUnits.length - 1}
-                  previousUnit={index > 0 ? visibleUnits[index - 1] : null}
-                />
-              ))
-            ) : (
-              <Box textAlign="center" py={12}>
-                <Text fontSize="lg" color="gray.400">
-                  {getTranslation("skill_tree_no_path")}
-                </Text>
-                <Text fontSize="sm" color="gray.500" mt={2}>
-                  {getTranslation("skill_tree_check_back")}
-                </Text>
-              </Box>
-            )}
-          </VStack>
-        ) : (
-          <FlashcardSkillTree
-            userProgress={userProgress}
-            onStartFlashcard={handleFlashcardComplete}
-            targetLang={targetLang}
-            supportLang={supportLang}
-            activeCEFRLevel={effectiveActiveLevel}
-            pauseMs={pauseMs}
-          />
-        )}
+        <AnimatePresence mode="wait" initial={false}>
+          {pathMode === "path" ? (
+            <MotionBox
+              key="path-view"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+            >
+              <VStack spacing={8} align="stretch">
+                {visibleUnits.length > 0 ? (
+                  visibleUnits.map((unit, index) => (
+                    <UnitSection
+                      key={unit.id}
+                      unit={unit}
+                      userProgress={userProgress}
+                      onLessonClick={handleLessonClick}
+                      index={index}
+                      supportLang={supportLang}
+                      hasNextUnit={index < visibleUnits.length - 1}
+                      previousUnit={index > 0 ? visibleUnits[index - 1] : null}
+                    />
+                  ))
+                ) : (
+                  <Box textAlign="center" py={12}>
+                    <Text fontSize="lg" color="gray.400">
+                      {getTranslation("skill_tree_no_path")}
+                    </Text>
+                    <Text fontSize="sm" color="gray.500" mt={2}>
+                      {getTranslation("skill_tree_check_back")}
+                    </Text>
+                  </Box>
+                )}
+              </VStack>
+            </MotionBox>
+          ) : (
+            <MotionBox
+              key="flashcard-view"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+            >
+              <FlashcardSkillTree
+                userProgress={userProgress}
+                onStartFlashcard={handleFlashcardComplete}
+                targetLang={targetLang}
+                supportLang={supportLang}
+                activeCEFRLevel={effectiveActiveLevel}
+                pauseMs={pauseMs}
+              />
+            </MotionBox>
+          )}
+        </AnimatePresence>
 
         {/* Lesson Detail Modal */}
         {selectedLesson && selectedUnit && (

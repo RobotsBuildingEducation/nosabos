@@ -81,11 +81,17 @@ export default function PathSwitcher({ selectedMode, onModeChange }) {
                 color: "white",
               }}
               _active={{
-                bg: isSelected ? "whiteAlpha.300" : "whiteAlpha.150",
+                bg: "whiteAlpha.300",
+                color: "white",
+                borderColor: "whiteAlpha.400",
+                transform: "scale(0.97)",
               }}
-              transition="all 0.2s"
+              transition="background 0.1s, color 0.1s, border-color 0.1s"
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={{
+                scale: 0.97,
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+              }}
             >
               <HStack spacing={2}>
                 <Icon size={18} />

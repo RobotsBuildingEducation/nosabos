@@ -68,32 +68,39 @@ const FlashcardCard = React.memo(function FlashcardCard({
   // Stacking offset for completed cards
   const stackOffset = isStacked ? stackPosition * 2 : 0;
 
-  return (
-    <MotionBox
-      layout={!skipInitialAnimation}
-      initial={skipInitialAnimation ? false : { opacity: 0, scale: 0.8 }}
-      animate={{
+  // Use simpler animations during initial render
+  const animateProps = skipInitialAnimation
+    ? {
         opacity: isLocked ? 0.4 : 1,
         scale: isStacked ? 0.95 - stackPosition * 0.02 : 1,
         y: isStacked ? stackOffset : 0,
-      }}
-      exit={{ opacity: 0, scale: 0.8 }}
+      }
+    : {
+        opacity: isLocked ? 0.4 : 1,
+        scale: isStacked ? 0.95 - stackPosition * 0.02 : 1,
+        y: isStacked ? stackOffset : 0,
+      };
+
+  return (
+    <MotionBox
+      initial={skipInitialAnimation ? false : { opacity: 0.8, scale: 0.95 }}
+      animate={animateProps}
+      exit={{ opacity: 0, scale: 0.9 }}
       transition={
         skipInitialAnimation
           ? { duration: 0 }
-          : { type: "spring", stiffness: 200, damping: 25 }
+          : { duration: 0.2, ease: "easeOut" }
       }
       onClick={onClick}
       cursor={isActive ? "pointer" : isLocked ? "not-allowed" : "default"}
       position={isStacked ? "absolute" : "relative"}
-      // left={isStacked ? "50%" : "auto"}
-      transform={isStacked ? "translateX(-50%)" : "none"}
       top={isStacked ? 0 : "auto"}
       w="220px"
       h="280px"
       flexShrink={0}
       zIndex={isStacked ? 100 - stackPosition : 1}
       filter={isLocked ? "grayscale(100%)" : "none"}
+      style={{ willChange: "transform, opacity" }}
     >
       <Box
         w="100%"
@@ -215,14 +222,23 @@ export default function FlashcardSkillTree({
   const [flashcardData, setFlashcardData] = useState(FLASHCARD_DATA);
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   // Skip initial animation on first render to prevent stutter
+  // Use double RAF to ensure we're past layout and paint
   useEffect(() => {
-    // Use requestAnimationFrame to ensure we're past the first paint
-    const frame = requestAnimationFrame(() => {
+    let frame1, frame2;
+    frame1 = requestAnimationFrame(() => {
       setHasMounted(true);
+      // Second RAF ensures we're fully rendered before enabling animations
+      frame2 = requestAnimationFrame(() => {
+        setIsReady(true);
+      });
     });
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame1);
+      cancelAnimationFrame(frame2);
+    };
   }, []);
 
   // Reset local completed cards when language changes
@@ -403,7 +419,14 @@ export default function FlashcardSkillTree({
   }, []);
 
   return (
-    <Box w="100%" minH="500px" position="relative">
+    <MotionBox
+      w="100%"
+      minH="500px"
+      position="relative"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15, ease: "easeOut" }}
+    >
       {/* Main container with vertical layout */}
       <VStack spacing={8} align="stretch">
         {/* Top: Active/Upcoming Cards */}
@@ -424,7 +447,7 @@ export default function FlashcardSkillTree({
               }}
             >
               <HStack spacing={6} px={4} minW="min-content">
-                <AnimatePresence mode="popLayout">
+                <AnimatePresence initial={false}>
                   {upcomingCards.map((card) => (
                     <FlashcardCard
                       key={card.id}
@@ -432,7 +455,7 @@ export default function FlashcardSkillTree({
                       status={getCardStatus(card)}
                       onClick={() => handleCardClick(card, getCardStatus(card))}
                       supportLang={supportLang}
-                      skipInitialAnimation={!hasMounted}
+                      skipInitialAnimation={!isReady}
                     />
                   ))}
                 </AnimatePresence>
@@ -484,7 +507,7 @@ export default function FlashcardSkillTree({
               justifyContent={"center"}
             >
               <Box position="relative" w="220px" h="280px">
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {completedCards.slice(-5).map((card, index) => (
                     <FlashcardCard
                       key={card.id}
@@ -492,7 +515,7 @@ export default function FlashcardSkillTree({
                       status="completed"
                       stackPosition={index}
                       supportLang={supportLang}
-                      skipInitialAnimation={!hasMounted}
+                      skipInitialAnimation={!isReady}
                     />
                   ))}
                 </AnimatePresence>
@@ -514,6 +537,6 @@ export default function FlashcardSkillTree({
           pauseMs={pauseMs}
         />
       )}
-    </Box>
+    </MotionBox>
   );
 }
