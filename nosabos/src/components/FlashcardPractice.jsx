@@ -51,6 +51,20 @@ const getTranslation = (key, params = {}) => {
   );
 };
 
+// Get effective language for flashcard content display
+// supportLang (from conversation settings) takes precedence if explicitly set
+// Otherwise fall back to appLanguage (from account settings)
+const getEffectiveCardLanguage = (supportLang) => {
+  const appLang = getAppLanguage();
+  // If supportLang is set to something other than default "en", use it
+  // This means user explicitly chose a support language in conversation settings
+  if (supportLang && supportLang !== "en") {
+    return supportLang;
+  }
+  // Otherwise use the app language preference
+  return appLang;
+};
+
 // Language name helper
 const LANG_NAME = (code) => {
   const names = {
@@ -161,7 +175,7 @@ export default function FlashcardPractice({
       const response = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input: buildFlashcardJudgePrompt({
-          concept: getConceptText(card, supportLang),
+          concept: getConceptText(card, getEffectiveCardLanguage(supportLang)),
           userAnswer: answer,
           targetLang,
           supportLang,
@@ -284,7 +298,7 @@ export default function FlashcardPractice({
     setStreamedAnswer("");
     streamingRef.current = true;
 
-    const sourceText = getConceptText(card, supportLang);
+    const sourceText = getConceptText(card, getEffectiveCardLanguage(supportLang));
     const prompt = `Translate "${sourceText}" to ${LANG_NAME(targetLang)}. Reply with ONLY the translated word or phrase, nothing else. No explanations, no quotes, no punctuation unless part of the translation.`;
 
     try {
@@ -391,7 +405,7 @@ export default function FlashcardPractice({
                     textAlign="center"
                     textShadow="0 2px 4px rgba(0,0,0,0.2)"
                   >
-                    {getConceptText(card, supportLang)}
+                    {getConceptText(card, getEffectiveCardLanguage(supportLang))}
                   </Text>
                   <Button
                     position="absolute"
