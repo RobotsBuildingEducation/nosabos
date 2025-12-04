@@ -14,7 +14,6 @@ import {
 } from "../data/flashcardData";
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
-import { WaveBar } from "./WaveBar";
 
 const MotionBox = motion(Box);
 
@@ -363,26 +362,6 @@ export default function FlashcardSkillTree({
       <VStack spacing={8} align="stretch">
         {/* Top: Active/Upcoming Cards */}
         <Box w="100%">
-          <VStack spacing={4} mb={4}>
-            <Text fontSize="sm" fontWeight="bold" color="gray.400">
-              {upcomingCards.length > 0 ? "PRACTICE" : "ALL COMPLETE!"}
-            </Text>
-            <Box w="100%" maxW="400px">
-              <WaveBar
-                value={(completedCards.length / flashcardData.length) * 100}
-                height={20}
-                start="#43e97b"
-                end="#38f9d7"
-                bg="rgba(255,255,255,0.1)"
-                border="rgba(255,255,255,0.2)"
-              />
-            </Box>
-            <Text fontSize="sm" color="gray.400" fontWeight="medium">
-              {Math.round((completedCards.length / flashcardData.length) * 100)}
-              % completed
-            </Text>
-          </VStack>
-
           {/* Upcoming cards in horizontal scrollable row */}
           {upcomingCards.length > 0 ? (
             <Box
