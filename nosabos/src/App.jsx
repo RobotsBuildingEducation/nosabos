@@ -1202,6 +1202,35 @@ export default function App() {
   const [completedProficiencyData, setCompletedProficiencyData] =
     useState(null);
 
+  // Helper functions for tracking shown proficiency celebrations in user document
+  const getCelebrationKey = (level, mode) => `${level}-${mode}`;
+  const getShownCelebrations = useCallback(() => {
+    return user?.shownProficiencyCelebrations || {};
+  }, [user?.shownProficiencyCelebrations]);
+  const markCelebrationShown = useCallback(async (level, mode) => {
+    if (!activeNpub) return;
+    const key = getCelebrationKey(level, mode);
+    const currentShown = user?.shownProficiencyCelebrations || {};
+    const updated = { ...currentShown, [key]: true };
+
+    // Update Firestore
+    try {
+      await setDoc(
+        doc(database, "users", activeNpub),
+        { shownProficiencyCelebrations: updated, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
+      // Update local state
+      patchUser?.({ shownProficiencyCelebrations: updated });
+    } catch (e) {
+      console.error("Failed to save celebration state:", e);
+    }
+  }, [activeNpub, user?.shownProficiencyCelebrations, patchUser]);
+  const wasCelebrationShown = useCallback((level, mode) => {
+    const shown = getShownCelebrations();
+    return shown[getCelebrationKey(level, mode)] === true;
+  }, [getShownCelebrations]);
+
   // Helper mapping for keys/index
   const TAB_KEYS = [
     "realtime",
@@ -1959,6 +1988,11 @@ export default function App() {
   const handleCloseProficiencyCompletionModal = useCallback(() => {
     const data = completedProficiencyData;
 
+    // Mark this celebration as shown so it won't appear again on refresh
+    if (data?.level && data?.mode) {
+      markCelebrationShown(data.level, data.mode);
+    }
+
     setShowProficiencyCompletionModal(false);
     setCompletedProficiencyData(null);
 
@@ -1970,7 +2004,7 @@ export default function App() {
         setActiveFlashcardLevel(data.nextLevel);
       }
     }
-  }, [completedProficiencyData]);
+  }, [completedProficiencyData, markCelebrationShown]);
 
   // Handle closing the daily goal celebration modal
   const handleCloseDailyGoalModal = () => {
@@ -2828,15 +2862,59 @@ export default function App() {
   }, [levelCompletionStatus]);
 
   // State for which CEFR level is currently being viewed (separate for each mode)
-  // Initialize once, but don't auto-update when levels unlock
-  const [activeLessonLevel, setActiveLessonLevel] =
-    useState(currentLessonLevel);
-  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState(
-    currentFlashcardLevel
-  );
+  // Initialize with default, will be synced from user document when loaded
+  const [activeLessonLevel, setActiveLessonLevel] = useState("A1");
+  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState("A1");
+  const [hasInitializedLevels, setHasInitializedLevels] = useState(false);
+
+  // Sync active levels from user document when it loads
+  useEffect(() => {
+    if (!user || hasInitializedLevels) return;
+
+    // Initialize from user document if available
+    if (user.activeLessonLevel && CEFR_LEVELS.includes(user.activeLessonLevel)) {
+      setActiveLessonLevel(user.activeLessonLevel);
+    }
+    if (user.activeFlashcardLevel && CEFR_LEVELS.includes(user.activeFlashcardLevel)) {
+      setActiveFlashcardLevel(user.activeFlashcardLevel);
+    }
+    setHasInitializedLevels(true);
+  }, [user, hasInitializedLevels]);
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
+
+  // Persist active lesson level to Firestore
+  const prevLessonLevelRef = useRef(null);
+  useEffect(() => {
+    // Skip if not initialized yet or no change
+    if (!hasInitializedLevels || !activeNpub) return;
+    if (prevLessonLevelRef.current === activeLessonLevel) return;
+    prevLessonLevelRef.current = activeLessonLevel;
+
+    // Save to Firestore
+    setDoc(
+      doc(database, "users", activeNpub),
+      { activeLessonLevel, updatedAt: new Date().toISOString() },
+      { merge: true }
+    ).catch((e) => console.error("Failed to save activeLessonLevel:", e));
+  }, [activeLessonLevel, activeNpub, hasInitializedLevels]);
+
+  // Persist active flashcard level to Firestore
+  const prevFlashcardLevelRef = useRef(null);
+  useEffect(() => {
+    // Skip if not initialized yet or no change
+    if (!hasInitializedLevels || !activeNpub) return;
+    if (prevFlashcardLevelRef.current === activeFlashcardLevel) return;
+    prevFlashcardLevelRef.current = activeFlashcardLevel;
+
+    // Save to Firestore
+    setDoc(
+      doc(database, "users", activeNpub),
+      { activeFlashcardLevel, updatedAt: new Date().toISOString() },
+      { merge: true }
+    ).catch((e) => console.error("Failed to save activeFlashcardLevel:", e));
+  }, [activeFlashcardLevel, activeNpub, hasInitializedLevels]);
 
   // Track previous completion status to detect newly completed levels
   const prevLessonCompletionRef = useRef({});
@@ -2847,9 +2925,11 @@ export default function App() {
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevLessonCompletionRef.current[level];
       const isNowComplete = lessonLevelCompletionStatus[level]?.isComplete;
+      const alreadyCelebrated = wasCelebrationShown(level, "lesson");
 
       // Check if level was just completed (transition from false/undefined to true)
-      if (!wasComplete && isNowComplete && level === activeLessonLevel) {
+      // and hasn't been celebrated before
+      if (!wasComplete && isNowComplete && level === activeLessonLevel && !alreadyCelebrated) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
         const nextLevel =
@@ -2871,16 +2951,18 @@ export default function App() {
       acc[level] = lessonLevelCompletionStatus[level]?.isComplete || false;
       return acc;
     }, {});
-  }, [lessonLevelCompletionStatus, activeLessonLevel]);
+  }, [lessonLevelCompletionStatus, activeLessonLevel, wasCelebrationShown]);
 
   // Detect flashcard level completion and show celebration modal
   useEffect(() => {
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevFlashcardCompletionRef.current[level];
       const isNowComplete = flashcardLevelCompletionStatus[level]?.isComplete;
+      const alreadyCelebrated = wasCelebrationShown(level, "flashcard");
 
       // Check if level was just completed (transition from false/undefined to true)
-      if (!wasComplete && isNowComplete && level === activeFlashcardLevel) {
+      // and hasn't been celebrated before
+      if (!wasComplete && isNowComplete && level === activeFlashcardLevel && !alreadyCelebrated) {
         // Find the next level for the modal
         const levelIndex = CEFR_LEVELS.indexOf(level);
         const nextLevel =
@@ -2902,7 +2984,7 @@ export default function App() {
       acc[level] = flashcardLevelCompletionStatus[level]?.isComplete || false;
       return acc;
     }, {});
-  }, [flashcardLevelCompletionStatus, activeFlashcardLevel]);
+  }, [flashcardLevelCompletionStatus, activeFlashcardLevel, wasCelebrationShown]);
 
   // Note: We deliberately do NOT auto-update active levels when new levels unlock
   // Users should stay at their current level until they manually navigate
@@ -3130,30 +3212,41 @@ export default function App() {
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
-          <SkillTree
-            targetLang={resolvedTargetLang}
-            level={resolvedLevel}
-            supportLang={resolvedSupportLang}
-            userProgress={userProgress}
-            onStartLesson={handleStartLesson}
-            onCompleteFlashcard={handleCompleteFlashcard}
-            showMultipleLevels={true}
-            levels={relevantLevels}
-            // Mode-specific level props
-            activeLessonLevel={activeLessonLevel}
-            activeFlashcardLevel={activeFlashcardLevel}
-            currentLessonLevel={currentLessonLevel}
-            currentFlashcardLevel={currentFlashcardLevel}
-            onLessonLevelChange={handleLessonLevelChange}
-            onFlashcardLevelChange={handleFlashcardLevelChange}
-            lessonLevelCompletionStatus={lessonLevelCompletionStatus}
-            flashcardLevelCompletionStatus={flashcardLevelCompletionStatus}
-            // Legacy props (for backwards compatibility)
-            activeCEFRLevel={activeCEFRLevel}
-            currentCEFRLevel={currentCEFRLevel}
-            onLevelChange={handleLevelChange}
-            levelCompletionStatus={levelCompletionStatus}
-          />
+          {!hasInitializedLevels ? (
+            <Box
+              display="flex"
+              justifyContent="center"
+              alignItems="center"
+              minH="60vh"
+            >
+              <RobotBuddyPro state="thinking" />
+            </Box>
+          ) : (
+            <SkillTree
+              targetLang={resolvedTargetLang}
+              level={resolvedLevel}
+              supportLang={resolvedSupportLang}
+              userProgress={userProgress}
+              onStartLesson={handleStartLesson}
+              onCompleteFlashcard={handleCompleteFlashcard}
+              showMultipleLevels={true}
+              levels={relevantLevels}
+              // Mode-specific level props
+              activeLessonLevel={activeLessonLevel}
+              activeFlashcardLevel={activeFlashcardLevel}
+              currentLessonLevel={currentLessonLevel}
+              currentFlashcardLevel={currentFlashcardLevel}
+              onLessonLevelChange={handleLessonLevelChange}
+              onFlashcardLevelChange={handleFlashcardLevelChange}
+              lessonLevelCompletionStatus={lessonLevelCompletionStatus}
+              flashcardLevelCompletionStatus={flashcardLevelCompletionStatus}
+              // Legacy props (for backwards compatibility)
+              activeCEFRLevel={activeCEFRLevel}
+              currentCEFRLevel={currentCEFRLevel}
+              onLevelChange={handleLevelChange}
+              levelCompletionStatus={levelCompletionStatus}
+            />
+          )}
         </Box>
       )}
 
