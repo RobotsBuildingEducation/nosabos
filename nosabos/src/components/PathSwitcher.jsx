@@ -38,7 +38,12 @@ export default function PathSwitcher({ selectedMode, onModeChange }) {
   ];
 
   return (
-    <Box mb={6}>
+    <Box
+      mb={6}
+      display="flex"
+      justifyContent="center"
+      width="100%"
+    >
       <HStack
         spacing={2}
         bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
