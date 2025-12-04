@@ -1202,23 +1202,30 @@ export default function App() {
   const [completedProficiencyData, setCompletedProficiencyData] =
     useState(null);
 
-  // Helper functions for tracking shown proficiency celebrations in localStorage
+  // Helper functions for tracking shown proficiency celebrations in user document
   const getCelebrationKey = (level, mode) => `${level}-${mode}`;
   const getShownCelebrations = useCallback(() => {
-    if (typeof window === "undefined") return {};
+    return user?.shownProficiencyCelebrations || {};
+  }, [user?.shownProficiencyCelebrations]);
+  const markCelebrationShown = useCallback(async (level, mode) => {
+    if (!activeNpub) return;
+    const key = getCelebrationKey(level, mode);
+    const currentShown = user?.shownProficiencyCelebrations || {};
+    const updated = { ...currentShown, [key]: true };
+
+    // Update Firestore
     try {
-      const stored = localStorage.getItem("shownProficiencyCelebrations");
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
+      await setDoc(
+        doc(database, "users", activeNpub),
+        { shownProficiencyCelebrations: updated, updatedAt: new Date().toISOString() },
+        { merge: true }
+      );
+      // Update local state
+      patchUser?.({ shownProficiencyCelebrations: updated });
+    } catch (e) {
+      console.error("Failed to save celebration state:", e);
     }
-  }, []);
-  const markCelebrationShown = useCallback((level, mode) => {
-    if (typeof window === "undefined") return;
-    const shown = getShownCelebrations();
-    shown[getCelebrationKey(level, mode)] = true;
-    localStorage.setItem("shownProficiencyCelebrations", JSON.stringify(shown));
-  }, [getShownCelebrations]);
+  }, [activeNpub, user?.shownProficiencyCelebrations, patchUser]);
   const wasCelebrationShown = useCallback((level, mode) => {
     const shown = getShownCelebrations();
     return shown[getCelebrationKey(level, mode)] === true;
@@ -2855,42 +2862,59 @@ export default function App() {
   }, [levelCompletionStatus]);
 
   // State for which CEFR level is currently being viewed (separate for each mode)
-  // Initialize from localStorage if available, otherwise use computed current level
-  const [activeLessonLevel, setActiveLessonLevel] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("activeLessonLevel");
-      if (stored && CEFR_LEVELS.includes(stored)) {
-        return stored;
-      }
+  // Initialize with default, will be synced from user document when loaded
+  const [activeLessonLevel, setActiveLessonLevel] = useState("A1");
+  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState("A1");
+  const hasInitializedLevelsRef = useRef(false);
+
+  // Sync active levels from user document when it loads
+  useEffect(() => {
+    if (!user || hasInitializedLevelsRef.current) return;
+
+    // Initialize from user document if available
+    if (user.activeLessonLevel && CEFR_LEVELS.includes(user.activeLessonLevel)) {
+      setActiveLessonLevel(user.activeLessonLevel);
     }
-    return currentLessonLevel;
-  });
-  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState(() => {
-    if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("activeFlashcardLevel");
-      if (stored && CEFR_LEVELS.includes(stored)) {
-        return stored;
-      }
+    if (user.activeFlashcardLevel && CEFR_LEVELS.includes(user.activeFlashcardLevel)) {
+      setActiveFlashcardLevel(user.activeFlashcardLevel);
     }
-    return currentFlashcardLevel;
-  });
+    hasInitializedLevelsRef.current = true;
+  }, [user]);
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
 
-  // Persist active lesson level to localStorage
+  // Persist active lesson level to Firestore
+  const prevLessonLevelRef = useRef(null);
   useEffect(() => {
-    if (typeof window !== "undefined" && activeLessonLevel) {
-      localStorage.setItem("activeLessonLevel", activeLessonLevel);
-    }
-  }, [activeLessonLevel]);
+    // Skip if not initialized yet or no change
+    if (!hasInitializedLevelsRef.current || !activeNpub) return;
+    if (prevLessonLevelRef.current === activeLessonLevel) return;
+    prevLessonLevelRef.current = activeLessonLevel;
 
-  // Persist active flashcard level to localStorage
+    // Save to Firestore
+    setDoc(
+      doc(database, "users", activeNpub),
+      { activeLessonLevel, updatedAt: new Date().toISOString() },
+      { merge: true }
+    ).catch((e) => console.error("Failed to save activeLessonLevel:", e));
+  }, [activeLessonLevel, activeNpub]);
+
+  // Persist active flashcard level to Firestore
+  const prevFlashcardLevelRef = useRef(null);
   useEffect(() => {
-    if (typeof window !== "undefined" && activeFlashcardLevel) {
-      localStorage.setItem("activeFlashcardLevel", activeFlashcardLevel);
-    }
-  }, [activeFlashcardLevel]);
+    // Skip if not initialized yet or no change
+    if (!hasInitializedLevelsRef.current || !activeNpub) return;
+    if (prevFlashcardLevelRef.current === activeFlashcardLevel) return;
+    prevFlashcardLevelRef.current = activeFlashcardLevel;
+
+    // Save to Firestore
+    setDoc(
+      doc(database, "users", activeNpub),
+      { activeFlashcardLevel, updatedAt: new Date().toISOString() },
+      { merge: true }
+    ).catch((e) => console.error("Failed to save activeFlashcardLevel:", e));
+  }, [activeFlashcardLevel, activeNpub]);
 
   // Track previous completion status to detect newly completed levels
   const prevLessonCompletionRef = useRef({});
