@@ -59,6 +59,27 @@ const FAQ_ITEMS = [
 
 const FEATURE_CARD_CONFIG = [
   {
+    titleKey: "feature_skilltree_title",
+    legacyTitleKey: "landing_feature_skilltree_title",
+    descriptionKey: "feature_skilltree_desc",
+    legacyDescriptionKey: "landing_feature_skilltree_desc",
+    icon: FiMap,
+  },
+  {
+    titleKey: "feature_flashcards_title",
+    legacyTitleKey: "landing_feature_flashcards_title",
+    descriptionKey: "feature_flashcards_desc",
+    legacyDescriptionKey: "landing_feature_flashcards_desc",
+    icon: FiCopy,
+  },
+  {
+    titleKey: "feature_dailygoals_title",
+    legacyTitleKey: "landing_feature_dailygoals_title",
+    descriptionKey: "feature_dailygoals_desc",
+    legacyDescriptionKey: "landing_feature_dailygoals_desc",
+    icon: FiCheckSquare,
+  },
+  {
     titleKey: "feature_conversations_title",
     legacyTitleKey: "landing_feature_conversations_title",
     descriptionKey: "feature_conversations_desc",
@@ -85,27 +106,6 @@ const FEATURE_CARD_CONFIG = [
     descriptionKey: "feature_grammar_desc",
     legacyDescriptionKey: "landing_feature_grammar_desc",
     icon: FiTarget,
-  },
-  {
-    titleKey: "feature_skilltree_title",
-    legacyTitleKey: "landing_feature_skilltree_title",
-    descriptionKey: "feature_skilltree_desc",
-    legacyDescriptionKey: "landing_feature_skilltree_desc",
-    icon: FiMap,
-  },
-  {
-    titleKey: "feature_flashcards_title",
-    legacyTitleKey: "landing_feature_flashcards_title",
-    descriptionKey: "feature_flashcards_desc",
-    legacyDescriptionKey: "landing_feature_flashcards_desc",
-    icon: FiCopy,
-  },
-  {
-    titleKey: "feature_dailygoals_title",
-    legacyTitleKey: "landing_feature_dailygoals_title",
-    descriptionKey: "feature_dailygoals_desc",
-    legacyDescriptionKey: "landing_feature_dailygoals_desc",
-    icon: FiCheckSquare,
   },
 ];
 
