@@ -1157,8 +1157,10 @@ export default function RealTimeTest({
     // Check if lesson content provides a specific goal/scenario
     const lesson = lessonContentRef.current;
     const lessonScenario = lesson?.scenario || lesson?.prompt;
+    const goalVariations = lesson?.goalVariations || [];
+    const hasVariations = goalVariations.length > 0;
 
-    // If we have a lesson-specific goal that matches current content, use it
+    // Check for existing goal that matches current lesson
     if (
       data.currentGoal &&
       data.currentGoal.title_en &&
@@ -1169,19 +1171,52 @@ export default function RealTimeTest({
       return { ...data.currentGoal, attempts: data.currentGoal.attempts || 0 };
     }
 
+    // Get goal index for variation progression
+    // Check how many times this lesson's goals have been completed
+    const lessonGoalCount = data.lessonGoalCounts?.[lessonScenario] || 0;
+    const goalIndex = hasVariations ? lessonGoalCount % goalVariations.length : 0;
+
+    // Select the appropriate goal variation or use base content
+    let activeGoal;
+    if (hasVariations && goalVariations[goalIndex]) {
+      activeGoal = goalVariations[goalIndex];
+    } else {
+      activeGoal = {
+        scenario: lessonScenario,
+        successCriteria: lesson?.successCriteria,
+      };
+    }
+
+    const scenario = activeGoal.scenario || lessonScenario;
+    const successCriteria = activeGoal.successCriteria || lesson?.successCriteria;
+
     // Generate goal based on lesson content or use default
     const seedTitles = goalTitlesSeed();
+
+    // Build clear rubric from success criteria or generate one
+    let rubricEn, rubricEs;
+    if (successCriteria) {
+      rubricEn = `Success: ${successCriteria}`;
+      rubricEs = `Éxito: ${successCriteria}`;
+    } else if (scenario) {
+      // Create actionable rubric from scenario
+      rubricEn = `Complete this task: ${scenario}`;
+      rubricEs = `Completa esta tarea: ${scenario}`;
+    } else {
+      rubricEn = "Say a greeting in the target language";
+      rubricEs = "Di un saludo en el idioma meta";
+    }
+
     const seed = {
       id: `goal_${Date.now()}`,
-      title_en: lessonScenario || seedTitles.en,
-      title_es: lessonScenario || seedTitles.es,
-      rubric_en: lessonScenario
-        ? `Practice: ${lessonScenario}`
-        : "Say a greeting",
-      rubric_es: lessonScenario
-        ? `Practica: ${lessonScenario}`
-        : "Di un saludo",
+      title_en: scenario || seedTitles.en,
+      title_es: scenario || seedTitles.es,
+      rubric_en: rubricEn,
+      rubric_es: rubricEs,
       lessonScenario: lessonScenario || null,
+      successCriteria: successCriteria || null,
+      goalIndex: goalIndex,
+      hasVariations: hasVariations,
       attempts: 0,
       status: "active",
       createdAt: isoNow(),
@@ -1250,6 +1285,17 @@ export default function RealTimeTest({
       confidence,
     };
     await addDoc(collection(database, "users", npub, "goals"), payload);
+
+    // Increment lesson goal count for variation progression
+    // This ensures the next time user does this lesson, they get a different goal
+    if (prevGoal.lessonScenario) {
+      const userRef = doc(database, "users", npub);
+      const userData = (await getDoc(userRef)).data() || {};
+      const lessonGoalCounts = userData.lessonGoalCounts || {};
+      lessonGoalCounts[prevGoal.lessonScenario] =
+        (lessonGoalCounts[prevGoal.lessonScenario] || 0) + 1;
+      await setDoc(userRef, { lessonGoalCounts }, { merge: true });
+    }
   }
 
   function skipGoal() {

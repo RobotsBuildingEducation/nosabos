@@ -1831,7 +1831,8 @@ export default function App() {
       const userRef = doc(database, "users", npub);
       await updateDoc(userRef, {
         [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: false,
-        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]: null,
+        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]:
+          null,
         updatedAt: new Date().toISOString(),
       });
 
