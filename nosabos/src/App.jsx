@@ -113,7 +113,7 @@ import { RiArrowLeftLine } from "react-icons/ri";
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
-const ONBOARDING_TOTAL_STEPS = 3;
+const ONBOARDING_TOTAL_STEPS = 1;
 
 /**
  * Migrate old level values to CEFR levels
@@ -542,13 +542,9 @@ function TopBar({
       const nextDraft = {
         level,
         supportLang,
-        voice,
         voicePersona,
         targetLang,
-        showTranslations,
         pauseMs,
-        helpRequest,
-        practicePronunciation,
       };
       await Promise.resolve(onPatchSettings?.(nextDraft));
       if (activeNpub != null) {
@@ -724,8 +720,6 @@ function TopBar({
                     >
                       {supportLang === "en" &&
                         translations[appLanguage].onboarding_support_en}
-                      {supportLang === "bilingual" &&
-                        translations[appLanguage].onboarding_support_bilingual}
                       {supportLang === "es" &&
                         translations[appLanguage].onboarding_support_es}
                     </MenuButton>
@@ -738,77 +732,8 @@ function TopBar({
                         <MenuItemOption value="en">
                           {translations[appLanguage].onboarding_support_en}
                         </MenuItemOption>
-                        <MenuItemOption value="bilingual">
-                          {
-                            translations[appLanguage]
-                              .onboarding_support_bilingual
-                          }
-                        </MenuItemOption>
                         <MenuItemOption value="es">
                           {translations[appLanguage].onboarding_support_es}
-                        </MenuItemOption>
-                      </MenuOptionGroup>
-                    </MenuList>
-                  </Menu>
-
-                  <Menu autoSelect={false} isLazy>
-                    <MenuButton
-                      as={Button}
-                      rightIcon={<ChevronDownIcon />}
-                      variant="outline"
-                      size="sm"
-                      borderColor="gray.700"
-                      bg="gray.800"
-                      _hover={{ bg: "gray.750" }}
-                      _active={{ bg: "gray.750" }}
-                      px={4}
-                    >
-                      {voice === "alloy" &&
-                        translations[appLanguage].onboarding_voice_alloy}
-                      {voice === "ash" &&
-                        translations[appLanguage].onboarding_voice_ash}
-                      {voice === "ballad" &&
-                        translations[appLanguage].onboarding_voice_ballad}
-                      {voice === "coral" &&
-                        translations[appLanguage].onboarding_voice_coral}
-                      {voice === "echo" &&
-                        translations[appLanguage].onboarding_voice_echo}
-                      {voice === "sage" &&
-                        translations[appLanguage].onboarding_voice_sage}
-                      {voice === "shimmer" &&
-                        translations[appLanguage].onboarding_voice_shimmer}
-                      {voice === "verse" &&
-                        translations[appLanguage].onboarding_voice_verse}
-                    </MenuButton>
-                    <MenuList borderColor="gray.700" bg="gray.900">
-                      <MenuOptionGroup
-                        type="radio"
-                        value={voice}
-                        onChange={(value) => setVoice(value)}
-                      >
-                        <MenuItemOption value="alloy">
-                          {translations[appLanguage].onboarding_voice_alloy}
-                        </MenuItemOption>
-                        <MenuItemOption value="ash">
-                          {translations[appLanguage].onboarding_voice_ash}
-                        </MenuItemOption>
-                        <MenuItemOption value="ballad">
-                          {translations[appLanguage].onboarding_voice_ballad}
-                        </MenuItemOption>
-                        <MenuItemOption value="coral">
-                          {translations[appLanguage].onboarding_voice_coral}
-                        </MenuItemOption>
-                        <MenuItemOption value="echo">
-                          {translations[appLanguage].onboarding_voice_echo}
-                        </MenuItemOption>
-                        <MenuItemOption value="sage">
-                          {translations[appLanguage].onboarding_voice_sage}
-                        </MenuItemOption>
-                        <MenuItemOption value="shimmer">
-                          {translations[appLanguage].onboarding_voice_shimmer}
-                        </MenuItemOption>
-                        <MenuItemOption value="verse">
-                          {translations[appLanguage].onboarding_voice_verse}
                         </MenuItemOption>
                       </MenuOptionGroup>
                     </MenuList>
@@ -872,33 +797,6 @@ function TopBar({
                   </Menu>
                 </Wrap>
 
-                {/* Pronunciation coaching */}
-                <HStack
-                  bg="gray.800"
-                  p={3}
-                  rounded="md"
-                  justify="space-between"
-                >
-                  <Box>
-                    <Text fontSize="sm" mb={0.5}>
-                      {t.ra_pron_label ||
-                        (appLanguage === "es"
-                          ? "Practicar pronunciación"
-                          : "Practice pronunciation")}
-                    </Text>
-                    <Text fontSize="xs" opacity={0.7}>
-                      {t.ra_pron_help ||
-                        (appLanguage === "es"
-                          ? "Añade una micro-pista y una repetición lenta en cada turno."
-                          : "Adds a tiny cue and one slow repetition each turn.")}
-                    </Text>
-                  </Box>
-                  <Switch
-                    isChecked={practicePronunciation}
-                    onChange={(e) => setPracticePronunciation(e.target.checked)}
-                  />
-                </HStack>
-
                 {/* Persona */}
                 <Box bg="gray.800" p={3} rounded="md">
                   <Text fontSize="sm" mb={2}>
@@ -923,36 +821,6 @@ function TopBar({
                   <Text fontSize="xs" opacity={0.7} mt={1}>
                     {t.ra_persona_help ||
                       "A short vibe/style hint for the AI voice."}
-                  </Text>
-                </Box>
-
-                {/* Help Request */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={2}>
-                    {t.ra_help_label ||
-                      (appLanguage === "es"
-                        ? "¿En qué te gustaría ayuda?"
-                        : "What would you like help with?")}
-                  </Text>
-                  <Textarea
-                    value={helpRequest}
-                    onChange={(e) =>
-                      setHelpRequest(e.target.value.slice(0, 600))
-                    }
-                    bg="gray.700"
-                    minH="100px"
-                    placeholder={
-                      t.ra_help_placeholder ||
-                      (appLanguage === "es"
-                        ? "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…"
-                        : "e.g., conversational practice for job interviews; past tenses review; travel Spanish…")
-                    }
-                  />
-                  <Text fontSize="xs" opacity={0.7} mt={1}>
-                    {t.ra_help_help ||
-                      (appLanguage === "es"
-                        ? "Describe tu meta o contexto (esto guía la experiencia)."
-                        : "Describe your goal or context (this guides the experience).")}
                   </Text>
                 </Box>
 
@@ -1664,7 +1532,7 @@ export default function App() {
     const next = {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "A1",
-      supportLang: ["en", "es", "bilingual"].includes(
+      supportLang: ["en", "es"].includes(
         partial.supportLang ?? prev.supportLang
       )
         ? partial.supportLang ?? prev.supportLang
@@ -1774,21 +1642,12 @@ export default function App() {
       const safe = (v, fallback) =>
         v === undefined || v === null ? fallback : v;
 
-      const CHALLENGE = {
-        en: translations.en.onboarding_challenge_default,
-        es: translations.es.onboarding_challenge_default,
-      };
-
+      // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "A1")),
-        supportLang: ["en", "es", "bilingual"].includes(payload.supportLang)
+        supportLang: ["en", "es"].includes(payload.supportLang)
           ? payload.supportLang
           : "en",
-        practicePronunciation:
-          typeof payload.practicePronunciation === "boolean"
-            ? payload.practicePronunciation
-            : false,
-        voice: safe(payload.voice, "alloy"),
         voicePersona: safe(
           payload.voicePersona,
           translations.en.onboarding_persona_default_example
@@ -1798,16 +1657,7 @@ export default function App() {
         )
           ? payload.targetLang
           : "es",
-        showTranslations:
-          typeof payload.showTranslations === "boolean"
-            ? payload.showTranslations
-            : true,
-        helpRequest: String(safe(payload.helpRequest, "")).slice(0, 600),
         pauseMs: typeof payload.pauseMs === "number" ? payload.pauseMs : 800,
-        challenge:
-          payload?.challenge?.en && payload?.challenge?.es
-            ? payload.challenge
-            : { ...CHALLENGE },
         xp: 0,
         streak: 0,
       };
@@ -1828,14 +1678,11 @@ export default function App() {
             ...(user?.onboarding || {}),
             completed: true,
             completedAt: now,
-            currentStep: ONBOARDING_TOTAL_STEPS,
+            currentStep: 1, // Now just 1 step
             draft: null,
           },
-          lastGoal: normalized.challenge.en,
           xp: 0,
           streak: 0,
-          helpRequest: normalized.helpRequest,
-          practicePronunciation: normalized.practicePronunciation,
           progress: { ...normalized },
           identity: safe(payload.identity, user?.identity || null),
         },
@@ -3134,15 +2981,6 @@ export default function App() {
   }
 
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
-  const rawOnboardingStep = Number(user?.onboarding?.currentStep);
-  const onboardingStep = Number.isFinite(rawOnboardingStep)
-    ? rawOnboardingStep
-    : 1;
-  const clampedOnboardingStep = Math.min(
-    Math.max(Math.round(onboardingStep) || 1, 1),
-    ONBOARDING_TOTAL_STEPS
-  );
-  const onboardingDefaultPath = `/onboarding/step-${clampedOnboardingStep}`;
   const onboardingInitialDraft = {
     ...(user?.progress || {}),
     ...(user?.onboarding?.draft || {}),
@@ -3150,7 +2988,7 @@ export default function App() {
 
   if (needsOnboarding) {
     if (!isOnboardingRoute) {
-      return <Navigate to={onboardingDefaultPath} replace />;
+      return <Navigate to="/onboarding" replace />;
     }
 
     return (
@@ -3162,7 +3000,6 @@ export default function App() {
             await saveAppLanguage(lang);
           }}
           initialDraft={onboardingInitialDraft}
-          onSaveDraft={handleOnboardingDraftSave}
         />
       </Box>
     );

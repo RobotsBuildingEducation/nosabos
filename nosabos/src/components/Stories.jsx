@@ -48,6 +48,7 @@ import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
+import { getRandomVoice } from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import {
@@ -981,8 +982,9 @@ export default function StoryMode({
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
       }
-      const voice = progress.voice || "alloy";
-      const cacheKey = `${text}-${voice}-${langTag}`;
+      // Use random voice for variety
+      const voice = getRandomVoice();
+      const cacheKey = `${text}-${langTag}`;
       let audioUrl = audioCacheRef.current.get(cacheKey);
 
       setSynthesizing?.(true);

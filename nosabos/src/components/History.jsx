@@ -36,6 +36,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { getRandomVoice } from "../utils/tts";
 
 /* ---------------------------
    Minimal i18n helper
@@ -1179,7 +1180,7 @@ export default function History({
     setIsReadingSupport(false);
   };
 
-  async function speak({ text, langTag, voice, setReading, onDone }) {
+  async function speak({ text, langTag, setReading, onDone }) {
     stopSpeech();
     if (!text) return;
     setReading(true);
@@ -1192,7 +1193,7 @@ export default function History({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             input: text,
-            voice: voice || "alloy",
+            voice: getRandomVoice(),
             model: "gpt-4o-mini-tts",
             response_format: "mp3",
           }),
@@ -1241,7 +1242,6 @@ export default function History({
     speak({
       text: viewLecture?.target,
       langTag: (BCP47[targetLang] || BCP47.es).tts,
-      voice: progress.voice || "alloy",
       onDone: () => {},
       setReading: setIsReadingTarget,
     });
@@ -1250,7 +1250,6 @@ export default function History({
     speak({
       text: viewLecture?.support,
       langTag: (BCP47[supportLang] || BCP47.en).tts,
-      voice: progress.voice || "alloy",
       onDone: () => {},
       setReading: setIsReadingSupport,
     });
