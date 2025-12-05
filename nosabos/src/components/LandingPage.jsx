@@ -23,10 +23,11 @@ import {
 import { ArrowForwardIcon, LockIcon } from "@chakra-ui/icons";
 import {
   FiBookOpen,
-  FiCompass,
+  FiCheckSquare,
+  FiCopy,
   FiLayers,
+  FiMap,
   FiMessageCircle,
-  FiShuffle,
   FiTarget,
 } from "react-icons/fi";
 
@@ -58,6 +59,27 @@ const FAQ_ITEMS = [
 
 const FEATURE_CARD_CONFIG = [
   {
+    titleKey: "feature_skilltree_title",
+    legacyTitleKey: "landing_feature_skilltree_title",
+    descriptionKey: "feature_skilltree_desc",
+    legacyDescriptionKey: "landing_feature_skilltree_desc",
+    icon: FiMap,
+  },
+  {
+    titleKey: "feature_flashcards_title",
+    legacyTitleKey: "landing_feature_flashcards_title",
+    descriptionKey: "feature_flashcards_desc",
+    legacyDescriptionKey: "landing_feature_flashcards_desc",
+    icon: FiCopy,
+  },
+  {
+    titleKey: "feature_dailygoals_title",
+    legacyTitleKey: "landing_feature_dailygoals_title",
+    descriptionKey: "feature_dailygoals_desc",
+    legacyDescriptionKey: "landing_feature_dailygoals_desc",
+    icon: FiCheckSquare,
+  },
+  {
     titleKey: "feature_conversations_title",
     legacyTitleKey: "landing_feature_conversations_title",
     descriptionKey: "feature_conversations_desc",
@@ -84,20 +106,6 @@ const FEATURE_CARD_CONFIG = [
     descriptionKey: "feature_grammar_desc",
     legacyDescriptionKey: "landing_feature_grammar_desc",
     icon: FiTarget,
-  },
-  {
-    titleKey: "feature_jobs_title",
-    legacyTitleKey: "landing_feature_jobs_title",
-    descriptionKey: "feature_jobs_desc",
-    legacyDescriptionKey: "landing_feature_jobs_desc",
-    icon: FiCompass,
-  },
-  {
-    titleKey: "feature_random_title",
-    legacyTitleKey: "landing_feature_random_title",
-    descriptionKey: "feature_random_desc",
-    legacyDescriptionKey: "landing_feature_random_desc",
-    icon: FiShuffle,
   },
 ];
 
@@ -225,12 +233,15 @@ const landingTranslations = {
     feature_grammar_title: "Grammar & vocabulary books",
     feature_grammar_desc:
       "Check rules quickly, drill tricky concepts, and test yourself with adaptive review sets.",
-    feature_jobs_title: "Job scripts",
-    feature_jobs_desc:
-      "Practice professional dialogues so you can present, interview, and collaborate with confidence.",
-    feature_random_title: "Random mode",
-    feature_random_desc:
-      "Mix up your routine with surprise prompts that blend speaking, reading, and listening challenges.",
+    feature_skilltree_title: "Skill tree",
+    feature_skilltree_desc:
+      "Learn in a structured way with guided paths that build your skills step by step.",
+    feature_flashcards_title: "Flash cards",
+    feature_flashcards_desc:
+      "Learn how to speak with others fast using quick-fire vocabulary and phrase drills.",
+    feature_dailygoals_title: "Daily goals",
+    feature_dailygoals_desc:
+      "Stay motivated with daily targets that track your progress and celebrate your streaks.",
     wallet_section_title: "Create scholarships with Bitcoin",
     wallet_section_description_prefix:
       "Top up your in-app Bitcoin wallet to help us create scholarships with learning with",
@@ -296,12 +307,15 @@ const landingTranslations = {
     feature_grammar_title: "Libros de gramática y vocabulario",
     feature_grammar_desc:
       "Consulta reglas rápido, practica puntos difíciles y pon a prueba tus conocimientos con repasos adaptativos.",
-    feature_jobs_title: "Guiones profesionales",
-    feature_jobs_desc:
-      "Practica diálogos profesionales para presentar, entrevistar y colaborar con confianza.",
-    feature_random_title: "Modo aleatorio",
-    feature_random_desc:
-      "Varía tu rutina con retos sorpresa que combinan expresión oral, lectura y escucha.",
+    feature_skilltree_title: "Árbol de habilidades",
+    feature_skilltree_desc:
+      "Aprende de manera estructurada con rutas guiadas que desarrollan tus habilidades paso a paso.",
+    feature_flashcards_title: "Tarjetas de memoria",
+    feature_flashcards_desc:
+      "Aprende a hablar con otros rápidamente usando ejercicios ágiles de vocabulario y frases.",
+    feature_dailygoals_title: "Metas diarias",
+    feature_dailygoals_desc:
+      "Mantente motivado con objetivos diarios que rastrean tu progreso y celebran tus rachas.",
     wallet_section_title: "Becas impulsadas con Bitcoin",
     wallet_section_description_prefix:
       "Recarga tu billetera de Bitcoin en la app para ayudarnos a crear becas con aprendizaje con",
