@@ -3285,7 +3285,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     speakLangTag,
     toast,
     userLanguage,
-    voicePreference,
   ]);
 
   const maReady =

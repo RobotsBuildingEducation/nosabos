@@ -2795,7 +2795,6 @@ Return JSON ONLY:
     speakLangTag,
     toast,
     userLanguage,
-    voicePreference,
   ]);
 
   const renderMcPrompt = () => {

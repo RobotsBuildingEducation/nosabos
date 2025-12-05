@@ -720,8 +720,6 @@ function TopBar({
                     >
                       {supportLang === "en" &&
                         translations[appLanguage].onboarding_support_en}
-                      {supportLang === "bilingual" &&
-                        translations[appLanguage].onboarding_support_bilingual}
                       {supportLang === "es" &&
                         translations[appLanguage].onboarding_support_es}
                     </MenuButton>
@@ -733,12 +731,6 @@ function TopBar({
                       >
                         <MenuItemOption value="en">
                           {translations[appLanguage].onboarding_support_en}
-                        </MenuItemOption>
-                        <MenuItemOption value="bilingual">
-                          {
-                            translations[appLanguage]
-                              .onboarding_support_bilingual
-                          }
                         </MenuItemOption>
                         <MenuItemOption value="es">
                           {translations[appLanguage].onboarding_support_es}
@@ -1540,7 +1532,7 @@ export default function App() {
     const next = {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "A1",
-      supportLang: ["en", "es", "bilingual"].includes(
+      supportLang: ["en", "es"].includes(
         partial.supportLang ?? prev.supportLang
       )
         ? partial.supportLang ?? prev.supportLang
@@ -1653,7 +1645,7 @@ export default function App() {
       // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "A1")),
-        supportLang: ["en", "es", "bilingual"].includes(payload.supportLang)
+        supportLang: ["en", "es"].includes(payload.supportLang)
           ? payload.supportLang
           : "en",
         voicePersona: safe(

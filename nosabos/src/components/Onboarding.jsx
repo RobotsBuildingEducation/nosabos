@@ -215,7 +215,6 @@ export default function Onboarding({
                           _active={{ bg: "gray.750" }}
                         >
                           {supportLang === "en" && ui.onboarding_support_en}
-                          {supportLang === "bilingual" && ui.onboarding_support_bilingual}
                           {supportLang === "es" && ui.onboarding_support_es}
                         </MenuButton>
                         <MenuList borderColor="gray.700" bg="gray.900">
@@ -226,9 +225,6 @@ export default function Onboarding({
                           >
                             <MenuItemOption value="en">
                               {ui.onboarding_support_en}
-                            </MenuItemOption>
-                            <MenuItemOption value="bilingual">
-                              {ui.onboarding_support_bilingual}
                             </MenuItemOption>
                             <MenuItemOption value="es">
                               {ui.onboarding_support_es}

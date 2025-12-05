@@ -46,7 +46,6 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import {
   TTS_LANG_TAG,
   fetchTTSBlob,
-  resolveVoicePreference,
 } from "../utils/tts";
 import { doc, onSnapshot } from "firebase/firestore";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
@@ -155,7 +154,6 @@ export default function LessonGroupQuiz({
   const [supportLang, setSupportLang] = useState("auto");
   const [showTranslations, setShowTranslations] = useState(true);
   const [xp, setXp] = useState(0);
-  const [voicePreference, setVoicePreference] = useState(null);
 
   // Subscribe to user progress
   useEffect(() => {
@@ -173,22 +171,14 @@ export default function LessonGroupQuiz({
       )
         ? prog.targetLang
         : "es";
-      const sLang = prog.supportLanguage || "auto";
+      const sLang = prog.supportLang || "auto";
       const showTr = prog.showTranslations !== false;
       const langXp = prog.languageXp?.[tLang] || prog.totalXp || 0;
-
-      const speakLangTag = TTS_LANG_TAG[tLang] || TTS_LANG_TAG.es;
-      const voice = resolveVoicePreference({
-        voice: prog.voice,
-        lang: tLang,
-        langTag: speakLangTag,
-      });
 
       setTargetLang(tLang);
       setSupportLang(sLang);
       setShowTranslations(showTr);
       setXp(langXp);
-      setVoicePreference(voice);
     });
     return () => unsub();
   }, []);
