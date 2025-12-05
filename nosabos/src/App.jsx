@@ -1817,6 +1817,48 @@ export default function App() {
     }
   };
 
+  // Handle random practice flashcard - awards XP and resets card to be practiced again
+  const handleRandomPracticeFlashcard = async (card) => {
+    const npub = resolveNpub();
+    if (!npub || !card) return;
+
+    try {
+      // Award XP (card.xpReward is set by the FlashcardPractice component, 4-7 XP)
+      const xpAmount = card.xpReward || 5;
+      await awardXp(npub, xpAmount, resolvedTargetLang);
+
+      // Remove the card from completed status (add it back to the active deck)
+      const userRef = doc(database, "users", npub);
+      await updateDoc(userRef, {
+        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completed`]: false,
+        [`progress.languageFlashcards.${resolvedTargetLang}.${card.id}.completedAt`]: null,
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Refresh user data to get updated progress
+      const fresh = await loadUserObjectFromDB(database, npub);
+      if (fresh) setUser?.(fresh);
+
+      console.log(
+        "[RandomPractice] Awarded",
+        xpAmount,
+        "XP and reset flashcard:",
+        card.id
+      );
+    } catch (error) {
+      console.error("Failed to complete random practice:", error);
+      toast({
+        title: appLanguage === "es" ? "Error" : "Error",
+        description:
+          appLanguage === "es"
+            ? "No se pudo guardar el progreso"
+            : "Failed to save progress",
+        status: "error",
+        duration: 3000,
+      });
+    }
+  };
+
   // Handle returning to skill tree
   const handleReturnToSkillTree = useCallback(() => {
     setViewMode("skillTree");
@@ -3096,6 +3138,7 @@ export default function App() {
               userProgress={userProgress}
               onStartLesson={handleStartLesson}
               onCompleteFlashcard={handleCompleteFlashcard}
+              onRandomPracticeFlashcard={handleRandomPracticeFlashcard}
               pauseMs={user?.progress?.pauseMs}
               showMultipleLevels={true}
               levels={relevantLevels}
