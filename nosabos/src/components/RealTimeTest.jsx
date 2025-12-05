@@ -344,10 +344,7 @@ function AlignedBubble({
                   borderRadius="lg"
                   borderWidth="1px"
                   borderColor={hexToRgba(color, 0.6)}
-                  background={`linear-gradient(140deg, ${hexToRgba(
-                    color,
-                    0.22
-                  )} 0%, rgba(15,17,22,0.5) 100%)`}
+                  background="#0b1220"
                   boxShadow={`0 6px 18px ${hexToRgba(color, 0.12)}`}
                   color="whiteAlpha.900"
                   minW="0"
