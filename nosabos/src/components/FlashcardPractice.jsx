@@ -607,6 +607,7 @@ export default function FlashcardPractice({
                         transform: "translateY(-2px)",
                         boxShadow: `0 8px 20px ${cefrColor.primary}40`,
                       }}
+                      padding={9}
                       _active={{ transform: "translateY(0)" }}
                     >
                       {isRecording
@@ -667,6 +668,7 @@ export default function FlashcardPractice({
                         onClick={handleTextSubmit}
                         isDisabled={!textAnswer.trim()}
                         leftIcon={<RiKeyboardLine size={20} />}
+                        padding={9}
                         _hover={{
                           transform: "translateY(-2px)",
                           boxShadow: `0 8px 20px ${cefrColor.primary}40`,
