@@ -25,7 +25,7 @@ import {
   RiEyeLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
-import { fetchTTSBlob, TTS_LANG_TAG } from "../utils/tts";
+import { getRandomVoice } from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
@@ -356,33 +356,35 @@ export default function FlashcardPractice({
     setIsPlayingAudio(true);
 
     try {
-      const langTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
-      const blob = await fetchTTSBlob({
-        text: streamedAnswer,
-        langTag,
-      });
+      const res = await fetch(
+        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input: streamedAnswer,
+            voice: getRandomVoice(),
+            model: "gpt-4o-mini-tts",
+            response_format: "mp3",
+          }),
+        }
+      );
 
-      const audioUrl = URL.createObjectURL(blob);
-      const audio = new Audio(audioUrl);
+      if (!res.ok) throw new Error(`TTS ${res.status}`);
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
       audioRef.current = audio;
 
-      audio.onended = () => {
+      const cleanup = () => {
+        URL.revokeObjectURL(url);
         setIsPlayingAudio(false);
-        URL.revokeObjectURL(audioUrl);
         audioRef.current = null;
       };
 
-      audio.onerror = () => {
-        setIsPlayingAudio(false);
-        URL.revokeObjectURL(audioUrl);
-        audioRef.current = null;
-        toast({
-          title: "Audio error",
-          description: "Could not play audio. Please try again.",
-          status: "error",
-          duration: 2500,
-        });
-      };
+      audio.onended = cleanup;
+      audio.onerror = cleanup;
 
       await audio.play();
     } catch (error) {
@@ -390,7 +392,7 @@ export default function FlashcardPractice({
       setIsPlayingAudio(false);
       toast({
         title: "Audio error",
-        description: "Could not generate audio. Please try again.",
+        description: "Could not play audio. Please try again.",
         status: "error",
         duration: 2500,
       });
