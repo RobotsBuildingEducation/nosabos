@@ -478,6 +478,17 @@ export default function RealTimeTest({
     lessonContentRef.current = lessonContent;
   }, [lessonContent]);
 
+  // Full lesson prop ref (for AI goal generation)
+  const lessonPropRef = useRef(lesson);
+  useEffect(() => {
+    lessonPropRef.current = lesson;
+  }, [lesson]);
+
+  // Scroll to top when component mounts or lesson changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [lesson?.id]);
+
   // User id
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
@@ -1140,6 +1151,81 @@ export default function RealTimeTest({
   /* ---------------------------
      🎯 Goal helpers
   --------------------------- */
+
+  /**
+   * Auto-generate a contextual prompt using AI based on lesson context
+   * This creates meaningful goals when hardcoded ones don't make sense
+   */
+  async function generateGoalFromAI(lessonData, lessonContentData) {
+    const topic = lessonContentData?.topic ||
+                  lessonData?.content?.vocabulary?.topic ||
+                  lessonData?.title?.en ||
+                  "conversation practice";
+    const focusPoints = lessonContentData?.focusPoints ||
+                        lessonData?.content?.vocabulary?.focusPoints ||
+                        [];
+    const lessonTitle = lessonData?.title?.en || "";
+    const lessonDesc = lessonData?.description?.en || "";
+    const cefrLvl = lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1";
+    const cefrHint = getCEFRPromptHint(cefrLvl);
+
+    const prompt = `You are creating a conversational practice goal for a language learner.
+
+Lesson: ${lessonTitle}
+Description: ${lessonDesc}
+Topic: ${topic}
+Focus areas: ${focusPoints.join(", ") || "general practice"}
+Level: ${cefrHint}
+
+Generate a short, clear, actionable conversation goal that makes sense for this lesson.
+The goal should be something the learner can demonstrate in a brief voice conversation.
+
+Return ONLY valid JSON in this exact format (no markdown, no explanation):
+{"scenario":"[2-6 word task title]","prompt":"[1-2 sentence roleplay instruction for AI tutor]","successCriteria":"[what the learner must do to succeed]"}`;
+
+    try {
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: TRANSLATE_MODEL,
+          text: { format: { type: "text" } },
+          input: prompt,
+        }),
+      });
+      const ct = r.headers.get("content-type") || "";
+      const payload = ct.includes("application/json")
+        ? await r.json()
+        : await r.text();
+      const text =
+        (typeof payload?.output_text === "string" && payload.output_text) ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) => (it?.content || []).map((seg) => seg?.text || "").join(""))
+            .join(" ")
+            .trim()) ||
+        (typeof payload === "string" ? payload : "");
+
+      const parsed = safeParseJson(text);
+      if (parsed?.scenario && parsed?.prompt) {
+        return {
+          scenario: parsed.scenario,
+          prompt: parsed.prompt,
+          successCriteria: parsed.successCriteria || `Complete the ${topic} task`,
+        };
+      }
+    } catch (err) {
+      console.warn("AI goal generation failed:", err?.message || err);
+    }
+
+    // Fallback if AI fails
+    return {
+      scenario: `Practice ${topic}`,
+      prompt: `Have a conversation about ${topic}. ${focusPoints.length ? `Focus on: ${focusPoints.slice(0, 2).join(", ")}.` : ""}`,
+      successCriteria: `User demonstrates understanding of ${topic}`,
+    };
+  }
+
   function goalTitlesSeed() {
     return {
       en:
@@ -1187,8 +1273,22 @@ export default function RealTimeTest({
       };
     }
 
-    const scenario = activeGoal.scenario || lessonScenario;
-    const successCriteria = activeGoal.successCriteria || lesson?.successCriteria;
+    let scenario = activeGoal.scenario || lessonScenario;
+    let successCriteria = activeGoal.successCriteria || lesson?.successCriteria;
+    let roleplayPrompt = activeGoal.prompt || lesson?.prompt || "";
+
+    // Check if scenario is too generic or missing - use AI to generate a better one
+    const isGenericScenario = !scenario ||
+      scenario.length < 10 ||
+      /^(practice|conversation|talk|speak)/i.test(scenario.trim());
+
+    if (isGenericScenario) {
+      // Use AI to generate a contextual goal based on full lesson data (passed as prop)
+      const aiGoal = await generateGoalFromAI(lessonPropRef.current, lesson);
+      scenario = aiGoal.scenario;
+      successCriteria = aiGoal.successCriteria;
+      roleplayPrompt = aiGoal.prompt;
+    }
 
     // Generate goal based on lesson content or use default
     const seedTitles = goalTitlesSeed();
@@ -1215,6 +1315,7 @@ export default function RealTimeTest({
       rubric_es: rubricEs,
       lessonScenario: lessonScenario || null,
       successCriteria: successCriteria || null,
+      roleplayPrompt: roleplayPrompt || null,
       goalIndex: goalIndex,
       hasVariations: hasVariations,
       attempts: 0,
@@ -1466,7 +1567,10 @@ Return ONLY JSON:
     const pronOn = !!(
       prefs?.practicePronunciation ?? practicePronunciationRef.current
     );
-    const activeGoal = goalTitleForTarget(goalRef.current);
+    const goal = goalRef.current;
+    const activeGoal = goalTitleForTarget(goal);
+    const roleplayPrompt = goal?.roleplayPrompt || "";
+    const successCriteria = goal?.successCriteria || "";
 
     let strict;
     if (tLang === "nah") {
@@ -1492,7 +1596,19 @@ Return ONLY JSON:
     const pronLine = pronOn
       ? "Pronunciation mode: after answering, give a micro pronunciation cue (≤6 words), then repeat the corrected sentence once, slowly, and invite the user to repeat."
       : "";
-    const goalLine = activeGoal ? `Active goal: ${activeGoal}.` : "";
+
+    // Build comprehensive goal guidance for the AI tutor
+    let goalGuidance = "";
+    if (activeGoal || roleplayPrompt) {
+      goalGuidance = `CONVERSATION GOAL: Help the learner accomplish "${activeGoal}".`;
+      if (roleplayPrompt) {
+        goalGuidance += ` YOUR ROLE: ${roleplayPrompt}`;
+      }
+      if (successCriteria) {
+        goalGuidance += ` Guide them toward: ${successCriteria}.`;
+      }
+      goalGuidance += " Gently steer the conversation to give them opportunities to demonstrate this skill.";
+    }
 
     return [
       "Act as a language practice partner.",
@@ -1502,7 +1618,7 @@ Return ONLY JSON:
       levelHint,
       focusLine,
       pronLine,
-      goalLine,
+      goalGuidance,
     ]
       .filter(Boolean)
       .join(" ");
