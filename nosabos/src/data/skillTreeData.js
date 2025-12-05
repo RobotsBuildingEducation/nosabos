@@ -9587,10 +9587,7 @@ function addSupplementalLessons(level, unit) {
       xpReward: 60,
       modes: ["realtime", "reading", "stories"],
       content: {
-        realtime: {
-          scenario: `${topic.toLowerCase()} integrated task`,
-          prompt: `Produce longer turns that connect earlier lesson points for ${topic}.`,
-        },
+        realtime: generateIntegratedPracticeGoal(topic, unit, lessons),
         reading: {
           topic,
           prompt: `Interpret scaffolded prompts about ${topic} before responding live.`,
@@ -9879,7 +9876,7 @@ const REALTIME_GOAL_TEMPLATES = {
 
 /**
  * Generates an actionable realtime goal based on topic and lesson focusPoints.
- * Falls back to a sensible default if no specific mapping exists.
+ * Includes goal variations for multiple sessions.
  */
 function generateActionableRealtimeGoal(topicLabel, lesson) {
   const topicKey = topicLabel.toLowerCase();
@@ -9891,22 +9888,43 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
   const allFocus = [...vocabFocus, ...grammarFocus].filter(Boolean);
 
   if (template) {
+    // Generate variations based on the base template
+    const goalVariations = generateGoalVariations(template, topicLabel, allFocus);
+
     return {
       scenario: template.scenario,
       prompt: template.prompt,
       successCriteria: template.successCriteria,
       focusPoints: allFocus,
+      goalVariations: goalVariations,
+      goalIndex: 0,
     };
   }
 
   // Generate a reasonable default based on available focusPoints
   if (allFocus.length > 0) {
     const firstFocus = allFocus[0];
-    return {
+    const baseGoal = {
       scenario: `Practice using ${firstFocus} in conversation`,
       prompt: `Have a natural conversation where the learner practices ${topicLabel}. Focus on: ${allFocus.join(", ")}.`,
       successCriteria: `User demonstrates use of ${firstFocus} in context`,
+    };
+
+    // Create variations for focus points
+    const variations = [baseGoal];
+    allFocus.slice(1, 3).forEach((focus, i) => {
+      variations.push({
+        scenario: `Practice ${focus} in a real situation`,
+        prompt: `Create a situation where the learner must use ${focus}. Ask follow-up questions.`,
+        successCriteria: `User uses ${focus} correctly in context`,
+      });
+    });
+
+    return {
+      ...baseGoal,
       focusPoints: allFocus,
+      goalVariations: variations,
+      goalIndex: 0,
     };
   }
 
@@ -9916,8 +9934,166 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
     prompt: `Engage the learner in a natural conversation about ${topicLabel}. Ask questions and encourage responses.`,
     successCriteria: `User participates meaningfully in conversation about ${topicLabel}`,
     focusPoints: [],
+    goalVariations: [],
+    goalIndex: 0,
   };
 }
+
+/**
+ * Generates goal variations from a base template for progression through multiple sessions.
+ */
+function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
+  const variations = [
+    {
+      scenario: baseTemplate.scenario,
+      prompt: baseTemplate.prompt,
+      successCriteria: baseTemplate.successCriteria,
+    },
+  ];
+
+  // Add "respond to questions" variation
+  variations.push({
+    scenario: `Answer questions about ${topicLabel}`,
+    prompt: `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
+    successCriteria: `User answers questions using ${topicLabel} vocabulary correctly`,
+  });
+
+  // Add "start a conversation" variation
+  variations.push({
+    scenario: `Start a conversation about ${topicLabel}`,
+    prompt: `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
+    successCriteria: `User initiates and sustains conversation about ${topicLabel}`,
+  });
+
+  // Add focus-point specific variations if available
+  if (focusPoints.length > 0) {
+    variations.push({
+      scenario: `Use ${focusPoints[0]} in a real situation`,
+      prompt: `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
+      successCriteria: `User demonstrates correct use of ${focusPoints[0]}`,
+    });
+  }
+
+  return variations;
+}
+
+/**
+ * Generates integrated practice goals that combine multiple unit topics.
+ * Includes goal variations for multiple chat sessions within the same lesson.
+ */
+function generateIntegratedPracticeGoal(topic, unit, lessons = []) {
+  // Collect all focus points from unit lessons
+  const allFocusPoints = [];
+  const allTopics = [];
+
+  lessons.forEach((lesson) => {
+    if (lesson.content?.vocabulary?.focusPoints) {
+      allFocusPoints.push(...lesson.content.vocabulary.focusPoints);
+    }
+    if (lesson.content?.grammar?.focusPoints) {
+      allFocusPoints.push(...lesson.content.grammar.focusPoints);
+    }
+    if (lesson.content?.vocabulary?.topic) {
+      allTopics.push(lesson.content.vocabulary.topic);
+    }
+  });
+
+  const uniqueFocus = [...new Set(allFocusPoints)].slice(0, 4);
+  const topicKey = topic.toLowerCase();
+
+  // Create varied goals for progression through multiple sessions
+  const goalVariations = [
+    {
+      scenario: `Combine what you learned: ${uniqueFocus.slice(0, 2).join(" and ") || topic}`,
+      prompt: `Have the learner demonstrate they can combine ${topic} concepts. Ask them to use vocabulary and grammar together in longer responses.`,
+      successCriteria: `User combines multiple ${topic} concepts in a coherent response`,
+    },
+    {
+      scenario: `Role-play a real situation using ${topic}`,
+      prompt: `Create a realistic scenario where the learner must use ${topic} language. Guide them through the situation with follow-up questions.`,
+      successCriteria: `User navigates a realistic scenario using ${topic} vocabulary and structures`,
+    },
+    {
+      scenario: `Teach someone about ${uniqueFocus[0] || topic}`,
+      prompt: `Ask the learner to explain a ${topic} concept as if teaching someone else. This tests their understanding and production.`,
+      successCriteria: `User explains a concept clearly using appropriate ${topic} language`,
+    },
+  ];
+
+  // Add topic-specific variations if we know the topic
+  const topicSpecificGoals = INTEGRATED_PRACTICE_TEMPLATES[topicKey];
+  if (topicSpecificGoals) {
+    goalVariations.unshift(...topicSpecificGoals);
+  }
+
+  // Return first goal as default, with variations array for progression
+  return {
+    ...goalVariations[0],
+    focusPoints: uniqueFocus,
+    goalVariations: goalVariations,
+    goalIndex: 0,
+  };
+}
+
+/**
+ * Topic-specific integrated practice goals for better relevance
+ */
+const INTEGRATED_PRACTICE_TEMPLATES = {
+  "pre-a1 foundations": [
+    {
+      scenario: "Introduce yourself and ask about someone else",
+      prompt: "Have the learner introduce themselves fully (name, origin, family) and then ask questions about you.",
+      successCriteria: "User introduces themselves AND asks at least one question about the other person",
+    },
+    {
+      scenario: "Navigate a simple social situation",
+      prompt: "Roleplay meeting someone new - greetings, introductions, polite phrases, and saying goodbye.",
+      successCriteria: "User uses greetings, introduces themselves, and uses polite expressions",
+    },
+  ],
+  greetings: [
+    {
+      scenario: "Have a complete greeting exchange",
+      prompt: "Practice a full greeting sequence - hello, how are you, response, and goodbye.",
+      successCriteria: "User completes a natural greeting exchange with appropriate responses",
+    },
+  ],
+  "people and places": [
+    {
+      scenario: "Describe where you live and who you live with",
+      prompt: "Ask about the learner's home - where they live, who is in their family, what's nearby.",
+      successCriteria: "User describes their location AND mentions family or people",
+    },
+  ],
+  numbers: [
+    {
+      scenario: "Exchange contact information",
+      prompt: "Practice giving and asking for phone numbers, ages, or addresses.",
+      successCriteria: "User correctly produces multiple numbers in context",
+    },
+  ],
+  food: [
+    {
+      scenario: "Order a complete meal at a restaurant",
+      prompt: "Roleplay ordering food - greeting the waiter, ordering food and drink, asking for the check.",
+      successCriteria: "User orders at least two items and uses polite phrases",
+    },
+  ],
+  shopping: [
+    {
+      scenario: "Complete a shopping transaction",
+      prompt: "Guide the learner through buying something - asking about items, prices, and paying.",
+      successCriteria: "User asks questions about products AND completes the transaction",
+    },
+  ],
+  travel: [
+    {
+      scenario: "Plan and describe a trip",
+      prompt: "Discuss travel plans - where they want to go, when, how, and what they'll do there.",
+      successCriteria: "User describes travel plans with multiple details (destination, timing, activities)",
+    },
+  ],
+};
 
 function ensureModeContent(mode, topic, lesson) {
   const topicLabel =
