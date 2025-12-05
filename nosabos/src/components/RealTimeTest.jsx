@@ -1171,17 +1171,32 @@ export default function RealTimeTest({
 
     // Generate goal based on lesson content or use default
     const seedTitles = goalTitlesSeed();
+
+    // Get success criteria from lesson content if available
+    const successCriteria = lesson?.successCriteria;
+
+    // Build clear rubric from success criteria or generate one
+    let rubricEn, rubricEs;
+    if (successCriteria) {
+      rubricEn = `Success: ${successCriteria}`;
+      rubricEs = `Éxito: ${successCriteria}`;
+    } else if (lessonScenario) {
+      // Create actionable rubric from scenario
+      rubricEn = `Complete this task: ${lessonScenario}`;
+      rubricEs = `Completa esta tarea: ${lessonScenario}`;
+    } else {
+      rubricEn = "Say a greeting in the target language";
+      rubricEs = "Di un saludo en el idioma meta";
+    }
+
     const seed = {
       id: `goal_${Date.now()}`,
       title_en: lessonScenario || seedTitles.en,
       title_es: lessonScenario || seedTitles.es,
-      rubric_en: lessonScenario
-        ? `Practice: ${lessonScenario}`
-        : "Say a greeting",
-      rubric_es: lessonScenario
-        ? `Practica: ${lessonScenario}`
-        : "Di un saludo",
+      rubric_en: rubricEn,
+      rubric_es: rubricEs,
       lessonScenario: lessonScenario || null,
+      successCriteria: successCriteria || null,
       attempts: 0,
       status: "active",
       createdAt: isoNow(),

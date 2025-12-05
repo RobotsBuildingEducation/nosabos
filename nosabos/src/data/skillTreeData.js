@@ -9678,6 +9678,247 @@ function appendAdvancedModes(level, lesson, unit) {
   };
 }
 
+/**
+ * Maps topics to specific, actionable realtime conversation goals.
+ * Each goal includes:
+ * - scenario: A clear task the user should accomplish
+ * - prompt: Roleplay context for the AI tutor
+ * - successCriteria: What counts as completing the goal (for evaluation)
+ */
+const REALTIME_GOAL_TEMPLATES = {
+  // Pre-A1 / A1 topics
+  "greetings and starters": {
+    scenario: "Greet someone and say goodbye",
+    prompt: "Roleplay meeting someone new. Greet them, exchange pleasantries, and say goodbye.",
+    successCriteria: "User greets appropriately and uses a farewell expression",
+  },
+  "people and places": {
+    scenario: "Introduce yourself and say where you're from",
+    prompt: "Ask the learner where they're from and about their family. Have them introduce a family member.",
+    successCriteria: "User states their name, origin, or introduces a person using 'This is...' or similar",
+  },
+  "actions and needs": {
+    scenario: "Ask for help or make a simple request",
+    prompt: "Roleplay a situation where the learner needs to ask for something (directions, help, or an item).",
+    successCriteria: "User makes a clear request using appropriate verb forms",
+  },
+  "time and movement": {
+    scenario: "Ask what time it is or for directions",
+    prompt: "The learner needs to find out the time or get directions to somewhere nearby.",
+    successCriteria: "User asks about time or directions using question words",
+  },
+  "social expressions": {
+    scenario: "Use polite phrases in a conversation",
+    prompt: "Have a brief polite exchange - the learner should use thank you, please, excuse me, or sorry.",
+    successCriteria: "User uses at least one polite expression naturally in context",
+  },
+  greetings: {
+    scenario: "Greet someone appropriately for the time of day",
+    prompt: "Meet the learner at different times and have them greet you appropriately.",
+    successCriteria: "User uses appropriate greeting for context (morning/afternoon/evening)",
+  },
+  introductions: {
+    scenario: "Introduce yourself with your name and one fact",
+    prompt: "Ask the learner to introduce themselves. Prompt for their name and something about them.",
+    successCriteria: "User states their name and shares at least one personal detail",
+  },
+  numbers: {
+    scenario: "Give your phone number or age",
+    prompt: "Ask the learner for their phone number, age, or address number in conversation.",
+    successCriteria: "User correctly produces numbers in the target language",
+  },
+  "days of week": {
+    scenario: "Make plans for a specific day",
+    prompt: "Invite the learner to do something and have them suggest or confirm a day.",
+    successCriteria: "User correctly names a day of the week in context",
+  },
+  "time expressions": {
+    scenario: "Say when you do something daily",
+    prompt: "Ask the learner about their daily routine - when they wake up, eat, or work.",
+    successCriteria: "User expresses time of day or routine timing",
+  },
+  time: {
+    scenario: "Tell someone the current time",
+    prompt: "Ask the learner what time it is now or what time they do certain activities.",
+    successCriteria: "User correctly states a time using appropriate format",
+  },
+  family: {
+    scenario: "Describe your family members",
+    prompt: "Ask the learner about their family. Who do they live with? Siblings?",
+    successCriteria: "User names family members and describes a relationship",
+  },
+  colors: {
+    scenario: "Describe what color something is",
+    prompt: "Point out objects and ask the learner what color they are or what their favorite color is.",
+    successCriteria: "User correctly uses color vocabulary",
+  },
+  food: {
+    scenario: "Order food or say what you like to eat",
+    prompt: "Roleplay a café scene. Ask what the learner wants to eat or drink.",
+    successCriteria: "User orders or expresses food preference",
+  },
+  clothing: {
+    scenario: "Describe what you're wearing",
+    prompt: "Ask the learner what they're wearing today or what they like to wear.",
+    successCriteria: "User describes clothing items",
+  },
+  // A2 topics
+  "daily activities": {
+    scenario: "Describe your morning routine",
+    prompt: "Ask about the learner's typical day. What do they do in the morning?",
+    successCriteria: "User describes at least two daily activities in sequence",
+  },
+  weather: {
+    scenario: "Talk about today's weather",
+    prompt: "Discuss the current weather and ask what the learner likes to do in this weather.",
+    successCriteria: "User describes weather conditions",
+  },
+  preferences: {
+    scenario: "Say what you like and dislike",
+    prompt: "Ask the learner about their preferences in food, activities, or music.",
+    successCriteria: "User expresses a preference using like/dislike structures",
+  },
+  "question words": {
+    scenario: "Ask three questions about someone",
+    prompt: "The learner should ask you questions to learn about you (who, what, where, when, why).",
+    successCriteria: "User asks at least two questions using question words",
+  },
+  "physical descriptions": {
+    scenario: "Describe a person's appearance",
+    prompt: "Ask the learner to describe someone they know - what do they look like?",
+    successCriteria: "User uses adjectives to describe physical appearance",
+  },
+  places: {
+    scenario: "Give directions to a nearby place",
+    prompt: "The learner is lost. Have them ask for or give directions to a location.",
+    successCriteria: "User uses directional vocabulary or location prepositions",
+  },
+  shopping: {
+    scenario: "Ask for a price and buy something",
+    prompt: "Roleplay a shop scene. The learner wants to buy something.",
+    successCriteria: "User asks price and completes a basic transaction",
+  },
+  transportation: {
+    scenario: "Ask about bus or train schedules",
+    prompt: "The learner needs to take public transport. Have them ask about times/platforms.",
+    successCriteria: "User asks about transportation times or locations",
+  },
+  directions: {
+    scenario: "Ask how to get somewhere",
+    prompt: "The learner needs to find a place. Have them ask for and understand directions.",
+    successCriteria: "User asks for directions using appropriate phrases",
+  },
+  // B1+ topics
+  arts: {
+    scenario: "Recommend a movie or book you enjoyed",
+    prompt: "Discuss entertainment. Ask the learner to recommend something and explain why.",
+    successCriteria: "User recommends something with a reason",
+  },
+  sports: {
+    scenario: "Talk about your favorite sport or exercise",
+    prompt: "Discuss sports and fitness. What does the learner do to stay active?",
+    successCriteria: "User discusses sports/exercise with relevant vocabulary",
+  },
+  health: {
+    scenario: "Describe how you're feeling today",
+    prompt: "Check in on the learner's health. How are they feeling? Any concerns?",
+    successCriteria: "User describes physical or emotional state",
+  },
+  careers: {
+    scenario: "Describe your job or dream career",
+    prompt: "Discuss work and careers. What does the learner do or want to do?",
+    successCriteria: "User describes work responsibilities or career aspirations",
+  },
+  education: {
+    scenario: "Talk about your studies or learning goals",
+    prompt: "Discuss education. What is the learner studying? What do they want to learn?",
+    successCriteria: "User discusses educational experiences or goals",
+  },
+  comparisons: {
+    scenario: "Compare two things and give your opinion",
+    prompt: "Present two options to the learner and have them compare and choose.",
+    successCriteria: "User uses comparative structures correctly",
+  },
+  travel: {
+    scenario: "Describe a trip you took or want to take",
+    prompt: "Discuss travel experiences or plans. Where has/would the learner go?",
+    successCriteria: "User describes travel using past or conditional forms",
+  },
+  culture: {
+    scenario: "Explain a tradition from your culture",
+    prompt: "Discuss cultural practices. What traditions does the learner's culture have?",
+    successCriteria: "User explains a cultural practice or tradition",
+  },
+  // Advanced topics
+  "abstract ideas": {
+    scenario: "Explain your opinion on a topic",
+    prompt: "Discuss a current topic or idea. Ask the learner to explain their viewpoint.",
+    successCriteria: "User presents an opinion with supporting reasoning",
+  },
+  emotions: {
+    scenario: "Describe a time you felt a strong emotion",
+    prompt: "Discuss feelings and experiences. When did the learner feel happy/sad/excited?",
+    successCriteria: "User describes emotional experience with appropriate vocabulary",
+  },
+  "future plans": {
+    scenario: "Talk about your goals for next year",
+    prompt: "Discuss plans and aspirations. What does the learner want to achieve?",
+    successCriteria: "User expresses future plans using appropriate tenses",
+  },
+  environment: {
+    scenario: "Discuss an environmental issue",
+    prompt: "Talk about environmental topics. What concerns does the learner have?",
+    successCriteria: "User discusses environmental topic with relevant vocabulary",
+  },
+  technology: {
+    scenario: "Explain how you use technology daily",
+    prompt: "Discuss technology use. How does technology affect the learner's life?",
+    successCriteria: "User describes technology use with specific examples",
+  },
+};
+
+/**
+ * Generates an actionable realtime goal based on topic and lesson focusPoints.
+ * Falls back to a sensible default if no specific mapping exists.
+ */
+function generateActionableRealtimeGoal(topicLabel, lesson) {
+  const topicKey = topicLabel.toLowerCase();
+  const template = REALTIME_GOAL_TEMPLATES[topicKey];
+
+  // Get focusPoints from vocabulary or grammar content for additional context
+  const vocabFocus = lesson?.content?.vocabulary?.focusPoints || [];
+  const grammarFocus = lesson?.content?.grammar?.focusPoints || [];
+  const allFocus = [...vocabFocus, ...grammarFocus].filter(Boolean);
+
+  if (template) {
+    return {
+      scenario: template.scenario,
+      prompt: template.prompt,
+      successCriteria: template.successCriteria,
+      focusPoints: allFocus,
+    };
+  }
+
+  // Generate a reasonable default based on available focusPoints
+  if (allFocus.length > 0) {
+    const firstFocus = allFocus[0];
+    return {
+      scenario: `Practice using ${firstFocus} in conversation`,
+      prompt: `Have a natural conversation where the learner practices ${topicLabel}. Focus on: ${allFocus.join(", ")}.`,
+      successCriteria: `User demonstrates use of ${firstFocus} in context`,
+      focusPoints: allFocus,
+    };
+  }
+
+  // Final fallback - still more specific than before
+  return {
+    scenario: `Have a conversation about ${topicLabel}`,
+    prompt: `Engage the learner in a natural conversation about ${topicLabel}. Ask questions and encourage responses.`,
+    successCriteria: `User participates meaningfully in conversation about ${topicLabel}`,
+    focusPoints: [],
+  };
+}
+
 function ensureModeContent(mode, topic, lesson) {
   const topicLabel =
     typeof topic === "string" ? topic : String(topic || "topic");
@@ -9712,10 +9953,8 @@ function ensureModeContent(mode, topic, lesson) {
   }
 
   if (mode === "realtime") {
-    updatedContent.realtime = updatedContent.realtime || {
-      scenario: `${topicLabel.toLowerCase()} exchange`,
-      prompt: `Respond in real time using ${topicLabel} language.`,
-    };
+    updatedContent.realtime = updatedContent.realtime ||
+      generateActionableRealtimeGoal(topicLabel, lesson);
   }
 
   return updatedContent;
