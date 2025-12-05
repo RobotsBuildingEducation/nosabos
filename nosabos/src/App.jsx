@@ -542,13 +542,9 @@ function TopBar({
       const nextDraft = {
         level,
         supportLang,
-        voice,
         voicePersona,
         targetLang,
-        showTranslations,
         pauseMs,
-        helpRequest,
-        practicePronunciation,
       };
       await Promise.resolve(onPatchSettings?.(nextDraft));
       if (activeNpub != null) {
@@ -762,69 +758,6 @@ function TopBar({
                       _hover={{ bg: "gray.750" }}
                       _active={{ bg: "gray.750" }}
                       px={4}
-                    >
-                      {voice === "alloy" &&
-                        translations[appLanguage].onboarding_voice_alloy}
-                      {voice === "ash" &&
-                        translations[appLanguage].onboarding_voice_ash}
-                      {voice === "ballad" &&
-                        translations[appLanguage].onboarding_voice_ballad}
-                      {voice === "coral" &&
-                        translations[appLanguage].onboarding_voice_coral}
-                      {voice === "echo" &&
-                        translations[appLanguage].onboarding_voice_echo}
-                      {voice === "sage" &&
-                        translations[appLanguage].onboarding_voice_sage}
-                      {voice === "shimmer" &&
-                        translations[appLanguage].onboarding_voice_shimmer}
-                      {voice === "verse" &&
-                        translations[appLanguage].onboarding_voice_verse}
-                    </MenuButton>
-                    <MenuList borderColor="gray.700" bg="gray.900">
-                      <MenuOptionGroup
-                        type="radio"
-                        value={voice}
-                        onChange={(value) => setVoice(value)}
-                      >
-                        <MenuItemOption value="alloy">
-                          {translations[appLanguage].onboarding_voice_alloy}
-                        </MenuItemOption>
-                        <MenuItemOption value="ash">
-                          {translations[appLanguage].onboarding_voice_ash}
-                        </MenuItemOption>
-                        <MenuItemOption value="ballad">
-                          {translations[appLanguage].onboarding_voice_ballad}
-                        </MenuItemOption>
-                        <MenuItemOption value="coral">
-                          {translations[appLanguage].onboarding_voice_coral}
-                        </MenuItemOption>
-                        <MenuItemOption value="echo">
-                          {translations[appLanguage].onboarding_voice_echo}
-                        </MenuItemOption>
-                        <MenuItemOption value="sage">
-                          {translations[appLanguage].onboarding_voice_sage}
-                        </MenuItemOption>
-                        <MenuItemOption value="shimmer">
-                          {translations[appLanguage].onboarding_voice_shimmer}
-                        </MenuItemOption>
-                        <MenuItemOption value="verse">
-                          {translations[appLanguage].onboarding_voice_verse}
-                        </MenuItemOption>
-                      </MenuOptionGroup>
-                    </MenuList>
-                  </Menu>
-
-                  <Menu autoSelect={false} isLazy>
-                    <MenuButton
-                      as={Button}
-                      rightIcon={<ChevronDownIcon />}
-                      variant="outline"
-                      size="sm"
-                      borderColor="gray.700"
-                      bg="gray.800"
-                      _hover={{ bg: "gray.750" }}
-                      _active={{ bg: "gray.750" }}
-                      px={4}
                       title={
                         translations[appLanguage]
                           .onboarding_practice_label_title
@@ -872,33 +805,6 @@ function TopBar({
                   </Menu>
                 </Wrap>
 
-                {/* Pronunciation coaching */}
-                <HStack
-                  bg="gray.800"
-                  p={3}
-                  rounded="md"
-                  justify="space-between"
-                >
-                  <Box>
-                    <Text fontSize="sm" mb={0.5}>
-                      {t.ra_pron_label ||
-                        (appLanguage === "es"
-                          ? "Practicar pronunciación"
-                          : "Practice pronunciation")}
-                    </Text>
-                    <Text fontSize="xs" opacity={0.7}>
-                      {t.ra_pron_help ||
-                        (appLanguage === "es"
-                          ? "Añade una micro-pista y una repetición lenta en cada turno."
-                          : "Adds a tiny cue and one slow repetition each turn.")}
-                    </Text>
-                  </Box>
-                  <Switch
-                    isChecked={practicePronunciation}
-                    onChange={(e) => setPracticePronunciation(e.target.checked)}
-                  />
-                </HStack>
-
                 {/* Persona */}
                 <Box bg="gray.800" p={3} rounded="md">
                   <Text fontSize="sm" mb={2}>
@@ -923,36 +829,6 @@ function TopBar({
                   <Text fontSize="xs" opacity={0.7} mt={1}>
                     {t.ra_persona_help ||
                       "A short vibe/style hint for the AI voice."}
-                  </Text>
-                </Box>
-
-                {/* Help Request */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={2}>
-                    {t.ra_help_label ||
-                      (appLanguage === "es"
-                        ? "¿En qué te gustaría ayuda?"
-                        : "What would you like help with?")}
-                  </Text>
-                  <Textarea
-                    value={helpRequest}
-                    onChange={(e) =>
-                      setHelpRequest(e.target.value.slice(0, 600))
-                    }
-                    bg="gray.700"
-                    minH="100px"
-                    placeholder={
-                      t.ra_help_placeholder ||
-                      (appLanguage === "es"
-                        ? "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…"
-                        : "e.g., conversational practice for job interviews; past tenses review; travel Spanish…")
-                    }
-                  />
-                  <Text fontSize="xs" opacity={0.7} mt={1}>
-                    {t.ra_help_help ||
-                      (appLanguage === "es"
-                        ? "Describe tu meta o contexto (esto guía la experiencia)."
-                        : "Describe your goal or context (this guides the experience).")}
                   </Text>
                 </Box>
 
