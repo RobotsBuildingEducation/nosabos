@@ -11,12 +11,11 @@ export const TTS_LANG_TAG = {
 
 export const DEFAULT_TTS_VOICE = "alloy";
 
+// Voices supported by BOTH TTS API and Realtime API
+// Note: fable, onyx, nova are TTS-only and NOT supported by Realtime API
 const SUPPORTED_TTS_VOICES = new Set([
   "alloy",
   "echo",
-  "fable",
-  "onyx",
-  "nova",
   "shimmer",
   "coral",
   "verse",
