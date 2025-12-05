@@ -545,16 +545,11 @@ export default function FlashcardSkillTree({
                 onClick={handleRandomPracticeClick}
                 leftIcon={<RiShuffleLine />}
                 size="lg"
-                variant="outline"
-                colorScheme="purple"
-                borderColor="whiteAlpha.300"
+                borderColor="blue.300"
+                bg="transparent"
                 color="white"
                 _hover={{
-                  bg: "whiteAlpha.100",
-                  borderColor: "purple.400",
-                }}
-                _active={{
-                  bg: "whiteAlpha.200",
+                  borderColor: "blue.400",
                 }}
               >
                 {getTranslation("flashcard_practice_random")}
