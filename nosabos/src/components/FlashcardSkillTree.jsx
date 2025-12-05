@@ -6,6 +6,7 @@ import {
   RiCheckLine,
   RiArrowDownLine,
   RiLockLine,
+  RiShuffleLine,
 } from "react-icons/ri";
 import {
   FLASHCARD_DATA,
@@ -197,6 +198,7 @@ const FlashcardCard = React.memo(function FlashcardCard({
 export default function FlashcardSkillTree({
   userProgress = { flashcards: {} },
   onStartFlashcard,
+  onRandomPractice, // Callback for random practice completion (awards XP, resets card)
   targetLang = "es",
   supportLang = "en",
   activeCEFRLevel = null, // Filter flashcards by CEFR level
@@ -204,6 +206,7 @@ export default function FlashcardSkillTree({
 }) {
   const [practiceCard, setPracticeCard] = useState(null);
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
+  const [isRandomPractice, setIsRandomPractice] = useState(false);
   const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
   const [flashcardData, setFlashcardData] = useState(FLASHCARD_DATA);
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
@@ -385,23 +388,51 @@ export default function FlashcardSkillTree({
 
   const handleComplete = useCallback(
     (card) => {
-      // Add to local completed cards immediately for instant UI update
-      setLocalCompletedCards((prev) => new Set([...prev, card.id]));
+      if (isRandomPractice) {
+        // Random practice: remove from local completed to add back to deck
+        setLocalCompletedCards((prev) => {
+          const next = new Set(prev);
+          next.delete(card.id);
+          return next;
+        });
 
-      // Call parent callback if provided
-      if (onStartFlashcard) {
-        onStartFlashcard(card);
+        // Call random practice callback (awards XP, resets card in DB)
+        if (onRandomPractice) {
+          onRandomPractice(card);
+        }
+      } else {
+        // Normal practice: add to local completed cards immediately for instant UI update
+        setLocalCompletedCards((prev) => new Set([...prev, card.id]));
+
+        // Call parent callback if provided
+        if (onStartFlashcard) {
+          onStartFlashcard(card);
+        }
       }
 
       setIsPracticeOpen(false);
       setPracticeCard(null);
+      setIsRandomPractice(false);
     },
-    [onStartFlashcard]
+    [onStartFlashcard, onRandomPractice, isRandomPractice]
   );
+
+  const handleRandomPracticeClick = useCallback(() => {
+    if (completedCards.length === 0) return;
+
+    // Select a random card from the completed cards
+    const randomIndex = Math.floor(Math.random() * completedCards.length);
+    const randomCard = completedCards[randomIndex];
+
+    setIsRandomPractice(true);
+    setPracticeCard(randomCard);
+    setIsPracticeOpen(true);
+  }, [completedCards]);
 
   const handleClosePractice = useCallback(() => {
     setIsPracticeOpen(false);
     setPracticeCard(null);
+    setIsRandomPractice(false);
   }, []);
 
   return (
@@ -506,6 +537,23 @@ export default function FlashcardSkillTree({
                   ))}
                 </AnimatePresence>
               </Box>
+            </Box>
+
+            {/* Practice Random Card Button */}
+            <Box textAlign="center" mt={4}>
+              <Button
+                onClick={handleRandomPracticeClick}
+                leftIcon={<RiShuffleLine />}
+                size="lg"
+                borderColor="blue.300"
+                bg="transparent"
+                color="white"
+                _hover={{
+                  borderColor: "blue.400",
+                }}
+              >
+                {getTranslation("flashcard_practice_random")}
+              </Button>
             </Box>
           </Box>
         )}

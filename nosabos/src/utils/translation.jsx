@@ -398,6 +398,8 @@ export const translations = {
     flashcard_all_completed: "You've completed all flashcards!",
     flashcard_listen: "Listen",
     flashcard_listening: "Playing...",
+    flashcard_practice_random: "Practice Random Card",
+    flashcard_random_xp_toast: "+{xp} XP for practice!",
     cefr_level_completed: "Level Completed!",
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulary",
@@ -805,6 +807,8 @@ export const translations = {
     flashcard_all_completed: "¡Has completado todas las tarjetas!",
     flashcard_listen: "Escuchar",
     flashcard_listening: "Reproduciendo...",
+    flashcard_practice_random: "Practicar Tarjeta Aleatoria",
+    flashcard_random_xp_toast: "+{xp} XP por práctica!",
     cefr_level_completed: "¡Nivel Completado!",
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulario",
