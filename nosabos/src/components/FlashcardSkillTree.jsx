@@ -171,20 +171,6 @@ const FlashcardCard = React.memo(function FlashcardCard({
           zIndex={2}
         >
           {/* CEFR Badge */}
-          <Badge
-            px={4}
-            py={2}
-            borderRadius="full"
-            bg={isCompleted ? "whiteAlpha.300" : "whiteAlpha.200"}
-            color="white"
-            fontSize="md"
-            fontWeight="black"
-            border="1px solid"
-            borderColor="whiteAlpha.300"
-            boxShadow="0 2px 8px rgba(0, 0, 0, 0.2)"
-          >
-            {card.cefrLevel}
-          </Badge>
 
           {/* Concept (centered) */}
           <VStack spacing={4} flex={1} justify="center">
