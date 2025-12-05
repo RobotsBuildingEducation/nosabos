@@ -237,7 +237,10 @@ import {
 import { translations } from "../utils/translation";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
-import { getAllLessonProgress, getAllFlashcardProgress } from "../utils/cefrProgress";
+import {
+  getAllLessonProgress,
+  getAllFlashcardProgress,
+} from "../utils/cefrProgress";
 import { CEFR_LEVELS } from "../data/flashcards/common";
 
 const MotionBox = motion(Box);
@@ -1541,9 +1544,10 @@ function LessonDetailModal({
                 {lesson.modes.map((mode) => {
                   const Icon = MODE_ICONS[mode] || RiStarLine;
                   const modeKey = `mode_${mode}`;
-                  const modeName = getTranslation(modeKey) !== modeKey
-                    ? getTranslation(modeKey)
-                    : mode;
+                  const modeName =
+                    getTranslation(modeKey) !== modeKey
+                      ? getTranslation(modeKey)
+                      : mode;
                   return (
                     <Badge
                       key={mode}
@@ -1723,10 +1727,16 @@ export default function SkillTree({
   }, [pathMode]);
 
   // Select appropriate level props based on current mode
-  const effectiveActiveLevel = pathMode === "path" ? activeLessonLevel : activeFlashcardLevel;
-  const effectiveCurrentLevel = pathMode === "path" ? currentLessonLevel : currentFlashcardLevel;
-  const effectiveOnLevelChange = pathMode === "path" ? onLessonLevelChange : onFlashcardLevelChange;
-  const effectiveLevelCompletionStatus = pathMode === "path" ? lessonLevelCompletionStatus : flashcardLevelCompletionStatus;
+  const effectiveActiveLevel =
+    pathMode === "path" ? activeLessonLevel : activeFlashcardLevel;
+  const effectiveCurrentLevel =
+    pathMode === "path" ? currentLessonLevel : currentFlashcardLevel;
+  const effectiveOnLevelChange =
+    pathMode === "path" ? onLessonLevelChange : onFlashcardLevelChange;
+  const effectiveLevelCompletionStatus =
+    pathMode === "path"
+      ? lessonLevelCompletionStatus
+      : flashcardLevelCompletionStatus;
 
   // Memoize units to prevent unnecessary recalculations
   const units = useMemo(() => {
@@ -1737,7 +1747,7 @@ export default function SkillTree({
 
   // Filter units to show only the effective active level for the current mode
   const visibleUnits = useMemo(() => {
-    return units.filter(unit => unit.cefrLevel === effectiveActiveLevel);
+    return units.filter((unit) => unit.cefrLevel === effectiveActiveLevel);
   }, [units, effectiveActiveLevel]);
 
   const bgColor = "gray.950";
@@ -1810,7 +1820,9 @@ export default function SkillTree({
       0
     );
 
-    return levelTotalLessons > 0 ? (levelCompletedLessons / levelTotalLessons) * 100 : 0;
+    return levelTotalLessons > 0
+      ? (levelCompletedLessons / levelTotalLessons) * 100
+      : 0;
   }, [visibleUnits, userProgress.lessons]);
 
   return (
@@ -1946,9 +1958,10 @@ export default function SkillTree({
 
             {/* CEFR Level Progress Bar */}
             {(() => {
-              const progress = pathMode === "path"
-                ? getAllLessonProgress(userProgress, targetLang)
-                : getAllFlashcardProgress(userProgress, targetLang);
+              const progress =
+                pathMode === "path"
+                  ? getAllLessonProgress(userProgress, targetLang)
+                  : getAllFlashcardProgress(userProgress, targetLang);
               const currentLevelProgress = progress[effectiveActiveLevel];
               return (
                 <VStack spacing={1} align="end" minW="200px">

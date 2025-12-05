@@ -593,7 +593,10 @@ export default function StoryMode({
       setCurrentSentenceIndex(0);
       setSessionXp(0);
       setSessionComplete(false);
-      setSessionSummary({ passed: 0, total: validated?.sentences?.length || 0 });
+      setSessionSummary({
+        passed: 0,
+        total: validated?.sentences?.length || 0,
+      });
       setPassedCount(0);
       sessionAwardedRef.current = false;
       setShowFullStory(true);
@@ -1288,7 +1291,8 @@ export default function StoryMode({
         const finishRecording = () => {
           if (!evalRef.current.inProgress) return;
           evalRef.current.speechDone = true;
-          if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
+          if (evalRef.current.timeoutId)
+            clearTimeout(evalRef.current.timeoutId);
           evalRef.current.timeoutId = null;
           if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
 
@@ -1322,7 +1326,9 @@ export default function StoryMode({
               hasReceivedSpeech = true;
               finalTranscript = result[0].transcript;
               finalConfidence =
-                typeof result[0].confidence === "number" ? result[0].confidence : 0;
+                typeof result[0].confidence === "number"
+                  ? result[0].confidence
+                  : 0;
             }
           }
 
@@ -1436,7 +1442,9 @@ export default function StoryMode({
     sessionAwardedRef.current = true;
 
     if (awardedXp > 0) {
-      await awardXp(npubLive, Math.round(awardedXp), targetLang).catch(() => {});
+      await awardXp(npubLive, Math.round(awardedXp), targetLang).catch(
+        () => {}
+      );
     }
     try {
       await saveStoryTurn(npubLive, {
@@ -1541,7 +1549,10 @@ export default function StoryMode({
       setLastSuccessInfo(null);
     } else {
       const totalSentences = storyData?.sentences?.length || 0;
-      const latestPassed = Math.min(totalSentences || passedCount + 1, passedCount + 1);
+      const latestPassed = Math.min(
+        totalSentences || passedCount + 1,
+        passedCount + 1
+      );
       const totalSessionXp = computeStoryXpReward();
       setSessionXp(totalSessionXp);
       setSessionSummary({ passed: latestPassed, total: totalSentences });
@@ -1657,6 +1668,7 @@ export default function StoryMode({
   return (
     <Box
       minH="100vh"
+
       // bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
     >
       {/* Header */}
@@ -1714,8 +1726,8 @@ export default function StoryMode({
       </Box>
 
       {/* Progress */}
-      <Box px={4} py={3}>
-        <VStack spacing={2}>
+      <Box px={4} py={3} display="flex" justifyContent={"center"}>
+        <VStack spacing={2} width="50%">
           <HStack w="100%" justify="space-between">
             <Text fontSize="sm" color="#94a3b8">
               {uiText.progress}
@@ -1733,8 +1745,9 @@ export default function StoryMode({
           <Progress
             value={progressPercentage}
             w="100%"
-            h="8px"
+            h="20px"
             borderRadius="full"
+
             // bg="rgba(255, 255, 255, 0.1)"
             // sx={{
             //   "& > div": {
@@ -1746,7 +1759,13 @@ export default function StoryMode({
       </Box>
 
       {/* Content */}
-      <Box px={4} py={6}>
+      <Box
+        px={4}
+        py={6}
+        display="flex"
+        flexDirection={"column"}
+        alignItems={"center"}
+      >
         <motion.div
           key={
             showFullStory ? "full-story" : `sentence-${currentSentenceIndex}`
@@ -1755,7 +1774,7 @@ export default function StoryMode({
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? {} : { duration: 0.5 }}
         >
-          <VStack spacing={6} align="stretch">
+          <VStack spacing={6} align="stretch" maxWidth="1280px">
             <Box
               bg="rgba(255, 255, 255, 0.05)"
               p={6}
@@ -2034,10 +2053,13 @@ export default function StoryMode({
                               </Text>
                               <Text fontSize="sm" color="whiteAlpha.800">
                                 {typeof lastSuccessInfo.score === "number"
-                                  ?
-                                      t(uiLang, "stories_sentence_success_score", {
+                                  ? t(
+                                      uiLang,
+                                      "stories_sentence_success_score",
+                                      {
                                         score: lastSuccessInfo.score,
-                                      }) ||
+                                      }
+                                    ) ||
                                     `${uiText.score}: ${lastSuccessInfo.score}%`
                                   : t(uiLang, "practice_next_ready") ||
                                     (uiLang === "es"
@@ -2059,16 +2081,18 @@ export default function StoryMode({
                         </Flex>
                       </SlideFade>
                     ) : null}
-                    {sessionComplete && sessionXp > 0 && sessionSummary.total > 0 ? (
+                    {sessionComplete &&
+                    sessionXp > 0 &&
+                    sessionSummary.total > 0 ? (
                       <SpeakSuccessCard
                         title={
                           uiLang === "es"
                             ? "¡Juego de roles completado!"
                             : "Role play completed!"
                         }
-                        scoreLabel={`${sessionSummary.passed}/${sessionSummary.total} ${
-                          uiLang === "es" ? "oraciones" : "sentences"
-                        }`}
+                        scoreLabel={`${sessionSummary.passed}/${
+                          sessionSummary.total
+                        } ${uiLang === "es" ? "oraciones" : "sentences"}`}
                         xp={sessionXp}
                         t={t}
                         userLanguage={uiLang}
