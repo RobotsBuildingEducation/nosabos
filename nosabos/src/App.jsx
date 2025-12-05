@@ -113,7 +113,7 @@ import { RiArrowLeftLine } from "react-icons/ri";
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
-const ONBOARDING_TOTAL_STEPS = 3;
+const ONBOARDING_TOTAL_STEPS = 1;
 
 /**
  * Migrate old level values to CEFR levels
@@ -1774,21 +1774,12 @@ export default function App() {
       const safe = (v, fallback) =>
         v === undefined || v === null ? fallback : v;
 
-      const CHALLENGE = {
-        en: translations.en.onboarding_challenge_default,
-        es: translations.es.onboarding_challenge_default,
-      };
-
+      // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "A1")),
         supportLang: ["en", "es", "bilingual"].includes(payload.supportLang)
           ? payload.supportLang
           : "en",
-        practicePronunciation:
-          typeof payload.practicePronunciation === "boolean"
-            ? payload.practicePronunciation
-            : false,
-        voice: safe(payload.voice, "alloy"),
         voicePersona: safe(
           payload.voicePersona,
           translations.en.onboarding_persona_default_example
@@ -1798,16 +1789,7 @@ export default function App() {
         )
           ? payload.targetLang
           : "es",
-        showTranslations:
-          typeof payload.showTranslations === "boolean"
-            ? payload.showTranslations
-            : true,
-        helpRequest: String(safe(payload.helpRequest, "")).slice(0, 600),
         pauseMs: typeof payload.pauseMs === "number" ? payload.pauseMs : 800,
-        challenge:
-          payload?.challenge?.en && payload?.challenge?.es
-            ? payload.challenge
-            : { ...CHALLENGE },
         xp: 0,
         streak: 0,
       };
@@ -1828,14 +1810,11 @@ export default function App() {
             ...(user?.onboarding || {}),
             completed: true,
             completedAt: now,
-            currentStep: ONBOARDING_TOTAL_STEPS,
+            currentStep: 1, // Now just 1 step
             draft: null,
           },
-          lastGoal: normalized.challenge.en,
           xp: 0,
           streak: 0,
-          helpRequest: normalized.helpRequest,
-          practicePronunciation: normalized.practicePronunciation,
           progress: { ...normalized },
           identity: safe(payload.identity, user?.identity || null),
         },
@@ -3134,15 +3113,6 @@ export default function App() {
   }
 
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
-  const rawOnboardingStep = Number(user?.onboarding?.currentStep);
-  const onboardingStep = Number.isFinite(rawOnboardingStep)
-    ? rawOnboardingStep
-    : 1;
-  const clampedOnboardingStep = Math.min(
-    Math.max(Math.round(onboardingStep) || 1, 1),
-    ONBOARDING_TOTAL_STEPS
-  );
-  const onboardingDefaultPath = `/onboarding/step-${clampedOnboardingStep}`;
   const onboardingInitialDraft = {
     ...(user?.progress || {}),
     ...(user?.onboarding?.draft || {}),
@@ -3150,7 +3120,7 @@ export default function App() {
 
   if (needsOnboarding) {
     if (!isOnboardingRoute) {
-      return <Navigate to={onboardingDefaultPath} replace />;
+      return <Navigate to="/onboarding" replace />;
     }
 
     return (
@@ -3162,7 +3132,6 @@ export default function App() {
             await saveAppLanguage(lang);
           }}
           initialDraft={onboardingInitialDraft}
-          onSaveDraft={handleOnboardingDraftSave}
         />
       </Box>
     );

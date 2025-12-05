@@ -27,66 +27,40 @@ const SUPPORTED_TTS_VOICES = new Set([
   "cedar",
 ]);
 
-const TTS_NATIVE_VOICE = {
-  en: "alloy",
-  es: "marin",
-  pt: "coral",
-  fr: "verse",
-  it: "ballad",
-  nah: "marin",
-};
+// Array version for random selection
+const TTS_VOICES_ARRAY = Array.from(SUPPORTED_TTS_VOICES);
+
+/**
+ * Returns a randomly selected voice from the available TTS voices.
+ * This provides variety in voice playback for a more diverse experience.
+ */
+export function getRandomVoice() {
+  const index = Math.floor(Math.random() * TTS_VOICES_ARRAY.length);
+  return TTS_VOICES_ARRAY[index];
+}
 
 function sanitizeVoice(voice) {
   return SUPPORTED_TTS_VOICES.has(voice) ? voice : DEFAULT_TTS_VOICE;
 }
 
-export function voiceForLang(lang, langTag) {
-  const normalizedLang = (lang || "").toLowerCase();
-  if (normalizedLang && TTS_NATIVE_VOICE[normalizedLang]) {
-    return sanitizeVoice(TTS_NATIVE_VOICE[normalizedLang]);
-  }
-
-  const normalizedTag = (langTag || "").toLowerCase();
-  if (normalizedTag.startsWith("es")) return sanitizeVoice(TTS_NATIVE_VOICE.es);
-  if (normalizedTag.startsWith("en")) return sanitizeVoice(TTS_NATIVE_VOICE.en);
-  if (normalizedTag.startsWith("pt")) return sanitizeVoice(TTS_NATIVE_VOICE.pt);
-  if (normalizedTag.startsWith("fr")) return sanitizeVoice(TTS_NATIVE_VOICE.fr);
-  if (normalizedTag.startsWith("it")) return sanitizeVoice(TTS_NATIVE_VOICE.it);
-  return DEFAULT_TTS_VOICE;
-}
-
+/**
+ * Resolves which voice to use for TTS playback.
+ * Now defaults to random voice selection for variety.
+ */
 export function resolveVoicePreference({
-  voice,
   lang,
   langTag,
-  preferNativeVoice = true,
-}) {
-  const trimmed = typeof voice === "string" ? voice.trim() : "";
-  if (!preferNativeVoice) {
-    return sanitizeVoice(trimmed || DEFAULT_TTS_VOICE);
-  }
-
-  if (trimmed && trimmed !== DEFAULT_TTS_VOICE) {
-    return sanitizeVoice(trimmed);
-  }
-
-  return voiceForLang(lang, langTag);
+} = {}) {
+  // Always use random voice for variety
+  return getRandomVoice();
 }
 
 export async function fetchTTSBlob({
   text,
-  voice,
-  lang,
   langTag = TTS_LANG_TAG.es,
-  preferNativeVoice = true,
 }) {
-  const effectiveLangTag = langTag || TTS_LANG_TAG.es;
-  const resolvedVoice = resolveVoicePreference({
-    voice,
-    lang,
-    langTag: effectiveLangTag,
-    preferNativeVoice,
-  });
+  // Always use a random voice for variety
+  const resolvedVoice = getRandomVoice();
 
   const payload = {
     input: text,

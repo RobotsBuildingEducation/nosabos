@@ -57,7 +57,7 @@ import { speechReasonTips } from "../utils/speechEvaluation";
 import {
   TTS_LANG_TAG,
   fetchTTSBlob,
-  resolveVoicePreference,
+  getRandomVoice,
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
@@ -824,11 +824,7 @@ export default function Vocabulary({
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
-  const voicePreference = resolveVoicePreference({
-    voice: progress.voice,
-    lang: targetLang,
-    langTag: speakLangTag,
-  });
+  // Voice will be randomly selected for each TTS call via getRandomVoice()
 
   const recentCorrectRef = useRef([]);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
@@ -3243,13 +3239,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       } catch {}
       speakAudioRef.current = null;
 
-      const cacheKey = `${speakLangTag}::${voicePreference}::${text}`;
+      // Cache key without voice since we use random voice each time
+      const cacheKey = `${speakLangTag}::${text}`;
       let audioUrl = speakAudioCacheRef.current.get(cacheKey);
       if (!audioUrl) {
         const blob = await fetchTTSBlob({
           text,
-          voice: voicePreference,
-          lang: targetLang,
           langTag: speakLangTag,
         });
         audioUrl = URL.createObjectURL(blob);

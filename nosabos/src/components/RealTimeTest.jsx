@@ -53,7 +53,7 @@ import { PasscodePage } from "./PasscodePage";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { DEFAULT_TTS_VOICE } from "../utils/tts";
+import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 
 const REALTIME_MODEL =
@@ -984,8 +984,8 @@ export default function RealTimeTest({
         } catch {}
         if (savedPrefs) primeRefsFromPrefs(savedPrefs);
 
-        const voiceName =
-          (savedPrefs?.voice || voiceRef.current || "alloy") + "";
+        // Use random voice for variety in each session
+        const voiceName = getRandomVoice();
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
         const vadMs = pauseMsRef.current || 2000;
         const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
@@ -1503,7 +1503,8 @@ Return ONLY JSON:
     }
     guardrailItemIdsRef.current = [];
 
-    const voiceName = voiceRef.current || "alloy";
+    // Use random voice for variety
+    const voiceName = getRandomVoice();
     const instructions = buildLanguageInstructionsFromRefs();
     const vadMs = pauseMsRef.current || 2000;
 
