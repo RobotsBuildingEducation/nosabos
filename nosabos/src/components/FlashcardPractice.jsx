@@ -146,33 +146,29 @@ export default function FlashcardPractice({
   const cefrColor = CEFR_COLORS[card.cefrLevel];
 
   // Speech practice hook
-  const {
-    startRecording,
-    stopRecording,
-    isRecording,
-    supportsSpeech,
-  } = useSpeechPractice({
-    targetText: "answer", // Placeholder - we use AI grading instead of strict matching
-    targetLang: targetLang,
-    onResult: ({ recognizedText, evaluation, error }) => {
-      if (error) {
-        toast({
-          title: getTranslation("flashcard_eval_error_title"),
-          description: getTranslation("flashcard_eval_error_desc"),
-          status: "error",
-          duration: 2500,
-        });
-        return;
-      }
+  const { startRecording, stopRecording, isRecording, supportsSpeech } =
+    useSpeechPractice({
+      targetText: "answer", // Placeholder - we use AI grading instead of strict matching
+      targetLang: targetLang,
+      onResult: ({ recognizedText, evaluation, error }) => {
+        if (error) {
+          toast({
+            title: getTranslation("flashcard_eval_error_title"),
+            description: getTranslation("flashcard_eval_error_desc"),
+            status: "error",
+            duration: 2500,
+          });
+          return;
+        }
 
-      const text = recognizedText || "";
-      setRecognizedText(text);
-      if (text && text.trim()) {
-        checkAnswerWithAI(text);
-      }
-    },
-    timeoutMs: pauseMs,
-  });
+        const text = recognizedText || "";
+        setRecognizedText(text);
+        if (text && text.trim()) {
+          checkAnswerWithAI(text);
+        }
+      },
+      timeoutMs: pauseMs,
+    });
 
   const checkAnswerWithAI = async (answer) => {
     setIsGrading(true);
@@ -309,8 +305,13 @@ export default function FlashcardPractice({
     setStreamedAnswer("");
     streamingRef.current = true;
 
-    const sourceText = getConceptText(card, getEffectiveCardLanguage(supportLang));
-    const prompt = `Translate "${sourceText}" to ${LANG_NAME(targetLang)}. Reply with ONLY the translated word or phrase, nothing else. No explanations, no quotes, no punctuation unless part of the translation.`;
+    const sourceText = getConceptText(
+      card,
+      getEffectiveCardLanguage(supportLang)
+    );
+    const prompt = `Translate "${sourceText}" to ${LANG_NAME(
+      targetLang
+    )}. Reply with ONLY the translated word or phrase, nothing else. No explanations, no quotes, no punctuation unless part of the translation.`;
 
     try {
       const result = await simplemodel.generateContentStream(prompt);
@@ -461,8 +462,15 @@ export default function FlashcardPractice({
                   sx={{ backfaceVisibility: "hidden" }}
                   boxShadow="0 8px 32px rgba(37, 99, 235, 0.3)"
                 >
-                  <Text fontSize="xs" color="whiteAlpha.800" fontWeight="medium" mb={1}>
-                    {getTranslation("flashcard_translate_to", { language: LANG_NAME(targetLang) })}
+                  <Text
+                    fontSize="xs"
+                    color="whiteAlpha.800"
+                    fontWeight="medium"
+                    mb={1}
+                  >
+                    {getTranslation("flashcard_translate_to", {
+                      language: LANG_NAME(targetLang),
+                    })}
                   </Text>
                   <Text
                     fontSize="3xl"
@@ -471,7 +479,10 @@ export default function FlashcardPractice({
                     textAlign="center"
                     textShadow="0 2px 4px rgba(0,0,0,0.2)"
                   >
-                    {getConceptText(card, getEffectiveCardLanguage(supportLang))}
+                    {getConceptText(
+                      card,
+                      getEffectiveCardLanguage(supportLang)
+                    )}
                   </Text>
                   <Button
                     position="absolute"
@@ -512,7 +523,12 @@ export default function FlashcardPractice({
                   cursor="pointer"
                   onClick={handleFlipBack}
                 >
-                  <Text fontSize="xs" color="blue.200" fontWeight="medium" mb={1}>
+                  <Text
+                    fontSize="xs"
+                    color="blue.200"
+                    fontWeight="medium"
+                    mb={1}
+                  >
                     {getTranslation("flashcard_answer_label")}
                   </Text>
                   {isStreaming && !streamedAnswer ? (
@@ -536,7 +552,6 @@ export default function FlashcardPractice({
                       left={3}
                       size="sm"
                       variant="solid"
-                      bg="whiteAlpha.200"
                       color="white"
                       leftIcon={<RiVolumeUpLine size={14} />}
                       onClick={handleListenToAnswer}
@@ -568,7 +583,9 @@ export default function FlashcardPractice({
                 {isGrading ? (
                   <VStack spacing={3} py={4}>
                     <Spinner size="lg" color={cefrColor.primary} />
-                    <Text color="gray.400">{getTranslation("flashcard_grading")}</Text>
+                    <Text color="gray.400">
+                      {getTranslation("flashcard_grading")}
+                    </Text>
                   </VStack>
                 ) : (
                   <VStack spacing={4} w="100%">
@@ -592,7 +609,9 @@ export default function FlashcardPractice({
                       }}
                       _active={{ transform: "translateY(0)" }}
                     >
-                      {isRecording ? getTranslation("flashcard_stop_recording") : getTranslation("flashcard_record_answer")}
+                      {isRecording
+                        ? getTranslation("flashcard_stop_recording")
+                        : getTranslation("flashcard_record_answer")}
                     </Button>
 
                     {/* Recognized speech text */}
@@ -621,7 +640,9 @@ export default function FlashcardPractice({
                         value={textAnswer}
                         onChange={(e) => setTextAnswer(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        placeholder={getTranslation("flashcard_type_placeholder")}
+                        placeholder={getTranslation(
+                          "flashcard_type_placeholder"
+                        )}
                         size="lg"
                         fontSize="2xl"
                         textAlign="center"
@@ -695,7 +716,9 @@ export default function FlashcardPractice({
                         <RiCloseLine size={32} color="#EF4444" />
                       )}
                       <Text fontSize="2xl" fontWeight="bold" color="white">
-                        {isCorrect ? getTranslation("flashcard_correct") : getTranslation("flashcard_incorrect")}
+                        {isCorrect
+                          ? getTranslation("flashcard_correct")
+                          : getTranslation("flashcard_incorrect")}
                       </Text>
                     </HStack>
 
