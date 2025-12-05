@@ -251,6 +251,10 @@ export default function FlashcardPractice({
       audioRef.current.pause();
       audioRef.current = null;
     }
+    // Cancel any ongoing Web Speech synthesis
+    if ("speechSynthesis" in window) {
+      speechSynthesis.cancel();
+    }
     if (isRecording) {
       stopRecording();
     }
@@ -342,6 +346,46 @@ export default function FlashcardPractice({
     setIsStreaming(false);
   };
 
+  // Web Speech API fallback for mobile devices
+  const playWebSpeechFallback = (text, langTag) => {
+    return new Promise((resolve, reject) => {
+      if (!("speechSynthesis" in window)) {
+        reject(new Error("Web Speech API not supported"));
+        return;
+      }
+
+      // Cancel any ongoing speech
+      speechSynthesis.cancel();
+
+      // Ensure voices are loaded (important for mobile)
+      const ensureVoices = () =>
+        new Promise((res) => {
+          const voices = speechSynthesis.getVoices();
+          if (voices.length) return res(voices);
+          speechSynthesis.addEventListener(
+            "voiceschanged",
+            () => res(speechSynthesis.getVoices()),
+            { once: true }
+          );
+          // Timeout fallback in case voiceschanged never fires
+          setTimeout(() => res(speechSynthesis.getVoices()), 500);
+        });
+
+      ensureVoices().then(() => {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = langTag || "es-ES";
+        utterance.rate = 0.9;
+        utterance.pitch = 1.0;
+        utterance.volume = 1.0;
+
+        utterance.onend = () => resolve();
+        utterance.onerror = (e) => reject(e);
+
+        speechSynthesis.speak(utterance);
+      });
+    });
+  };
+
   const handleListenToAnswer = async (e) => {
     e.stopPropagation(); // Prevent card flip when clicking listen button
 
@@ -355,8 +399,10 @@ export default function FlashcardPractice({
 
     setIsPlayingAudio(true);
 
+    const langTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
+
+    // Try OpenAI TTS first, fall back to Web Speech API on mobile
     try {
-      const langTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
       const blob = await fetchTTSBlob({
         text: streamedAnswer,
         langTag,
@@ -366,34 +412,48 @@ export default function FlashcardPractice({
       const audio = new Audio(audioUrl);
       audioRef.current = audio;
 
-      audio.onended = () => {
-        setIsPlayingAudio(false);
-        URL.revokeObjectURL(audioUrl);
-        audioRef.current = null;
-      };
+      // Wrap play() in its own try-catch for mobile autoplay issues
+      const playPromise = new Promise((resolve, reject) => {
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl);
+          audioRef.current = null;
+          resolve();
+        };
 
-      audio.onerror = () => {
-        setIsPlayingAudio(false);
-        URL.revokeObjectURL(audioUrl);
+        audio.onerror = (e) => {
+          URL.revokeObjectURL(audioUrl);
+          audioRef.current = null;
+          reject(e);
+        };
+
+        audio.play().catch(reject);
+      });
+
+      await playPromise;
+      setIsPlayingAudio(false);
+    } catch (error) {
+      console.warn("OpenAI TTS failed, trying Web Speech fallback:", error);
+
+      // Clean up any audio refs
+      if (audioRef.current) {
+        audioRef.current.pause();
         audioRef.current = null;
+      }
+
+      // Fallback to Web Speech API (better mobile support)
+      try {
+        await playWebSpeechFallback(streamedAnswer, langTag);
+        setIsPlayingAudio(false);
+      } catch (fallbackError) {
+        console.error("Web Speech fallback also failed:", fallbackError);
+        setIsPlayingAudio(false);
         toast({
           title: "Audio error",
           description: "Could not play audio. Please try again.",
           status: "error",
           duration: 2500,
         });
-      };
-
-      await audio.play();
-    } catch (error) {
-      console.error("TTS error:", error);
-      setIsPlayingAudio(false);
-      toast({
-        title: "Audio error",
-        description: "Could not generate audio. Please try again.",
-        status: "error",
-        duration: 2500,
-      });
+      }
     }
   };
 
