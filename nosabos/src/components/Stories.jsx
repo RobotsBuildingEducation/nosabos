@@ -1708,7 +1708,7 @@ export default function StoryMode({
       <Box px={4} pt={4}>
         <Box p={3} rounded="2xl">
           <Box display="flex" justifyContent={"center"}>
-            <HStack justify="space-between" mb={1} width="50%">
+            <HStack justify="space-between" mb={1} width="50%" maxW="600px">
               <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
                 {uiText.levelLabel} {levelNumber}
               </Badge>
@@ -1718,7 +1718,7 @@ export default function StoryMode({
             </HStack>
           </Box>
           <Box display="flex" justifyContent={"center"}>
-            <Box width="50%">
+            <Box width="50%" maxW="600px">
               <WaveBar value={progressPct} />
             </Box>
           </Box>
@@ -1727,7 +1727,7 @@ export default function StoryMode({
 
       {/* Progress */}
       <Box px={4} py={3} display="flex" justifyContent={"center"}>
-        <VStack spacing={2} width="50%">
+        <VStack spacing={2} width="50%" maxWidth={"600px"}>
           <HStack w="100%" justify="space-between">
             <Text fontSize="sm" color="#94a3b8">
               {uiText.progress}
