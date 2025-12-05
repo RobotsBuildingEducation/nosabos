@@ -11,6 +11,9 @@ export const TTS_LANG_TAG = {
 
 export const DEFAULT_TTS_VOICE = "alloy";
 
+// Use opus format for faster transfer (smaller files than mp3)
+const TTS_FORMAT = "opus";
+
 // Voices supported by BOTH TTS API and Realtime API
 // Note: fable, onyx, nova are TTS-only and NOT supported by Realtime API
 const SUPPORTED_TTS_VOICES = new Set([
@@ -54,29 +57,328 @@ export function resolveVoicePreference({
   return getRandomVoice();
 }
 
+// ============================================================================
+// CACHING LAYER
+// ============================================================================
+
+// In-memory cache for current session (instant access)
+const memoryCache = new Map();
+
+// IndexedDB configuration
+const DB_NAME = "tts-audio-cache";
+const DB_VERSION = 1;
+const STORE_NAME = "audio";
+const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+// IndexedDB instance (lazy initialized)
+let dbPromise = null;
+
+/**
+ * Generate a cache key from text (voice-agnostic for better cache hits)
+ */
+function getCacheKey(text, langTag) {
+  // Normalize text: lowercase, trim, collapse whitespace
+  const normalized = text.toLowerCase().trim().replace(/\s+/g, " ");
+  return `${langTag}::${normalized}`;
+}
+
+/**
+ * Open/initialize IndexedDB
+ */
+function openDB() {
+  if (dbPromise) return dbPromise;
+
+  dbPromise = new Promise((resolve, reject) => {
+    if (typeof indexedDB === "undefined") {
+      resolve(null);
+      return;
+    }
+
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+    request.onerror = () => {
+      console.warn("TTS IndexedDB failed to open:", request.error);
+      resolve(null);
+    };
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
+        store.createIndex("timestamp", "timestamp", { unique: false });
+      }
+    };
+  });
+
+  return dbPromise;
+}
+
+/**
+ * Get audio blob from IndexedDB
+ */
+async function getFromIndexedDB(key) {
+  try {
+    const db = await openDB();
+    if (!db) return null;
+
+    return new Promise((resolve) => {
+      const transaction = db.transaction(STORE_NAME, "readonly");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.get(key);
+
+      request.onsuccess = () => {
+        const result = request.result;
+        if (!result) {
+          resolve(null);
+          return;
+        }
+
+        // Check TTL
+        if (Date.now() - result.timestamp > CACHE_TTL_MS) {
+          // Expired - delete async and return null
+          deleteFromIndexedDB(key);
+          resolve(null);
+          return;
+        }
+
+        resolve(result.blob);
+      };
+
+      request.onerror = () => {
+        resolve(null);
+      };
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Save audio blob to IndexedDB
+ */
+async function saveToIndexedDB(key, blob) {
+  try {
+    const db = await openDB();
+    if (!db) return;
+
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    store.put({
+      key,
+      blob,
+      timestamp: Date.now(),
+    });
+  } catch (error) {
+    console.warn("TTS IndexedDB save failed:", error);
+  }
+}
+
+/**
+ * Delete expired entry from IndexedDB
+ */
+async function deleteFromIndexedDB(key) {
+  try {
+    const db = await openDB();
+    if (!db) return;
+
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    store.delete(key);
+  } catch {
+    // Ignore deletion errors
+  }
+}
+
+/**
+ * Clean up expired entries (call periodically)
+ */
+export async function cleanupExpiredCache() {
+  try {
+    const db = await openDB();
+    if (!db) return;
+
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+    const index = store.index("timestamp");
+    const expiredBefore = Date.now() - CACHE_TTL_MS;
+
+    const range = IDBKeyRange.upperBound(expiredBefore);
+    const request = index.openCursor(range);
+
+    request.onsuccess = (event) => {
+      const cursor = event.target.result;
+      if (cursor) {
+        store.delete(cursor.primaryKey);
+        cursor.continue();
+      }
+    };
+  } catch {
+    // Ignore cleanup errors
+  }
+}
+
+// ============================================================================
+// CORE TTS FUNCTIONS
+// ============================================================================
+
+// Track in-flight requests to avoid duplicate fetches
+const inFlightRequests = new Map();
+
+/**
+ * Fetch TTS audio with multi-layer caching:
+ * 1. Check in-memory cache (instant)
+ * 2. Check IndexedDB cache (fast)
+ * 3. Fetch from API (slow, but cached for future)
+ *
+ * @param {Object} options
+ * @param {string} options.text - Text to synthesize
+ * @param {string} options.langTag - Language tag (e.g., "es-ES")
+ * @param {string} options.voice - Optional specific voice (defaults to random)
+ * @returns {Promise<Blob>} Audio blob
+ */
 export async function fetchTTSBlob({
   text,
   langTag = TTS_LANG_TAG.es,
+  voice,
 }) {
-  // Always use a random voice for variety
-  const resolvedVoice = getRandomVoice();
+  const cacheKey = getCacheKey(text, langTag);
 
-  const payload = {
-    input: text,
-    voice: resolvedVoice,
-    model: "gpt-4o-mini-tts",
-    response_format: "mp3",
-  };
-
-  const res = await fetch(TTS_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    throw new Error(`OpenAI TTS ${res.status}`);
+  // 1. Check in-memory cache (instant)
+  if (memoryCache.has(cacheKey)) {
+    return memoryCache.get(cacheKey);
   }
 
-  return res.blob();
+  // 2. Check if there's already an in-flight request for this key
+  if (inFlightRequests.has(cacheKey)) {
+    return inFlightRequests.get(cacheKey);
+  }
+
+  // 3. Create the fetch promise (checks IndexedDB, then network)
+  const fetchPromise = (async () => {
+    try {
+      // Check IndexedDB cache
+      const cachedBlob = await getFromIndexedDB(cacheKey);
+      if (cachedBlob) {
+        // Store in memory for even faster subsequent access
+        memoryCache.set(cacheKey, cachedBlob);
+        return cachedBlob;
+      }
+
+      // Fetch from API
+      const resolvedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
+
+      const payload = {
+        input: text,
+        voice: resolvedVoice,
+        model: "gpt-4o-mini-tts",
+        response_format: TTS_FORMAT,
+      };
+
+      const res = await fetch(TTS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        throw new Error(`OpenAI TTS ${res.status}`);
+      }
+
+      const blob = await res.blob();
+
+      // Cache in both layers
+      memoryCache.set(cacheKey, blob);
+      saveToIndexedDB(cacheKey, blob); // async, don't await
+
+      return blob;
+    } finally {
+      // Remove from in-flight after completion
+      inFlightRequests.delete(cacheKey);
+    }
+  })();
+
+  // Track in-flight request
+  inFlightRequests.set(cacheKey, fetchPromise);
+
+  return fetchPromise;
+}
+
+/**
+ * Pre-fetch TTS audio in the background.
+ * Call this when content loads to warm the cache before user needs it.
+ *
+ * @param {Array<{text: string, langTag?: string}>} items - Items to pre-fetch
+ * @returns {Promise<void>} Resolves when all pre-fetches complete (or fail silently)
+ */
+export async function prefetchTTS(items) {
+  if (!items || items.length === 0) return;
+
+  const promises = items.map(({ text, langTag = TTS_LANG_TAG.es }) => {
+    // Skip if already cached in memory
+    const cacheKey = getCacheKey(text, langTag);
+    if (memoryCache.has(cacheKey)) {
+      return Promise.resolve();
+    }
+
+    // Fetch silently (don't throw on error)
+    return fetchTTSBlob({ text, langTag }).catch(() => {
+      // Ignore pre-fetch errors silently
+    });
+  });
+
+  await Promise.all(promises);
+}
+
+/**
+ * Check if audio is already cached (memory or IndexedDB)
+ * Useful for showing "ready" indicators in UI
+ */
+export async function isCached(text, langTag = TTS_LANG_TAG.es) {
+  const cacheKey = getCacheKey(text, langTag);
+
+  // Check memory first (instant)
+  if (memoryCache.has(cacheKey)) {
+    return true;
+  }
+
+  // Check IndexedDB
+  const cached = await getFromIndexedDB(cacheKey);
+  if (cached) {
+    // Promote to memory cache
+    memoryCache.set(cacheKey, cached);
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Clear all TTS caches (useful for debugging or user-initiated clear)
+ */
+export async function clearTTSCache() {
+  // Clear memory cache
+  memoryCache.clear();
+
+  // Clear IndexedDB
+  try {
+    const db = await openDB();
+    if (db) {
+      const transaction = db.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      store.clear();
+    }
+  } catch {
+    // Ignore clear errors
+  }
+}
+
+// Run cleanup on module load (async, non-blocking)
+if (typeof window !== "undefined") {
+  setTimeout(() => {
+    cleanupExpiredCache();
+  }, 5000);
 }

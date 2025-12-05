@@ -40,6 +40,7 @@ import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
+import { fetchTTSBlob } from "../utils/tts";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -963,10 +964,10 @@ export default function JobScript({ userLanguage = "en", lessonContent = null })
 
   // Audio / recording
   const currentAudioRef = useRef(null);
+  const currentAudioUrlRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recognitionRef = useRef(null);
   const mediaStreamRef = useRef(null);
-  const audioCacheRef = useRef(new Map());
 
   // SR aggregation / silence gating
   const aggTranscriptRef = useRef("");
@@ -1283,29 +1284,20 @@ export default function JobScript({ userLanguage = "en", lessonContent = null })
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
       }
-      const voice = progress.voice || "alloy";
-      const cacheKey = `${text}-${voice}-${langTag}`;
-      let audioUrl = audioCacheRef.current.get(cacheKey);
-
-      if (!audioUrl) {
-        const res = await fetch(
-          "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              input: text,
-              voice,
-              model: "gpt-4o-mini-tts",
-              response_format: "mp3",
-            }),
-          }
-        );
-        if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
-        const blob = await res.blob();
-        audioUrl = URL.createObjectURL(blob);
-        audioCacheRef.current.set(cacheKey, audioUrl);
+      if (currentAudioUrlRef.current) {
+        try {
+          URL.revokeObjectURL(currentAudioUrlRef.current);
+        } catch {}
+        currentAudioUrlRef.current = null;
       }
+
+      // Global cache in tts.js handles caching (memory + IndexedDB)
+      const blob = await fetchTTSBlob({
+        text,
+        langTag,
+      });
+      const audioUrl = URL.createObjectURL(blob);
+      currentAudioUrlRef.current = audioUrl;
 
       const audio = new Audio(audioUrl);
       currentAudioRef.current = audio;

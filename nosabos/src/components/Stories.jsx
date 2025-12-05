@@ -48,7 +48,7 @@ import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { getRandomVoice } from "../utils/tts";
+import { getRandomVoice, fetchTTSBlob, TTS_LANG_TAG } from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import {
@@ -379,7 +379,7 @@ export default function StoryMode({
   const animationFrameRef = useRef(null);
   const currentAudioRef = useRef(null);
   const eventSourceRef = useRef(null);
-  const audioCacheRef = useRef(new Map());
+  const currentAudioUrlRef = useRef(null);
   const sessionAwardedRef = useRef(false);
   const evalRef = useRef({
     inProgress: false,
@@ -982,33 +982,23 @@ export default function StoryMode({
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
       }
-      // Use random voice for variety
-      const voice = getRandomVoice();
-      const cacheKey = `${text}-${langTag}`;
-      let audioUrl = audioCacheRef.current.get(cacheKey);
+      if (currentAudioUrlRef.current) {
+        try {
+          URL.revokeObjectURL(currentAudioUrlRef.current);
+        } catch {}
+        currentAudioUrlRef.current = null;
+      }
 
       setSynthesizing?.(true);
 
-      if (!audioUrl) {
-        usageStatsRef.current.ttsCalls++;
-        const res = await fetch(
-          "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              input: text,
-              voice,
-              model: "gpt-4o-mini-tts",
-              response_format: "mp3",
-            }),
-          }
-        );
-        if (!res.ok) throw new Error(`OpenAI TTS ${res.status}`);
-        const blob = await res.blob();
-        audioUrl = URL.createObjectURL(blob);
-        audioCacheRef.current.set(cacheKey, audioUrl);
-      }
+      // Global cache in tts.js handles caching (memory + IndexedDB)
+      usageStatsRef.current.ttsCalls++;
+      const blob = await fetchTTSBlob({
+        text,
+        langTag,
+      });
+      const audioUrl = URL.createObjectURL(blob);
+      currentAudioUrlRef.current = audioUrl;
 
       let tokenMap = null;
       if (alignToText) {
@@ -1588,8 +1578,12 @@ export default function StoryMode({
           mediaRecorderRef.current.stop();
       } catch {}
       setIsRecording(false);
-      audioCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
-      audioCacheRef.current.clear();
+      if (currentAudioUrlRef.current) {
+        try {
+          URL.revokeObjectURL(currentAudioUrlRef.current);
+        } catch {}
+        currentAudioUrlRef.current = null;
+      }
     };
     window.addEventListener("beforeunload", cleanup);
     return () => {
