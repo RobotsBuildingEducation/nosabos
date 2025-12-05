@@ -976,23 +976,22 @@ export default function GrammarBook({
   const [sEval, setSEval] = useState(null);
   const [loadingSpeakQ, setLoadingSpeakQ] = useState(false);
   const speakAudioRef = useRef(null);
-  const speakAudioCacheRef = useRef(new Map());
+  const speakAudioUrlRef = useRef(null);
   const [isSpeakPlaying, setIsSpeakPlaying] = useState(false);
   const [isSpeakSynthesizing, setIsSpeakSynthesizing] = useState(false);
 
   useEffect(() => {
-    const cache = speakAudioCacheRef.current;
     return () => {
       try {
         speakAudioRef.current?.pause?.();
       } catch {}
       speakAudioRef.current = null;
-      cache.forEach((url) => {
+      if (speakAudioUrlRef.current) {
         try {
-          URL.revokeObjectURL(url);
+          URL.revokeObjectURL(speakAudioUrlRef.current);
         } catch {}
-      });
-      cache.clear();
+        speakAudioUrlRef.current = null;
+      }
     };
   }, []);
 
@@ -2789,18 +2788,20 @@ Return JSON ONLY:
         speakAudioRef.current?.pause?.();
       } catch {}
       speakAudioRef.current = null;
-
-      // Cache key without voice since we use random voice each time
-      const cacheKey = `${speakLangTag}::${text}`;
-      let audioUrl = speakAudioCacheRef.current.get(cacheKey);
-      if (!audioUrl) {
-        const blob = await fetchTTSBlob({
-          text,
-          langTag: speakLangTag,
-        });
-        audioUrl = URL.createObjectURL(blob);
-        speakAudioCacheRef.current.set(cacheKey, audioUrl);
+      if (speakAudioUrlRef.current) {
+        try {
+          URL.revokeObjectURL(speakAudioUrlRef.current);
+        } catch {}
+        speakAudioUrlRef.current = null;
       }
+
+      // Global cache in tts.js handles caching (memory + IndexedDB)
+      const blob = await fetchTTSBlob({
+        text,
+        langTag: speakLangTag,
+      });
+      const audioUrl = URL.createObjectURL(blob);
+      speakAudioUrlRef.current = audioUrl;
 
       const audio = new Audio(audioUrl);
       speakAudioRef.current = audio;
