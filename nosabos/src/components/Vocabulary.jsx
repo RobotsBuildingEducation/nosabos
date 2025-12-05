@@ -686,6 +686,50 @@ function norm(s) {
     .trim();
 }
 
+// Ensure the correct answer is always present in choices.
+// If answer not found, inject it by replacing a random non-answer choice.
+function ensureAnswerInChoices(choices, answer) {
+  if (!answer || !Array.isArray(choices) || choices.length === 0) {
+    return { choices, answer: choices[0] || "" };
+  }
+  const found = choices.find((c) => norm(c) === norm(answer));
+  if (found) {
+    return { choices, answer: found };
+  }
+  // Answer not found - inject it by replacing a random choice
+  const newChoices = [...choices];
+  const replaceIdx = Math.floor(Math.random() * newChoices.length);
+  newChoices[replaceIdx] = String(answer);
+  return { choices: newChoices, answer: String(answer) };
+}
+
+// For multiple answer questions - ensure all correct answers are in choices
+function ensureAnswersInChoices(choices, answers) {
+  if (!Array.isArray(answers) || !Array.isArray(choices) || choices.length === 0) {
+    return { choices, answers: [] };
+  }
+  const newChoices = [...choices];
+  const validAnswers = [];
+
+  for (const ans of answers) {
+    const found = newChoices.find((c) => norm(c) === norm(ans));
+    if (found) {
+      validAnswers.push(found);
+    } else {
+      // Find a slot that's not already a correct answer and replace it
+      const nonAnswerIdx = newChoices.findIndex(
+        (c) => !validAnswers.some((a) => norm(a) === norm(c)) &&
+               !answers.some((a) => norm(a) === norm(c))
+      );
+      if (nonAnswerIdx !== -1) {
+        newChoices[nonAnswerIdx] = String(ans);
+        validAnswers.push(String(ans));
+      }
+    }
+  }
+  return { choices: newChoices, answers: validAnswers };
+}
+
 /* ---------------------------
    Component
 --------------------------- */
@@ -1683,14 +1727,14 @@ Return EXACTLY:
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              const choices = obj.choices.slice(0, 4).map(String);
-              setChoicesMC(choices);
-              // if answer already known from meta, align it
+              const rawChoices = obj.choices.slice(0, 4).map(String);
+              // if answer already known from meta, ensure it's in choices
               if (pendingAnswer) {
-                const ans =
-                  choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                  choices[0];
-                setAnswerMC(ans);
+                const { choices, answer } = ensureAnswerInChoices(rawChoices, pendingAnswer);
+                setChoicesMC(choices);
+                setAnswerMC(answer);
+              } else {
+                setChoicesMC(rawChoices);
               }
               got = true;
             } else if (obj?.type === "vocab_mc" && obj.phase === "meta") {
@@ -1699,10 +1743,9 @@ Return EXACTLY:
               if (typeof obj.answer === "string") {
                 pendingAnswer = obj.answer;
                 if (Array.isArray(choicesMC) && choicesMC.length) {
-                  const ans =
-                    choicesMC.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    choicesMC[0];
-                  setAnswerMC(ans);
+                  const { choices, answer } = ensureAnswerInChoices(choicesMC, pendingAnswer);
+                  setChoicesMC(choices);
+                  setAnswerMC(answer);
                 }
               }
               got = true;
@@ -1736,13 +1779,13 @@ Return EXACTLY:
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                const choices = obj.choices.slice(0, 4).map(String);
-                setChoicesMC(choices);
+                const rawChoices = obj.choices.slice(0, 4).map(String);
                 if (pendingAnswer) {
-                  const ans =
-                    choices.find((c) => norm(c) === norm(pendingAnswer)) ||
-                    choices[0];
-                  setAnswerMC(ans);
+                  const { choices, answer } = ensureAnswerInChoices(rawChoices, pendingAnswer);
+                  setChoicesMC(choices);
+                  setAnswerMC(answer);
+                } else {
+                  setChoicesMC(rawChoices);
                 }
                 got = true;
               } else if (obj?.type === "vocab_mc" && obj.phase === "meta") {
@@ -1752,10 +1795,9 @@ Return EXACTLY:
                 if (typeof obj.answer === "string") {
                   pendingAnswer = obj.answer;
                   if (Array.isArray(choicesMC) && choicesMC.length) {
-                    const ans =
-                      choicesMC.find((c) => norm(c) === norm(pendingAnswer)) ||
-                      choicesMC[0];
-                    setAnswerMC(ans);
+                    const { choices, answer } = ensureAnswerInChoices(choicesMC, pendingAnswer);
+                    setChoicesMC(choices);
+                    setAnswerMC(answer);
                   }
                 }
                 got = true;
@@ -1793,13 +1835,13 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
         Array.isArray(parsed.choices) &&
         parsed.choices.length >= 3
       ) {
-        const choices = parsed.choices.slice(0, 4).map(String);
-        const ans =
-          choices.find((c) => norm(c) === norm(parsed.answer)) || choices[0];
+        const rawChoices = parsed.choices.slice(0, 4).map(String);
+        // Ensure the correct answer is always in choices
+        const { choices, answer } = ensureAnswerInChoices(rawChoices, parsed.answer);
         setQMC(String(parsed.question));
         setHMC(String(parsed.hint || ""));
         setChoicesMC(choices);
-        setAnswerMC(ans);
+        setAnswerMC(answer);
         setTrMC(String(parsed.translation || ""));
       } else {
         setQMC("Choose the best synonym for “quick”.");
@@ -1909,13 +1951,14 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       return out;
     };
 
-    const choices = uniqByNorm(parsed.choices).slice(0, 6);
-    const answers = uniqByNorm(parsed.answers).filter((a) =>
-      choices.some((c) => norm(c) === norm(a))
-    );
+    const rawChoices = uniqByNorm(parsed.choices).slice(0, 6);
+    const rawAnswers = uniqByNorm(parsed.answers);
 
-    if (choices.length < 4) return null;
-    if (answers.length < 2 || answers.length > 3) return null;
+    if (rawChoices.length < 4) return null;
+    if (rawAnswers.length < 2 || rawAnswers.length > 3) return null;
+
+    // Ensure all correct answers are in choices
+    const { choices, answers } = ensureAnswersInChoices(rawChoices, rawAnswers);
 
     return {
       question: String(parsed.question),
@@ -1983,13 +2026,13 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              const choices = obj.choices.slice(0, 6).map(String);
-              setChoicesMA(choices);
+              const rawChoices = obj.choices.slice(0, 6).map(String);
               if (pendingAnswers?.length) {
-                const aligned = pendingAnswers.filter((a) =>
-                  choices.some((c) => norm(c) === norm(a))
-                );
-                if (aligned.length >= 2) setAnswersMA(aligned);
+                const { choices, answers } = ensureAnswersInChoices(rawChoices, pendingAnswers);
+                setChoicesMA(choices);
+                if (answers.length >= 2) setAnswersMA(answers);
+              } else {
+                setChoicesMA(rawChoices);
               }
               got = true;
             } else if (obj?.type === "vocab_ma" && obj.phase === "meta") {
@@ -1998,10 +2041,9 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
               if (Array.isArray(obj.answers)) {
                 pendingAnswers = obj.answers.map(String);
                 if (Array.isArray(choicesMA) && choicesMA.length) {
-                  const aligned = pendingAnswers.filter((a) =>
-                    choicesMA.some((c) => norm(c) === norm(a))
-                  );
-                  if (aligned.length >= 2) setAnswersMA(aligned);
+                  const { choices, answers } = ensureAnswersInChoices(choicesMA, pendingAnswers);
+                  setChoicesMA(choices);
+                  if (answers.length >= 2) setAnswersMA(answers);
                 }
               }
               got = true;
@@ -2035,13 +2077,13 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                const choices = obj.choices.slice(0, 6).map(String);
-                setChoicesMA(choices);
+                const rawChoices = obj.choices.slice(0, 6).map(String);
                 if (pendingAnswers?.length) {
-                  const aligned = pendingAnswers.filter((a) =>
-                    choices.some((c) => norm(c) === norm(a))
-                  );
-                  if (aligned.length >= 2) setAnswersMA(aligned);
+                  const { choices, answers } = ensureAnswersInChoices(rawChoices, pendingAnswers);
+                  setChoicesMA(choices);
+                  if (answers.length >= 2) setAnswersMA(answers);
+                } else {
+                  setChoicesMA(rawChoices);
                 }
                 got = true;
               } else if (obj?.type === "vocab_ma" && obj.phase === "meta") {
@@ -2051,10 +2093,9 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                 if (Array.isArray(obj.answers)) {
                   pendingAnswers = obj.answers.map(String);
                   if (Array.isArray(choicesMA) && choicesMA.length) {
-                    const aligned = pendingAnswers.filter((a) =>
-                      choicesMA.some((c) => norm(c) === norm(a))
-                    );
-                    if (aligned.length >= 2) setAnswersMA(aligned);
+                    const { choices, answers } = ensureAnswersInChoices(choicesMA, pendingAnswers);
+                    setChoicesMA(choices);
+                    if (answers.length >= 2) setAnswersMA(answers);
                   }
                 }
                 got = true;

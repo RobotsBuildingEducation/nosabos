@@ -57,8 +57,15 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
     [item]
   );
 
+  // Remove diacritics for tolerant matching (e.g., "Cuál" matches "cual")
+  function removeDiacritics(str) {
+    return String(str || "")
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "");
+  }
+
   function normalize(s = "") {
-    return s.trim().toLowerCase();
+    return removeDiacritics(s).trim().toLowerCase();
   }
 
   function check() {
@@ -216,8 +223,8 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
             <Badge
               colorScheme={
                 (item.answer?.acceptable || [])
-                  .map((a) => a.toLowerCase())
-                  .includes(openText.trim().toLowerCase())
+                  .map(normalize)
+                  .includes(normalize(openText))
                   ? "green"
                   : "orange"
               }
@@ -250,14 +257,10 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
           {submitted && (
             <Badge
               colorScheme={(() => {
-                const toks = oneWord
-                  .trim()
-                  .toLowerCase()
+                const toks = normalize(oneWord)
                   .split(/\s+/)
                   .filter(Boolean);
-                const ok = (item.answer?.acceptable || []).map((a) =>
-                  a.toLowerCase()
-                );
+                const ok = (item.answer?.acceptable || []).map(normalize);
                 return toks.length === 1 && ok.includes(toks[0])
                   ? "green"
                   : "red";
@@ -265,14 +268,10 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
               w="fit-content"
             >
               {(() => {
-                const toks = oneWord
-                  .trim()
-                  .toLowerCase()
+                const toks = normalize(oneWord)
                   .split(/\s+/)
                   .filter(Boolean);
-                const ok = (item.answer?.acceptable || []).map((a) =>
-                  a.toLowerCase()
-                );
+                const ok = (item.answer?.acceptable || []).map(normalize);
                 return toks.length === 1 && ok.includes(toks[0])
                   ? t("quiz_correct")
                   : t("quiz_try_again");
