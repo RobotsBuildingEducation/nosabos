@@ -131,6 +131,19 @@ export default function CEFRLevelNavigator({
     }
   };
 
+  const navButtonStyles = {
+    variant: "outline",
+    borderColor: "blue.300",
+    borderWidth: "2px",
+    color: "blue.100",
+    bg: "whiteAlpha.50",
+    _hover: { bg: "whiteAlpha.100", borderColor: "blue.200", color: "white" },
+    px: 4,
+    py: 3,
+    size: "sm",
+    minW: "110px",
+  };
+
   return (
     <MotionBox
       initial={{ opacity: 0, y: -20 }}
@@ -143,17 +156,17 @@ export default function CEFRLevelNavigator({
         {/* Level Header */}
         <HStack justify="space-between" align="center">
           {/* Previous Level Button */}
-          <Button
-            leftIcon={<RiArrowLeftLine />}
-            onClick={handlePrevious}
-            isDisabled={!hasPrevious}
-            variant="ghost"
-            color="gray.400"
-            _hover={{ bg: "whiteAlpha.100", color: "white" }}
-            size="sm"
-          >
-            {hasPrevious ? previousLevel : ""}
-          </Button>
+          {hasPrevious ? (
+            <Button
+              leftIcon={<RiArrowLeftLine />}
+              onClick={handlePrevious}
+              {...navButtonStyles}
+            >
+              {previousLevel}
+            </Button>
+          ) : (
+            <Box minW={navButtonStyles.minW} />
+          )}
 
           {/* Current Level Badge */}
           <VStack spacing={2} flex={1} align="center">
@@ -178,23 +191,22 @@ export default function CEFRLevelNavigator({
           </VStack>
 
           {/* Next Level Button */}
-          <Button
-            rightIcon={
-              isNextLevelUnlocked ? <RiArrowRightLine /> : <RiLockLine />
-            }
-            onClick={handleNext}
-            isDisabled={!hasNext || !isNextLevelUnlocked}
-            variant="ghost"
-            color={isNextLevelUnlocked ? "gray.400" : "gray.600"}
-            _hover={
-              isNextLevelUnlocked
-                ? { bg: "whiteAlpha.100", color: "white" }
-                : {}
-            }
-            size="sm"
-          >
-            {hasNext ? nextLevel : ""}
-          </Button>
+          {hasNext ? (
+            <Button
+              rightIcon={
+                isNextLevelUnlocked ? <RiArrowRightLine /> : <RiLockLine />
+              }
+              onClick={handleNext}
+              isDisabled={!isNextLevelUnlocked}
+              {...navButtonStyles}
+              opacity={isNextLevelUnlocked ? 1 : 0.6}
+              cursor={isNextLevelUnlocked ? "pointer" : "not-allowed"}
+            >
+              {nextLevel}
+            </Button>
+          ) : (
+            <Box minW={navButtonStyles.minW} />
+          )}
         </HStack>
 
         {/* Completion Badge */}
