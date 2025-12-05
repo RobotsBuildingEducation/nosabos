@@ -1275,6 +1275,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
     let scenario = activeGoal.scenario || lessonScenario;
     let successCriteria = activeGoal.successCriteria || lesson?.successCriteria;
+    let roleplayPrompt = activeGoal.prompt || lesson?.prompt || "";
 
     // Check if scenario is too generic or missing - use AI to generate a better one
     const isGenericScenario = !scenario ||
@@ -1286,6 +1287,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       const aiGoal = await generateGoalFromAI(lessonPropRef.current, lesson);
       scenario = aiGoal.scenario;
       successCriteria = aiGoal.successCriteria;
+      roleplayPrompt = aiGoal.prompt;
     }
 
     // Generate goal based on lesson content or use default
@@ -1313,6 +1315,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       rubric_es: rubricEs,
       lessonScenario: lessonScenario || null,
       successCriteria: successCriteria || null,
+      roleplayPrompt: roleplayPrompt || null,
       goalIndex: goalIndex,
       hasVariations: hasVariations,
       attempts: 0,
@@ -1564,7 +1567,10 @@ Return ONLY JSON:
     const pronOn = !!(
       prefs?.practicePronunciation ?? practicePronunciationRef.current
     );
-    const activeGoal = goalTitleForTarget(goalRef.current);
+    const goal = goalRef.current;
+    const activeGoal = goalTitleForTarget(goal);
+    const roleplayPrompt = goal?.roleplayPrompt || "";
+    const successCriteria = goal?.successCriteria || "";
 
     let strict;
     if (tLang === "nah") {
@@ -1590,7 +1596,19 @@ Return ONLY JSON:
     const pronLine = pronOn
       ? "Pronunciation mode: after answering, give a micro pronunciation cue (≤6 words), then repeat the corrected sentence once, slowly, and invite the user to repeat."
       : "";
-    const goalLine = activeGoal ? `Active goal: ${activeGoal}.` : "";
+
+    // Build comprehensive goal guidance for the AI tutor
+    let goalGuidance = "";
+    if (activeGoal || roleplayPrompt) {
+      goalGuidance = `CONVERSATION GOAL: Help the learner accomplish "${activeGoal}".`;
+      if (roleplayPrompt) {
+        goalGuidance += ` YOUR ROLE: ${roleplayPrompt}`;
+      }
+      if (successCriteria) {
+        goalGuidance += ` Guide them toward: ${successCriteria}.`;
+      }
+      goalGuidance += " Gently steer the conversation to give them opportunities to demonstrate this skill.";
+    }
 
     return [
       "Act as a language practice partner.",
@@ -1600,7 +1618,7 @@ Return ONLY JSON:
       levelHint,
       focusLine,
       pronLine,
-      goalLine,
+      goalGuidance,
     ]
       .filter(Boolean)
       .join(" ");
