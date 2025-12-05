@@ -23,7 +23,9 @@ import {
   RiStopCircleLine,
   RiKeyboardLine,
   RiEyeLine,
+  RiVolumeUpLine,
 } from "react-icons/ri";
+import { fetchTTSBlob, TTS_LANG_TAG } from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
@@ -136,7 +138,9 @@ export default function FlashcardPractice({
   const [isFlipped, setIsFlipped] = useState(false);
   const [streamedAnswer, setStreamedAnswer] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const streamingRef = useRef(false);
+  const audioRef = useRef(null);
   const toast = useToast();
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
@@ -245,7 +249,12 @@ export default function FlashcardPractice({
     setIsFlipped(false);
     setStreamedAnswer("");
     setIsStreaming(false);
+    setIsPlayingAudio(false);
     streamingRef.current = false;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
     if (isRecording) {
       stopRecording();
     }
@@ -330,6 +339,61 @@ export default function FlashcardPractice({
     setIsFlipped(false);
     setStreamedAnswer("");
     setIsStreaming(false);
+  };
+
+  const handleListenToAnswer = async (e) => {
+    e.stopPropagation(); // Prevent card flip when clicking listen button
+
+    if (!streamedAnswer || isPlayingAudio) return;
+
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setIsPlayingAudio(true);
+
+    try {
+      const langTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
+      const blob = await fetchTTSBlob({
+        text: streamedAnswer,
+        langTag,
+      });
+
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setIsPlayingAudio(false);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+      };
+
+      audio.onerror = () => {
+        setIsPlayingAudio(false);
+        URL.revokeObjectURL(audioUrl);
+        audioRef.current = null;
+        toast({
+          title: "Audio error",
+          description: "Could not play audio. Please try again.",
+          status: "error",
+          duration: 2500,
+        });
+      };
+
+      await audio.play();
+    } catch (error) {
+      console.error("TTS error:", error);
+      setIsPlayingAudio(false);
+      toast({
+        title: "Audio error",
+        description: "Could not generate audio. Please try again.",
+        status: "error",
+        duration: 2500,
+      });
+    }
   };
 
   return (
@@ -463,6 +527,26 @@ export default function FlashcardPractice({
                     >
                       {streamedAnswer || "..."}
                     </Text>
+                  )}
+                  {/* Listen Button */}
+                  {streamedAnswer && !isStreaming && (
+                    <Button
+                      position="absolute"
+                      bottom={3}
+                      left={3}
+                      size="sm"
+                      variant="solid"
+                      bg="whiteAlpha.200"
+                      color="white"
+                      leftIcon={<RiVolumeUpLine size={14} />}
+                      onClick={handleListenToAnswer}
+                      isLoading={isPlayingAudio}
+                      loadingText={getTranslation("flashcard_listening")}
+                      _hover={{ bg: "whiteAlpha.300" }}
+                      fontSize="xs"
+                    >
+                      {getTranslation("flashcard_listen")}
+                    </Button>
                   )}
                   <Text
                     position="absolute"
