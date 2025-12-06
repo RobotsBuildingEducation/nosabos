@@ -12,13 +12,9 @@ import {
   WrapItem,
   useToast,
   Flex,
-  IconButton,
   Spinner,
 } from "@chakra-ui/react";
-import {
-  PiArrowsClockwiseDuotone,
-  PiMicrophoneStageDuotone,
-} from "react-icons/pi";
+import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
 
 import {
@@ -485,7 +481,6 @@ export default function RealTimeTest({
 
   // Refs for realtime
   const audioRef = useRef(null); // remote stream sink
-  const playbackRef = useRef(null); // local playback for cached clips
   const pcRef = useRef(null);
   const localRef = useRef(null);
   const dcRef = useRef(null);
@@ -604,9 +599,6 @@ export default function RealTimeTest({
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
-  // Tiny UI state to avoid double-taps
-  const [replayingMid, setReplayingMid] = useState(null);
-
   // XP/STREAK
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -648,8 +640,6 @@ export default function RealTimeTest({
     "{language}",
     languageNameFor(targetLang)
   );
-  const tRepeat = ui?.ra_btn_repeat || (uiLang === "es" ? "Repetir" : "Repeat");
-
   // Goal-UI language routing
   const goalUiLang = (() => {
     const t = targetLangRef.current || targetLang;
@@ -1845,67 +1835,6 @@ Return ONLY JSON:
     recTailRef.current.set(rid, id);
   }
 
-  async function replayMessageAudio(mid, textFallback) {
-    if (replayingMid) return;
-    setReplayingMid(mid);
-    try {
-      await audioCtxRef.current?.resume?.();
-    } catch {}
-    try {
-      const row = await idbGetClip(mid);
-      if (row?.blob) {
-        const url = URL.createObjectURL(row.blob);
-        const a = playbackRef.current;
-        if (a) {
-          try {
-            a.pause();
-          } catch {}
-          a.src = url;
-          a.preload = "auto";
-          a.playsInline = true;
-          a.onended = () => URL.revokeObjectURL(url);
-          a.onpause = () => URL.revokeObjectURL(url);
-          try {
-            await a.play();
-            setReplayingMid(null);
-            return;
-          } catch (e) {
-            console.warn(
-              "Local clip play() failed, falling back:",
-              e?.message || e
-            );
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("IDB read failed, using fallback:", e?.message || e);
-    }
-    if (dcRef.current?.readyState === "open" && textFallback) {
-      try {
-        dcRef.current.send(
-          JSON.stringify({
-            type: "response.create",
-            response: {
-              modalities: ["audio"],
-              conversation: "none",
-              instructions: `Say exactly: "${textFallback.replace(
-                /"/g,
-                '\\"'
-              )}"`,
-              commit: false,
-              metadata: { kind: "replay", mid },
-            },
-          })
-        );
-        setReplayingMid(null);
-        return;
-      } catch (e) {
-        console.warn("Replay request failed:", e?.message || e);
-      }
-    }
-    setReplayingMid(null);
-  }
-
   /* ---------------------------
      Event handling
   --------------------------- */
@@ -2392,23 +2321,29 @@ Do not return the whole sentence as a single chunk.`;
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
+            position="relative"
+            overflow="hidden"
           >
-            <VStack align="flex-start" spacing={3} width="100%">
-              {/* Robot animation tucked in the corner to save space */}
-              <Box flexShrink={0} width="84px">
-                <RobotBuddyPro
-                  state={uiState}
-                  loudness={uiState === "listening" ? volume : 0}
-                  mood={mood}
-                  variant="abstract"
-                  maxW={84}
-                />
-              </Box>
+            <Box position="absolute" top={3} left={3} width="72px" opacity={0.95}>
+              <RobotBuddyPro
+                state={uiState}
+                loudness={uiState === "listening" ? volume : 0}
+                mood={mood}
+                variant="abstract"
+                maxW={72}
+              />
+            </Box>
 
-              {/* Goal content under the robot */}
+            <VStack
+              align="flex-start"
+              spacing={2}
+              width="100%"
+              pl={{ base: "78px", sm: "82px" }}
+              pt={{ base: 1, sm: 0 }}
+            >
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
-                  <HStack>
+                  <HStack spacing={2} align="center">
                     <Badge
                       colorScheme="yellow"
                       variant="subtle"
@@ -2434,8 +2369,7 @@ Do not return the whole sentence as a single chunk.`;
                   </Text>
                 ) : null}
 
-                {/* Level progress bar under goal UI */}
-                <Box mt={4}>
+                <Box mt={3}>
                   <HStack justifyContent="space-between" mb={1}>
                     <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
                       {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
@@ -2481,46 +2415,17 @@ Do not return the whole sentence as a single chunk.`;
               !secondaryText && !!m.textStream && showTranslations;
 
             if (!primaryText.trim()) return null;
-
-            const hasCached =
-              audioCacheIndexRef.current.has(m.id) || !!m.hasAudio;
-            const canReplay = hasCached || status === "connected";
-
             return (
               <RowLeft key={m.id}>
-                <Box position="relative">
-                  <AlignedBubble
-                    primaryLabel={primaryLabel}
-                    secondaryLabel={secondaryLabel}
-                    primaryText={primaryText}
-                    secondaryText={showTranslations ? secondaryText : ""}
-                    pairs={m.pairs || []}
-                    showSecondary={showTranslations}
-                    isTranslating={isTranslating}
-                  />
-                  <IconButton
-                    aria-label={tRepeat}
-                    title={tRepeat}
-                    icon={<PiArrowsClockwiseDuotone />}
-                    size="xs"
-                    variant="outline"
-                    top="6px"
-                    color="white"
-                    right="6px"
-                    opacity={0.9}
-                    isDisabled={!canReplay}
-                    isLoading={replayingMid === m.id}
-                    onClick={() =>
-                      replayMessageAudio(
-                        m.id,
-                        (m.textFinal || "").trim() ||
-                          (m.textStream || "").trim()
-                      )
-                    }
-                    height="36px"
-                    width="36px"
-                  />
-                </Box>
+                <AlignedBubble
+                  primaryLabel={primaryLabel}
+                  secondaryLabel={secondaryLabel}
+                  primaryText={primaryText}
+                  secondaryText={showTranslations ? secondaryText : ""}
+                  pairs={m.pairs || []}
+                  showSecondary={showTranslations}
+                  isTranslating={isTranslating}
+                />
               </RowLeft>
             );
           })}
@@ -2611,8 +2516,6 @@ Do not return the whole sentence as a single chunk.`;
 
         {/* remote live audio sink */}
         <audio ref={audioRef} />
-        {/* local playback for cached clips */}
-        <audio ref={playbackRef} />
       </Box>
     </>
   );
