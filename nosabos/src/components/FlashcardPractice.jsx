@@ -659,7 +659,6 @@ export default function FlashcardPractice({
                           borderColor: cefrColor.primary,
                           boxShadow: `0 0 0 1px ${cefrColor.primary}`,
                         }}
-                        autoFocus
                       />
 
                       {/* Submit Button */}
