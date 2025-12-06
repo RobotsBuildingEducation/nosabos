@@ -115,8 +115,7 @@ const toLangKey = (value) => {
   if (!raw) return null;
   if (["en", "english"].includes(raw)) return "en";
   if (["es", "spanish", "español"].includes(raw)) return "es";
-  if (["pt", "portuguese", "português", "portugues"].includes(raw))
-    return "pt";
+  if (["pt", "portuguese", "português", "portugues"].includes(raw)) return "pt";
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
@@ -928,7 +927,10 @@ function micErrorToMessage(err, uiLang) {
 /* ================================
    Component
 =================================== */
-export default function JobScript({ userLanguage = "en", lessonContent = null }) {
+export default function JobScript({
+  userLanguage = "en",
+  lessonContent = null,
+}) {
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
@@ -1514,7 +1516,9 @@ export default function JobScript({ userLanguage = "en", lessonContent = null })
     if (!npubLive) return;
 
     if (awardedXp > 0) {
-      await awardXp(npubLive, Math.round(awardedXp), targetLang).catch(() => {});
+      await awardXp(npubLive, Math.round(awardedXp), targetLang).catch(
+        () => {}
+      );
     }
     try {
       await saveStoryTurn(npubLive, {
