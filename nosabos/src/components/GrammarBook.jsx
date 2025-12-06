@@ -42,7 +42,6 @@ import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
-import { PasscodePage } from "./PasscodePage";
 import { FiArrowRight, FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -789,15 +788,6 @@ export default function GrammarBook({
   const recentCorrectRef = useRef([]);
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
 
   // random-by-default (no manual lock controls)
   const modeLocked = false;
@@ -1327,12 +1317,11 @@ export default function GrammarBook({
   // ✅ Wait until 'ready' so the very first prompt uses the user's target/support language.
   useEffect(() => {
     if (autoInitRef.current) return;
-    if (showPasscodeModal) return;
     if (!ready) return;
     autoInitRef.current = true;
     generateRandom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal]);
+  }, [ready]);
 
   /* ---------- STREAM Generate: Fill ---------- */
   async function generateFill() {
@@ -2689,15 +2678,6 @@ Return JSON ONLY:
     showTranslations &&
     sTranslation &&
     supportCode !== (targetLang === "en" ? "en" : targetLang);
-
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user?.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
 
   // Single copy button (left of question)
   const CopyAllBtn = ({ q, h, tr }) => {
