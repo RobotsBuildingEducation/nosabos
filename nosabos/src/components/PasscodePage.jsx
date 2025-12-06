@@ -1,20 +1,30 @@
 // components/PasscodePage.jsx
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { database } from "../firebaseResources/firebaseResources";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { Box, Button, Input, Text } from "@chakra-ui/react";
+import {
+  Box,
+  Button,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Text,
+} from "@chakra-ui/react";
 import { translations } from "../utils/translation"; // named export
 
 export const PasscodePage = ({
-  isOldAccount,
   userLanguage,
   setShowPasscodeModal,
+  isOpen,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState("");
   const [isValid, setIsValid] = useState(null);
-  const navigate = useNavigate();
 
   const t = translations[userLanguage] || translations.en;
   const pc = t;
@@ -100,84 +110,75 @@ export const PasscodePage = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (isLoading) {
-    return <Box>{t.generic_loading || "Loading..."}</Box>;
-  }
-
   return (
-    <Box width="100%" display="flex" justifyContent={"center"}>
-      <Box
-        // minHeight="90vh"
-        display="flex"
-        flexDirection={"column"}
-        alignItems={"center"}
-        justifyContent={"center"}
-        width="100%"
-        maxWidth="680px"
-        padding={4}
-        paddingBottom={12}
-      >
-        <br />
-        <Text maxWidth="600px">
-          <div style={{ textAlign: "left" }}>
-            <p>{pc.intro}</p>
+    <Modal isOpen={isOpen} onClose={() => setShowPasscodeModal(false)} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>{pc.benefitsTitle}</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          {isLoading ? (
+            <Text>{t.generic_loading || "Loading..."}</Text>
+          ) : (
+            <Box display="flex" flexDirection="column" gap={4}>
+              <Text>{pc.intro}</Text>
+              <Box as="ul" pl={5} display="flex" flexDirection="column" gap={2}>
+                {pc.benefits.map((line, i) => (
+                  <Box as="li" key={line ?? i}>
+                    <Text>{line}</Text>
+                  </Box>
+                ))}
+              </Box>
 
-            <br />
-            <b>{pc.benefitsTitle}</b>
-            <ul>
-              {pc.benefits.map((line, i) => (
-                <li key={i} style={{ marginBottom: 4, marginTop: 4 }}>
-                  {line}
-                </li>
-              ))}
-            </ul>
+              <Box display="flex" flexDirection="column" gap={3}>
+                <a
+                  style={{ textDecoration: "underline" }}
+                  href="https://patreon.com/notesandotherstuff"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {pc.goToPatreon}
+                </a>
+                <a
+                  style={{ textDecoration: "underline" }}
+                  href="https://www.patreon.com/posts/start-learning-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {pc.passcodeLink}
+                </a>
+              </Box>
 
-            <br />
-            <a
-              style={{ textDecoration: "underline" }}
-              href="https://patreon.com/notesandotherstuff"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {pc.goToPatreon}
-            </a>
-
-            <br />
-            <br />
-            <a
-              style={{ textDecoration: "underline" }}
-              href="https://www.patreon.com/posts/start-learning-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link"
-              target="_blank"
-              rel="noreferrer"
-            >
-              {pc.passcodeLink}
-            </a>
-
-            <br />
-            <br />
-            <Text fontSize={"smaller"}>{pc.label}</Text>
-            <Input
-              color="black"
-              backgroundColor="white"
-              style={{ boxShadow: "0.5px 0.5px 1px 0px rgba(0,0,0,0.75)" }}
-              value={input}
-              onChange={(e) => setInput(e.target.value.toUpperCase())}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") checkPasscode();
-              }}
-            />
-            {isValid === false && (
-              <Text color="red.300" mt={2} fontSize="sm">
-                {pc.invalid}
-              </Text>
-            )}
-
-            <Button mt={4} onClick={checkPasscode} colorScheme="teal">
-              OK
-            </Button>
-          </div>
-        </Text>
-      </Box>
-    </Box>
+              <Box display="flex" flexDirection="column" gap={2}>
+                <Text fontSize="smaller">{pc.label}</Text>
+                <Input
+                  color="black"
+                  backgroundColor="white"
+                  style={{ boxShadow: "0.5px 0.5px 1px 0px rgba(0,0,0,0.75)" }}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") checkPasscode();
+                  }}
+                />
+                {isValid === false && (
+                  <Text color="red.300" mt={2} fontSize="sm">
+                    {pc.invalid}
+                  </Text>
+                )}
+              </Box>
+            </Box>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <Button onClick={() => setShowPasscodeModal(false)} mr={2} variant="ghost">
+            Close
+          </Button>
+          <Button onClick={checkPasscode} colorScheme="teal" isLoading={isLoading}>
+            OK
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
   );
 };

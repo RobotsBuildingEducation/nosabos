@@ -43,6 +43,7 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
+import { usePasscodeModal } from "../hooks/usePasscodeModal";
 import { FiArrowRight, FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -789,15 +790,8 @@ export default function GrammarBook({
   const recentCorrectRef = useRef([]);
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
+  const { showPasscodeModal, setShowPasscodeModal } =
+    usePasscodeModal(levelNumber);
 
   // random-by-default (no manual lock controls)
   const modeLocked = false;
@@ -2690,14 +2684,13 @@ Return JSON ONLY:
     sTranslation &&
     supportCode !== (targetLang === "en" ? "en" : targetLang);
 
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user?.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
+  const passcodeModal = showPasscodeModal ? (
+    <PasscodePage
+      isOpen={showPasscodeModal}
+      userLanguage={user?.appLanguage}
+      setShowPasscodeModal={setShowPasscodeModal}
+    />
+  ) : null;
 
   // Single copy button (left of question)
   const CopyAllBtn = ({ q, h, tr }) => {
@@ -3095,7 +3088,9 @@ Return JSON ONLY:
   };
 
   return (
-    <Box p={4}>
+    <>
+      {passcodeModal}
+      <Box p={4}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
         {/* Shared progress header */}
         <Box display={"flex"} justifyContent={"center"}>
@@ -4440,20 +4435,21 @@ Return JSON ONLY:
               </Button>
             </Stack>
 
-            <FeedbackRail
-              ok={lastOk}
-              xp={recentXp}
-              showNext={
-                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-                nextAction
-              }
-              onNext={handleNext}
-              nextLabel={nextQuestionLabel}
-            />
-          </>
-        ) : null}
-      </VStack>
+          <FeedbackRail
+            ok={lastOk}
+            xp={recentXp}
+            showNext={
+              (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+              nextAction
+            }
+            onNext={handleNext}
+            nextLabel={nextQuestionLabel}
+          />
+        </>
+      ) : null}
+    </VStack>
     </Box>
+    </>
   );
 }
 

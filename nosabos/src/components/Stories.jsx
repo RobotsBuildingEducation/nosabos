@@ -46,6 +46,7 @@ import useUserStore from "../hooks/useUserStore";
 import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
+import { usePasscodeModal } from "../hooks/usePasscodeModal";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { getRandomVoice, TTS_LANG_TAG, TTS_ENDPOINT } from "../utils/tts";
@@ -330,16 +331,8 @@ export default function StoryMode({
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
   const supportDisplayName = DISPLAY_LANG_NAME(supportLang, uiLang);
 
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
+  const { showPasscodeModal, setShowPasscodeModal } =
+    usePasscodeModal(levelNumber);
 
   // State
   const [storyData, setStoryData] = useState(null);
@@ -1621,67 +1614,73 @@ export default function StoryMode({
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
+  const passcodeModal = showPasscodeModal ? (
+    <PasscodePage
+      isOpen={showPasscodeModal}
+      userLanguage={user.appLanguage}
+      setShowPasscodeModal={setShowPasscodeModal}
+    />
+  ) : null;
 
   /* ----------------------------- Loading / Empty ----------------------------- */
   if (isLoading) {
     return (
-      <Box
-        minH="100vh"
-        // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
-      >
-        <Center h="100vh">
-          <VStack spacing={6}>
-            <Text color="white" fontSize="xl" fontWeight="600">
-              {uiText.generatingTitle}
-            </Text>
-            <Text color="#94a3b8" fontSize="sm">
-              {uiText.generatingSub}
-            </Text>
-            <Spinner color="teal.300" />
-          </VStack>
-        </Center>
-      </Box>
+      <>
+        {passcodeModal}
+        <Box
+          minH="100vh"
+          // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+        >
+          <Center h="100vh">
+            <VStack spacing={6}>
+              <Text color="white" fontSize="xl" fontWeight="600">
+                {uiText.generatingTitle}
+              </Text>
+              <Text color="#94a3b8" fontSize="sm">
+                {uiText.generatingSub}
+              </Text>
+              <Spinner color="teal.300" />
+            </VStack>
+          </Center>
+        </Box>
+      </>
     );
   }
 
   if (!storyData) {
     return (
-      <Box
-        minH="100vh"
-        // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
-        borderRadius="24px"
-      >
-        <Center h="100vh">
-          <VStack spacing={6}>
-            <Text color="white" fontSize="xl" fontWeight="600">
-              {uiText.generatingTitle}
-            </Text>
-            <Text color="#94a3b8" fontSize="sm">
-              {uiText.generatingSub}
-            </Text>
-            <Spinner color="teal.300" />
-          </VStack>
-        </Center>
-      </Box>
+      <>
+        {passcodeModal}
+        <Box
+          minH="100vh"
+          // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+          borderRadius="24px"
+        >
+          <Center h="100vh">
+            <VStack spacing={6}>
+              <Text color="white" fontSize="xl" fontWeight="600">
+                {uiText.generatingTitle}
+              </Text>
+              <Text color="#94a3b8" fontSize="sm">
+                {uiText.generatingSub}
+              </Text>
+              <Spinner color="teal.300" />
+            </VStack>
+          </Center>
+        </Box>
+      </>
     );
   }
 
   /* ----------------------------- Main UI ----------------------------- */
   return (
-    <Box
-      minH="100vh"
+    <>
+      {passcodeModal}
+      <Box
+        minH="100vh"
 
-      // bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
-    >
+        // bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
+      >
       {/* Header */}
       <motion.div
         initial={prefersReducedMotion ? {} : { y: -100, opacity: 0 }}
@@ -2133,5 +2132,6 @@ export default function StoryMode({
         )}
       </Box>
     </Box>
+    </>
   );
 }

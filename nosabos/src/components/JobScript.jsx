@@ -38,6 +38,7 @@ import useUserStore from "../hooks/useUserStore";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
+import { usePasscodeModal } from "../hooks/usePasscodeModal";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { fetchTTSBlob } from "../utils/tts";
@@ -992,15 +993,8 @@ export default function JobScript({
   const [isRecording, setIsRecording] = useState(false);
 
   // Gate
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
+  const { showPasscodeModal, setShowPasscodeModal } =
+    usePasscodeModal(levelNumber);
 
   const targetLang = normalizeLangCode(practiceTarget);
   const supportLang = normalizeLangCode(practiceSupport);
@@ -1892,22 +1886,22 @@ export default function JobScript({
         storyData.sentences.length) *
       100
     : 0;
-
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user?.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
+  const passcodeModal = showPasscodeModal ? (
+    <PasscodePage
+      isOpen={showPasscodeModal}
+      userLanguage={user?.appLanguage}
+      setShowPasscodeModal={setShowPasscodeModal}
+    />
+  ) : null;
 
   /* ----------------------------- UI ----------------------------- */
   return (
-    <Box
-      minH="100vh"
-      // bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
-    >
+    <>
+      {passcodeModal}
+      <Box
+        minH="100vh"
+        // bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
+      >
       {/* Header */}
       <motion.div
         initial={prefersReducedMotion ? {} : { y: -100, opacity: 0 }}
@@ -2278,5 +2272,6 @@ export default function JobScript({
         </Box>
       )}
     </Box>
+    </>
   );
 }

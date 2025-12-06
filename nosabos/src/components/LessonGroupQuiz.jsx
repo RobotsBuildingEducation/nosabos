@@ -38,6 +38,7 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
+import { usePasscodeModal } from "../hooks/usePasscodeModal";
 import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -154,6 +155,9 @@ export default function LessonGroupQuiz({
   const [supportLang, setSupportLang] = useState("auto");
   const [showTranslations, setShowTranslations] = useState(true);
   const [xp, setXp] = useState(0);
+  const levelNumber = Math.floor(xp / 100) + 1;
+  const { showPasscodeModal, setShowPasscodeModal } =
+    usePasscodeModal(levelNumber);
 
   // Subscribe to user progress
   useEffect(() => {
@@ -1137,64 +1141,72 @@ YES or NO
   /* ---------------------------
      RENDER
   --------------------------- */
-  if (!npub) {
-    return <PasscodePage />;
-  }
+  const shouldShowPasscodeModal = showPasscodeModal || !npub;
+  const passcodeModal = shouldShowPasscodeModal ? (
+    <PasscodePage
+      isOpen={shouldShowPasscodeModal}
+      userLanguage={userLanguage}
+      setShowPasscodeModal={setShowPasscodeModal}
+    />
+  ) : null;
 
   // Results Modal
   if (showResults) {
     const passed = correctAnswers >= PASS_SCORE;
     return (
-      <Modal isOpen={true} onClose={handleComplete} size="lg">
-        <ModalOverlay />
-        <ModalContent bg="#1a1e2e" color="white">
-          <ModalHeader textAlign="center">
-            {userLanguage === "es"
-              ? passed
-                ? "¡Examen Aprobado! 🎉"
-                : "Examen Fallido 😔"
-              : passed
-              ? "Quiz Passed! 🎉"
-              : "Quiz Failed 😔"}
-          </ModalHeader>
-          <ModalBody>
-            <VStack spacing={4}>
-              <Text fontSize="2xl">
-                {userLanguage === "es" ? "Puntuación" : "Score"}:{" "}
-                {correctAnswers}/{TOTAL_QUESTIONS}
-              </Text>
-              <Progress
-                value={(correctAnswers / TOTAL_QUESTIONS) * 100}
-                colorScheme={passed ? "green" : "red"}
-                w="full"
-                size="lg"
-                borderRadius="full"
-              />
-              <Text textAlign="center">
-                {passed
-                  ? userLanguage === "es"
-                    ? `¡Felicitaciones! Aprobaste con ${correctAnswers} respuestas correctas. Ganaste ${xpReward} XP!`
-                    : `Congratulations! You passed with ${correctAnswers} correct answers. You earned ${xpReward} XP!`
-                  : userLanguage === "es"
-                  ? `Necesitas ${PASS_SCORE} respuestas correctas para aprobar. Obtuviste ${correctAnswers}. ¡Inténtalo de nuevo!`
-                  : `You need ${PASS_SCORE} correct answers to pass. You got ${correctAnswers}. Try again!`}
-              </Text>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <HStack spacing={4} w="full" justify="center">
-              {!passed && (
-                <Button colorScheme="teal" onClick={handleRetry}>
-                  {userLanguage === "es" ? "Reintentar" : "Retry Quiz"}
+      <>
+        {passcodeModal}
+        <Modal isOpen={true} onClose={handleComplete} size="lg">
+          <ModalOverlay />
+          <ModalContent bg="#1a1e2e" color="white">
+            <ModalHeader textAlign="center">
+              {userLanguage === "es"
+                ? passed
+                  ? "¡Examen Aprobado! 🎉"
+                  : "Examen Fallido 😔"
+                : passed
+                ? "Quiz Passed! 🎉"
+                : "Quiz Failed 😔"}
+            </ModalHeader>
+            <ModalBody>
+              <VStack spacing={4}>
+                <Text fontSize="2xl">
+                  {userLanguage === "es" ? "Puntuación" : "Score"}:{" "}
+                  {correctAnswers}/{TOTAL_QUESTIONS}
+                </Text>
+                <Progress
+                  value={(correctAnswers / TOTAL_QUESTIONS) * 100}
+                  colorScheme={passed ? "green" : "red"}
+                  w="full"
+                  size="lg"
+                  borderRadius="full"
+                />
+                <Text textAlign="center">
+                  {passed
+                    ? userLanguage === "es"
+                      ? `¡Felicitaciones! Aprobaste con ${correctAnswers} respuestas correctas. Ganaste ${xpReward} XP!`
+                      : `Congratulations! You passed with ${correctAnswers} correct answers. You earned ${xpReward} XP!`
+                    : userLanguage === "es"
+                    ? `Necesitas ${PASS_SCORE} respuestas correctas para aprobar. Obtuviste ${correctAnswers}. ¡Inténtalo de nuevo!`
+                    : `You need ${PASS_SCORE} correct answers to pass. You got ${correctAnswers}. Try again!`}
+                </Text>
+              </VStack>
+            </ModalBody>
+            <ModalFooter>
+              <HStack spacing={4} w="full" justify="center">
+                {!passed && (
+                  <Button colorScheme="teal" onClick={handleRetry}>
+                    {userLanguage === "es" ? "Reintentar" : "Retry Quiz"}
+                  </Button>
+                )}
+                <Button onClick={handleComplete}>
+                  {userLanguage === "es" ? "Continuar" : "Continue"}
                 </Button>
-              )}
-              <Button onClick={handleComplete}>
-                {userLanguage === "es" ? "Continuar" : "Continue"}
-              </Button>
-            </HStack>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+              </HStack>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+      </>
     );
   }
 
@@ -1203,11 +1215,13 @@ YES or NO
   const isGrading = loadingGFill || loadingGMC || loadingGMA || loadingMJ;
 
   return (
-    <Box
-      minH="100vh"
-      bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
-      py={8}
-    >
+    <>
+      {passcodeModal}
+      <Box
+        minH="100vh"
+        bg="linear-gradient(135deg, #0f0f23 0%, #1a1e2e 50%, #16213e 100%)"
+        py={8}
+      >
       <VStack spacing={6} maxW="800px" mx="auto" px={4}>
         {/* Progress Header */}
         <Box w="full">
@@ -1502,6 +1516,7 @@ YES or NO
           )}
         </Box>
       </VStack>
-    </Box>
+      </Box>
+    </>
   );
 }

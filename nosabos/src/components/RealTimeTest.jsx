@@ -33,6 +33,7 @@ import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
+import { usePasscodeModal } from "../hooks/usePasscodeModal";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -597,8 +598,6 @@ export default function RealTimeTest({
     }
   }, [currentGoal]);
 
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
   // XP/STREAK
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -660,15 +659,8 @@ export default function RealTimeTest({
     gtr?.ra_goal_criteria || (goalUiLang === "es" ? "Éxito:" : "Success:");
 
   const xpLevelNumber = Math.floor(xp / 100) + 1;
-
-  useEffect(() => {
-    if (
-      xpLevelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
+  const { showPasscodeModal, setShowPasscodeModal } =
+    usePasscodeModal(xpLevelNumber);
 
   useEffect(() => () => stop(), []);
 
@@ -2270,16 +2262,16 @@ Do not return the whole sentence as a single chunk.`;
     return Array.from(map.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
   }, [messages, history]);
 
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
+  const passcodeModal = showPasscodeModal ? (
+    <PasscodePage
+      isOpen={showPasscodeModal}
+      userLanguage={user.appLanguage}
+      setShowPasscodeModal={setShowPasscodeModal}
+    />
+  ) : null;
   return (
     <>
+      {passcodeModal}
       <Box
         minH="100vh"
         // bg="gray.900"

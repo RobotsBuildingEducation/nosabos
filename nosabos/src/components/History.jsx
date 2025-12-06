@@ -32,6 +32,7 @@ import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
+import { usePasscodeModal } from "../hooks/usePasscodeModal";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
@@ -706,17 +707,8 @@ export default function History({
 
   const targetDisplay = localizedLangName(targetLang);
   const supportDisplay = localizedLangName(supportLang);
-
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp, levelNumber]);
+  const { showPasscodeModal, setShowPasscodeModal } =
+    usePasscodeModal(levelNumber);
 
   // List
   const [lectures, setLectures] = useState([]);
@@ -1300,22 +1292,21 @@ export default function History({
     }
   }
 
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
-
   return (
-    <Box p={[3, 4, 6]}>
-      <VStack spacing={5} align="stretch" maxW="1100px" mx="auto">
-        {/* Header: Level / XP */}
-        <Box justifyContent={"center"} display="flex">
-          <Box width="50%">
-            <HStack justify="space-between" mb={2}>
+    <>
+      {showPasscodeModal && (
+        <PasscodePage
+          isOpen={showPasscodeModal}
+          userLanguage={user.appLanguage}
+          setShowPasscodeModal={setShowPasscodeModal}
+        />
+      )}
+      <Box p={[3, 4, 6]}>
+        <VStack spacing={5} align="stretch" maxW="1100px" mx="auto">
+          {/* Header: Level / XP */}
+          <Box justifyContent={"center"} display="flex">
+            <Box width="50%">
+              <HStack justify="space-between" mb={2}>
               <Badge variant="subtle" px={2} py={1} rounded="md">
                 {t("reading_badge_level", { level: levelNumber })}
               </Badge>
@@ -1625,7 +1616,8 @@ export default function History({
             )}
           </Box>
         </HStack>
-      </VStack>
-    </Box>
+        </VStack>
+      </Box>
+    </>
   );
 }

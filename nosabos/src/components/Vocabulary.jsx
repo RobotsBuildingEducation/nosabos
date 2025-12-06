@@ -48,6 +48,7 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { PasscodePage } from "./PasscodePage";
+import { usePasscodeModal } from "../hooks/usePasscodeModal";
 import { FiArrowRight, FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -871,16 +872,8 @@ export default function Vocabulary({
   // Voice will be randomly selected for each TTS call via getRandomVoice()
 
   const recentCorrectRef = useRef([]);
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
+  const { showPasscodeModal, setShowPasscodeModal } =
+    usePasscodeModal(levelNumber);
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
   // ✅ always randomize (no manual lock controls in the UI)
@@ -2958,14 +2951,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, showPasscodeModal]);
 
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user?.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
+  const passcodeModal = showPasscodeModal ? (
+    <PasscodePage
+      isOpen={showPasscodeModal}
+      userLanguage={user?.appLanguage}
+      setShowPasscodeModal={setShowPasscodeModal}
+    />
+  ) : null;
 
   // Single copy button (left of question)
   const CopyAllBtn = ({ q, h, tr }) => {
@@ -3369,7 +3361,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       : picksMA.length > 0;
 
   return (
-    <Box p={4}>
+    <>
+      {passcodeModal}
+      <Box p={4}>
       <VStack spacing={4} align="stretch" maxW="720px" mx="auto">
         {/* Shared progress header */}
         <Box display={"flex"} justifyContent={"center"}>
@@ -4947,5 +4941,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         </ModalContent>
       </Modal>
     </Box>
+    </>
   );
 }
