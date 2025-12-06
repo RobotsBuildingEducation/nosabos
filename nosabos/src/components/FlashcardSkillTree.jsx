@@ -16,7 +16,7 @@ import {
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { translations } from "../utils/translation";
-import { PasscodePage } from "./PasscodePage";
+import { usePasscodeGate } from "../hooks/usePasscodeGate";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -213,13 +213,6 @@ export default function FlashcardSkillTree({
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  const hasValidPasscode = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    const stored = localStorage.getItem("passcode");
-    return stored === import.meta.env.VITE_PATREON_PASSCODE;
-  }, []);
 
   const levelNumber = Math.floor((userProgress.totalXp || 0) / 100) + 1;
 
@@ -245,11 +238,10 @@ export default function FlashcardSkillTree({
     setLocalCompletedCards(new Set());
   }, [targetLang]);
 
-  useEffect(() => {
-    if (levelNumber > 2 && !hasValidPasscode) {
-      setShowPasscodeModal(true);
-    }
-  }, [levelNumber, hasValidPasscode]);
+  const { showPasscodeModal, gateView } = usePasscodeGate(
+    levelNumber,
+    getAppLanguage()
+  );
 
   // Load relevant flashcards based on user progress (lazy loading)
   useEffect(() => {
@@ -452,12 +444,7 @@ export default function FlashcardSkillTree({
   }, []);
 
   if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={getAppLanguage()}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
+    return gateView;
   }
 
   return (

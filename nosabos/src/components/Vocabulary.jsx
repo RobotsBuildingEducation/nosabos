@@ -47,7 +47,6 @@ import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
-import { PasscodePage } from "./PasscodePage";
 import { FiArrowRight, FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -57,6 +56,7 @@ import { speechReasonTips } from "../utils/speechEvaluation";
 import { TTS_ENDPOINT, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
+import { usePasscodeGate } from "../hooks/usePasscodeGate";
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -871,16 +871,10 @@ export default function Vocabulary({
   // Voice will be randomly selected for each TTS call via getRandomVoice()
 
   const recentCorrectRef = useRef([]);
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp, levelNumber]);
+  const { showPasscodeModal, gateView } = usePasscodeGate(
+    levelNumber,
+    user?.appLanguage
+  );
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
   // ✅ always randomize (no manual lock controls in the UI)
@@ -2959,12 +2953,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   }, [ready, showPasscodeModal]);
 
   if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user?.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
+    return gateView;
   }
 
   // Single copy button (left of question)

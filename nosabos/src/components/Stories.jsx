@@ -45,7 +45,6 @@ import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
-import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { getRandomVoice, TTS_LANG_TAG, TTS_ENDPOINT } from "../utils/tts";
@@ -57,6 +56,7 @@ import {
   speechReasonTips,
 } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
+import { usePasscodeGate } from "../hooks/usePasscodeGate";
 
 /* ================================
    ENV / API
@@ -330,16 +330,10 @@ export default function StoryMode({
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
   const supportDisplayName = DISPLAY_LANG_NAME(supportLang, uiLang);
 
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp, levelNumber]);
+  const { showPasscodeModal, gateView } = usePasscodeGate(
+    levelNumber,
+    user?.appLanguage
+  );
 
   // State
   const [storyData, setStoryData] = useState(null);
@@ -1623,12 +1617,7 @@ export default function StoryMode({
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
+    return gateView;
   }
 
   /* ----------------------------- Loading / Empty ----------------------------- */

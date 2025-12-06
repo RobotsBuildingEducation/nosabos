@@ -42,7 +42,6 @@ import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
-import { PasscodePage } from "./PasscodePage";
 import { FiArrowRight, FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -52,6 +51,7 @@ import { speechReasonTips } from "../utils/speechEvaluation";
 import { TTS_ENDPOINT, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
+import { usePasscodeGate } from "../hooks/usePasscodeGate";
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -789,15 +789,10 @@ export default function GrammarBook({
   const recentCorrectRef = useRef([]);
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp, levelNumber]);
+  const { showPasscodeModal, gateView } = usePasscodeGate(
+    levelNumber,
+    user?.appLanguage
+  );
 
   // random-by-default (no manual lock controls)
   const modeLocked = false;
@@ -2691,12 +2686,7 @@ Return JSON ONLY:
     supportCode !== (targetLang === "en" ? "en" : targetLang);
 
   if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user?.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
+    return gateView;
   }
 
   // Single copy button (left of question)
