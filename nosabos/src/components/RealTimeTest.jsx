@@ -1713,7 +1713,6 @@ Return ONLY JSON:
               modalities: ["audio"],
               conversation: "none",
               instructions: `Say exactly: "${probeText}"`,
-              cancel_previous: false,
               commit: false,
               metadata: { kind: "voice_probe" },
             },
@@ -1893,7 +1892,6 @@ Return ONLY JSON:
                 /"/g,
                 '\\"'
               )}"`,
-              cancel_previous: false,
               commit: false,
               metadata: { kind: "replay", mid },
             },
@@ -2395,20 +2393,20 @@ Do not return the whole sentence as a single chunk.`;
             width="100%"
             maxWidth="400px"
           >
-            <HStack align="center" spacing={3}>
-              {/* Robot animation - prominent on the left */}
-              <Box flexShrink={0} width="150px">
+            <VStack align="flex-start" spacing={3} width="100%">
+              {/* Robot animation tucked in the corner to save space */}
+              <Box flexShrink={0} width="84px">
                 <RobotBuddyPro
                   state={uiState}
                   loudness={uiState === "listening" ? volume : 0}
                   mood={mood}
                   variant="abstract"
-                  maxW={150}
+                  maxW={84}
                 />
               </Box>
 
-              {/* Goal content on the right */}
-              <Box flex={1}>
+              {/* Goal content under the robot */}
+              <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack>
                     <Badge
@@ -2449,7 +2447,7 @@ Do not return the whole sentence as a single chunk.`;
                   <WaveBar value={progressPct} />
                 </Box>
               </Box>
-            </HStack>
+            </VStack>
           </Box>
         </Box>
 

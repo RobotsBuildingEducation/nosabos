@@ -2780,8 +2780,8 @@ Return JSON ONLY:
               variant="solid"
               onClick={onNext}
               shadow="md"
-              px={{ base: 6, md: 7 }}
-              py={{ base: 3, md: 3 }}
+              px={{ base: 7, md: 12 }}
+              py={{ base: 3, md: 4 }}
               alignSelf="flex-end"
             >
               {nextLabel}
@@ -3276,8 +3276,8 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQ || loadingG}
-                px={{ base: 5, md: 6 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 6, md: 10 }}
+                py={{ base: 3, md: 4 }}
               >
                 {skipLabel}
               </Button>
@@ -3291,8 +3291,8 @@ Return JSON ONLY:
                   !question ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                px={{ base: 6, md: 7 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
               >
                 {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -3574,8 +3574,8 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMCQ || loadingMCG}
-                px={{ base: 5, md: 6 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 6, md: 10 }}
+                py={{ base: 3, md: 4 }}
               >
                 {skipLabel}
               </Button>
@@ -3589,8 +3589,8 @@ Return JSON ONLY:
                   !mcChoices.length ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                px={{ base: 6, md: 7 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
               >
                 {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -3893,8 +3893,8 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMAQ || loadingMAG}
-                px={{ base: 5, md: 6 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 6, md: 10 }}
+                py={{ base: 3, md: 4 }}
               >
                 {skipLabel}
               </Button>
@@ -3908,8 +3908,8 @@ Return JSON ONLY:
                   !maReady ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                px={{ base: 6, md: 7 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
               >
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -4077,15 +4077,15 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingSpeakQ || isSpeakRecording}
-                px={{ base: 5, md: 6 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 6, md: 10 }}
+                py={{ base: 3, md: 4 }}
               >
                 {skipLabel}
               </Button>
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
-                px={{ base: 6, md: 7 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
@@ -4418,7 +4418,7 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
-                px={{ base: 6, md: 9 }}
+                px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
               >
                 {skipLabel}
@@ -4433,7 +4433,7 @@ Return JSON ONLY:
                   !mLeft.length ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                px={{ base: 7, md: 11 }}
+                px={{ base: 8, md: 14 }}
                 py={{ base: 3, md: 4 }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
