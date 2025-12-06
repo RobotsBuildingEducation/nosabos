@@ -954,8 +954,13 @@ export default function RealTimeTest({
         } catch {}
         if (savedPrefs) primeRefsFromPrefs(savedPrefs);
 
-        // Use random voice for variety in each session
-        const voiceName = getRandomVoice();
+        // Use saved voice if available, otherwise pick a random one for the session
+        const voiceName =
+          voiceRef.current && voiceRef.current !== "alloy"
+            ? voiceRef.current
+            : getRandomVoice();
+        voiceRef.current = voiceName;
+        setVoice(voiceName);
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
         const vadMs = pauseMsRef.current || 2000;
         const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
@@ -1624,8 +1629,7 @@ Return ONLY JSON:
     }
     guardrailItemIdsRef.current = [];
 
-    // Use random voice for variety
-    const voiceName = getRandomVoice();
+    const voiceName = voiceRef.current || "alloy";
     const instructions = buildLanguageInstructionsFromRefs();
     const vadMs = pauseMsRef.current || 2000;
 
@@ -2538,7 +2542,7 @@ Do not return the whole sentence as a single chunk.`;
               onClick={skipGoal}
               size="md"
               height="48px"
-              px="6"
+              px={{ base: 6, md: 8 }}
               rounded="full"
               colorScheme="orange"
               variant="outline"
@@ -2552,7 +2556,7 @@ Do not return the whole sentence as a single chunk.`;
               onClick={status === "connected" ? stop : start}
               size="lg"
               height="64px"
-              px="8"
+              px={{ base: 8, md: 12 }}
               rounded="full"
               colorScheme={status === "connected" ? "red" : "cyan"}
               color="white"
@@ -2577,7 +2581,7 @@ Do not return the whole sentence as a single chunk.`;
               onClick={handleNextGoal}
               size="md"
               height="48px"
-              px="6"
+              px={{ base: 6, md: 8 }}
               rounded="full"
               color="white"
               textShadow="0px 0px 20px black"

@@ -4418,8 +4418,8 @@ Return JSON ONLY:
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
-                px={{ base: 5, md: 6 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 6, md: 9 }}
+                py={{ base: 3, md: 4 }}
               >
                 {skipLabel}
               </Button>
@@ -4433,8 +4433,8 @@ Return JSON ONLY:
                   !mLeft.length ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                px={{ base: 6, md: 7 }}
-                py={{ base: 3, md: 3 }}
+                px={{ base: 7, md: 11 }}
+                py={{ base: 3, md: 4 }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
