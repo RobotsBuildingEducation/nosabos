@@ -875,12 +875,12 @@ export default function Vocabulary({
 
   useEffect(() => {
     if (
-      levelNumber > 3 &&
+      levelNumber > 2 &&
       localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
     ) {
       setShowPasscodeModal(true);
     }
-  }, [xp]);
+  }, [xp, levelNumber]);
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
   // ✅ always randomize (no manual lock controls in the UI)

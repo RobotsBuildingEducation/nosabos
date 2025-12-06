@@ -792,12 +792,12 @@ export default function GrammarBook({
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   useEffect(() => {
     if (
-      levelNumber > 3 &&
+      levelNumber > 2 &&
       localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
     ) {
       setShowPasscodeModal(true);
     }
-  }, [xp]);
+  }, [xp, levelNumber]);
 
   // random-by-default (no manual lock controls)
   const modeLocked = false;

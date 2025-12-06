@@ -711,7 +711,7 @@ export default function History({
 
   useEffect(() => {
     if (
-      levelNumber > 3 &&
+      levelNumber > 2 &&
       localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
     ) {
       setShowPasscodeModal(true);

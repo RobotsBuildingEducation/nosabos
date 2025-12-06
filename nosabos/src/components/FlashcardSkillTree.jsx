@@ -246,7 +246,7 @@ export default function FlashcardSkillTree({
   }, [targetLang]);
 
   useEffect(() => {
-    if (levelNumber > 3 && !hasValidPasscode) {
+    if (levelNumber > 2 && !hasValidPasscode) {
       setShowPasscodeModal(true);
     }
   }, [levelNumber, hasValidPasscode]);

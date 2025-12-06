@@ -995,12 +995,12 @@ export default function JobScript({
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
   useEffect(() => {
     if (
-      levelNumber > 3 &&
+      levelNumber > 2 &&
       localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
     ) {
       setShowPasscodeModal(true);
     }
-  }, [xp]);
+  }, [xp, levelNumber]);
 
   const targetLang = normalizeLangCode(practiceTarget);
   const supportLang = normalizeLangCode(practiceSupport);
