@@ -25,11 +25,11 @@ export const PasscodePage = ({
 
   const correctPasscode = import.meta.env.VITE_PATREON_PASSCODE;
 
-  const checkPasscode = async () => {
+  const checkPasscode = async (value = input) => {
     const npub = localStorage.getItem("local_npub");
     const isBanned = bannedUserList.includes(npub);
 
-    if (input === correctPasscode && isBanned) {
+    if (value === correctPasscode && isBanned) {
       // use your alert/toast system here; keeping your showAlert signature
       if (typeof window.showAlert === "function") {
         window.showAlert("error", `${pc.bannedTitle}: ${pc.bannedBody}`);
@@ -40,11 +40,18 @@ export const PasscodePage = ({
       return;
     }
 
-    if (input === correctPasscode) {
-      localStorage.setItem("passcode", input);
-      localStorage.setItem("features_passcode", input);
+    if (value === correctPasscode) {
+      localStorage.setItem("passcode", value);
+      localStorage.setItem("features_passcode", value);
 
       const userId = npub; // if different, plug your real ID here
+
+      if (!userId) {
+        setShowPasscodeModal(false);
+        setIsValid(true);
+        return;
+      }
+
       const userDocRef = doc(database, "users", userId);
       const userSnapshot = await getDoc(userDocRef);
 
@@ -61,17 +68,25 @@ export const PasscodePage = ({
   };
 
   useEffect(() => {
-    localStorage.setItem("passcode", input);
-    if (localStorage.getItem("passcode") === correctPasscode) {
-      checkPasscode(); // Auto-check if passcode is already stored
+    const storedPasscode = localStorage.getItem("passcode") || "";
+
+    if (storedPasscode) {
+      setInput(storedPasscode);
+      if (storedPasscode === correctPasscode) {
+        checkPasscode(storedPasscode); // Auto-check if passcode is already stored
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [input]);
+  }, []);
 
   useEffect(() => {
     setIsLoading(true);
     const checkUser = async () => {
       const userId = localStorage.getItem("local_npub");
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
       const userDocRef = doc(database, "users", userId);
       const userSnapshot = await getDoc(userDocRef);
 
