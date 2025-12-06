@@ -392,6 +392,8 @@ export default function HelpChatFab({
   useEffect(() => {
     if (isOpen) {
       scrollToBottom();
+      const timer = setTimeout(scrollToBottom, 150);
+      return () => clearTimeout(timer);
     }
   }, [isOpen, scrollToBottom]);
 
