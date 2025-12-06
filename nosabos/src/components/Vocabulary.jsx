@@ -47,7 +47,6 @@ import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
-import { PasscodePage } from "./PasscodePage";
 import { FiArrowRight, FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -871,16 +870,6 @@ export default function Vocabulary({
   // Voice will be randomly selected for each TTS call via getRandomVoice()
 
   const recentCorrectRef = useRef([]);
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
 
   const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
   // ✅ always randomize (no manual lock controls in the UI)
@@ -2951,21 +2940,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   const autoInitRef = useRef(false);
   useEffect(() => {
     if (autoInitRef.current) return;
-    if (showPasscodeModal) return;
     if (!ready) return; // ✅ wait for user progress to load
     autoInitRef.current = true;
     generateRandom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ready, showPasscodeModal]);
-
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user?.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
+  }, [ready]);
 
   // Single copy button (left of question)
   const CopyAllBtn = ({ q, h, tr }) => {

@@ -31,7 +31,6 @@ import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
-import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
@@ -707,17 +706,6 @@ export default function History({
   const targetDisplay = localizedLangName(targetLang);
   const supportDisplay = localizedLangName(supportLang);
 
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp, levelNumber]);
-
   // List
   const [lectures, setLectures] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -1298,15 +1286,6 @@ export default function History({
     if (onSkip) {
       onSkip();
     }
-  }
-
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
   }
 
   return (

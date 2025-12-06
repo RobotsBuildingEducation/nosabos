@@ -37,7 +37,6 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
-import { PasscodePage } from "./PasscodePage";
 import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -1137,10 +1136,6 @@ YES or NO
   /* ---------------------------
      RENDER
   --------------------------- */
-  if (!npub) {
-    return <PasscodePage />;
-  }
-
   // Results Modal
   if (showResults) {
     const passed = correctAnswers >= PASS_SCORE;

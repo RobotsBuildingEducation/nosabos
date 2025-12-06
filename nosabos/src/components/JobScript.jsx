@@ -37,7 +37,6 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
-import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { fetchTTSBlob } from "../utils/tts";
@@ -991,17 +990,6 @@ export default function JobScript({
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
 
-  // Gate
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
-
   const targetLang = normalizeLangCode(practiceTarget);
   const supportLang = normalizeLangCode(practiceSupport);
 
@@ -1892,15 +1880,6 @@ export default function JobScript({
         storyData.sentences.length) *
       100
     : 0;
-
-  if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user?.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
-  }
 
   /* ----------------------------- UI ----------------------------- */
   return (
