@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import { PasscodePage } from "../components/PasscodePage";
 
 const PASSCODE_KEY = "passcode";
@@ -30,12 +30,16 @@ export function usePasscodeGate(levelNumber, userLanguage) {
     localStorage.setItem(PASSCODE_FEATURES_KEY, import.meta.env.VITE_PATREON_PASSCODE);
   }, [hasValidPasscode]);
 
-  const gateView = showPasscodeModal ? (
-    <PasscodePage
-      userLanguage={userLanguage}
-      setShowPasscodeModal={setShowPasscodeModal}
-    />
-  ) : null;
+  const gateView = useMemo(
+    () =>
+      showPasscodeModal
+        ? createElement(PasscodePage, {
+            userLanguage,
+            setShowPasscodeModal,
+          })
+        : null,
+    [showPasscodeModal, userLanguage]
+  );
 
   return { showPasscodeModal, gateView, setShowPasscodeModal };
 }
