@@ -48,7 +48,7 @@ import { WaveBar } from "./WaveBar";
 import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { getRandomVoice, fetchTTSBlob, TTS_LANG_TAG } from "../utils/tts";
+import { getRandomVoice, TTS_LANG_TAG, TTS_ENDPOINT } from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import {
@@ -994,12 +994,23 @@ export default function StoryMode({
 
       setSynthesizing?.(true);
 
-      // Global cache in tts.js handles caching (memory + IndexedDB)
       usageStatsRef.current.ttsCalls++;
-      const blob = await fetchTTSBlob({
-        text,
-        langTag,
+
+      const res = await fetch(TTS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: text,
+          voice: getRandomVoice(),
+          model: "gpt-4o-mini-tts",
+          response_format: "mp3",
+          language: langTag,
+        }),
       });
+
+      if (!res.ok) throw new Error(`TTS ${res.status}`);
+
+      const blob = await res.blob();
       const audioUrl = URL.createObjectURL(blob);
       currentAudioUrlRef.current = audioUrl;
 

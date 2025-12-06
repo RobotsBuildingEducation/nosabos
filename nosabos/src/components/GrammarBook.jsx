@@ -43,11 +43,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
-import {
-  TTS_LANG_TAG,
-  fetchTTSBlob,
-  getRandomVoice,
-} from "../utils/tts";
+import { TTS_ENDPOINT, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 
@@ -754,7 +750,6 @@ export default function GrammarBook({
   )
     ? progress.targetLang
     : "en";
-  const speakLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
   const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
     ? progress.supportLang
     : "en";
@@ -2795,11 +2790,20 @@ Return JSON ONLY:
         speakAudioUrlRef.current = null;
       }
 
-      // Global cache in tts.js handles caching (memory + IndexedDB)
-      const blob = await fetchTTSBlob({
-        text,
-        langTag: speakLangTag,
+      const res = await fetch(TTS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: text,
+          voice: getRandomVoice(),
+          model: "gpt-4o-mini-tts",
+          response_format: "mp3",
+        }),
       });
+
+      if (!res.ok) throw new Error(`TTS ${res.status}`);
+
+      const blob = await res.blob();
       const audioUrl = URL.createObjectURL(blob);
       speakAudioUrlRef.current = audioUrl;
 
@@ -2834,7 +2838,6 @@ Return JSON ONLY:
   }, [
     isSpeakPlaying,
     sTarget,
-    speakLangTag,
     toast,
     userLanguage,
   ]);
