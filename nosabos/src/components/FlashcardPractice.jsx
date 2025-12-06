@@ -648,7 +648,7 @@ export default function FlashcardPractice({
                           "flashcard_type_placeholder"
                         )}
                         size="lg"
-                        fontSize="2xl"
+                        fontSize="16px"
                         textAlign="center"
                         bg="whiteAlpha.100"
                         border="2px solid"

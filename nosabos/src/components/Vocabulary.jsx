@@ -701,7 +701,11 @@ function ensureAnswerInChoices(choices, answer) {
 
 // For multiple answer questions - ensure all correct answers are in choices
 function ensureAnswersInChoices(choices, answers) {
-  if (!Array.isArray(answers) || !Array.isArray(choices) || choices.length === 0) {
+  if (
+    !Array.isArray(answers) ||
+    !Array.isArray(choices) ||
+    choices.length === 0
+  ) {
     return { choices, answers: [] };
   }
   const newChoices = [...choices];
@@ -714,8 +718,9 @@ function ensureAnswersInChoices(choices, answers) {
     } else {
       // Find a slot that's not already a correct answer and replace it
       const nonAnswerIdx = newChoices.findIndex(
-        (c) => !validAnswers.some((a) => norm(a) === norm(c)) &&
-               !answers.some((a) => norm(a) === norm(c))
+        (c) =>
+          !validAnswers.some((a) => norm(a) === norm(c)) &&
+          !answers.some((a) => norm(a) === norm(c))
       );
       if (nonAnswerIdx !== -1) {
         newChoices[nonAnswerIdx] = String(ans);
@@ -1236,7 +1241,7 @@ export default function Vocabulary({
   useEffect(() => {
     const prevSlots = prevMSlotsRef.current;
     const slotsChanged = JSON.stringify(mSlots) !== JSON.stringify(prevSlots);
-    const hasContent = mSlots.some(s => s !== null);
+    const hasContent = mSlots.some((s) => s !== null);
     if (hasContent && slotsChanged) {
       setLastOk(null);
     }
@@ -1724,7 +1729,10 @@ Return EXACTLY:
               const rawChoices = obj.choices.slice(0, 4).map(String);
               // if answer already known from meta, ensure it's in choices
               if (pendingAnswer) {
-                const { choices, answer } = ensureAnswerInChoices(rawChoices, pendingAnswer);
+                const { choices, answer } = ensureAnswerInChoices(
+                  rawChoices,
+                  pendingAnswer
+                );
                 setChoicesMC(choices);
                 setAnswerMC(answer);
               } else {
@@ -1737,7 +1745,10 @@ Return EXACTLY:
               if (typeof obj.answer === "string") {
                 pendingAnswer = obj.answer;
                 if (Array.isArray(choicesMC) && choicesMC.length) {
-                  const { choices, answer } = ensureAnswerInChoices(choicesMC, pendingAnswer);
+                  const { choices, answer } = ensureAnswerInChoices(
+                    choicesMC,
+                    pendingAnswer
+                  );
                   setChoicesMC(choices);
                   setAnswerMC(answer);
                 }
@@ -1775,7 +1786,10 @@ Return EXACTLY:
               ) {
                 const rawChoices = obj.choices.slice(0, 4).map(String);
                 if (pendingAnswer) {
-                  const { choices, answer } = ensureAnswerInChoices(rawChoices, pendingAnswer);
+                  const { choices, answer } = ensureAnswerInChoices(
+                    rawChoices,
+                    pendingAnswer
+                  );
                   setChoicesMC(choices);
                   setAnswerMC(answer);
                 } else {
@@ -1789,7 +1803,10 @@ Return EXACTLY:
                 if (typeof obj.answer === "string") {
                   pendingAnswer = obj.answer;
                   if (Array.isArray(choicesMC) && choicesMC.length) {
-                    const { choices, answer } = ensureAnswerInChoices(choicesMC, pendingAnswer);
+                    const { choices, answer } = ensureAnswerInChoices(
+                      choicesMC,
+                      pendingAnswer
+                    );
                     setChoicesMC(choices);
                     setAnswerMC(answer);
                   }
@@ -1831,7 +1848,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       ) {
         const rawChoices = parsed.choices.slice(0, 4).map(String);
         // Ensure the correct answer is always in choices
-        const { choices, answer } = ensureAnswerInChoices(rawChoices, parsed.answer);
+        const { choices, answer } = ensureAnswerInChoices(
+          rawChoices,
+          parsed.answer
+        );
         setQMC(String(parsed.question));
         setHMC(String(parsed.hint || ""));
         setChoicesMC(choices);
@@ -1858,8 +1878,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     if (!qMC || !pickMC) return;
     setLoadingGMC(true);
 
-    const deterministicOk =
-      answerMC && norm(pickMC) === norm(answerMC);
+    const deterministicOk = answerMC && norm(pickMC) === norm(answerMC);
 
     const verdictRaw = await callResponses({
       model: MODEL,
@@ -1873,7 +1892,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
     });
 
     const ok =
-      deterministicOk || (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+      deterministicOk ||
+      (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     // Handle quiz mode differently
@@ -2022,7 +2042,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
             ) {
               const rawChoices = obj.choices.slice(0, 6).map(String);
               if (pendingAnswers?.length) {
-                const { choices, answers } = ensureAnswersInChoices(rawChoices, pendingAnswers);
+                const { choices, answers } = ensureAnswersInChoices(
+                  rawChoices,
+                  pendingAnswers
+                );
                 setChoicesMA(choices);
                 if (answers.length >= 2) setAnswersMA(answers);
               } else {
@@ -2035,7 +2058,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
               if (Array.isArray(obj.answers)) {
                 pendingAnswers = obj.answers.map(String);
                 if (Array.isArray(choicesMA) && choicesMA.length) {
-                  const { choices, answers } = ensureAnswersInChoices(choicesMA, pendingAnswers);
+                  const { choices, answers } = ensureAnswersInChoices(
+                    choicesMA,
+                    pendingAnswers
+                  );
                   setChoicesMA(choices);
                   if (answers.length >= 2) setAnswersMA(answers);
                 }
@@ -2073,7 +2099,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
               ) {
                 const rawChoices = obj.choices.slice(0, 6).map(String);
                 if (pendingAnswers?.length) {
-                  const { choices, answers } = ensureAnswersInChoices(rawChoices, pendingAnswers);
+                  const { choices, answers } = ensureAnswersInChoices(
+                    rawChoices,
+                    pendingAnswers
+                  );
                   setChoicesMA(choices);
                   if (answers.length >= 2) setAnswersMA(answers);
                 } else {
@@ -2087,7 +2116,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
                 if (Array.isArray(obj.answers)) {
                   pendingAnswers = obj.answers.map(String);
                   if (Array.isArray(choicesMA) && choicesMA.length) {
-                    const { choices, answers } = ensureAnswersInChoices(choicesMA, pendingAnswers);
+                    const { choices, answers } = ensureAnswersInChoices(
+                      choicesMA,
+                      pendingAnswers
+                    );
                     setChoicesMA(choices);
                     if (answers.length >= 2) setAnswersMA(answers);
                   }
@@ -2164,7 +2196,8 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
     });
 
     const ok =
-      deterministicOk || (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+      deterministicOk ||
+      (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     // Handle quiz mode differently
@@ -3325,12 +3358,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         duration: 2600,
       });
     }
-  }, [
-    isSpeakPlaying,
-    sTarget,
-    toast,
-    userLanguage,
-  ]);
+  }, [isSpeakPlaying, sTarget, toast, userLanguage]);
 
   const maReady =
     maLayout === "drag"
@@ -3504,6 +3532,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onChange={(e) => setAnsFill(e.target.value)}
               placeholder={t("vocab_input_placeholder_word")}
               isDisabled={loadingGFill}
+              fontSize="16px"
             />
 
             <Stack

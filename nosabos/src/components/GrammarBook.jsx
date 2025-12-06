@@ -1,5 +1,11 @@
 // components/GrammarBook.jsx
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import {
   Box,
   Badge,
@@ -603,7 +609,11 @@ function ensureAnswerInChoices(choices, answer) {
 
 // For multiple answer questions - ensure all correct answers are in choices
 function ensureAnswersInChoices(choices, answers) {
-  if (!Array.isArray(answers) || !Array.isArray(choices) || choices.length === 0) {
+  if (
+    !Array.isArray(answers) ||
+    !Array.isArray(choices) ||
+    choices.length === 0
+  ) {
     return { choices, answers: [] };
   }
   const newChoices = [...choices];
@@ -616,8 +626,9 @@ function ensureAnswersInChoices(choices, answers) {
     } else {
       // Find a slot that's not already a correct answer and replace it
       const nonAnswerIdx = newChoices.findIndex(
-        (c) => !validAnswers.some((a) => norm(a) === norm(c)) &&
-               !answers.some((a) => norm(a) === norm(c))
+        (c) =>
+          !validAnswers.some((a) => norm(a) === norm(c)) &&
+          !answers.some((a) => norm(a) === norm(c))
       );
       if (nonAnswerIdx !== -1) {
         newChoices[nonAnswerIdx] = String(ans);
@@ -1514,7 +1525,10 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               const rawChoices = obj.choices.slice(0, 4).map(String);
               // If answer already known, ensure it's in choices
               if (pendingAnswer) {
-                const { choices, answer } = ensureAnswerInChoices(rawChoices, pendingAnswer);
+                const { choices, answer } = ensureAnswerInChoices(
+                  rawChoices,
+                  pendingAnswer
+                );
                 setMcChoices(choices);
                 setMcAnswer(answer);
               } else {
@@ -1528,7 +1542,10 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               if (typeof obj.answer === "string") {
                 pendingAnswer = obj.answer;
                 if (Array.isArray(mcChoices) && mcChoices.length) {
-                  const { choices, answer } = ensureAnswerInChoices(mcChoices, pendingAnswer);
+                  const { choices, answer } = ensureAnswerInChoices(
+                    mcChoices,
+                    pendingAnswer
+                  );
                   setMcChoices(choices);
                   setMcAnswer(answer);
                 }
@@ -1562,7 +1579,10 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
               ) {
                 const rawChoices = obj.choices.slice(0, 4).map(String);
                 if (pendingAnswer) {
-                  const { choices, answer } = ensureAnswerInChoices(rawChoices, pendingAnswer);
+                  const { choices, answer } = ensureAnswerInChoices(
+                    rawChoices,
+                    pendingAnswer
+                  );
                   setMcChoices(choices);
                   setMcAnswer(answer);
                 } else {
@@ -1576,7 +1596,10 @@ Return EXACTLY: <question> ||| <hint in ${LANG_NAME(
                 if (typeof obj.answer === "string") {
                   pendingAnswer = obj.answer;
                   if (Array.isArray(mcChoices) && mcChoices.length) {
-                    const { choices, answer } = ensureAnswerInChoices(mcChoices, pendingAnswer);
+                    const { choices, answer } = ensureAnswerInChoices(
+                      mcChoices,
+                      pendingAnswer
+                    );
                     setMcChoices(choices);
                     setMcAnswer(answer);
                   }
@@ -1618,7 +1641,10 @@ Create ONE multiple-choice ${LANG_NAME(
       ) {
         const rawChoices = parsed.choices.slice(0, 4).map((c) => String(c));
         // Ensure the correct answer is always in choices
-        const { choices, answer } = ensureAnswerInChoices(rawChoices, parsed.answer);
+        const { choices, answer } = ensureAnswerInChoices(
+          rawChoices,
+          parsed.answer
+        );
         setMcQ(String(parsed.question));
         setMcHint(String(parsed.hint || ""));
         setMcChoices(choices);
@@ -1742,7 +1768,10 @@ Create ONE multiple-choice ${LANG_NAME(
               const rawChoices = obj.choices.slice(0, 6).map(String);
               // If we already have pending answers, ensure they're in choices
               if (pendingAnswers?.length) {
-                const { choices, answers } = ensureAnswersInChoices(rawChoices, pendingAnswers);
+                const { choices, answers } = ensureAnswersInChoices(
+                  rawChoices,
+                  pendingAnswers
+                );
                 setMaChoices(choices);
                 if (answers.length >= 2) setMaAnswers(answers);
               } else {
@@ -1756,7 +1785,10 @@ Create ONE multiple-choice ${LANG_NAME(
               if (Array.isArray(obj.answers)) {
                 pendingAnswers = obj.answers.map(String);
                 if (Array.isArray(maChoices) && maChoices.length) {
-                  const { choices, answers } = ensureAnswersInChoices(maChoices, pendingAnswers);
+                  const { choices, answers } = ensureAnswersInChoices(
+                    maChoices,
+                    pendingAnswers
+                  );
                   setMaChoices(choices);
                   if (answers.length >= 2) setMaAnswers(answers);
                 }
@@ -1790,7 +1822,10 @@ Create ONE multiple-choice ${LANG_NAME(
               ) {
                 const rawChoices = obj.choices.slice(0, 6).map(String);
                 if (pendingAnswers?.length) {
-                  const { choices, answers } = ensureAnswersInChoices(rawChoices, pendingAnswers);
+                  const { choices, answers } = ensureAnswersInChoices(
+                    rawChoices,
+                    pendingAnswers
+                  );
                   setMaChoices(choices);
                   if (answers.length >= 2) setMaAnswers(answers);
                 } else {
@@ -1804,7 +1839,10 @@ Create ONE multiple-choice ${LANG_NAME(
                 if (Array.isArray(obj.answers)) {
                   pendingAnswers = obj.answers.map(String);
                   if (Array.isArray(maChoices) && maChoices.length) {
-                    const { choices, answers } = ensureAnswersInChoices(maChoices, pendingAnswers);
+                    const { choices, answers } = ensureAnswersInChoices(
+                      maChoices,
+                      pendingAnswers
+                    );
                     setMaChoices(choices);
                     if (answers.length >= 2) setMaAnswers(answers);
                   }
@@ -2203,11 +2241,12 @@ Return JSON ONLY:
       handleQuizAnswer(ok);
       setLastOk(ok);
       setRecentXp(0);
-      const nextFn = ok || isFinalQuiz
-        ? modeLocked
-          ? () => generateFill()
-          : () => generateRandomRef.current()
-        : null;
+      const nextFn =
+        ok || isFinalQuiz
+          ? modeLocked
+            ? () => generateFill()
+            : () => generateRandomRef.current()
+          : null;
       setNextAction(() => nextFn);
       setLoadingG(false);
       return;
@@ -2248,8 +2287,7 @@ Return JSON ONLY:
     if (!mcQ || !mcPick) return;
     setLoadingMCG(true);
 
-    const deterministicOk =
-      mcAnswer && norm(mcPick) === norm(mcAnswer);
+    const deterministicOk = mcAnswer && norm(mcPick) === norm(mcAnswer);
 
     const verdictRaw = await callResponses({
       model: MODEL,
@@ -2263,7 +2301,8 @@ Return JSON ONLY:
     });
 
     const ok =
-      deterministicOk || (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+      deterministicOk ||
+      (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 5 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
@@ -2271,11 +2310,12 @@ Return JSON ONLY:
       setMcResult(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0);
-      const nextFn = ok || isFinalQuiz
-        ? modeLocked
-          ? () => generateMC()
-          : () => generateRandomRef.current()
-        : null;
+      const nextFn =
+        ok || isFinalQuiz
+          ? modeLocked
+            ? () => generateMC()
+            : () => generateRandomRef.current()
+          : null;
       setNextAction(() => nextFn);
       setLoadingMCG(false);
       return;
@@ -2330,7 +2370,8 @@ Return JSON ONLY:
     });
 
     const ok =
-      deterministicOk || (verdictRaw || "").trim().toUpperCase().startsWith("Y");
+      deterministicOk ||
+      (verdictRaw || "").trim().toUpperCase().startsWith("Y");
     const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
     if (isFinalQuiz) {
@@ -2338,11 +2379,12 @@ Return JSON ONLY:
       setMaResult(ok ? "correct" : "try_again");
       setLastOk(ok);
       setRecentXp(0);
-      const nextFn = ok || isFinalQuiz
-        ? modeLocked
-          ? () => generateMA()
-          : () => generateRandomRef.current()
-        : null;
+      const nextFn =
+        ok || isFinalQuiz
+          ? modeLocked
+            ? () => generateMA()
+            : () => generateRandomRef.current()
+          : null;
       setNextAction(() => nextFn);
       setLoadingMAG(false);
       return;
@@ -2400,11 +2442,12 @@ Return JSON ONLY:
       handleQuizAnswer(ok);
       setLastOk(ok);
       setRecentXp(0);
-      const nextFn = ok || isFinalQuiz
-        ? modeLocked
-          ? () => generateMatch()
-          : () => generateRandomRef.current()
-        : null;
+      const nextFn =
+        ok || isFinalQuiz
+          ? modeLocked
+            ? () => generateMatch()
+            : () => generateRandomRef.current()
+          : null;
       setNextAction(() => nextFn);
       setLoadingMJ(false);
       return;
@@ -2463,24 +2506,25 @@ Return JSON ONLY:
       setSRecognized(recognizedText || "");
       setSEval(evaluation);
 
-    const ok = evaluation.pass;
-    const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
+      const ok = evaluation.pass;
+      const delta = ok ? 6 : 0; // ✅ normalized to 4-7 XP range
 
-    if (isFinalQuiz) {
-      handleQuizAnswer(ok);
-      setLastOk(ok);
-      setRecentXp(0);
-      const nextFn = ok || isFinalQuiz
-        ? modeLocked
-          ? () => generateSpeak()
-          : () => generateRandomRef.current()
-        : null;
-      setNextAction(() => nextFn);
-      return;
-    }
+      if (isFinalQuiz) {
+        handleQuizAnswer(ok);
+        setLastOk(ok);
+        setRecentXp(0);
+        const nextFn =
+          ok || isFinalQuiz
+            ? modeLocked
+              ? () => generateSpeak()
+              : () => generateRandomRef.current()
+            : null;
+        setNextAction(() => nextFn);
+        return;
+      }
 
-    await saveAttempt(npub, {
-      ok,
+      await saveAttempt(npub, {
+        ok,
         mode: "grammar_speak",
         question: sPrompt,
         target: sTarget,
@@ -2835,12 +2879,7 @@ Return JSON ONLY:
         duration: 2600,
       });
     }
-  }, [
-    isSpeakPlaying,
-    sTarget,
-    toast,
-    userLanguage,
-  ]);
+  }, [isSpeakPlaying, sTarget, toast, userLanguage]);
 
   const renderMcPrompt = () => {
     if (!mcQ) return null;
@@ -3151,7 +3190,9 @@ Return JSON ONLY:
                   <Badge variant="subtle">
                     {t("grammar_badge_level", { level: levelNumber })}
                   </Badge>
-                  <Badge variant="subtle">{t("grammar_badge_xp", { xp })}</Badge>
+                  <Badge variant="subtle">
+                    {t("grammar_badge_xp", { xp })}
+                  </Badge>
                 </HStack>
                 <WaveBar value={progressPct} />
               </>
@@ -3219,6 +3260,7 @@ Return JSON ONLY:
               onChange={(e) => setInput(e.target.value)}
               placeholder={t("grammar_input_placeholder_answer")}
               isDisabled={loadingG}
+              fontSize="16px"
             />
 
             <Stack
@@ -3238,8 +3280,11 @@ Return JSON ONLY:
                 colorScheme="purple"
                 onClick={submitFill}
                 isDisabled={
-                  lastOk === true || loadingG || !input.trim() || !question
-                  || (isFinalQuiz && quizCurrentQuestionAttempted)
+                  lastOk === true ||
+                  loadingG ||
+                  !input.trim() ||
+                  !question ||
+                  (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
                 w={{ base: "100%", md: "auto" }}
               >
