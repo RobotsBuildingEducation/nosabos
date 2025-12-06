@@ -1912,7 +1912,7 @@ export default function SkillTree({
             backdropFilter="blur(10px)"
             px={6}
             py={3}
-            borderRadius="full"
+            borderRadius="8px"
             border="1px solid"
             borderColor="whiteAlpha.200"
             boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
