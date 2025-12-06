@@ -2731,8 +2731,9 @@ Return JSON ONLY:
     return (
       <SlideFade in={true} offsetY="10px">
         <Flex
-          align={{ base: "flex-start", md: "center" }}
-          direction={{ base: "column", md: "row" }}
+          align={{ base: "center", md: "center" }}
+          direction={{ base: "row", md: "row" }}
+          justify="space-between"
           gap={3}
           p={4}
           borderRadius="xl"
@@ -2779,7 +2780,9 @@ Return JSON ONLY:
               variant="solid"
               onClick={onNext}
               shadow="md"
-              w={{ base: "100%", md: "auto" }}
+              px={{ base: 6, md: 7 }}
+              py={{ base: 3, md: 3 }}
+              alignSelf="flex-end"
             >
               {nextLabel}
             </Button>
@@ -3264,15 +3267,17 @@ Return JSON ONLY:
             />
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
             >
               <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingQ || loadingG}
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 5, md: 6 }}
+                py={{ base: 3, md: 3 }}
               >
                 {skipLabel}
               </Button>
@@ -3286,7 +3291,8 @@ Return JSON ONLY:
                   !question ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 6, md: 7 }}
+                py={{ base: 3, md: 3 }}
               >
                 {loadingG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -3559,15 +3565,17 @@ Return JSON ONLY:
             )}
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
             >
               <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMCQ || loadingMCG}
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 5, md: 6 }}
+                py={{ base: 3, md: 3 }}
               >
                 {skipLabel}
               </Button>
@@ -3581,7 +3589,8 @@ Return JSON ONLY:
                   !mcChoices.length ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 6, md: 7 }}
+                py={{ base: 3, md: 3 }}
               >
                 {loadingMCG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -3875,15 +3884,17 @@ Return JSON ONLY:
             )}
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
             >
               <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMAQ || loadingMAG}
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 5, md: 6 }}
+                py={{ base: 3, md: 3 }}
               >
                 {skipLabel}
               </Button>
@@ -3897,7 +3908,8 @@ Return JSON ONLY:
                   !maReady ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 6, md: 7 }}
+                py={{ base: 3, md: 3 }}
               >
                 {loadingMAG ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
@@ -4055,22 +4067,25 @@ Return JSON ONLY:
             ) : null}
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
               mt={4}
             >
               <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingSpeakQ || isSpeakRecording}
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 5, md: 6 }}
+                py={{ base: 3, md: 3 }}
               >
                 {skipLabel}
               </Button>
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 6, md: 7 }}
+                py={{ base: 3, md: 3 }}
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
@@ -4394,15 +4409,17 @@ Return JSON ONLY:
             </DragDropContext>
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
             >
               <Button
                 variant="ghost"
                 onClick={handleSkip}
                 isDisabled={loadingMG || loadingMJ}
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 5, md: 6 }}
+                py={{ base: 3, md: 3 }}
               >
                 {skipLabel}
               </Button>
@@ -4416,7 +4433,8 @@ Return JSON ONLY:
                   !mLeft.length ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 6, md: 7 }}
+                py={{ base: 3, md: 3 }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("grammar_submit")}
               </Button>
