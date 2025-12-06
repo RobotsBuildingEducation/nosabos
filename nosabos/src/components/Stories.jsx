@@ -334,7 +334,7 @@ export default function StoryMode({
 
   useEffect(() => {
     if (
-      levelNumber > 2 &&
+      levelNumber > 3 &&
       localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
     ) {
       setShowPasscodeModal(true);

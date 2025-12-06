@@ -221,7 +221,7 @@ export default function FlashcardSkillTree({
     return stored === import.meta.env.VITE_PATREON_PASSCODE;
   }, []);
 
-  const levelNumber = getUserProgressLevel(userProgress) || 1;
+  const levelNumber = Math.floor((userProgress.totalXp || 0) / 100) + 1;
 
   // Skip initial animation on first render to prevent stutter
   // Use double RAF to ensure we're past layout and paint
@@ -246,7 +246,7 @@ export default function FlashcardSkillTree({
   }, [targetLang]);
 
   useEffect(() => {
-    if (levelNumber > 2 && !hasValidPasscode) {
+    if (levelNumber > 3 && !hasValidPasscode) {
       setShowPasscodeModal(true);
     }
   }, [levelNumber, hasValidPasscode]);
