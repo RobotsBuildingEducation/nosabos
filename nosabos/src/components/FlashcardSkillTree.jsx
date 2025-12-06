@@ -16,6 +16,7 @@ import {
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { translations } from "../utils/translation";
+import { PasscodePage } from "./PasscodePage";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -212,6 +213,9 @@ export default function FlashcardSkillTree({
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
+
+  const levelNumber = getUserProgressLevel(userProgress) || 1;
 
   // Skip initial animation on first render to prevent stutter
   // Use double RAF to ensure we're past layout and paint
@@ -234,6 +238,15 @@ export default function FlashcardSkillTree({
   useEffect(() => {
     setLocalCompletedCards(new Set());
   }, [targetLang]);
+
+  useEffect(() => {
+    if (
+      levelNumber > 2 &&
+      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
+    ) {
+      setShowPasscodeModal(true);
+    }
+  }, [levelNumber]);
 
   // Load relevant flashcards based on user progress (lazy loading)
   useEffect(() => {
@@ -434,6 +447,15 @@ export default function FlashcardSkillTree({
     setPracticeCard(null);
     setIsRandomPractice(false);
   }, []);
+
+  if (showPasscodeModal) {
+    return (
+      <PasscodePage
+        userLanguage={getAppLanguage()}
+        setShowPasscodeModal={setShowPasscodeModal}
+      />
+    );
+  }
 
   return (
     <MotionBox
