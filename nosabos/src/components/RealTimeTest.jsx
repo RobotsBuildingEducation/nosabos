@@ -12,20 +12,9 @@ import {
   WrapItem,
   useToast,
   Flex,
-  IconButton,
   Spinner,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
 } from "@chakra-ui/react";
-import { DeleteIcon } from "@chakra-ui/icons";
-import {
-  PiArrowsClockwiseDuotone,
-  PiMicrophoneStageDuotone,
-} from "react-icons/pi";
+import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
 
 import {
@@ -34,13 +23,7 @@ import {
   getDoc,
   collection,
   addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  limit,
   serverTimestamp,
-  getDocs,
-  writeBatch,
   increment,
 } from "firebase/firestore";
 import { database, analytics } from "../firebaseResources/firebaseResources";
@@ -498,7 +481,6 @@ export default function RealTimeTest({
 
   // Refs for realtime
   const audioRef = useRef(null); // remote stream sink
-  const playbackRef = useRef(null); // local playback for cached clips
   const pcRef = useRef(null);
   const localRef = useRef(null);
   const dcRef = useRef(null);
@@ -534,8 +516,6 @@ export default function RealTimeTest({
   const [volume] = useState(0);
   const [mood, setMood] = useState("neutral");
   const [pauseMs, setPauseMs] = useState(2000);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [isDeletingConversation, setIsDeletingConversation] = useState(false);
 
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
@@ -619,9 +599,6 @@ export default function RealTimeTest({
 
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
-  // Tiny UI state to avoid double-taps
-  const [replayingMid, setReplayingMid] = useState(null);
-
   // XP/STREAK
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -663,8 +640,6 @@ export default function RealTimeTest({
     "{language}",
     languageNameFor(targetLang)
   );
-  const tRepeat = ui?.ra_btn_repeat || (uiLang === "es" ? "Repetir" : "Repeat");
-
   // Goal-UI language routing
   const goalUiLang = (() => {
     const t = targetLangRef.current || targetLang;
@@ -703,11 +678,12 @@ export default function RealTimeTest({
   }, [currentNpub]);
 
   /* ---------------------------
-     Load profile + subscribe history + seed goal
+     Load profile + seed goal (fresh conversation each render)
   --------------------------- */
   useEffect(() => {
     if (!currentNpub) return;
     setHydrated(false);
+    setHistory([]);
     (async () => {
       try {
         const ok = await ensureUserDoc(currentNpub);
@@ -739,30 +715,6 @@ export default function RealTimeTest({
         setHydrated(true);
       }
     })();
-
-    const colRef = collection(database, "users", currentNpub, "turns");
-    const q = query(colRef, orderBy("createdAtClient", "desc"), limit(500));
-    const unsub = onSnapshot(q, (snap) => {
-      const turns = snap.docs.map((d) => {
-        const v = d.data() || {};
-        return {
-          id: d.id,
-          role: v.role || "assistant",
-          lang: v.lang || "es",
-          textFinal: v.text || "",
-          textStream: "",
-          trans_es: v.trans_es || "",
-          trans_en: v.trans_en || "",
-          pairs: Array.isArray(v.pairs) ? v.pairs : [],
-          done: true,
-          persisted: true,
-          ts: v.createdAtClient || 0,
-          hasAudio: false,
-        };
-      });
-      setHistory(turns);
-    });
-    return () => unsub();
   }, [activeNpub]);
 
   // ✅ react to store changes (global settings changed elsewhere)
@@ -992,8 +944,13 @@ export default function RealTimeTest({
         } catch {}
         if (savedPrefs) primeRefsFromPrefs(savedPrefs);
 
-        // Use random voice for variety in each session
-        const voiceName = getRandomVoice();
+        // Use saved voice if available, otherwise pick a random one for the session
+        const voiceName =
+          voiceRef.current && voiceRef.current !== "alloy"
+            ? voiceRef.current
+            : getRandomVoice();
+        voiceRef.current = voiceName;
+        setVoice(voiceName);
         const instructions = buildLanguageInstructions(savedPrefs || undefined);
         const vadMs = pauseMsRef.current || 2000;
         const tLang = savedPrefs?.targetLang || targetLangRef.current || "es";
@@ -1662,8 +1619,7 @@ Return ONLY JSON:
     }
     guardrailItemIdsRef.current = [];
 
-    // Use random voice for variety
-    const voiceName = getRandomVoice();
+    const voiceName = voiceRef.current || "alloy";
     const instructions = buildLanguageInstructionsFromRefs();
     const vadMs = pauseMsRef.current || 2000;
 
@@ -1747,7 +1703,6 @@ Return ONLY JSON:
               modalities: ["audio"],
               conversation: "none",
               instructions: `Say exactly: "${probeText}"`,
-              cancel_previous: false,
               commit: false,
               metadata: { kind: "voice_probe" },
             },
@@ -1878,68 +1833,6 @@ Return ONLY JSON:
       }
     }, 100);
     recTailRef.current.set(rid, id);
-  }
-
-  async function replayMessageAudio(mid, textFallback) {
-    if (replayingMid) return;
-    setReplayingMid(mid);
-    try {
-      await audioCtxRef.current?.resume?.();
-    } catch {}
-    try {
-      const row = await idbGetClip(mid);
-      if (row?.blob) {
-        const url = URL.createObjectURL(row.blob);
-        const a = playbackRef.current;
-        if (a) {
-          try {
-            a.pause();
-          } catch {}
-          a.src = url;
-          a.preload = "auto";
-          a.playsInline = true;
-          a.onended = () => URL.revokeObjectURL(url);
-          a.onpause = () => URL.revokeObjectURL(url);
-          try {
-            await a.play();
-            setReplayingMid(null);
-            return;
-          } catch (e) {
-            console.warn(
-              "Local clip play() failed, falling back:",
-              e?.message || e
-            );
-          }
-        }
-      }
-    } catch (e) {
-      console.warn("IDB read failed, using fallback:", e?.message || e);
-    }
-    if (dcRef.current?.readyState === "open" && textFallback) {
-      try {
-        dcRef.current.send(
-          JSON.stringify({
-            type: "response.create",
-            response: {
-              modalities: ["audio"],
-              conversation: "none",
-              instructions: `Say exactly: "${textFallback.replace(
-                /"/g,
-                '\\"'
-              )}"`,
-              cancel_previous: false,
-              commit: false,
-              metadata: { kind: "replay", mid },
-            },
-          })
-        );
-        setReplayingMid(null);
-        return;
-      } catch (e) {
-        console.warn("Replay request failed:", e?.message || e);
-      }
-    }
-    setReplayingMid(null);
   }
 
   /* ---------------------------
@@ -2259,43 +2152,6 @@ Do not return the whole sentence as a single chunk.`;
     if (!npub) return;
     if (!(await ensureUserDoc(npub))) return;
 
-    const effectiveSecondary =
-      targetLangRef.current === "en"
-        ? "es"
-        : supportLangRef.current === "es"
-        ? "es"
-        : "en";
-
-    const trans_en =
-      lang === "es"
-        ? translation || ""
-        : effectiveSecondary !== "es"
-        ? translation || ""
-        : "";
-    const trans_es =
-      lang !== "es" && effectiveSecondary === "es"
-        ? translation || ""
-        : lang === "es"
-        ? ""
-        : "";
-
-    const ref = doc(database, "users", npub, "turns", mid);
-    await setDoc(
-      ref,
-      {
-        role: "assistant",
-        lang,
-        text: String(text || "").trim(),
-        trans_en,
-        trans_es,
-        pairs: Array.isArray(pairs) ? pairs : [],
-        origin: "realtime",
-        createdAt: serverTimestamp(),
-        createdAtClient: Date.now(),
-      },
-      { merge: true }
-    );
-
     setStreak((v) => v + 1);
     try {
       await setDoc(
@@ -2328,26 +2184,6 @@ Do not return the whole sentence as a single chunk.`;
     const npub = strongNpub(user);
     if (!npub) return;
     const now = Date.now();
-    if (
-      lastUserSaveRef.current.text === text &&
-      now - (lastUserSaveRef.current.ts || 0) < 1200
-    )
-      return;
-
-    if (!(await ensureUserDoc(npub))) return;
-
-    await addDoc(collection(database, "users", npub, "turns"), {
-      role: "user",
-      lang,
-      text: text.trim(),
-      trans_en: "",
-      trans_es: "",
-      pairs: [],
-      origin: "realtime",
-      createdAt: serverTimestamp(),
-      createdAtClient: now,
-    });
-
     lastUserSaveRef.current = { text, ts: now };
   }
 
@@ -2409,56 +2245,6 @@ Do not return the whole sentence as a single chunk.`;
   }
 
   /* ---------------------------
-     Delete conversation
-  --------------------------- */
-  async function deleteConversation() {
-    const npub = strongNpub(user);
-    if (!npub) {
-      toast({
-        title: ui?.ra_toast_no_account_title || "No account",
-        description: ui?.ra_toast_no_account_desc || "User ID not found.",
-        status: "warning",
-        duration: 3000,
-        isClosable: true,
-        position: "top",
-      });
-      setIsDeleteModalOpen(false);
-      return;
-    }
-    setIsDeletingConversation(true);
-    try {
-      const colRef = collection(database, "users", npub, "turns");
-      while (true) {
-        const snap = await getDocs(query(colRef, limit(500)));
-        if (snap.empty) break;
-        const batch = writeBatch(database);
-        snap.docs.forEach((d) => batch.delete(d.ref));
-        await batch.commit();
-      }
-      setHistory([]);
-      toast({
-        title: ui?.ra_toast_delete_success || "Conversation deleted",
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-        position: "top",
-      });
-    } catch (e) {
-      console.error(e);
-      toast({
-        title: ui?.ra_toast_delete_failed_title || "Delete failed",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-        position: "top",
-      });
-    } finally {
-      setIsDeletingConversation(false);
-      setIsDeleteModalOpen(false);
-    }
-  }
-
-  /* ---------------------------
      Render helpers
   --------------------------- */
   function isDuplicateOfPersistedUser(ephem) {
@@ -2503,26 +2289,6 @@ Do not return the whole sentence as a single chunk.`;
         borderRadius="24px"
         mt="-8"
       >
-        <HStack
-          spacing={2}
-          display="flex"
-          justifyContent={"center"}
-          mt={6}
-          position={"absolute"}
-          right={5}
-          top={"8"}
-        >
-          <IconButton
-            aria-label={ui.ra_btn_delete_convo}
-            icon={<DeleteIcon />}
-            size="sm"
-            colorScheme="red"
-            variant="outline"
-            onClick={() => setIsDeleteModalOpen(true)}
-            width="24px"
-            height="24px"
-          />
-        </HStack>
         {/* Header */}
         {/* <Text
         fontSize={["md", "lg"]}
@@ -2555,23 +2321,29 @@ Do not return the whole sentence as a single chunk.`;
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
+            position="relative"
+            overflow="hidden"
           >
-            <HStack align="center" spacing={3}>
-              {/* Robot animation - prominent on the left */}
-              <Box flexShrink={0} width="150px">
-                <RobotBuddyPro
-                  state={uiState}
-                  loudness={uiState === "listening" ? volume : 0}
-                  mood={mood}
-                  variant="abstract"
-                  maxW={150}
-                />
-              </Box>
+            <Box position="absolute" top={3} left={3} width="72px" opacity={0.95}>
+              <RobotBuddyPro
+                state={uiState}
+                loudness={uiState === "listening" ? volume : 0}
+                mood={mood}
+                variant="abstract"
+                maxW={72}
+              />
+            </Box>
 
-              {/* Goal content on the right */}
-              <Box flex={1}>
+            <VStack
+              align="flex-start"
+              spacing={2}
+              width="100%"
+              pl={{ base: "78px", sm: "82px" }}
+              pt={{ base: 1, sm: 0 }}
+            >
+              <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
-                  <HStack>
+                  <HStack spacing={2} align="center">
                     <Badge
                       colorScheme="yellow"
                       variant="subtle"
@@ -2597,8 +2369,7 @@ Do not return the whole sentence as a single chunk.`;
                   </Text>
                 ) : null}
 
-                {/* Level progress bar under goal UI */}
-                <Box mt={4}>
+                <Box mt={3}>
                   <HStack justifyContent="space-between" mb={1}>
                     <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
                       {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
@@ -2610,7 +2381,7 @@ Do not return the whole sentence as a single chunk.`;
                   <WaveBar value={progressPct} />
                 </Box>
               </Box>
-            </HStack>
+            </VStack>
           </Box>
         </Box>
 
@@ -2644,46 +2415,17 @@ Do not return the whole sentence as a single chunk.`;
               !secondaryText && !!m.textStream && showTranslations;
 
             if (!primaryText.trim()) return null;
-
-            const hasCached =
-              audioCacheIndexRef.current.has(m.id) || !!m.hasAudio;
-            const canReplay = hasCached || status === "connected";
-
             return (
               <RowLeft key={m.id}>
-                <Box position="relative">
-                  <AlignedBubble
-                    primaryLabel={primaryLabel}
-                    secondaryLabel={secondaryLabel}
-                    primaryText={primaryText}
-                    secondaryText={showTranslations ? secondaryText : ""}
-                    pairs={m.pairs || []}
-                    showSecondary={showTranslations}
-                    isTranslating={isTranslating}
-                  />
-                  <IconButton
-                    aria-label={tRepeat}
-                    title={tRepeat}
-                    icon={<PiArrowsClockwiseDuotone />}
-                    size="xs"
-                    variant="outline"
-                    top="6px"
-                    color="white"
-                    right="6px"
-                    opacity={0.9}
-                    isDisabled={!canReplay}
-                    isLoading={replayingMid === m.id}
-                    onClick={() =>
-                      replayMessageAudio(
-                        m.id,
-                        (m.textFinal || "").trim() ||
-                          (m.textStream || "").trim()
-                      )
-                    }
-                    height="36px"
-                    width="36px"
-                  />
-                </Box>
+                <AlignedBubble
+                  primaryLabel={primaryLabel}
+                  secondaryLabel={secondaryLabel}
+                  primaryText={primaryText}
+                  secondaryText={showTranslations ? secondaryText : ""}
+                  pairs={m.pairs || []}
+                  showSecondary={showTranslations}
+                  isTranslating={isTranslating}
+                />
               </RowLeft>
             );
           })}
@@ -2703,7 +2445,7 @@ Do not return the whole sentence as a single chunk.`;
               onClick={skipGoal}
               size="md"
               height="48px"
-              px="6"
+              px={{ base: 6, md: 8 }}
               rounded="full"
               colorScheme="orange"
               variant="outline"
@@ -2717,7 +2459,7 @@ Do not return the whole sentence as a single chunk.`;
               onClick={status === "connected" ? stop : start}
               size="lg"
               height="64px"
-              px="8"
+              px={{ base: 8, md: 12 }}
               rounded="full"
               colorScheme={status === "connected" ? "red" : "cyan"}
               color="white"
@@ -2742,7 +2484,7 @@ Do not return the whole sentence as a single chunk.`;
               onClick={handleNextGoal}
               size="md"
               height="48px"
-              px="6"
+              px={{ base: 6, md: 8 }}
               rounded="full"
               color="white"
               textShadow="0px 0px 20px black"
@@ -2774,44 +2516,7 @@ Do not return the whole sentence as a single chunk.`;
 
         {/* remote live audio sink */}
         <audio ref={audioRef} />
-        {/* local playback for cached clips */}
-        <audio ref={playbackRef} />
       </Box>
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          if (!isDeletingConversation) setIsDeleteModalOpen(false);
-        }}
-        isCentered
-      >
-        <ModalOverlay />
-        <ModalContent bg="gray.900" color="gray.50">
-          <ModalHeader>
-            {ui?.ra_btn_delete_convo || "Delete conversation"}
-          </ModalHeader>
-          <ModalBody>
-            <Text>{ui?.ra_delete_confirm}</Text>
-          </ModalBody>
-          <ModalFooter gap={3}>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                if (!isDeletingConversation) setIsDeleteModalOpen(false);
-              }}
-              isDisabled={isDeletingConversation}
-            >
-              {ui?.common_cancel || "Cancel"}
-            </Button>
-            <Button
-              colorScheme="red"
-              onClick={deleteConversation}
-              isLoading={isDeletingConversation}
-            >
-              {ui?.ra_btn_delete_convo || "Delete conversation"}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </>
   );
 }

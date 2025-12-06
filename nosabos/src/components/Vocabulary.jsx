@@ -2999,8 +2999,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     return (
       <SlideFade in={true} offsetY="10px">
         <Flex
-          align={{ base: "flex-start", md: "center" }}
-          direction={{ base: "column", md: "row" }}
+          align={{ base: "center", md: "center" }}
+          direction={{ base: "row", md: "row" }}
+          justify="space-between"
           gap={3}
           p={4}
           borderRadius="xl"
@@ -3047,7 +3048,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               variant="solid"
               onClick={onNext}
               shadow="md"
-              w={{ base: "100%", md: "auto" }}
+              px={{ base: 7, md: 12 }}
+              py={{ base: 3, md: 4 }}
+              alignSelf="flex-end"
             >
               {nextLabel}
             </Button>
@@ -3536,16 +3539,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             />
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
             >
               {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
                   isDisabled={loadingQFill || loadingGFill}
-                  w={{ base: "100%", md: "auto" }}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
                 >
                   {skipLabel}
                 </Button>
@@ -3560,7 +3565,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   !qFill ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
               >
                 {loadingGFill ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
@@ -3822,16 +3828,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             )}
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
             >
               {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
                   isDisabled={loadingQMC || loadingGMC}
-                  w={{ base: "100%", md: "auto" }}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
                 >
                   {skipLabel}
                 </Button>
@@ -3846,7 +3854,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   !choicesMC.length ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
               >
                 {loadingGMC ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
@@ -4130,16 +4139,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             )}
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
             >
               {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
                   isDisabled={loadingQMA || loadingGMA}
-                  w={{ base: "100%", md: "auto" }}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
                 >
                   {skipLabel}
                 </Button>
@@ -4154,7 +4165,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   !maReady ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
               >
                 {loadingGMA ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
@@ -4312,9 +4324,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             ) : null}
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
               mt={4}
             >
               {canSkip && (
@@ -4322,14 +4335,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   variant="ghost"
                   onClick={handleSkip}
                   isDisabled={loadingQSpeak || isSpeakRecording}
-                  w={{ base: "100%", md: "auto" }}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
                 >
                   {skipLabel}
                 </Button>
               )}
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
@@ -4645,16 +4660,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
             </DragDropContext>
 
             <Stack
-              direction={{ base: "column", md: "row" }}
+              direction="row"
               spacing={3}
-              align={{ base: "stretch", md: "center" }}
+              align="center"
+              justify="flex-end"
             >
               {canSkip && (
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
                   isDisabled={loadingMG || loadingMJ}
-                  w={{ base: "100%", md: "auto" }}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
                 >
                   {skipLabel}
                 </Button>
@@ -4669,7 +4686,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   !mLeft.length ||
                   (isFinalQuiz && quizCurrentQuestionAttempted)
                 }
-                w={{ base: "100%", md: "auto" }}
+                px={{ base: 7, md: 12 }}
+                py={{ base: 3, md: 4 }}
               >
                 {loadingMJ ? <Spinner size="sm" /> : t("vocab_submit")}
               </Button>
