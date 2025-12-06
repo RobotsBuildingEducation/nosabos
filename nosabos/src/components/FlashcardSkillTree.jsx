@@ -215,6 +215,12 @@ export default function FlashcardSkillTree({
   const [isReady, setIsReady] = useState(false);
   const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
+  const hasValidPasscode = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem("passcode");
+    return stored === import.meta.env.VITE_PATREON_PASSCODE;
+  }, []);
+
   const levelNumber = getUserProgressLevel(userProgress) || 1;
 
   // Skip initial animation on first render to prevent stutter
@@ -240,13 +246,10 @@ export default function FlashcardSkillTree({
   }, [targetLang]);
 
   useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
+    if (levelNumber > 2 && !hasValidPasscode) {
       setShowPasscodeModal(true);
     }
-  }, [levelNumber]);
+  }, [levelNumber, hasValidPasscode]);
 
   // Load relevant flashcards based on user progress (lazy loading)
   useEffect(() => {
