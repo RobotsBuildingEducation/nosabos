@@ -1,6 +1,5 @@
 // components/PasscodePage.jsx
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, useCallback } from "react";
 import { database } from "../firebaseResources/firebaseResources";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Box, Button, Input, Text } from "@chakra-ui/react";
@@ -14,7 +13,12 @@ export const PasscodePage = ({
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState("");
   const [isValid, setIsValid] = useState(null);
-  const navigate = useNavigate();
+  // Allow embedding in contexts where the modal toggler is optional
+  const hidePasscodeModal = useCallback(() => {
+    if (typeof setShowPasscodeModal === "function") {
+      setShowPasscodeModal(false);
+    }
+  }, [setShowPasscodeModal]);
 
   const t = translations[userLanguage] || translations.en;
   const pc = t;
@@ -52,7 +56,7 @@ export const PasscodePage = ({
 
       if (userSnapshot.exists()) {
         await updateDoc(userDocRef, { hasSubmittedPasscode: true });
-        setShowPasscodeModal(false);
+        hidePasscodeModal();
       } else {
         console.log("User document not found");
       }
@@ -90,7 +94,7 @@ export const PasscodePage = ({
             "features_passcode",
             import.meta.env.VITE_PATREON_PASSCODE
           );
-          setShowPasscodeModal(true);
+          hidePasscodeModal();
         }
       }
       setIsLoading(false);

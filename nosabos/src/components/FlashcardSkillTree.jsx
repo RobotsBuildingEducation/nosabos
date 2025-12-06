@@ -16,6 +16,7 @@ import {
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { translations } from "../utils/translation";
+import { usePasscodeGate } from "../hooks/usePasscodeGate";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -213,6 +214,8 @@ export default function FlashcardSkillTree({
   const [hasMounted, setHasMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
+  const levelNumber = Math.floor((userProgress.totalXp || 0) / 100) + 1;
+
   // Skip initial animation on first render to prevent stutter
   // Use double RAF to ensure we're past layout and paint
   useEffect(() => {
@@ -234,6 +237,11 @@ export default function FlashcardSkillTree({
   useEffect(() => {
     setLocalCompletedCards(new Set());
   }, [targetLang]);
+
+  const { showPasscodeModal, gateView } = usePasscodeGate(
+    levelNumber,
+    getAppLanguage()
+  );
 
   // Load relevant flashcards based on user progress (lazy loading)
   useEffect(() => {
@@ -434,6 +442,10 @@ export default function FlashcardSkillTree({
     setPracticeCard(null);
     setIsRandomPractice(false);
   }, []);
+
+  if (showPasscodeModal) {
+    return gateView;
+  }
 
   return (
     <MotionBox

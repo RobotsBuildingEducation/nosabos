@@ -32,12 +32,12 @@ import { logEvent } from "firebase/analytics";
 import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
-import { PasscodePage } from "./PasscodePage";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { usePasscodeGate } from "../hooks/usePasscodeGate";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -597,8 +597,6 @@ export default function RealTimeTest({
     }
   }, [currentGoal]);
 
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
   // XP/STREAK
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
@@ -660,15 +658,10 @@ export default function RealTimeTest({
     gtr?.ra_goal_criteria || (goalUiLang === "es" ? "Éxito:" : "Success:");
 
   const xpLevelNumber = Math.floor(xp / 100) + 1;
-
-  useEffect(() => {
-    if (
-      xpLevelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp]);
+  const { showPasscodeModal, gateView } = usePasscodeGate(
+    xpLevelNumber,
+    user?.appLanguage
+  );
 
   useEffect(() => () => stop(), []);
 
@@ -2271,12 +2264,7 @@ Do not return the whole sentence as a single chunk.`;
   }, [messages, history]);
 
   if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
+    return gateView;
   }
   return (
     <>

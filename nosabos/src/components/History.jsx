@@ -31,12 +31,12 @@ import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
-import { PasscodePage } from "./PasscodePage";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getRandomVoice } from "../utils/tts";
+import { usePasscodeGate } from "../hooks/usePasscodeGate";
 
 /* ---------------------------
    Minimal i18n helper
@@ -707,16 +707,10 @@ export default function History({
   const targetDisplay = localizedLangName(targetLang);
   const supportDisplay = localizedLangName(supportLang);
 
-  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
-
-  useEffect(() => {
-    if (
-      levelNumber > 2 &&
-      localStorage.getItem("passcode") !== import.meta.env.VITE_PATREON_PASSCODE
-    ) {
-      setShowPasscodeModal(true);
-    }
-  }, [xp, levelNumber]);
+  const { showPasscodeModal, gateView } = usePasscodeGate(
+    levelNumber,
+    user.appLanguage
+  );
 
   // List
   const [lectures, setLectures] = useState([]);
@@ -1301,12 +1295,7 @@ export default function History({
   }
 
   if (showPasscodeModal) {
-    return (
-      <PasscodePage
-        userLanguage={user.appLanguage}
-        setShowPasscodeModal={setShowPasscodeModal}
-      />
-    );
+    return gateView;
   }
 
   return (
