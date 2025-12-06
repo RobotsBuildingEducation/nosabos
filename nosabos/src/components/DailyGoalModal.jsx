@@ -21,7 +21,6 @@ import {
   SliderTrack,
   Text,
   VStack,
-  useToast,
 } from "@chakra-ui/react";
 import { doc, setDoc } from "firebase/firestore";
 import { FiTarget, FiZap, FiClock } from "react-icons/fi";
@@ -77,7 +76,6 @@ export default function DailyGoalModal({
   },
 }) {
   const L = I18N[lang === "es" ? "es" : "en"];
-  const toast = useToast();
   const [goal, setGoal] = useState(String(defaultGoal));
 
   // Reset field when modal re-opens or default changes
@@ -110,11 +108,7 @@ export default function DailyGoalModal({
 
   const save = async () => {
     if (!npub) {
-      toast({
-        title: L.errNoUserTitle,
-        description: L.errNoUserDesc,
-        status: "error",
-      });
+      console.warn(L.errNoUserTitle, L.errNoUserDesc);
       return;
     }
     try {
@@ -130,14 +124,9 @@ export default function DailyGoalModal({
         },
         { merge: true }
       );
-      toast({ title: L.toastSaved, status: "success", duration: 1400 });
       onClose?.();
     } catch (e) {
-      toast({
-        title: L.errSaveTitle,
-        description: String(e?.message || e),
-        status: "error",
-      });
+      console.error(L.errSaveTitle, e);
     }
   };
 

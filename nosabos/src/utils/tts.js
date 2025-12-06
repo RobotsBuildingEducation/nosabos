@@ -49,10 +49,7 @@ function sanitizeVoice(voice) {
  * Resolves which voice to use for TTS playback.
  * Now defaults to random voice selection for variety.
  */
-export function resolveVoicePreference({
-  lang,
-  langTag,
-} = {}) {
+export function resolveVoicePreference({ lang, langTag } = {}) {
   // Always use random voice for variety
   return getRandomVoice();
 }
@@ -240,11 +237,7 @@ const inFlightRequests = new Map();
  * @param {string} options.voice - Optional specific voice (defaults to random)
  * @returns {Promise<Blob>} Audio blob
  */
-export async function fetchTTSBlob({
-  text,
-  langTag = TTS_LANG_TAG.es,
-  voice,
-}) {
+export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
   const cacheKey = getCacheKey(text, langTag);
 
   // 1. Check in-memory cache (instant)
