@@ -1,6 +1,5 @@
 // components/PasscodePage.jsx
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { database } from "../firebaseResources/firebaseResources";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { Box, Button, Input, Text } from "@chakra-ui/react";
@@ -9,12 +8,11 @@ import { translations } from "../utils/translation"; // named export
 export const PasscodePage = ({
   isOldAccount,
   userLanguage,
-  setShowPasscodeModal,
+  setShowPasscodeModal = () => {},
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [input, setInput] = useState("");
   const [isValid, setIsValid] = useState(null);
-  const navigate = useNavigate();
 
   const t = translations[userLanguage] || translations.en;
   const pc = t;
@@ -90,7 +88,8 @@ export const PasscodePage = ({
             "features_passcode",
             import.meta.env.VITE_PATREON_PASSCODE
           );
-          setShowPasscodeModal(true);
+          // If the user already submitted a passcode, the modal should stay closed
+          setShowPasscodeModal(false);
         }
       }
       setIsLoading(false);
