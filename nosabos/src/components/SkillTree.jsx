@@ -1142,19 +1142,6 @@ const UnitSection = React.memo(function UnitSection({
             </VStack>
 
             <VStack spacing={1}>
-              <Box
-                p={2}
-                borderRadius="xl"
-                bgGradient={`linear(135deg, ${unit.color}30, ${unit.color}20)`}
-                border="1px solid"
-                borderColor={`${unit.color}40`}
-              >
-                <RiTrophyLine
-                  size={28}
-                  color={unit.color}
-                  style={{ filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))" }}
-                />
-              </Box>
               <Text fontSize="sm" fontWeight="bold" color="white">
                 {completedCount}/{unit.lessons.length}
               </Text>
@@ -1931,14 +1918,6 @@ export default function SkillTree({
             boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
           >
             <HStack spacing={3}>
-              <Box
-                p={1.5}
-                borderRadius="lg"
-                bgGradient="linear(135deg, yellow.400, orange.400)"
-                boxShadow="0 2px 8px rgba(251, 191, 36, 0.3)"
-              >
-                <RiTrophyLine size={18} color="white" />
-              </Box>
               <VStack spacing={0} align="start">
                 <Text
                   fontSize="lg"
