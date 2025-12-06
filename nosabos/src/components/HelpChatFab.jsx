@@ -169,6 +169,7 @@ export default function HelpChatFab({
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState([]); // {id, role, text, done}
   const stopRef = useRef(false);
+  const scrollRef = useRef(null);
 
   // -- helpers ---------------------------------------------------------------
 
@@ -373,6 +374,35 @@ export default function HelpChatFab({
     setSending(false);
   };
 
+  const scrollToBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+
+    const doScroll = () => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    };
+
+    if (typeof window !== "undefined" && window?.requestAnimationFrame) {
+      window.requestAnimationFrame(doScroll);
+    } else {
+      doScroll();
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+      const timer = setTimeout(scrollToBottom, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, scrollToBottom]);
+
+  useEffect(() => {
+    if (isOpen && messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [isOpen, messages, scrollToBottom]);
+
   // -- UI --------------------------------------------------------------------
 
   return (
@@ -424,6 +454,7 @@ export default function HelpChatFab({
           <ModalBody
             flex="1"
             overflowY="auto"
+            ref={scrollRef}
             sx={{
               scrollbarWidth: "none",
               msOverflowStyle: "none",
