@@ -154,11 +154,15 @@ export default function LessonGroupQuiz({
   const [supportLang, setSupportLang] = useState("auto");
   const [showTranslations, setShowTranslations] = useState(true);
   const [xp, setXp] = useState(0);
+  const [showPasscodeModal, setShowPasscodeModal] = useState(false);
 
   // Subscribe to user progress
   useEffect(() => {
     const storedNpub = localStorage.getItem("local_npub");
-    if (!storedNpub) return;
+    if (!storedNpub) {
+      setShowPasscodeModal(true);
+      return;
+    }
 
     setNpub(storedNpub);
     const ref = doc(database, "users", storedNpub);
@@ -1137,8 +1141,13 @@ YES or NO
   /* ---------------------------
      RENDER
   --------------------------- */
-  if (!npub) {
-    return <PasscodePage />;
+  if (showPasscodeModal || !npub) {
+    return (
+      <PasscodePage
+        userLanguage={userLanguage}
+        setShowPasscodeModal={setShowPasscodeModal}
+      />
+    );
   }
 
   // Results Modal
