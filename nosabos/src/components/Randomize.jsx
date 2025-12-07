@@ -235,7 +235,6 @@ export default function Randomize() {
     return () => unsub();
   }, [
     npub,
-    slots,
     initializing,
     t,
     toast,
@@ -244,9 +243,7 @@ export default function Randomize() {
   ]);
 
   const currentSlot = slots.find((s) => s.active) || slots[0];
-  const prefetchSlot = slots.find((s) => !s.active) || slots[1];
   const currentModeKey = currentSlot?.modeKey;
-  const nextModeKey = prefetchSlot?.modeKey;
 
   const currentMode = useMemo(() => {
     return currentModeKey
@@ -255,15 +252,27 @@ export default function Randomize() {
   }, [currentModeKey, modeLabels]);
 
   const surpriseMe = () => {
-    if (nextModeKey) {
-      swapInPrefetch();
-      return;
-    }
-    const pick = scheduleNextMode(currentModeKey) || currentModeKey;
-    setSlots((prev) => [
-      { ...prev[0], modeKey: pick, active: true },
-      { ...prev[1], modeKey: scheduleNextMode(pick), active: false },
-    ]);
+    setSlots((prev) => {
+      const activeIdx = prev.findIndex((s) => s.active);
+      const prefetchIdx = activeIdx === 0 ? 1 : 0;
+      const prefetchKey = prev[prefetchIdx]?.modeKey;
+
+      if (prefetchKey) {
+        const newNext = scheduleNextMode(prefetchKey);
+        return prev.map((slot, idx) =>
+          idx === prefetchIdx
+            ? { ...slot, active: true }
+            : { ...slot, active: false, modeKey: newNext }
+        );
+      }
+
+      const fallbackPick =
+        scheduleNextMode(prev[activeIdx]?.modeKey) || prev[activeIdx]?.modeKey;
+      return [
+        { ...prev[0], active: true, modeKey: fallbackPick },
+        { ...prev[1], active: false, modeKey: scheduleNextMode(fallbackPick) },
+      ];
+    });
   };
 
   // Reused translated strings with safe fallbacks
@@ -303,6 +312,45 @@ export default function Randomize() {
     }
     return <History userLanguage={uiLang} />;
   };
+
+  const renderSlot = (slot) => (
+    <Box
+      key={slot.id}
+      position={slot.active ? "relative" : "absolute"}
+      left={slot.active ? "auto" : -9999}
+      top={slot.active ? "auto" : 0}
+      width={slot.active ? "100%" : "1px"}
+      height={slot.active ? "auto" : "1px"}
+      overflow={slot.active ? "visible" : "hidden"}
+      opacity={slot.active ? 1 : 0}
+      pointerEvents={slot.active ? "auto" : "none"}
+      aria-hidden={slot.active ? undefined : true}
+    >
+      <Suspense
+        fallback={
+          slot.active ? (
+            <HStack justify="center" py={12}>
+              <Spinner color="teal.300" />
+              <Text color="white" ml={2}>
+                {STR.loading}
+              </Text>
+            </HStack>
+          ) : null
+        }
+      >
+        {slot.modeKey ? (
+          renderMode(slot.modeKey)
+        ) : (
+          <HStack justify="center" py={12}>
+            <Spinner color="teal.300" />
+            <Text color="white" ml={2}>
+              {slot.active ? STR.picking : STR.loading}
+            </Text>
+          </HStack>
+        )}
+      </Suspense>
+    </Box>
+  );
 
   return (
     <Box
@@ -355,43 +403,19 @@ export default function Randomize() {
         </Box>
       </Box>
 
-      {/* Content */}
-      <Box>
-        <Suspense
-          fallback={
-            <HStack justify="center" py={12}>
-              <Spinner color="teal.300" />
-            </HStack>
-          }
-        >
-          {!currentMode ? (
-            <HStack justify="center" py={12}>
-              <Spinner color="teal.300" />
-              <Text color="white" ml={2}>
-                {STR.picking}
-              </Text>
-            </HStack>
-          ) : (
-            renderMode(currentMode.key)
-          )}
-        </Suspense>
+      {/* Content + hidden prefetch slot. Both stay mounted so the next module is ready instantly. */}
+      <Box position="relative" minH="40vh">
+        {!currentMode ? (
+          <HStack justify="center" py={12}>
+            <Spinner color="teal.300" />
+            <Text color="white" ml={2}>
+              {STR.picking}
+            </Text>
+          </HStack>
+        ) : (
+          slots.map((slot) => renderSlot(slot))
+        )}
       </Box>
-
-      {/* Hidden prefetcher keeps the next module generating while the user works */}
-      {nextModeKey ? (
-        <Box
-          position="absolute"
-          left={-9999}
-          width="1px"
-          height="1px"
-          overflow="hidden"
-          opacity={0}
-          pointerEvents="none"
-          aria-hidden="true"
-        >
-          <Suspense fallback={null}>{renderMode(nextModeKey)}</Suspense>
-        </Box>
-      ) : null}
     </Box>
   );
 }
