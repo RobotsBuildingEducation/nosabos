@@ -553,6 +553,7 @@ export default function RealTimeTest({
   const voicePersonaRef = useRef(voicePersona);
   const levelRef = useRef(level);
   const supportLangRef = useRef(supportLang);
+  const goalLocalizationBusyRef = useRef(false);
   const targetLangRef = useRef(targetLang);
   const pauseMsRef = useRef(pauseMs);
   const practicePronunciationRef = useRef(practicePronunciation);
@@ -740,6 +741,44 @@ export default function RealTimeTest({
     },
     []
   );
+
+  // Backfill localized goal text for Spanish support when older goals lack it
+  useEffect(() => {
+    const prefersSpanish = (supportLangRef.current || supportLang) === "es";
+    const goal = currentGoal;
+    if (!prefersSpanish || !goal) return;
+    if (goalLocalizationBusyRef.current) return;
+    if (goal.title_es && goal.rubric_es) return;
+
+    goalLocalizationBusyRef.current = true;
+    (async () => {
+      try {
+        const titleSource =
+          goal.title_en || goal.scenario || goal.lessonScenario || "";
+        const rubricSource = goal.rubric_en || goal.successCriteria || "";
+        const [title_es, rubric_es] = await Promise.all([
+          goal.title_es ? goal.title_es : translateGoalText(titleSource, "es"),
+          goal.rubric_es
+            ? goal.rubric_es
+            : translateGoalText(rubricSource || titleSource, "es"),
+        ]);
+
+        const patched = {
+          ...goal,
+          title_es: goal.title_es || title_es,
+          rubric_es: goal.rubric_es || rubric_es,
+        };
+
+        setCurrentGoal(patched);
+        goalRef.current = patched;
+        await persistCurrentGoal(patched);
+      } catch (err) {
+        console.warn("Goal localization backfill failed", err?.message || err);
+      } finally {
+        goalLocalizationBusyRef.current = false;
+      }
+    })();
+  }, [currentGoal, supportLang]);
 
   // Keep local_npub cached
   useEffect(() => {
