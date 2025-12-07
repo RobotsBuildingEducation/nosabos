@@ -1393,16 +1393,23 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     }
 
     // Localize goal strings when Spanish support is requested
+    const prefersSpanishSupport = (supportLangRef.current || supportLang) === "es";
+    const goalLangCode = supportLangRef.current || supportLang || "en";
+
+    let localizedScenarioEn = scenario || seedTitles.en;
+    let localizedRubricEn = rubricEn;
     let localizedScenarioEs = activeGoal.scenario_es || scenario || seedTitles.es;
     let localizedRubricEs = activeGoal.successCriteria_es || rubricEs;
-    const prefersSpanishSupport = (supportLangRef.current || supportLang) === "es";
+
     if (prefersSpanishSupport) {
       try {
-        if (!activeGoal.scenario_es && scenario) {
-          localizedScenarioEs = await translateGoalText(scenario, "es");
-        }
-        if (!activeGoal.successCriteria_es && rubricEs) {
-          localizedRubricEs = await translateGoalText(rubricEs, "es");
+        localizedScenarioEs = await translateGoalText(localizedScenarioEn, "es");
+        localizedRubricEs = await translateGoalText(localizedRubricEn, "es");
+
+        // Ensure we still maintain an English fallback when the goal language is Spanish
+        if (goalLangCode === "es") {
+          localizedScenarioEn = await translateGoalText(localizedScenarioEs, "en");
+          localizedRubricEn = await translateGoalText(localizedRubricEs, "en");
         }
       } catch (err) {
         console.warn("Falling back to default goal Spanish", err?.message || err);
@@ -1411,9 +1418,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
     const seed = {
       id: `goal_${Date.now()}`,
-      title_en: scenario || seedTitles.en,
+      title_en: localizedScenarioEn,
       title_es: localizedScenarioEs,
-      rubric_en: rubricEn,
+      rubric_en: localizedRubricEn,
       rubric_es: localizedRubricEs,
       lessonScenario: lessonScenario || null,
       successCriteria: successCriteria || null,
