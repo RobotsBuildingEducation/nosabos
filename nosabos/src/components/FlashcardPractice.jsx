@@ -34,8 +34,16 @@ import { translations } from "../utils/translation";
 
 const MotionBox = motion(Box);
 
+// Prefer realtime mini TTS (used by RealTimeTest) for faster playback.
+// Fall back to the legacy proxy if no realtime endpoint is configured.
 const FLASHCARD_TTS_ENDPOINT =
-  import.meta.env.VITE_REALTIME_TTS_URL || TTS_ENDPOINT;
+  import.meta.env.VITE_REALTIME_TTS_URL ||
+  import.meta.env.VITE_REALTIME_URL ||
+  TTS_ENDPOINT;
+
+const FLASHCARD_TTS_MODEL = FLASHCARD_TTS_ENDPOINT === TTS_ENDPOINT
+  ? "gpt-4o-mini-tts"
+  : import.meta.env.VITE_REALTIME_TTS_MODEL || "gpt-realtime-mini";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -360,7 +368,7 @@ export default function FlashcardPractice({
         body: JSON.stringify({
           input: streamedAnswer,
           voice: getRandomVoice(),
-          model: "gpt-4o-mini-tts",
+          model: FLASHCARD_TTS_MODEL,
           response_format: "mp3",
         }),
       });
