@@ -3480,7 +3480,7 @@ export default function App() {
           maxW={{ base: "90%", sm: "md" }}
         >
           <ModalHeader textAlign="center" fontSize="2xl" fontWeight="bold">
-            Time's up!
+            {t.timer_times_up_title || "Time's up!"}
           </ModalHeader>
           <ModalCloseButton color="white" />
           <ModalBody py={8} px={{ base: 6, md: 8 }}>
@@ -3493,21 +3493,22 @@ export default function App() {
               />
               <VStack spacing={2}>
                 <Text fontSize="lg" fontWeight="semibold">
-                  Focus session complete
+                  {t.timer_times_up_subtitle || "Focus session complete"}
                 </Text>
                 <Text opacity={0.9} fontSize="md">
                   {timerDurationSeconds
-                    ? `You stayed on task for ${Math.round(
-                        timerDurationSeconds / 60
-                      )} minutes.`
-                    : "Nice work wrapping up your timer."}
+                    ? (t.timer_times_up_duration || "You stayed on task for {minutes} minutes.").replace(
+                        "{minutes}",
+                        String(Math.round(timerDurationSeconds / 60))
+                      )
+                    : t.timer_times_up_no_duration || "Nice work wrapping up your timer."}
                 </Text>
               </VStack>
             </VStack>
           </ModalBody>
           <ModalFooter gap={3} flexWrap="wrap">
             <Button variant="ghost" onClick={handleCloseTimeUp}>
-              Close
+              {t.timer_times_up_close || "Close"}
             </Button>
             <Button
               colorScheme="whiteAlpha"
@@ -3519,7 +3520,7 @@ export default function App() {
                 setTimerModalOpen(true);
               }}
             >
-              Start another timer
+              {t.timer_times_up_restart || "Start another timer"}
             </Button>
           </ModalFooter>
         </ModalContent>
