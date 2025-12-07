@@ -575,24 +575,6 @@ function TopBar({
       appLanguage === "es" ? "es" : "en-US"
     );
 
-  const timerHelper = useMemo(() => {
-    if (timerRemainingSeconds === null) return null;
-    return (
-      <Alert
-        status={timerActive ? "info" : "success"}
-        variant="subtle"
-        borderRadius="md"
-      >
-        <AlertIcon />
-        <Text>
-          {timerActive
-            ? `Timer is counting down: ${formatTimer(timerRemainingSeconds)}`
-            : "Timer finished. Restart to set a new focus window."}
-        </Text>
-      </Alert>
-    );
-  }, [formatTimer, timerActive, timerRemainingSeconds]);
-
   return (
     <>
       {/* ---- Header (responsive) ---- */}
@@ -1483,6 +1465,24 @@ export default function App() {
     setTimerDurationSeconds(null);
     setTimerActive(false);
   }, []);
+
+  const timerHelper = useMemo(() => {
+    if (timerRemainingSeconds === null) return null;
+    return (
+      <Alert
+        status={timerActive ? "info" : "success"}
+        variant="subtle"
+        borderRadius="md"
+      >
+        <AlertIcon />
+        <Text>
+          {timerActive
+            ? `Timer is counting down: ${formatTimer(timerRemainingSeconds)}`
+            : "Timer finished. Restart to set a new focus window."}
+        </Text>
+      </Alert>
+    );
+  }, [formatTimer, timerActive, timerRemainingSeconds]);
 
   useEffect(() => {
     if (!timerActive || timerRemainingRef.current === null) return;
