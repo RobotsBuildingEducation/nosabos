@@ -15,7 +15,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop } from "react-icons/fa";
+import { FaStop, FaPlay } from "react-icons/fa";
 
 import {
   doc,
@@ -249,6 +249,10 @@ function AlignedBubble({
   pairs,
   showSecondary,
   isTranslating,
+  canReplay,
+  onReplay,
+  isReplaying,
+  replayLabel,
 }) {
   const [activeId, setActiveId] = useState(null);
   function decorate(nodes) {
@@ -287,6 +291,19 @@ function AlignedBubble({
       <HStack justify="space-between" mb={1}>
         <Badge variant="subtle">{primaryLabel}</Badge>
         <HStack>
+          {canReplay && (
+            <Button
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              leftIcon={<FaPlay />}
+              onClick={onReplay}
+              isLoading={isReplaying}
+              loadingText={replayLabel || "Replay"}
+            >
+              {replayLabel || "Replay"}
+            </Button>
+          )}
           {showSecondary && !!secondaryText && (
             <Badge variant="outline">{secondaryLabel}</Badge>
           )}
@@ -499,6 +516,7 @@ export default function RealTimeTest({
   const recChunksRef = useRef(new Map());
   const recTailRef = useRef(new Map());
   const replayRidSetRef = useRef(new Set());
+  const replayAudioRef = useRef(null);
 
   // Guardrails
   const guardrailItemIdsRef = useRef([]);
@@ -515,6 +533,7 @@ export default function RealTimeTest({
   const [volume] = useState(0);
   const [mood, setMood] = useState("neutral");
   const [pauseMs, setPauseMs] = useState(2000);
+  const [replayingId, setReplayingId] = useState(null);
 
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
@@ -622,6 +641,58 @@ export default function RealTimeTest({
       translations[uiLang][`language_${secondaryPref}`]
     ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
 
+  /* ---------------------------
+     Replay playback helpers
+  --------------------------- */
+  function stopReplayAudio() {
+    try {
+      replayAudioRef.current?.pause();
+    } catch {}
+    if (replayAudioRef.current?.src) {
+      try {
+        URL.revokeObjectURL(replayAudioRef.current.src);
+      } catch {}
+    }
+    replayAudioRef.current = null;
+  }
+  async function playSavedClip(mid) {
+    if (!mid) return;
+    stopReplayAudio();
+    setReplayingId(mid);
+    try {
+      const clip = await idbGetClip(mid);
+      if (!clip?.blob) throw new Error("missing");
+      audioCacheIndexRef.current.add(mid);
+      const url = URL.createObjectURL(clip.blob);
+      const audio = new Audio(url);
+      replayAudioRef.current = audio;
+      audio.onended = () => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+        setReplayingId((cur) => (cur === mid ? null : cur));
+      };
+      audio.onerror = () => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+        setReplayingId((cur) => (cur === mid ? null : cur));
+      };
+      await audio.play();
+    } catch (e) {
+      setReplayingId((cur) => (cur === mid ? null : cur));
+      toast({
+        status: "warning",
+        description:
+          uiLang === "es"
+            ? "No hay audio para reproducir."
+            : "No audio available to replay.",
+        duration: 3000,
+        position: "top",
+      });
+    }
+  }
+
   const languageNameFor = (code) =>
     translations[uiLang][`language_${code === "nah" ? "nah" : code}`];
 
@@ -659,6 +730,13 @@ export default function RealTimeTest({
   const xpLevelNumber = Math.floor(xp / 100) + 1;
 
   useEffect(() => () => stop(), []);
+
+  useEffect(
+    () => () => {
+      stopReplayAudio();
+    },
+    []
+  );
 
   // Keep local_npub cached
   useEffect(() => {
@@ -1076,6 +1154,9 @@ export default function RealTimeTest({
     for (const id of recTailRef.current.values()) clearInterval(id);
     recTailRef.current.clear();
     replayRidSetRef.current.clear();
+
+    stopReplayAudio();
+    setReplayingId(null);
 
     clearAllDebouncers();
     respToMsg.current.clear();
@@ -2413,6 +2494,10 @@ Do not return the whole sentence as a single chunk.`;
             const isTranslating =
               !secondaryText && !!m.textStream && showTranslations;
 
+            const canReplay =
+              !!m.hasAudio || audioCacheIndexRef.current.has(m.id);
+            const replayLabel = uiLang === "es" ? "Reproducir" : "Replay";
+
             if (!primaryText.trim()) return null;
             return (
               <RowLeft key={m.id}>
@@ -2424,6 +2509,10 @@ Do not return the whole sentence as a single chunk.`;
                   pairs={m.pairs || []}
                   showSecondary={showTranslations}
                   isTranslating={isTranslating}
+                  canReplay={canReplay}
+                  onReplay={() => playSavedClip(m.id)}
+                  isReplaying={replayingId === m.id}
+                  replayLabel={replayLabel}
                 />
               </RowLeft>
             );
