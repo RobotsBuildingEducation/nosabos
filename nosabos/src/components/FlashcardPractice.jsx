@@ -25,7 +25,7 @@ import {
   RiEyeLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
-import { getRandomVoice } from "../utils/tts";
+import { TTS_ENDPOINT, getRandomVoice } from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
@@ -33,6 +33,9 @@ import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 
 const MotionBox = motion(Box);
+
+const FLASHCARD_TTS_ENDPOINT =
+  import.meta.env.VITE_REALTIME_TTS_URL || TTS_ENDPOINT;
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -351,19 +354,16 @@ export default function FlashcardPractice({
     setIsPlayingAudio(true);
 
     try {
-      const res = await fetch(
-        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: streamedAnswer,
-            voice: getRandomVoice(),
-            model: "gpt-4o-mini-tts",
-            response_format: "mp3",
-          }),
-        }
-      );
+      const res = await fetch(FLASHCARD_TTS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          input: streamedAnswer,
+          voice: getRandomVoice(),
+          model: "gpt-4o-mini-tts",
+          response_format: "mp3",
+        }),
+      });
 
       if (!res.ok) throw new Error(`TTS ${res.status}`);
 
