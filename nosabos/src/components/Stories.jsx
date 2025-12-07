@@ -1235,8 +1235,7 @@ export default function StoryMode({
 
       if (error) {
         toast({
-          title:
-            uiLang === "es" ? "No se pudo evaluar" : "Could not evaluate",
+          title: uiLang === "es" ? "No se pudo evaluar" : "Could not evaluate",
           description:
             uiLang === "es"
               ? "Vuelve a intentarlo con una conexión estable."
@@ -1364,7 +1363,10 @@ export default function StoryMode({
         });
       } else if (code === "mic-denied") {
         toast({
-          title: uiLang === "es" ? "Permiso de micrófono denegado" : "Microphone denied",
+          title:
+            uiLang === "es"
+              ? "Permiso de micrófono denegado"
+              : "Microphone denied",
           description:
             uiLang === "es"
               ? "Activa el micrófono en la configuración del navegador."
@@ -1379,9 +1381,7 @@ export default function StoryMode({
               ? "No se pudo iniciar la grabación"
               : "Recording failed",
           description:
-            uiLang === "es"
-              ? "Inténtalo nuevamente."
-              : "Please try again.",
+            uiLang === "es" ? "Inténtalo nuevamente." : "Please try again.",
           status: "error",
           duration: 2500,
         });
