@@ -25,7 +25,7 @@ import {
   RiEyeLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
-import { getRandomVoice } from "../utils/tts";
+import { fetchTTSBlob, TTS_LANG_TAG } from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
@@ -136,6 +136,7 @@ export default function FlashcardPractice({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const streamingRef = useRef(false);
   const audioRef = useRef(null);
+  const audioUrlRef = useRef(null);
   const toast = useToast();
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
@@ -246,6 +247,12 @@ export default function FlashcardPractice({
       audioRef.current.pause();
       audioRef.current = null;
     }
+    if (audioUrlRef.current) {
+      try {
+        URL.revokeObjectURL(audioUrlRef.current);
+      } catch {}
+      audioUrlRef.current = null;
+    }
     if (isRecording) {
       stopRecording();
     }
@@ -347,36 +354,37 @@ export default function FlashcardPractice({
       audioRef.current.pause();
       audioRef.current = null;
     }
+    if (audioUrlRef.current) {
+      try {
+        URL.revokeObjectURL(audioUrlRef.current);
+      } catch {}
+      audioUrlRef.current = null;
+    }
 
     setIsPlayingAudio(true);
 
+    const cleanup = () => {
+      if (audioUrlRef.current) {
+        try {
+          URL.revokeObjectURL(audioUrlRef.current);
+        } catch {}
+        audioUrlRef.current = null;
+      }
+      setIsPlayingAudio(false);
+      audioRef.current = null;
+    };
+
     try {
-      const res = await fetch(
-        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: streamedAnswer,
-            voice: getRandomVoice(),
-            model: "gpt-4o-mini-tts",
-            response_format: "mp3",
-          }),
-        }
-      );
+      const langTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
+      const blob = await fetchTTSBlob({
+        text: streamedAnswer,
+        langTag,
+      });
 
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-
-      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
+      audioUrlRef.current = url;
       const audio = new Audio(url);
       audioRef.current = audio;
-
-      const cleanup = () => {
-        URL.revokeObjectURL(url);
-        setIsPlayingAudio(false);
-        audioRef.current = null;
-      };
 
       audio.onended = cleanup;
       audio.onerror = cleanup;
@@ -384,7 +392,7 @@ export default function FlashcardPractice({
       await audio.play();
     } catch (error) {
       console.error("TTS error:", error);
-      setIsPlayingAudio(false);
+      cleanup();
       toast({
         title: "Audio error",
         description: "Could not play audio. Please try again.",
