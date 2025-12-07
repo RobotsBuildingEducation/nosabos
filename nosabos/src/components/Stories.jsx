@@ -158,9 +158,10 @@ function useSharedProgress() {
     supportLang: "en", // 'en' | 'es' | 'bilingual'
     voice: "alloy",
   });
+  const [progressReady, setProgressReady] = useState(!npub);
 
   useEffect(() => {
-    if (!npub) return;
+    if (!npub) return setProgressReady(true);
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
@@ -181,13 +182,14 @@ function useSharedProgress() {
           : "en",
         voice: p.voice || "alloy",
       });
+      setProgressReady(true);
     });
     return () => unsub();
   }, [npub]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
-  return { xp, levelNumber, progressPct, progress, npub };
+  return { xp, levelNumber, progressPct, progress, npub, progressReady };
 }
 
 /* ================================
@@ -308,7 +310,8 @@ export default function StoryMode({
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
 
   // Shared settings + XP
-  const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
+  const { xp, levelNumber, progressPct, progress, npub, progressReady } =
+    useSharedProgress();
 
   // APP UI language (drives all UI copy)
   const uiLang = getAppUILang();
@@ -1014,10 +1017,17 @@ export default function StoryMode({
   // Auto-generate story on mount if lessonContent is provided
   useEffect(() => {
     if (storyData || isLoading) return;
+    if (!progressReady) return; // wait for user settings to load so language is accurate
     if (lessonContent) {
       generateStoryGeminiStream();
     }
-  }, [lessonContent, storyData, isLoading, generateStoryGeminiStream]);
+  }, [
+    lessonContent,
+    storyData,
+    isLoading,
+    progressReady,
+    generateStoryGeminiStream,
+  ]);
 
   /* ----------------------------- Skip module ----------------------------- */
   const handleSkipModule = () => {
