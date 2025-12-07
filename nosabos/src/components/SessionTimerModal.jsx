@@ -26,6 +26,7 @@ export default function SessionTimerModal({
   onStart,
   isRunning,
   helper,
+  t = {},
 }) {
   const presets = [10, 15, 20, 30, 45, 60, 90, 120];
 
@@ -36,21 +37,21 @@ export default function SessionTimerModal({
         <ModalHeader>
           <HStack spacing={2} align="center">
             <Box as={FiClock} aria-hidden />
-            <Text>Session timer</Text>
+            <Text>{t.timer_modal_title || "Session timer"}</Text>
           </HStack>
         </ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <VStack align="stretch" spacing={4}>
             <Text>
-              Set how long you want to focus. You can start a fresh countdown or
-              reset the current one.
+              {t.timer_modal_description ||
+                "Set how long you want to focus. You can start a fresh countdown or reset the current one."}
             </Text>
 
             {helper}
 
             <FormControl>
-              <FormLabel>Minutes</FormLabel>
+              <FormLabel>{t.timer_modal_minutes_label || "Minutes"}</FormLabel>
               <Input
                 type="number"
                 min={1}
@@ -61,7 +62,7 @@ export default function SessionTimerModal({
 
             <Box>
               <Text fontSize="sm" mb={2} color="gray.300">
-                Quick picks
+                {t.timer_modal_quick_picks || "Quick picks"}
               </Text>
               <HStack spacing={2} wrap="wrap">
                 {presets.map((preset) => (
@@ -81,10 +82,12 @@ export default function SessionTimerModal({
         </ModalBody>
         <ModalFooter gap={3} flexWrap="wrap">
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {t.timer_modal_cancel || "Cancel"}
           </Button>
           <Button colorScheme="teal" onClick={onStart}>
-            {isRunning ? "Restart" : "Start"} timer
+            {isRunning
+              ? t.timer_modal_restart || "Restart timer"
+              : t.timer_modal_start || "Start timer"}
           </Button>
         </ModalFooter>
       </ModalContent>

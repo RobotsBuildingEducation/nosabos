@@ -410,6 +410,15 @@ export const translations = {
     // PathSwitcher tabs
     path_switcher_path: "Path",
     path_switcher_flashcards: "Flashcards",
+    // Session timer modal
+    timer_modal_title: "Session timer",
+    timer_modal_description:
+      "Set how long you want to focus. You can start a fresh countdown or reset the current one.",
+    timer_modal_minutes_label: "Minutes",
+    timer_modal_quick_picks: "Quick picks",
+    timer_modal_cancel: "Cancel",
+    timer_modal_start: "Start timer",
+    timer_modal_restart: "Restart timer",
   },
   es: {
     correct: "¡Correcto!",
@@ -819,6 +828,15 @@ export const translations = {
     // PathSwitcher tabs
     path_switcher_path: "Ruta",
     path_switcher_flashcards: "Tarjetas",
+    // Session timer modal
+    timer_modal_title: "Temporizador de sesión",
+    timer_modal_description:
+      "Define cuánto tiempo quieres enfocarte. Puedes iniciar una nueva cuenta regresiva o reiniciar la actual.",
+    timer_modal_minutes_label: "Minutos",
+    timer_modal_quick_picks: "Opciones rápidas",
+    timer_modal_cancel: "Cancelar",
+    timer_modal_start: "Iniciar temporizador",
+    timer_modal_restart: "Reiniciar temporizador",
   },
 };
 

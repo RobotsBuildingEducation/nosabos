@@ -661,7 +661,7 @@ function TopBar({
               gap={2}
             >
               <Box as={FiClock} aria-hidden />
-              <Text fontFamily="mono" fontWeight="bold">
+              <Text fontFamily="mono" fontWeight="bold" fontSize="2xs">
                 {formatTimer(timerRemainingSeconds)}
               </Text>
             </Badge>
@@ -682,7 +682,6 @@ function TopBar({
               onClick={onTogglePauseTimer}
             >
               {timerPaused ? <FiPlay /> : <FiPause />}
-              <Text ml={2}>{timerPaused ? "Resume" : "Pause"}</Text>
             </Button>
           )}
         </HStack>
@@ -3463,6 +3462,7 @@ export default function App() {
         onStart={handleStartTimer}
         isRunning={isTimerRunning}
         helper={timerHelper}
+        t={t}
       />
 
       <Modal
