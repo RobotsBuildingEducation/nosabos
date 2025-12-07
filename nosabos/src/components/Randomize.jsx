@@ -1,5 +1,12 @@
 // components/Randomize.jsx
-import React, { useEffect, useMemo, useRef, useState, Suspense } from "react";
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Box,
   Button,
@@ -83,9 +90,11 @@ export default function Randomize() {
   const levelNumber = Math.floor(xp / 100) + 1;
 
   // random rotation state
-  const [currentModeKey, setCurrentModeKey] = useState(null);
   const [initializing, setInitializing] = useState(true);
-  const [nextModeKey, setNextModeKey] = useState(null);
+  const [slots, setSlots] = useState([
+    { id: "a", modeKey: null, active: true },
+    { id: "b", modeKey: null, active: false },
+  ]);
 
   // watch XP to detect “earned XP”
   const xpBaselineRef = useRef(0);
@@ -123,12 +132,28 @@ export default function Randomize() {
   const scheduleNextMode = useCallback(
     (excludeKey) => {
       const pick = pickRandomMode(excludeKey);
-      setNextModeKey(pick);
       prefetchModeComponent(pick);
       return pick;
     },
     [pickRandomMode, prefetchModeComponent]
   );
+
+  const swapInPrefetch = useCallback(() => {
+    setSlots((prev) => {
+      const activeIdx = prev.findIndex((s) => s.active);
+      const prefetchIdx = activeIdx === 0 ? 1 : 0;
+      const readyKey = prev[prefetchIdx]?.modeKey;
+      if (!readyKey) return prev;
+
+      const newNext = scheduleNextMode(readyKey);
+      return prev.map((slot, idx) => {
+        if (idx === prefetchIdx) {
+          return { ...slot, active: true };
+        }
+        return { ...slot, active: false, modeKey: newNext };
+      });
+    });
+  }, [scheduleNextMode]);
 
   // subscribe to Firestore XP and drive randomization
   useEffect(() => {
@@ -152,9 +177,12 @@ export default function Randomize() {
 
       if (initializing) {
         xpBaselineRef.current = newXp;
-        const pick = pickRandomMode();
-        setCurrentModeKey(pick);
-        scheduleNextMode(pick);
+        const first = pickRandomMode();
+        const second = scheduleNextMode(first);
+        setSlots([
+          { id: "a", modeKey: first, active: true },
+          { id: "b", modeKey: second, active: false },
+        ]);
         setInitializing(false);
         return;
       }
@@ -194,9 +222,7 @@ export default function Randomize() {
         });
 
         // Auto-pick the next randomized activity (different from current)
-        const pick = nextModeKey || scheduleNextMode(currentModeKey);
-        setCurrentModeKey(pick);
-        scheduleNextMode(pick);
+        swapInPrefetch();
 
         // Optional: let child components know they can advance internally if needed
         try {
@@ -209,31 +235,35 @@ export default function Randomize() {
     return () => unsub();
   }, [
     npub,
-    currentModeKey,
+    slots,
     initializing,
     t,
     toast,
     uiLang,
-    nextModeKey,
-    scheduleNextMode,
-    pickRandomMode,
+    swapInPrefetch,
   ]);
 
-  const currentMode = useMemo(
-    () =>
-      currentModeKey
-        ? { key: currentModeKey, label: modeLabels[currentModeKey] }
-        : null,
-    [currentModeKey, modeLabels]
-  );
+  const currentSlot = slots.find((s) => s.active) || slots[0];
+  const prefetchSlot = slots.find((s) => !s.active) || slots[1];
+  const currentModeKey = currentSlot?.modeKey;
+  const nextModeKey = prefetchSlot?.modeKey;
+
+  const currentMode = useMemo(() => {
+    return currentModeKey
+      ? { key: currentModeKey, label: modeLabels[currentModeKey] }
+      : null;
+  }, [currentModeKey, modeLabels]);
 
   const surpriseMe = () => {
-    const pick =
-      (nextModeKey && nextModeKey !== currentModeKey
-        ? nextModeKey
-        : scheduleNextMode(currentModeKey)) || currentModeKey;
-    setCurrentModeKey(pick);
-    scheduleNextMode(pick);
+    if (nextModeKey) {
+      swapInPrefetch();
+      return;
+    }
+    const pick = scheduleNextMode(currentModeKey) || currentModeKey;
+    setSlots((prev) => [
+      { ...prev[0], modeKey: pick, active: true },
+      { ...prev[1], modeKey: scheduleNextMode(pick), active: false },
+    ]);
   };
 
   // Reused translated strings with safe fallbacks
@@ -252,6 +282,26 @@ export default function Randomize() {
         : "Picking a surprise for you…"),
     loading:
       t("generic_loading") || (uiLang === "es" ? "Cargando..." : "Loading..."),
+  };
+
+  const renderMode = (modeKey) => {
+    if (!modeKey) return null;
+    if (modeKey === "story") {
+      return (
+        <StoryMode userLanguage={uiLang} activeNpub={npub} activeNsec={nsec} />
+      );
+    }
+    if (modeKey === "grammar") {
+      return (
+        <GrammarBook userLanguage={uiLang} activeNpub={npub} activeNsec={nsec} />
+      );
+    }
+    if (modeKey === "vocab") {
+      return (
+        <Vocabulary userLanguage={uiLang} activeNpub={npub} activeNsec={nsec} />
+      );
+    }
+    return <History userLanguage={uiLang} />;
   };
 
   return (
@@ -321,29 +371,27 @@ export default function Randomize() {
                 {STR.picking}
               </Text>
             </HStack>
-          ) : currentMode.key === "story" ? (
-            <StoryMode
-              userLanguage={uiLang}
-              activeNpub={npub}
-              activeNsec={nsec}
-            />
-          ) : currentMode.key === "grammar" ? (
-            <GrammarBook
-              userLanguage={uiLang}
-              activeNpub={npub}
-              activeNsec={nsec}
-            />
-          ) : currentMode.key === "vocab" ? (
-            <Vocabulary
-              userLanguage={uiLang}
-              activeNpub={npub}
-              activeNsec={nsec}
-            />
           ) : (
-            <History userLanguage={uiLang} />
+            renderMode(currentMode.key)
           )}
         </Suspense>
       </Box>
+
+      {/* Hidden prefetcher keeps the next module generating while the user works */}
+      {nextModeKey ? (
+        <Box
+          position="absolute"
+          left={-9999}
+          width="1px"
+          height="1px"
+          overflow="hidden"
+          opacity={0}
+          pointerEvents="none"
+          aria-hidden="true"
+        >
+          <Suspense fallback={null}>{renderMode(nextModeKey)}</Suspense>
+        </Box>
+      ) : null}
     </Box>
   );
 }
