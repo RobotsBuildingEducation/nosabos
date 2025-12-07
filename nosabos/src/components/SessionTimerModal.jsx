@@ -82,11 +82,7 @@ export default function SessionTimerModal({
         </ModalBody>
         <ModalFooter gap={3} flexWrap="wrap">
           {onReset && (
-            <Button
-              variant="ghost"
-              onClick={onReset}
-              isDisabled={!isRunning}
-            >
+            <Button variant="ghost" onClick={onReset} isDisabled={!isRunning}>
               Stop timer
             </Button>
           )}

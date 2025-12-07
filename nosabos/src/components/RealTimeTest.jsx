@@ -1102,13 +1102,15 @@ export default function RealTimeTest({
    * This creates meaningful goals when hardcoded ones don't make sense
    */
   async function generateGoalFromAI(lessonData, lessonContentData) {
-    const topic = lessonContentData?.topic ||
-                  lessonData?.content?.vocabulary?.topic ||
-                  lessonData?.title?.en ||
-                  "conversation practice";
-    const focusPoints = lessonContentData?.focusPoints ||
-                        lessonData?.content?.vocabulary?.focusPoints ||
-                        [];
+    const topic =
+      lessonContentData?.topic ||
+      lessonData?.content?.vocabulary?.topic ||
+      lessonData?.title?.en ||
+      "conversation practice";
+    const focusPoints =
+      lessonContentData?.focusPoints ||
+      lessonData?.content?.vocabulary?.focusPoints ||
+      [];
     const lessonTitle = lessonData?.title?.en || "";
     const lessonDesc = lessonData?.description?.en || "";
     const cefrLvl = lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1";
@@ -1146,7 +1148,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
         (typeof payload?.output_text === "string" && payload.output_text) ||
         (Array.isArray(payload?.output) &&
           payload.output
-            .map((it) => (it?.content || []).map((seg) => seg?.text || "").join(""))
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join("")
+            )
             .join(" ")
             .trim()) ||
         (typeof payload === "string" ? payload : "");
@@ -1156,7 +1160,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
         return {
           scenario: parsed.scenario,
           prompt: parsed.prompt,
-          successCriteria: parsed.successCriteria || `Complete the ${topic} task`,
+          successCriteria:
+            parsed.successCriteria || `Complete the ${topic} task`,
         };
       }
     } catch (err) {
@@ -1166,7 +1171,11 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     // Fallback if AI fails
     return {
       scenario: `Practice ${topic}`,
-      prompt: `Have a conversation about ${topic}. ${focusPoints.length ? `Focus on: ${focusPoints.slice(0, 2).join(", ")}.` : ""}`,
+      prompt: `Have a conversation about ${topic}. ${
+        focusPoints.length
+          ? `Focus on: ${focusPoints.slice(0, 2).join(", ")}.`
+          : ""
+      }`,
       successCriteria: `User demonstrates understanding of ${topic}`,
     };
   }
@@ -1205,7 +1214,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     // Get goal index for variation progression
     // Check how many times this lesson's goals have been completed
     const lessonGoalCount = data.lessonGoalCounts?.[lessonScenario] || 0;
-    const goalIndex = hasVariations ? lessonGoalCount % goalVariations.length : 0;
+    const goalIndex = hasVariations
+      ? lessonGoalCount % goalVariations.length
+      : 0;
 
     // Select the appropriate goal variation or use base content
     let activeGoal;
@@ -1223,7 +1234,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     let roleplayPrompt = activeGoal.prompt || lesson?.prompt || "";
 
     // Check if scenario is too generic or missing - use AI to generate a better one
-    const isGenericScenario = !scenario ||
+    const isGenericScenario =
+      !scenario ||
       scenario.length < 10 ||
       /^(practice|conversation|talk|speak)/i.test(scenario.trim());
 
@@ -1552,7 +1564,8 @@ Return ONLY JSON:
       if (successCriteria) {
         goalGuidance += ` Guide them toward: ${successCriteria}.`;
       }
-      goalGuidance += " Gently steer the conversation to give them opportunities to demonstrate this skill.";
+      goalGuidance +=
+        " Gently steer the conversation to give them opportunities to demonstrate this skill.";
     }
 
     return [
@@ -2304,7 +2317,13 @@ Do not return the whole sentence as a single chunk.`;
             position="relative"
             overflow="hidden"
           >
-            <Box position="absolute" top={3} left={3} width="72px" opacity={0.95}>
+            <Box
+              position="absolute"
+              top={3}
+              left={3}
+              width="72px"
+              opacity={0.95}
+            >
               <RobotBuddyPro
                 state={uiState}
                 loudness={uiState === "listening" ? volume : 0}

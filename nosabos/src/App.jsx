@@ -375,6 +375,12 @@ function TopBar({
   currentTab = "realtime",
   onSelectTab,
   viewMode,
+
+  // 🆕 timer props
+  timerRemainingSeconds,
+  isTimerRunning,
+  formatTimer,
+  onOpenTimerModal,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -659,13 +665,12 @@ function TopBar({
             </Badge>
           )}
           <Button
-            leftIcon={<FiClock />}
             colorScheme="teal"
             variant={isTimerRunning ? "solid" : "outline"}
             size="sm"
-            onClick={() => setTimerModalOpen(true)}
+            onClick={onOpenTimerModal}
           >
-            {isTimerRunning ? "Timer running" : "Start timer"}
+            <FiClock />
           </Button>
         </HStack>
       </HStack>
@@ -1403,7 +1408,8 @@ export default function App() {
   const [dailyGoalOpen, setDailyGoalOpen] = useState(false);
   const [celebrateOpen, setCelebrateOpen] = useState(false);
   const dailyGoalModalJustOpenedRef = useRef(false);
-  const [shouldShowTimerAfterGoal, setShouldShowTimerAfterGoal] = useState(false);
+  const [shouldShowTimerAfterGoal, setShouldShowTimerAfterGoal] =
+    useState(false);
 
   /* -----------------------------------
      Session timer
@@ -1468,20 +1474,7 @@ export default function App() {
 
   const timerHelper = useMemo(() => {
     if (timerRemainingSeconds === null) return null;
-    return (
-      <Alert
-        status={timerActive ? "info" : "success"}
-        variant="subtle"
-        borderRadius="md"
-      >
-        <AlertIcon />
-        <Text>
-          {timerActive
-            ? `Timer is counting down: ${formatTimer(timerRemainingSeconds)}`
-            : "Timer finished. Restart to set a new focus window."}
-        </Text>
-      </Alert>
-    );
+    return null;
   }, [formatTimer, timerActive, timerRemainingSeconds]);
 
   useEffect(() => {
@@ -3168,15 +3161,10 @@ export default function App() {
         cefrLoading={cefrLoading}
         cefrError={cefrError}
         onSwitchedAccount={async (id, sec) => {
-          if (id) localStorage.setItem("local_npub", id);
-          if (typeof sec === "string") localStorage.setItem("local_nsec", sec);
-          await connectDID();
-          setActiveNpub(localStorage.getItem("local_npub") || "");
-          setActiveNsec(localStorage.getItem("local_nsec") || "");
+          /* ... */
         }}
         onPatchSettings={saveGlobalSettings}
         onSelectLanguage={handleSelectAppLanguage}
-        // controlled drawers
         settingsOpen={settingsOpen}
         openSettings={() => setSettingsOpen(true)}
         closeSettings={() => setSettingsOpen(false)}
@@ -3191,6 +3179,11 @@ export default function App() {
         currentTab={currentTab}
         onSelectTab={handleSelectTab}
         viewMode={viewMode}
+        // 🆕 timer props
+        timerRemainingSeconds={timerRemainingSeconds}
+        isTimerRunning={isTimerRunning}
+        formatTimer={formatTimer}
+        onOpenTimerModal={() => setTimerModalOpen(true)}
       />
 
       <TeamsDrawer
@@ -3432,7 +3425,12 @@ export default function App() {
         helper={timerHelper}
       />
 
-      <Modal isOpen={timeUpOpen} onClose={handleCloseTimeUp} isCentered size="lg">
+      <Modal
+        isOpen={timeUpOpen}
+        onClose={handleCloseTimeUp}
+        isCentered
+        size="lg"
+      >
         <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
         <ModalContent
           bg="linear-gradient(135deg, #c084fc 0%, #22d3ee 100%)"
