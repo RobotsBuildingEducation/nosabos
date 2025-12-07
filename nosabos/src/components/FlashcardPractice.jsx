@@ -35,10 +35,8 @@ const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
 
 const REALTIME_URL = `${
-  import.meta.env.VITE_REALTIME_URL
-}?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
-  REALTIME_MODEL
-)}`;
+  import.meta.env.VITE_RESPONSES_URL
+}/exchangeRealtimeSDP?model=${encodeURIComponent(REALTIME_MODEL)}`;
 
 const MotionBox = motion(Box);
 
@@ -393,7 +391,7 @@ export default function FlashcardPractice({
               type === "response.text.delta") &&
             typeof data?.delta === "string"
           ) {
-            setStreamedAnswer((prev) => (prev + data.delta).trim());
+            setStreamedAnswer((prev) => `${prev}${data.delta}`);
             return;
           }
 
