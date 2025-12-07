@@ -48,7 +48,12 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
-import { TTS_ENDPOINT, getRandomVoice } from "../utils/tts";
+import {
+  TTS_ENDPOINT,
+  TTS_LANG_TAG,
+  fetchTTSBlob,
+  getRandomVoice,
+} from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 
@@ -975,6 +980,11 @@ export default function GrammarBook({
   const speakAudioUrlRef = useRef(null);
   const [isSpeakPlaying, setIsSpeakPlaying] = useState(false);
   const [isSpeakSynthesizing, setIsSpeakSynthesizing] = useState(false);
+  const [isQuestionPlaying, setIsQuestionPlaying] = useState(false);
+  const [isQuestionSynthesizing, setIsQuestionSynthesizing] = useState(false);
+  const questionAudioRef = useRef(null);
+  const questionAudioUrlRef = useRef(null);
+  const questionTextRef = useRef("");
 
   useEffect(() => {
     return () => {
@@ -982,11 +992,21 @@ export default function GrammarBook({
         speakAudioRef.current?.pause?.();
       } catch {}
       speakAudioRef.current = null;
+      try {
+        questionAudioRef.current?.pause?.();
+      } catch {}
+      questionAudioRef.current = null;
       if (speakAudioUrlRef.current) {
         try {
           URL.revokeObjectURL(speakAudioUrlRef.current);
         } catch {}
         speakAudioUrlRef.current = null;
+      }
+      if (questionAudioUrlRef.current) {
+        try {
+          URL.revokeObjectURL(questionAudioUrlRef.current);
+        } catch {}
+        questionAudioUrlRef.current = null;
       }
     };
   }, []);
@@ -997,7 +1017,21 @@ export default function GrammarBook({
     } catch {}
     speakAudioRef.current = null;
     setIsSpeakPlaying(false);
+    try {
+      questionAudioRef.current?.pause?.();
+    } catch {}
+    questionAudioRef.current = null;
+    setIsQuestionPlaying(false);
   }, [sTarget]);
+
+  useEffect(() => {
+    try {
+      questionAudioRef.current?.pause?.();
+    } catch {}
+    questionAudioRef.current = null;
+    setIsQuestionPlaying(false);
+    setIsQuestionSynthesizing(false);
+  }, [mcQ, maQ, targetLang]);
 
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
@@ -2778,8 +2812,9 @@ Return JSON ONLY:
       ? "Suelta la respuesta aquí"
       : "Drop the answer here");
   const skipLabel =
-    t("practice_skip_question") ||
-    (userLanguage === "es" ? "Omitir pregunta" : "skip");
+    t("practice_skip_question") || (userLanguage === "es" ? "Saltar" : "Skip");
+  const questionListenLabel =
+    userLanguage === "es" ? "Escuchar pregunta" : "Listen to question";
   const speakListenLabel =
     userLanguage === "es" ? "Escuchar ejemplo" : "Listen to example";
   const speakVariantLabel =
@@ -2863,6 +2898,76 @@ Return JSON ONLY:
       });
     }
   }, [isSpeakPlaying, sTarget, toast, userLanguage]);
+
+  const handlePlayQuestionTTS = useCallback(
+    async (text) => {
+      const ttsText = (text || "").trim().replace(/___/g, " … ");
+      if (!ttsText) return;
+
+      if (isQuestionPlaying && questionTextRef.current === ttsText) {
+        try {
+          questionAudioRef.current?.pause?.();
+        } catch {}
+        questionAudioRef.current = null;
+        setIsQuestionPlaying(false);
+        setIsQuestionSynthesizing(false);
+        return;
+      }
+
+      try {
+        setIsQuestionSynthesizing(true);
+        questionTextRef.current = ttsText;
+
+        try {
+          questionAudioRef.current?.pause?.();
+        } catch {}
+        questionAudioRef.current = null;
+        if (questionAudioUrlRef.current) {
+          try {
+            URL.revokeObjectURL(questionAudioUrlRef.current);
+          } catch {}
+          questionAudioUrlRef.current = null;
+        }
+
+        const blob = await fetchTTSBlob({
+          text: ttsText,
+          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+        });
+
+        const audioUrl = URL.createObjectURL(blob);
+        questionAudioUrlRef.current = audioUrl;
+        const audio = new Audio(audioUrl);
+        questionAudioRef.current = audio;
+        audio.onended = () => {
+          setIsQuestionPlaying(false);
+          questionAudioRef.current = null;
+        };
+        audio.onerror = () => {
+          setIsQuestionPlaying(false);
+          questionAudioRef.current = null;
+        };
+        await audio.play();
+        setIsQuestionPlaying(true);
+      } catch (err) {
+        console.error("Grammar question playback failed", err);
+        setIsQuestionPlaying(false);
+        toast({
+          title:
+            userLanguage === "es"
+              ? "No se pudo reproducir la pregunta"
+              : "Question audio failed",
+          description:
+            userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+        });
+      } finally {
+        setIsQuestionSynthesizing(false);
+      }
+    },
+    [isQuestionPlaying, targetLang, toast, userLanguage]
+  );
 
   const renderMcPrompt = () => {
     if (!mcQ) return null;
@@ -3311,6 +3416,17 @@ Return JSON ONLY:
                           h={mcHint}
                           tr={showTRMC ? mcTranslation : ""}
                         />
+                        <Tooltip label={questionListenLabel} placement="top">
+                          <IconButton
+                            aria-label={questionListenLabel}
+                            icon={<PiSpeakerHighDuotone />}
+                            size="xs"
+                            variant="ghost"
+                            isLoading={isQuestionSynthesizing}
+                            onClick={() => handlePlayQuestionTTS(mcQ)}
+                            mr={1}
+                          />
+                        </Tooltip>
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -3432,6 +3548,17 @@ Return JSON ONLY:
                         h={mcHint}
                         tr={showTRMC ? mcTranslation : ""}
                       />
+                      <Tooltip label={questionListenLabel} placement="top">
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={<PiSpeakerHighDuotone />}
+                          size="xs"
+                          variant="ghost"
+                          isLoading={isQuestionSynthesizing}
+                          onClick={() => handlePlayQuestionTTS(mcQ)}
+                          mr={1}
+                        />
+                      </Tooltip>
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -3608,6 +3735,17 @@ Return JSON ONLY:
                           h={maHint}
                           tr={showTRMA ? maTranslation : ""}
                         />
+                        <Tooltip label={questionListenLabel} placement="top">
+                          <IconButton
+                            aria-label={questionListenLabel}
+                            icon={<PiSpeakerHighDuotone />}
+                            size="xs"
+                            variant="ghost"
+                            isLoading={isQuestionSynthesizing}
+                            onClick={() => handlePlayQuestionTTS(maQ)}
+                            mr={1}
+                          />
+                        </Tooltip>
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -3736,6 +3874,17 @@ Return JSON ONLY:
                         h={maHint}
                         tr={showTRMA ? maTranslation : ""}
                       />
+                      <Tooltip label={questionListenLabel} placement="top">
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={<PiSpeakerHighDuotone />}
+                          size="xs"
+                          variant="ghost"
+                          isLoading={isQuestionSynthesizing}
+                          onClick={() => handlePlayQuestionTTS(maQ)}
+                          mr={1}
+                        />
+                      </Tooltip>
                       <Text
                         fontSize="lg"
                         fontWeight="medium"

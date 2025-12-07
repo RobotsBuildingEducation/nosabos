@@ -15,7 +15,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop } from "react-icons/fa";
+import { FaStop, FaPlay } from "react-icons/fa";
 
 import {
   doc,
@@ -249,6 +249,10 @@ function AlignedBubble({
   pairs,
   showSecondary,
   isTranslating,
+  canReplay,
+  onReplay,
+  isReplaying,
+  replayLabel,
 }) {
   const [activeId, setActiveId] = useState(null);
   function decorate(nodes) {
@@ -287,6 +291,19 @@ function AlignedBubble({
       <HStack justify="space-between" mb={1}>
         <Badge variant="subtle">{primaryLabel}</Badge>
         <HStack>
+          {canReplay && (
+            <Button
+              size="xs"
+              variant="ghost"
+              colorScheme="cyan"
+              leftIcon={<FaPlay />}
+              onClick={onReplay}
+              isLoading={isReplaying}
+              loadingText={replayLabel || "Replay"}
+            >
+              {replayLabel || "Replay"}
+            </Button>
+          )}
           {showSecondary && !!secondaryText && (
             <Badge variant="outline">{secondaryLabel}</Badge>
           )}
@@ -499,6 +516,7 @@ export default function RealTimeTest({
   const recChunksRef = useRef(new Map());
   const recTailRef = useRef(new Map());
   const replayRidSetRef = useRef(new Set());
+  const replayAudioRef = useRef(null);
 
   // Guardrails
   const guardrailItemIdsRef = useRef([]);
@@ -515,6 +533,7 @@ export default function RealTimeTest({
   const [volume] = useState(0);
   const [mood, setMood] = useState("neutral");
   const [pauseMs, setPauseMs] = useState(2000);
+  const [replayingId, setReplayingId] = useState(null);
 
   // Learning prefs (now controlled globally; we still mirror them locally)
   const [level, setLevel] = useState("beginner");
@@ -534,6 +553,7 @@ export default function RealTimeTest({
   const voicePersonaRef = useRef(voicePersona);
   const levelRef = useRef(level);
   const supportLangRef = useRef(supportLang);
+  const goalLocalizationBusyRef = useRef(false);
   const targetLangRef = useRef(targetLang);
   const pauseMsRef = useRef(pauseMs);
   const practicePronunciationRef = useRef(practicePronunciation);
@@ -622,6 +642,58 @@ export default function RealTimeTest({
       translations[uiLang][`language_${secondaryPref}`]
     ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
 
+  /* ---------------------------
+     Replay playback helpers
+  --------------------------- */
+  function stopReplayAudio() {
+    try {
+      replayAudioRef.current?.pause();
+    } catch {}
+    if (replayAudioRef.current?.src) {
+      try {
+        URL.revokeObjectURL(replayAudioRef.current.src);
+      } catch {}
+    }
+    replayAudioRef.current = null;
+  }
+  async function playSavedClip(mid) {
+    if (!mid) return;
+    stopReplayAudio();
+    setReplayingId(mid);
+    try {
+      const clip = await idbGetClip(mid);
+      if (!clip?.blob) throw new Error("missing");
+      audioCacheIndexRef.current.add(mid);
+      const url = URL.createObjectURL(clip.blob);
+      const audio = new Audio(url);
+      replayAudioRef.current = audio;
+      audio.onended = () => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+        setReplayingId((cur) => (cur === mid ? null : cur));
+      };
+      audio.onerror = () => {
+        try {
+          URL.revokeObjectURL(url);
+        } catch {}
+        setReplayingId((cur) => (cur === mid ? null : cur));
+      };
+      await audio.play();
+    } catch (e) {
+      setReplayingId((cur) => (cur === mid ? null : cur));
+      toast({
+        status: "warning",
+        description:
+          uiLang === "es"
+            ? "No hay audio para reproducir."
+            : "No audio available to replay.",
+        duration: 3000,
+        position: "top",
+      });
+    }
+  }
+
   const languageNameFor = (code) =>
     translations[uiLang][`language_${code === "nah" ? "nah" : code}`];
 
@@ -639,26 +711,74 @@ export default function RealTimeTest({
   );
   // Goal-UI language routing
   const goalUiLang = (() => {
-    const t = targetLangRef.current || targetLang;
-    if (t === "es") return "en";
-    if (t === "en") return "es";
     const s = supportLangRef.current || supportLang;
-    return s === "es" ? "es" : "en";
+    if (s === "es") return "es";
+    if (s === "en") return "en";
+    const t = targetLangRef.current || targetLang;
+    if (t === "es") return "es";
+    if (t === "en") return "en";
+    return uiLang === "es" ? "es" : "en";
   })();
   const gtr = translations[goalUiLang] || translations.en;
   const tGoalLabel =
-    translations[uiLang]?.ra_goal_label || (uiLang === "es" ? "Meta" : "Goal");
+    translations[goalUiLang]?.ra_goal_label ||
+    (goalUiLang === "es" ? "Meta" : "Goal");
   const tGoalCompletedToast =
     gtr?.ra_goal_completed ||
     (goalUiLang === "es" ? "¡Meta lograda!" : "Goal completed!");
   const tGoalSkip =
     gtr?.ra_goal_skip || (goalUiLang === "es" ? "Saltar" : "Skip");
   const tGoalCriteria =
-    gtr?.ra_goal_criteria || (goalUiLang === "es" ? "Éxito:" : "Success:");
+    gtr?.ra_goal_criteria || (goalUiLang === "es" ? "" : "");
 
   const xpLevelNumber = Math.floor(xp / 100) + 1;
 
   useEffect(() => () => stop(), []);
+
+  useEffect(
+    () => () => {
+      stopReplayAudio();
+    },
+    []
+  );
+
+  // Backfill localized goal text for Spanish support when older goals lack it
+  useEffect(() => {
+    const prefersSpanish = (supportLangRef.current || supportLang) === "es";
+    const goal = currentGoal;
+    if (!prefersSpanish || !goal) return;
+    if (goalLocalizationBusyRef.current) return;
+    if (goal.title_es && goal.rubric_es) return;
+
+    goalLocalizationBusyRef.current = true;
+    (async () => {
+      try {
+        const titleSource =
+          goal.title_en || goal.scenario || goal.lessonScenario || "";
+        const rubricSource = goal.rubric_en || goal.successCriteria || "";
+        const [title_es, rubric_es] = await Promise.all([
+          goal.title_es ? goal.title_es : translateGoalText(titleSource, "es"),
+          goal.rubric_es
+            ? goal.rubric_es
+            : translateGoalText(rubricSource || titleSource, "es"),
+        ]);
+
+        const patched = {
+          ...goal,
+          title_es: goal.title_es || title_es,
+          rubric_es: goal.rubric_es || rubric_es,
+        };
+
+        setCurrentGoal(patched);
+        goalRef.current = patched;
+        await persistCurrentGoal(patched);
+      } catch (err) {
+        console.warn("Goal localization backfill failed", err?.message || err);
+      } finally {
+        goalLocalizationBusyRef.current = false;
+      }
+    })();
+  }, [currentGoal, supportLang]);
 
   // Keep local_npub cached
   useEffect(() => {
@@ -1077,6 +1197,9 @@ export default function RealTimeTest({
     recTailRef.current.clear();
     replayRidSetRef.current.clear();
 
+    stopReplayAudio();
+    setReplayingId(null);
+
     clearAllDebouncers();
     respToMsg.current.clear();
     guardrailItemIdsRef.current = [];
@@ -1115,6 +1238,8 @@ export default function RealTimeTest({
     const lessonDesc = lessonData?.description?.en || "";
     const cefrLvl = lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
+    const goalLangCode = supportLangRef.current || supportLang || "en";
+    const goalLangName = goalLangCode === "es" ? "Spanish" : "English";
 
     const prompt = `You are creating a conversational practice goal for a language learner.
 
@@ -1123,9 +1248,12 @@ Description: ${lessonDesc}
 Topic: ${topic}
 Focus areas: ${focusPoints.join(", ") || "general practice"}
 Level: ${cefrHint}
+Goal language: ${goalLangName} (write every field in ${goalLangName}, avoid mixing languages)
 
 Generate a short, clear, actionable conversation goal that makes sense for this lesson.
 The goal should be something the learner can demonstrate in a brief voice conversation.
+
+The goal must be written entirely in ${goalLangName}. Do NOT output English if the goal language is Spanish.
 
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {"scenario":"[2-6 word task title]","prompt":"[1-2 sentence roleplay instruction for AI tutor]","successCriteria":"[what the learner must do to succeed]"}`;
@@ -1253,8 +1381,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     // Build clear rubric from success criteria or generate one
     let rubricEn, rubricEs;
     if (successCriteria) {
-      rubricEn = `Success: ${successCriteria}`;
-      rubricEs = `Éxito: ${successCriteria}`;
+      rubricEn = `${successCriteria}`;
+      rubricEs = `${successCriteria}`;
     } else if (scenario) {
       // Create actionable rubric from scenario
       rubricEn = `Complete this task: ${scenario}`;
@@ -1264,12 +1392,47 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       rubricEs = "Di un saludo en el idioma meta";
     }
 
+    // Localize goal strings when Spanish support is requested
+    const prefersSpanishSupport =
+      (supportLangRef.current || supportLang) === "es";
+    const goalLangCode = supportLangRef.current || supportLang || "en";
+
+    let localizedScenarioEn = scenario || seedTitles.en;
+    let localizedRubricEn = rubricEn;
+    let localizedScenarioEs =
+      activeGoal.scenario_es || scenario || seedTitles.es;
+    let localizedRubricEs = activeGoal.successCriteria_es || rubricEs;
+
+    if (prefersSpanishSupport) {
+      try {
+        localizedScenarioEs = await translateGoalText(
+          localizedScenarioEn,
+          "es"
+        );
+        localizedRubricEs = await translateGoalText(localizedRubricEn, "es");
+
+        // Ensure we still maintain an English fallback when the goal language is Spanish
+        if (goalLangCode === "es") {
+          localizedScenarioEn = await translateGoalText(
+            localizedScenarioEs,
+            "en"
+          );
+          localizedRubricEn = await translateGoalText(localizedRubricEs, "en");
+        }
+      } catch (err) {
+        console.warn(
+          "Falling back to default goal Spanish",
+          err?.message || err
+        );
+      }
+    }
+
     const seed = {
       id: `goal_${Date.now()}`,
-      title_en: scenario || seedTitles.en,
-      title_es: scenario || seedTitles.es,
-      rubric_en: rubricEn,
-      rubric_es: rubricEs,
+      title_en: localizedScenarioEn,
+      title_es: localizedScenarioEs,
+      rubric_en: localizedRubricEn,
+      rubric_es: localizedRubricEs,
       lessonScenario: lessonScenario || null,
       successCriteria: successCriteria || null,
       roleplayPrompt: roleplayPrompt || null,
@@ -1290,25 +1453,27 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   }
 
   function goalUiLangCode() {
-    const t = targetLangRef.current || targetLang;
-    if (t === "es") return "en";
-    if (t === "en") return "es";
     const s = supportLangRef.current || supportLang;
-    return s === "es" ? "es" : "en";
+    if (s === "es") return "es";
+    if (s === "en") return "en";
+    const t = targetLangRef.current || targetLang;
+    if (t === "es") return "es";
+    if (t === "en") return "en";
+    return uiLang === "es" ? "es" : "en";
   }
   function goalTitleForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
     return gLang === "es"
-      ? goal.title_es || goal.title_en || ""
-      : goal.title_en || goal.title_es || "";
+      ? goal.title_es || goal.scenario_es || goal.title_en || ""
+      : goal.title_en || goal.title_es || goal.scenario || "";
   }
   function goalRubricForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
     return gLang === "es"
-      ? goal.rubric_es || goal.rubric_en || ""
-      : goal.rubric_en || goal.rubric_es || "";
+      ? goal.rubric_es || goal.successCriteria_es || goal.rubric_en || ""
+      : goal.rubric_en || goal.rubric_es || goal.successCriteria || "";
   }
   function goalTitleForTarget(goal) {
     if (!goal) return "";
@@ -1322,6 +1487,63 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     return targetLangRef.current === "en"
       ? goal.rubric_es || ""
       : goal.rubric_en || "";
+  }
+
+  async function translateGoalText(text, target = "es") {
+    const trimmed = String(text || "").trim();
+    if (!trimmed) return "";
+
+    const prompt =
+      target === "es"
+        ? `Traduce al español neutral y conciso. Devuelve solo JSON {"translation":"..."}.\n${trimmed}`
+        : `Translate to natural US English. Return only JSON {"translation":"..."}.\n${trimmed}`;
+
+    try {
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          model: TRANSLATE_MODEL,
+          text: { format: { type: "text" } },
+          input: prompt,
+        }),
+      });
+
+      const ct = r.headers.get("content-type") || "";
+      const payload = ct.includes("application/json")
+        ? await r.json()
+        : await r.text();
+
+      if (!r.ok) {
+        const msg =
+          payload?.error?.message ||
+          (typeof payload === "string" ? payload : JSON.stringify(payload));
+        throw new Error(msg || `Translate HTTP ${r.status}`);
+      }
+
+      const merged =
+        (typeof payload?.output_text === "string" && payload.output_text) ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join("")
+            )
+            .join(" ")
+            .trim()) ||
+        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
+        (Array.isArray(payload?.choices) &&
+          (payload.choices[0]?.message?.content || "")) ||
+        "";
+
+      const parsed = safeParseJson(merged);
+      return (parsed?.translation || merged || trimmed).trim();
+    } catch (err) {
+      console.warn("Goal translation failed", err?.message || err);
+      return trimmed;
+    }
   }
 
   async function persistCurrentGoal(next) {
@@ -2073,15 +2295,19 @@ Return ONLY JSON:
     if (!src) return;
     if (m.role !== "assistant") return;
 
-    const effectiveSecondary =
-      targetLangRef.current === "en"
-        ? "es"
-        : supportLangRef.current === "es"
-        ? "es"
-        : "en";
+    const supportChoice = supportLangRef.current || supportLang || "en";
+    const target = supportChoice === "es" ? "es" : "en";
 
-    const isSpanish = (m.lang || targetLangRef.current) === "es";
-    const target = isSpanish ? "en" : effectiveSecondary;
+    if ((m.lang || targetLangRef.current) === target) {
+      updateMessage(id, (prev) => ({ ...prev, translation: src, pairs: [] }));
+      await upsertAssistantTurn(id, {
+        text: src,
+        lang: m.lang || targetLangRef.current || "es",
+        translation: src,
+        pairs: [],
+      });
+      return;
+    }
 
     const prompt =
       target === "es"
@@ -2413,6 +2639,10 @@ Do not return the whole sentence as a single chunk.`;
             const isTranslating =
               !secondaryText && !!m.textStream && showTranslations;
 
+            const canReplay =
+              !!m.hasAudio || audioCacheIndexRef.current.has(m.id);
+            const replayLabel = uiLang === "es" ? "Reproducir" : "Replay";
+
             if (!primaryText.trim()) return null;
             return (
               <RowLeft key={m.id}>
@@ -2424,6 +2654,10 @@ Do not return the whole sentence as a single chunk.`;
                   pairs={m.pairs || []}
                   showSecondary={showTranslations}
                   isTranslating={isTranslating}
+                  canReplay={canReplay}
+                  onReplay={() => playSavedClip(m.id)}
+                  isReplaying={replayingId === m.id}
+                  replayLabel={replayLabel}
                 />
               </RowLeft>
             );

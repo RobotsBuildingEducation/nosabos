@@ -9992,35 +9992,119 @@ function generateActionableRealtimeGoal(topicLabel, lesson) {
 /**
  * Generates goal variations from a base template for progression through multiple sessions.
  */
+function translateGoalTextToEs(text, topicLabel, focus) {
+  if (!text) return "";
+  const t = text.toLowerCase();
+  const topic = topicLabel || focus || "";
+  const focusTerm = focus || topicLabel || "";
+
+  const matches = [
+    {
+      test: (s) => s.includes("answer questions about"),
+      build: () => `Responde preguntas sobre ${topic}`,
+    },
+    {
+      test: (s) => s.includes("start a conversation about"),
+      build: () => `Inicia una conversación sobre ${topic}`,
+    },
+    {
+      test: (s) => s.includes("use") && s.includes("real situation"),
+      build: () => `Usa ${focusTerm} en una situación real`,
+    },
+    {
+      test: (s) => s.includes("demonstrates correct use"),
+      build: () => `El usuario demuestra el uso correcto de ${focusTerm}`,
+    },
+    {
+      test: (s) => s.includes("answers questions using"),
+      build: () =>
+        `El usuario responde preguntas usando vocabulario de ${topic} correctamente`,
+    },
+    {
+      test: (s) => s.includes("initiates and sustains conversation"),
+      build: () =>
+        `El usuario inicia y mantiene una conversación sobre ${topic}`,
+    },
+  ];
+
+  const hit = matches.find((m) => m.test(t));
+  return hit ? hit.build() : text;
+}
+
 function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
   const variations = [
     {
       scenario: baseTemplate.scenario,
+      scenario_es: translateGoalTextToEs(baseTemplate.scenario, topicLabel),
       prompt: baseTemplate.prompt,
+      prompt_es: translateGoalTextToEs(baseTemplate.prompt, topicLabel),
       successCriteria: baseTemplate.successCriteria,
+      successCriteria_es: translateGoalTextToEs(
+        baseTemplate.successCriteria,
+        topicLabel
+      ),
     },
   ];
 
   // Add "respond to questions" variation
   variations.push({
     scenario: `Answer questions about ${topicLabel}`,
+    scenario_es: translateGoalTextToEs(
+      `Answer questions about ${topicLabel}`,
+      topicLabel
+    ),
     prompt: `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
+    prompt_es: translateGoalTextToEs(
+      `Ask the learner questions about ${topicLabel}. Have them respond with complete answers.`,
+      topicLabel
+    ),
     successCriteria: `User answers questions using ${topicLabel} vocabulary correctly`,
+    successCriteria_es: translateGoalTextToEs(
+      `User answers questions using ${topicLabel} vocabulary correctly`,
+      topicLabel
+    ),
   });
 
   // Add "start a conversation" variation
   variations.push({
     scenario: `Start a conversation about ${topicLabel}`,
+    scenario_es: translateGoalTextToEs(
+      `Start a conversation about ${topicLabel}`,
+      topicLabel
+    ),
     prompt: `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
+    prompt_es: translateGoalTextToEs(
+      `Let the learner initiate conversation about ${topicLabel}. Respond naturally and encourage them to say more.`,
+      topicLabel
+    ),
     successCriteria: `User initiates and sustains conversation about ${topicLabel}`,
+    successCriteria_es: translateGoalTextToEs(
+      `User initiates and sustains conversation about ${topicLabel}`,
+      topicLabel
+    ),
   });
 
   // Add focus-point specific variations if available
   if (focusPoints.length > 0) {
     variations.push({
       scenario: `Use ${focusPoints[0]} in a real situation`,
+      scenario_es: translateGoalTextToEs(
+        `Use ${focusPoints[0]} in a real situation`,
+        topicLabel,
+        focusPoints[0]
+      ),
       prompt: `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
+      prompt_es: translateGoalTextToEs(
+        `Create a realistic scenario requiring ${focusPoints[0]}. Guide the learner through it.`,
+        topicLabel,
+        focusPoints[0]
+      ),
       successCriteria: `User demonstrates correct use of ${focusPoints[0]}`,
+      successCriteria_es: translateGoalTextToEs(
+        `User demonstrates correct use of ${focusPoints[0]}`,
+        topicLabel,
+        focusPoints[0]
+      ),
     });
   }
 

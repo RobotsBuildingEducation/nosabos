@@ -543,7 +543,7 @@ export const translations = {
     copy_all: "Copiar pregunta",
     grammar_next: "Siguiente",
     practice_next_question: "Siguiente pregunta",
-    practice_skip_question: "Omitir pregunta",
+    practice_skip_question: "Saltar",
     practice_speak_banner_you_said: "Dijiste",
     practice_speak_banner_translation: "Significado",
     practice_speak_banner_xp: "+{xp} XP",
