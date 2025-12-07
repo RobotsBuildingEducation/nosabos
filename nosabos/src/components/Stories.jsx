@@ -1445,6 +1445,13 @@ export default function StoryMode({
       setSessionSummary({ passed: latestPassed, total: totalSentences });
       setSessionComplete(true);
       await finalizePracticeSession(totalSessionXp);
+
+      // Move to the next lesson module when available; otherwise show recap
+      if (onSkip && typeof onSkip === "function") {
+        onSkip();
+        return;
+      }
+
       setShowFullStory(true);
       setCurrentSentenceIndex(0);
       setSentenceCompleted(false);
