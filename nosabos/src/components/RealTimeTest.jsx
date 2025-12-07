@@ -710,11 +710,13 @@ export default function RealTimeTest({
   );
   // Goal-UI language routing
   const goalUiLang = (() => {
-    const t = targetLangRef.current || targetLang;
-    if (t === "es") return "en";
-    if (t === "en") return "es";
     const s = supportLangRef.current || supportLang;
-    return s === "es" ? "es" : "en";
+    if (s === "es") return "es";
+    if (s === "en") return "en";
+    const t = targetLangRef.current || targetLang;
+    if (t === "es") return "es";
+    if (t === "en") return "en";
+    return uiLang === "es" ? "es" : "en";
   })();
   const gtr = translations[goalUiLang] || translations.en;
   const tGoalLabel =
@@ -1371,11 +1373,13 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   }
 
   function goalUiLangCode() {
-    const t = targetLangRef.current || targetLang;
-    if (t === "es") return "en";
-    if (t === "en") return "es";
     const s = supportLangRef.current || supportLang;
-    return s === "es" ? "es" : "en";
+    if (s === "es") return "es";
+    if (s === "en") return "en";
+    const t = targetLangRef.current || targetLang;
+    if (t === "es") return "es";
+    if (t === "en") return "en";
+    return uiLang === "es" ? "es" : "en";
   }
   function goalTitleForUI(goal) {
     if (!goal) return "";
