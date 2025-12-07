@@ -720,7 +720,8 @@ export default function RealTimeTest({
   })();
   const gtr = translations[goalUiLang] || translations.en;
   const tGoalLabel =
-    translations[uiLang]?.ra_goal_label || (uiLang === "es" ? "Meta" : "Goal");
+    translations[goalUiLang]?.ra_goal_label ||
+    (goalUiLang === "es" ? "Meta" : "Goal");
   const tGoalCompletedToast =
     gtr?.ra_goal_completed ||
     (goalUiLang === "es" ? "¡Meta lograda!" : "Goal completed!");
@@ -1350,9 +1351,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     const seed = {
       id: `goal_${Date.now()}`,
       title_en: scenario || seedTitles.en,
-      title_es: scenario || seedTitles.es,
+      title_es: activeGoal.scenario_es || scenario || seedTitles.es,
       rubric_en: rubricEn,
-      rubric_es: rubricEs,
+      rubric_es: activeGoal.successCriteria_es || rubricEs,
       lessonScenario: lessonScenario || null,
       successCriteria: successCriteria || null,
       roleplayPrompt: roleplayPrompt || null,
@@ -1385,15 +1386,15 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     if (!goal) return "";
     const gLang = goalUiLangCode();
     return gLang === "es"
-      ? goal.title_es || goal.title_en || ""
-      : goal.title_en || goal.title_es || "";
+      ? goal.title_es || goal.scenario_es || goal.title_en || ""
+      : goal.title_en || goal.title_es || goal.scenario || "";
   }
   function goalRubricForUI(goal) {
     if (!goal) return "";
     const gLang = goalUiLangCode();
     return gLang === "es"
-      ? goal.rubric_es || goal.rubric_en || ""
-      : goal.rubric_en || goal.rubric_es || "";
+      ? goal.rubric_es || goal.successCriteria_es || goal.rubric_en || ""
+      : goal.rubric_en || goal.rubric_es || goal.successCriteria || "";
   }
   function goalTitleForTarget(goal) {
     if (!goal) return "";
