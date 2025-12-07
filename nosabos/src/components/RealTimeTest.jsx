@@ -1238,6 +1238,8 @@ export default function RealTimeTest({
     const lessonDesc = lessonData?.description?.en || "";
     const cefrLvl = lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
+    const goalLangCode = supportLangRef.current || supportLang || "en";
+    const goalLangName = goalLangCode === "es" ? "Spanish" : "English";
 
     const prompt = `You are creating a conversational practice goal for a language learner.
 
@@ -1246,9 +1248,12 @@ Description: ${lessonDesc}
 Topic: ${topic}
 Focus areas: ${focusPoints.join(", ") || "general practice"}
 Level: ${cefrHint}
+Goal language: ${goalLangName} (write every field in ${goalLangName}, avoid mixing languages)
 
 Generate a short, clear, actionable conversation goal that makes sense for this lesson.
 The goal should be something the learner can demonstrate in a brief voice conversation.
+
+The goal must be written entirely in ${goalLangName}. Do NOT output English if the goal language is Spanish.
 
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {"scenario":"[2-6 word task title]","prompt":"[1-2 sentence roleplay instruction for AI tutor]","successCriteria":"[what the learner must do to succeed]"}`;
