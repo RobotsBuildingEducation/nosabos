@@ -317,10 +317,9 @@ export default function Randomize() {
     <Box
       key={slot.id}
       position={slot.active ? "relative" : "absolute"}
-      left={slot.active ? "auto" : -9999}
-      top={slot.active ? "auto" : 0}
-      width={slot.active ? "100%" : "1px"}
-      height={slot.active ? "auto" : "1px"}
+      inset={slot.active ? "auto" : 0}
+      width="100%"
+      minH={slot.active ? "auto" : "40vh"}
       overflow={slot.active ? "visible" : "hidden"}
       opacity={slot.active ? 1 : 0}
       pointerEvents={slot.active ? "auto" : "none"}
