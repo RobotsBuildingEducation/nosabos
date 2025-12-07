@@ -268,6 +268,7 @@ export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
         voice: resolvedVoice,
         model: "gpt-4o-mini-tts",
         response_format: "opus",
+        stream: false,
       };
 
       const res = await fetch(TTS_ENDPOINT, {

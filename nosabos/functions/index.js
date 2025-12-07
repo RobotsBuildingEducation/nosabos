@@ -5,6 +5,7 @@ const functions = require("firebase-functions/v2");
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
 const { WebSocket } = require("undici");
+const { Readable } = require("node:stream");
 
 // Initialize Admin SDK once
 try {
@@ -260,13 +261,64 @@ exports.proxyTTS = onRequest(
       input,
       voice = "alloy",
       model = "gpt-4o-mini-realtime-preview",
+      response_format: responseFormat = "opus",
       sample_rate: sampleRate = 24000,
+      stream = true,
     } = body;
 
     if (!input) {
       return res.status(400).json({ error: "Missing 'input' text" });
     }
 
+    const useRealtime =
+      stream !== false && model.includes("realtime");
+
+    if (!useRealtime) {
+      // Fallback to REST TTS for cacheable/non-streaming callers
+      try {
+        const upstream = await fetch(
+          "https://api.openai.com/v1/audio/speech",
+          {
+            method: "POST",
+            headers: {
+              ...authzHeader(),
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini-tts",
+              voice,
+              input,
+              response_format: responseFormat,
+            }),
+          }
+        );
+
+        if (!upstream.ok || !upstream.body) {
+          const details = await upstream.text();
+          functions.logger.error(
+            "TTS REST upstream error",
+            upstream.status,
+            details
+          );
+          return res.status(upstream.status).json({
+            error: "OpenAI TTS error",
+            details,
+          });
+        }
+
+        res.status(upstream.status);
+        const contentType =
+          upstream.headers.get("content-type") || "application/octet-stream";
+        res.setHeader("Content-Type", contentType);
+        Readable.fromWeb(upstream.body).pipe(res);
+        return;
+      } catch (err) {
+        functions.logger.error("TTS REST fetch failed", err?.message || err);
+        return res.status(500).json({ error: "OpenAI TTS error" });
+      }
+    }
+
+    // --- Realtime streaming branch ---
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
