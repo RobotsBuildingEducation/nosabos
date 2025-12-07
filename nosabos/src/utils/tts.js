@@ -53,8 +53,6 @@ export function resolveVoicePreference({ lang, langTag } = {}) {
 
 const DEFAULT_SAMPLE_RATE = 24000;
 
-const DEFAULT_SAMPLE_RATE = 24000;
-
 // ============================================================================
 // CACHING LAYER
 // ============================================================================
