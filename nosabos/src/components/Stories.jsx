@@ -50,12 +50,9 @@ import { getLanguageXp } from "../utils/progressTracking";
 import { getRandomVoice, TTS_LANG_TAG, TTS_ENDPOINT } from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
-import {
-  evaluateAttemptStrict,
-  computeAudioMetricsFromBlob,
-  speechReasonTips,
-} from "../utils/speechEvaluation";
+import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
+import { useSpeechPractice } from "../hooks/useSpeechPractice";
 
 /* ================================
    ENV / API
@@ -338,7 +335,6 @@ export default function StoryMode({
   const [isPlayingSupport, setIsPlayingSupport] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [isSynthesizingSupport, setIsSynthesizingSupport] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
   const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
 
@@ -358,8 +354,6 @@ export default function StoryMode({
   const [boundarySupported, setBoundarySupported] = useState(null);
 
   // Refs
-  const mediaRecorderRef = useRef(null);
-  const recognitionRef = useRef(null);
   const audioRef = useRef(null);
   const storyCacheRef = useRef(null);
   const highlightIntervalRef = useRef(null);
@@ -369,11 +363,6 @@ export default function StoryMode({
   const eventSourceRef = useRef(null);
   const currentAudioUrlRef = useRef(null);
   const sessionAwardedRef = useRef(false);
-  const evalRef = useRef({
-    inProgress: false,
-    speechDone: false,
-    timeoutId: null,
-  });
   const usageStatsRef = useRef({
     ttsCalls: 0,
     storyGenerations: 0,
@@ -1231,203 +1220,181 @@ export default function StoryMode({
   const finishLabel =
     t(uiLang, "stories_finish") || (uiLang === "es" ? "Terminar" : "Finish");
 
-  const startRecording = async () => {
-    if (evalRef.current.inProgress) return;
-    evalRef.current.inProgress = true;
-    evalRef.current.speechDone = false;
+  const handleEvaluationResult = useCallback(
+    async ({
+      evaluation,
+      recognizedText = "",
+      confidence = 0,
+      audioMetrics = null,
+      method = "",
+      error = null,
+    }) => {
+      const target = currentSentence?.tgt || "";
+      if (!target) return;
+      const npubLive = strongNpub(useUserStore.getState().user);
 
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) {
-      toast({
-        title:
-          uiLang === "es"
-            ? "Reconocimiento de voz no disponible"
-            : "Speech recognition unavailable",
-        description:
-          uiLang === "es"
-            ? "Para calificar, usa un navegador Chromium con acceso al micrófono."
-            : "For grading, please use a Chromium-based browser with microphone access.",
-        status: "warning",
-        duration: 3500,
-      });
-    }
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      mediaRecorderRef.current = mr;
-
-      const chunks = [];
-      mr.ondataavailable = (e) => {
-        if (e.data?.size) chunks.push(e.data);
-      };
-      mr.onstop = async () => {
-        const blob = new Blob(chunks, { type: "audio/webm" });
-        if (!evalRef.current.speechDone) {
-          await evaluateWithAudioAnalysis(blob);
-        }
-        try {
-          stream.getTracks().forEach((t) => t.stop());
-        } catch {}
-        evalRef.current.inProgress = false;
-        clearTimeout(evalRef.current.timeoutId);
-        setIsRecording(false);
-      };
-
-      if (SR) {
-        const recog = new SR();
-        recognitionRef.current = recog;
-        recog.lang = (BCP47[targetLang] || BCP47.es).stt;
-        recog.continuous = true; // Enable continuous mode for manual silence detection
-        recog.interimResults = true; // Enable interim results to detect speech activity
-        recog.maxAlternatives = 5;
-
-        let finalTranscript = "";
-        let finalConfidence = 0;
-        let silenceTimeoutId = null;
-        let hasReceivedSpeech = false;
-
-        const finishRecording = () => {
-          if (!evalRef.current.inProgress) return;
-          evalRef.current.speechDone = true;
-          if (evalRef.current.timeoutId)
-            clearTimeout(evalRef.current.timeoutId);
-          evalRef.current.timeoutId = null;
-          if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
-
-          handleEvaluationResult({
-            recognizedText: finalTranscript,
-            confidence: finalConfidence,
-            method: "live-speech-api",
-          });
-
-          try {
-            recog.stop();
-          } catch {}
-          try {
-            mr.stop();
-          } catch {}
-        };
-
-        recog.onresult = (evt) => {
-          if (!evalRef.current.inProgress) return;
-
-          // Clear any existing silence timeout
-          if (silenceTimeoutId) {
-            clearTimeout(silenceTimeoutId);
-            silenceTimeoutId = null;
-          }
-
-          // Process results to build up the transcript
-          for (let i = 0; i < evt.results.length; i++) {
-            const result = evt.results[i];
-            if (result.isFinal) {
-              hasReceivedSpeech = true;
-              finalTranscript = result[0].transcript;
-              finalConfidence =
-                typeof result[0].confidence === "number"
-                  ? result[0].confidence
-                  : 0;
-            }
-          }
-
-          // Start silence detection timer - wait for pauseMs of silence before finishing
-          if (hasReceivedSpeech) {
-            silenceTimeoutId = setTimeout(() => {
-              finishRecording();
-            }, pauseMs);
-          }
-        };
-
-        recog.onerror = () => {
-          evalRef.current.speechDone = false;
-          if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
-          try {
-            mr.stop();
-          } catch {}
-        };
-        recog.onend = () => {
-          if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
-          if (evalRef.current.inProgress && !evalRef.current.speechDone) {
-            try {
-              mr.stop();
-            } catch {}
-          }
-        };
-        try {
-          recog.start();
-        } catch {}
+      if (error) {
+        toast({
+          title: uiLang === "es" ? "No se pudo evaluar" : "Could not evaluate",
+          description:
+            uiLang === "es"
+              ? "Vuelve a intentarlo con una conexión estable."
+              : "Please try again with a stable connection.",
+          status: "error",
+          duration: 2500,
+        });
+        return;
       }
 
-      mr.start();
-      setIsRecording(true);
+      if (!evaluation) return;
 
-      // Maximum timeout as a safety measure (30 seconds)
-      evalRef.current.timeoutId = setTimeout(() => {
-        if (!evalRef.current.inProgress) return;
-        evalRef.current.speechDone = false;
-        try {
-          recognitionRef.current?.stop?.();
-        } catch {}
-        try {
-          mr.stop();
-        } catch {}
-      }, 30000);
+      if (!evaluation.pass) {
+        const tips = speechReasonTips(evaluation.reasons, {
+          uiLang,
+          targetLabel: targetDisplayName,
+        });
+
+        setLastSuccessInfo(null);
+
+        toast({
+          title: uiText.almost,
+          description: tips.join(" "),
+          status: "warning",
+          duration: 3800,
+        });
+
+        // log failed attempt (0 XP)
+        saveStoryTurn(npubLive, {
+          ok: false,
+          mode: "sentence",
+          lang: targetLang,
+          supportLang,
+          sentenceIndex: currentSentenceIndex,
+          target,
+          recognizedText,
+          confidence,
+          audioMetrics: audioMetrics || null,
+          eval: evaluation,
+          xpAwarded: 0,
+          method,
+        }).catch(() => {});
+        return;
+      }
+
+      // Passed — advance (XP awarded once at the end of the story)
+      setPassedCount((c) => c + 1);
+
+      // log passing attempt with 0 awarded now (we award at session end)
+      saveStoryTurn(npubLive, {
+        ok: true,
+        mode: "sentence",
+        lang: targetLang,
+        supportLang,
+        sentenceIndex: currentSentenceIndex,
+        target,
+        recognizedText,
+        confidence,
+        audioMetrics: audioMetrics || null,
+        eval: evaluation,
+        xpAwarded: 0,
+        method,
+      }).catch(() => {});
+
+      setLastSuccessInfo({
+        score: evaluation.score,
+        recognizedText,
+        translation: currentSentence?.sup || "",
+      });
+
+      // Mark sentence as completed, wait for user to click "Next"
+      setSentenceCompleted(true);
+    },
+    [
+      currentSentence,
+      currentSentenceIndex,
+      supportLang,
+      targetDisplayName,
+      targetLang,
+      toast,
+      uiLang,
+      uiText,
+    ]
+  );
+
+  const {
+    startRecording: startSpeakRecording,
+    stopRecording: stopSpeakRecording,
+    isRecording: isSpeakRecording,
+    supportsSpeech: supportsSpeak,
+  } = useSpeechPractice({
+    targetText: currentSentence?.tgt || "",
+    targetLang,
+    onResult: handleEvaluationResult,
+    timeoutMs: pauseMs,
+  });
+
+  const isRecording = isSpeakRecording;
+
+  const handleRecordPress = useCallback(async () => {
+    stopAllAudio();
+    if (isSpeakRecording) {
+      stopSpeakRecording();
+      return;
+    }
+
+    setLastSuccessInfo(null);
+
+    try {
+      await startSpeakRecording();
     } catch (err) {
-      evalRef.current.inProgress = false;
-      console.error("Mic error:", err);
-      toast({
-        title: uiLang === "es" ? "Error de micrófono" : "Microphone error",
-        description:
-          uiLang === "es"
-            ? "Revisa permisos e inténtalo de nuevo."
-            : "Check permissions and try again.",
-        status: "error",
-        duration: 3000,
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    try {
-      recognitionRef.current?.stop?.();
-    } catch {}
-    try {
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state === "recording"
-      ) {
-        mediaRecorderRef.current.stop();
+      const code = err?.code;
+      if (code === "no-speech-recognition") {
+        toast({
+          title:
+            uiLang === "es"
+              ? "Reconocimiento de voz no disponible"
+              : "Speech recognition unavailable",
+          description:
+            uiLang === "es"
+              ? "Para calificar, usa un navegador Chromium con acceso al micrófono."
+              : "For grading, please use a Chromium-based browser with microphone access.",
+          status: "warning",
+          duration: 3500,
+        });
+      } else if (code === "mic-denied") {
+        toast({
+          title:
+            uiLang === "es"
+              ? "Permiso de micrófono denegado"
+              : "Microphone denied",
+          description:
+            uiLang === "es"
+              ? "Activa el micrófono en la configuración del navegador."
+              : "Enable microphone access in your browser settings.",
+          status: "error",
+          duration: 3200,
+        });
+      } else {
+        toast({
+          title:
+            uiLang === "es"
+              ? "No se pudo iniciar la grabación"
+              : "Recording failed",
+          description:
+            uiLang === "es" ? "Inténtalo nuevamente." : "Please try again.",
+          status: "error",
+          duration: 2500,
+        });
       }
-    } catch {}
-  };
-
-  const evaluateWithAudioAnalysis = async (blob) => {
-    try {
-      const metrics = await computeAudioMetricsFromBlob(blob);
-      handleEvaluationResult({
-        recognizedText: "",
-        confidence: 0,
-        audioMetrics: metrics,
-        method: "audio-fallback",
-      });
-    } catch (e) {
-      console.error("Audio analysis failed:", e);
-      toast({
-        title:
-          uiLang === "es"
-            ? "No se pudo evaluar el audio"
-            : "Could not evaluate audio",
-        description:
-          uiLang === "es"
-            ? "Vuelve a intentarlo hablando claramente."
-            : "Please try again, speak clearly in the target language.",
-        status: "error",
-        duration: 2500,
-      });
-      setIsRecording(false);
     }
-  };
+  }, [
+    isSpeakRecording,
+    startSpeakRecording,
+    stopAllAudio,
+    stopSpeakRecording,
+    toast,
+    uiLang,
+  ]);
 
   /* ----------------------------- Award once at session end ----------------------------- */
   const computeStoryXpReward = () =>
@@ -1458,85 +1425,6 @@ export default function StoryMode({
     } catch {}
   };
 
-  // STRICT gate handler — only advances on pass; accumulate XP; log attempts
-  const handleEvaluationResult = async ({
-    recognizedText = "",
-    confidence = 0,
-    audioMetrics,
-    method,
-  }) => {
-    const target = currentSentence?.tgt || "";
-    const evalOut = evaluateAttemptStrict({
-      recognizedText,
-      confidence,
-      audioMetrics,
-      targetSentence: target,
-      lang: targetLang,
-    });
-    const npubLive = strongNpub(useUserStore.getState().user);
-
-    if (!evalOut.pass) {
-      const tips = speechReasonTips(evalOut.reasons, {
-        uiLang,
-        targetLabel: targetDisplayName,
-      });
-
-      setLastSuccessInfo(null);
-
-      toast({
-        title: uiText.almost,
-        description: tips.join(" "),
-        status: "warning",
-        duration: 3800,
-      });
-
-      // log failed attempt (0 XP)
-      saveStoryTurn(npubLive, {
-        ok: false,
-        mode: "sentence",
-        lang: targetLang,
-        supportLang,
-        sentenceIndex: currentSentenceIndex,
-        target,
-        recognizedText,
-        confidence,
-        audioMetrics: audioMetrics || null,
-        eval: evalOut,
-        xpAwarded: 0,
-      }).catch(() => {});
-      setIsRecording(false);
-      return;
-    }
-
-    // Passed — advance (XP awarded once at the end of the story)
-    setPassedCount((c) => c + 1);
-
-    // log passing attempt with 0 awarded now (we award at session end)
-    saveStoryTurn(npubLive, {
-      ok: true,
-      mode: "sentence",
-      lang: targetLang,
-      supportLang,
-      sentenceIndex: currentSentenceIndex,
-      target,
-      recognizedText,
-      confidence,
-      audioMetrics: audioMetrics || null,
-      eval: evalOut,
-      xpAwarded: 0,
-    }).catch(() => {});
-
-    setLastSuccessInfo({
-      score: evalOut.score,
-      recognizedText,
-      translation: currentSentence?.sup || "",
-    });
-
-    // Mark sentence as completed, wait for user to click "Next"
-    setSentenceCompleted(true);
-    setIsRecording(false);
-  };
-
   // Handle manual advancement to next sentence
   const handleNextSentence = async () => {
     const isLast =
@@ -1557,6 +1445,13 @@ export default function StoryMode({
       setSessionSummary({ passed: latestPassed, total: totalSentences });
       setSessionComplete(true);
       await finalizePracticeSession(totalSessionXp);
+
+      // Move to the next lesson module when available; otherwise show recap
+      if (onSkip && typeof onSkip === "function") {
+        onSkip();
+        return;
+      }
+
       setShowFullStory(true);
       setCurrentSentenceIndex(0);
       setSentenceCompleted(false);
@@ -1572,22 +1467,11 @@ export default function StoryMode({
   useEffect(() => {
     const cleanup = () => {
       stopAllAudio();
-      try {
-        recognitionRef.current?.stop?.();
-      } catch {}
       if (eventSourceRef.current) {
         eventSourceRef.current.close();
         eventSourceRef.current = null;
       }
       if (audioRef.current) clearInterval(audioRef.current);
-      try {
-        if (
-          mediaRecorderRef.current &&
-          mediaRecorderRef.current.state === "recording"
-        )
-          mediaRecorderRef.current.stop();
-      } catch {}
-      setIsRecording(false);
       if (currentAudioUrlRef.current) {
         try {
           URL.revokeObjectURL(currentAudioUrlRef.current);
@@ -1901,7 +1785,7 @@ export default function StoryMode({
                         sessionAwardedRef.current = false;
                         setPassedCount(0);
                         setHighlightedWordIndex(-1);
-                        setIsRecording(false);
+                        stopSpeakRecording();
                       }}
                       size="lg"
                       px={8}
@@ -1959,10 +1843,7 @@ export default function StoryMode({
                     <Center>
                       <HStack spacing={4}>
                         <Button
-                          onClick={() => {
-                            if (isRecording) return stopRecording();
-                            return startRecording();
-                          }}
+                          onClick={handleRecordPress}
                           size="lg"
                           height="60px"
                           px={8}
@@ -1976,6 +1857,7 @@ export default function StoryMode({
                           fontWeight="600"
                           fontSize="lg"
                           leftIcon={<PiMicrophoneStageDuotone />}
+                          isDisabled={!supportsSpeak || !currentSentence?.tgt}
                           _hover={{
                             bg: isRecording
                               ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
