@@ -4,6 +4,7 @@
 const functions = require("firebase-functions/v2");
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const { WebSocket } = require("undici");
 
 // Initialize Admin SDK once
 try {
@@ -258,50 +259,120 @@ exports.proxyTTS = onRequest(
     const {
       input,
       voice = "alloy",
-      model = "gpt-4o-mini-tts",
-      response_format = "mp3",
+      model = "gpt-4o-mini-realtime-preview",
+      sample_rate: sampleRate = 24000,
     } = body;
 
     if (!input) {
       return res.status(400).json({ error: "Missing 'input' text" });
     }
 
-    try {
-      const response = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders?.();
+    res.write(`event:config\ndata:${JSON.stringify({ sampleRate })}\n\n`);
+
+    const ws = new WebSocket(
+      `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`,
+      {
         headers: {
           ...authzHeader(),
-          "Content-Type": "application/json",
+          "OpenAI-Beta": "realtime=v1",
         },
-        body: JSON.stringify({
-          model,
-          input,
-          voice,
-          response_format,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        functions.logger.error("OpenAI TTS error:", response.status, errorText);
-        return res.status(response.status).json({
-          error: "OpenAI TTS error",
-          details: errorText,
-        });
       }
+    );
 
-      const audioBuffer = await response.arrayBuffer();
+    let closed = false;
+    const cleanup = (status = 200) => {
+      if (closed) return;
+      closed = true;
+      try {
+        ws.close();
+      } catch {}
+      res.write(`event:done\ndata:done\n\n`);
+      res.end();
+    };
 
-      res.setHeader("Content-Type", `audio/${response_format}`);
-      res.setHeader("Content-Length", audioBuffer.byteLength);
-      return res.send(Buffer.from(audioBuffer));
-    } catch (error) {
-      functions.logger.error("TTS proxy error:", error);
-      return res.status(500).json({
-        error: "TTS generation failed",
-        details: error.message,
-      });
-    }
+    const sendError = (message) => {
+      if (closed) return;
+      res.write(`event:error\ndata:${JSON.stringify({ message })}\n\n`);
+      cleanup(500);
+    };
+
+    ws.on("open", () => {
+      try {
+        ws.send(
+          JSON.stringify({
+            type: "session.update",
+            session: {
+              voice,
+              input_audio_format: "pcm16",
+              output_audio_format: "pcm16",
+              model,
+              input_audio_samplerate: sampleRate,
+              output_audio_samplerate: sampleRate,
+            },
+          })
+        );
+
+        ws.send(
+          JSON.stringify({
+            type: "response.create",
+            response: {
+              modalities: ["output_audio"],
+              input_text: input,
+              instructions: "Read the text aloud.",
+            },
+          })
+        );
+      } catch (err) {
+        functions.logger.error("Failed to start realtime session", err);
+        sendError("Failed to start realtime session");
+      }
+    });
+
+    ws.on("message", (data) => {
+      try {
+        const event = JSON.parse(data.toString());
+        switch (event.type) {
+          case "output_audio_buffer.append": {
+            const audio = event.audio;
+            if (audio) {
+              res.write(`event:audio\ndata:${audio}\n\n`);
+            }
+            break;
+          }
+          case "output_audio_buffer.commit": {
+            // keep-alive marker, no-op
+            break;
+          }
+          case "response.completed":
+          case "response.finished":
+          case "response.done": {
+            cleanup();
+            break;
+          }
+          case "error":
+          case "response.error": {
+            const message = event.error?.message || "Realtime error";
+            functions.logger.error("Realtime TTS error", message);
+            sendError(message);
+            break;
+          }
+          default:
+            break;
+        }
+      } catch (err) {
+        functions.logger.error("Realtime message parse error", err);
+      }
+    });
+
+    ws.on("close", () => cleanup());
+    ws.on("error", (err) => {
+      functions.logger.error("Realtime WebSocket error", err);
+      sendError("Realtime WebSocket error");
+    });
   }
 );
 

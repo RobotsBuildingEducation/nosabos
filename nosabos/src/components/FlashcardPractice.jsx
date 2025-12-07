@@ -25,7 +25,7 @@ import {
   RiEyeLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
-import { getRandomVoice } from "../utils/tts";
+import { getRandomVoice, startRealtimeTTSPlayback } from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
@@ -135,7 +135,7 @@ export default function FlashcardPractice({
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const streamingRef = useRef(false);
-  const audioRef = useRef(null);
+  const ttsPlaybackRef = useRef(null);
   const toast = useToast();
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
@@ -242,10 +242,8 @@ export default function FlashcardPractice({
     setIsStreaming(false);
     setIsPlayingAudio(false);
     streamingRef.current = false;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
+    ttsPlaybackRef.current?.stop?.();
+    ttsPlaybackRef.current = null;
     if (isRecording) {
       stopRecording();
     }
@@ -343,45 +341,21 @@ export default function FlashcardPractice({
     if (!streamedAnswer || isPlayingAudio) return;
 
     // Stop any currently playing audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
+    ttsPlaybackRef.current?.stop?.();
+    ttsPlaybackRef.current = null;
 
     setIsPlayingAudio(true);
 
     try {
-      const res = await fetch(
-        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: streamedAnswer,
-            voice: getRandomVoice(),
-            model: "gpt-4o-mini-tts",
-            response_format: "mp3",
-          }),
-        }
-      );
-
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-
-      const cleanup = () => {
-        URL.revokeObjectURL(url);
-        setIsPlayingAudio(false);
-        audioRef.current = null;
-      };
-
-      audio.onended = cleanup;
-      audio.onerror = cleanup;
-
-      await audio.play();
+      const playback = startRealtimeTTSPlayback({
+        text: streamedAnswer,
+        voice: getRandomVoice(),
+        onFirstAudio: () => setIsPlayingAudio(true),
+      });
+      ttsPlaybackRef.current = playback;
+      await playback.done;
+      ttsPlaybackRef.current = null;
+      setIsPlayingAudio(false);
     } catch (error) {
       console.error("TTS error:", error);
       setIsPlayingAudio(false);

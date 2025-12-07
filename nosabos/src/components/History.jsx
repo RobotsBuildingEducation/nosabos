@@ -35,7 +35,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
-import { getRandomVoice } from "../utils/tts";
+import { getRandomVoice, startRealtimeTTSPlayback } from "../utils/tts";
 
 /* ---------------------------
    Minimal i18n helper
@@ -720,7 +720,7 @@ export default function History({
   const [isFinishing, setIsFinishing] = useState(false);
 
   // Refs for audio
-  const currentAudioRef = useRef(null);
+  const ttsPlaybackRef = useRef(null);
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -1158,12 +1158,9 @@ export default function History({
       if ("speechSynthesis" in window) speechSynthesis.cancel();
     } catch {}
     try {
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current.currentTime = 0;
-        currentAudioRef.current = null;
-      }
+      ttsPlaybackRef.current?.stop?.();
     } catch {}
+    ttsPlaybackRef.current = null;
     setIsReadingTarget(false);
     setIsReadingSupport(false);
   };
@@ -1174,35 +1171,16 @@ export default function History({
     setReading(true);
 
     try {
-      const res = await fetch(
-        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: text,
-            voice: getRandomVoice(),
-            model: "gpt-4o-mini-tts",
-            response_format: "mp3",
-          }),
-        }
-      );
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      currentAudioRef.current = audio;
-
-      const cleanup = () => {
-        URL.revokeObjectURL(url);
-        setReading(false);
-        currentAudioRef.current = null;
-        onDone?.();
-      };
-      audio.onended = cleanup;
-      audio.onerror = cleanup;
-
-      await audio.play();
+      const playback = startRealtimeTTSPlayback({
+        text,
+        voice: getRandomVoice(),
+        onFirstAudio: () => setReading(true),
+      });
+      ttsPlaybackRef.current = playback;
+      await playback.done;
+      ttsPlaybackRef.current = null;
+      setReading(false);
+      onDone?.();
       return;
     } catch {
       if ("speechSynthesis" in window) {

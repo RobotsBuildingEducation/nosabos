@@ -11,9 +11,6 @@ export const TTS_LANG_TAG = {
 
 export const DEFAULT_TTS_VOICE = "alloy";
 
-// Use opus format for faster transfer (smaller files than mp3)
-const TTS_FORMAT = "opus";
-
 // Voices supported by BOTH TTS API and Realtime API
 // Note: fable, onyx, nova are TTS-only and NOT supported by Realtime API
 const SUPPORTED_TTS_VOICES = new Set([
@@ -53,6 +50,10 @@ export function resolveVoicePreference({ lang, langTag } = {}) {
   // Always use random voice for variety
   return getRandomVoice();
 }
+
+const DEFAULT_SAMPLE_RATE = 24000;
+
+const DEFAULT_SAMPLE_RATE = 24000;
 
 // ============================================================================
 // CACHING LAYER
@@ -268,7 +269,7 @@ export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
         input: text,
         voice: resolvedVoice,
         model: "gpt-4o-mini-tts",
-        response_format: TTS_FORMAT,
+        response_format: "opus",
       };
 
       const res = await fetch(TTS_ENDPOINT, {
@@ -347,6 +348,164 @@ export async function isCached(text, langTag = TTS_LANG_TAG.es) {
   }
 
   return false;
+}
+
+// ============================================================================
+// REALTIME STREAMING TTS (low-latency playback)
+// ============================================================================
+
+function parseSseEvents(buffer) {
+  const events = [];
+  let remaining = buffer;
+  let idx = remaining.indexOf("\n\n");
+  while (idx !== -1) {
+    const raw = remaining.slice(0, idx);
+    remaining = remaining.slice(idx + 2);
+    const lines = raw.split(/\n/);
+    let event = "message";
+    const dataLines = [];
+    for (const line of lines) {
+      if (line.startsWith("event:")) {
+        event = line.slice(6).trim();
+      } else if (line.startsWith("data:")) {
+        dataLines.push(line.slice(5).trim());
+      }
+    }
+    events.push({ event, data: dataLines.join("\n") });
+    idx = remaining.indexOf("\n\n");
+  }
+  return { events, remaining };
+}
+
+function base64ToInt16(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new Int16Array(bytes.buffer);
+}
+
+function schedulePcmChunk({ ctx, int16, sampleRate, startAt, scheduledSources }) {
+  const audioBuffer = ctx.createBuffer(1, int16.length, sampleRate);
+  const channel = audioBuffer.getChannelData(0);
+  for (let i = 0; i < int16.length; i++) {
+    channel[i] = int16[i] / 32768;
+  }
+
+  const source = ctx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(ctx.destination);
+  source.start(startAt.time);
+  scheduledSources.push(source);
+  startAt.time += audioBuffer.duration;
+}
+
+/**
+ * Start realtime OpenAI TTS playback. Returns a controller with a `stop()`
+ * function and a `done` promise that resolves once playback ends.
+ */
+export function startRealtimeTTSPlayback({
+  text,
+  voice = getRandomVoice(),
+  model = "gpt-4o-mini-realtime-preview",
+  sampleRate = DEFAULT_SAMPLE_RATE,
+  onFirstAudio,
+  signal,
+}) {
+  const abortController = new AbortController();
+  if (signal) {
+    signal.addEventListener("abort", () => abortController.abort(), {
+      once: true,
+    });
+  }
+
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new AudioCtx({ sampleRate });
+  const scheduledSources = [];
+  const startAt = { time: ctx.currentTime + 0.05 };
+  let firstAudioSent = false;
+  let stopped = false;
+
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    abortController.abort();
+    scheduledSources.forEach((src) => {
+      try {
+        src.stop();
+      } catch {}
+    });
+    ctx.close?.();
+  };
+
+  const done = (async () => {
+    const res = await fetch(TTS_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: abortController.signal,
+      body: JSON.stringify({
+        input: text,
+        voice: sanitizeVoice(voice),
+        model,
+        sample_rate: sampleRate,
+      }),
+    });
+
+    if (!res.ok || !res.body) {
+      throw new Error(`Realtime TTS ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let doneStreaming = false;
+
+    while (!doneStreaming) {
+      const { value, done: readerDone } = await reader.read();
+      if (readerDone) break;
+      buffer += decoder.decode(value, { stream: true });
+      const { events, remaining } = parseSseEvents(buffer);
+      buffer = remaining;
+      for (const evt of events) {
+        if (evt.event === "audio" && evt.data) {
+          const int16 = base64ToInt16(evt.data);
+          schedulePcmChunk({
+            ctx,
+            int16,
+            sampleRate,
+            startAt,
+            scheduledSources,
+          });
+          if (!firstAudioSent) {
+            firstAudioSent = true;
+            onFirstAudio?.();
+          }
+        } else if (evt.event === "config" && evt.data) {
+          // Config event is informational only for now
+        } else if (evt.event === "error") {
+          try {
+            const parsed = JSON.parse(evt.data);
+            throw new Error(parsed?.message || "Realtime TTS error");
+          } catch (err) {
+            throw err;
+          }
+        } else if (evt.event === "done") {
+          doneStreaming = true;
+          break;
+        }
+      }
+    }
+
+    const remainingMs = Math.max((startAt.time - ctx.currentTime) * 1000, 0);
+    if (remainingMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, remainingMs));
+    }
+    await ctx.close?.();
+  })();
+
+  return { stop, done };
 }
 
 /**

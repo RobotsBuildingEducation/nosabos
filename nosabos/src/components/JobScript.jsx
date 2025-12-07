@@ -39,7 +39,7 @@ import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { fetchTTSBlob } from "../utils/tts";
+import { startRealtimeTTSPlayback } from "../utils/tts";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -965,7 +965,7 @@ export default function JobScript({
 
   // Audio / recording
   const currentAudioRef = useRef(null);
-  const currentAudioUrlRef = useRef(null);
+  const ttsPlaybackRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recognitionRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -1259,6 +1259,10 @@ export default function JobScript({
     try {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
     } catch {}
+    try {
+      ttsPlaybackRef.current?.stop();
+    } catch {}
+    ttsPlaybackRef.current = null;
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current.currentTime = 0;
@@ -1270,38 +1274,16 @@ export default function JobScript({
 
   const playWithOpenAITTS = async (text, langTag, setLoading) => {
     try {
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current = null;
-      }
-      if (currentAudioUrlRef.current) {
-        try {
-          URL.revokeObjectURL(currentAudioUrlRef.current);
-        } catch {}
-        currentAudioUrlRef.current = null;
-      }
-
-      // Global cache in tts.js handles caching (memory + IndexedDB)
-      const blob = await fetchTTSBlob({
+      stopAllAudio();
+      const playback = startRealtimeTTSPlayback({
         text,
-        langTag,
+        voice: getRandomVoice(),
+        onFirstAudio: () => setLoading(true),
       });
-      const audioUrl = URL.createObjectURL(blob);
-      currentAudioUrlRef.current = audioUrl;
-
-      const audio = new Audio(audioUrl);
-      currentAudioRef.current = audio;
-
-      audio.onended = () => {
-        setLoading(false);
-        currentAudioRef.current = null;
-      };
-      audio.onerror = () => {
-        setLoading(false);
-        currentAudioRef.current = null;
-      };
-
-      await audio.play();
+      ttsPlaybackRef.current = playback;
+      await playback.done;
+      ttsPlaybackRef.current = null;
+      setLoading(false);
     } catch (e) {
       setLoading(false);
       throw e;
