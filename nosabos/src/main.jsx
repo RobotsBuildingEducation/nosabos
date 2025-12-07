@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
+import Experiments from "./components/Experiments.jsx";
 
 const hasStoredKey = () => {
   if (typeof window === "undefined") return false;
@@ -47,7 +48,7 @@ createRoot(document.getElementById("root")).render(
       <Routes>
         <Route path="/" element={<AppContainer />} />
         <Route path="/onboarding/*" element={<AppContainer />} />
-        {/* <Route path="/experiments" element={<RealtimeAgent />} /> */}
+        <Route path="/experiments" element={<Experiments />} />
       </Routes>
     </Router>
   </ChakraProvider>
