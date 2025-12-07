@@ -456,16 +456,22 @@ export default function StoryMode({
   // Normalize incoming story to { fullStory: { tgt, sup }, sentences: [{tgt,sup}, ...] }
   function normalizeStory(raw, tgtCode, supCode) {
     if (!raw) return null;
-    const pick = (obj, code, fallback) =>
-      obj?.[code] ??
-      (code === "es" ? obj?.es : code === "en" ? obj?.en : undefined) ??
-      obj?.[fallback];
+    const pick = (obj, code, fallback) => {
+      if (!obj) return "";
+      const primary = obj?.[code];
+      if (typeof primary === "string" && primary.trim()) return primary;
+      if (fallback && typeof obj?.[fallback] === "string") return obj[fallback];
+      const firstValue = Object.values(obj || {}).find(
+        (v) => typeof v === "string" && v.trim()
+      );
+      return firstValue || "";
+    };
 
-    const fullTgt = pick(raw.fullStory || {}, tgtCode, "es");
-    const fullSup = pick(raw.fullStory || {}, supCode, "en");
+    const fullTgt = pick(raw.fullStory || {}, tgtCode, supCode);
+    const fullSup = pick(raw.fullStory || {}, supCode, tgtCode);
     const sentences = (raw.sentences || []).map((s) => ({
-      tgt: s?.[tgtCode] ?? s?.es ?? s?.en ?? "",
-      sup: s?.[supCode] ?? s?.en ?? s?.es ?? "",
+      tgt: pick(s, tgtCode, supCode),
+      sup: pick(s, supCode, tgtCode),
     }));
 
     if (!fullTgt || !sentences.length) return null;
@@ -709,9 +715,15 @@ export default function StoryMode({
             : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
           : "Create a simple conversational story appropriate for language practice.";
 
+      const targetLanguageRule =
+        tLang === "es"
+          ? "All target sentences must be in Spanish."
+          : `All target sentences must be in ${tName}. Do NOT use Spanish or any other language for the target sentences.`;
+
       const prompt = [
         "You are a language tutor. Generate a short, engaging conversational story",
         `for a learner practicing ${tName} (${tLang}). Difficulty: ${diff}.`,
+        targetLanguageRule,
         `Also provide a brief support translation in ${sName} (${sLang}).`,
         scenarioDirective,
         "",
