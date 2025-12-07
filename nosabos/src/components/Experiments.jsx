@@ -14,6 +14,7 @@ export default function Experiments() {
   const audioRef = useRef(null);
   const [activePhrase, setActivePhrase] = useState("");
   const [error, setError] = useState("");
+  const [info, setInfo] = useState("");
 
   const stopAudio = () => {
     try {
@@ -29,9 +30,17 @@ export default function Experiments() {
 
   useEffect(() => stopAudio, []);
 
+  const explainGeminiLimitation = () => {
+    setError("");
+    setInfo(
+      "Gemini TTS necesita una llamada de servidor para proteger la clave, así que no se puede ejecutar solo desde el navegador."
+    );
+  };
+
   const handleSpeak = async (phrase) => {
     stopAudio();
     setError("");
+    setInfo("");
     setActivePhrase(phrase);
 
     try {
@@ -84,10 +93,21 @@ export default function Experiments() {
           Pulsa en reproducir para escuchar cada frase a través de <code>/proxyTTS</code>.
         </Text>
 
+        <Button variant="outline" size="sm" alignSelf="flex-start" onClick={explainGeminiLimitation}>
+          ¿Gemini TTS sin /proxyTTS?
+        </Button>
+
         {error && (
           <Alert status="error">
             <AlertIcon />
             {error}
+          </Alert>
+        )}
+
+        {info && (
+          <Alert status="info">
+            <AlertIcon />
+            {info}
           </Alert>
         )}
 
