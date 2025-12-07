@@ -281,7 +281,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
           {`${t?.teams_view_my_teams || "My teams"} (${myTeams.length})`}
         </Text>
         {!myTeams.length ? (
-          <Alert status="info">
+          <Alert status="warning" color="black">
             <AlertIcon />
             {t?.teams_view_empty ||
               "Create a team to start tracking progress together."}

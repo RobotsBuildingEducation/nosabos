@@ -96,12 +96,7 @@ export default function TeamsDrawer({
             </TabList>
             <TabPanels>
               <TabPanel px={0}>
-                <TeamFeed
-                  userLanguage={userLanguage}
-                  t={t}
-                  allowPosts={allowPosts}
-                  onAllowPostsChange={onAllowPostsChange}
-                />
+                <TeamFeed t={t} allowPosts={allowPosts} onAllowPostsChange={onAllowPostsChange} />
               </TabPanel>
               <TabPanel>
                 <TeamCreation userLanguage={userLanguage} onTeamCreated={handleTeamCreated} t={t} />

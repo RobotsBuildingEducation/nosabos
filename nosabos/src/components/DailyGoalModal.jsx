@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -25,42 +25,10 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { FiTarget, FiZap, FiClock } from "react-icons/fi";
 import { database } from "../firebaseResources/firebaseResources";
+import { translations as allTranslations, t as translate } from "../utils/translation.jsx";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [25, 50, 75, 100, 150];
-
-const I18N = {
-  en: {
-    quickPicks: "Quick picks",
-    fineTune: "Fine-tune",
-    xpUnit: "XP / day",
-    levelExplainer: (pct, lvls) =>
-      `Each level is 100 XP. This goal is ${pct}% of a level (≈ ${lvls} level${
-        lvls === "1" ? "" : "s"
-      } per day).`,
-    goalPreview: "Goal preview",
-    resetsIn: (when) => `Resets in 24h · ${when}`,
-    toastSaved: "Daily goal saved",
-    errNoUserTitle: "No user ID",
-    errNoUserDesc: "Please sign in again.",
-    errSaveTitle: "Could not save goal",
-  },
-  es: {
-    quickPicks: "Atajos",
-    fineTune: "Ajuste fino",
-    xpUnit: "XP / día",
-    levelExplainer: (pct, lvls) =>
-      `Cada nivel = 100 XP. Esta meta es el ${pct}% de un nivel (≈ ${lvls} nivel${
-        lvls === "1" ? "" : "es"
-      } por día).`,
-    goalPreview: "Vista previa de la meta",
-    resetsIn: (when) => `Se reinicia en 24 h · ${when}`,
-    toastSaved: "Meta diaria guardada",
-    errNoUserTitle: "Sin ID de usuario",
-    errNoUserDesc: "Vuelve a iniciar sesión.",
-    errSaveTitle: "No se pudo guardar la meta",
-  },
-};
 
 export default function DailyGoalModal({
   isOpen,
@@ -68,14 +36,57 @@ export default function DailyGoalModal({
   npub,
   lang = "en",
   defaultGoal = 50,
-  ui = {
-    title: "Daily XP goal",
-    subtitle: "Each level = 100 XP. How many XP do you want to earn per day?",
-    inputLabel: "XP per day",
-    save: "Save",
-  },
+  t,
+  ui = {},
 }) {
-  const L = I18N[lang === "es" ? "es" : "en"];
+  const resolvedLang = lang === "es" ? "es" : "en";
+  const resolvedTranslations = useMemo(
+    () => t || allTranslations[resolvedLang] || allTranslations.en,
+    [t, resolvedLang]
+  );
+
+  const getLabel = useCallback(
+    (key, fallback, vars = {}) =>
+      translate(resolvedLang, key, vars) ||
+      translate("en", key, vars) ||
+      resolvedTranslations?.[key] ||
+      fallback,
+    [resolvedLang, resolvedTranslations]
+  );
+
+  const L = useMemo(
+    () => ({
+      quickPicks: getLabel("daily_goal_quick_picks", "Quick picks"),
+      fineTune: getLabel("daily_goal_fine_tune", "Fine-tune"),
+      xpUnit: getLabel("daily_goal_xp_unit", "XP / day"),
+      levelExplainer: (pct, lvls) =>
+        getLabel(
+          "daily_goal_level_explainer",
+          `Each level is 100 XP. This goal is ${pct}% of a level (≈ ${lvls} levels per day).`,
+          { pct, levels: lvls }
+        ),
+      goalPreview: getLabel("daily_goal_preview", "Goal preview"),
+      resetsIn: (when) =>
+        getLabel("daily_goal_resets_in", `Resets in 24h · ${when}`, { when }),
+      save: getLabel("daily_goal_save", "Save"),
+      title: getLabel("daily_goal_title", "Daily XP goal"),
+      subtitle: getLabel(
+        "daily_goal_subtitle",
+        "Each level = 100 XP. How many XP do you want to earn per day?"
+      ),
+      inputLabel: getLabel("daily_goal_input_label", "XP per day"),
+      errNoUserTitle: getLabel("daily_goal_error_no_user", "No user ID"),
+      errNoUserDesc: getLabel(
+        "daily_goal_error_no_user_desc",
+        "Please sign in again."
+      ),
+      errSaveTitle: getLabel(
+        "daily_goal_error_save",
+        "Could not save goal"
+      ),
+    }),
+    [getLabel]
+  );
   const [goal, setGoal] = useState(String(defaultGoal));
 
   // Reset field when modal re-opens or default changes
@@ -168,10 +179,10 @@ export default function DailyGoalModal({
             <Box as={FiTarget} aria-hidden fontSize="22px" opacity={0.95} />
             <VStack align="start" spacing={0}>
               <Text fontWeight="bold" fontSize="lg" lineHeight="1.2">
-                {ui.title}
+                {ui.title || L.title}
               </Text>
               <Text fontSize="sm" opacity={0.95}>
-                {ui.subtitle}
+                {ui.subtitle || L.subtitle}
               </Text>
             </VStack>
           </HStack>
@@ -224,7 +235,7 @@ export default function DailyGoalModal({
 
             {/* Simple text field (no steppers) */}
             <FormControl>
-              <FormLabel>{ui.inputLabel}</FormLabel>
+              <FormLabel>{ui.inputLabel || L.inputLabel}</FormLabel>
               <HStack spacing={3} align="center">
                 <Input
                   type="number"
@@ -288,7 +299,7 @@ export default function DailyGoalModal({
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
             <Button colorScheme="teal" onClick={save} isDisabled={!npub}>
-              {ui.save}
+              {ui.save || L.save}
             </Button>
           </HStack>
         </ModalFooter>
