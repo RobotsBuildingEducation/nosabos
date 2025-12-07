@@ -22,6 +22,13 @@ const GrammarBook = React.lazy(() => import("./GrammarBook"));
 const Vocabulary = React.lazy(() => import("./Vocabulary"));
 const History = React.lazy(() => import("./History"));
 
+const MODE_LOADERS = {
+  story: () => import("./Stories"),
+  grammar: () => import("./GrammarBook"),
+  vocab: () => import("./Vocabulary"),
+  reading: () => import("./History"),
+};
+
 /* ---------------------------
    Minimal i18n helper
 --------------------------- */
@@ -78,10 +85,12 @@ export default function Randomize() {
   // random rotation state
   const [currentModeKey, setCurrentModeKey] = useState(null);
   const [initializing, setInitializing] = useState(true);
+  const [nextModeKey, setNextModeKey] = useState(null);
 
   // watch XP to detect “earned XP”
   const xpBaselineRef = useRef(0);
   const targetLangRef = useRef("es");
+  const preloadedRef = useRef({});
 
   // Mode labels from translations
   const modeLabels = useMemo(
@@ -93,6 +102,32 @@ export default function Randomize() {
       reading: t("tabs_reading") || (uiLang === "es" ? "Lectura" : "Reading"),
     }),
     [t, uiLang]
+  );
+
+  const pickRandomMode = useCallback((excludeKey = null) => {
+    const keys = MODES.map((m) => m.key).filter((k) => k !== excludeKey);
+    const pool = keys.length ? keys : MODES.map((m) => m.key);
+    return pool[Math.floor(Math.random() * pool.length)];
+  }, []);
+
+  const prefetchModeComponent = useCallback((modeKey) => {
+    if (!modeKey || preloadedRef.current[modeKey]) return;
+    const loader = MODE_LOADERS[modeKey];
+    if (!loader) return;
+    preloadedRef.current[modeKey] = loader().catch((err) => {
+      console.error(`Failed to preload ${modeKey} mode`, err);
+      delete preloadedRef.current[modeKey];
+    });
+  }, []);
+
+  const scheduleNextMode = useCallback(
+    (excludeKey) => {
+      const pick = pickRandomMode(excludeKey);
+      setNextModeKey(pick);
+      prefetchModeComponent(pick);
+      return pick;
+    },
+    [pickRandomMode, prefetchModeComponent]
   );
 
   // subscribe to Firestore XP and drive randomization
@@ -117,9 +152,9 @@ export default function Randomize() {
 
       if (initializing) {
         xpBaselineRef.current = newXp;
-        const keys = MODES.map((m) => m.key);
-        const pick = keys[Math.floor(Math.random() * keys.length)];
+        const pick = pickRandomMode();
         setCurrentModeKey(pick);
+        scheduleNextMode(pick);
         setInitializing(false);
         return;
       }
@@ -159,11 +194,9 @@ export default function Randomize() {
         });
 
         // Auto-pick the next randomized activity (different from current)
-        const keys = MODES.map((m) => m.key).filter(
-          (k) => k !== currentModeKey
-        );
-        const pick = keys[Math.floor(Math.random() * keys.length)];
+        const pick = nextModeKey || scheduleNextMode(currentModeKey);
         setCurrentModeKey(pick);
+        scheduleNextMode(pick);
 
         // Optional: let child components know they can advance internally if needed
         try {
@@ -174,7 +207,17 @@ export default function Randomize() {
       }
     });
     return () => unsub();
-  }, [npub, currentModeKey, initializing, t, toast, uiLang]);
+  }, [
+    npub,
+    currentModeKey,
+    initializing,
+    t,
+    toast,
+    uiLang,
+    nextModeKey,
+    scheduleNextMode,
+    pickRandomMode,
+  ]);
 
   const currentMode = useMemo(
     () =>
@@ -185,9 +228,12 @@ export default function Randomize() {
   );
 
   const surpriseMe = () => {
-    const keys = MODES.map((m) => m.key).filter((k) => k !== currentModeKey);
-    const pick = keys[Math.floor(Math.random() * keys.length)];
+    const pick =
+      (nextModeKey && nextModeKey !== currentModeKey
+        ? nextModeKey
+        : scheduleNextMode(currentModeKey)) || currentModeKey;
     setCurrentModeKey(pick);
+    scheduleNextMode(pick);
   };
 
   // Reused translated strings with safe fallbacks
