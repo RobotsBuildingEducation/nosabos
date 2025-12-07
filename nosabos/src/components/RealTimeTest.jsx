@@ -729,7 +729,7 @@ export default function RealTimeTest({
   const tGoalSkip =
     gtr?.ra_goal_skip || (goalUiLang === "es" ? "Saltar" : "Skip");
   const tGoalCriteria =
-    gtr?.ra_goal_criteria || (goalUiLang === "es" ? "Éxito:" : "Success:");
+    gtr?.ra_goal_criteria || (goalUiLang === "es" ? "" : "");
 
   const xpLevelNumber = Math.floor(xp / 100) + 1;
 
@@ -1381,8 +1381,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     // Build clear rubric from success criteria or generate one
     let rubricEn, rubricEs;
     if (successCriteria) {
-      rubricEn = `Success: ${successCriteria}`;
-      rubricEs = `Éxito: ${successCriteria}`;
+      rubricEn = `${successCriteria}`;
+      rubricEs = `${successCriteria}`;
     } else if (scenario) {
       // Create actionable rubric from scenario
       rubricEn = `Complete this task: ${scenario}`;
