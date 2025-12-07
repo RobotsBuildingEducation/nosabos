@@ -660,7 +660,6 @@ function TopBar({
               alignItems="center"
               gap={2}
             >
-              <Box as={FiClock} aria-hidden />
               <Text fontFamily="mono" fontWeight="bold" fontSize="2xs">
                 {formatTimer(timerRemainingSeconds)}
               </Text>
@@ -3489,7 +3488,6 @@ export default function App() {
                 size={120}
                 accentGradient="linear(135deg, #c084fc, #7c3aed, #22d3ee)"
                 particleColor="cyan.100"
-                icon="⏰"
               />
               <VStack spacing={2}>
                 <Text fontSize="lg" fontWeight="semibold">
@@ -3497,11 +3495,15 @@ export default function App() {
                 </Text>
                 <Text opacity={0.9} fontSize="md">
                   {timerDurationSeconds
-                    ? (t.timer_times_up_duration || "You stayed on task for {minutes} minutes.").replace(
+                    ? (
+                        t.timer_times_up_duration ||
+                        "You stayed on task for {minutes} minutes."
+                      ).replace(
                         "{minutes}",
                         String(Math.round(timerDurationSeconds / 60))
                       )
-                    : t.timer_times_up_no_duration || "Nice work wrapping up your timer."}
+                    : t.timer_times_up_no_duration ||
+                      "Nice work wrapping up your timer."}
                 </Text>
               </VStack>
             </VStack>

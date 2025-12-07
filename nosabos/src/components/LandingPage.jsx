@@ -400,12 +400,6 @@ const LandingPage = ({ onAuthenticated }) => {
       setGeneratedKeys(keys);
       localStorage.setItem("displayName", displayName.trim());
       setView("created");
-      toast({
-        title: copy.toast_account_created_title,
-        description: copy.toast_account_created_desc,
-        status: "success",
-        duration: 2500,
-      });
     } catch (error) {
       console.error("Failed to create account", error);
       setErrorMessage(error?.message || copy.error_create_generic);

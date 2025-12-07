@@ -81,9 +81,6 @@ export default function SessionTimerModal({
           </VStack>
         </ModalBody>
         <ModalFooter gap={3} flexWrap="wrap">
-          <Button variant="ghost" onClick={onClose}>
-            {t.timer_modal_cancel || "Cancel"}
-          </Button>
           <Button colorScheme="teal" onClick={onStart}>
             {isRunning
               ? t.timer_modal_restart || "Restart timer"
