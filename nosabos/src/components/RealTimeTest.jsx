@@ -1348,12 +1348,29 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       rubricEs = "Di un saludo en el idioma meta";
     }
 
+    // Localize goal strings when Spanish support is requested
+    let localizedScenarioEs = activeGoal.scenario_es || scenario || seedTitles.es;
+    let localizedRubricEs = activeGoal.successCriteria_es || rubricEs;
+    const prefersSpanishSupport = (supportLangRef.current || supportLang) === "es";
+    if (prefersSpanishSupport) {
+      try {
+        if (!activeGoal.scenario_es && scenario) {
+          localizedScenarioEs = await translateGoalText(scenario, "es");
+        }
+        if (!activeGoal.successCriteria_es && rubricEs) {
+          localizedRubricEs = await translateGoalText(rubricEs, "es");
+        }
+      } catch (err) {
+        console.warn("Falling back to default goal Spanish", err?.message || err);
+      }
+    }
+
     const seed = {
       id: `goal_${Date.now()}`,
       title_en: scenario || seedTitles.en,
-      title_es: activeGoal.scenario_es || scenario || seedTitles.es,
+      title_es: localizedScenarioEs,
       rubric_en: rubricEn,
-      rubric_es: activeGoal.successCriteria_es || rubricEs,
+      rubric_es: localizedRubricEs,
       lessonScenario: lessonScenario || null,
       successCriteria: successCriteria || null,
       roleplayPrompt: roleplayPrompt || null,
@@ -1408,6 +1425,63 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     return targetLangRef.current === "en"
       ? goal.rubric_es || ""
       : goal.rubric_en || "";
+  }
+
+  async function translateGoalText(text, target = "es") {
+    const trimmed = String(text || "").trim();
+    if (!trimmed) return "";
+
+    const prompt =
+      target === "es"
+        ? `Traduce al español neutral y conciso. Devuelve solo JSON {"translation":"..."}.\n${trimmed}`
+        : `Translate to natural US English. Return only JSON {"translation":"..."}.\n${trimmed}`;
+
+    try {
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          model: TRANSLATE_MODEL,
+          text: { format: { type: "text" } },
+          input: prompt,
+        }),
+      });
+
+      const ct = r.headers.get("content-type") || "";
+      const payload = ct.includes("application/json")
+        ? await r.json()
+        : await r.text();
+
+      if (!r.ok) {
+        const msg =
+          payload?.error?.message ||
+          (typeof payload === "string" ? payload : JSON.stringify(payload));
+        throw new Error(msg || `Translate HTTP ${r.status}`);
+      }
+
+      const merged =
+        (typeof payload?.output_text === "string" && payload.output_text) ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join("")
+            )
+            .join(" ")
+            .trim()) ||
+        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
+        (Array.isArray(payload?.choices) &&
+          (payload.choices[0]?.message?.content || "")) ||
+        "";
+
+      const parsed = safeParseJson(merged);
+      return (parsed?.translation || merged || trimmed).trim();
+    } catch (err) {
+      console.warn("Goal translation failed", err?.message || err);
+      return trimmed;
+    }
   }
 
   async function persistCurrentGoal(next) {
@@ -2159,15 +2233,19 @@ Return ONLY JSON:
     if (!src) return;
     if (m.role !== "assistant") return;
 
-    const effectiveSecondary =
-      targetLangRef.current === "en"
-        ? "es"
-        : supportLangRef.current === "es"
-        ? "es"
-        : "en";
+    const supportChoice = supportLangRef.current || supportLang || "en";
+    const target = supportChoice === "es" ? "es" : "en";
 
-    const isSpanish = (m.lang || targetLangRef.current) === "es";
-    const target = isSpanish ? "en" : effectiveSecondary;
+    if ((m.lang || targetLangRef.current) === target) {
+      updateMessage(id, (prev) => ({ ...prev, translation: src, pairs: [] }));
+      await upsertAssistantTurn(id, {
+        text: src,
+        lang: m.lang || targetLangRef.current || "es",
+        translation: src,
+        pairs: [],
+      });
+      return;
+    }
 
     const prompt =
       target === "es"
