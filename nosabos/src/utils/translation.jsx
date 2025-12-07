@@ -17,7 +17,8 @@ export const translations = {
     correct: "Correct!",
     dailyGoalProgress: "Goal",
     daily_goal_title: "Daily XP goal",
-    daily_goal_subtitle: "Each level = 100 XP. How many XP do you want to earn per day?",
+    daily_goal_subtitle:
+      "Each level = 100 XP. How many XP do you want to earn per day?",
     daily_goal_input_label: "XP per day",
     daily_goal_save: "Save",
     daily_goal_quick_picks: "Quick picks",
@@ -403,11 +404,14 @@ export const translations = {
     flashcard_eval_error_title: "Could not evaluate",
     flashcard_eval_error_desc: "Please try again with a stable connection.",
     flashcard_grading_error_title: "Grading error",
-    flashcard_grading_error_desc: "Failed to grade your answer. Please try again.",
+    flashcard_grading_error_desc:
+      "Failed to grade your answer. Please try again.",
     flashcard_speech_unavailable_title: "Speech recognition unavailable",
-    flashcard_speech_unavailable_desc: "Use a Chromium-based browser with microphone access.",
+    flashcard_speech_unavailable_desc:
+      "Use a Chromium-based browser with microphone access.",
     flashcard_mic_denied_title: "Microphone denied",
-    flashcard_mic_denied_desc: "Enable microphone access in your browser settings.",
+    flashcard_mic_denied_desc:
+      "Enable microphone access in your browser settings.",
     flashcard_all_done: "All Done!",
     flashcard_all_completed: "You've completed all flashcards!",
     flashcard_listen: "Listen",
@@ -465,7 +469,7 @@ export const translations = {
     teams_create_missing_member: "Add at least one teammate before creating",
     teams_create_unknown_user: "New Learner",
     teams_create_dm_template:
-      "Hi! You've been invited to join \"{team}\" on Robots Building Education. Create an account to track progress with your team.",
+      'Hi! You\'ve been invited to join "{team}" on Robots Building Education. Create an account to track progress with your team.',
     teams_create_success: "Team created",
     teams_create_invites: "invites sent",
     teams_create_failed: "failed",
@@ -512,7 +516,8 @@ export const translations = {
     correct: "¡Correcto!",
     dailyGoalProgress: "Meta",
     daily_goal_title: "Meta diaria de XP",
-    daily_goal_subtitle: "Cada nivel = 100 XP. ¿Cuántos XP quieres ganar al día?",
+    daily_goal_subtitle:
+      "Cada nivel = 100 XP. ¿Cuántos XP quieres ganar al día?",
     daily_goal_input_label: "XP por día",
     daily_goal_save: "Guardar",
     daily_goal_quick_picks: "Atajos",
@@ -763,7 +768,7 @@ export const translations = {
       "Ingresa tu código de acceso para continuar. Si eres patrocinador en Patreon, revisa tu mensaje de bienvenida para encontrar el código.",
     "passcode.label": "Código de acceso",
     backToQuestion9: "Volver a la pregunta 9",
-    DEFAULT_PERSONA: "Como una tóxica sarcástica y semi-amistosa",
+    DEFAULT_PERSONA: "Un asistente amable y servicial.",
     common_id_label: "ID:",
     common_saving: "Guardando",
     common_cancel: "Cancelar",
@@ -907,13 +912,17 @@ export const translations = {
     flashcard_try_again: "Intentar de Nuevo",
     flashcard_error_loading: "Error al cargar respuesta",
     flashcard_eval_error_title: "No se pudo evaluar",
-    flashcard_eval_error_desc: "Por favor intenta de nuevo con una conexión estable.",
+    flashcard_eval_error_desc:
+      "Por favor intenta de nuevo con una conexión estable.",
     flashcard_grading_error_title: "Error de evaluación",
-    flashcard_grading_error_desc: "No se pudo evaluar tu respuesta. Por favor intenta de nuevo.",
+    flashcard_grading_error_desc:
+      "No se pudo evaluar tu respuesta. Por favor intenta de nuevo.",
     flashcard_speech_unavailable_title: "Reconocimiento de voz no disponible",
-    flashcard_speech_unavailable_desc: "Usa un navegador basado en Chromium con acceso al micrófono.",
+    flashcard_speech_unavailable_desc:
+      "Usa un navegador basado en Chromium con acceso al micrófono.",
     flashcard_mic_denied_title: "Micrófono denegado",
-    flashcard_mic_denied_desc: "Habilita el acceso al micrófono en la configuración de tu navegador.",
+    flashcard_mic_denied_desc:
+      "Habilita el acceso al micrófono en la configuración de tu navegador.",
     flashcard_all_done: "¡Terminado!",
     flashcard_all_completed: "¡Has completado todas las tarjetas!",
     flashcard_listen: "Escuchar",
@@ -941,7 +950,8 @@ export const translations = {
     timer_modal_restart: "Reiniciar temporizador",
     timer_times_up_title: "¡Tiempo terminado!",
     timer_times_up_subtitle: "Sesión de enfoque completa",
-    timer_times_up_duration: "Te mantuviste concentrado durante {minutes} minutos.",
+    timer_times_up_duration:
+      "Te mantuviste concentrado durante {minutes} minutos.",
     timer_times_up_no_duration: "Buen trabajo al terminar tu temporizador.",
     timer_times_up_close: "Cerrar",
     timer_times_up_restart: "Iniciar otro temporizador",
@@ -957,21 +967,24 @@ export const translations = {
     teams_feed_copy_desc: "Tu llave se copió al portapapeles.",
     teams_feed_allow_label: "Permitir publicaciones automáticas",
     teams_feed_allow_enabled: "Las publicaciones automáticas están activadas.",
-    teams_feed_allow_disabled: "Las publicaciones automáticas están desactivadas.",
+    teams_feed_allow_disabled:
+      "Las publicaciones automáticas están desactivadas.",
     teams_feed_refresh: "Actualizar",
     teams_feed_loading: "Sincronizando con la comunidad...",
-    teams_feed_empty: "Aún no hay publicaciones. ¡Sé la primera persona en compartir!",
+    teams_feed_empty:
+      "Aún no hay publicaciones. ¡Sé la primera persona en compartir!",
     teams_feed_error: "No se pudo cargar el feed.",
     teams_feed_copy_fallback: "No se pudo copiar la llave.",
     teams_create_error: "Error",
     teams_create_invalid: "Introduce un npub válido para invitar",
-    teams_create_invalid_format: "Formato de npub inválido. Los npub empiezan con 'npub'",
+    teams_create_invalid_format:
+      "Formato de npub inválido. Los npub empiezan con 'npub'",
     teams_create_duplicate: "Este npub ya está en la lista",
     teams_create_missing_name: "Elige un nombre para el equipo",
     teams_create_missing_member: "Agrega al menos un compañero antes de crear",
     teams_create_unknown_user: "Nuevo estudiante",
     teams_create_dm_template:
-      "¡Hola! Te invitaron a unirte a \"{team}\" en Robots Building Education. Crea una cuenta para seguir el progreso con tu equipo.",
+      '¡Hola! Te invitaron a unirte a "{team}" en Robots Building Education. Crea una cuenta para seguir el progreso con tu equipo.',
     teams_create_success: "Equipo creado",
     teams_create_invites: "invitaciones enviadas",
     teams_create_failed: "fallaron",
@@ -998,7 +1011,8 @@ export const translations = {
     teams_view_accept: "Aceptar",
     teams_view_decline: "Rechazar",
     teams_view_my_teams: "Mis equipos",
-    teams_view_empty: "Crea un equipo para empezar a seguir el progreso en conjunto.",
+    teams_view_empty:
+      "Crea un equipo para empezar a seguir el progreso en conjunto.",
     teams_view_member_one: "miembro",
     teams_view_member_many: "miembros",
     teams_view_badge_creator: "Creador",
