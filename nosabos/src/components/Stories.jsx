@@ -453,10 +453,162 @@ export default function StoryMode({
   }
 
   /* --------------------------- Story data shaping --------------------------- */
+  const FALLBACK_STORIES = {
+    es: {
+      sentences: [
+        "Había una vez un pequeño pueblo en México llamado San Miguel.",
+        "La plaza tenía una fuente antigua que siempre tenía agua fresca.",
+        "Cada tarde, los niños jugaban mientras los adultos conversaban.",
+        "Un día, una feria llegó al pueblo y todos ayudaron a prepararla.",
+      ],
+      translations: {
+        en: [
+          "Once upon a time there was a small town in Mexico called San Miguel.",
+          "The plaza had an old fountain that always had fresh water.",
+          "Every afternoon, children played while the adults chatted.",
+          "One day, a fair came to town and everyone helped set it up.",
+        ],
+        es: [],
+      },
+    },
+    en: {
+      sentences: [
+        "Once upon a time there was a small town in Mexico called San Miguel.",
+        "The plaza had an old fountain that always had fresh water.",
+        "Every afternoon, children played while the adults chatted.",
+        "One day, a fair came to town and everyone helped set it up.",
+      ],
+      translations: {
+        es: [
+          "Había una vez un pequeño pueblo en México llamado San Miguel.",
+          "La plaza tenía una fuente antigua que siempre tenía agua fresca.",
+          "Cada tarde, los niños jugaban mientras los adultos conversaban.",
+          "Un día, una feria llegó al pueblo y todos ayudaron a prepararla.",
+        ],
+        en: [],
+      },
+    },
+    pt: {
+      sentences: [
+        "Era manhã quando Ana abriu sua pequena padaria na praça.",
+        "Ela preparou pão fresco e cumprimentou os primeiros clientes.",
+        "Um músico de rua começou a tocar violão perto da fonte.",
+        "As pessoas sorriram e tomaram café ouvindo a melodia suave.",
+      ],
+      translations: {
+        en: [
+          "It was morning when Ana opened her small bakery in the square.",
+          "She prepared fresh bread and greeted the first customers.",
+          "A street musician started playing guitar near the fountain.",
+          "People smiled and drank coffee while hearing the soft melody.",
+        ],
+        es: [
+          "Era de mañana cuando Ana abrió su pequeña panadería en la plaza.",
+          "Preparó pan fresco y saludó a los primeros clientes.",
+          "Un músico callejero empezó a tocar la guitarra cerca de la fuente.",
+          "La gente sonrió y tomó café mientras escuchaba la melodía suave.",
+        ],
+      },
+    },
+    fr: {
+      sentences: [
+        "Au matin, Léa ouvre sa petite librairie près du marché.",
+        "Elle recommande un roman facile aux nouveaux apprenants de français.",
+        "Un couple demande un café et discute de leurs voyages.",
+        "Léa sourit en entendant leurs histoires et propose un guide local.",
+      ],
+      translations: {
+        en: [
+          "In the morning, Léa opens her small bookstore near the market.",
+          "She recommends an easy novel to new French learners.",
+          "A couple asks for a coffee and talks about their travels.",
+          "Léa smiles hearing their stories and offers a local guide.",
+        ],
+        es: [
+          "Por la mañana, Léa abre su pequeña librería cerca del mercado.",
+          "Recomienda una novela fácil a los nuevos estudiantes de francés.",
+          "Una pareja pide un café y habla de sus viajes.",
+          "Léa sonríe al escuchar sus historias y ofrece una guía local.",
+        ],
+      },
+    },
+    it: {
+      sentences: [
+        "È mattina e Lucia apre il bar del paese.",
+        "Prepara il caffè e saluta i primi clienti.",
+        "Un turista chiede indicazioni per il museo.",
+        "Lucia disegna una mappa sul tovagliolo e sorride.",
+      ],
+      translations: {
+        en: [
+          "It is morning and Lucia opens the town café.",
+          "She makes coffee and greets the first customers.",
+          "A tourist asks for directions to the museum.",
+          "Lucia draws a map on a napkin and smiles.",
+        ],
+        es: [
+          "Es de mañana y Lucía abre el café del pueblo.",
+          "Prepara el café y saluda a los primeros clientes.",
+          "Un turista pregunta cómo llegar al museo.",
+          "Lucía dibuja un mapa en una servilleta y sonríe.",
+        ],
+      },
+    },
+    nah: {
+      sentences: [
+        "Tlajko, se ipantzi se tiankistli kan altepetl.",
+        "Tlahtokeh ica tlacatl sekinamaka tlanelto.",
+        "Se konetl chikauak mokaka pakilistli ika nochtli.",
+        "In altepetl moneki tlapaleuili itech se ilhuitl.",
+      ],
+      translations: {
+        en: [
+          "In the morning, a market opens in the town.",
+          "People greet each other and share goods.",
+          "A child happily tastes fresh cactus fruit.",
+          "The town prepares decorations for a festival.",
+        ],
+        es: [
+          "Por la mañana, se abre un mercado en el pueblo.",
+          "La gente se saluda y comparte productos.",
+          "Un niño prueba feliz la fruta del nopal.",
+          "El pueblo prepara decoraciones para una fiesta.",
+        ],
+      },
+    },
+  };
+
+  const buildFallbackStory = (tLang, sLang) => {
+    const entry = FALLBACK_STORIES[tLang] || FALLBACK_STORIES.es;
+    const supKey = sLang === "es" ? "es" : "en";
+    const sentences = (entry.sentences || []).map((tgt, idx) => ({
+      tgt,
+      sup:
+        entry.translations?.[supKey]?.[idx] ||
+        entry.translations?.en?.[idx] ||
+        entry.translations?.es?.[idx] ||
+        "",
+    }));
+
+    return {
+      fullStory: {
+        tgt: sentences.map((s) => s.tgt).join(" "),
+        sup: sentences.map((s) => s.sup).filter(Boolean).join(" "),
+      },
+      sentences,
+    };
+  };
+
   // Normalize incoming story to { fullStory: { tgt, sup }, sentences: [{tgt,sup}, ...] }
   function normalizeStory(raw, tgtCode, supCode) {
     if (!raw) return null;
-    const pick = (obj, code, fallback) => {
+
+    const pickTarget = (obj, code) => {
+      const value = obj?.[code];
+      return typeof value === "string" && value.trim() ? value : "";
+    };
+
+    const pickSupport = (obj, code, fallback) => {
       if (!obj) return "";
       const primary = obj?.[code];
       if (typeof primary === "string" && primary.trim()) return primary;
@@ -467,12 +619,14 @@ export default function StoryMode({
       return firstValue || "";
     };
 
-    const fullTgt = pick(raw.fullStory || {}, tgtCode, supCode);
-    const fullSup = pick(raw.fullStory || {}, supCode, tgtCode);
-    const sentences = (raw.sentences || []).map((s) => ({
-      tgt: pick(s, tgtCode, supCode),
-      sup: pick(s, supCode, tgtCode),
-    }));
+    const fullTgt = pickTarget(raw.fullStory || {}, tgtCode);
+    const fullSup = pickSupport(raw.fullStory || {}, supCode, tgtCode);
+    const sentences = (raw.sentences || [])
+      .map((s) => ({
+        tgt: pickTarget(s, tgtCode),
+        sup: pickSupport(s, supCode, tgtCode),
+      }))
+      .filter((s) => s.tgt);
 
     if (!fullTgt || !sentences.length) return null;
 
@@ -586,83 +740,11 @@ export default function StoryMode({
       setHighlightedWordIndex(-1);
       setLastSuccessInfo(null);
     } catch (error) {
-      // Bilingual fallback (ES/EN) that respects target/support languages
-      const fallback = {
-        fullStory: {
-          tgt:
-            targetLang === "en"
-              ? "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
-              : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-          sup:
-            supportLang === "es"
-              ? "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-              : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
-        },
-        sentences:
-          targetLang === "en"
-            ? [
-                {
-                  tgt: "Once upon a time, there was a small town called San Miguel.",
-                  sup:
-                    supportLang === "es"
-                      ? "Había una vez un pequeño pueblo llamado San Miguel."
-                      : "Once upon a time, there was a small town called San Miguel.",
-                },
-                {
-                  tgt: "The town had a lovely square where kids played every day.",
-                  sup:
-                    supportLang === "es"
-                      ? "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
-                      : "The town had a lovely square where kids played every day.",
-                },
-                {
-                  tgt: "In the square, an old fountain always had fresh water.",
-                  sup:
-                    supportLang === "es"
-                      ? "En la plaza, una fuente antigua siempre tenía agua fresca."
-                      : "In the square, an old fountain always had fresh water.",
-                },
-                {
-                  tgt: "Adults sat around it to talk and rest after work.",
-                  sup:
-                    supportLang === "es"
-                      ? "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
-                      : "Adults sat around it to talk and rest after work.",
-                },
-              ]
-            : [
-                {
-                  tgt: "Había una vez un pequeño pueblo en México llamado San Miguel.",
-                  sup:
-                    supportLang === "es"
-                      ? "Había una vez un pequeño pueblo en México llamado San Miguel."
-                      : "Once upon a time, there was a small town in Mexico called San Miguel.",
-                },
-                {
-                  tgt: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
-                  sup:
-                    supportLang === "es"
-                      ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
-                      : "The town had a very beautiful square where the children played every day.",
-                },
-                {
-                  tgt: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
-                  sup:
-                    supportLang === "es"
-                      ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
-                      : "In the square, there was an old fountain that always had fresh water.",
-                },
-                {
-                  tgt: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-                  sup:
-                    supportLang === "es"
-                      ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                      : "The adults sat around the fountain to talk and rest after work.",
-                },
-              ],
-      };
-      setStoryData(fallback);
-      storyCacheRef.current = fallback;
+      // Fallback story that mirrors the selected practice/support languages
+      const fallback = buildFallbackStory(targetLang, supportLang);
+      const validated = validateAndFixStorySentences(fallback, "tgt", "sup");
+      setStoryData(validated);
+      storyCacheRef.current = validated;
       toast({
         title:
           uiLang === "es"
