@@ -10,6 +10,7 @@ import {
 } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
+import { TTS_ENDPOINT } from "./utils/tts";
 
 const hasStoredKey = () => {
   if (typeof window === "undefined") return false;
@@ -22,6 +23,31 @@ function AppContainer() {
 
   const handleAuthenticated = useCallback(() => {
     setIsAuthenticated(true);
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    const warmProxyTTS = async () => {
+      try {
+        await fetch(TTS_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input: "Warmup",
+            voice: "alloy",
+            response_format: "opus",
+          }),
+          signal: controller.signal,
+        });
+      } catch (error) {
+        console.warn("proxyTTS warmup skipped:", error?.message || error);
+      }
+    };
+
+    warmProxyTTS();
+
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
