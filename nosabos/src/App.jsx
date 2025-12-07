@@ -72,7 +72,7 @@ import {
   LuLanguages,
 } from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
-import { FiClock } from "react-icons/fi";
+import { FiClock, FiPause, FiPlay } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -379,8 +379,10 @@ function TopBar({
   // 🆕 timer props
   timerRemainingSeconds,
   isTimerRunning,
+  timerPaused,
   formatTimer,
   onOpenTimerModal,
+  onTogglePauseTimer,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -658,8 +660,7 @@ function TopBar({
               alignItems="center"
               gap={2}
             >
-              <Box as={FiClock} aria-hidden />
-              <Text fontFamily="mono" fontWeight="bold">
+              <Text fontFamily="mono" fontWeight="bold" fontSize="2xs">
                 {formatTimer(timerRemainingSeconds)}
               </Text>
             </Badge>
@@ -672,6 +673,16 @@ function TopBar({
           >
             <FiClock />
           </Button>
+          {timerRemainingSeconds !== null && (
+            <Button
+              colorScheme="teal"
+              variant={timerPaused ? "outline" : "ghost"}
+              size="sm"
+              onClick={onTogglePauseTimer}
+            >
+              {timerPaused ? <FiPlay /> : <FiPause />}
+            </Button>
+          )}
         </HStack>
       </HStack>
 
@@ -1419,10 +1430,12 @@ export default function App() {
   const [timerRemainingSeconds, setTimerRemainingSeconds] = useState(null);
   const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
+  const [timerPaused, setTimerPaused] = useState(false);
   const [timeUpOpen, setTimeUpOpen] = useState(false);
   const timerIntervalRef = useRef(null);
   const timerRemainingRef = useRef(null);
-  const isTimerRunning = timerActive && timerRemainingSeconds !== null;
+  const isTimerRunning =
+    timerActive && !timerPaused && timerRemainingSeconds !== null;
 
   const formatTimer = useCallback((seconds) => {
     const safe = Math.max(0, Math.floor(Number(seconds) || 0));
@@ -1449,6 +1462,7 @@ export default function App() {
       timerIntervalRef.current = null;
     }
     setTimerActive(false);
+    setTimerPaused(false);
     setTimerRemainingSeconds(null);
     setTimerDurationSeconds(null);
     setTimeUpOpen(false);
@@ -1461,6 +1475,7 @@ export default function App() {
     setTimerDurationSeconds(seconds);
     setTimerRemainingSeconds(seconds);
     setTimerActive(true);
+    setTimerPaused(false);
     setTimeUpOpen(false);
     setTimerModalOpen(false);
   }, [handleResetTimer, timerMinutes]);
@@ -1470,6 +1485,7 @@ export default function App() {
     setTimerRemainingSeconds(null);
     setTimerDurationSeconds(null);
     setTimerActive(false);
+    setTimerPaused(false);
   }, []);
 
   const timerHelper = useMemo(() => {
@@ -1478,7 +1494,13 @@ export default function App() {
   }, [formatTimer, timerActive, timerRemainingSeconds]);
 
   useEffect(() => {
-    if (!timerActive || timerRemainingRef.current === null) return;
+    if (
+      !timerActive ||
+      timerPaused ||
+      timerRemainingRef.current === null ||
+      timerRemainingRef.current <= 0
+    )
+      return;
 
     const id = setInterval(() => {
       setTimerRemainingSeconds((prev) => {
@@ -1487,6 +1509,7 @@ export default function App() {
           clearInterval(id);
           timerIntervalRef.current = null;
           setTimerActive(false);
+          setTimerPaused(false);
           setTimeUpOpen(true);
           return 0;
         }
@@ -1496,8 +1519,22 @@ export default function App() {
 
     timerIntervalRef.current = id;
 
-    return () => clearInterval(id);
-  }, [timerActive]);
+    return () => {
+      clearInterval(id);
+      timerIntervalRef.current = null;
+    };
+  }, [timerActive, timerPaused, timerRemainingSeconds]);
+
+  const handleTogglePauseTimer = useCallback(() => {
+    if (!timerActive || timerRemainingSeconds === null) return;
+
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+
+    setTimerPaused((prev) => !prev);
+  }, [timerActive, timerRemainingSeconds]);
 
   // Celebration listener (fired by awardXp when goal is reached)
   useEffect(() => {
@@ -3182,8 +3219,10 @@ export default function App() {
         // 🆕 timer props
         timerRemainingSeconds={timerRemainingSeconds}
         isTimerRunning={isTimerRunning}
+        timerPaused={timerPaused}
         formatTimer={formatTimer}
         onOpenTimerModal={() => setTimerModalOpen(true)}
+        onTogglePauseTimer={handleTogglePauseTimer}
       />
 
       <TeamsDrawer
@@ -3420,9 +3459,9 @@ export default function App() {
         minutes={timerMinutes}
         onMinutesChange={setTimerMinutes}
         onStart={handleStartTimer}
-        onReset={handleResetTimer}
         isRunning={isTimerRunning}
         helper={timerHelper}
+        t={t}
       />
 
       <Modal
@@ -3440,7 +3479,7 @@ export default function App() {
           maxW={{ base: "90%", sm: "md" }}
         >
           <ModalHeader textAlign="center" fontSize="2xl" fontWeight="bold">
-            Time's up!
+            {t.timer_times_up_title || "Time's up!"}
           </ModalHeader>
           <ModalCloseButton color="white" />
           <ModalBody py={8} px={{ base: 6, md: 8 }}>
@@ -3449,25 +3488,29 @@ export default function App() {
                 size={120}
                 accentGradient="linear(135deg, #c084fc, #7c3aed, #22d3ee)"
                 particleColor="cyan.100"
-                icon="⏰"
               />
               <VStack spacing={2}>
                 <Text fontSize="lg" fontWeight="semibold">
-                  Focus session complete
+                  {t.timer_times_up_subtitle || "Focus session complete"}
                 </Text>
                 <Text opacity={0.9} fontSize="md">
                   {timerDurationSeconds
-                    ? `You stayed on task for ${Math.round(
-                        timerDurationSeconds / 60
-                      )} minutes.`
-                    : "Nice work wrapping up your timer."}
+                    ? (
+                        t.timer_times_up_duration ||
+                        "You stayed on task for {minutes} minutes."
+                      ).replace(
+                        "{minutes}",
+                        String(Math.round(timerDurationSeconds / 60))
+                      )
+                    : t.timer_times_up_no_duration ||
+                      "Nice work wrapping up your timer."}
                 </Text>
               </VStack>
             </VStack>
           </ModalBody>
           <ModalFooter gap={3} flexWrap="wrap">
             <Button variant="ghost" onClick={handleCloseTimeUp}>
-              Close
+              {t.timer_times_up_close || "Close"}
             </Button>
             <Button
               colorScheme="whiteAlpha"
@@ -3479,7 +3522,7 @@ export default function App() {
                 setTimerModalOpen(true);
               }}
             >
-              Start another timer
+              {t.timer_times_up_restart || "Start another timer"}
             </Button>
           </ModalFooter>
         </ModalContent>

@@ -410,6 +410,21 @@ export const translations = {
     // PathSwitcher tabs
     path_switcher_path: "Path",
     path_switcher_flashcards: "Flashcards",
+    // Session timer modal
+    timer_modal_title: "Session timer",
+    timer_modal_description:
+      "Set how long you want to focus. You can start a fresh countdown or reset the current one.",
+    timer_modal_minutes_label: "Minutes",
+    timer_modal_quick_picks: "Quick picks",
+    timer_modal_cancel: "Cancel",
+    timer_modal_start: "Start timer",
+    timer_modal_restart: "Restart timer",
+    timer_times_up_title: "Time's up!",
+    timer_times_up_subtitle: "Focus session complete",
+    timer_times_up_duration: "You stayed on task for {minutes} minutes.",
+    timer_times_up_no_duration: "Nice work wrapping up your timer.",
+    timer_times_up_close: "Close",
+    timer_times_up_restart: "Start another timer",
   },
   es: {
     correct: "¡Correcto!",
@@ -819,6 +834,21 @@ export const translations = {
     // PathSwitcher tabs
     path_switcher_path: "Ruta",
     path_switcher_flashcards: "Tarjetas",
+    // Session timer modal
+    timer_modal_title: "Temporizador de sesión",
+    timer_modal_description:
+      "Define cuánto tiempo quieres enfocarte. Puedes iniciar una nueva cuenta regresiva o reiniciar la actual.",
+    timer_modal_minutes_label: "Minutos",
+    timer_modal_quick_picks: "Opciones rápidas",
+    timer_modal_cancel: "Cancelar",
+    timer_modal_start: "Iniciar temporizador",
+    timer_modal_restart: "Reiniciar temporizador",
+    timer_times_up_title: "¡Tiempo terminado!",
+    timer_times_up_subtitle: "Sesión de enfoque completa",
+    timer_times_up_duration: "Te mantuviste concentrado durante {minutes} minutos.",
+    timer_times_up_no_duration: "Buen trabajo al terminar tu temporizador.",
+    timer_times_up_close: "Cerrar",
+    timer_times_up_restart: "Iniciar otro temporizador",
   },
 };
 
