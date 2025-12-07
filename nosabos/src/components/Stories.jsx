@@ -51,9 +51,7 @@ import { getRandomVoice, TTS_LANG_TAG, TTS_ENDPOINT } from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import {
-  evaluateAttemptStrict,
   computeAudioMetricsFromBlob,
-  speechReasonTips,
 } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 
@@ -1458,7 +1456,7 @@ export default function StoryMode({
     } catch {}
   };
 
-  // STRICT gate handler — only advances on pass; accumulate XP; log attempts
+  // Attempt handler — advances and logs attempts without strict gating
   const handleEvaluationResult = async ({
     recognizedText = "",
     confidence = 0,
@@ -1466,47 +1464,8 @@ export default function StoryMode({
     method,
   }) => {
     const target = currentSentence?.tgt || "";
-    const evalOut = evaluateAttemptStrict({
-      recognizedText,
-      confidence,
-      audioMetrics,
-      targetSentence: target,
-      lang: targetLang,
-    });
+    const evalOut = { pass: true, score: 1, reasons: [], method };
     const npubLive = strongNpub(useUserStore.getState().user);
-
-    if (!evalOut.pass) {
-      const tips = speechReasonTips(evalOut.reasons, {
-        uiLang,
-        targetLabel: targetDisplayName,
-      });
-
-      setLastSuccessInfo(null);
-
-      toast({
-        title: uiText.almost,
-        description: tips.join(" "),
-        status: "warning",
-        duration: 3800,
-      });
-
-      // log failed attempt (0 XP)
-      saveStoryTurn(npubLive, {
-        ok: false,
-        mode: "sentence",
-        lang: targetLang,
-        supportLang,
-        sentenceIndex: currentSentenceIndex,
-        target,
-        recognizedText,
-        confidence,
-        audioMetrics: audioMetrics || null,
-        eval: evalOut,
-        xpAwarded: 0,
-      }).catch(() => {});
-      setIsRecording(false);
-      return;
-    }
 
     // Passed — advance (XP awarded once at the end of the story)
     setPassedCount((c) => c + 1);
