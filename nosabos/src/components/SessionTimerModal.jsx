@@ -24,11 +24,10 @@ export default function SessionTimerModal({
   minutes,
   onMinutesChange,
   onStart,
-  onReset,
   isRunning,
   helper,
 }) {
-  const presets = [10, 15, 20, 25, 30, 45, 60];
+  const presets = [10, 15, 20, 30, 45, 60, 90, 120];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
@@ -81,11 +80,6 @@ export default function SessionTimerModal({
           </VStack>
         </ModalBody>
         <ModalFooter gap={3} flexWrap="wrap">
-          {onReset && (
-            <Button variant="ghost" onClick={onReset} isDisabled={!isRunning}>
-              Stop timer
-            </Button>
-          )}
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
