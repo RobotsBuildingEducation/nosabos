@@ -159,17 +159,27 @@ function useSharedProgress() {
     voice: "alloy",
   });
 
+  // ✅ NEW: track when we've loaded progress at least once
+  const [progressReady, setProgressReady] = useState(false);
+
   useEffect(() => {
-    if (!npub) return;
+    // If we don't have an npub, just mark as ready and keep defaults
+    if (!npub) {
+      setProgressReady(true);
+      return;
+    }
+
     const ref = doc(database, "users", npub);
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
+
       const targetLang = ["nah", "es", "pt", "en", "fr", "it"].includes(
         p.targetLang
       )
         ? p.targetLang
         : "es";
+
       const langXp = getLanguageXp(p, targetLang);
 
       setXp(Number.isFinite(langXp) ? langXp : 0);
@@ -181,13 +191,19 @@ function useSharedProgress() {
           : "en",
         voice: p.voice || "alloy",
       });
+
+      // ✅ we've seen the first snapshot (existing doc or not)
+      setProgressReady(true);
     });
+
     return () => unsub();
   }, [npub]);
 
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
-  return { xp, levelNumber, progressPct, progress, npub };
+
+  // ✅ return the ready flag
+  return { xp, levelNumber, progressPct, progress, npub, progressReady };
 }
 
 /* ================================
@@ -308,7 +324,8 @@ export default function StoryMode({
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
 
   // Shared settings + XP
-  const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
+  const { xp, levelNumber, progressPct, progress, npub, progressReady } =
+    useSharedProgress();
 
   // APP UI language (drives all UI copy)
   const uiLang = getAppUILang();
@@ -316,6 +333,7 @@ export default function StoryMode({
 
   // Content languages
   const targetLang = progress.targetLang; // 'es' | 'en' | 'nah'
+
   const supportLang =
     progress.supportLang === "bilingual"
       ? uiLang === "es"
@@ -918,12 +936,22 @@ export default function StoryMode({
   ]);
 
   // Auto-generate story on mount if lessonContent is provided
+  // Auto-generate story on mount if lessonContent is provided
   useEffect(() => {
+    // ⚠️ if we don't have progress yet, don't generate
+    if (!progressReady) return;
+
     if (storyData || isLoading) return;
     if (lessonContent) {
       generateStoryGeminiStream();
     }
-  }, [lessonContent, storyData, isLoading, generateStoryGeminiStream]);
+  }, [
+    lessonContent,
+    storyData,
+    isLoading,
+    progressReady,
+    generateStoryGeminiStream,
+  ]);
 
   /* ----------------------------- Skip module ----------------------------- */
   const handleSkipModule = () => {

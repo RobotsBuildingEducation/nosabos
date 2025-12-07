@@ -4282,9 +4282,7 @@ Return JSON ONLY:
                   ? t("grammar_speak_stop") ||
                     (userLanguage === "es" ? "Detener" : "Stop")
                   : t("grammar_speak_record") ||
-                    (userLanguage === "es"
-                      ? "Grabar pronunciación"
-                      : "Record pronunciation")}
+                    (userLanguage === "es" ? "Grabar" : "Record")}
               </Button>
             </Stack>
 

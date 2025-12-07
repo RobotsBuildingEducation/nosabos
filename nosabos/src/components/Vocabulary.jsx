@@ -3289,8 +3289,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     t("practice_next_question") ||
     (userLanguage === "es" ? "Siguiente pregunta" : "Next question");
   const skipLabel =
-    t("practice_skip_question") ||
-    (userLanguage === "es" ? "Omitir pregunta" : "skip");
+    t("practice_skip_question") || (userLanguage === "es" ? "Saltar" : "Skip");
   const canSkip = !isFinalQuiz && !quizCompleted;
   const showNextButton = isFinalQuiz
     ? Boolean(nextAction)
@@ -4536,9 +4535,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   ? t("vocab_speak_stop") ||
                     (userLanguage === "es" ? "Detener" : "Stop")
                   : t("vocab_speak_record") ||
-                    (userLanguage === "es"
-                      ? "Grabar pronunciación"
-                      : "Record pronunciation")}
+                    (userLanguage === "es" ? "Grabar" : "Record")}
               </Button>
             </Stack>
 
