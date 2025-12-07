@@ -53,6 +53,8 @@ import {
   Badge,
   Tooltip,
   useDisclosure,
+  Alert,
+  AlertIcon,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -70,6 +72,7 @@ import {
   LuLanguages,
 } from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
+import { FiClock } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -106,6 +109,7 @@ import {
 } from "./utils/progressTracking";
 import { awardXp } from "./utils/utils";
 import { RiArrowLeftLine } from "react-icons/ri";
+import SessionTimerModal from "./components/SessionTimerModal";
 
 /* ---------------------------
    Small helpers
@@ -571,6 +575,24 @@ function TopBar({
       appLanguage === "es" ? "es" : "en-US"
     );
 
+  const timerHelper = useMemo(() => {
+    if (timerRemainingSeconds === null) return null;
+    return (
+      <Alert
+        status={timerActive ? "info" : "success"}
+        variant="subtle"
+        borderRadius="md"
+      >
+        <AlertIcon />
+        <Text>
+          {timerActive
+            ? `Timer is counting down: ${formatTimer(timerRemainingSeconds)}`
+            : "Timer finished. Restart to set a new focus window."}
+        </Text>
+      </Alert>
+    );
+  }, [formatTimer, timerActive, timerRemainingSeconds]);
+
   return (
     <>
       {/* ---- Header (responsive) ---- */}
@@ -637,43 +659,32 @@ function TopBar({
           ml="auto"
           align="center"
         >
-          {viewMode !== "skillTree" && (
-            <Menu autoSelect={false} isLazy>
-              <MenuButton
-                as={Button}
-                rightIcon={<ChevronDownIcon />}
-                variant="outline"
-                size="sm"
-                borderColor="gray.700"
-                px={3}
-                py={1.5}
-              >
-                <HStack spacing={2}>
-                  {tabIcons?.[currentTab]}
-                  <Text fontSize="sm" noOfLines={1}>
-                    {tabLabels?.[currentTab] || currentTab}
-                  </Text>
-                </HStack>
-              </MenuButton>
-
-              <MenuList borderColor="gray.700" bg="gray.900">
-                <MenuOptionGroup
-                  type="radio"
-                  value={currentTab}
-                  onChange={(value) => onSelectTab?.(String(value))}
-                >
-                  {tabOrder.map((key) => (
-                    <MenuItemOption key={key} value={key}>
-                      <HStack spacing={2}>
-                        {tabIcons?.[key]}
-                        <Text>{tabLabels?.[key] || key}</Text>
-                      </HStack>
-                    </MenuItemOption>
-                  ))}
-                </MenuOptionGroup>
-              </MenuList>
-            </Menu>
+          {timerRemainingSeconds !== null && (
+            <Badge
+              colorScheme={isTimerRunning ? "teal" : "purple"}
+              variant="subtle"
+              px={3}
+              py={1.5}
+              borderRadius="md"
+              display="flex"
+              alignItems="center"
+              gap={2}
+            >
+              <Box as={FiClock} aria-hidden />
+              <Text fontFamily="mono" fontWeight="bold">
+                {formatTimer(timerRemainingSeconds)}
+              </Text>
+            </Badge>
           )}
+          <Button
+            leftIcon={<FiClock />}
+            colorScheme="teal"
+            variant={isTimerRunning ? "solid" : "outline"}
+            size="sm"
+            onClick={() => setTimerModalOpen(true)}
+          >
+            {isTimerRunning ? "Timer running" : "Start timer"}
+          </Button>
         </HStack>
       </HStack>
 
@@ -1410,6 +1421,90 @@ export default function App() {
   const [dailyGoalOpen, setDailyGoalOpen] = useState(false);
   const [celebrateOpen, setCelebrateOpen] = useState(false);
   const dailyGoalModalJustOpenedRef = useRef(false);
+  const [shouldShowTimerAfterGoal, setShouldShowTimerAfterGoal] = useState(false);
+
+  /* -----------------------------------
+     Session timer
+  ----------------------------------- */
+  const [timerModalOpen, setTimerModalOpen] = useState(false);
+  const [timerMinutes, setTimerMinutes] = useState("25");
+  const [timerRemainingSeconds, setTimerRemainingSeconds] = useState(null);
+  const [timerDurationSeconds, setTimerDurationSeconds] = useState(null);
+  const [timerActive, setTimerActive] = useState(false);
+  const [timeUpOpen, setTimeUpOpen] = useState(false);
+  const timerIntervalRef = useRef(null);
+  const timerRemainingRef = useRef(null);
+  const isTimerRunning = timerActive && timerRemainingSeconds !== null;
+
+  const formatTimer = useCallback((seconds) => {
+    const safe = Math.max(0, Math.floor(Number(seconds) || 0));
+    const mins = String(Math.floor(safe / 60)).padStart(2, "0");
+    const secs = String(safe % 60).padStart(2, "0");
+    return `${mins}:${secs}`;
+  }, []);
+
+  useEffect(() => {
+    timerRemainingRef.current = timerRemainingSeconds;
+  }, [timerRemainingSeconds]);
+
+  useEffect(() => {
+    return () => {
+      if (timerIntervalRef.current) {
+        clearInterval(timerIntervalRef.current);
+      }
+    };
+  }, []);
+
+  const handleResetTimer = useCallback(() => {
+    if (timerIntervalRef.current) {
+      clearInterval(timerIntervalRef.current);
+      timerIntervalRef.current = null;
+    }
+    setTimerActive(false);
+    setTimerRemainingSeconds(null);
+    setTimerDurationSeconds(null);
+    setTimeUpOpen(false);
+  }, []);
+
+  const handleStartTimer = useCallback(() => {
+    const parsedMinutes = Math.max(1, Math.round(Number(timerMinutes) || 0));
+    handleResetTimer();
+    const seconds = parsedMinutes * 60;
+    setTimerDurationSeconds(seconds);
+    setTimerRemainingSeconds(seconds);
+    setTimerActive(true);
+    setTimeUpOpen(false);
+    setTimerModalOpen(false);
+  }, [handleResetTimer, timerMinutes]);
+
+  const handleCloseTimeUp = useCallback(() => {
+    setTimeUpOpen(false);
+    setTimerRemainingSeconds(null);
+    setTimerDurationSeconds(null);
+    setTimerActive(false);
+  }, []);
+
+  useEffect(() => {
+    if (!timerActive || timerRemainingRef.current === null) return;
+
+    const id = setInterval(() => {
+      setTimerRemainingSeconds((prev) => {
+        if (prev === null) return prev;
+        if (prev <= 1) {
+          clearInterval(id);
+          timerIntervalRef.current = null;
+          setTimerActive(false);
+          setTimeUpOpen(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    timerIntervalRef.current = id;
+
+    return () => clearInterval(id);
+  }, [timerActive]);
 
   // Celebration listener (fired by awardXp when goal is reached)
   useEffect(() => {
@@ -1694,6 +1789,7 @@ export default function App() {
 
       // Prompt for daily goal right after onboarding
       setDailyGoalOpen(true);
+      setShouldShowTimerAfterGoal(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -2119,7 +2215,11 @@ export default function App() {
 
   const handleDailyGoalClose = useCallback(() => {
     setDailyGoalOpen(false);
-  }, []);
+    if (shouldShowTimerAfterGoal) {
+      setShouldShowTimerAfterGoal(false);
+      setTimerModalOpen(true);
+    }
+  }, [shouldShowTimerAfterGoal]);
 
   const pickRandomFeature = useCallback(() => {
     const pool = RANDOM_POOL;
@@ -3320,6 +3420,72 @@ export default function App() {
           cancel: appLanguage === "es" ? "Cancelar" : "Cancel",
         }}
       />
+
+      <SessionTimerModal
+        isOpen={timerModalOpen}
+        onClose={() => setTimerModalOpen(false)}
+        minutes={timerMinutes}
+        onMinutesChange={setTimerMinutes}
+        onStart={handleStartTimer}
+        onReset={handleResetTimer}
+        isRunning={isTimerRunning}
+        helper={timerHelper}
+      />
+
+      <Modal isOpen={timeUpOpen} onClose={handleCloseTimeUp} isCentered size="lg">
+        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(4px)" />
+        <ModalContent
+          bg="linear-gradient(135deg, #c084fc 0%, #22d3ee 100%)"
+          color="white"
+          borderRadius="2xl"
+          boxShadow="2xl"
+          maxW={{ base: "90%", sm: "md" }}
+        >
+          <ModalHeader textAlign="center" fontSize="2xl" fontWeight="bold">
+            Time's up!
+          </ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody py={8} px={{ base: 6, md: 8 }}>
+            <VStack spacing={5} textAlign="center">
+              <CelebrationOrb
+                size={120}
+                accentGradient="linear(135deg, #c084fc, #7c3aed, #22d3ee)"
+                particleColor="cyan.100"
+                icon="⏰"
+              />
+              <VStack spacing={2}>
+                <Text fontSize="lg" fontWeight="semibold">
+                  Focus session complete
+                </Text>
+                <Text opacity={0.9} fontSize="md">
+                  {timerDurationSeconds
+                    ? `You stayed on task for ${Math.round(
+                        timerDurationSeconds / 60
+                      )} minutes.`
+                    : "Nice work wrapping up your timer."}
+                </Text>
+              </VStack>
+            </VStack>
+          </ModalBody>
+          <ModalFooter gap={3} flexWrap="wrap">
+            <Button variant="ghost" onClick={handleCloseTimeUp}>
+              Close
+            </Button>
+            <Button
+              colorScheme="whiteAlpha"
+              bg="white"
+              color="purple.700"
+              _hover={{ bg: "whiteAlpha.900" }}
+              onClick={() => {
+                handleCloseTimeUp();
+                setTimerModalOpen(true);
+              }}
+            >
+              Start another timer
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Daily celebration (once per day) */}
       <Modal
