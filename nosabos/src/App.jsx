@@ -119,6 +119,12 @@ const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
 
+const personaDefaultFor = (lang) =>
+  translations?.[lang]?.DEFAULT_PERSONA ||
+  translations?.[lang]?.onboarding_persona_default_example ||
+  translations?.en?.onboarding_persona_default_example ||
+  "";
+
 /**
  * Migrate old level values to CEFR levels
  * beginner -> A1, intermediate -> B1, advanced -> C1
@@ -394,7 +400,7 @@ function TopBar({
   const [voice, setVoice] = useState(p.voice || "alloy");
   const defaultPersona =
     p.voicePersona ||
-    translations[appLanguage]?.onboarding_persona_default_example ||
+    personaDefaultFor(appLanguage) ||
     translations.en.onboarding_persona_default_example;
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
   const [targetLang, setTargetLang] = useState(p.targetLang || "es");
@@ -419,7 +425,7 @@ function TopBar({
     setVoice(q.voice || "alloy");
     setVoicePersona(
       q.voicePersona ||
-        translations[appLanguage]?.onboarding_persona_default_example ||
+        personaDefaultFor(appLanguage) ||
         translations.en.onboarding_persona_default_example
     );
     setTargetLang(q.targetLang || "es");
@@ -431,6 +437,21 @@ function TopBar({
     setPracticePronunciation(!!q.practicePronunciation);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.progress, user?.helpRequest]);
+
+  useEffect(() => {
+    const localizedDefault = personaDefaultFor(appLanguage);
+    const enDefault = personaDefaultFor("en");
+    const esDefault = personaDefaultFor("es");
+    const current = (voicePersona || "").trim();
+
+    if (
+      (!current && localizedDefault) ||
+      (current && current !== localizedDefault && (current === enDefault || current === esDefault))
+    ) {
+      setVoicePersona(localizedDefault || current);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appLanguage]);
 
   const [currentId, setCurrentId] = useState(activeNpub || "");
   const [currentSecret, setCurrentSecret] = useState(activeNsec || "");

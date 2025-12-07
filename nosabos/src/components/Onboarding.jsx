@@ -33,6 +33,12 @@ import { translations } from "../utils/translation";
 
 const BASE_PATH = "/onboarding";
 
+const personaDefaultFor = (lang) =>
+  translations?.[lang]?.DEFAULT_PERSONA ||
+  translations?.[lang]?.onboarding_persona_default_example ||
+  translations?.en?.onboarding_persona_default_example ||
+  "";
+
 export default function Onboarding({
   onComplete,
   userLanguage = "en",
@@ -52,7 +58,7 @@ export default function Onboarding({
       targetLang: initialDraft.targetLang || "es",
       voicePersona:
         initialDraft.voicePersona ||
-        ui.DEFAULT_PERSONA ||
+        personaDefaultFor(appLang) ||
         translations.en.onboarding_persona_default_example,
       pauseMs:
         typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
@@ -70,8 +76,20 @@ export default function Onboarding({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!voicePersona) {
-      setVoicePersona(ui.DEFAULT_PERSONA || "");
+    const localizedDefault = personaDefaultFor(appLang);
+    const enDefault = personaDefaultFor("en");
+    const esDefault = personaDefaultFor("es");
+    const current = (voicePersona || "").trim();
+
+    if (
+      !current ||
+      current === enDefault ||
+      current === esDefault
+    ) {
+      const next = localizedDefault || current;
+      if (next && next !== current) {
+        setVoicePersona(next);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appLang]);
