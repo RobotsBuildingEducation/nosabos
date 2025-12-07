@@ -29,8 +29,16 @@ import { getRandomVoice } from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
-import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
+
+const REALTIME_MODEL =
+  (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
+
+const REALTIME_URL = `${
+  import.meta.env.VITE_REALTIME_URL
+}?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
+  REALTIME_MODEL
+)}`;
 
 const MotionBox = motion(Box);
 
@@ -133,9 +141,10 @@ export default function FlashcardPractice({
   const [isFlipped, setIsFlipped] = useState(false);
   const [streamedAnswer, setStreamedAnswer] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const streamingRef = useRef(false);
   const audioRef = useRef(null);
+  const pcRef = useRef(null);
+  const dcRef = useRef(null);
   const toast = useToast();
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
@@ -240,12 +249,8 @@ export default function FlashcardPractice({
     setIsFlipped(false);
     setStreamedAnswer("");
     setIsStreaming(false);
-    setIsPlayingAudio(false);
     streamingRef.current = false;
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
+    teardownRealtime();
     if (isRecording) {
       stopRecording();
     }
@@ -292,10 +297,52 @@ export default function FlashcardPractice({
     }
   };
 
+  const teardownRealtime = () => {
+    try {
+      streamingRef.current = false;
+      dcRef.current?.close?.();
+      pcRef.current?.getSenders?.().forEach((s) => s.track && s.track.stop());
+      pcRef.current?.getReceivers?.().forEach((r) => r.track && r.track.stop());
+      pcRef.current?.close?.();
+    } catch {}
+    pcRef.current = null;
+    dcRef.current = null;
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+      } catch {}
+      const stream = audioRef.current.srcObject;
+      if (stream) {
+        try {
+          stream.getTracks().forEach((t) => t.stop());
+        } catch {}
+      }
+      audioRef.current.srcObject = null;
+      audioRef.current = null;
+    }
+  };
+
   const handleShowAnswer = async () => {
     if (isFlipped || isStreaming) return;
 
     setIsFlipped(true);
+    await handleListenToAnswer(new Event("autoplay"));
+  };
+
+  const handleFlipBack = () => {
+    streamingRef.current = false;
+    setIsFlipped(false);
+    setStreamedAnswer("");
+    setIsStreaming(false);
+    teardownRealtime();
+  };
+
+  const handleListenToAnswer = async (e) => {
+    e.stopPropagation(); // Prevent card flip when clicking listen button
+
+    if (isStreaming) return;
+
+    teardownRealtime();
     setIsStreaming(true);
     setStreamedAnswer("");
     streamingRef.current = true;
@@ -306,88 +353,134 @@ export default function FlashcardPractice({
     );
     const prompt = `Translate "${sourceText}" to ${LANG_NAME(
       targetLang
-    )}. Reply with ONLY the translated word or phrase, nothing else. No explanations, no quotes, no punctuation unless part of the translation.`;
+    )}. Reply with ONLY the translated word or phrase, nothing else. Speak the translation clearly.`;
 
     try {
-      const result = await simplemodel.generateContentStream(prompt);
+      const pc = new RTCPeerConnection();
+      pcRef.current = pc;
 
-      let fullText = "";
-      for await (const chunk of result.stream) {
-        if (!streamingRef.current) break;
+      const remote = new MediaStream();
+      pc.ontrack = (ev) => {
+        ev.streams[0].getTracks().forEach((t) => remote.addTrack(t));
+      };
+      pc.addTransceiver("audio", { direction: "recvonly" });
 
-        const chunkText = typeof chunk.text === "function" ? chunk.text() : "";
-        if (!chunkText) continue;
+      const dc = pc.createDataChannel("oai-events");
+      dcRef.current = dc;
 
-        fullText += chunkText;
-        setStreamedAnswer(fullText.trim());
-      }
-    } catch (error) {
-      console.error("Gemini streaming error:", error);
-      setStreamedAnswer(getTranslation("flashcard_error_loading"));
-    } finally {
-      setIsStreaming(false);
-      streamingRef.current = false;
-    }
-  };
+      const audioEl = new Audio();
+      audioEl.autoplay = true;
+      audioEl.playsInline = true;
+      audioEl.srcObject = remote;
+      audioRef.current = audioEl;
 
-  const handleFlipBack = () => {
-    streamingRef.current = false;
-    setIsFlipped(false);
-    setStreamedAnswer("");
-    setIsStreaming(false);
-  };
+      let responseId = null;
+      dc.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data || "{}");
+          const type = payload?.type;
+          const data = payload || {};
+          const rid =
+            data?.response?.id || data?.response_id || responseId || null;
 
-  const handleListenToAnswer = async (e) => {
-    e.stopPropagation(); // Prevent card flip when clicking listen button
+          if (type === "response.created" && data?.response?.id) {
+            responseId = data.response.id;
+            return;
+          }
 
-    if (!streamedAnswer || isPlayingAudio) return;
+          if (
+            (type === "response.output_text.delta" ||
+              type === "response.text.delta") &&
+            typeof data?.delta === "string"
+          ) {
+            setStreamedAnswer((prev) => (prev + data.delta).trim());
+            return;
+          }
 
-    // Stop any currently playing audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
+          if (
+            (type === "response.output_text.done" ||
+              type === "response.text.done") &&
+            typeof data?.text === "string"
+          ) {
+            setStreamedAnswer((prev) => `${prev} ${data.text}`.trim());
+            return;
+          }
 
-    setIsPlayingAudio(true);
+          if (
+            type === "response.completed" ||
+            type === "response.done" ||
+            type === "response.canceled"
+          ) {
+            streamingRef.current = false;
+            setIsStreaming(false);
+            teardownRealtime();
+            return;
+          }
 
-    try {
-      const res = await fetch(
-        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: streamedAnswer,
-            voice: getRandomVoice(),
-            model: "gpt-4o-mini-tts",
-            response_format: "mp3",
-          }),
+          if (type === "error" && data?.error?.message) {
+            throw new Error(data.error.message);
+          }
+        } catch (err) {
+          console.error("Realtime flashcard error: ", err);
+          streamingRef.current = false;
+          setIsStreaming(false);
+          teardownRealtime();
+          toast({
+            title: getTranslation("flashcard_error_loading"),
+            description: err?.message || "", 
+            status: "error",
+            duration: 2500,
+          });
         }
-      );
-
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
-
-      const cleanup = () => {
-        URL.revokeObjectURL(url);
-        setIsPlayingAudio(false);
-        audioRef.current = null;
       };
 
-      audio.onended = cleanup;
-      audio.onerror = cleanup;
+      dc.onopen = () => {
+        const voiceName = getRandomVoice();
+        dc.send(
+          JSON.stringify({
+            type: "session.update",
+            session: {
+              instructions: prompt,
+              modalities: ["audio", "text"],
+              voice: voiceName,
+              output_audio_format: "pcm16",
+              input_audio_transcription: { model: "whisper-1" },
+              turn_detection: null,
+            },
+          })
+        );
 
-      await audio.play();
+        dc.send(
+          JSON.stringify({
+            type: "response.create",
+            response: {
+              modalities: ["audio", "text"],
+              conversation: "none",
+              instructions: prompt,
+            },
+          })
+        );
+      };
+
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      const resp = await fetch(REALTIME_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/sdp" },
+        body: offer.sdp,
+      });
+      const answer = await resp.text();
+      if (!resp.ok) throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
+      await pc.setRemoteDescription({ type: "answer", sdp: answer });
     } catch (error) {
-      console.error("TTS error:", error);
-      setIsPlayingAudio(false);
+      console.error("Realtime translation error:", error);
+      setStreamedAnswer(getTranslation("flashcard_error_loading"));
+      streamingRef.current = false;
+      setIsStreaming(false);
+      teardownRealtime();
       toast({
-        title: "Audio error",
-        description: "Could not play audio. Please try again.",
+        title: getTranslation("flashcard_error_loading"),
+        description: error?.message || "",
         status: "error",
         duration: 2500,
       });
@@ -553,7 +646,7 @@ export default function FlashcardPractice({
                       color="white"
                       leftIcon={<RiVolumeUpLine size={14} />}
                       onClick={handleListenToAnswer}
-                      isLoading={isPlayingAudio}
+                      isLoading={isStreaming}
                       loadingText={getTranslation("flashcard_listening")}
                       _hover={{ bg: "whiteAlpha.300" }}
                       fontSize="xs"
