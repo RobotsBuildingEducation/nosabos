@@ -2812,8 +2812,7 @@ Return JSON ONLY:
       ? "Suelta la respuesta aquí"
       : "Drop the answer here");
   const skipLabel =
-    t("practice_skip_question") ||
-    (userLanguage === "es" ? "Omitir pregunta" : "skip");
+    t("practice_skip_question") || (userLanguage === "es" ? "Saltar" : "Skip");
   const questionListenLabel =
     userLanguage === "es" ? "Escuchar pregunta" : "Listen to question";
   const speakListenLabel =
