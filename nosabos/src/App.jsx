@@ -392,9 +392,11 @@ function TopBar({
   const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "A1");
   const [supportLang, setSupportLang] = useState(p.supportLang || "en");
   const [voice, setVoice] = useState(p.voice || "alloy");
-  const [voicePersona, setVoicePersona] = useState(
-    p.voicePersona || translations.en.onboarding_persona_default_example
-  );
+  const defaultPersona =
+    p.voicePersona ||
+    translations[appLanguage]?.onboarding_persona_default_example ||
+    translations.en.onboarding_persona_default_example;
+  const [voicePersona, setVoicePersona] = useState(defaultPersona);
   const [targetLang, setTargetLang] = useState(p.targetLang || "es");
   const [showTranslations, setShowTranslations] = useState(
     typeof p.showTranslations === "boolean" ? p.showTranslations : true
@@ -416,7 +418,9 @@ function TopBar({
     setSupportLang(q.supportLang || "en");
     setVoice(q.voice || "alloy");
     setVoicePersona(
-      q.voicePersona || translations.en.onboarding_persona_default_example
+      q.voicePersona ||
+        translations[appLanguage]?.onboarding_persona_default_example ||
+        translations.en.onboarding_persona_default_example
     );
     setTargetLang(q.targetLang || "es");
     setShowTranslations(
@@ -1300,7 +1304,10 @@ export default function App() {
     level: "A1",
     supportLang: "en",
     voice: "alloy",
-    voicePersona: translations?.en?.onboarding_persona_default_example || "",
+    voicePersona:
+      translations?.[appLanguage]?.onboarding_persona_default_example ||
+      translations?.en?.onboarding_persona_default_example ||
+      "",
     targetLang: "es",
     showTranslations: true,
     pauseMs: 2000,
@@ -1775,7 +1782,8 @@ export default function App() {
           : "en",
         voicePersona: safe(
           payload.voicePersona,
-          translations.en.onboarding_persona_default_example
+          translations[appLanguage]?.onboarding_persona_default_example ||
+            translations.en.onboarding_persona_default_example
         ),
         targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
           payload.targetLang
@@ -3441,16 +3449,8 @@ export default function App() {
         isOpen={dailyGoalOpen}
         onClose={handleDailyGoalClose}
         npub={activeNpub}
-        ui={{
-          title: appLanguage === "es" ? "Meta diaria de XP" : "Daily XP goal",
-          subtitle:
-            appLanguage === "es"
-              ? "Cada nivel = 100 XP. ¿Cuántos XP quieres ganar al día?"
-              : "Each level = 100 XP. How many XP do you want to earn per day?",
-          inputLabel: appLanguage === "es" ? "XP por día" : "XP per day",
-          save: appLanguage === "es" ? "Guardar" : "Save",
-          cancel: appLanguage === "es" ? "Cancelar" : "Cancel",
-        }}
+        lang={appLanguage}
+        t={t}
       />
 
       <SessionTimerModal

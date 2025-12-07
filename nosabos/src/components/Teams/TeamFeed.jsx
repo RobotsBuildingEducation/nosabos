@@ -88,7 +88,6 @@ const sanitizeProfiles = (profiles = []) => {
 };
 
 export default function TeamFeed({
-  userLanguage = "en",
   t = {},
   allowPosts = false,
   onAllowPostsChange,
@@ -102,40 +101,28 @@ export default function TeamFeed({
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
   );
 
-  const localeStrings = useMemo(() => {
-    if (userLanguage === "es") {
-      return {
-        instructions:
-          "Comparte tu progreso con la comunidad usando #LearnWithNostr y muestra lo que estás practicando.",
-        copyButton: "Copiar llave privada",
-        copyTitle: "Llave copiada",
-        copyDescription: "Tu llave se copió al portapapeles.",
-        allowLabel: "Permitir publicaciones automáticas",
-        allowEnabled: "Las publicaciones automáticas están activadas.",
-        allowDisabled: "Las publicaciones automáticas están desactivadas.",
-        refresh: "Actualizar",
-        loading: "Sincronizando con la comunidad...",
-        empty: "Aún no hay publicaciones. ¡Sé la primera persona en compartir!",
-        error: "No se pudo cargar el feed.",
-        copyFallback: "No se pudo copiar la llave.",
-      };
-    }
-    return {
+  const localeStrings = useMemo(
+    () => ({
       instructions:
+        t?.teams_feed_instructions ||
         "Share your progress with the community using #LearnWithNostr and show what you're practicing.",
-      copyButton: "Copy secret key",
-      copyTitle: "Keys copied",
-      copyDescription: "Your key was copied to the clipboard.",
-      allowLabel: "Allow posts",
-      allowEnabled: "Automatic community posts enabled.",
-      allowDisabled: "Automatic community posts disabled.",
-      refresh: "Refresh",
-      loading: "Syncing with the community...",
-      empty: "No posts yet. Start the conversation!",
-      error: "Unable to load the feed.",
-      copyFallback: "Unable to copy key.",
-    };
-  }, [userLanguage]);
+      copyButton: t?.teams_feed_copy_button || "Copy secret key",
+      copyTitle: t?.teams_feed_copy_title || "Keys copied",
+      copyDescription:
+        t?.teams_feed_copy_desc || "Your key was copied to the clipboard.",
+      allowLabel: t?.teams_feed_allow_label || "Allow posts",
+      allowEnabled:
+        t?.teams_feed_allow_enabled || "Automatic community posts enabled.",
+      allowDisabled:
+        t?.teams_feed_allow_disabled || "Automatic community posts disabled.",
+      refresh: t?.teams_feed_refresh || "Refresh",
+      loading: t?.teams_feed_loading || "Syncing with the community...",
+      empty: t?.teams_feed_empty || "No posts yet. Start the conversation!",
+      error: t?.teams_feed_error || "Unable to load the feed.",
+      copyFallback: t?.teams_feed_copy_fallback || "Unable to copy key.",
+    }),
+    [t]
+  );
 
   const fetchFeed = useCallback(async () => {
     setIsLoading(true);
@@ -385,12 +372,12 @@ export default function TeamFeed({
   return (
     <VStack spacing={4} align="stretch">
       <Text fontSize="sm" color="gray.300">
-        {t?.learnwithnostr_instructions || localeStrings.instructions}
+        {t?.teams_feed_instructions || localeStrings.instructions}
       </Text>
 
       <FormControl display="flex" alignItems="center" mb={4}>
         <FormLabel htmlFor="allow-posts-switch" mb="0">
-          {t?.learnwithnostr_allow_posts || localeStrings.allowLabel}
+          {t?.teams_feed_allow_label || localeStrings.allowLabel}
         </FormLabel>
         <Switch
           id="allow-posts-switch"

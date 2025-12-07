@@ -69,15 +69,10 @@ const getEffectiveCardLanguage = (supportLang) => {
 
 // Language name helper
 const LANG_NAME = (code) => {
-  const names = {
-    es: "Spanish",
-    en: "English",
-    pt: "Portuguese",
-    fr: "French",
-    it: "Italian",
-    nah: "Nahuatl",
-  };
-  return names[code] || code;
+  const appLang = getAppLanguage();
+  const dict = translations[appLang] || translations.en;
+  const key = `language_${code === "nah" ? "nah" : code}`;
+  return dict[key] || translations.en[key] || code;
 };
 
 // Build AI grading prompt for flashcard translation
