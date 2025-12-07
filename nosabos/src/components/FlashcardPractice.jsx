@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Box,
   VStack,
@@ -139,6 +139,35 @@ export default function FlashcardPractice({
   const toast = useToast();
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const controller = new AbortController();
+
+    const warmupTTS = async () => {
+      try {
+        await fetch("https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            input: "warmup",
+            voice: getRandomVoice(),
+            model: "gpt-4o-mini-tts",
+            response_format: "mp3",
+          }),
+          signal: controller.signal,
+        });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        console.warn("Flashcard TTS warmup failed", error);
+      }
+    };
+
+    warmupTTS();
+
+    return () => controller.abort();
+  }, [isOpen]);
 
   // Speech practice hook
   const { startRecording, stopRecording, isRecording, supportsSpeech } =
