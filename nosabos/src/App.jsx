@@ -446,7 +446,9 @@ function TopBar({
 
     if (
       (!current && localizedDefault) ||
-      (current && current !== localizedDefault && (current === enDefault || current === esDefault))
+      (current &&
+        current !== localizedDefault &&
+        (current === enDefault || current === esDefault))
     ) {
       setVoicePersona(localizedDefault || current);
     }
