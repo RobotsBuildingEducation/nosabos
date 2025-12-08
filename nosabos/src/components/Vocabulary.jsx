@@ -28,7 +28,6 @@ import {
   ModalOverlay,
   ModalContent,
   ModalBody,
-  SlideFade,
 } from "@chakra-ui/react";
 import {
   doc,
@@ -47,12 +46,13 @@ import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
-import { FiArrowRight, FiCopy } from "react-icons/fi";
+import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
+import FeedbackRail from "./FeedbackRail";
 import {
   TTS_ENDPOINT,
   TTS_LANG_TAG,
@@ -3002,77 +3002,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     );
   };
 
-  // Animated feedback rail that blends the badge + next button
-  const FeedbackRail = ({ ok, xp, showNext, onNext, nextLabel }) => {
-    if (ok === null) return null;
-    const label = ok
-      ? t("correct") || "Correct!"
-      : t("try_again") || "Try again";
-
-    return (
-      <SlideFade in={true} offsetY="10px">
-        <Flex
-          align={{ base: "center", md: "center" }}
-          direction={{ base: "row", md: "row" }}
-          justify="space-between"
-          gap={3}
-          p={4}
-          borderRadius="xl"
-          bg={
-            ok
-              ? "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
-              : "linear-gradient(90deg, rgba(245,101,101,0.16), rgba(229,62,62,0.08))"
-          }
-          borderWidth="1px"
-          borderColor={ok ? "green.400" : "red.300"}
-          boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
-        >
-          <HStack spacing={3} flex="1" align="center">
-            <Flex
-              w="44px"
-              h="44px"
-              rounded="full"
-              align="center"
-              justify="center"
-              bg={ok ? "green.500" : "red.500"}
-              color="white"
-              fontWeight="bold"
-              fontSize="lg"
-              boxShadow="0 10px 24px rgba(0,0,0,0.22)"
-            >
-              {ok ? "✓" : "✖"}
-            </Flex>
-            <Box>
-              <Text fontWeight="semibold">{label}</Text>
-              <Text fontSize="sm" color="whiteAlpha.800">
-                {xp > 0
-                  ? `+${xp} XP`
-                  : ok
-                  ? t("practice_next_ready") ||
-                    "Great work! Keep the streak going."
-                  : t("practice_try_again_hint") || "Review and try again."}
-              </Text>
-            </Box>
-          </HStack>
-          {showNext ? (
-            <Button
-              rightIcon={<FiArrowRight />}
-              colorScheme="cyan"
-              variant="solid"
-              onClick={onNext}
-              shadow="md"
-              px={{ base: 7, md: 12 }}
-              py={{ base: 3, md: 4 }}
-              alignSelf="flex-end"
-            >
-              {nextLabel}
-            </Button>
-          ) : null}
-        </Flex>
-      </SlideFade>
-    );
-  };
-
   const dragPlaceholderLabel =
     t("practice_drag_drop_slot_placeholder") ||
     (userLanguage === "es"
@@ -3662,6 +3591,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
+              t={t}
+              userLanguage={userLanguage}
             />
           </VStack>
         ) : null}
@@ -3973,6 +3904,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
+              t={t}
+              userLanguage={userLanguage}
             />
           </>
         ) : null}
@@ -4306,6 +4239,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
+              t={t}
+              userLanguage={userLanguage}
             />
           </>
         ) : null}
@@ -4545,6 +4480,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
+              t={t}
+              userLanguage={userLanguage}
             />
 
             {lastOk === true ? (
@@ -4825,6 +4762,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               showNext={showNextButton}
               onNext={handleNext}
               nextLabel={nextLabel}
+              t={t}
+              userLanguage={userLanguage}
             />
           </>
         ) : null}
