@@ -1392,39 +1392,46 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       rubricEs = "Di un saludo en el idioma meta";
     }
 
-    // Localize goal strings when Spanish support is requested
-    const prefersSpanishSupport =
-      (supportLangRef.current || supportLang) === "es";
+    // Determine which language the AI generated the goal in
     const goalLangCode = supportLangRef.current || supportLang || "en";
+    const aiGeneratedInSpanish = goalLangCode === "es";
 
-    let localizedScenarioEn = scenario || seedTitles.en;
-    let localizedRubricEn = rubricEn;
-    let localizedScenarioEs =
-      activeGoal.scenario_es || scenario || seedTitles.es;
-    let localizedRubricEs = activeGoal.successCriteria_es || rubricEs;
+    // Initialize localized strings based on the AI's output language
+    let localizedScenarioEn, localizedRubricEn;
+    let localizedScenarioEs, localizedRubricEs;
 
-    if (prefersSpanishSupport) {
-      try {
-        localizedScenarioEs = await translateGoalText(
-          localizedScenarioEn,
-          "es"
-        );
+    if (aiGeneratedInSpanish) {
+      // AI generated content in Spanish - use as Spanish source
+      localizedScenarioEs = scenario || seedTitles.es;
+      localizedRubricEs = successCriteria || rubricEs;
+      // Need to translate to English
+      localizedScenarioEn = seedTitles.en; // fallback
+      localizedRubricEn = rubricEn; // fallback
+    } else {
+      // AI generated content in English - use as English source
+      localizedScenarioEn = scenario || seedTitles.en;
+      localizedRubricEn = successCriteria || rubricEn;
+      // Need to translate to Spanish
+      localizedScenarioEs = activeGoal.scenario_es || seedTitles.es; // fallback
+      localizedRubricEs = activeGoal.successCriteria_es || rubricEs; // fallback
+    }
+
+    // Always translate to ensure both languages have proper content
+    try {
+      if (aiGeneratedInSpanish) {
+        // Translate Spanish -> English
+        localizedScenarioEn = await translateGoalText(localizedScenarioEs, "en");
+        localizedRubricEn = await translateGoalText(localizedRubricEs, "en");
+      } else {
+        // Translate English -> Spanish
+        localizedScenarioEs = await translateGoalText(localizedScenarioEn, "es");
         localizedRubricEs = await translateGoalText(localizedRubricEn, "es");
-
-        // Ensure we still maintain an English fallback when the goal language is Spanish
-        if (goalLangCode === "es") {
-          localizedScenarioEn = await translateGoalText(
-            localizedScenarioEs,
-            "en"
-          );
-          localizedRubricEn = await translateGoalText(localizedRubricEs, "en");
-        }
-      } catch (err) {
-        console.warn(
-          "Falling back to default goal Spanish",
-          err?.message || err
-        );
       }
+    } catch (err) {
+      console.warn(
+        "Goal translation failed, using fallbacks",
+        err?.message || err
+      );
     }
 
     const seed = {
