@@ -287,7 +287,8 @@ Policy:
 - Say YES if the answer is grammatically correct and fits the context.
 - Allow contractions, minor casing/punctuation differences, and natural variants.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
-- If clearly wrong or ungrammatical for the stem, say NO.
+- Accept words only (if the question is como ___? the appropriate answer is just a word without the ?)
+- Be lenient, good enough answers are acceptable.
 
 Reply ONE WORD ONLY:
 YES or NO
@@ -391,6 +392,7 @@ function buildMCStreamPrompt({
     `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${diff}`,
     stemDirective,
     `- 4 distinct choices in ${TARGET}.`,
+    `- One of the distinct choices must be correct.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
       ? `- ${SUPPORT} translation of stem.`
@@ -427,7 +429,7 @@ Instructions:
 - Use the hint and any time/aspect cues in the stem (e.g., "usually", "yesterday", "for/since").
 - Allow contractions, minor punctuation/casing differences, and natural variation.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
-- If more than one choice could be acceptable, accept the user's if it fits well.
+- If more than one choice could be acceptable, accept the user's if it fits well or is good enough.
 - Otherwise say NO.
 
 Reply with ONE WORD ONLY:
@@ -476,7 +478,7 @@ function buildMAStreamPrompt({
         )}`;
 
   return [
-    `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
+    `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct, NEVER just 1). Difficulty: ${diff}`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -575,6 +577,7 @@ Instructions:
 - Be lenient about contractions and minor surface differences; focus on grammar/meaning fit with the stem + hint.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - If two variants are both acceptable, either may be included.
+- Be lenient, good enough answers are acceptable.
 
 Reply with ONE WORD ONLY:
 YES or NO

@@ -329,6 +329,7 @@ function buildMCVocabStreamPrompt({
     `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${diff}`,
     stemDirective,
     `- 4 distinct word choices in ${TARGET}.`,
+    `One of the distinct word choices must be correct.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
     topicDirective,
@@ -381,7 +382,7 @@ function buildMAVocabStreamPrompt({
         )}`;
 
   return [
-    `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
+    `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct, never just 1). Difficulty: ${diff}`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -534,6 +535,7 @@ Policy:
 - Ignore minor casing/inflection if meaning is equivalent.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - If it clearly doesn't fit the meaning or register, say NO.
+- Be lenient, good enough answers are acceptable.
 
 Reply ONE WORD ONLY: YES or NO
 `.trim();
@@ -568,6 +570,7 @@ Rules:
 - Allow close synonyms if they fit as well as the intended answer.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - Otherwise say NO.
+- Be lenient, good enough answers are acceptable.
 
 Reply ONE WORD ONLY: YES or NO
 `.trim();
@@ -603,6 +606,7 @@ Policy:
 - Say YES if the user's selection includes ALL correct choices and NO incorrect ones (order doesn't matter).
 - Be lenient with near-synonyms if they fit naturally.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
+- Be lenient, good enough answers are acceptable.
 
 Reply ONE WORD ONLY: YES or NO
 `.trim();
