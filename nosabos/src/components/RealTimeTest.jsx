@@ -13,6 +13,8 @@ import {
   useToast,
   Flex,
   Spinner,
+  Skeleton,
+  SkeletonText,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop, FaPlay } from "react-icons/fa";
@@ -604,6 +606,7 @@ export default function RealTimeTest({
   const goalBusyRef = useRef(false);
   const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
   const goalXpAwardedRef = useRef(false);
+  const [goalGenerating, setGoalGenerating] = useState(false); // Track when AI is generating a new goal
 
   // Track when XP has been granted for the active goal to avoid duplicates
   const lastGoalIdRef = useRef(null);
@@ -812,10 +815,15 @@ export default function RealTimeTest({
           if (hr && hr !== helpRequestRef.current) setHelpRequest(hr);
 
           // 🎯 goal
-          const goal = await ensureCurrentGoalSeed(currentNpub, data);
-          setCurrentGoal(goal);
-          goalRef.current = goal;
-          scheduleSessionUpdate();
+          setGoalGenerating(true);
+          try {
+            const goal = await ensureCurrentGoalSeed(currentNpub, data);
+            setCurrentGoal(goal);
+            goalRef.current = goal;
+            scheduleSessionUpdate();
+          } finally {
+            setGoalGenerating(false);
+          }
         }
       } catch (e) {
         console.warn("Load profile failed:", e?.message || e);
@@ -1241,22 +1249,35 @@ export default function RealTimeTest({
     const goalLangCode = supportLangRef.current || supportLang || "en";
     const goalLangName = goalLangCode === "es" ? "Spanish" : "English";
 
-    const prompt = `You are creating a conversational practice goal for a language learner.
+    const prompt = `You are creating a specific, measurable practice goal for a language learner.
 
 Lesson: ${lessonTitle}
 Description: ${lessonDesc}
 Topic: ${topic}
 Focus areas: ${focusPoints.join(", ") || "general practice"}
 Level: ${cefrHint}
-Goal language: ${goalLangName} (write every field in ${goalLangName}, avoid mixing languages)
+Output language: ${goalLangName}
 
-Generate a short, clear, actionable conversation goal that makes sense for this lesson.
-The goal should be something the learner can demonstrate in a brief voice conversation.
+Create a SPECIFIC and ACTIONABLE goal. Avoid generic titles like "Practice X" or "X conversation".
 
-The goal must be written entirely in ${goalLangName}. Do NOT output English if the goal language is Spanish.
+Good examples:
+- "Order coffee and ask for the WiFi password" (specific scenario)
+- "Describe your family members and their jobs" (clear objective)
+- "Ask for directions to the train station" (measurable outcome)
+- "Introduce yourself and ask 3 questions about someone's hobbies" (quantifiable)
 
-Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{"scenario":"[2-6 word task title]","prompt":"[1-2 sentence roleplay instruction for AI tutor]","successCriteria":"[what the learner must do to succeed]"}`;
+Bad examples (too vague):
+- "Family conversation" ❌
+- "Practice introductions" ❌
+- "Talk about food" ❌
+
+The "scenario" should be a clear mini-mission (5-10 words) that tells the learner exactly what to accomplish.
+The "successCriteria" should describe what specific language/phrases the learner must use to succeed.
+
+Write everything in ${goalLangName}. Do NOT mix languages.
+
+Return ONLY valid JSON (no markdown):
+{"scenario":"[specific mini-mission]","prompt":"[roleplay setup for AI tutor]","successCriteria":"[specific phrases or structures the learner must demonstrate]"}`;
 
     try {
       const r = await fetch(RESPONSES_URL, {
@@ -2583,13 +2604,19 @@ Do not return the whole sentence as a single chunk.`;
                     >
                       {tGoalLabel}
                     </Badge>
-                    <Text fontSize="xs" opacity={0.9}>
-                      {goalTitleForUI(currentGoal) || "—"}
-                    </Text>
+                    {goalGenerating ? (
+                      <Skeleton height="14px" width="200px" borderRadius="sm" />
+                    ) : (
+                      <Text fontSize="xs" opacity={0.9}>
+                        {goalTitleForUI(currentGoal) || "—"}
+                      </Text>
+                    )}
                   </HStack>
                   <HStack></HStack>
                 </HStack>
-                {!!currentGoal && (
+                {goalGenerating ? (
+                  <SkeletonText noOfLines={1} spacing="2" skeletonHeight="12px" width="80%" />
+                ) : !!currentGoal && (
                   <Text fontSize="xs" opacity={0.8}>
                     <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
                     {goalRubricForUI(currentGoal)}
