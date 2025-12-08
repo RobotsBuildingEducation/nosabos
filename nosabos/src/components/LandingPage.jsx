@@ -535,6 +535,8 @@ const LandingPage = ({ onAuthenticated }) => {
             onClick={handleSignIn}
             isLoading={isSigningIn}
             rightIcon={<LockIcon />}
+            colorScheme="teal"
+            color="white"
           >
             {copy.signin_button}
           </ActionButton>
@@ -610,6 +612,7 @@ const LandingPage = ({ onAuthenticated }) => {
               onClick={handleLaunch}
               rightIcon={<ArrowForwardIcon />}
               color="white"
+              colorScheme="teal"
             >
               {copy.created_launch}
             </ActionButton>
@@ -708,6 +711,7 @@ const LandingPage = ({ onAuthenticated }) => {
             color="white"
             width="75%"
             p={6}
+            colorScheme="teal"
           >
             {copy.have_key_button}
           </ActionButton>
@@ -836,6 +840,7 @@ const LandingPage = ({ onAuthenticated }) => {
                 width="75%"
                 maxWidth="300px"
                 p={6}
+                colorScheme="teal"
               >
                 {copy.have_key_button}
               </ActionButton>
