@@ -9442,6 +9442,35 @@ const baseLearningPath = {
   ],
 };
 
+const LESSON_XP_RANGE = { min: 55, max: 80 };
+const LESSON_XP_STEP = 5;
+
+/**
+ * Assign a deterministic pseudo-random XP reward to each lesson so that every
+ * lesson requires between 55–80 XP to complete in increments of 5. The hash
+ * keeps rewards stable across sessions while still varying the distribution
+ * across lessons.
+ */
+function applyLessonXPSchedule(lessons) {
+  return lessons.map((lesson) => ({
+    ...lesson,
+    xpReward: getLessonXpReward(lesson.id),
+  }));
+}
+
+function getLessonXpReward(lessonId = "") {
+  const normalized = lessonId || "lesson";
+  let hash = 0;
+
+  for (let i = 0; i < normalized.length; i++) {
+    hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0;
+  }
+
+  const rewardOptions =
+    Math.floor((LESSON_XP_RANGE.max - LESSON_XP_RANGE.min) / LESSON_XP_STEP) + 1;
+  return (hash % rewardOptions) * LESSON_XP_STEP + LESSON_XP_RANGE.min;
+}
+
 const SUB_LEVEL_SEGMENTS = {
   A1: ["A1.1", "A1.2", "A1.3"],
   A2: ["A2.1", "A2.2", "A2.3"],
@@ -10495,7 +10524,7 @@ function applyCEFRScaffolding(path) {
             CEFR_LEVEL_PROFILES[level]?.discourseSkills || []
           ).join(", ")}.`,
         ],
-        lessons: balancedLessons,
+        lessons: applyLessonXPSchedule(balancedLessons),
       };
     });
   });
