@@ -9443,11 +9443,13 @@ const baseLearningPath = {
 };
 
 const LESSON_XP_RANGE = { min: 55, max: 80 };
+const LESSON_XP_STEP = 5;
 
 /**
  * Assign a deterministic pseudo-random XP reward to each lesson so that every
- * lesson requires between 55–80 XP to complete. The hash keeps rewards stable
- * across sessions while still varying the distribution across lessons.
+ * lesson requires between 55–80 XP to complete in increments of 5. The hash
+ * keeps rewards stable across sessions while still varying the distribution
+ * across lessons.
  */
 function applyLessonXPSchedule(lessons) {
   return lessons.map((lesson) => ({
@@ -9464,8 +9466,9 @@ function getLessonXpReward(lessonId = "") {
     hash = (hash * 31 + normalized.charCodeAt(i)) >>> 0;
   }
 
-  const range = LESSON_XP_RANGE.max - LESSON_XP_RANGE.min + 1;
-  return (hash % range) + LESSON_XP_RANGE.min;
+  const rewardOptions =
+    Math.floor((LESSON_XP_RANGE.max - LESSON_XP_RANGE.min) / LESSON_XP_STEP) + 1;
+  return (hash % rewardOptions) * LESSON_XP_STEP + LESSON_XP_RANGE.min;
 }
 
 const SUB_LEVEL_SEGMENTS = {
