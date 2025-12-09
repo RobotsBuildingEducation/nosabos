@@ -1904,16 +1904,28 @@ export default function SkillTree({
 
         {/* Simplified proficiency display for conversations mode */}
         {pathMode === "conversations" && (() => {
+          // Testing unlock: check for specific nsec in local storage
+          const testNsec =
+            typeof window !== "undefined"
+              ? localStorage.getItem("local_nsec")
+              : null;
+          const isTestUnlocked =
+            testNsec ===
+            "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+
           // Calculate max unlocked proficiency level
           const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
-          let maxLevel = "A1";
-          for (const level of levelsOrder) {
-            const lessonStatus = lessonLevelCompletionStatus[level];
-            const flashcardStatus = flashcardLevelCompletionStatus[level];
-            if (lessonStatus?.isComplete || flashcardStatus?.isComplete ||
-                lessonStatus?.percentage > 0 || flashcardStatus?.percentage > 0 ||
-                level === "A1") {
-              maxLevel = level;
+          let maxLevel = isTestUnlocked ? "C2" : "A1";
+
+          if (!isTestUnlocked) {
+            for (const level of levelsOrder) {
+              const lessonStatus = lessonLevelCompletionStatus[level];
+              const flashcardStatus = flashcardLevelCompletionStatus[level];
+              if (lessonStatus?.isComplete || flashcardStatus?.isComplete ||
+                  lessonStatus?.percentage > 0 || flashcardStatus?.percentage > 0 ||
+                  level === "A1") {
+                maxLevel = level;
+              }
             }
           }
 
@@ -2099,6 +2111,17 @@ export default function SkillTree({
                 supportLang={supportLang}
                 pauseMs={pauseMs}
                 maxProficiencyLevel={(() => {
+                  // Testing unlock: check for specific nsec in local storage
+                  const testNsec =
+                    typeof window !== "undefined"
+                      ? localStorage.getItem("local_nsec")
+                      : null;
+                  const isTestUnlocked =
+                    testNsec ===
+                    "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+
+                  if (isTestUnlocked) return "C2";
+
                   // Calculate max unlocked proficiency level
                   const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
                   let maxLevel = "A1";
