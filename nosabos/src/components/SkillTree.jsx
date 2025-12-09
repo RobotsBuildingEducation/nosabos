@@ -1747,19 +1747,7 @@ export default function SkillTree({
     const lessonIndex = levelsOrder.indexOf(currentLessonLevel);
     const flashcardIndex = levelsOrder.indexOf(currentFlashcardLevel);
     const maxIndex = Math.max(lessonIndex, flashcardIndex);
-    const result = levelsOrder[maxIndex] || "A1";
-
-    // Debug logging
-    console.log('Conversation Proficiency Debug:', {
-      currentLessonLevel,
-      currentFlashcardLevel,
-      lessonIndex,
-      flashcardIndex,
-      maxIndex,
-      result
-    });
-
-    return result;
+    return levelsOrder[maxIndex] || "A1";
   }, [currentLessonLevel, currentFlashcardLevel]);
 
   const bgColor = "gray.950";
@@ -1926,20 +1914,7 @@ export default function SkillTree({
 
         {/* Simplified proficiency display for conversations mode */}
         {pathMode === "conversations" && (() => {
-          // Calculate max unlocked proficiency level
-          const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
-          let maxLevel = "A1";
-
-          for (const level of levelsOrder) {
-            const lessonStatus = lessonLevelCompletionStatus[level];
-            const flashcardStatus = flashcardLevelCompletionStatus[level];
-            if (lessonStatus?.isComplete || flashcardStatus?.isComplete ||
-                lessonStatus?.percentage > 0 || flashcardStatus?.percentage > 0 ||
-                level === "A1") {
-              maxLevel = level;
-            }
-          }
-
+          // Use the correctly calculated maxProficiencyLevel
           const LEVEL_INFO = {
             A1: { name: { en: "Beginner", es: "Principiante" }, desc: { en: "Basic survival language", es: "Lenguaje básico de supervivencia" }, color: "#3B82F6" },
             A2: { name: { en: "Elementary", es: "Elemental" }, desc: { en: "Simple everyday communication", es: "Comunicación cotidiana simple" }, color: "#8B5CF6" },
@@ -1948,7 +1923,7 @@ export default function SkillTree({
             C1: { name: { en: "Advanced", es: "Avanzado" }, desc: { en: "Sophisticated language use", es: "Uso sofisticado del idioma" }, color: "#EF4444" },
             C2: { name: { en: "Mastery", es: "Maestría" }, desc: { en: "Near-native proficiency", es: "Competencia casi nativa" }, color: "#EC4899" },
           };
-          const info = LEVEL_INFO[maxLevel];
+          const info = LEVEL_INFO[maxProficiencyLevel];
           const lang = getAppLanguage();
 
           return (
@@ -1970,7 +1945,7 @@ export default function SkillTree({
                   fontWeight="black"
                   boxShadow={`0 4px 14px ${info.color}66`}
                 >
-                  {maxLevel}
+                  {maxProficiencyLevel}
                 </Badge>
                 <Text fontSize="lg" fontWeight="bold" color="white">
                   {info.name[lang] || info.name.en}
