@@ -13,7 +13,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaPlay } from "react-icons/fa";
+import { FaStop, FaPlay, FaCheckCircle } from "react-icons/fa";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
 import { database, analytics } from "../firebaseResources/firebaseResources";
@@ -545,6 +545,7 @@ export default function Conversations({
     completed: false,
   });
   const [goalsCompleted, setGoalsCompleted] = useState(0);
+  const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
   const goalCheckPendingRef = useRef(false);
   const lastUserMessageRef = useRef("");
 
@@ -1051,17 +1052,28 @@ export default function Conversations({
 
       const prompt = `You are evaluating if a language learner completed a conversation goal.
 
-IMPORTANT: The learner is practicing ${languageName}. They MUST respond in ${languageName} to complete the goal.
-If the user responded in a different language (like English when practicing Spanish), the goal is NOT completed.
+CRITICAL REQUIREMENTS (BOTH must be met):
+1. The user MUST respond in ${languageName}. If they responded in ANY other language, the goal is NOT completed.
+2. The user's message MUST directly address the specific goal content. Generic or unrelated responses do NOT count.
 
 Goal: "${goalText}"
 Target language: ${languageName}
 User said: "${userMessage}"
 AI responded: "${aiResponse}"
 
-Evaluate:
-1. Is the user's message in ${languageName}? (If not, completed = false)
-2. Does the message satisfy the goal? (Consider partial completion as success)
+STRICT EVALUATION CRITERIA:
+1. Language Check: Is the user's message in ${languageName}? (If not → completed = false)
+2. Content Relevance Check: Does the user's message directly address the specific topic/action in the goal?
+   - If the goal is "talk about your favorite place in the city" and user talks about their dog → completed = false
+   - If the goal is "describe your morning routine" and user talks about food → completed = false
+   - If the goal is "discuss your hobbies" and user talks about weather → completed = false
+   - The message must be TOPICALLY RELEVANT to the goal, not just grammatically correct
+
+Examples of INCORRECT evaluation:
+- Goal: "Describe your favorite restaurant" / User: "My dog is white" → completed = false (wrong topic)
+- Goal: "Talk about your weekend plans" / User: "I like coffee" → completed = false (off-topic)
+
+Only mark completed = true if BOTH language AND content relevance are satisfied.
 
 Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief explanation"}`;
 
@@ -1104,6 +1116,8 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief expl
 
   // Generate next goal based on conversation context
   async function generateContextualGoal() {
+    setIsGeneratingGoal(true);
+
     try {
       // Get recent conversation context
       const recentMessages = messagesRef.current.slice(-6).map(m =>
@@ -1145,6 +1159,7 @@ Respond with ONLY a JSON object: {"en": "goal in English", "es": "goal in Spanis
         // Fallback to default goal
         setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
         goalCheckPendingRef.current = false;
+        setIsGeneratingGoal(false);
         return;
       }
 
@@ -1164,6 +1179,8 @@ Respond with ONLY a JSON object: {"en": "goal in English", "es": "goal in Spanis
     } catch (e) {
       setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
     }
+
+    setIsGeneratingGoal(false);
     goalCheckPendingRef.current = false;
   }
 
@@ -1544,27 +1561,38 @@ Do not return the whole sentence as a single chunk.`;
                 />
               </Box>
 
-              {/* Goal Badge and Text */}
-              <VStack spacing={1} align="center" width="100%">
-                <Badge
-                  colorScheme={currentGoal.completed ? "green" : "purple"}
-                  variant="subtle"
-                  fontSize="10px"
-                >
-                  {currentGoal.completed
-                    ? (uiLang === "es" ? "¡Meta completada!" : "Goal completed!")
-                    : (uiLang === "es" ? "Meta actual" : "Current Goal")}
-                </Badge>
-                <Text
-                  fontSize="sm"
-                  fontWeight="medium"
-                  textAlign="center"
-                  opacity={currentGoal.completed ? 0.6 : 1}
-                  textDecoration={currentGoal.completed ? "line-through" : "none"}
-                >
-                  {currentGoal.text[uiLang] || currentGoal.text.en}
-                </Text>
-              </VStack>
+              {/* Goal Text with Checkmark or Loader */}
+              <HStack spacing={2} align="center" width="100%" justify="center">
+                {isGeneratingGoal ? (
+                  <>
+                    <Spinner size="sm" color="purple.400" thickness="2px" speed="0.8s" />
+                    <Text
+                      fontSize="sm"
+                      fontWeight="medium"
+                      textAlign="center"
+                      color="purple.300"
+                    >
+                      {uiLang === "es" ? "Generando nueva meta..." : "Generating new goal..."}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text
+                      fontSize="sm"
+                      fontWeight="medium"
+                      textAlign="center"
+                      opacity={currentGoal.completed ? 0.6 : 1}
+                      textDecoration={currentGoal.completed ? "line-through" : "none"}
+                      flex="1"
+                    >
+                      {currentGoal.text[uiLang] || currentGoal.text.en}
+                    </Text>
+                    {currentGoal.completed && (
+                      <Box as={FaCheckCircle} color="green.400" boxSize="18px" />
+                    )}
+                  </>
+                )}
+              </HStack>
 
               {/* XP Progress Bar */}
               <Box w="100%">
