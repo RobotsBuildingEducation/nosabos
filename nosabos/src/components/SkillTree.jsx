@@ -2100,20 +2100,13 @@ export default function SkillTree({
                 supportLang={supportLang}
                 pauseMs={pauseMs}
                 maxProficiencyLevel={(() => {
-                  // Calculate max unlocked proficiency level
+                  // Calculate max unlocked proficiency level from skill tree and flashcards
+                  // Use the highest unlocked level between the two modes
                   const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
-                  let maxLevel = "A1";
-                  for (const level of levelsOrder) {
-                    const lessonStatus = lessonLevelCompletionStatus[level];
-                    const flashcardStatus = flashcardLevelCompletionStatus[level];
-                    // Level is accessible if it's unlocked in either lessons or flashcards
-                    if (lessonStatus?.isComplete || flashcardStatus?.isComplete ||
-                        lessonStatus?.percentage > 0 || flashcardStatus?.percentage > 0 ||
-                        level === "A1") {
-                      maxLevel = level;
-                    }
-                  }
-                  return maxLevel;
+                  const lessonIndex = levelsOrder.indexOf(currentLessonLevel);
+                  const flashcardIndex = levelsOrder.indexOf(currentFlashcardLevel);
+                  const maxIndex = Math.max(lessonIndex, flashcardIndex);
+                  return levelsOrder[maxIndex] || "A1";
                 })()}
               />
             </MotionBox>

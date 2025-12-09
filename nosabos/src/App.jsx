@@ -2932,21 +2932,57 @@ export default function App() {
   useEffect(() => {
     if (!user || hasInitializedLevels) return;
 
-    // Initialize from user document if available
+    // Initialize from user document if available, but validate they're unlocked
     if (
       user.activeLessonLevel &&
       CEFR_LEVELS.includes(user.activeLessonLevel)
     ) {
-      setActiveLessonLevel(user.activeLessonLevel);
+      // Validate the saved level is actually unlocked
+      const savedLevelIndex = CEFR_LEVELS.indexOf(user.activeLessonLevel);
+      let isUnlocked = user.activeLessonLevel === "A1";
+
+      if (!isUnlocked) {
+        isUnlocked = true;
+        for (let i = 0; i < savedLevelIndex; i++) {
+          if (!lessonLevelCompletionStatus[CEFR_LEVELS[i]]?.isComplete) {
+            isUnlocked = false;
+            break;
+          }
+        }
+      }
+
+      // Use saved level if unlocked, otherwise use the highest unlocked level
+      setActiveLessonLevel(isUnlocked ? user.activeLessonLevel : currentLessonLevel);
+    } else {
+      setActiveLessonLevel(currentLessonLevel);
     }
+
     if (
       user.activeFlashcardLevel &&
       CEFR_LEVELS.includes(user.activeFlashcardLevel)
     ) {
-      setActiveFlashcardLevel(user.activeFlashcardLevel);
+      // Validate the saved level is actually unlocked
+      const savedLevelIndex = CEFR_LEVELS.indexOf(user.activeFlashcardLevel);
+      let isUnlocked = user.activeFlashcardLevel === "A1";
+
+      if (!isUnlocked) {
+        isUnlocked = true;
+        for (let i = 0; i < savedLevelIndex; i++) {
+          if (!flashcardLevelCompletionStatus[CEFR_LEVELS[i]]?.isComplete) {
+            isUnlocked = false;
+            break;
+          }
+        }
+      }
+
+      // Use saved level if unlocked, otherwise use the highest unlocked level
+      setActiveFlashcardLevel(isUnlocked ? user.activeFlashcardLevel : currentFlashcardLevel);
+    } else {
+      setActiveFlashcardLevel(currentFlashcardLevel);
     }
+
     setHasInitializedLevels(true);
-  }, [user, hasInitializedLevels]);
+  }, [user, hasInitializedLevels, lessonLevelCompletionStatus, flashcardLevelCompletionStatus, currentLessonLevel, currentFlashcardLevel]);
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
