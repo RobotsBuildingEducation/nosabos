@@ -1740,6 +1740,16 @@ export default function SkillTree({
     return units.filter((unit) => unit.cefrLevel === effectiveActiveLevel);
   }, [units, effectiveActiveLevel]);
 
+  // Calculate max unlocked proficiency level for conversations
+  // Uses the highest unlocked level between skill tree and flashcards
+  const maxProficiencyLevel = useMemo(() => {
+    const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+    const lessonIndex = levelsOrder.indexOf(currentLessonLevel);
+    const flashcardIndex = levelsOrder.indexOf(currentFlashcardLevel);
+    const maxIndex = Math.max(lessonIndex, flashcardIndex);
+    return levelsOrder[maxIndex] || "A1";
+  }, [currentLessonLevel, currentFlashcardLevel]);
+
   const bgColor = "gray.950";
 
   const handleLessonClick = (lesson, unit, status) => {
@@ -2099,15 +2109,7 @@ export default function SkillTree({
                 targetLang={targetLang}
                 supportLang={supportLang}
                 pauseMs={pauseMs}
-                maxProficiencyLevel={(() => {
-                  // Calculate max unlocked proficiency level from skill tree and flashcards
-                  // Use the highest unlocked level between the two modes
-                  const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
-                  const lessonIndex = levelsOrder.indexOf(currentLessonLevel);
-                  const flashcardIndex = levelsOrder.indexOf(currentFlashcardLevel);
-                  const maxIndex = Math.max(lessonIndex, flashcardIndex);
-                  return levelsOrder[maxIndex] || "A1";
-                })()}
+                maxProficiencyLevel={maxProficiencyLevel}
               />
             </MotionBox>
           )}
