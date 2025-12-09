@@ -1903,38 +1903,62 @@ export default function SkillTree({
         )}
 
         {/* Simplified proficiency display for conversations mode */}
-        {pathMode === "conversations" && (
-          <MotionBox
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            w="100%"
-            mb={6}
-          >
-            <VStack spacing={2} align="center">
-              <Badge
-                px={6}
-                py={3}
-                borderRadius="16px"
-                bgGradient="linear(135deg, #60A5FA, #3B82F6)"
-                color="white"
-                fontSize="2xl"
-                fontWeight="black"
-                boxShadow="0 4px 14px rgba(59, 130, 246, 0.4)"
-              >
-                A1
-              </Badge>
-              <Text fontSize="lg" fontWeight="bold" color="white">
-                {getAppLanguage() === "es" ? "Principiante" : "Beginner"}
-              </Text>
-              <Text fontSize="sm" color="gray.400" textAlign="center">
-                {getAppLanguage() === "es"
-                  ? "Lenguaje básico de supervivencia"
-                  : "Basic survival language"}
-              </Text>
-            </VStack>
-          </MotionBox>
-        )}
+        {pathMode === "conversations" && (() => {
+          // Calculate max unlocked proficiency level
+          const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+          let maxLevel = "A1";
+          for (const level of levelsOrder) {
+            const lessonStatus = lessonLevelCompletionStatus[level];
+            const flashcardStatus = flashcardLevelCompletionStatus[level];
+            if (lessonStatus?.isComplete || flashcardStatus?.isComplete ||
+                lessonStatus?.percentage > 0 || flashcardStatus?.percentage > 0 ||
+                level === "A1") {
+              maxLevel = level;
+            }
+          }
+
+          const LEVEL_INFO = {
+            A1: { name: { en: "Beginner", es: "Principiante" }, desc: { en: "Basic survival language", es: "Lenguaje básico de supervivencia" }, color: "#3B82F6" },
+            A2: { name: { en: "Elementary", es: "Elemental" }, desc: { en: "Simple everyday communication", es: "Comunicación cotidiana simple" }, color: "#8B5CF6" },
+            B1: { name: { en: "Intermediate", es: "Intermedio" }, desc: { en: "Handle everyday situations", es: "Manejo de situaciones cotidianas" }, color: "#A855F7" },
+            B2: { name: { en: "Upper Intermediate", es: "Intermedio Alto" }, desc: { en: "Complex discussions", es: "Discusiones complejas" }, color: "#F97316" },
+            C1: { name: { en: "Advanced", es: "Avanzado" }, desc: { en: "Sophisticated language use", es: "Uso sofisticado del idioma" }, color: "#EF4444" },
+            C2: { name: { en: "Mastery", es: "Maestría" }, desc: { en: "Near-native proficiency", es: "Competencia casi nativa" }, color: "#EC4899" },
+          };
+          const info = LEVEL_INFO[maxLevel];
+          const lang = getAppLanguage();
+
+          return (
+            <MotionBox
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              w="100%"
+              mb={6}
+            >
+              <VStack spacing={2} align="center">
+                <Badge
+                  px={6}
+                  py={3}
+                  borderRadius="16px"
+                  bgGradient={`linear(135deg, ${info.color}99, ${info.color})`}
+                  color="white"
+                  fontSize="2xl"
+                  fontWeight="black"
+                  boxShadow={`0 4px 14px ${info.color}66`}
+                >
+                  {maxLevel}
+                </Badge>
+                <Text fontSize="lg" fontWeight="bold" color="white">
+                  {info.name[lang] || info.name.en}
+                </Text>
+                <Text fontSize="sm" color="gray.400" textAlign="center">
+                  {info.desc[lang] || info.desc.en}
+                </Text>
+              </VStack>
+            </MotionBox>
+          );
+        })()}
 
         {/* Minimal Progress Header - hidden in conversations mode */}
         {pathMode !== "conversations" && (
@@ -2074,6 +2098,22 @@ export default function SkillTree({
                 targetLang={targetLang}
                 supportLang={supportLang}
                 pauseMs={pauseMs}
+                maxProficiencyLevel={(() => {
+                  // Calculate max unlocked proficiency level
+                  const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+                  let maxLevel = "A1";
+                  for (const level of levelsOrder) {
+                    const lessonStatus = lessonLevelCompletionStatus[level];
+                    const flashcardStatus = flashcardLevelCompletionStatus[level];
+                    // Level is accessible if it's unlocked in either lessons or flashcards
+                    if (lessonStatus?.isComplete || flashcardStatus?.isComplete ||
+                        lessonStatus?.percentage > 0 || flashcardStatus?.percentage > 0 ||
+                        level === "A1") {
+                      maxLevel = level;
+                    }
+                  }
+                  return maxLevel;
+                })()}
               />
             </MotionBox>
           )}

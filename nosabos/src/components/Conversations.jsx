@@ -454,6 +454,7 @@ export default function Conversations({
   targetLang = "es",
   supportLang = "en",
   pauseMs: initialPauseMs = 2000,
+  maxProficiencyLevel = "A1",
 }) {
   const aliveRef = useRef(false);
 
@@ -545,6 +546,7 @@ export default function Conversations({
   });
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const goalCheckPendingRef = useRef(false);
+  const lastUserMessageRef = useRef("");
 
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
@@ -943,7 +945,7 @@ export default function Conversations({
   }
 
   /* ---------------------------
-     Language instructions (simplified - no goals)
+     Language instructions with proficiency level
   --------------------------- */
   function buildLanguageInstructions() {
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
@@ -967,9 +969,22 @@ export default function Conversations({
       strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
     }
 
+    // Proficiency level guidance
+    const levelGuidance = {
+      A1: "Use very simple vocabulary and short sentences. Speak slowly and clearly. Use basic present tense only. Vocabulary should be limited to ~500 common words.",
+      A2: "Use simple everyday vocabulary. Keep sentences straightforward. Can use past and future tenses. Vocabulary up to ~1000 words.",
+      B1: "Use intermediate vocabulary. Can discuss opinions and experiences. Use various tenses appropriately. Vocabulary up to ~2500 words.",
+      B2: "Use complex sentence structures. Can discuss abstract topics. Use idioms occasionally. Vocabulary up to ~5000 words.",
+      C1: "Use sophisticated vocabulary and nuanced expressions. Can discuss complex topics fluently. Use advanced grammar structures.",
+      C2: "Use native-like expressions and register. Can handle any topic with precision. Use colloquialisms and subtle language distinctions.",
+    };
+
+    const proficiencyHint = levelGuidance[maxProficiencyLevel] || levelGuidance.A1;
+
     return [
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
+      `The learner is at ${maxProficiencyLevel} proficiency level. ${proficiencyHint}`,
       "Keep replies very brief (≤25 words) and natural.",
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       "Be encouraging and help the learner practice speaking naturally.",
@@ -1015,39 +1030,132 @@ export default function Conversations({
   }
 
   /* ---------------------------
-     Goal-based XP system
+     Goal-based XP system with AI evaluation
   --------------------------- */
-  const CONVERSATION_GOALS = [
-    { en: "Introduce yourself", es: "Preséntate" },
-    { en: "Ask a question about your partner", es: "Haz una pregunta sobre tu compañero" },
-    { en: "Describe your day", es: "Describe tu día" },
-    { en: "Talk about your hobbies", es: "Habla de tus pasatiempos" },
-    { en: "Share your opinion on something", es: "Comparte tu opinión sobre algo" },
-    { en: "Ask about the weather", es: "Pregunta sobre el clima" },
-    { en: "Talk about your family", es: "Habla de tu familia" },
-    { en: "Describe your favorite food", es: "Describe tu comida favorita" },
-    { en: "Ask for recommendations", es: "Pide recomendaciones" },
-    { en: "Talk about your plans", es: "Habla de tus planes" },
-    { en: "Express gratitude", es: "Expresa gratitud" },
-    { en: "Ask for clarification", es: "Pide aclaración" },
-  ];
 
-  function generateNextGoal(conversationContext = "") {
-    // Pick a random goal that follows the conversation flow
-    const randomIndex = Math.floor(Math.random() * CONVERSATION_GOALS.length);
-    const newGoal = CONVERSATION_GOALS[randomIndex];
-    setCurrentGoal({ text: newGoal, completed: false });
-  }
-
-  async function completeGoalAndAwardXp() {
+  // Evaluate if user's response satisfies the current goal
+  async function evaluateGoalCompletion(userMessage, aiResponse) {
     if (currentGoal.completed || goalCheckPendingRef.current) return;
+    if (!userMessage || userMessage.length < 3) return;
 
     goalCheckPendingRef.current = true;
-    const npub = currentNpub;
-    if (!npub) {
+
+    try {
+      const goalText = currentGoal.text.en;
+      const prompt = `You are evaluating if a language learner completed a conversation goal.
+
+Goal: "${goalText}"
+User said: "${userMessage}"
+AI responded: "${aiResponse}"
+
+Did the user's message satisfy the goal? Consider partial completion as success.
+Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief explanation"}`;
+
+      const body = {
+        model: TRANSLATE_MODEL,
+        text: { format: { type: "text" } },
+        input: prompt,
+      };
+
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!r.ok) {
+        goalCheckPendingRef.current = false;
+        return;
+      }
+
+      const payload = await r.json();
+      const responseText =
+        payload?.output_text ||
+        (Array.isArray(payload?.output) &&
+          payload.output.map((it) => (it?.content || []).map((seg) => seg?.text || "").join("")).join(" ").trim()) ||
+        "";
+
+      const parsed = safeParseJson(responseText);
+      if (parsed?.completed) {
+        await awardGoalXp();
+        // Generate contextual next goal
+        setTimeout(() => generateContextualGoal(), 1500);
+      } else {
+        goalCheckPendingRef.current = false;
+      }
+    } catch (e) {
       goalCheckPendingRef.current = false;
-      return;
     }
+  }
+
+  // Generate next goal based on conversation context
+  async function generateContextualGoal() {
+    try {
+      // Get recent conversation context
+      const recentMessages = messagesRef.current.slice(-6).map(m =>
+        `${m.role === "user" ? "User" : "AI"}: ${m.textFinal || ""}`
+      ).join("\n");
+
+      const prompt = `You are helping a ${maxProficiencyLevel} level language learner practice conversation.
+
+Recent conversation:
+${recentMessages || "Just started"}
+
+Previous goal was: "${currentGoal.text.en}"
+
+Generate the NEXT natural conversation goal that follows the flow of the conversation.
+The goal should be appropriate for ${maxProficiencyLevel} level (${
+        maxProficiencyLevel === "A1" ? "beginner - simple tasks" :
+        maxProficiencyLevel === "A2" ? "elementary - everyday topics" :
+        maxProficiencyLevel === "B1" ? "intermediate - opinions and experiences" :
+        maxProficiencyLevel === "B2" ? "upper intermediate - complex discussions" :
+        maxProficiencyLevel === "C1" ? "advanced - nuanced expression" :
+        "mastery - sophisticated language"
+      }).
+
+Respond with ONLY a JSON object: {"en": "goal in English", "es": "goal in Spanish"}`;
+
+      const body = {
+        model: TRANSLATE_MODEL,
+        text: { format: { type: "text" } },
+        input: prompt,
+      };
+
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!r.ok) {
+        // Fallback to default goal
+        setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+        goalCheckPendingRef.current = false;
+        return;
+      }
+
+      const payload = await r.json();
+      const responseText =
+        payload?.output_text ||
+        (Array.isArray(payload?.output) &&
+          payload.output.map((it) => (it?.content || []).map((seg) => seg?.text || "").join("")).join(" ").trim()) ||
+        "";
+
+      const parsed = safeParseJson(responseText);
+      if (parsed?.en && parsed?.es) {
+        setCurrentGoal({ text: { en: parsed.en, es: parsed.es }, completed: false });
+      } else {
+        setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+      }
+    } catch (e) {
+      setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+    }
+    goalCheckPendingRef.current = false;
+  }
+
+  async function awardGoalXp() {
+    const npub = currentNpub;
+    if (!npub) return;
 
     // Award 2-4 XP for completing a goal
     const xpGain = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
@@ -1060,18 +1168,12 @@ export default function Conversations({
       await awardXp(npub, xpGain, targetLangRef.current);
       logEvent(analytics, "conversation_goal_completed", { xp: xpGain });
     } catch {}
-
-    // Generate next goal after a short delay
-    setTimeout(() => {
-      generateNextGoal();
-      goalCheckPendingRef.current = false;
-    }, 1500);
   }
 
   /* ---------------------------
      Award XP per turn (1-3 XP)
   --------------------------- */
-  async function awardTurnXp() {
+  async function awardTurnXp(userMessage = "", aiResponse = "") {
     const npub = currentNpub;
     if (!npub) return;
 
@@ -1080,8 +1182,10 @@ export default function Conversations({
 
     setXp((v) => v + xpGain);
 
-    // Also check for goal completion after each turn
-    completeGoalAndAwardXp();
+    // Evaluate goal completion with AI
+    if (userMessage) {
+      evaluateGoalCompletion(userMessage, aiResponse);
+    }
 
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
@@ -1158,9 +1262,10 @@ export default function Conversations({
           done: true,
           ts: userTs,
         });
-        // Award XP for user turn
+        // Award XP for user turn and store message for goal evaluation
         turnCountRef.current += 1;
-        awardTurnXp();
+        lastUserMessageRef.current = text;
+        awardTurnXp(text, "");
       }
       return;
     }
@@ -1244,6 +1349,14 @@ export default function Conversations({
             action: "turn_completed",
           });
         } catch {}
+
+        // Evaluate goal completion with the AI response
+        const aiMessage = messagesRef.current.find((m) => m.id === mid);
+        const aiResponseText = aiMessage?.textFinal || "";
+        if (lastUserMessageRef.current && aiResponseText) {
+          evaluateGoalCompletion(lastUserMessageRef.current, aiResponseText);
+        }
+
         respToMsg.current.delete(rid);
       }
       setUiState("idle");
