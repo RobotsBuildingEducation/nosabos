@@ -2952,7 +2952,9 @@ export default function App() {
       }
 
       // Use saved level if unlocked, otherwise use the highest unlocked level
-      setActiveLessonLevel(isUnlocked ? user.activeLessonLevel : currentLessonLevel);
+      setActiveLessonLevel(
+        isUnlocked ? user.activeLessonLevel : currentLessonLevel
+      );
     } else {
       setActiveLessonLevel(currentLessonLevel);
     }
@@ -2976,13 +2978,22 @@ export default function App() {
       }
 
       // Use saved level if unlocked, otherwise use the highest unlocked level
-      setActiveFlashcardLevel(isUnlocked ? user.activeFlashcardLevel : currentFlashcardLevel);
+      setActiveFlashcardLevel(
+        isUnlocked ? user.activeFlashcardLevel : currentFlashcardLevel
+      );
     } else {
       setActiveFlashcardLevel(currentFlashcardLevel);
     }
 
     setHasInitializedLevels(true);
-  }, [user, hasInitializedLevels, lessonLevelCompletionStatus, flashcardLevelCompletionStatus, currentLessonLevel, currentFlashcardLevel]);
+  }, [
+    user,
+    hasInitializedLevels,
+    lessonLevelCompletionStatus,
+    flashcardLevelCompletionStatus,
+    currentLessonLevel,
+    currentFlashcardLevel,
+  ]);
 
   // Legacy: Combined active level (for backwards compatibility)
   const [activeCEFRLevel, setActiveCEFRLevel] = useState(currentCEFRLevel);
