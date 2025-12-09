@@ -1327,7 +1327,6 @@ Do not return the whole sentence as a single chunk.`;
         position="relative"
         pb="120px"
         borderRadius="24px"
-        mt="-8"
       >
         {/* Header area with Robot and Goal UI */}
         <Box px={4} mt={3} display="flex" justifyContent="center">
