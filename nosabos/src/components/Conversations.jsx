@@ -546,6 +546,7 @@ export default function Conversations({
   });
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
+  const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
   const lastUserMessageRef = useRef("");
 
@@ -1075,7 +1076,11 @@ Examples of INCORRECT evaluation:
 
 Only mark completed = true if BOTH language AND content relevance are satisfied.
 
-Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief explanation"}`;
+FEEDBACK GUIDELINES:
+- If completed = true: Provide encouraging, specific praise (e.g., "Great! You talked about your favorite restaurant perfectly!")
+- If completed = false: Provide helpful guidance to redirect the user (e.g., "Try talking about your favorite place in the city instead of other topics")
+
+Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, actionable feedback"}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -1103,10 +1108,14 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief expl
 
       const parsed = safeParseJson(responseText);
       if (parsed?.completed) {
+        // Set positive feedback
+        setGoalFeedback(parsed?.reason || "Great job! You completed the goal!");
         await awardGoalXp();
         // Generate contextual next goal
         setTimeout(() => generateContextualGoal(), 1500);
       } else {
+        // Set guiding feedback for failed attempt
+        setGoalFeedback(parsed?.reason || "Try to address the goal topic more directly.");
         goalCheckPendingRef.current = false;
       }
     } catch (e) {
@@ -1117,6 +1126,7 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief expl
   // Generate next goal based on conversation context
   async function generateContextualGoal() {
     setIsGeneratingGoal(true);
+    setGoalFeedback(""); // Clear previous feedback
 
     try {
       // Get recent conversation context
@@ -1562,37 +1572,57 @@ Do not return the whole sentence as a single chunk.`;
               </Box>
 
               {/* Goal Text with Checkmark or Loader */}
-              <HStack spacing={2} align="center" width="100%" justify="center">
-                {isGeneratingGoal ? (
-                  <>
-                    <Spinner size="sm" color="purple.400" thickness="2px" speed="0.8s" />
-                    <Text
-                      fontSize="sm"
-                      fontWeight="medium"
-                      textAlign="center"
-                      color="purple.300"
-                    >
-                      {uiLang === "es" ? "Generando nueva meta..." : "Generating new goal..."}
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Text
-                      fontSize="sm"
-                      fontWeight="medium"
-                      textAlign="center"
-                      opacity={currentGoal.completed ? 0.6 : 1}
-                      textDecoration={currentGoal.completed ? "line-through" : "none"}
-                      flex="1"
-                    >
-                      {currentGoal.text[uiLang] || currentGoal.text.en}
-                    </Text>
-                    {currentGoal.completed && (
-                      <Box as={FaCheckCircle} color="green.400" boxSize="18px" />
-                    )}
-                  </>
+              <VStack spacing={2} align="center" width="100%">
+                <HStack spacing={2} align="center" width="100%" justify="center">
+                  {isGeneratingGoal ? (
+                    <>
+                      <Spinner size="sm" color="purple.400" thickness="2px" speed="0.8s" />
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        textAlign="center"
+                        color="purple.300"
+                      >
+                        {uiLang === "es" ? "Generando nueva meta..." : "Generating new goal..."}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        textAlign="center"
+                        opacity={currentGoal.completed ? 0.6 : 1}
+                        textDecoration={currentGoal.completed ? "line-through" : "none"}
+                        flex="1"
+                      >
+                        {currentGoal.text[uiLang] || currentGoal.text.en}
+                      </Text>
+                      {currentGoal.completed && (
+                        <Box as={FaCheckCircle} color="green.400" boxSize="18px" />
+                      )}
+                    </>
+                  )}
+                </HStack>
+
+                {/* Goal Feedback */}
+                {goalFeedback && !isGeneratingGoal && (
+                  <Text
+                    fontSize="xs"
+                    textAlign="center"
+                    px={3}
+                    py={1.5}
+                    borderRadius="md"
+                    bg={currentGoal.completed ? "green.900" : "orange.900"}
+                    color={currentGoal.completed ? "green.200" : "orange.200"}
+                    border="1px solid"
+                    borderColor={currentGoal.completed ? "green.600" : "orange.600"}
+                    maxW="90%"
+                  >
+                    {goalFeedback}
+                  </Text>
                 )}
-              </HStack>
+              </VStack>
 
               {/* XP Progress Bar */}
               <Box w="100%">
