@@ -1890,8 +1890,8 @@ export default function SkillTree({
           <PathSwitcher selectedMode={pathMode} onModeChange={setPathMode} />
         </MotionBox>
 
-        {/* CEFR Level Navigator */}
-        {effectiveOnLevelChange && (
+        {/* CEFR Level Navigator - hidden in conversations mode */}
+        {effectiveOnLevelChange && pathMode !== "conversations" && (
           <CEFRLevelNavigator
             currentLevel={effectiveCurrentLevel}
             activeCEFRLevel={effectiveActiveLevel}
@@ -1902,74 +1902,135 @@ export default function SkillTree({
           />
         )}
 
-        {/* Minimal Progress Header */}
-        <MotionBox
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          mb={8}
-        >
-          <HStack
-            justify="space-between"
-            bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
-            backdropFilter="blur(10px)"
-            px={6}
-            py={3}
-            borderRadius="8px"
-            border="1px solid"
-            borderColor="whiteAlpha.200"
-            boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
-          >
-            <HStack spacing={3}>
-              <VStack spacing={0} align="start">
-                <Text
-                  fontSize="lg"
-                  fontWeight="black"
+        {/* Simplified proficiency display for conversations mode */}
+        {pathMode === "conversations" && (() => {
+          // Calculate max unlocked proficiency level
+          const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+          let maxLevel = "A1";
+
+          for (const level of levelsOrder) {
+            const lessonStatus = lessonLevelCompletionStatus[level];
+            const flashcardStatus = flashcardLevelCompletionStatus[level];
+            if (lessonStatus?.isComplete || flashcardStatus?.isComplete ||
+                lessonStatus?.percentage > 0 || flashcardStatus?.percentage > 0 ||
+                level === "A1") {
+              maxLevel = level;
+            }
+          }
+
+          const LEVEL_INFO = {
+            A1: { name: { en: "Beginner", es: "Principiante" }, desc: { en: "Basic survival language", es: "Lenguaje básico de supervivencia" }, color: "#3B82F6" },
+            A2: { name: { en: "Elementary", es: "Elemental" }, desc: { en: "Simple everyday communication", es: "Comunicación cotidiana simple" }, color: "#8B5CF6" },
+            B1: { name: { en: "Intermediate", es: "Intermedio" }, desc: { en: "Handle everyday situations", es: "Manejo de situaciones cotidianas" }, color: "#A855F7" },
+            B2: { name: { en: "Upper Intermediate", es: "Intermedio Alto" }, desc: { en: "Complex discussions", es: "Discusiones complejas" }, color: "#F97316" },
+            C1: { name: { en: "Advanced", es: "Avanzado" }, desc: { en: "Sophisticated language use", es: "Uso sofisticado del idioma" }, color: "#EF4444" },
+            C2: { name: { en: "Mastery", es: "Maestría" }, desc: { en: "Near-native proficiency", es: "Competencia casi nativa" }, color: "#EC4899" },
+          };
+          const info = LEVEL_INFO[maxLevel];
+          const lang = getAppLanguage();
+
+          return (
+            <MotionBox
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              w="100%"
+              mb={6}
+            >
+              <VStack spacing={2} align="center">
+                <Badge
+                  px={6}
+                  py={3}
+                  borderRadius="16px"
+                  bgGradient={`linear(135deg, ${info.color}99, ${info.color})`}
                   color="white"
-                  lineHeight="1"
+                  fontSize="2xl"
+                  fontWeight="black"
+                  boxShadow={`0 4px 14px ${info.color}66`}
                 >
-                  {userProgress.totalXp || 0} XP
+                  {maxLevel}
+                </Badge>
+                <Text fontSize="lg" fontWeight="bold" color="white">
+                  {info.name[lang] || info.name.en}
                 </Text>
-                <Text fontSize="xs" color="gray.400" fontWeight="medium">
-                  {getTranslation("skill_tree_level", {
-                    level: Math.floor((userProgress.totalXp || 0) / 100) + 1,
-                  })}
+                <Text fontSize="sm" color="gray.400" textAlign="center">
+                  {info.desc[lang] || info.desc.en}
                 </Text>
               </VStack>
-            </HStack>
+            </MotionBox>
+          );
+        })()}
 
-            {/* CEFR Level Progress Bar */}
-            {(() => {
-              const progress =
-                pathMode === "path"
-                  ? getAllLessonProgress(userProgress, targetLang)
-                  : getAllFlashcardProgress(userProgress, targetLang);
-              const currentLevelProgress = progress[effectiveActiveLevel];
-              return (
-                <VStack spacing={1} align="end" minW="200px">
-                  <HStack spacing={2}>
-                    <Text fontSize="xs" fontWeight="semibold" color="white">
-                      {effectiveActiveLevel}
-                    </Text>
-                    <Text fontSize="xs" fontWeight="bold" color="blue.300">
-                      {currentLevelProgress.percentage}%
-                    </Text>
-                  </HStack>
-                  <Box w="full">
-                    <WaveBar
-                      value={currentLevelProgress.percentage}
-                      height={12}
-                      start="#60A5FA"
-                      end="#2563EB"
-                      bg="rgba(255,255,255,0.05)"
-                      border="rgba(255,255,255,0.1)"
-                    />
-                  </Box>
+        {/* Minimal Progress Header - hidden in conversations mode */}
+        {pathMode !== "conversations" && (
+          <MotionBox
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            mb={8}
+          >
+            <HStack
+              justify="space-between"
+              bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
+              backdropFilter="blur(10px)"
+              px={6}
+              py={3}
+              borderRadius="8px"
+              border="1px solid"
+              borderColor="whiteAlpha.200"
+              boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
+            >
+              <HStack spacing={3}>
+                <VStack spacing={0} align="start">
+                  <Text
+                    fontSize="lg"
+                    fontWeight="black"
+                    color="white"
+                    lineHeight="1"
+                  >
+                    {userProgress.totalXp || 0} XP
+                  </Text>
+                  <Text fontSize="xs" color="gray.400" fontWeight="medium">
+                    {getTranslation("skill_tree_level", {
+                      level: Math.floor((userProgress.totalXp || 0) / 100) + 1,
+                    })}
+                  </Text>
                 </VStack>
-              );
-            })()}
-          </HStack>
-        </MotionBox>
+              </HStack>
+
+              {/* CEFR Level Progress Bar */}
+              {(() => {
+                const progress =
+                  pathMode === "path"
+                    ? getAllLessonProgress(userProgress, targetLang)
+                    : getAllFlashcardProgress(userProgress, targetLang);
+                const currentLevelProgress = progress[effectiveActiveLevel];
+                return (
+                  <VStack spacing={1} align="end" minW="200px">
+                    <HStack spacing={2}>
+                      <Text fontSize="xs" fontWeight="semibold" color="white">
+                        {effectiveActiveLevel}
+                      </Text>
+                      <Text fontSize="xs" fontWeight="bold" color="blue.300">
+                        {currentLevelProgress.percentage}%
+                      </Text>
+                    </HStack>
+                    <Box w="full">
+                      <WaveBar
+                        value={currentLevelProgress.percentage}
+                        height={12}
+                        start="#60A5FA"
+                        end="#2563EB"
+                        bg="rgba(255,255,255,0.05)"
+                        border="rgba(255,255,255,0.1)"
+                      />
+                    </Box>
+                  </VStack>
+                );
+              })()}
+            </HStack>
+          </MotionBox>
+        )}
 
         {/* Skill Tree Units, Flashcards, or Conversations */}
         <AnimatePresence mode="wait" initial={false}>
@@ -2038,6 +2099,22 @@ export default function SkillTree({
                 targetLang={targetLang}
                 supportLang={supportLang}
                 pauseMs={pauseMs}
+                maxProficiencyLevel={(() => {
+                  // Calculate max unlocked proficiency level
+                  const levelsOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
+                  let maxLevel = "A1";
+                  for (const level of levelsOrder) {
+                    const lessonStatus = lessonLevelCompletionStatus[level];
+                    const flashcardStatus = flashcardLevelCompletionStatus[level];
+                    // Level is accessible if it's unlocked in either lessons or flashcards
+                    if (lessonStatus?.isComplete || flashcardStatus?.isComplete ||
+                        lessonStatus?.percentage > 0 || flashcardStatus?.percentage > 0 ||
+                        level === "A1") {
+                      maxLevel = level;
+                    }
+                  }
+                  return maxLevel;
+                })()}
               />
             </MotionBox>
           )}

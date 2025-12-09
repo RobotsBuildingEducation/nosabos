@@ -454,6 +454,7 @@ export default function Conversations({
   targetLang = "es",
   supportLang = "en",
   pauseMs: initialPauseMs = 2000,
+  maxProficiencyLevel = "A1",
 }) {
   const aliveRef = useRef(false);
 
@@ -537,6 +538,15 @@ export default function Conversations({
   // XP
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
+
+  // Goal system
+  const [currentGoal, setCurrentGoal] = useState({
+    text: { en: "Practice speaking about any topic", es: "Practica hablando sobre cualquier tema" },
+    completed: false,
+  });
+  const [goalsCompleted, setGoalsCompleted] = useState(0);
+  const goalCheckPendingRef = useRef(false);
+  const lastUserMessageRef = useRef("");
 
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
@@ -935,7 +945,7 @@ export default function Conversations({
   }
 
   /* ---------------------------
-     Language instructions (simplified - no goals)
+     Language instructions with proficiency level
   --------------------------- */
   function buildLanguageInstructions() {
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
@@ -959,9 +969,22 @@ export default function Conversations({
       strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
     }
 
+    // Proficiency level guidance
+    const levelGuidance = {
+      A1: "Use very simple vocabulary and short sentences. Speak slowly and clearly. Use basic present tense only. Vocabulary should be limited to ~500 common words.",
+      A2: "Use simple everyday vocabulary. Keep sentences straightforward. Can use past and future tenses. Vocabulary up to ~1000 words.",
+      B1: "Use intermediate vocabulary. Can discuss opinions and experiences. Use various tenses appropriately. Vocabulary up to ~2500 words.",
+      B2: "Use complex sentence structures. Can discuss abstract topics. Use idioms occasionally. Vocabulary up to ~5000 words.",
+      C1: "Use sophisticated vocabulary and nuanced expressions. Can discuss complex topics fluently. Use advanced grammar structures.",
+      C2: "Use native-like expressions and register. Can handle any topic with precision. Use colloquialisms and subtle language distinctions.",
+    };
+
+    const proficiencyHint = levelGuidance[maxProficiencyLevel] || levelGuidance.A1;
+
     return [
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
+      `The learner is at ${maxProficiencyLevel} proficiency level. ${proficiencyHint}`,
       "Keep replies very brief (≤25 words) and natural.",
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       "Be encouraging and help the learner practice speaking naturally.",
@@ -1007,9 +1030,164 @@ export default function Conversations({
   }
 
   /* ---------------------------
+     Goal-based XP system with AI evaluation
+  --------------------------- */
+
+  // Evaluate if user's response satisfies the current goal
+  async function evaluateGoalCompletion(userMessage, aiResponse) {
+    if (currentGoal.completed || goalCheckPendingRef.current) return;
+    if (!userMessage || userMessage.length < 3) return;
+
+    goalCheckPendingRef.current = true;
+
+    try {
+      const goalText = currentGoal.text.en;
+      const tLang = targetLangRef.current;
+      const languageName = tLang === "es" ? "Spanish" :
+                           tLang === "pt" ? "Portuguese" :
+                           tLang === "fr" ? "French" :
+                           tLang === "it" ? "Italian" :
+                           tLang === "nah" ? "Nahuatl" : "English";
+
+      const prompt = `You are evaluating if a language learner completed a conversation goal.
+
+IMPORTANT: The learner is practicing ${languageName}. They MUST respond in ${languageName} to complete the goal.
+If the user responded in a different language (like English when practicing Spanish), the goal is NOT completed.
+
+Goal: "${goalText}"
+Target language: ${languageName}
+User said: "${userMessage}"
+AI responded: "${aiResponse}"
+
+Evaluate:
+1. Is the user's message in ${languageName}? (If not, completed = false)
+2. Does the message satisfy the goal? (Consider partial completion as success)
+
+Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief explanation"}`;
+
+      const body = {
+        model: TRANSLATE_MODEL,
+        text: { format: { type: "text" } },
+        input: prompt,
+      };
+
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!r.ok) {
+        goalCheckPendingRef.current = false;
+        return;
+      }
+
+      const payload = await r.json();
+      const responseText =
+        payload?.output_text ||
+        (Array.isArray(payload?.output) &&
+          payload.output.map((it) => (it?.content || []).map((seg) => seg?.text || "").join("")).join(" ").trim()) ||
+        "";
+
+      const parsed = safeParseJson(responseText);
+      if (parsed?.completed) {
+        await awardGoalXp();
+        // Generate contextual next goal
+        setTimeout(() => generateContextualGoal(), 1500);
+      } else {
+        goalCheckPendingRef.current = false;
+      }
+    } catch (e) {
+      goalCheckPendingRef.current = false;
+    }
+  }
+
+  // Generate next goal based on conversation context
+  async function generateContextualGoal() {
+    try {
+      // Get recent conversation context
+      const recentMessages = messagesRef.current.slice(-6).map(m =>
+        `${m.role === "user" ? "User" : "AI"}: ${m.textFinal || ""}`
+      ).join("\n");
+
+      const prompt = `You are helping a ${maxProficiencyLevel} level language learner practice conversation.
+
+Recent conversation:
+${recentMessages || "Just started"}
+
+Previous goal was: "${currentGoal.text.en}"
+
+Generate the NEXT natural conversation goal that follows the flow of the conversation.
+The goal should be appropriate for ${maxProficiencyLevel} level (${
+        maxProficiencyLevel === "A1" ? "beginner - simple tasks" :
+        maxProficiencyLevel === "A2" ? "elementary - everyday topics" :
+        maxProficiencyLevel === "B1" ? "intermediate - opinions and experiences" :
+        maxProficiencyLevel === "B2" ? "upper intermediate - complex discussions" :
+        maxProficiencyLevel === "C1" ? "advanced - nuanced expression" :
+        "mastery - sophisticated language"
+      }).
+
+Respond with ONLY a JSON object: {"en": "goal in English", "es": "goal in Spanish"}`;
+
+      const body = {
+        model: TRANSLATE_MODEL,
+        text: { format: { type: "text" } },
+        input: prompt,
+      };
+
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!r.ok) {
+        // Fallback to default goal
+        setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+        goalCheckPendingRef.current = false;
+        return;
+      }
+
+      const payload = await r.json();
+      const responseText =
+        payload?.output_text ||
+        (Array.isArray(payload?.output) &&
+          payload.output.map((it) => (it?.content || []).map((seg) => seg?.text || "").join("")).join(" ").trim()) ||
+        "";
+
+      const parsed = safeParseJson(responseText);
+      if (parsed?.en && parsed?.es) {
+        setCurrentGoal({ text: { en: parsed.en, es: parsed.es }, completed: false });
+      } else {
+        setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+      }
+    } catch (e) {
+      setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+    }
+    goalCheckPendingRef.current = false;
+  }
+
+  async function awardGoalXp() {
+    const npub = currentNpub;
+    if (!npub) return;
+
+    // Award 2-4 XP for completing a goal
+    const xpGain = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
+
+    setXp((v) => v + xpGain);
+    setGoalsCompleted((v) => v + 1);
+    setCurrentGoal((prev) => ({ ...prev, completed: true }));
+
+    try {
+      await awardXp(npub, xpGain, targetLangRef.current);
+      logEvent(analytics, "conversation_goal_completed", { xp: xpGain });
+    } catch {}
+  }
+
+  /* ---------------------------
      Award XP per turn (1-3 XP)
   --------------------------- */
-  async function awardTurnXp() {
+  async function awardTurnXp(userMessage = "", aiResponse = "") {
     const npub = currentNpub;
     if (!npub) return;
 
@@ -1017,6 +1195,12 @@ export default function Conversations({
     const xpGain = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
 
     setXp((v) => v + xpGain);
+
+    // Evaluate goal completion with AI
+    if (userMessage) {
+      evaluateGoalCompletion(userMessage, aiResponse);
+    }
+
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
       logEvent(analytics, "conversation_turn_xp", { xp: xpGain });
@@ -1092,9 +1276,10 @@ export default function Conversations({
           done: true,
           ts: userTs,
         });
-        // Award XP for user turn
+        // Award XP for user turn and store message for goal evaluation
         turnCountRef.current += 1;
-        awardTurnXp();
+        lastUserMessageRef.current = text;
+        awardTurnXp(text, "");
       }
       return;
     }
@@ -1178,6 +1363,14 @@ export default function Conversations({
             action: "turn_completed",
           });
         } catch {}
+
+        // Evaluate goal completion with the AI response
+        const aiMessage = messagesRef.current.find((m) => m.id === mid);
+        const aiResponseText = aiMessage?.textFinal || "";
+        if (lastUserMessageRef.current && aiResponseText) {
+          evaluateGoalCompletion(lastUserMessageRef.current, aiResponseText);
+        }
+
         respToMsg.current.delete(rid);
       }
       setUiState("idle");
@@ -1328,74 +1521,62 @@ Do not return the whole sentence as a single chunk.`;
         position="relative"
         pb="120px"
         borderRadius="24px"
-        mt="-8"
       >
-        {/* Header area with Robot and XP */}
+        {/* Header area with centered Robot and Goal UI */}
         <Box px={4} mt={3} display="flex" justifyContent="center">
           <Box
             bg="gray.800"
-            p={3}
+            p={4}
             rounded="2xl"
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
-            position="relative"
-            overflow="hidden"
           >
-            <Box
-              position="absolute"
-              top={3}
-              left={3}
-              width="72px"
-              opacity={0.95}
-            >
-              <RobotBuddyPro
-                state={uiState}
-                loudness={uiState === "listening" ? volume : 0}
-                mood={mood}
-                variant="abstract"
-                maxW={72}
-              />
-            </Box>
+            <VStack spacing={3} align="center" width="100%">
+              {/* Centered RobotBuddyPro */}
+              <Box width="80px" opacity={0.95}>
+                <RobotBuddyPro
+                  state={uiState}
+                  loudness={uiState === "listening" ? volume : 0}
+                  mood={mood}
+                  variant="abstract"
+                  maxW={80}
+                />
+              </Box>
 
-            <VStack
-              align="flex-start"
-              spacing={2}
-              width="100%"
-              pl={{ base: "78px", sm: "82px" }}
-              pt={{ base: 1, sm: 0 }}
-            >
-              <Box w="100%">
-                <HStack justify="space-between" align="center" mb={1}>
-                  <HStack spacing={2} align="center">
-                    <Badge
-                      colorScheme="purple"
-                      variant="subtle"
-                      fontSize={"10px"}
-                    >
-                      {uiLang === "es"
-                        ? "Conversación Libre"
-                        : "Free Conversation"}
-                    </Badge>
-                  </HStack>
-                </HStack>
-                <Text fontSize="xs" opacity={0.8}>
-                  {uiLang === "es"
-                    ? "Practica hablando sobre cualquier tema"
-                    : "Practice speaking about any topic"}
+              {/* Goal Badge and Text */}
+              <VStack spacing={1} align="center" width="100%">
+                <Badge
+                  colorScheme={currentGoal.completed ? "green" : "purple"}
+                  variant="subtle"
+                  fontSize="10px"
+                >
+                  {currentGoal.completed
+                    ? (uiLang === "es" ? "¡Meta completada!" : "Goal completed!")
+                    : (uiLang === "es" ? "Meta actual" : "Current Goal")}
+                </Badge>
+                <Text
+                  fontSize="sm"
+                  fontWeight="medium"
+                  textAlign="center"
+                  opacity={currentGoal.completed ? 0.6 : 1}
+                  textDecoration={currentGoal.completed ? "line-through" : "none"}
+                >
+                  {currentGoal.text[uiLang] || currentGoal.text.en}
                 </Text>
+              </VStack>
 
-                <Box mt={3}>
-                  <HStack justifyContent="space-between" mb={1}>
-                    <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                      {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-                    </Badge>
-                    <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                      {ui.ra_label_xp} {xp}
-                    </Badge>
-                  </HStack>
-                  <WaveBar value={progressPct} />
-                </Box>
+              {/* XP Progress Bar */}
+              <Box w="100%">
+                <HStack justifyContent="space-between" mb={1}>
+                  <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+                    {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
+                  </Badge>
+                  <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                    {ui.ra_label_xp} {xp}
+                  </Badge>
+                </HStack>
+                <WaveBar value={progressPct} />
               </Box>
             </VStack>
           </Box>
