@@ -3320,6 +3320,8 @@ export default function App() {
               currentCEFRLevel={currentCEFRLevel}
               onLevelChange={handleLevelChange}
               levelCompletionStatus={levelCompletionStatus}
+              // Conversations props
+              activeNpub={activeNpub}
             />
           )}
         </Box>

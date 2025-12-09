@@ -1,6 +1,6 @@
 import React from "react";
 import { HStack, Button, Box, Text } from "@chakra-ui/react";
-import { RiRoadMapLine, RiFileList3Line } from "react-icons/ri";
+import { RiRoadMapLine, RiFileList3Line, RiChat3Line } from "react-icons/ri";
 import { motion } from "framer-motion";
 import { translations } from "../utils/translation";
 
@@ -34,6 +34,12 @@ export default function PathSwitcher({ selectedMode, onModeChange }) {
       label: getTranslation("path_switcher_flashcards"),
       icon: RiFileList3Line,
       description: "Practice cards",
+    },
+    {
+      id: "conversations",
+      label: getTranslation("path_switcher_conversations"),
+      icon: RiChat3Line,
+      description: "Free conversation",
     },
   ];
 

@@ -428,6 +428,7 @@ export const translations = {
     // PathSwitcher tabs
     path_switcher_path: "Path",
     path_switcher_flashcards: "Flashcards",
+    path_switcher_conversations: "Conversations",
     // Session timer modal
     timer_modal_title: "Session timer",
     timer_modal_description:
@@ -939,6 +940,7 @@ export const translations = {
     // PathSwitcher tabs
     path_switcher_path: "Ruta",
     path_switcher_flashcards: "Tarjetas",
+    path_switcher_conversations: "Conversaciones",
     // Session timer modal
     timer_modal_title: "Temporizador de sesión",
     timer_modal_description:
