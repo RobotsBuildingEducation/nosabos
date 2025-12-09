@@ -15,12 +15,7 @@ import {
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop, FaPlay } from "react-icons/fa";
 
-import {
-  doc,
-  setDoc,
-  getDoc,
-  increment,
-} from "firebase/firestore";
+import { doc, setDoc, getDoc, increment } from "firebase/firestore";
 import { database, analytics } from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
@@ -508,7 +503,8 @@ export default function Conversations({
   // Learning prefs
   const [voice, setVoice] = useState(user?.progress?.voice || "alloy");
   const [voicePersona, setVoicePersona] = useState(
-    user?.progress?.voicePersona || translations.en.onboarding_persona_default_example
+    user?.progress?.voicePersona ||
+      translations.en.onboarding_persona_default_example
   );
   const [showTranslations, setShowTranslations] = useState(
     user?.progress?.showTranslations !== false
@@ -691,7 +687,8 @@ export default function Conversations({
           const languageXp = getLanguageXp(data?.progress || {}, targetLang);
           if (Number.isFinite(languageXp)) setXp(languageXp);
           if (data.progress?.voice) setVoice(data.progress.voice);
-          if (data.progress?.voicePersona) setVoicePersona(data.progress.voicePersona);
+          if (data.progress?.voicePersona)
+            setVoicePersona(data.progress.voicePersona);
           if (typeof data.progress?.showTranslations === "boolean") {
             setShowTranslations(data.progress.showTranslations);
           }
@@ -1139,7 +1136,9 @@ export default function Conversations({
         updateMessage(mid, (m) => ({ ...m, done: true }));
         try {
           await translateMessage(mid, "completed");
-          logEvent(analytics, "conversation_turn", { action: "turn_completed" });
+          logEvent(analytics, "conversation_turn", {
+            action: "turn_completed",
+          });
         } catch {}
         respToMsg.current.delete(rid);
       }
@@ -1336,7 +1335,9 @@ Do not return the whole sentence as a single chunk.`;
                       variant="subtle"
                       fontSize={"10px"}
                     >
-                      {uiLang === "es" ? "Conversación Libre" : "Free Conversation"}
+                      {uiLang === "es"
+                        ? "Conversación Libre"
+                        : "Free Conversation"}
                     </Badge>
                   </HStack>
                 </HStack>
