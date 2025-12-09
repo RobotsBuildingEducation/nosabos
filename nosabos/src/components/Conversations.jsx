@@ -22,6 +22,7 @@ import { logEvent } from "firebase/analytics";
 import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
+import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
@@ -537,6 +538,14 @@ export default function Conversations({
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
 
+  // Goal system
+  const [currentGoal, setCurrentGoal] = useState({
+    text: { en: "Practice speaking about any topic", es: "Practica hablando sobre cualquier tema" },
+    completed: false,
+  });
+  const [goalsCompleted, setGoalsCompleted] = useState(0);
+  const goalCheckPendingRef = useRef(false);
+
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
 
@@ -1006,6 +1015,60 @@ export default function Conversations({
   }
 
   /* ---------------------------
+     Goal-based XP system
+  --------------------------- */
+  const CONVERSATION_GOALS = [
+    { en: "Introduce yourself", es: "Preséntate" },
+    { en: "Ask a question about your partner", es: "Haz una pregunta sobre tu compañero" },
+    { en: "Describe your day", es: "Describe tu día" },
+    { en: "Talk about your hobbies", es: "Habla de tus pasatiempos" },
+    { en: "Share your opinion on something", es: "Comparte tu opinión sobre algo" },
+    { en: "Ask about the weather", es: "Pregunta sobre el clima" },
+    { en: "Talk about your family", es: "Habla de tu familia" },
+    { en: "Describe your favorite food", es: "Describe tu comida favorita" },
+    { en: "Ask for recommendations", es: "Pide recomendaciones" },
+    { en: "Talk about your plans", es: "Habla de tus planes" },
+    { en: "Express gratitude", es: "Expresa gratitud" },
+    { en: "Ask for clarification", es: "Pide aclaración" },
+  ];
+
+  function generateNextGoal(conversationContext = "") {
+    // Pick a random goal that follows the conversation flow
+    const randomIndex = Math.floor(Math.random() * CONVERSATION_GOALS.length);
+    const newGoal = CONVERSATION_GOALS[randomIndex];
+    setCurrentGoal({ text: newGoal, completed: false });
+  }
+
+  async function completeGoalAndAwardXp() {
+    if (currentGoal.completed || goalCheckPendingRef.current) return;
+
+    goalCheckPendingRef.current = true;
+    const npub = currentNpub;
+    if (!npub) {
+      goalCheckPendingRef.current = false;
+      return;
+    }
+
+    // Award 2-4 XP for completing a goal
+    const xpGain = Math.floor(Math.random() * 3) + 2; // 2, 3, or 4
+
+    setXp((v) => v + xpGain);
+    setGoalsCompleted((v) => v + 1);
+    setCurrentGoal((prev) => ({ ...prev, completed: true }));
+
+    try {
+      await awardXp(npub, xpGain, targetLangRef.current);
+      logEvent(analytics, "conversation_goal_completed", { xp: xpGain });
+    } catch {}
+
+    // Generate next goal after a short delay
+    setTimeout(() => {
+      generateNextGoal();
+      goalCheckPendingRef.current = false;
+    }, 1500);
+  }
+
+  /* ---------------------------
      Award XP per turn (1-3 XP)
   --------------------------- */
   async function awardTurnXp() {
@@ -1016,6 +1079,10 @@ export default function Conversations({
     const xpGain = Math.floor(Math.random() * 3) + 1; // 1, 2, or 3
 
     setXp((v) => v + xpGain);
+
+    // Also check for goal completion after each turn
+    completeGoalAndAwardXp();
+
     try {
       await awardXp(npub, xpGain, targetLangRef.current);
       logEvent(analytics, "conversation_turn_xp", { xp: xpGain });
@@ -1328,60 +1395,61 @@ Do not return the whole sentence as a single chunk.`;
         pb="120px"
         borderRadius="24px"
       >
-        {/* Header area with Robot and Goal UI */}
+        {/* Header area with centered Robot and Goal UI */}
         <Box px={4} mt={3} display="flex" justifyContent="center">
           <Box
             bg="gray.800"
-            p={3}
+            p={4}
             rounded="2xl"
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
-            position="relative"
-            overflow="hidden"
           >
-            <Box
-              position="absolute"
-              top={3}
-              left={3}
-              width="72px"
-              opacity={0.95}
-            >
-              <RobotBuddyPro
-                state={uiState}
-                loudness={uiState === "listening" ? volume : 0}
-                mood={mood}
-                variant="abstract"
-                maxW={72}
-              />
-            </Box>
+            <VStack spacing={3} align="center" width="100%">
+              {/* Centered RobotBuddyPro */}
+              <Box width="80px" opacity={0.95}>
+                <RobotBuddyPro
+                  state={uiState}
+                  loudness={uiState === "listening" ? volume : 0}
+                  mood={mood}
+                  variant="abstract"
+                  maxW={80}
+                />
+              </Box>
 
-            <VStack
-              align="flex-start"
-              spacing={2}
-              width="100%"
-              pl={{ base: "78px", sm: "82px" }}
-              pt={{ base: 1, sm: 0 }}
-            >
-              <Box w="100%">
-                <HStack justify="space-between" align="center" mb={1}>
-                  <HStack spacing={2} align="center">
-                    <Badge
-                      colorScheme="purple"
-                      variant="subtle"
-                      fontSize={"10px"}
-                    >
-                      {uiLang === "es"
-                        ? "Conversación Libre"
-                        : "Free Conversation"}
-                    </Badge>
-                  </HStack>
-                </HStack>
-                <Text fontSize="xs" opacity={0.8}>
-                  {uiLang === "es"
-                    ? "Practica hablando sobre cualquier tema"
-                    : "Practice speaking about any topic"}
+              {/* Goal Badge and Text */}
+              <VStack spacing={1} align="center" width="100%">
+                <Badge
+                  colorScheme={currentGoal.completed ? "green" : "purple"}
+                  variant="subtle"
+                  fontSize="10px"
+                >
+                  {currentGoal.completed
+                    ? (uiLang === "es" ? "¡Meta completada!" : "Goal completed!")
+                    : (uiLang === "es" ? "Meta actual" : "Current Goal")}
+                </Badge>
+                <Text
+                  fontSize="sm"
+                  fontWeight="medium"
+                  textAlign="center"
+                  opacity={currentGoal.completed ? 0.6 : 1}
+                  textDecoration={currentGoal.completed ? "line-through" : "none"}
+                >
+                  {currentGoal.text[uiLang] || currentGoal.text.en}
                 </Text>
+              </VStack>
+
+              {/* XP Progress Bar */}
+              <Box w="100%">
+                <HStack justifyContent="space-between" mb={1}>
+                  <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+                    {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
+                  </Badge>
+                  <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                    {ui.ra_label_xp} {xp}
+                  </Badge>
+                </HStack>
+                <WaveBar value={progressPct} />
               </Box>
             </VStack>
           </Box>
