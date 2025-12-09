@@ -25,6 +25,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
 import PathSwitcher from "./PathSwitcher";
 import FlashcardSkillTree from "./FlashcardSkillTree";
+import Conversations from "./Conversations";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
 import {
   RiLockLine,
@@ -1692,6 +1693,8 @@ export default function SkillTree({
   currentCEFRLevel = "A1", // User's current progress level
   onLevelChange, // Callback when user navigates to different level
   levelCompletionStatus = {}, // Status of all levels (unlocked/locked, progress, etc.)
+  // Conversations props
+  activeNpub = "", // User's npub for conversations
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -1968,7 +1971,7 @@ export default function SkillTree({
           </HStack>
         </MotionBox>
 
-        {/* Skill Tree Units or Flashcards */}
+        {/* Skill Tree Units, Flashcards, or Conversations */}
         <AnimatePresence mode="wait" initial={false}>
           {pathMode === "path" ? (
             <MotionBox
@@ -2004,7 +2007,7 @@ export default function SkillTree({
                 )}
               </VStack>
             </MotionBox>
-          ) : (
+          ) : pathMode === "flashcards" ? (
             <MotionBox
               key="flashcard-view"
               initial={{ opacity: 0 }}
@@ -2019,6 +2022,21 @@ export default function SkillTree({
                 targetLang={targetLang}
                 supportLang={supportLang}
                 activeCEFRLevel={effectiveActiveLevel}
+                pauseMs={pauseMs}
+              />
+            </MotionBox>
+          ) : (
+            <MotionBox
+              key="conversations-view"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
+            >
+              <Conversations
+                activeNpub={activeNpub}
+                targetLang={targetLang}
+                supportLang={supportLang}
                 pauseMs={pauseMs}
               />
             </MotionBox>
