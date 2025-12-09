@@ -22,7 +22,6 @@ import { logEvent } from "firebase/analytics";
 import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
-import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
@@ -1330,7 +1329,7 @@ Do not return the whole sentence as a single chunk.`;
         borderRadius="24px"
         mt="-8"
       >
-        {/* Header area with Robot and XP */}
+        {/* Header area with Robot and Goal UI */}
         <Box px={4} mt={3} display="flex" justifyContent="center">
           <Box
             bg="gray.800"
@@ -1384,18 +1383,6 @@ Do not return the whole sentence as a single chunk.`;
                     ? "Practica hablando sobre cualquier tema"
                     : "Practice speaking about any topic"}
                 </Text>
-
-                <Box mt={3}>
-                  <HStack justifyContent="space-between" mb={1}>
-                    <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                      {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-                    </Badge>
-                    <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                      {ui.ra_label_xp} {xp}
-                    </Badge>
-                  </HStack>
-                  <WaveBar value={progressPct} />
-                </Box>
               </Box>
             </VStack>
           </Box>

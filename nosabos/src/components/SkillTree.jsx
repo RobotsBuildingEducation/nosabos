@@ -1890,8 +1890,8 @@ export default function SkillTree({
           <PathSwitcher selectedMode={pathMode} onModeChange={setPathMode} />
         </MotionBox>
 
-        {/* CEFR Level Navigator */}
-        {effectiveOnLevelChange && (
+        {/* CEFR Level Navigator - hidden in conversations mode */}
+        {effectiveOnLevelChange && pathMode !== "conversations" && (
           <CEFRLevelNavigator
             currentLevel={effectiveCurrentLevel}
             activeCEFRLevel={effectiveActiveLevel}
@@ -1902,74 +1902,110 @@ export default function SkillTree({
           />
         )}
 
-        {/* Minimal Progress Header */}
-        <MotionBox
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          mb={8}
-        >
-          <HStack
-            justify="space-between"
-            bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
-            backdropFilter="blur(10px)"
-            px={6}
-            py={3}
-            borderRadius="8px"
-            border="1px solid"
-            borderColor="whiteAlpha.200"
-            boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
+        {/* Simplified proficiency display for conversations mode */}
+        {pathMode === "conversations" && (
+          <MotionBox
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            w="100%"
+            mb={6}
           >
-            <HStack spacing={3}>
-              <VStack spacing={0} align="start">
-                <Text
-                  fontSize="lg"
-                  fontWeight="black"
-                  color="white"
-                  lineHeight="1"
-                >
-                  {userProgress.totalXp || 0} XP
-                </Text>
-                <Text fontSize="xs" color="gray.400" fontWeight="medium">
-                  {getTranslation("skill_tree_level", {
-                    level: Math.floor((userProgress.totalXp || 0) / 100) + 1,
-                  })}
-                </Text>
-              </VStack>
-            </HStack>
+            <VStack spacing={2} align="center">
+              <Badge
+                px={6}
+                py={3}
+                borderRadius="16px"
+                bgGradient="linear(135deg, #60A5FA, #3B82F6)"
+                color="white"
+                fontSize="2xl"
+                fontWeight="black"
+                boxShadow="0 4px 14px rgba(59, 130, 246, 0.4)"
+              >
+                A1
+              </Badge>
+              <Text fontSize="lg" fontWeight="bold" color="white">
+                {getAppLanguage() === "es" ? "Principiante" : "Beginner"}
+              </Text>
+              <Text fontSize="sm" color="gray.400" textAlign="center">
+                {getAppLanguage() === "es"
+                  ? "Lenguaje básico de supervivencia"
+                  : "Basic survival language"}
+              </Text>
+            </VStack>
+          </MotionBox>
+        )}
 
-            {/* CEFR Level Progress Bar */}
-            {(() => {
-              const progress =
-                pathMode === "path"
-                  ? getAllLessonProgress(userProgress, targetLang)
-                  : getAllFlashcardProgress(userProgress, targetLang);
-              const currentLevelProgress = progress[effectiveActiveLevel];
-              return (
-                <VStack spacing={1} align="end" minW="200px">
-                  <HStack spacing={2}>
-                    <Text fontSize="xs" fontWeight="semibold" color="white">
-                      {effectiveActiveLevel}
-                    </Text>
-                    <Text fontSize="xs" fontWeight="bold" color="blue.300">
-                      {currentLevelProgress.percentage}%
-                    </Text>
-                  </HStack>
-                  <Box w="full">
-                    <WaveBar
-                      value={currentLevelProgress.percentage}
-                      height={12}
-                      start="#60A5FA"
-                      end="#2563EB"
-                      bg="rgba(255,255,255,0.05)"
-                      border="rgba(255,255,255,0.1)"
-                    />
-                  </Box>
+        {/* Minimal Progress Header - hidden in conversations mode */}
+        {pathMode !== "conversations" && (
+          <MotionBox
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            mb={8}
+          >
+            <HStack
+              justify="space-between"
+              bgGradient="linear(135deg, whiteAlpha.50, whiteAlpha.30)"
+              backdropFilter="blur(10px)"
+              px={6}
+              py={3}
+              borderRadius="8px"
+              border="1px solid"
+              borderColor="whiteAlpha.200"
+              boxShadow="0 4px 16px rgba(0, 0, 0, 0.3)"
+            >
+              <HStack spacing={3}>
+                <VStack spacing={0} align="start">
+                  <Text
+                    fontSize="lg"
+                    fontWeight="black"
+                    color="white"
+                    lineHeight="1"
+                  >
+                    {userProgress.totalXp || 0} XP
+                  </Text>
+                  <Text fontSize="xs" color="gray.400" fontWeight="medium">
+                    {getTranslation("skill_tree_level", {
+                      level: Math.floor((userProgress.totalXp || 0) / 100) + 1,
+                    })}
+                  </Text>
                 </VStack>
-              );
-            })()}
-          </HStack>
-        </MotionBox>
+              </HStack>
+
+              {/* CEFR Level Progress Bar */}
+              {(() => {
+                const progress =
+                  pathMode === "path"
+                    ? getAllLessonProgress(userProgress, targetLang)
+                    : getAllFlashcardProgress(userProgress, targetLang);
+                const currentLevelProgress = progress[effectiveActiveLevel];
+                return (
+                  <VStack spacing={1} align="end" minW="200px">
+                    <HStack spacing={2}>
+                      <Text fontSize="xs" fontWeight="semibold" color="white">
+                        {effectiveActiveLevel}
+                      </Text>
+                      <Text fontSize="xs" fontWeight="bold" color="blue.300">
+                        {currentLevelProgress.percentage}%
+                      </Text>
+                    </HStack>
+                    <Box w="full">
+                      <WaveBar
+                        value={currentLevelProgress.percentage}
+                        height={12}
+                        start="#60A5FA"
+                        end="#2563EB"
+                        bg="rgba(255,255,255,0.05)"
+                        border="rgba(255,255,255,0.1)"
+                      />
+                    </Box>
+                  </VStack>
+                );
+              })()}
+            </HStack>
+          </MotionBox>
+        )}
 
         {/* Skill Tree Units, Flashcards, or Conversations */}
         <AnimatePresence mode="wait" initial={false}>
