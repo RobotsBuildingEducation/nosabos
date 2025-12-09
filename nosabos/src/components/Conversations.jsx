@@ -1045,11 +1045,13 @@ export default function Conversations({
     try {
       const goalText = currentGoal.text.en;
       const tLang = targetLangRef.current;
+      const sLang = supportLangRef.current;
       const languageName = tLang === "es" ? "Spanish" :
                            tLang === "pt" ? "Portuguese" :
                            tLang === "fr" ? "French" :
                            tLang === "it" ? "Italian" :
                            tLang === "nah" ? "Nahuatl" : "English";
+      const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 
       const prompt = `You are evaluating if a language learner completed a conversation goal.
 
@@ -1077,10 +1079,11 @@ Examples of INCORRECT evaluation:
 Only mark completed = true if BOTH language AND content relevance are satisfied.
 
 FEEDBACK GUIDELINES:
+- Provide feedback in ${feedbackLanguage}
 - If completed = true: Provide encouraging, specific praise (e.g., "Great! You talked about your favorite restaurant perfectly!")
 - If completed = false: Provide helpful guidance to redirect the user (e.g., "Try talking about your favorite place in the city instead of other topics")
 
-Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, actionable feedback"}`;
+Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, actionable feedback in ${feedbackLanguage}"}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -1109,13 +1112,19 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
       const parsed = safeParseJson(responseText);
       if (parsed?.completed) {
         // Set positive feedback
-        setGoalFeedback(parsed?.reason || "Great job! You completed the goal!");
+        const defaultSuccess = sLang === "es"
+          ? "¡Bien hecho! Completaste la meta."
+          : "Great job! You completed the goal!";
+        setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
         // Generate contextual next goal
         setTimeout(() => generateContextualGoal(), 1500);
       } else {
         // Set guiding feedback for failed attempt
-        setGoalFeedback(parsed?.reason || "Try to address the goal topic more directly.");
+        const defaultGuidance = sLang === "es"
+          ? "Intenta abordar el tema de la meta más directamente."
+          : "Try to address the goal topic more directly.";
+        setGoalFeedback(parsed?.reason || defaultGuidance);
         goalCheckPendingRef.current = false;
       }
     } catch (e) {
