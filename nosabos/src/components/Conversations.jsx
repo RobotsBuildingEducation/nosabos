@@ -1042,13 +1042,27 @@ export default function Conversations({
 
     try {
       const goalText = currentGoal.text.en;
+      const tLang = targetLangRef.current;
+      const languageName = tLang === "es" ? "Spanish" :
+                           tLang === "pt" ? "Portuguese" :
+                           tLang === "fr" ? "French" :
+                           tLang === "it" ? "Italian" :
+                           tLang === "nah" ? "Nahuatl" : "English";
+
       const prompt = `You are evaluating if a language learner completed a conversation goal.
 
+IMPORTANT: The learner is practicing ${languageName}. They MUST respond in ${languageName} to complete the goal.
+If the user responded in a different language (like English when practicing Spanish), the goal is NOT completed.
+
 Goal: "${goalText}"
+Target language: ${languageName}
 User said: "${userMessage}"
 AI responded: "${aiResponse}"
 
-Did the user's message satisfy the goal? Consider partial completion as success.
+Evaluate:
+1. Is the user's message in ${languageName}? (If not, completed = false)
+2. Does the message satisfy the goal? (Consider partial completion as success)
+
 Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief explanation"}`;
 
       const body = {
