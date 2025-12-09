@@ -660,17 +660,55 @@ export default function Conversations({
     } catch {}
   }
 
-  function stopRecorderAfterTail(rid) {
-    const prev = recTailRef.current.get(rid);
-    if (prev) clearInterval(prev);
-    const timerId = setTimeout(() => {
-      const rec = recMapRef.current.get(rid);
-      if (rec?.state === "recording") rec.stop();
-      recMapRef.current.delete(rid);
-      recChunksRef.current.delete(rid);
-      recTailRef.current.delete(rid);
-    }, 400);
-    recTailRef.current.set(rid, timerId);
+  function getRMS() {
+    const analyser = analyserRef.current;
+    const buf = floatBufRef.current;
+    if (!analyser || !buf) return 0;
+    if (analyser.getFloatTimeDomainData) {
+      analyser.getFloatTimeDomainData(buf);
+    } else {
+      const tmp = new Uint8Array(analyser.fftSize);
+      analyser.getByteTimeDomainData(tmp);
+      for (let i = 0; i < tmp.length; i++) buf[i] = (tmp[i] - 128) / 128;
+    }
+    let sum = 0;
+    for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+    return Math.sqrt(sum / buf.length);
+  }
+
+  function stopRecorderAfterTail(
+    rid,
+    opts = { quietMs: 900, maxMs: 20000, armThresh: 0.006, minActiveMs: 900 }
+  ) {
+    if (recTailRef.current.has(rid)) return;
+    const { quietMs, maxMs, armThresh, minActiveMs } = opts;
+    const startedAt = Date.now();
+    let armed = false;
+    let firstVoiceAt = 0;
+    let lastLoudAt = Date.now();
+    const id = setInterval(() => {
+      const now = Date.now();
+      const rms = getRMS();
+      if (rms >= armThresh) {
+        if (!armed) {
+          armed = true;
+          firstVoiceAt = now;
+        }
+        lastLoudAt = now;
+      }
+      const longEnoughSinceVoice = armed && now - firstVoiceAt >= minActiveMs;
+      const quietLongEnough = armed && now - lastLoudAt >= quietMs;
+      const timedOut = now - startedAt >= maxMs;
+      if ((longEnoughSinceVoice && quietLongEnough) || timedOut) {
+        clearInterval(id);
+        recTailRef.current.delete(rid);
+        const rec = recMapRef.current.get(rid);
+        if (rec?.state === "recording") rec.stop();
+        recMapRef.current.delete(rid);
+        recChunksRef.current.delete(rid);
+      }
+    }, 100);
+    recTailRef.current.set(rid, id);
   }
 
   /* ---------------------------

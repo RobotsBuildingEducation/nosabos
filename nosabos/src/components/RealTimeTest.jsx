@@ -1926,7 +1926,6 @@ Return ONLY JSON:
               modalities: ["audio"],
               conversation: "none",
               instructions: `Say exactly: "${probeText}"`,
-              commit: false,
               metadata: { kind: "voice_probe" },
             },
           })
