@@ -1747,7 +1747,19 @@ export default function SkillTree({
     const lessonIndex = levelsOrder.indexOf(currentLessonLevel);
     const flashcardIndex = levelsOrder.indexOf(currentFlashcardLevel);
     const maxIndex = Math.max(lessonIndex, flashcardIndex);
-    return levelsOrder[maxIndex] || "A1";
+    const result = levelsOrder[maxIndex] || "A1";
+
+    // Debug logging
+    console.log('Conversation Proficiency Debug:', {
+      currentLessonLevel,
+      currentFlashcardLevel,
+      lessonIndex,
+      flashcardIndex,
+      maxIndex,
+      result
+    });
+
+    return result;
   }, [currentLessonLevel, currentFlashcardLevel]);
 
   const bgColor = "gray.950";
