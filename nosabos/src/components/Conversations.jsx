@@ -1172,7 +1172,13 @@ export default function Conversations({
   }
 
   function pushMessage(m) {
-    setMessages((p) => [...p, m]);
+    setMessages((p) => {
+      // Prevent duplicate messages with same ID
+      if (p.some((existing) => existing.id === m.id)) {
+        return p;
+      }
+      return [...p, m];
+    });
   }
 
   function updateMessage(id, fn) {
