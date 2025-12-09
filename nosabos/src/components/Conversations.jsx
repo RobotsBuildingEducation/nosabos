@@ -493,6 +493,9 @@ export default function Conversations({
   const isIdleRef = useRef(true);
   const idleWaitersRef = useRef([]);
 
+  // Track when current response started (for proper user message ordering)
+  const responseStartTimeRef = useRef(null);
+
   // Connection/UI state
   const [status, setStatus] = useState("disconnected");
   const [err, setErr] = useState("");
@@ -574,8 +577,8 @@ export default function Conversations({
   const xpLevelNumber = Math.floor(xp / 100) + 1;
   const progressPct = xp % 100;
 
-  // Timeline (newest-first for display)
-  const timeline = [...messages].reverse();
+  // Timeline sorted by timestamp (newest-first for display)
+  const timeline = [...messages].sort((a, b) => b.ts - a.ts);
 
   // Language name helper
   const languageNameFor = (code) => {
@@ -1005,6 +1008,8 @@ export default function Conversations({
 
     if (t === "response.created") {
       isIdleRef.current = false;
+      // Record when this response started (user spoke before this)
+      responseStartTimeRef.current = Date.now();
       const mdKind = data?.response?.metadata?.kind;
       if (mdKind === "replay") {
         replayRidSetRef.current.add(rid);
@@ -1037,6 +1042,10 @@ export default function Conversations({
           return;
         }
         lastTranscriptRef.current = { text, ts: now };
+        // Use timestamp BEFORE the AI response started so user message appears first
+        const userTs = responseStartTimeRef.current
+          ? responseStartTimeRef.current - 1
+          : now;
         pushMessage({
           id: uid(),
           role: "user",
@@ -1046,7 +1055,7 @@ export default function Conversations({
           translation: "",
           pairs: [],
           done: true,
-          ts: now,
+          ts: userTs,
         });
         // Award XP for user turn
         turnCountRef.current += 1;
