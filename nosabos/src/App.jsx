@@ -2713,11 +2713,11 @@ export default function App() {
   const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const CEFR_LEVEL_COUNTS = {
     A1: { flashcards: 300, lessons: 77 },
-    A2: { flashcards: 250, lessons: 35 },
-    B1: { flashcards: 200, lessons: 40 },
-    B2: { flashcards: 150, lessons: 35 },
-    C1: { flashcards: 100, lessons: 30 },
-    C2: { flashcards: 50, lessons: 20 },
+    A2: { flashcards: 250, lessons: 72 },
+    B1: { flashcards: 200, lessons: 60 },
+    B2: { flashcards: 150, lessons: 48 },
+    C1: { flashcards: 100, lessons: 40 },
+    C2: { flashcards: 50, lessons: 32 },
   };
 
   const CEFR_LEVEL_INFO = {
