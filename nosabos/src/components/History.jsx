@@ -35,6 +35,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { getRandomVoice } from "../utils/tts";
 
 /* ---------------------------
@@ -664,8 +665,19 @@ export default function History({
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
-  // Extract CEFR level from lesson ID
-  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
+  // Get user's current proficiency level from their progress
+  // Falls back to lesson ID if available, or A1 as default
+  const { xp, levelNumber, progressPct, progress, npub, isLoading } =
+    useSharedProgress();
+
+  const targetLang = ["en", "es", "pt", "nah", "fr", "it"].includes(
+    progress.targetLang
+  )
+    ? progress.targetLang
+    : "es";
+
+  // Determine CEFR level: use user's proficiency level from skill tree progress
+  const cefrLevel = getUserProficiencyLevel(progress, targetLang);
 
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
@@ -677,14 +689,6 @@ export default function History({
   // ---- Dedup & concurrency guards ----
   const generatingRef = useRef(false); // synchronous mutex to stop double invokes
 
-  const { xp, levelNumber, progressPct, progress, npub, isLoading } =
-    useSharedProgress();
-
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it"].includes(
-    progress.targetLang
-  )
-    ? progress.targetLang
-    : "es";
   const supportLang =
     progress.supportLang === "bilingual"
       ? userLanguage === "es"

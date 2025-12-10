@@ -130,3 +130,36 @@ export function getAllCEFRProgress(userProgress, targetLang = 'es') {
 
   return combinedProgress;
 }
+
+/**
+ * Determine the user's current proficiency level based on lesson completion
+ * Returns the highest CEFR level that is unlocked (previous level is complete)
+ * @param {Object} userProgress - User progress object
+ * @param {string} targetLang - Target language code
+ * @returns {string} Current CEFR level (A1, A2, B1, B2, C1, or C2)
+ */
+export function getUserProficiencyLevel(userProgress, targetLang = 'es') {
+  if (!userProgress) return 'A1'; // Default to A1 if no progress
+
+  // A1 is always unlocked
+  let currentLevel = 'A1';
+
+  // Check each level sequentially
+  for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
+    const level = CEFR_LEVELS[i];
+    const nextLevel = CEFR_LEVELS[i + 1];
+
+    // Calculate completion for current level
+    const completion = calculateLessonCompletion(userProgress, level, targetLang);
+
+    // If current level is 100% complete, unlock next level
+    if (completion >= 100) {
+      currentLevel = nextLevel;
+    } else {
+      // Stop at first incomplete level
+      break;
+    }
+  }
+
+  return currentLevel;
+}
