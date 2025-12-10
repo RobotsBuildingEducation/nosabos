@@ -50,6 +50,7 @@ import { getLanguageXp } from "../utils/progressTracking";
 import { getRandomVoice, TTS_LANG_TAG, TTS_ENDPOINT } from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
@@ -320,20 +321,22 @@ export default function StoryMode({
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
-  // Extract CEFR level from lesson ID
-  const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
-
   // Shared settings + XP
   const { xp, levelNumber, progressPct, progress, npub, progressReady } =
     useSharedProgress();
+
+  const targetLang = progress.targetLang;
+
+  // Use CEFR level from the current lesson, or user's proficiency level as fallback
+  const cefrLevel = lesson?.id
+    ? extractCEFRLevel(lesson.id)
+    : getUserProficiencyLevel(progress, targetLang);
 
   // APP UI language (drives all UI copy)
   const uiLang = getAppUILang();
   const uiText = useUIText(uiLang, progress.level);
 
   // Content languages
-  const targetLang = progress.targetLang; // 'es' | 'en' | 'nah'
-
   const supportLang =
     progress.supportLang === "bilingual"
       ? uiLang === "es"
@@ -1736,7 +1739,7 @@ export default function StoryMode({
                                 borderRadius="4px"
                                 transition="background-color 0.3s ease"
                               >
-                                {w}{" "}
+                                {w}
                               </Text>
                             ))}
                     </Text>
