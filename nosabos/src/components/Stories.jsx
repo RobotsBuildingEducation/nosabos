@@ -1739,7 +1739,7 @@ export default function StoryMode({
                                 borderRadius="4px"
                                 transition="background-color 0.3s ease"
                               >
-                                {w}{" "}
+                                {w}
                               </Text>
                             ))}
                     </Text>

@@ -2712,12 +2712,12 @@ export default function App() {
   // CEFR level configuration (shared across modes)
   const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const CEFR_LEVEL_COUNTS = {
-    A1: { flashcards: 300, lessons: 77 },
-    A2: { flashcards: 250, lessons: 35 },
-    B1: { flashcards: 200, lessons: 40 },
-    B2: { flashcards: 150, lessons: 35 },
-    C1: { flashcards: 100, lessons: 30 },
-    C2: { flashcards: 50, lessons: 20 },
+    A1: { flashcards: 300, lessons: 0 },
+    A2: { flashcards: 250, lessons: 0 },
+    B1: { flashcards: 200, lessons: 0 },
+    B2: { flashcards: 150, lessons: 0 },
+    C1: { flashcards: 100, lessons: 0 },
+    C2: { flashcards: 50, lessons: 0 },
   };
 
   const CEFR_LEVEL_INFO = {
