@@ -973,12 +973,12 @@ export default function Conversations({
 
     // Proficiency level guidance
     const levelGuidance = {
-      A1: "Use very simple vocabulary and short sentences. Speak slowly and clearly. Use basic present tense only. Vocabulary should be limited to ~500 common words.",
-      A2: "Use simple everyday vocabulary. Keep sentences straightforward. Can use past and future tenses. Vocabulary up to ~1000 words.",
-      B1: "Use intermediate vocabulary. Can discuss opinions and experiences. Use various tenses appropriately. Vocabulary up to ~2500 words.",
-      B2: "Use complex sentence structures. Can discuss abstract topics. Use idioms occasionally. Vocabulary up to ~5000 words.",
-      C1: "Use sophisticated vocabulary and nuanced expressions. Can discuss complex topics fluently. Use advanced grammar structures.",
-      C2: "Use native-like expressions and register. Can handle any topic with precision. Use colloquialisms and subtle language distinctions.",
+      A1: "CRITICAL: User is a complete beginner (A1). Use ONLY very simple vocabulary (greetings, numbers, colors, family). Use short 3-5 word sentences. Use ONLY present tense. Speak as if to a child learning their first words. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
+      A2: "CRITICAL: User is elementary level (A2). Use simple everyday vocabulary (food, shopping, directions). Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar. Examples: 'Ayer fui al mercado.' '¿Qué vas a hacer mañana?'",
+      B1: "CRITICAL: User is intermediate (B1). Use conversational vocabulary about familiar topics (work, travel, hobbies). Can use 8-12 word sentences. Use various tenses but keep grammar structures moderate. Can express opinions simply.",
+      B2: "CRITICAL: User is upper intermediate (B2). Use more complex vocabulary and abstract concepts. Can use longer sentences with subordinate clauses. Can use subjunctive mood occasionally. Can discuss hypotheticals.",
+      C1: "CRITICAL: User is advanced (C1). Use sophisticated vocabulary and nuanced expressions. Use complex sentence structures with multiple clauses. Use idiomatic expressions. Can handle abstract and specialized topics.",
+      C2: "CRITICAL: User is near-native (C2). Use native-like expressions, colloquialisms, and subtle distinctions. Can use any grammatical structure. Can handle any topic with precision and style.",
     };
 
     const proficiencyHint = levelGuidance[maxProficiencyLevel] || levelGuidance.A1;
@@ -986,7 +986,8 @@ export default function Conversations({
     return [
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
-      `The learner is at ${maxProficiencyLevel} proficiency level. ${proficiencyHint}`,
+      proficiencyHint,
+      "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       "Be encouraging and help the learner practice speaking naturally.",
