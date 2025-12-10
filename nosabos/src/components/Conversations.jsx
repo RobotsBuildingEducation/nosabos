@@ -13,7 +13,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaPlay } from "react-icons/fa";
+import { FaStop, FaPlay, FaCheckCircle } from "react-icons/fa";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
 import { database, analytics } from "../firebaseResources/firebaseResources";
@@ -541,10 +541,15 @@ export default function Conversations({
 
   // Goal system
   const [currentGoal, setCurrentGoal] = useState({
-    text: { en: "Practice speaking about any topic", es: "Practica hablando sobre cualquier tema" },
+    text: {
+      en: "Practice speaking about any topic",
+      es: "Practica hablando sobre cualquier tema",
+    },
     completed: false,
   });
   const [goalsCompleted, setGoalsCompleted] = useState(0);
+  const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
+  const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
   const lastUserMessageRef = useRef("");
 
@@ -971,20 +976,22 @@ export default function Conversations({
 
     // Proficiency level guidance
     const levelGuidance = {
-      A1: "Use very simple vocabulary and short sentences. Speak slowly and clearly. Use basic present tense only. Vocabulary should be limited to ~500 common words.",
-      A2: "Use simple everyday vocabulary. Keep sentences straightforward. Can use past and future tenses. Vocabulary up to ~1000 words.",
-      B1: "Use intermediate vocabulary. Can discuss opinions and experiences. Use various tenses appropriately. Vocabulary up to ~2500 words.",
-      B2: "Use complex sentence structures. Can discuss abstract topics. Use idioms occasionally. Vocabulary up to ~5000 words.",
-      C1: "Use sophisticated vocabulary and nuanced expressions. Can discuss complex topics fluently. Use advanced grammar structures.",
-      C2: "Use native-like expressions and register. Can handle any topic with precision. Use colloquialisms and subtle language distinctions.",
+      A1: "CRITICAL: User is a complete beginner (A1). Use ONLY very simple vocabulary (greetings, numbers, colors, family). Use short 3-5 word sentences. Use ONLY present tense. Speak as if to a child learning their first words. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
+      A2: "CRITICAL: User is elementary level (A2). Use simple everyday vocabulary (food, shopping, directions). Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar. Examples: 'Ayer fui al mercado.' '¿Qué vas a hacer mañana?'",
+      B1: "CRITICAL: User is intermediate (B1). Use conversational vocabulary about familiar topics (work, travel, hobbies). Can use 8-12 word sentences. Use various tenses but keep grammar structures moderate. Can express opinions simply.",
+      B2: "CRITICAL: User is upper intermediate (B2). Use more complex vocabulary and abstract concepts. Can use longer sentences with subordinate clauses. Can use subjunctive mood occasionally. Can discuss hypotheticals.",
+      C1: "CRITICAL: User is advanced (C1). Use sophisticated vocabulary and nuanced expressions. Use complex sentence structures with multiple clauses. Use idiomatic expressions. Can handle abstract and specialized topics.",
+      C2: "CRITICAL: User is near-native (C2). Use native-like expressions, colloquialisms, and subtle distinctions. Can use any grammatical structure. Can handle any topic with precision and style.",
     };
 
-    const proficiencyHint = levelGuidance[maxProficiencyLevel] || levelGuidance.A1;
+    const proficiencyHint =
+      levelGuidance[maxProficiencyLevel] || levelGuidance.A1;
 
     return [
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
-      `The learner is at ${maxProficiencyLevel} proficiency level. ${proficiencyHint}`,
+      proficiencyHint,
+      "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       "Be encouraging and help the learner practice speaking naturally.",
@@ -1043,27 +1050,52 @@ export default function Conversations({
     try {
       const goalText = currentGoal.text.en;
       const tLang = targetLangRef.current;
-      const languageName = tLang === "es" ? "Spanish" :
-                           tLang === "pt" ? "Portuguese" :
-                           tLang === "fr" ? "French" :
-                           tLang === "it" ? "Italian" :
-                           tLang === "nah" ? "Nahuatl" : "English";
+      const sLang = supportLangRef.current;
+      const languageName =
+        tLang === "es"
+          ? "Spanish"
+          : tLang === "pt"
+          ? "Portuguese"
+          : tLang === "fr"
+          ? "French"
+          : tLang === "it"
+          ? "Italian"
+          : tLang === "nah"
+          ? "Nahuatl"
+          : "English";
+      const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 
       const prompt = `You are evaluating if a language learner completed a conversation goal.
 
-IMPORTANT: The learner is practicing ${languageName}. They MUST respond in ${languageName} to complete the goal.
-If the user responded in a different language (like English when practicing Spanish), the goal is NOT completed.
+CRITICAL REQUIREMENTS (BOTH must be met):
+1. The user MUST respond in ${languageName}. If they responded in ANY other language, the goal is NOT completed.
+2. The user's message MUST directly address the specific goal content. Generic or unrelated responses do NOT count.
 
 Goal: "${goalText}"
 Target language: ${languageName}
 User said: "${userMessage}"
 AI responded: "${aiResponse}"
 
-Evaluate:
-1. Is the user's message in ${languageName}? (If not, completed = false)
-2. Does the message satisfy the goal? (Consider partial completion as success)
+STRICT EVALUATION CRITERIA:
+1. Language Check: Is the user's message in ${languageName}? (If not → completed = false)
+2. Content Relevance Check: Does the user's message directly address the specific topic/action in the goal?
+   - If the goal is "talk about your favorite place in the city" and user talks about their dog → completed = false
+   - If the goal is "describe your morning routine" and user talks about food → completed = false
+   - If the goal is "discuss your hobbies" and user talks about weather → completed = false
+   - The message must be TOPICALLY RELEVANT to the goal, not just grammatically correct
 
-Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief explanation"}`;
+Examples of INCORRECT evaluation:
+- Goal: "Describe your favorite restaurant" / User: "My dog is white" → completed = false (wrong topic)
+- Goal: "Talk about your weekend plans" / User: "I like coffee" → completed = false (off-topic)
+
+Only mark completed = true if BOTH language AND content relevance are satisfied.
+
+FEEDBACK GUIDELINES:
+- Provide feedback in ${feedbackLanguage}
+- If completed = true: Provide encouraging, specific praise (e.g., "Great! You talked about your favorite restaurant perfectly!")
+- If completed = false: Provide helpful guidance to redirect the user (e.g., "Try talking about your favorite place in the city instead of other topics")
+
+Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, actionable feedback in ${feedbackLanguage}"}`;
 
       const body = {
         model: TRANSLATE_MODEL,
@@ -1086,15 +1118,32 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief expl
       const responseText =
         payload?.output_text ||
         (Array.isArray(payload?.output) &&
-          payload.output.map((it) => (it?.content || []).map((seg) => seg?.text || "").join("")).join(" ").trim()) ||
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join("")
+            )
+            .join(" ")
+            .trim()) ||
         "";
 
       const parsed = safeParseJson(responseText);
       if (parsed?.completed) {
+        // Set positive feedback
+        const defaultSuccess =
+          sLang === "es"
+            ? "¡Bien hecho! Completaste la meta."
+            : "Great job! You completed the goal!";
+        setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
         // Generate contextual next goal
         setTimeout(() => generateContextualGoal(), 1500);
       } else {
+        // Set guiding feedback for failed attempt
+        const defaultGuidance =
+          sLang === "es"
+            ? "Intenta abordar el tema de la meta más directamente."
+            : "Try to address the goal topic more directly.";
+        setGoalFeedback(parsed?.reason || defaultGuidance);
         goalCheckPendingRef.current = false;
       }
     } catch (e) {
@@ -1104,11 +1153,17 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief expl
 
   // Generate next goal based on conversation context
   async function generateContextualGoal() {
+    setIsGeneratingGoal(true);
+    setGoalFeedback(""); // Clear previous feedback
+
     try {
       // Get recent conversation context
-      const recentMessages = messagesRef.current.slice(-6).map(m =>
-        `${m.role === "user" ? "User" : "AI"}: ${m.textFinal || ""}`
-      ).join("\n");
+      const recentMessages = messagesRef.current
+        .slice(-6)
+        .map(
+          (m) => `${m.role === "user" ? "User" : "AI"}: ${m.textFinal || ""}`
+        )
+        .join("\n");
 
       const prompt = `You are helping a ${maxProficiencyLevel} level language learner practice conversation.
 
@@ -1119,12 +1174,17 @@ Previous goal was: "${currentGoal.text.en}"
 
 Generate the NEXT natural conversation goal that follows the flow of the conversation.
 The goal should be appropriate for ${maxProficiencyLevel} level (${
-        maxProficiencyLevel === "A1" ? "beginner - simple tasks" :
-        maxProficiencyLevel === "A2" ? "elementary - everyday topics" :
-        maxProficiencyLevel === "B1" ? "intermediate - opinions and experiences" :
-        maxProficiencyLevel === "B2" ? "upper intermediate - complex discussions" :
-        maxProficiencyLevel === "C1" ? "advanced - nuanced expression" :
-        "mastery - sophisticated language"
+        maxProficiencyLevel === "A1"
+          ? "beginner - simple tasks"
+          : maxProficiencyLevel === "A2"
+          ? "elementary - everyday topics"
+          : maxProficiencyLevel === "B1"
+          ? "intermediate - opinions and experiences"
+          : maxProficiencyLevel === "B2"
+          ? "upper intermediate - complex discussions"
+          : maxProficiencyLevel === "C1"
+          ? "advanced - nuanced expression"
+          : "mastery - sophisticated language"
       }).
 
 Respond with ONLY a JSON object: {"en": "goal in English", "es": "goal in Spanish"}`;
@@ -1143,8 +1203,15 @@ Respond with ONLY a JSON object: {"en": "goal in English", "es": "goal in Spanis
 
       if (!r.ok) {
         // Fallback to default goal
-        setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+        setCurrentGoal({
+          text: {
+            en: "Continue the conversation",
+            es: "Continúa la conversación",
+          },
+          completed: false,
+        });
         goalCheckPendingRef.current = false;
+        setIsGeneratingGoal(false);
         return;
       }
 
@@ -1152,18 +1219,40 @@ Respond with ONLY a JSON object: {"en": "goal in English", "es": "goal in Spanis
       const responseText =
         payload?.output_text ||
         (Array.isArray(payload?.output) &&
-          payload.output.map((it) => (it?.content || []).map((seg) => seg?.text || "").join("")).join(" ").trim()) ||
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join("")
+            )
+            .join(" ")
+            .trim()) ||
         "";
 
       const parsed = safeParseJson(responseText);
       if (parsed?.en && parsed?.es) {
-        setCurrentGoal({ text: { en: parsed.en, es: parsed.es }, completed: false });
+        setCurrentGoal({
+          text: { en: parsed.en, es: parsed.es },
+          completed: false,
+        });
       } else {
-        setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+        setCurrentGoal({
+          text: {
+            en: "Continue the conversation",
+            es: "Continúa la conversación",
+          },
+          completed: false,
+        });
       }
     } catch (e) {
-      setCurrentGoal({ text: { en: "Continue the conversation", es: "Continúa la conversación" }, completed: false });
+      setCurrentGoal({
+        text: {
+          en: "Continue the conversation",
+          es: "Continúa la conversación",
+        },
+        completed: false,
+      });
     }
+
+    setIsGeneratingGoal(false);
     goalCheckPendingRef.current = false;
   }
 
@@ -1544,26 +1633,77 @@ Do not return the whole sentence as a single chunk.`;
                 />
               </Box>
 
-              {/* Goal Badge and Text */}
-              <VStack spacing={1} align="center" width="100%">
-                <Badge
-                  colorScheme={currentGoal.completed ? "green" : "purple"}
-                  variant="subtle"
-                  fontSize="10px"
+              {/* Goal Text with Checkmark or Loader */}
+              <VStack spacing={2} align="center" width="100%">
+                <HStack
+                  spacing={2}
+                  align="center"
+                  width="100%"
+                  justify="center"
                 >
-                  {currentGoal.completed
-                    ? (uiLang === "es" ? "¡Meta completada!" : "Goal completed!")
-                    : (uiLang === "es" ? "Meta actual" : "Current Goal")}
-                </Badge>
-                <Text
-                  fontSize="sm"
-                  fontWeight="medium"
-                  textAlign="center"
-                  opacity={currentGoal.completed ? 0.6 : 1}
-                  textDecoration={currentGoal.completed ? "line-through" : "none"}
-                >
-                  {currentGoal.text[uiLang] || currentGoal.text.en}
-                </Text>
+                  {isGeneratingGoal ? (
+                    <>
+                      <Spinner
+                        size="sm"
+                        color="purple.400"
+                        thickness="2px"
+                        speed="0.8s"
+                      />
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        textAlign="center"
+                        color="purple.300"
+                      >
+                        {uiLang === "es"
+                          ? "Generando nueva meta..."
+                          : "Generating new goal..."}
+                      </Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text
+                        fontSize="sm"
+                        fontWeight="medium"
+                        textAlign="center"
+                        opacity={currentGoal.completed ? 0.6 : 1}
+                        textDecoration={
+                          currentGoal.completed ? "line-through" : "none"
+                        }
+                        flex="1"
+                      >
+                        {currentGoal.text[uiLang] || currentGoal.text.en}
+                      </Text>
+                      {currentGoal.completed && (
+                        <Box
+                          as={FaCheckCircle}
+                          color="green.400"
+                          boxSize="18px"
+                        />
+                      )}
+                    </>
+                  )}
+                </HStack>
+
+                {/* Goal Feedback */}
+                {goalFeedback && !isGeneratingGoal && (
+                  <Text
+                    fontSize="xs"
+                    textAlign="center"
+                    px={3}
+                    py={1.5}
+                    borderRadius="md"
+                    bg={currentGoal.completed ? "green.900" : "orange.900"}
+                    color={currentGoal.completed ? "green.200" : "orange.200"}
+                    border="1px solid"
+                    borderColor={
+                      currentGoal.completed ? "green.600" : "orange.600"
+                    }
+                    maxW="90%"
+                  >
+                    {goalFeedback}
+                  </Text>
+                )}
               </VStack>
 
               {/* XP Progress Bar */}

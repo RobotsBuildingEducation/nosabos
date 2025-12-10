@@ -427,8 +427,8 @@ export const translations = {
     mode_stories: "Stories",
     // PathSwitcher tabs
     path_switcher_path: "Path",
-    path_switcher_flashcards: "Flashcards",
-    path_switcher_conversations: "Conversations",
+    path_switcher_flashcards: "Cards",
+    path_switcher_conversations: "Chat",
     // Session timer modal
     timer_modal_title: "Session timer",
     timer_modal_description:
