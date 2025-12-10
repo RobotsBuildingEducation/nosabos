@@ -176,7 +176,7 @@ export default function CEFRLevelNavigator({
               borderRadius="16px"
               bgGradient={levelInfo.gradient}
               color="white"
-              fontSize="2xl"
+              fontSize="md"
               fontWeight="black"
               boxShadow={`0 4px 14px ${levelInfo.color}40`}
             >
@@ -186,7 +186,8 @@ export default function CEFRLevelNavigator({
               {levelInfo.name[getAppLanguage()] || levelInfo.name.en}
             </Text>
             <Text fontSize="sm" color="gray.400" textAlign="center">
-              {levelInfo.description[getAppLanguage()] || levelInfo.description.en}
+              {levelInfo.description[getAppLanguage()] ||
+                levelInfo.description.en}
             </Text>
           </VStack>
 
