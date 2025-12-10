@@ -665,8 +665,6 @@ export default function History({
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
-  // Get user's current proficiency level from their progress
-  // Falls back to lesson ID if available, or A1 as default
   const { xp, levelNumber, progressPct, progress, npub, isLoading } =
     useSharedProgress();
 
@@ -676,8 +674,10 @@ export default function History({
     ? progress.targetLang
     : "es";
 
-  // Determine CEFR level: use user's proficiency level from skill tree progress
-  const cefrLevel = getUserProficiencyLevel(progress, targetLang);
+  // Use CEFR level from the current lesson, or user's proficiency level as fallback
+  const cefrLevel = lesson?.id
+    ? extractCEFRLevel(lesson.id)
+    : getUserProficiencyLevel(progress, targetLang);
 
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
