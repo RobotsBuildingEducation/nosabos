@@ -1,5 +1,7 @@
 // src/utils/translation.jsx
 
+import { Button } from "@chakra-ui/react";
+
 // Simple i18n helper for flat keys with {placeholders}
 export function t(lang = "en", key, vars = {}) {
   const raw =
@@ -223,9 +225,71 @@ export const translations = {
     toast_switch_failed: "Switch failed",
     toast_switched_account: "Switched account",
     toast_save_lang_failed: "Failed to save language",
-    "passcode.instructions":
-      "Enter your passcode to continue. If you’re a Patreon supporter, check your welcome message for the code.",
-    "passcode.label": "Passcode",
+    "passcode.instructions": (
+      <div>
+        Enter the subscription passcode to continue.
+        <br />
+        <br />
+        <div>
+          <b style={{ marginBottom: 6 }}>Subscribing grants you:</b>
+          <ol style={{ marginTop: 12, marginLeft: 24 }}>
+            <li style={{ marginBottom: 8 }}>
+              Access to multiple AI education apps.
+            </li>
+            <li style={{ marginBottom: 8 }}> Personal support.</li>
+            <li style={{ marginBottom: 8 }}>
+              A growing collection of subscriber content oriented around startup
+              engineering and investing.
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              Appreciation for supporting the mission of creating scholarships
+              with learning.
+            </li>
+          </ol>
+          <br />
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank"
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/NotesAndOtherStuff",
+                  "_blank"
+                );
+              }
+            }}
+            colorScheme="blue"
+          >
+            View subscription platform
+          </Button>
+          <br />
+          <br />
+          <Button
+            onMouseDown={() => {
+              window.open(
+                "https://www.patreon.com/posts/syllabus-getting-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                "_blank"
+              );
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                window.open(
+                  "https://www.patreon.com/posts/syllabus-getting-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                  "_blank"
+                );
+              }
+            }}
+          >
+            Subscribe or pay once
+          </Button>{" "}
+        </div>
+      </div>
+    ),
+    "passcode.label": "Subscription Passcode",
     backToQuestion9: "Back to Question 9",
     vocab_badge_level: "Level {level}",
     vocab_badge_xp: "XP {xp}",
@@ -765,9 +829,59 @@ export const translations = {
     onboarding_pron_label: "Practicar pronunciación",
     onboarding_pron_hint:
       "Al activarlo, tu coach te pedirá repetir frases y se enfocará en los sonidos y la entonación.",
-    "passcode.instructions":
-      "Ingresa tu código de acceso para continuar. Si eres patrocinador en Patreon, revisa tu mensaje de bienvenida para encontrar el código.",
-    "passcode.label": "Código de acceso",
+    "passcode.instructions": (
+      <div>
+        Ingresa el código de suscripción para continuar.
+        <br />
+        <br />
+        <div>
+          <b style={{ marginBottom: 6 }}>La suscripción te otorga:</b>
+          <ol style={{ marginTop: 12, marginLeft: 24 }}>
+            <li style={{ marginBottom: 8 }}>
+              Acceso a múltiples aplicaciones educativas con IA.
+            </li>
+            <li style={{ marginBottom: 8 }}>Soporte personal.</li>
+            <li style={{ marginBottom: 8 }}>
+              Una colección en crecimiento de contenido para suscriptores
+              orientado a la ingeniería y la inversión en startups.
+            </li>
+            <li style={{ marginBottom: 8 }}>
+              Agradecimiento por apoyar la misión de crear becas a través del
+              aprendizaje.
+            </li>
+          </ol>
+          <br />
+          <a
+            style={{
+              fontSize: "1.15rem",
+              textDecoration: "underline",
+              color: "#63b3ed",
+              fontWeight: "bold",
+            }}
+            href="https://www.patreon.com/NotesAndOtherStuff"
+            target="_blank"
+          >
+            Ver plataforma de suscripción
+          </a>
+          <br />
+          <br />
+          <a
+            style={{
+              fontSize: "1.15rem",
+              textDecoration: "underline",
+              color: "#63b3ed",
+              fontWeight: "bold",
+            }}
+            href="https://www.patreon.com/posts/syllabus-getting-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link"
+            target="_blank"
+          >
+            Suscribirse o pagar una sola vez
+          </a>{" "}
+        </div>
+      </div>
+    ),
+    "passcode.label": "Código de suscripción",
+
     backToQuestion9: "Volver a la pregunta 9",
     DEFAULT_PERSONA: "Un asistente amable y servicial.",
     common_id_label: "ID:",

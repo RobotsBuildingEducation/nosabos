@@ -84,11 +84,12 @@ export default function SubscriptionGate({
             <Text color="gray.200">{instructions}</Text>
           </Box>
 
-          <Stack spacing={3}>
+          <Stack spacing={3} mt={4}>
             <InputGroup>
               <InputLeftElement pointerEvents="none">
                 <LockIcon color="gray.400" />
               </InputLeftElement>
+
               <Input
                 bg="gray.800"
                 borderColor="gray.700"
@@ -96,6 +97,7 @@ export default function SubscriptionGate({
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={label}
                 autoComplete="off"
+                fontSize="16px"
               />
             </InputGroup>
             {(error || localError) && (

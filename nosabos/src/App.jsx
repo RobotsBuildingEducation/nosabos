@@ -975,8 +975,9 @@ export default function App() {
   const patchUser = useUserStore((s) => s.patchUser);
 
   const SUBSCRIPTION_PASSCODE_KEY = "subscriptionPasscode";
-  const subscriptionPasscode =
-    (import.meta.env?.VITE_SUBSCRIPTION_PASSCODE || "ZEPHYR").trim();
+  const subscriptionPasscode = (
+    import.meta.env?.VITE_SUBSCRIPTION_PASSCODE || "ZEPHYR"
+  ).trim();
   const [storedPasscode, setStoredPasscode] = useState(() =>
     typeof window !== "undefined"
       ? localStorage.getItem(SUBSCRIPTION_PASSCODE_KEY) || ""
@@ -1089,7 +1090,11 @@ export default function App() {
       subscriptionPasscode &&
       storedPasscode.toUpperCase() === subscriptionPasscode.toUpperCase();
     return matchesLocal || isTrue(user?.subscriptionPasscodeVerified);
-  }, [storedPasscode, subscriptionPasscode, user?.subscriptionPasscodeVerified]);
+  }, [
+    storedPasscode,
+    subscriptionPasscode,
+    user?.subscriptionPasscodeVerified,
+  ]);
   const [allowPosts, setAllowPosts] = useState(false);
 
   const [cefrResult, setCefrResult] = useState(null);
@@ -1521,7 +1526,7 @@ export default function App() {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 700 && !subscriptionVerified,
+    () => subscriptionXp >= 0 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified]
   );
 
@@ -1629,8 +1634,7 @@ export default function App() {
         return;
       }
 
-      const matches =
-        normalized.toUpperCase() === expected.toUpperCase();
+      const matches = normalized.toUpperCase() === expected.toUpperCase();
       if (!matches) {
         const msg =
           t.invalid ||
