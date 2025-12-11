@@ -94,11 +94,9 @@ const FeedbackRail = React.memo(
                     <FiHelpCircle />
                   )
                 }
-                colorScheme="orange"
-                variant="solid"
+                colorScheme="pink"
                 onClick={onExplainAnswer}
                 isDisabled={isLoadingExplanation || !!explanationText}
-                shadow="md"
                 width="full"
                 py={6}
                 size="lg"
@@ -129,19 +127,19 @@ const FeedbackRail = React.memo(
             <Box
               p={4}
               borderRadius="lg"
-              bg="rgba(139, 92, 246, 0.1)"
+              bg="rgba(246, 92, 174, 0.1)"
               borderWidth="1px"
-              borderColor="purple.400"
+              borderColor="pink.400"
               boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
             >
               <HStack spacing={2} mb={2}>
-                <FiHelpCircle color="var(--chakra-colors-purple-400)" />
-                <Text fontWeight="semibold" color="purple.300">
+                <FiHelpCircle color="var(--chakra-colors-pink-400)" />
+                <Text fontWeight="semibold" color="pink.300">
                   {userLanguage === "es" ? "Explicación" : "Explanation"}
                 </Text>
               </HStack>
               <Box
-                fontSize="sm"
+                fontSize="md"
                 color="whiteAlpha.900"
                 lineHeight="1.6"
                 sx={{
