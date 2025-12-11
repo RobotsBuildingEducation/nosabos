@@ -45,7 +45,11 @@ import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
+import {
+  callResponses,
+  DEFAULT_RESPONSES_MODEL,
+  explainAnswer,
+} from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import {
@@ -806,6 +810,11 @@ export default function GrammarBook({
   const [recentXp, setRecentXp] = useState(0);
   const [nextAction, setNextAction] = useState(null);
 
+  // explanation feature
+  const [explanationText, setExplanationText] = useState("");
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [currentQuestionData, setCurrentQuestionData] = useState(null);
+
   function showCopyToast() {
     toast({
       title:
@@ -888,11 +897,221 @@ export default function GrammarBook({
     }
   }
 
+  async function handleExplainAnswer() {
+    if (!currentQuestionData || isLoadingExplanation || explanationText) return;
+
+    setIsLoadingExplanation(true);
+    setExplanationText(""); // Clear any previous text
+
+    try {
+      // Build prompt for explanation
+      const { question, userAnswer, correctAnswer, questionType } = currentQuestionData;
+
+      // Get the prompt template based on question type and user language
+      const getLangPrompt = (type) => {
+        const langKey = userLanguage === "es" ? "es" : "en";
+        const prompts = {
+          en: {
+            fill: `You are a helpful language tutor teaching ${targetName}. A student answered a fill-in-the-blank question incorrectly.
+
+Question: ${question}
+Student's answer: ${userAnswer}
+Correct answer (or hint): ${correctAnswer}
+
+IMPORTANT: Provide your explanation in ${supportName}.
+
+Provide a brief, encouraging explanation (2-3 sentences) that:
+1. Explains why their answer doesn't fit or what they misunderstood
+2. Clarifies the correct answer and its meaning
+3. Provides a helpful tip to remember it
+
+Keep it concise, supportive, and focused on learning. Write your entire response in ${supportName}.`,
+            mc: `You are a helpful language tutor teaching ${targetName}. A student answered a multiple-choice question incorrectly.
+
+Question: ${question}
+Student's answer: ${userAnswer}
+Correct answer: ${correctAnswer}
+
+IMPORTANT: Provide your explanation in ${supportName}.
+
+Provide a brief, encouraging explanation (2-3 sentences) that:
+1. Explains why their choice was incorrect
+2. Clarifies why the correct answer is right
+3. Provides a helpful tip to remember the difference
+
+Keep it concise, supportive, and focused on learning. Write your entire response in ${supportName}.`,
+            ma: `You are a helpful language tutor teaching ${targetName}. A student answered a multiple-answer question incorrectly.
+
+Question: ${question}
+Student's answers: ${userAnswer}
+Correct answers: ${correctAnswer}
+
+IMPORTANT: Provide your explanation in ${supportName}.
+
+Provide a brief, encouraging explanation (2-3 sentences) that:
+1. Explains which answers they missed or incorrectly selected
+2. Clarifies why the correct answers are right
+3. Provides a helpful tip to identify correct answers
+
+Keep it concise, supportive, and focused on learning. Write your entire response in ${supportName}.`,
+            speak: `You are a helpful language tutor teaching ${targetName}. A student tried to say something in ${targetName} but was not understood correctly.
+
+Target phrase: ${correctAnswer}
+What they said: ${userAnswer}
+
+IMPORTANT: Provide your explanation in ${supportName}.
+
+Provide a brief, encouraging explanation (2-3 sentences) that:
+1. Explains what pronunciation or phrasing issues may have occurred
+2. Provides tips on how to pronounce the correct phrase
+3. Offers encouragement to try again
+
+Keep it concise, supportive, and focused on learning. Write your entire response in ${supportName}.`,
+            match: `You are a helpful language tutor teaching ${targetName}. A student attempted to match items but made incorrect pairings.
+
+Question: ${question}
+Their pairings: ${userAnswer}
+Hint: ${correctAnswer}
+
+IMPORTANT: Provide your explanation in ${supportName}.
+
+Provide a brief, encouraging explanation (2-3 sentences) that:
+1. Explains which pairings were incorrect
+2. Clarifies the correct relationships
+3. Provides a tip to remember the correct matches
+
+Keep it concise, supportive, and focused on learning. Write your entire response in ${supportName}.`,
+          },
+          es: {
+            fill: `Eres un tutor de idiomas servicial que enseña ${targetName}. Un estudiante respondió incorrectamente una pregunta de llenar el espacio en blanco.
+
+Pregunta: ${question}
+Respuesta del estudiante: ${userAnswer}
+Respuesta correcta (o pista): ${correctAnswer}
+
+IMPORTANTE: Proporciona tu explicación en ${supportName}.
+
+Proporciona una breve explicación alentadora (2-3 oraciones) que:
+1. Explique por qué su respuesta no encaja o qué malentendieron
+2. Aclare la respuesta correcta y su significado
+3. Proporcione un consejo útil para recordarla
+
+Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
+            mc: `Eres un tutor de idiomas servicial que enseña ${targetName}. Un estudiante respondió incorrectamente una pregunta de opción múltiple.
+
+Pregunta: ${question}
+Respuesta del estudiante: ${userAnswer}
+Respuesta correcta: ${correctAnswer}
+
+IMPORTANTE: Proporciona tu explicación en ${supportName}.
+
+Proporciona una breve explicación alentadora (2-3 oraciones) que:
+1. Explique por qué su elección fue incorrecta
+2. Aclare por qué la respuesta correcta es la correcta
+3. Proporcione un consejo útil para recordar la diferencia
+
+Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
+            ma: `Eres un tutor de idiomas servicial que enseña ${targetName}. Un estudiante respondió incorrectamente una pregunta de respuesta múltiple.
+
+Pregunta: ${question}
+Respuestas del estudiante: ${userAnswer}
+Respuestas correctas: ${correctAnswer}
+
+IMPORTANTE: Proporciona tu explicación en ${supportName}.
+
+Proporciona una breve explicación alentadora (2-3 oraciones) que:
+1. Explique qué respuestas omitieron o seleccionaron incorrectamente
+2. Aclare por qué las respuestas correctas son correctas
+3. Proporcione un consejo útil para identificar las respuestas correctas
+
+Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
+            speak: `Eres un tutor de idiomas servicial que enseña ${targetName}. Un estudiante intentó decir algo en ${targetName} pero no fue entendido correctamente.
+
+Frase objetivo: ${correctAnswer}
+Lo que dijeron: ${userAnswer}
+
+IMPORTANTE: Proporciona tu explicación en ${supportName}.
+
+Proporciona una breve explicación alentadora (2-3 oraciones) que:
+1. Explique qué problemas de pronunciación o fraseo pueden haber ocurrido
+2. Proporcione consejos sobre cómo pronunciar la frase correcta
+3. Ofrezca aliento para intentarlo de nuevo
+
+Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
+            match: `Eres un tutor de idiomas servicial que enseña ${targetName}. Un estudiante intentó emparejar elementos pero hizo emparejamientos incorrectos.
+
+Pregunta: ${question}
+Sus emparejamientos: ${userAnswer}
+Pista: ${correctAnswer}
+
+IMPORTANTE: Proporciona tu explicación en ${supportName}.
+
+Proporciona una breve explicación alentadora (2-3 oraciones) que:
+1. Explique qué emparejamientos fueron incorrectos
+2. Aclare las relaciones correctas
+3. Proporcione un consejo para recordar los emparejamientos correctos
+
+Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respuesta en ${supportName}.`,
+          },
+        };
+        return prompts[langKey][type] || prompts[langKey].fill;
+      };
+
+      const prompt = getLangPrompt(questionType);
+
+      // Try streaming with Gemini first
+      if (simplemodel) {
+        const resp = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        let accumulatedText = "";
+        for await (const chunk of resp.stream) {
+          const piece = textFromChunk(chunk);
+          if (piece) {
+            accumulatedText += piece;
+            setExplanationText(accumulatedText);
+          }
+        }
+
+        // Ensure final text is set
+        const finalAgg = await resp.response;
+        const finalText =
+          (typeof finalAgg?.text === "function"
+            ? finalAgg.text()
+            : finalAgg?.text) || accumulatedText;
+        if (finalText) {
+          setExplanationText(finalText);
+        }
+      } else {
+        // Fallback to non-streaming if Gemini unavailable
+        const explanation = await callResponses({
+          model: MODEL,
+          input: prompt,
+        });
+        setExplanationText(explanation || (userLanguage === "es"
+          ? "No se pudo generar una explicación en este momento."
+          : "Could not generate an explanation at this time."));
+      }
+    } catch (error) {
+      console.error("Failed to generate explanation:", error);
+      setExplanationText(
+        userLanguage === "es"
+          ? "No se pudo generar una explicación en este momento."
+          : "Could not generate an explanation at this time."
+      );
+    } finally {
+      setIsLoadingExplanation(false);
+    }
+  }
+
   function handleNext() {
     setLastOk(null);
     setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     // In lesson mode, move to next module
     if (onSkip && !isFinalQuiz) {
@@ -2251,6 +2470,10 @@ Return JSON ONLY:
     if (!question || !input.trim()) return;
     setLoadingG(true);
 
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
+
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildFillJudgePrompt({
@@ -2292,7 +2515,18 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
 
-    if (ok) {
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question,
+        userAnswer: input,
+        correctAnswer: hint,
+        questionType: "fill",
+      });
+      setNextAction(null);
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
       setInput("");
       recentCorrectRef.current = [
         ...recentCorrectRef.current,
@@ -2302,8 +2536,6 @@ Return JSON ONLY:
         ? () => generateFill()
         : () => generateRandomRef.current();
       setNextAction(() => nextFn); // ✅ random unless user locked a type
-    } else {
-      setNextAction(null);
     }
 
     setLoadingG(false);
@@ -2312,6 +2544,10 @@ Return JSON ONLY:
   async function submitMC() {
     if (!mcQ || !mcPick) return;
     setLoadingMCG(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     const deterministicOk = mcAnswer && norm(mcPick) === norm(mcAnswer);
 
@@ -2363,6 +2599,20 @@ Return JSON ONLY:
     setMcResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
     setRecentXp(delta);
+
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question: mcQ,
+        userAnswer: mcPick,
+        correctAnswer: mcAnswer || mcHint,
+        questionType: "mc",
+      });
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
+    }
+
     const nextFn = ok
       ? modeLocked
         ? () => generateMC()
@@ -2376,6 +2626,10 @@ Return JSON ONLY:
   async function submitMA() {
     if (!maQ || !maPicks.length) return;
     setLoadingMAG(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     const answerSet = new Set((maAnswers || []).map((a) => norm(a)));
     const pickSet = new Set(maPicks.map((a) => norm(a)));
@@ -2432,6 +2686,20 @@ Return JSON ONLY:
     setMaResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
     setRecentXp(delta);
+
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question: maQ,
+        userAnswer: maPicks.join(", "),
+        correctAnswer: maAnswers?.join(", ") || maHint,
+        questionType: "ma",
+      });
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
+    }
+
     const nextFn = ok
       ? modeLocked
         ? () => generateMA()
@@ -2450,6 +2718,10 @@ Return JSON ONLY:
   async function submitMatch() {
     if (!canSubmitMatch()) return;
     setLoadingMJ(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     const userPairs = mSlots.map((ri, li) => [li, ri]);
 
@@ -2494,6 +2766,21 @@ Return JSON ONLY:
 
     setLastOk(ok);
     setRecentXp(delta);
+
+    // Store question data for explanation feature
+    if (!ok) {
+      const userMappings = userPairs.map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`).join(", ");
+      setCurrentQuestionData({
+        question: mStem || "Match the items:",
+        userAnswer: userMappings,
+        correctAnswer: mHint || "Check the correct pairings",
+        questionType: "match",
+      });
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
+    }
+
     const nextFn = ok
       ? modeLocked
         ? () => generateMatch()
@@ -2528,6 +2815,10 @@ Return JSON ONLY:
         return;
       }
       if (!evaluation) return;
+
+      // Clear previous explanation when attempting a new answer
+      setExplanationText("");
+      setCurrentQuestionData(null);
 
       setSRecognized(recognizedText || "");
       setSEval(evaluation);
@@ -2567,6 +2858,20 @@ Return JSON ONLY:
 
       setLastOk(ok);
       setRecentXp(delta);
+
+      // Store question data for explanation feature
+      if (!ok) {
+        setCurrentQuestionData({
+          question: sPrompt || sTarget,
+          userAnswer: recognizedText || "",
+          correctAnswer: sTarget,
+          questionType: "speak",
+        });
+      } else {
+        setExplanationText("");
+        setCurrentQuestionData(null);
+      }
+
       const nextFn = ok
         ? modeLocked
           ? () => generateSpeak()
@@ -3326,6 +3631,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </VStack>
         ) : null}
@@ -3648,6 +3956,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
@@ -3991,6 +4302,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
@@ -4259,6 +4573,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
@@ -4518,6 +4835,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
