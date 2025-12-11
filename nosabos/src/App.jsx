@@ -102,6 +102,7 @@ import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
+import SubscriptionGate from "./components/SubscriptionGate";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { FaAddressCard } from "react-icons/fa";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
@@ -973,6 +974,17 @@ export default function App() {
   const setUser = useUserStore((s) => s.setUser);
   const patchUser = useUserStore((s) => s.patchUser);
 
+  const SUBSCRIPTION_PASSCODE_KEY = "subscriptionPasscode";
+  const subscriptionPasscode =
+    (import.meta.env?.VITE_SUBSCRIPTION_PASSCODE || "ZEPHYR").trim();
+  const [storedPasscode, setStoredPasscode] = useState(() =>
+    typeof window !== "undefined"
+      ? localStorage.getItem(SUBSCRIPTION_PASSCODE_KEY) || ""
+      : ""
+  );
+  const [passcodeError, setPasscodeError] = useState("");
+  const [isSavingPasscode, setIsSavingPasscode] = useState(false);
+
   const resolvedTargetLang = user?.progress?.targetLang || "es";
   const resolvedSupportLang = user?.progress?.supportLang || "en";
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "A1";
@@ -1071,6 +1083,13 @@ export default function App() {
       : "en"
   );
   const t = translations[appLanguage] || translations.en;
+  const subscriptionVerified = useMemo(() => {
+    const matchesLocal =
+      storedPasscode &&
+      subscriptionPasscode &&
+      storedPasscode.toUpperCase() === subscriptionPasscode.toUpperCase();
+    return matchesLocal || isTrue(user?.subscriptionPasscodeVerified);
+  }, [storedPasscode, subscriptionPasscode, user?.subscriptionPasscodeVerified]);
   const [allowPosts, setAllowPosts] = useState(false);
 
   const [cefrResult, setCefrResult] = useState(null);
@@ -1491,6 +1510,21 @@ export default function App() {
     };
   }, []);
 
+  const subscriptionXp = useMemo(() => {
+    const xpCandidates = [
+      Number(user?.xp),
+      Number(user?.progress?.totalXp),
+      Number(getLanguageXp(user?.progress, resolvedTargetLang)),
+    ];
+    const pick = xpCandidates.find((val) => Number.isFinite(val) && val >= 0);
+    return Number.isFinite(pick) ? pick : 0;
+  }, [user?.xp, user?.progress, resolvedTargetLang]);
+
+  const needsSubscriptionPasscode = useMemo(
+    () => subscriptionXp >= 700 && !subscriptionVerified,
+    [subscriptionXp, subscriptionVerified]
+  );
+
   const handleResetTimer = useCallback(() => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
@@ -1580,6 +1614,80 @@ export default function App() {
     window.addEventListener("daily:goalAchieved", onHit);
     return () => window.removeEventListener("daily:goalAchieved", onHit);
   }, []);
+
+  const handleSubmitPasscode = useCallback(
+    async (input, setLocalError) => {
+      const normalized = (input || "").trim();
+      const expected = (subscriptionPasscode || "").trim();
+      if (!expected) {
+        const msg =
+          appLanguage === "es"
+            ? "El código de acceso no está configurado"
+            : "Subscription passcode is not configured";
+        setPasscodeError(msg);
+        setLocalError?.(msg);
+        return;
+      }
+
+      const matches =
+        normalized.toUpperCase() === expected.toUpperCase();
+      if (!matches) {
+        const msg =
+          t.invalid ||
+          t.passcode?.invalid ||
+          "Invalid passcode. Please try again.";
+        setPasscodeError(msg);
+        setLocalError?.(msg);
+        return;
+      }
+
+      setIsSavingPasscode(true);
+      setPasscodeError("");
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(SUBSCRIPTION_PASSCODE_KEY, normalized);
+          setStoredPasscode(normalized);
+        }
+
+        if (activeNpub) {
+          await setDoc(
+            doc(database, "users", activeNpub),
+            {
+              subscriptionPasscodeVerified: true,
+              subscriptionPasscodeUpdatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          );
+        }
+
+        patchUser?.({ subscriptionPasscodeVerified: true });
+        toast({
+          status: "success",
+          title: appLanguage === "es" ? "Código aceptado" : "Passcode accepted",
+        });
+      } catch (error) {
+        console.error("Failed to save subscription passcode", error);
+        const msg =
+          appLanguage === "es"
+            ? "No se pudo guardar el código"
+            : "Failed to save passcode";
+        setPasscodeError(msg);
+        setLocalError?.(msg);
+      } finally {
+        setIsSavingPasscode(false);
+      }
+    },
+    [
+      SUBSCRIPTION_PASSCODE_KEY,
+      activeNpub,
+      appLanguage,
+      patchUser,
+      subscriptionPasscode,
+      t.invalid,
+      t.passcode?.invalid,
+      toast,
+    ]
+  );
 
   /* -----------------------------------
      Persistence helpers
@@ -3237,6 +3345,7 @@ export default function App() {
   }
 
   const isOnboardingRoute = location.pathname.startsWith("/onboarding");
+  const isSubscriptionRoute = location.pathname.startsWith("/subscribe");
   const onboardingInitialDraft = {
     ...(user?.progress || {}),
     ...(user?.onboarding?.draft || {}),
@@ -3263,6 +3372,26 @@ export default function App() {
 
   if (isOnboardingRoute) {
     return <Navigate to="/" replace />;
+  }
+
+  if (isSubscriptionRoute) {
+    if (!needsSubscriptionPasscode) {
+      return <Navigate to="/" replace />;
+    }
+
+    return (
+      <SubscriptionGate
+        appLanguage={appLanguage}
+        t={t}
+        onSubmit={handleSubmitPasscode}
+        isSubmitting={isSavingPasscode}
+        error={passcodeError}
+      />
+    );
+  }
+
+  if (needsSubscriptionPasscode) {
+    return <Navigate to="/subscribe" replace />;
   }
 
   /* -----------------------------------
