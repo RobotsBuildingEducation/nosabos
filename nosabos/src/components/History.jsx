@@ -360,16 +360,16 @@ function buildSeedLecturePrompt({
   const promptText = lessonContent?.prompt || "";
 
   return `
-Write ONE short educational lecture about ${topicText}. ${promptText}
-Suitable for a ${cefrLevel} learner. Difficulty: ${diff}.
+Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${diff}.
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
-1. The target language for learning is: ${TARGET} (language code: ${targetLang})
-2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
-3. Write the ENTIRE lecture content (title, body, takeaways) in ${TARGET} ONLY
-4. Write the translation in ${SUPPORT} ONLY
-5. Do NOT write in any other language regardless of what the topic mentions
-6. Even if the topic references other cultures or languages, you MUST write in ${TARGET}
+1. Most importantly, the lecture generated is suitable for a ${cefrLevel} level reader. 
+2. The target language for learning is: ${TARGET} (language code: ${targetLang})
+3. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
+4. Write the ENTIRE lecture content (title, body, takeaways) in ${TARGET} ONLY
+5. Write the translation in ${SUPPORT} ONLY
+6. Do NOT write in any other language regardless of what the topic mentions
+7. Even if the topic references other cultures or languages, you MUST write in ${TARGET}
 
 IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
 
@@ -560,7 +560,11 @@ async function computeAdaptiveXp({
   // Streak bonus
   score += hoursSinceLastLecture != null && hoursSinceLastLecture <= 48 ? 1 : 0;
   // CEFR level tweak
-  score += ["C1", "C2"].includes(cefrLevel) ? 1 : ["B1", "B2"].includes(cefrLevel) ? 0.5 : 0;
+  score += ["C1", "C2"].includes(cefrLevel)
+    ? 1
+    : ["B1", "B2"].includes(cefrLevel)
+    ? 0.5
+    : 0;
 
   const xp = Math.max(MIN, Math.min(MAX, score));
   return { xp, reason: "Heuristic fallback scoring." };
@@ -1512,11 +1516,15 @@ export default function History({
                       isLoading={isReadingTarget}
                       loadingText={
                         t("tts_synthesizing") ||
-                        (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...")
+                        (userLanguage === "es"
+                          ? "Sintetizando..."
+                          : "Synthesizing...")
                       }
                       leftIcon={<PiSpeakerHighDuotone />}
                       size="sm"
-                      isDisabled={!viewLecture?.target || draftLecture || isGenerating}
+                      isDisabled={
+                        !viewLecture?.target || draftLecture || isGenerating
+                      }
                     >
                       {t("reading_read_in", { language: targetDisplay })}
                     </Button>
