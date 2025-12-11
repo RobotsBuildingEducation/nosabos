@@ -10,6 +10,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
+import ReactMarkdown from "react-markdown";
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -139,9 +140,28 @@ const FeedbackRail = React.memo(
                   {userLanguage === "es" ? "Explicación" : "Explanation"}
                 </Text>
               </HStack>
-              <Text fontSize="sm" color="whiteAlpha.900" lineHeight="1.6">
-                {explanationText}
-              </Text>
+              <Box
+                fontSize="sm"
+                color="whiteAlpha.900"
+                lineHeight="1.6"
+                sx={{
+                  "& p": { mb: 2 },
+                  "& p:last-child": { mb: 0 },
+                  "& strong": { fontWeight: "bold", color: "purple.200" },
+                  "& em": { fontStyle: "italic" },
+                  "& ul, & ol": { pl: 4, mb: 2 },
+                  "& li": { mb: 1 },
+                  "& code": {
+                    bg: "rgba(0,0,0,0.3)",
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: "sm",
+                    fontFamily: "mono",
+                  },
+                }}
+              >
+                <ReactMarkdown>{explanationText}</ReactMarkdown>
+              </Box>
             </Box>
           )}
         </VStack>

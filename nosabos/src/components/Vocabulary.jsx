@@ -1853,6 +1853,10 @@ Return EXACTLY:
     if (!qFill || !ansFill.trim()) return;
     setLoadingGFill(true);
 
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
+
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildFillVocabJudgePrompt({
@@ -2136,6 +2140,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
   async function submitMC() {
     if (!qMC || !pickMC) return;
     setLoadingGMC(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     const deterministicOk = answerMC && norm(pickMC) === norm(answerMC);
 
@@ -2448,6 +2456,10 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
   async function submitMA() {
     if (!qMA || !picksMA.length) return;
     setLoadingGMA(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     const answerSet = new Set((answersMA || []).map((a) => norm(a)));
     const pickSet = new Set(picksMA.map((a) => norm(a)));
@@ -2941,6 +2953,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     if (!canSubmitMatch()) return;
     setLoadingMJ(true);
 
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
+
     const userPairs = mSlots.map((ri, li) => [li, ri]);
 
     const verdictRaw = await callResponses({
@@ -3031,6 +3047,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         return;
       }
       if (!evaluation) return;
+
+      // Clear previous explanation when attempting a new answer
+      setExplanationText("");
+      setCurrentQuestionData(null);
 
       setSRecognized(recognizedText || "");
       setSEval(evaluation);

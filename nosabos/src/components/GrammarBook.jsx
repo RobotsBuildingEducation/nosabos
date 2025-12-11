@@ -2470,6 +2470,10 @@ Return JSON ONLY:
     if (!question || !input.trim()) return;
     setLoadingG(true);
 
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
+
     const verdictRaw = await callResponses({
       model: MODEL,
       input: buildFillJudgePrompt({
@@ -2540,6 +2544,10 @@ Return JSON ONLY:
   async function submitMC() {
     if (!mcQ || !mcPick) return;
     setLoadingMCG(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     const deterministicOk = mcAnswer && norm(mcPick) === norm(mcAnswer);
 
@@ -2618,6 +2626,10 @@ Return JSON ONLY:
   async function submitMA() {
     if (!maQ || !maPicks.length) return;
     setLoadingMAG(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     const answerSet = new Set((maAnswers || []).map((a) => norm(a)));
     const pickSet = new Set(maPicks.map((a) => norm(a)));
@@ -2706,6 +2718,10 @@ Return JSON ONLY:
   async function submitMatch() {
     if (!canSubmitMatch()) return;
     setLoadingMJ(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     const userPairs = mSlots.map((ri, li) => [li, ri]);
 
@@ -2799,6 +2815,10 @@ Return JSON ONLY:
         return;
       }
       if (!evaluation) return;
+
+      // Clear previous explanation when attempting a new answer
+      setExplanationText("");
+      setCurrentQuestionData(null);
 
       setSRecognized(recognizedText || "");
       setSEval(evaluation);
