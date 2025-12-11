@@ -94,7 +94,7 @@ const FeedbackRail = React.memo(
                     <FiHelpCircle />
                   )
                 }
-                colorScheme="purple"
+                colorScheme="orange"
                 variant="solid"
                 onClick={onExplainAnswer}
                 isDisabled={isLoadingExplanation || !!explanationText}
@@ -105,7 +105,7 @@ const FeedbackRail = React.memo(
               >
                 {userLanguage === "es"
                   ? "Explicar mi respuesta"
-                  : "Explain my answer"}
+                  : "Explain the answer"}
               </Button>
             )}
 
@@ -173,4 +173,3 @@ const FeedbackRail = React.memo(
 FeedbackRail.displayName = "FeedbackRail";
 
 export default FeedbackRail;
-
