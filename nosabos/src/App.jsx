@@ -975,9 +975,8 @@ export default function App() {
   const patchUser = useUserStore((s) => s.patchUser);
 
   const SUBSCRIPTION_PASSCODE_KEY = "subscriptionPasscode";
-  const subscriptionPasscode = (
-    import.meta.env?.VITE_SUBSCRIPTION_PASSCODE || "ZEPHYR"
-  ).trim();
+  const subscriptionPasscode =
+    (import.meta.env?.VITE_SUBSCRIPTION_PASSCODE).trim();
   const [storedPasscode, setStoredPasscode] = useState(() =>
     typeof window !== "undefined"
       ? localStorage.getItem(SUBSCRIPTION_PASSCODE_KEY) || ""
@@ -1526,7 +1525,7 @@ export default function App() {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 0 && !subscriptionVerified,
+    () => subscriptionXp >= 700 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified]
   );
 
