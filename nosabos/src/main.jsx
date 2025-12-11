@@ -47,6 +47,7 @@ createRoot(document.getElementById("root")).render(
       <Routes>
         <Route path="/" element={<AppContainer />} />
         <Route path="/onboarding/*" element={<AppContainer />} />
+        <Route path="/subscribe" element={<AppContainer />} />
         {/* <Route path="/experiments" element={<RealtimeAgent />} /> */}
       </Routes>
     </Router>
