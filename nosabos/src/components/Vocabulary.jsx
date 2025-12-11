@@ -50,7 +50,11 @@ import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
+import {
+  callResponses,
+  DEFAULT_RESPONSES_MODEL,
+  explainAnswer,
+} from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import {
@@ -889,6 +893,11 @@ export default function Vocabulary({
   const [recentXp, setRecentXp] = useState(0);
   const [nextAction, setNextAction] = useState(null);
 
+  // explanation feature
+  const [explanationText, setExplanationText] = useState("");
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [currentQuestionData, setCurrentQuestionData] = useState(null);
+
   function showCopyToast() {
     toast({
       title:
@@ -985,9 +994,37 @@ export default function Vocabulary({
     }
   }
 
+  async function handleExplainAnswer() {
+    if (!currentQuestionData || isLoadingExplanation || explanationText) return;
+
+    setIsLoadingExplanation(true);
+    try {
+      const explanation = await explainAnswer({
+        question: currentQuestionData.question,
+        userAnswer: currentQuestionData.userAnswer,
+        correctAnswer: currentQuestionData.correctAnswer,
+        targetLang: targetName,
+        questionType: currentQuestionData.questionType,
+        userLanguage,
+      });
+      setExplanationText(explanation);
+    } catch (error) {
+      console.error("Failed to generate explanation:", error);
+      setExplanationText(
+        userLanguage === "es"
+          ? "No se pudo generar una explicación en este momento."
+          : "Could not generate an explanation at this time."
+      );
+    } finally {
+      setIsLoadingExplanation(false);
+    }
+  }
+
   function handleNext() {
     setLastOk(null);
     setRecentXp(0);
+    setExplanationText("");
+    setCurrentQuestionData(null);
     setNextAction(null);
 
     // In lesson mode (non-quiz), move to next module
@@ -1671,6 +1708,19 @@ Return EXACTLY:
       setRecentXp(delta);
     }
 
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question: qFill,
+        userAnswer: ansFill,
+        correctAnswer: hFill,
+        questionType: "fill",
+      });
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
+    }
+
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
     // In quiz mode, always show next button (even on wrong answer)
     const nextFn =
@@ -1946,6 +1996,19 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       setResMC(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
       setRecentXp(delta);
+    }
+
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question: qMC,
+        userAnswer: pickMC,
+        correctAnswer: answerMC || hMC,
+        questionType: "mc",
+      });
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
     }
 
     // In quiz mode, always show next button (even on wrong answer)
@@ -2250,6 +2313,19 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
       setResMA(ok ? "correct" : "try_again"); // log only
       setLastOk(ok);
       setRecentXp(delta);
+    }
+
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question: qMA,
+        userAnswer: picksMA.join(", "),
+        correctAnswer: answersMA?.join(", ") || hMA,
+        questionType: "ma",
+      });
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
     }
 
     // In quiz mode, always show next button (even on wrong answer)
@@ -3597,6 +3673,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               nextLabel={nextLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </VStack>
         ) : null}
@@ -3910,6 +3989,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               nextLabel={nextLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
@@ -4245,6 +4327,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               nextLabel={nextLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
@@ -4486,6 +4571,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               nextLabel={nextLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
 
             {lastOk === true ? (
@@ -4768,6 +4856,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               nextLabel={nextLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}

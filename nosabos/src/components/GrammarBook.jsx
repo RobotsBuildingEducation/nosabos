@@ -45,7 +45,11 @@ import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
+import {
+  callResponses,
+  DEFAULT_RESPONSES_MODEL,
+  explainAnswer,
+} from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import {
@@ -806,6 +810,11 @@ export default function GrammarBook({
   const [recentXp, setRecentXp] = useState(0);
   const [nextAction, setNextAction] = useState(null);
 
+  // explanation feature
+  const [explanationText, setExplanationText] = useState("");
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [currentQuestionData, setCurrentQuestionData] = useState(null);
+
   function showCopyToast() {
     toast({
       title:
@@ -888,11 +897,39 @@ export default function GrammarBook({
     }
   }
 
+  async function handleExplainAnswer() {
+    if (!currentQuestionData || isLoadingExplanation || explanationText) return;
+
+    setIsLoadingExplanation(true);
+    try {
+      const explanation = await explainAnswer({
+        question: currentQuestionData.question,
+        userAnswer: currentQuestionData.userAnswer,
+        correctAnswer: currentQuestionData.correctAnswer,
+        targetLang: targetName,
+        questionType: currentQuestionData.questionType,
+        userLanguage,
+      });
+      setExplanationText(explanation);
+    } catch (error) {
+      console.error("Failed to generate explanation:", error);
+      setExplanationText(
+        userLanguage === "es"
+          ? "No se pudo generar una explicación en este momento."
+          : "Could not generate an explanation at this time."
+      );
+    } finally {
+      setIsLoadingExplanation(false);
+    }
+  }
+
   function handleNext() {
     setLastOk(null);
     setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
     setNextAction(null);
+    setExplanationText("");
+    setCurrentQuestionData(null);
 
     // In lesson mode, move to next module
     if (onSkip && !isFinalQuiz) {
@@ -2292,7 +2329,18 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
 
-    if (ok) {
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question,
+        userAnswer: input,
+        correctAnswer: hint,
+        questionType: "fill",
+      });
+      setNextAction(null);
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
       setInput("");
       recentCorrectRef.current = [
         ...recentCorrectRef.current,
@@ -2302,8 +2350,6 @@ Return JSON ONLY:
         ? () => generateFill()
         : () => generateRandomRef.current();
       setNextAction(() => nextFn); // ✅ random unless user locked a type
-    } else {
-      setNextAction(null);
     }
 
     setLoadingG(false);
@@ -2363,6 +2409,20 @@ Return JSON ONLY:
     setMcResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
     setRecentXp(delta);
+
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question: mcQ,
+        userAnswer: mcPick,
+        correctAnswer: mcAnswer || mcHint,
+        questionType: "mc",
+      });
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
+    }
+
     const nextFn = ok
       ? modeLocked
         ? () => generateMC()
@@ -2432,6 +2492,20 @@ Return JSON ONLY:
     setMaResult(ok ? "correct" : "try_again"); // for logs only
     setLastOk(ok);
     setRecentXp(delta);
+
+    // Store question data for explanation feature
+    if (!ok) {
+      setCurrentQuestionData({
+        question: maQ,
+        userAnswer: maPicks.join(", "),
+        correctAnswer: maAnswers?.join(", ") || maHint,
+        questionType: "ma",
+      });
+    } else {
+      setExplanationText("");
+      setCurrentQuestionData(null);
+    }
+
     const nextFn = ok
       ? modeLocked
         ? () => generateMA()
@@ -3326,6 +3400,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </VStack>
         ) : null}
@@ -3648,6 +3725,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
@@ -3991,6 +4071,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
@@ -4259,6 +4342,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
@@ -4518,6 +4604,9 @@ Return JSON ONLY:
               nextLabel={nextQuestionLabel}
               t={t}
               userLanguage={userLanguage}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
             />
           </>
         ) : null}
