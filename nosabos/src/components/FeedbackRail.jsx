@@ -38,11 +38,9 @@ const FeedbackRail = React.memo(
     return (
       <SlideFade in={true} offsetY="10px">
         <VStack spacing={3} align="stretch">
-          <Flex
-            align={{ base: "center", md: "center" }}
-            direction={{ base: "row", md: "row" }}
-            justify="space-between"
-            gap={3}
+          <VStack
+            spacing={3}
+            align="stretch"
             p={4}
             borderRadius="xl"
             bg={
@@ -54,7 +52,7 @@ const FeedbackRail = React.memo(
             borderColor={ok ? "green.400" : "red.300"}
             boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
           >
-            <HStack spacing={3} flex="1" align="center">
+            <HStack spacing={3} align="center">
               <Flex
                 w="44px"
                 h="44px"
@@ -66,10 +64,11 @@ const FeedbackRail = React.memo(
                 fontWeight="bold"
                 fontSize="lg"
                 boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                flexShrink={0}
               >
                 {ok ? "✓" : "✖"}
               </Flex>
-              <Box>
+              <Box flex="1">
                 <Text fontWeight="semibold">{label}</Text>
                 <Text fontSize="sm" color="whiteAlpha.800">
                   {xp > 0
@@ -84,45 +83,47 @@ const FeedbackRail = React.memo(
                 </Text>
               </Box>
             </HStack>
-            <HStack spacing={2}>
-              {!ok && onExplainAnswer && (
-                <Button
-                  leftIcon={
-                    isLoadingExplanation ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <FiHelpCircle />
-                    )
-                  }
-                  colorScheme="purple"
-                  variant="outline"
-                  onClick={onExplainAnswer}
-                  isDisabled={isLoadingExplanation || !!explanationText}
-                  shadow="md"
-                  px={{ base: 4, md: 6 }}
-                  py={{ base: 3, md: 4 }}
-                  size="md"
-                >
-                  {userLanguage === "es"
-                    ? "Explicar mi respuesta"
-                    : "Explain my answer"}
-                </Button>
-              )}
-              {showNext ? (
-                <Button
-                  rightIcon={<FiArrowRight />}
-                  colorScheme="cyan"
-                  variant="solid"
-                  onClick={onNext}
-                  shadow="md"
-                  px={{ base: 7, md: 12 }}
-                  py={{ base: 3, md: 4 }}
-                >
-                  {nextLabel}
-                </Button>
-              ) : null}
-            </HStack>
-          </Flex>
+
+            {!ok && onExplainAnswer && (
+              <Button
+                leftIcon={
+                  isLoadingExplanation ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <FiHelpCircle />
+                  )
+                }
+                colorScheme="purple"
+                variant="solid"
+                onClick={onExplainAnswer}
+                isDisabled={isLoadingExplanation || !!explanationText}
+                shadow="md"
+                width="full"
+                py={6}
+                size="lg"
+              >
+                {userLanguage === "es"
+                  ? "Explicar mi respuesta"
+                  : "Explain my answer"}
+              </Button>
+            )}
+
+            {showNext && (
+              <Button
+                rightIcon={<FiArrowRight />}
+                colorScheme="cyan"
+                variant="solid"
+                onClick={onNext}
+                shadow="md"
+                width="full"
+                py={6}
+                size="lg"
+              >
+                {nextLabel}
+              </Button>
+            )}
+          </VStack>
+
           {!ok && explanationText && (
             <Box
               p={4}
