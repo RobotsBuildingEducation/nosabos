@@ -71,7 +71,12 @@ import {
   LuShuffle,
   LuLanguages,
 } from "react-icons/lu";
-import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
+import {
+  PiPatreonLogoFill,
+  PiUsers,
+  PiUsersBold,
+  PiUsersThreeBold,
+} from "react-icons/pi";
 import { FiClock, FiPause, FiPlay } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -2714,10 +2719,10 @@ export default function App() {
   const CEFR_LEVEL_COUNTS = {
     A1: { flashcards: 300, lessons: 109 }, // 1 pre-unit (7) + 17 units (6 each) = 7 + 102
     A2: { flashcards: 250, lessons: 108 }, // 18 units × 6 lessons per unit
-    B1: { flashcards: 200, lessons: 90 },  // 15 units × 6 lessons per unit
-    B2: { flashcards: 150, lessons: 72 },  // 12 units × 6 lessons per unit
-    C1: { flashcards: 100, lessons: 60 },  // 10 units × 6 lessons per unit
-    C2: { flashcards: 50, lessons: 48 },   // 8 units × 6 lessons per unit
+    B1: { flashcards: 200, lessons: 90 }, // 15 units × 6 lessons per unit
+    B2: { flashcards: 150, lessons: 72 }, // 12 units × 6 lessons per unit
+    C1: { flashcards: 100, lessons: 60 }, // 10 units × 6 lessons per unit
+    C2: { flashcards: 50, lessons: 48 }, // 8 units × 6 lessons per unit
   };
 
   const CEFR_LEVEL_INFO = {
@@ -3921,6 +3926,8 @@ function BottomActionBar({
       maxW="480px"
       margin="0 auto"
       borderRadius="24"
+      borderBottomLeftRadius={"0"}
+      borderBottomRightRadius={"0"}
       paddingBottom={6}
       paddingTop={4}
     >
@@ -3930,11 +3937,8 @@ function BottomActionBar({
         mx="auto"
         w="100%"
         align="center"
-        justify={{ base: "center", md: "center" }}
-        gap={{ base: 3, md: 6 }}
+        justify={{ base: "space-evenly", md: "space-evenly" }}
         flexWrap={{ base: "wrap", md: "wrap" }}
-        rowGap={{ base: 3, md: 4 }}
-        columnGap={{ base: 3, md: 6 }}
         overflow="visible"
       >
         {/* Back button - only show when not in skill tree */}
@@ -3996,6 +4000,31 @@ function BottomActionBar({
           zIndex={50}
           boxShadow="lg"
           flexShrink={0}
+        />
+
+        <IconButton
+          icon={<PiPatreonLogoFill size={20} />}
+          aria-label={helpChatLabel}
+          // rounded="full"
+          isDisabled={!onOpenHelpChat}
+          bg="black"
+          color="white"
+          size="lg"
+          zIndex={50}
+          boxShadow="lg"
+          flexShrink={0}
+          border="1px solid gray"
+          onMouseDown={() => {
+            window.open("https://www.patreon.com/NotesAndOtherStuff", "_blank");
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              window.open(
+                "https://www.patreon.com/NotesAndOtherStuff",
+                "_blank"
+              );
+            }
+          }}
         />
       </Flex>
     </Box>
