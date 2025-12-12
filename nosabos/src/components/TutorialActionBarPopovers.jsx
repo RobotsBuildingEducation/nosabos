@@ -218,7 +218,12 @@ export default function TutorialActionBarPopovers({
                 _disabled={{ opacity: 0.3, cursor: "not-allowed" }}
               />
 
-              <Text fontSize="xs" color="whiteAlpha.800" minW="60px" textAlign="center">
+              <Text
+                fontSize="xs"
+                color="whiteAlpha.800"
+                minW="60px"
+                textAlign="center"
+              >
                 {currentStep + 1} / {BUTTON_EXPLANATIONS.length}
               </Text>
 
