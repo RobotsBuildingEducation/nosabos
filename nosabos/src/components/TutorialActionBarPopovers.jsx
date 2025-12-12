@@ -44,8 +44,8 @@ const BUTTON_EXPLANATIONS = [
     icon: LuKeyRound,
     label: { en: "Account Key", es: "Llave de cuenta" },
     description: {
-      en: "Access your account drawer to view your keys and wallet",
-      es: "Abre tu cuenta para ver tus llaves y la billetera",
+      en: "Access your account info to install the app and access your password",
+      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
     },
     position: 1,
   },
