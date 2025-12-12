@@ -16,17 +16,19 @@ import {
   FaTheaterMasks,
   FaMicrophone,
 } from "react-icons/fa";
+import { RiBook2Line, RiPencilLine } from "react-icons/ri";
+import { MdOutlineDescription } from "react-icons/md";
 
 // Module configuration with icons and colors
 const MODULE_CONFIG = {
   vocabulary: {
-    icon: FaBook,
+    icon: RiBook2Line,
     color: "#10B981",
     label: { en: "Vocabulary", es: "Vocabulario" },
     shortLabel: { en: "Vocab", es: "Vocab" },
   },
   grammar: {
-    icon: FaGraduationCap,
+    icon: RiPencilLine,
     color: "#3B82F6",
     label: { en: "Grammar", es: "Gramática" },
     shortLabel: { en: "Grammar", es: "Gram" },
@@ -38,7 +40,7 @@ const MODULE_CONFIG = {
     shortLabel: { en: "Read", es: "Leer" },
   },
   stories: {
-    icon: FaTheaterMasks,
+    icon: MdOutlineDescription,
     color: "#EC4899",
     label: { en: "Stories", es: "Historias" },
     shortLabel: { en: "Story", es: "Historia" },
@@ -46,8 +48,8 @@ const MODULE_CONFIG = {
   realtime: {
     icon: FaMicrophone,
     color: "#8B5CF6",
-    label: { en: "Speaking", es: "Conversación" },
-    shortLabel: { en: "Speak", es: "Hablar" },
+    label: { en: "Chat", es: "Conversación" },
+    shortLabel: { en: "Chat", es: "Hablar" },
   },
 };
 
