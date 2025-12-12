@@ -2976,9 +2976,15 @@ export default function App() {
     },
   };
 
-  const getLessonLevelFromId = (lessonId) => {
+  const getLessonLevelFromId = (lessonId = "") => {
     const match = lessonId.match(/lesson-(?:pre-)?(?:tutorial-)?([a-z]\d+)/i);
-    return match ? match[1].toUpperCase() : null;
+    if (match) return match[1].toUpperCase();
+
+    // Tutorial lessons like "lesson-tutorial-1" don't encode the CEFR level
+    // in their ID, but they belong to A1 for progression unlocking.
+    if (lessonId.includes("lesson-tutorial")) return "A1";
+
+    return null;
   };
 
   // Calculate lesson mode completion status (independent from flashcards)
