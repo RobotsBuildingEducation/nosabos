@@ -1362,10 +1362,17 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     let roleplayPrompt = activeGoal.prompt || lesson?.prompt || "";
 
     // Check if scenario is too generic or missing - use AI to generate a better one
+    const lessonIsTutorial =
+      Boolean(lessonPropRef.current?.isTutorial || lesson?.isTutorial);
+    const hasExplicitGoal = Boolean(
+      (lessonScenario && (activeGoal.prompt || activeGoal.successCriteria)) ||
+        lessonIsTutorial
+    );
     const isGenericScenario =
       !scenario ||
-      scenario.length < 10 ||
-      /^(practice|conversation|talk|speak)/i.test(scenario.trim());
+      (!hasExplicitGoal &&
+        (scenario.length < 10 ||
+          /^(practice|conversation|talk|speak)/i.test(scenario.trim())));
 
     if (isGenericScenario) {
       // Use AI to generate a contextual goal based on full lesson data (passed as prop)
