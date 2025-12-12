@@ -5,9 +5,16 @@ import {
   VStack,
   HStack,
   Fade,
+  Button,
+  IconButton,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
-import { ArrowBackIcon, SettingsIcon } from "@chakra-ui/icons";
+import {
+  ArrowBackIcon,
+  SettingsIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from "@chakra-ui/icons";
 import { FaAddressCard } from "react-icons/fa";
 import { PiUsersBold, PiPatreonLogoFill } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
@@ -87,7 +94,6 @@ export default function TutorialActionBarPopovers({
   isActive = false,
   lang = "en",
   onComplete,
-  autoAdvanceMs = 3000,
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
@@ -101,25 +107,26 @@ export default function TutorialActionBarPopovers({
 
     // Start showing popovers
     setIsVisible(true);
+  }, [isActive]);
 
-    // Auto-advance through all buttons
-    const interval = setInterval(() => {
-      setCurrentStep((prev) => {
-        const next = prev + 1;
-        if (next >= BUTTON_EXPLANATIONS.length) {
-          clearInterval(interval);
-          setIsVisible(false);
-          if (onComplete) {
-            setTimeout(onComplete, 500);
-          }
-          return prev;
-        }
-        return next;
-      });
-    }, autoAdvanceMs);
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1);
+    }
+  };
 
-    return () => clearInterval(interval);
-  }, [isActive, autoAdvanceMs, onComplete]);
+  const handleNext = () => {
+    if (currentStep < BUTTON_EXPLANATIONS.length - 1) {
+      setCurrentStep((prev) => prev + 1);
+    }
+  };
+
+  const handleFinish = () => {
+    setIsVisible(false);
+    if (onComplete) {
+      setTimeout(onComplete, 300);
+    }
+  };
 
   if (!isActive || !isVisible) return null;
 
@@ -127,7 +134,10 @@ export default function TutorialActionBarPopovers({
   if (!currentButton) return null;
 
   const Icon = currentButton.icon;
-  const isChakraIcon = currentButton.id === "back" || currentButton.id === "settings";
+  const isChakraIcon =
+    currentButton.id === "back" || currentButton.id === "settings";
+  const isFirstStep = currentStep === 0;
+  const isLastStep = currentStep === BUTTON_EXPLANATIONS.length - 1;
 
   return (
     <Box
@@ -138,7 +148,6 @@ export default function TutorialActionBarPopovers({
       zIndex={1000}
       w="90%"
       maxW="400px"
-      pointerEvents="none"
     >
       <Fade in={isVisible}>
         <Box
@@ -195,12 +204,45 @@ export default function TutorialActionBarPopovers({
               ))}
             </HStack>
 
-            {/* Skip hint */}
-            <Text fontSize="xs" color="whiteAlpha.600" mt={1}>
-              {lang === "es"
-                ? `${currentStep + 1}/${BUTTON_EXPLANATIONS.length} - Avanzando automáticamente...`
-                : `${currentStep + 1}/${BUTTON_EXPLANATIONS.length} - Auto-advancing...`}
-            </Text>
+            {/* Navigation buttons */}
+            <HStack spacing={3} mt={2} w="100%" justify="center">
+              <IconButton
+                icon={<ChevronLeftIcon boxSize={5} />}
+                onClick={handlePrevious}
+                isDisabled={isFirstStep}
+                aria-label={lang === "es" ? "Anterior" : "Previous"}
+                size="sm"
+                variant="ghost"
+                color="white"
+                _hover={{ bg: "whiteAlpha.200" }}
+                _disabled={{ opacity: 0.3, cursor: "not-allowed" }}
+              />
+
+              <Text fontSize="xs" color="whiteAlpha.800" minW="60px" textAlign="center">
+                {currentStep + 1} / {BUTTON_EXPLANATIONS.length}
+              </Text>
+
+              {isLastStep ? (
+                <Button
+                  size="sm"
+                  colorScheme="whiteAlpha"
+                  onClick={handleFinish}
+                  px={4}
+                >
+                  {lang === "es" ? "Listo" : "Done"}
+                </Button>
+              ) : (
+                <IconButton
+                  icon={<ChevronRightIcon boxSize={5} />}
+                  onClick={handleNext}
+                  aria-label={lang === "es" ? "Siguiente" : "Next"}
+                  size="sm"
+                  variant="ghost"
+                  color="white"
+                  _hover={{ bg: "whiteAlpha.200" }}
+                />
+              )}
+            </HStack>
           </VStack>
 
           {/* Arrow pointing down to action bar */}
