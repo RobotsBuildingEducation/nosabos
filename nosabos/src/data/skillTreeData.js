@@ -9639,6 +9639,12 @@ function deriveLessonTopic(unit, lesson) {
 
 function addSupplementalLessons(level, unit) {
   const lessons = unit.lessons || [];
+
+  // Skip supplemental lessons for tutorial units
+  if (unit.isTutorial) {
+    return lessons;
+  }
+
   const nonQuizLessons = lessons.filter((lesson) => !lesson.isFinalQuiz);
   const maxNonQuizXp = Math.max(
     ...nonQuizLessons.map((lesson) => lesson.xpRequired || 0),
