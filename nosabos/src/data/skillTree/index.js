@@ -6,19 +6,19 @@
  * based on user progress, significantly improving performance.
  */
 
-import { CEFR_LEVELS } from '../flashcards/common';
+import { CEFR_LEVELS } from "../flashcards/common";
 
 // Cache for loaded skill tree data
 const skillTreeCache = new Map();
 
 // Dynamic imports for each CEFR level
 const levelLoaders = {
-  A1: () => import('./a1.js').then(m => m.SKILL_TREE_A1),
-  A2: () => import('./a2.js').then(m => m.SKILL_TREE_A2),
-  B1: () => import('./b1.js').then(m => m.SKILL_TREE_B1),
-  B2: () => import('./b2.js').then(m => m.SKILL_TREE_B2),
-  C1: () => import('./c1.js').then(m => m.SKILL_TREE_C1),
-  C2: () => import('./c2.js').then(m => m.SKILL_TREE_C2),
+  A1: () => import("./a1.js").then((m) => m.SKILL_TREE_A1),
+  A2: () => import("./a2.js").then((m) => m.SKILL_TREE_A2),
+  B1: () => import("./b1.js").then((m) => m.SKILL_TREE_B1),
+  B2: () => import("./b2.js").then((m) => m.SKILL_TREE_B2),
+  C1: () => import("./c1.js").then((m) => m.SKILL_TREE_C1),
+  C2: () => import("./c2.js").then((m) => m.SKILL_TREE_C2),
 };
 
 /**
@@ -53,7 +53,7 @@ export async function loadSkillTreeForLevel(level) {
  * @returns {Promise<Array>} Combined skill tree units from all specified levels
  */
 export async function loadSkillTreeForLevels(levels) {
-  const promises = levels.map(level => loadSkillTreeForLevel(level));
+  const promises = levels.map((level) => loadSkillTreeForLevel(level));
   const results = await Promise.all(promises);
   return results.flat();
 }
@@ -67,7 +67,7 @@ export function getLevelsToLoad(userProgress = {}) {
   const lessons = userProgress.lessons || {};
 
   // Find the highest CEFR level the user has started
-  let highestStartedLevel = 'A1';
+  let highestStartedLevel = "A1";
   for (const lessonId in lessons) {
     // Extract CEFR level from lesson ID (assumes format like "lesson-a1-1", "lesson-b2-3", etc.)
     const match = lessonId.match(/lesson-([a-z]\d+)/i);

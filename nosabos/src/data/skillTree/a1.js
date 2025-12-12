@@ -19,7 +19,7 @@ export const SKILL_TREE_A1 = [
     isTutorial: true,
     lessons: [
       {
-        id: "lesson-tutorial-1",
+        id: "lesson-tutorial-a1",
         title: {
           en: "Getting Started",
           es: "Primeros Pasos",
