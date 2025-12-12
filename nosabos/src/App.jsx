@@ -2982,14 +2982,19 @@ export default function App() {
     const lessons = userProgress.lessons || {};
 
     CEFR_LEVELS.forEach((level) => {
-      // Count completed lessons for this level (including pre-level lessons)
+      // Count completed lessons for this level (including pre-level and tutorial lessons)
       const completedLessons = Object.keys(lessons).filter((lessonId) => {
+        const isCompleted = lessons[lessonId]?.status === "completed";
+        if (!isCompleted) return false;
+
+        // Tutorial lessons count towards A1
+        if (level === "A1" && lessonId.startsWith("lesson-tutorial-")) {
+          return true;
+        }
+
+        // Standard lesson pattern: lesson-a1-X or lesson-pre-a1-X
         const match = lessonId.match(/lesson-(?:pre-)?([a-z]\d+)/i);
-        return (
-          match &&
-          match[1].toUpperCase() === level &&
-          lessons[lessonId]?.status === "completed"
-        );
+        return match && match[1].toUpperCase() === level;
       }).length;
 
       const totalLessons = CEFR_LEVEL_COUNTS[level]?.lessons || 0;
