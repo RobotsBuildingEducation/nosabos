@@ -356,7 +356,12 @@ const getStoredLanguage = () =>
     ? "es"
     : "en";
 
-const LandingPage = ({ onAuthenticated, user, onSelectIdentity, isIdentitySaving }) => {
+const LandingPage = ({
+  onAuthenticated,
+  user,
+  onSelectIdentity,
+  isIdentitySaving,
+}) => {
   const toast = useToast();
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
@@ -372,7 +377,6 @@ const LandingPage = ({ onAuthenticated, user, onSelectIdentity, isIdentitySaving
   const [view, setView] = useState("landing");
   const [displayName, setDisplayName] = useState("");
   const [secretKey, setSecretKey] = useState("");
-  const [generatedKeys, setGeneratedKeys] = useState(null);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
@@ -395,15 +399,14 @@ const LandingPage = ({ onAuthenticated, user, onSelectIdentity, isIdentitySaving
   const handleCreateAccount = useCallback(async () => {
     if (!hasDisplayName || isCreatingAccount) return;
     setIsCreatingAccount(true);
-    setGeneratedKeys(null);
     setLoadingMessage(defaultLoadingMessage);
     setErrorMessage("");
 
     try {
       const keys = await generateNostrKeys(displayName.trim());
-      setGeneratedKeys(keys);
       localStorage.setItem("displayName", displayName.trim());
-      setView("created");
+      // Skip the "created" view and go directly to onboarding
+      onAuthenticated?.();
     } catch (error) {
       console.error("Failed to create account", error);
       setErrorMessage(error?.message || copy.error_create_generic);
@@ -419,35 +422,7 @@ const LandingPage = ({ onAuthenticated, user, onSelectIdentity, isIdentitySaving
     generateNostrKeys,
     hasDisplayName,
     isCreatingAccount,
-    toast,
-  ]);
-
-  const handleCopyKey = useCallback(() => {
-    if (!generatedKeys?.nsec) return;
-    navigator.clipboard
-      .writeText(generatedKeys.nsec)
-      .then(() =>
-        toast({
-          title: copy.toast_copy_success_title,
-          description: copy.toast_copy_success_desc,
-          status: "info",
-          duration: 2400,
-        })
-      )
-      .catch(() =>
-        toast({
-          title: copy.toast_copy_error_title,
-          description: copy.toast_copy_error_desc,
-          status: "error",
-          duration: 2400,
-        })
-      );
-  }, [
-    copy.toast_copy_error_desc,
-    copy.toast_copy_error_title,
-    copy.toast_copy_success_desc,
-    copy.toast_copy_success_title,
-    generatedKeys?.nsec,
+    onAuthenticated,
     toast,
   ]);
 
@@ -481,10 +456,6 @@ const LandingPage = ({ onAuthenticated, user, onSelectIdentity, isIdentitySaving
     secretKey,
     toast,
   ]);
-
-  const handleLaunch = useCallback(() => {
-    onAuthenticated?.();
-  }, [onAuthenticated]);
 
   const ActionButton = ({ variant = "primary", ...props }) => (
     <Button
@@ -550,179 +521,6 @@ const LandingPage = ({ onAuthenticated, user, onSelectIdentity, isIdentitySaving
             }}
           >
             {copy.back_button}
-          </ActionButton>
-        </VStack>
-      </Flex>
-    );
-  }
-
-  if (view === "created") {
-    const installSteps = [
-      {
-        id: "step1",
-        icon: <IoIosMore size={28} />,
-        text: copy.app_install_step1 || "Open the browser menu.",
-      },
-      {
-        id: "step2",
-        icon: <MdOutlineFileUpload size={28} />,
-        text: copy.app_install_step2 || "Choose 'Share' or 'Install'.",
-      },
-      {
-        id: "step3",
-        icon: <CiSquarePlus size={28} />,
-        text: copy.app_install_step3 || "Add to Home Screen.",
-      },
-      {
-        id: "step4",
-        icon: <LuBadgeCheck size={28} />,
-        text: copy.app_install_step4 || "Launch from your Home Screen.",
-      },
-    ];
-
-    return (
-      <Flex
-        minH="100vh"
-        align="center"
-        justify="center"
-        bg="gray.900"
-        color="gray.100"
-        px={4}
-        py={{ base: 12, md: 16 }}
-      >
-        <VStack
-          spacing={6}
-          align="stretch"
-          maxW="2xl"
-          w="full"
-          bg="rgba(7, 17, 28, 0.95)"
-          borderRadius="3xl"
-          border="1px solid rgba(45, 212, 191, 0.4)"
-          p={{ base: 6, md: 10 }}
-        >
-          {/* Bitcoin Section */}
-          <Box
-            bg="rgba(6, 18, 30, 0.85)"
-            borderRadius="lg"
-            p={4}
-            border="2px solid"
-            borderColor="orange.400"
-          >
-            <Text fontSize="xl" fontWeight="bold" mb={4}>
-              {copy.bitcoin_modal_title || (landingLanguage === "es" ? "Apoya con Bitcoin" : "Support with Bitcoin")}
-            </Text>
-            <Text fontSize="sm" color="teal.100" mb={3}>
-              {landingLanguage === "es"
-                ? "Después de iniciar sesión, podrás crear una billetera Bitcoin para apoyar a la comunidad y crear becas."
-                : "After signing in, you'll be able to create a Bitcoin wallet to support the community and create scholarships."}
-            </Text>
-            {user && onSelectIdentity && typeof isIdentitySaving !== 'undefined' ? (
-              <BitcoinWalletSection
-                userLanguage={landingLanguage}
-                identity={user?.identity || ""}
-                onSelectIdentity={onSelectIdentity}
-                isIdentitySaving={isIdentitySaving}
-              />
-            ) : (
-              <Box bg="gray.900" p={4} rounded="md" border="1px dashed" borderColor="orange.300">
-                <Text fontSize="sm" textAlign="center" color="gray.300">
-                  {landingLanguage === "es"
-                    ? "La billetera Bitcoin estará disponible después de que inicies tu sesión."
-                    : "Bitcoin wallet will be available after you start your session."}
-                </Text>
-              </Box>
-            )}
-          </Box>
-
-          {/* Install App Section (Always Visible) */}
-          <Box
-            bg="rgba(6, 18, 30, 0.85)"
-            borderRadius="lg"
-            p={4}
-            border="2px solid"
-            borderColor="cyan.400"
-          >
-            <Text fontSize="xl" fontWeight="bold" mb={4}>
-              {copy.app_install_title || "Install as app"}
-            </Text>
-            <VStack align="stretch" spacing={3}>
-              {installSteps.map((step, idx) => (
-                <Box key={step.id}>
-                  <Flex align="center" gap={3}>
-                    <Box color="teal.200">{step.icon}</Box>
-                    <Text fontSize="sm">{step.text}</Text>
-                  </Flex>
-                  {idx < installSteps.length - 1 && (
-                    <Divider my={3} borderColor="gray.700" />
-                  )}
-                </Box>
-              ))}
-            </VStack>
-          </Box>
-
-          {/* Final Step: Copy Your Secret Key */}
-          <Box
-            bg="rgba(6, 18, 30, 0.85)"
-            borderRadius="lg"
-            p={4}
-            border="2px solid"
-            borderColor="teal.400"
-          >
-            <Text fontSize="xl" fontWeight="bold" mb={2}>
-              {copy.onboarding_final_step_title || "Copy your secret key to sign into your account"}
-            </Text>
-            <Text color="teal.100" mb={4} fontSize="sm">
-              {copy.onboarding_final_step_description || copy.created_description}
-            </Text>
-            <Box
-              border="1px dashed"
-              borderColor="rgba(45, 212, 191, 0.45)"
-              borderRadius="lg"
-              p={4}
-              bg="rgba(6, 18, 30, 0.85)"
-              fontFamily="mono"
-              fontSize="sm"
-              wordBreak="break-all"
-              mb={4}
-            >
-              {generatedKeys?.nsec || copy.created_generating}
-            </Box>
-            <ActionButton
-              variant="secondary"
-              onClick={handleCopyKey}
-              colorScheme="blue"
-              width="full"
-              mb={4}
-            >
-              {copy.onboarding_copy_key || copy.created_copy}
-            </ActionButton>
-            <ActionButton
-              variant="primary"
-              onClick={handleLaunch}
-              rightIcon={<ArrowForwardIcon />}
-              color="white"
-              colorScheme="teal"
-              width="full"
-            >
-              {copy.onboarding_start_learning || copy.created_launch}
-            </ActionButton>
-          </Box>
-
-          {isCreatingAccount && (
-            <HStack color="gray.400" justify="center">
-              <Spinner size="sm" />
-              <Text fontSize="sm">{loadingMessage}</Text>
-            </HStack>
-          )}
-
-          <ActionButton
-            variant="ghost"
-            onClick={() => {
-              setView("landing");
-            }}
-            alignSelf="center"
-          >
-            {copy.onboarding_go_back || copy.created_back}
           </ActionButton>
         </VStack>
       </Flex>

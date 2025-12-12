@@ -190,12 +190,10 @@ export const translations = {
     app_install_step3: "Add to Home Screen.",
     app_install_step4: "Launch from your Home Screen.",
     app_close: "Close",
-    onboarding_final_step_title: "Copy your secret key to sign into your account",
-    onboarding_final_step_description:
+    account_final_step_title: "Copy your secret key to sign into your account",
+    account_final_step_description:
       "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
-    onboarding_copy_key: "Copy key",
-    onboarding_start_learning: "Start learning",
-    onboarding_go_back: "Go back",
+    account_copy_secret: "Copy Secret Key",
     app_account_title: "Account",
     app_your_id: "Your ID",
     app_copy: "Copy",
@@ -688,7 +686,8 @@ export const translations = {
     app_settings_aria: "Configuración",
     app_install_aria: "Instalar App",
     app_account_aria: "Cuenta",
-    onboarding_final_step_title: "Copia tu llave secreta para iniciar sesión en tu cuenta",
+    onboarding_final_step_title:
+      "Copia tu llave secreta para iniciar sesión en tu cuenta",
     onboarding_final_step_description:
       "Esta llave es la única forma de acceder a tus cuentas en las apps de Robots Building Education. Guárdala en un gestor de contraseñas o en un lugar seguro. No podemos recuperarla por ti.",
     onboarding_copy_key: "Copiar llave",
@@ -706,6 +705,11 @@ export const translations = {
       "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…",
     ra_help_help: "Describe tu meta o contexto (esto guía la experiencia).",
     ra_vad_label: "Pausa entre turnos (1000 ms = 1 segundo)",
+    account_final_step_title:
+      "Copia tu llave secreta para iniciar sesión en tu cuenta",
+    account_final_step_description:
+      "Esta llave es la única forma de acceder a tus cuentas en las apps de Robots Building Education. Guárdala en un gestor de contraseñas o en un lugar seguro. No podemos recuperarla por ti.",
+    account_copy_secret: "Copiar Llave Secreta",
     app_account_title: "Cuenta",
     app_your_id: "Tu ID (npub)",
     app_copy: "Copiar",
