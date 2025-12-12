@@ -62,34 +62,34 @@ const baseLearningPath = {
           content: {
             vocabulary: {
               topic: "tutorial",
-              focusPoints: ["basic words", "greetings"],
+              focusPoints: ["saying hello", "simple greetings"],
               tutorialDescription: {
-                en: "Learn new words with interactive questions.",
-                es: "Aprende nuevas palabras mediante preguntas interactivas.",
+                en: "Practice the easiest greeting words like hello and hi.",
+                es: "Practica las palabras de saludo más fáciles como hola y hi.",
               },
             },
             grammar: {
               topic: "tutorial",
-              focusPoints: ["basic patterns"],
+              focusPoints: ["saying hello"],
               tutorialDescription: {
-                en: "Master grammar rules through exercises.",
-                es: "Domina las reglas gramaticales mediante ejercicios.",
+                en: "Learn the simplest way to say hello.",
+                es: "Aprende la forma más simple de decir hola.",
               },
             },
             reading: {
               topic: "tutorial",
-              prompt: "Introduction to reading comprehension",
+              prompt: "Read a short hello message",
               tutorialDescription: {
-                en: "Improve your reading skills by following along with passages.",
-                es: "Mejora tus habilidades de lectura siguiendo los textos.",
+                en: "Read tiny hello examples and reply with a greeting.",
+                es: "Lee pequeños ejemplos de saludo y responde con un saludo.",
               },
             },
             stories: {
               topic: "tutorial",
-              prompt: "Introduction to interactive stories",
+              prompt: "Say hello in a mini story",
               tutorialDescription: {
-                en: "Practice with interactive stories and roleplay by reading and speaking sentence by sentence.",
-                es: "Practica con historias interactivas y juegos de rol leyendo y hablando oración por oración.",
+                en: "Roleplay a friendly hello using one easy line.",
+                es: "Haz un pequeño juego de rol diciendo un hola amistoso con una sola línea.",
               },
             },
             realtime: {
