@@ -3,6 +3,80 @@
  */
 
 export const SKILL_TREE_A1 = [
+  // Tutorial Unit - always at the very beginning
+  {
+    id: "unit-tutorial",
+    title: {
+      en: "Getting Started",
+      es: "Primeros Pasos",
+    },
+    description: {
+      en: "Learn how to use the app and explore all features",
+      es: "Aprende a usar la app y explora todas las funciones",
+    },
+    color: "#6366F1",
+    position: { row: -2, offset: 0 },
+    isTutorial: true,
+    lessons: [
+      {
+        id: "lesson-tutorial-1",
+        title: {
+          en: "Getting Started",
+          es: "Primeros Pasos",
+        },
+        description: {
+          en: "A guided tour of all learning modules",
+          es: "Un recorrido guiado por todos los módulos de aprendizaje",
+        },
+        xpRequired: 0,
+        xpReward: 50,
+        isTutorial: true,
+        modes: ["vocabulary", "grammar", "reading", "stories", "realtime"],
+        content: {
+          vocabulary: {
+            topic: "tutorial",
+            focusPoints: ["basic words", "greetings"],
+            tutorialDescription: {
+              en: "Learn new words through interactive flashcards. Swipe or click to reveal translations, then practice with drag-and-drop exercises.",
+              es: "Aprende nuevas palabras con tarjetas interactivas. Desliza o haz clic para ver traducciones, luego practica con ejercicios de arrastrar y soltar.",
+            },
+          },
+          grammar: {
+            topic: "tutorial",
+            focusPoints: ["basic patterns"],
+            tutorialDescription: {
+              en: "Master grammar rules through clear explanations and fill-in-the-blank exercises. Build sentences step by step.",
+              es: "Domina las reglas gramaticales con explicaciones claras y ejercicios de completar espacios. Construye oraciones paso a paso.",
+            },
+          },
+          reading: {
+            topic: "tutorial",
+            prompt: "Introduction to reading comprehension",
+            tutorialDescription: {
+              en: "Improve your reading skills with cultural and historical passages. Answer comprehension questions to test your understanding.",
+              es: "Mejora tus habilidades de lectura con pasajes culturales e históricos. Responde preguntas de comprensión para evaluar tu entendimiento.",
+            },
+          },
+          stories: {
+            topic: "tutorial",
+            prompt: "Introduction to interactive stories",
+            tutorialDescription: {
+              en: "Engage with interactive stories and roleplays. Practice real conversations in fun scenarios.",
+              es: "Participa en historias interactivas y juegos de rol. Practica conversaciones reales en escenarios divertidos.",
+            },
+          },
+          realtime: {
+            scenario: "tutorial conversation",
+            prompt: "Introduction to real-time practice",
+            tutorialDescription: {
+              en: "Practice speaking with AI conversations. Get real-time feedback on your pronunciation and responses.",
+              es: "Practica hablando con conversaciones de IA. Recibe retroalimentación en tiempo real sobre tu pronunciación y respuestas.",
+            },
+          },
+        },
+      },
+    ],
+  },
   {
     id: "unit-pre-a1-1",
       title: {

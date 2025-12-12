@@ -116,6 +116,8 @@ import {
 import { awardXp } from "./utils/utils";
 import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
+import TutorialStepper from "./components/TutorialStepper";
+import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 
 /* ---------------------------
    Small helpers
@@ -1124,6 +1126,12 @@ export default function App() {
       : null
   );
 
+  // Tutorial mode state
+  const [isTutorialMode, setIsTutorialMode] = useState(false);
+  const [tutorialCompletedModules, setTutorialCompletedModules] = useState([]);
+  const [showTutorialPopovers, setShowTutorialPopovers] = useState(false);
+  const tutorialPopoverShownRef = useRef(false);
+
   // Lesson completion celebration modal
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
@@ -1196,13 +1204,14 @@ export default function App() {
   const lastTargetLangRef = useRef(resolvedTargetLang);
   const pendingLessonCompletionRef = useRef(null);
 
-  // Random mode switcher for lessons
+  // Random mode switcher for lessons (sequential for tutorial mode)
   const switchToRandomLessonMode = useCallback(() => {
     console.log("[switchToRandomLessonMode] Called", {
       viewMode,
       hasActiveLesson: !!activeLesson,
       activeLessonModes: activeLesson?.modes,
       currentTab,
+      isTutorialMode,
     });
 
     if (viewMode !== "lesson" || !activeLesson?.modes?.length) {
@@ -1213,6 +1222,40 @@ export default function App() {
     }
 
     const availableModes = activeLesson.modes;
+
+    // TUTORIAL MODE: Sequential navigation through modules
+    if (isTutorialMode && activeLesson.isTutorial) {
+      const currentIndex = availableModes.indexOf(currentTab);
+
+      // Mark current module as completed
+      if (!tutorialCompletedModules.includes(currentTab)) {
+        setTutorialCompletedModules(prev => [...prev, currentTab]);
+      }
+
+      // Check if this is the last module
+      if (currentIndex >= availableModes.length - 1) {
+        console.log("[Tutorial Mode] All modules completed, triggering lesson completion");
+        // Tutorial complete - will trigger lesson completion flow
+        return;
+      }
+
+      // Move to next module in sequence
+      const nextMode = availableModes[currentIndex + 1];
+      console.log("[Tutorial Mode] Sequential switch", {
+        from: currentTab,
+        to: nextMode,
+        currentIndex,
+        totalModules: availableModes.length,
+      });
+
+      setCurrentTab(nextMode);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("currentTab", nextMode);
+      }
+      return;
+    }
+
+    // NORMAL MODE: Random switching
     if (availableModes.length <= 1) {
       console.log(
         "[switchToRandomLessonMode] Only one mode available, not switching"
@@ -1242,7 +1285,7 @@ export default function App() {
     if (typeof window !== "undefined") {
       localStorage.setItem("currentTab", randomMode);
     }
-  }, [viewMode, activeLesson, currentTab]);
+  }, [viewMode, activeLesson, currentTab, isTutorialMode, tutorialCompletedModules]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2033,6 +2076,19 @@ export default function App() {
       if (typeof window !== "undefined") {
         localStorage.setItem("viewMode", "lesson");
       }
+
+      // Check if this is a tutorial lesson
+      if (lesson.isTutorial) {
+        setIsTutorialMode(true);
+        setTutorialCompletedModules([]);
+        // Show popovers only once per session
+        if (!tutorialPopoverShownRef.current) {
+          tutorialPopoverShownRef.current = true;
+          setShowTutorialPopovers(true);
+        }
+      } else {
+        setIsTutorialMode(false);
+      }
     } catch (e) {
       console.error("Failed to start lesson:", e);
       toast({
@@ -2141,6 +2197,10 @@ export default function App() {
     previousXpRef.current = null;
     lessonCompletionTriggeredRef.current = false;
     activeLessonLanguageRef.current = resolvedTargetLang;
+    // Reset tutorial state
+    setIsTutorialMode(false);
+    setTutorialCompletedModules([]);
+    setShowTutorialPopovers(false);
     if (typeof window !== "undefined") {
       localStorage.setItem("viewMode", "skillTree");
       localStorage.removeItem("activeLesson");
@@ -3466,6 +3526,14 @@ export default function App() {
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
       />
 
+      {/* Tutorial Action Bar Popovers - shows when tutorial starts */}
+      <TutorialActionBarPopovers
+        isActive={showTutorialPopovers}
+        lang={appLanguage}
+        onComplete={() => setShowTutorialPopovers(false)}
+        autoAdvanceMs={3500}
+      />
+
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
@@ -3514,6 +3582,19 @@ export default function App() {
       {/* Learning Modules Scene */}
       {viewMode === "lesson" && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+          {/* Tutorial Stepper - shows progress through tutorial modules */}
+          {isTutorialMode && activeLesson?.isTutorial && (
+            <TutorialStepper
+              modules={activeLesson.modes}
+              currentModule={currentTab}
+              completedModules={tutorialCompletedModules}
+              lang={appLanguage}
+              tutorialDescription={
+                activeLesson?.content?.[currentTab]?.tutorialDescription
+              }
+            />
+          )}
+
           <Tabs
             index={tabIndex}
             onChange={(i) => {
