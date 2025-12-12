@@ -1229,12 +1229,14 @@ export default function App() {
 
       // Mark current module as completed
       if (!tutorialCompletedModules.includes(currentTab)) {
-        setTutorialCompletedModules(prev => [...prev, currentTab]);
+        setTutorialCompletedModules((prev) => [...prev, currentTab]);
       }
 
       // Check if this is the last module
       if (currentIndex >= availableModes.length - 1) {
-        console.log("[Tutorial Mode] All modules completed, triggering lesson completion");
+        console.log(
+          "[Tutorial Mode] All modules completed, triggering lesson completion"
+        );
         // Tutorial complete - will trigger lesson completion flow
         return;
       }
@@ -1285,7 +1287,13 @@ export default function App() {
     if (typeof window !== "undefined") {
       localStorage.setItem("currentTab", randomMode);
     }
-  }, [viewMode, activeLesson, currentTab, isTutorialMode, tutorialCompletedModules]);
+  }, [
+    viewMode,
+    activeLesson,
+    currentTab,
+    isTutorialMode,
+    tutorialCompletedModules,
+  ]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -2888,7 +2896,7 @@ export default function App() {
   // CEFR level configuration (shared across modes)
   const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const CEFR_LEVEL_COUNTS = {
-    A1: { flashcards: 300, lessons: 109 }, // 1 pre-unit (7) + 17 units (6 each) = 7 + 102
+    A1: { flashcards: 300, lessons: 110 }, // 1 pre-unit (7) + 17 units (6 each) = 7 + 102
     A2: { flashcards: 250, lessons: 108 }, // 18 units × 6 lessons per unit
     B1: { flashcards: 200, lessons: 90 }, // 15 units × 6 lessons per unit
     B2: { flashcards: 150, lessons: 72 }, // 12 units × 6 lessons per unit
