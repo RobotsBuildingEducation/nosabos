@@ -92,15 +92,16 @@ const baseLearningPath = {
                 es: "Practica con historias interactivas y juegos de rol leyendo y hablando oración por oración.",
               },
             },
-            realtime: {
-              scenario: "Say hello",
-              prompt: "Practice saying hello in a live chat",
-              successCriteria: "Say hello.",
-              tutorialDescription: {
-                en: "Practice speaking with realtime conversations and goal oriented chats.",
-                es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
-              },
+          realtime: {
+            scenario: "Say hello",
+            prompt: "Practice saying hello in a live chat",
+            successCriteria: "Say hello.",
+            successCriteria_es: "Di hola.",
+            tutorialDescription: {
+              en: "Practice speaking with realtime conversations and goal oriented chats.",
+              es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
             },
+          },
           },
         },
       ],

@@ -1491,9 +1491,15 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   }
   function goalRubricForTarget(goal) {
     if (!goal) return "";
-    return targetLangRef.current === "en"
-      ? goal.rubric_es || ""
-      : goal.rubric_en || "";
+    const t = targetLangRef.current;
+    if (t === "es") {
+      return (
+        goal.rubric_es || goal.successCriteria_es || goal.rubric_en || goal.successCriteria || ""
+      );
+    }
+    return (
+      goal.rubric_en || goal.successCriteria || goal.rubric_es || goal.successCriteria_es || ""
+    );
   }
 
   async function translateGoalText(text, target = "es") {
