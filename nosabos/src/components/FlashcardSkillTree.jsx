@@ -114,13 +114,7 @@ const FlashcardCard = React.memo(function FlashcardCard({
         borderRadius="2xl"
         border="2px solid"
         borderColor={isCompleted ? "whiteAlpha.200" : `${cefrColor.primary}80`}
-        boxShadow={
-          isActive
-            ? `0 4px 12px ${cefrColor.primary}30`
-            : isCompleted
-            ? "0 2px 8px rgba(0, 0, 0, 0.2)"
-            : "0 4px 12px rgba(0, 0, 0, 0.25)"
-        }
+        boxShadow={`0px 3px 2px lightgray`}
         backdropFilter="blur(10px)"
         position="relative"
         overflow="hidden"

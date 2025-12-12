@@ -481,21 +481,23 @@ export default function FlashcardPractice({
                       getEffectiveCardLanguage(supportLang)
                     )}
                   </Text>
-                  <Button
-                    position="absolute"
-                    bottom={3}
-                    right={3}
-                    size="sm"
-                    variant="solid"
-                    bg="whiteAlpha.200"
-                    color="white"
-                    rightIcon={<RiEyeLine size={14} />}
-                    onClick={handleShowAnswer}
-                    _hover={{ bg: "whiteAlpha.300" }}
-                    fontSize="xs"
-                  >
-                    {getTranslation("flashcard_show_answer")}
-                  </Button>
+                  <Box mt={6}>
+                    <Button
+                      position="absolute"
+                      bottom={3}
+                      right={3}
+                      size="sm"
+                      variant="solid"
+                      bg="whiteAlpha.200"
+                      color="white"
+                      rightIcon={<RiEyeLine size={14} />}
+                      onClick={handleShowAnswer}
+                      _hover={{ bg: "whiteAlpha.300" }}
+                      fontSize="xs"
+                    >
+                      {getTranslation("flashcard_show_answer")}
+                    </Button>
+                  </Box>
                 </Box>
 
                 {/* Back Side */}
@@ -542,34 +544,36 @@ export default function FlashcardPractice({
                     </Text>
                   )}
                   {/* Listen Button */}
-                  {streamedAnswer && !isStreaming && (
-                    <Button
+                  <Box mt={6}>
+                    {streamedAnswer && !isStreaming && (
+                      <Button
+                        position="absolute"
+                        bottom={3}
+                        left={3}
+                        size="sm"
+                        variant="solid"
+                        colorScheme="purple"
+                        color="white"
+                        leftIcon={<RiVolumeUpLine size={14} />}
+                        onClick={handleListenToAnswer}
+                        isLoading={isPlayingAudio}
+                        loadingText={getTranslation("flashcard_listening")}
+                        _hover={{ bg: "whiteAlpha.300" }}
+                        fontSize="xs"
+                      >
+                        {getTranslation("flashcard_listen")}
+                      </Button>
+                    )}
+                    <Text
                       position="absolute"
                       bottom={3}
-                      left={3}
-                      size="sm"
-                      variant="solid"
-                      bg="whiteAlpha.200"
-                      color="white"
-                      leftIcon={<RiVolumeUpLine size={14} />}
-                      onClick={handleListenToAnswer}
-                      isLoading={isPlayingAudio}
-                      loadingText={getTranslation("flashcard_listening")}
-                      _hover={{ bg: "whiteAlpha.300" }}
+                      right={3}
                       fontSize="xs"
+                      color="blue.300"
                     >
-                      {getTranslation("flashcard_listen")}
-                    </Button>
-                  )}
-                  <Text
-                    position="absolute"
-                    bottom={3}
-                    right={3}
-                    fontSize="xs"
-                    color="blue.300"
-                  >
-                    {getTranslation("flashcard_tap_to_flip")}
-                  </Text>
+                      {getTranslation("flashcard_tap_to_flip")}
+                    </Text>
+                  </Box>
                 </Box>
               </MotionBox>
             </Box>
