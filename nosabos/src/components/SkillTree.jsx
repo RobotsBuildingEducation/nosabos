@@ -1590,6 +1590,8 @@ function LessonDetailModal({
                   <Text fontWeight="bold" color="white" fontSize="md">
                     {lesson.isFinalQuiz
                       ? getTranslation("skill_tree_passing_score")
+                      : lesson.isTutorial
+                      ? getTranslation("skill_tree_tutorial_goal")
                       : getTranslation("skill_tree_xp_reward")}
                   </Text>
                 </HStack>
@@ -1601,6 +1603,7 @@ function LessonDetailModal({
                   py={2}
                   borderRadius="full"
                   fontWeight="black"
+                  textAlign="center"
                 >
                   {lesson.isFinalQuiz
                     ? `${Math.round(
@@ -1608,6 +1611,8 @@ function LessonDetailModal({
                           lesson.quizConfig?.questionsRequired) *
                           100
                       )}%`
+                    : lesson.isTutorial
+                    ? getTranslation("skill_tree_tutorial_goal")
                     : `+${lesson.xpReward} XP`}
                 </Badge>
               </HStack>
