@@ -40,7 +40,7 @@ import { SiCashapp } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck } from "react-icons/lu";
+import { LuBadgeCheck, LuKeyRound } from "react-icons/lu";
 import { LuKey } from "react-icons/lu";
 import { doc, updateDoc } from "firebase/firestore";
 
@@ -49,6 +49,7 @@ import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
+import { FaKey } from "react-icons/fa";
 
 export default function IdentityDrawer({
   isOpen,
@@ -209,7 +210,7 @@ export default function IdentityDrawer({
       },
       {
         id: "step5",
-        icon: <LuKey size={24} />,
+        icon: <LuKeyRound size={24} />,
         text:
           t?.account_final_step_title ||
           "Copy your secret key to sign into your account",
@@ -219,9 +220,8 @@ export default function IdentityDrawer({
         action: (
           <Button
             size="xs"
-            leftIcon={<LuKey size={14} />}
+            leftIcon={<LuKeyRound size={14} />}
             colorScheme="orange"
-            variant="outline"
             onClick={() =>
               copy(currentSecret, t?.toast_secret_copied || "Secret copied")
             }
@@ -419,7 +419,13 @@ export default function IdentityDrawer({
             )}
 
             {/* Install App Section (Always Visible - NOT an accordion) */}
-            <Box bg="gray.800" p={4} rounded="md" border="2px solid" borderColor="cyan.400">
+            <Box
+              bg="gray.800"
+              p={4}
+              rounded="md"
+              border="2px solid"
+              borderColor="cyan.400"
+            >
               <Text fontWeight="semibold" mb={3}>
                 {t?.app_install_title || "Install as app"}
               </Text>

@@ -17,7 +17,8 @@ import {
 } from "@chakra-ui/icons";
 import { PiUsersBold, PiPatreonLogoFill } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { LuKey } from "react-icons/lu";
+import { LuKey, LuKeyRound } from "react-icons/lu";
+import { FaKey } from "react-icons/fa";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -40,7 +41,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "identity",
-    icon: LuKey,
+    icon: LuKeyRound,
     label: { en: "Account Key", es: "Llave de cuenta" },
     description: {
       en: "Access your account drawer to view your keys and wallet",

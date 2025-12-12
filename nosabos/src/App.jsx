@@ -70,6 +70,7 @@ import {
   LuBookOpen,
   LuShuffle,
   LuLanguages,
+  LuKeyRound,
 } from "react-icons/lu";
 import {
   PiPatreonLogoFill,
@@ -118,6 +119,7 @@ import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
+import { FaKey } from "react-icons/fa";
 
 /* ---------------------------
    Small helpers
@@ -4201,7 +4203,7 @@ function BottomActionBar({
           />
         )}
         <IconButton
-          icon={<LuKey size={20} />}
+          icon={<LuKeyRound size={18} />}
           onClick={onOpenIdentity}
           aria-label={identityLabel}
           isLoading={isIdentitySaving}
