@@ -93,8 +93,8 @@ const baseLearningPath = {
               },
             },
             realtime: {
-              scenario: "tutorial conversation",
-              prompt: "Introduction to real-time practice",
+              scenario: "Say hello",
+              prompt: "Practice saying hello in a live chat",
               tutorialDescription: {
                 en: "Practice speaking with realtime conversations and goal oriented chats.",
                 es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
