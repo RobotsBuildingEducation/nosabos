@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Divider,
   Flex,
   HStack,
   Icon,
@@ -30,9 +31,14 @@ import {
   FiMessageCircle,
   FiTarget,
 } from "react-icons/fi";
+import { IoIosMore } from "react-icons/io";
+import { MdOutlineFileUpload } from "react-icons/md";
+import { CiSquarePlus } from "react-icons/ci";
+import { LuBadgeCheck } from "react-icons/lu";
 
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import RobotBuddyPro from "./RobotBuddyPro";
+import { BitcoinWalletSection } from "./IdentityDrawer";
 
 const FAQ_ITEMS = [
   {
@@ -350,7 +356,12 @@ const getStoredLanguage = () =>
     ? "es"
     : "en";
 
-const LandingPage = ({ onAuthenticated }) => {
+const LandingPage = ({
+  onAuthenticated,
+  user,
+  onSelectIdentity,
+  isIdentitySaving,
+}) => {
   const toast = useToast();
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
@@ -366,8 +377,6 @@ const LandingPage = ({ onAuthenticated }) => {
   const [view, setView] = useState("landing");
   const [displayName, setDisplayName] = useState("");
   const [secretKey, setSecretKey] = useState("");
-  const [generatedKeys, setGeneratedKeys] = useState(null);
-  const [acknowledged, setAcknowledged] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
@@ -390,16 +399,14 @@ const LandingPage = ({ onAuthenticated }) => {
   const handleCreateAccount = useCallback(async () => {
     if (!hasDisplayName || isCreatingAccount) return;
     setIsCreatingAccount(true);
-    setAcknowledged(false);
-    setGeneratedKeys(null);
     setLoadingMessage(defaultLoadingMessage);
     setErrorMessage("");
 
     try {
       const keys = await generateNostrKeys(displayName.trim());
-      setGeneratedKeys(keys);
       localStorage.setItem("displayName", displayName.trim());
-      setView("created");
+      // Skip the "created" view and go directly to onboarding
+      onAuthenticated?.();
     } catch (error) {
       console.error("Failed to create account", error);
       setErrorMessage(error?.message || copy.error_create_generic);
@@ -415,35 +422,7 @@ const LandingPage = ({ onAuthenticated }) => {
     generateNostrKeys,
     hasDisplayName,
     isCreatingAccount,
-    toast,
-  ]);
-
-  const handleCopyKey = useCallback(() => {
-    if (!generatedKeys?.nsec) return;
-    navigator.clipboard
-      .writeText(generatedKeys.nsec)
-      .then(() =>
-        toast({
-          title: copy.toast_copy_success_title,
-          description: copy.toast_copy_success_desc,
-          status: "info",
-          duration: 2400,
-        })
-      )
-      .catch(() =>
-        toast({
-          title: copy.toast_copy_error_title,
-          description: copy.toast_copy_error_desc,
-          status: "error",
-          duration: 2400,
-        })
-      );
-  }, [
-    copy.toast_copy_error_desc,
-    copy.toast_copy_error_title,
-    copy.toast_copy_success_desc,
-    copy.toast_copy_success_title,
-    generatedKeys?.nsec,
+    onAuthenticated,
     toast,
   ]);
 
@@ -477,11 +456,6 @@ const LandingPage = ({ onAuthenticated }) => {
     secretKey,
     toast,
   ]);
-
-  const handleLaunch = useCallback(() => {
-    if (!acknowledged) return;
-    onAuthenticated?.();
-  }, [acknowledged, onAuthenticated]);
 
   const ActionButton = ({ variant = "primary", ...props }) => (
     <Button
@@ -547,90 +521,6 @@ const LandingPage = ({ onAuthenticated }) => {
             }}
           >
             {copy.back_button}
-          </ActionButton>
-        </VStack>
-      </Flex>
-    );
-  }
-
-  if (view === "created") {
-    return (
-      <Flex
-        minH="100vh"
-        align="center"
-        justify="center"
-        bg="gray.900"
-        color="gray.100"
-        px={4}
-        py={{ base: 12, md: 16 }}
-      >
-        <VStack
-          spacing={6}
-          align="stretch"
-          maxW="lg"
-          w="full"
-          bg="rgba(7, 17, 28, 0.95)"
-          borderRadius="3xl"
-          border="1px solid rgba(45, 212, 191, 0.4)"
-          p={{ base: 6, md: 10 }}
-        >
-          <Text fontSize="2xl" fontWeight="bold">
-            {copy.created_title}
-          </Text>
-          <Text color="teal.100">{copy.created_description}</Text>
-          <Box
-            border="1px dashed"
-            borderColor="rgba(45, 212, 191, 0.45)"
-            borderRadius="lg"
-            p={4}
-            bg="rgba(6, 18, 30, 0.85)"
-            fontFamily="mono"
-            fontSize="sm"
-            wordBreak="break-all"
-          >
-            {generatedKeys?.nsec || copy.created_generating}
-          </Box>
-          <ActionButton
-            variant="secondary"
-            onClick={handleCopyKey}
-            colorScheme="blue"
-          >
-            {copy.created_copy}
-          </ActionButton>
-          <Checkbox
-            isChecked={acknowledged}
-            onChange={(event) => setAcknowledged(event.target.checked)}
-            colorScheme="teal"
-          >
-            <Text fontSize={"sm"}>{copy.created_checkbox}</Text>
-          </Checkbox>
-          <VStack direction={{ base: "column", md: "row" }} spacing={4}>
-            <ActionButton
-              variant="primary"
-              isDisabled={!acknowledged}
-              bg={!acknowledged ? "gray" : "teal"}
-              onClick={handleLaunch}
-              rightIcon={<ArrowForwardIcon />}
-              color="white"
-              colorScheme="teal"
-            >
-              {copy.created_launch}
-            </ActionButton>
-          </VStack>
-          {isCreatingAccount && (
-            <HStack color="gray.400">
-              <Spinner size="sm" />
-              <Text fontSize="sm">{loadingMessage}</Text>
-            </HStack>
-          )}
-          <ActionButton
-            variant="ghost"
-            onClick={() => {
-              setView("landing");
-            }}
-            width="100px"
-          >
-            {copy.created_back}
           </ActionButton>
         </VStack>
       </Flex>
