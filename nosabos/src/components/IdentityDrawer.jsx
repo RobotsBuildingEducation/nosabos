@@ -165,6 +165,7 @@ export default function IdentityDrawer({
 
       onClose?.();
       await Promise.resolve(onSwitchedAccount?.(npub, nsec));
+      window.location.reload();
     } catch (e) {
       console.error("switchAccount error:", e);
       toast({
@@ -250,7 +251,7 @@ export default function IdentityDrawer({
                 isDisabled={!currentId}
                 colorScheme="teal"
               >
-                {t?.app_copy_id || "Copy ID"}
+                {t?.app_copy_id || "Copy User ID"}
               </Button>
 
               {/* Copy Secret Key Button */}
@@ -262,7 +263,7 @@ export default function IdentityDrawer({
                 }
                 isDisabled={!currentSecret}
               >
-                {t?.app_copy_secret || "Copy Secret"}
+                {t?.app_copy_secret || "Copy Secret Key"}
               </Button>
 
               {/* Language Switcher */}
