@@ -5,8 +5,8 @@ import {
   VStack,
   HStack,
   Fade,
-  keyframes,
 } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import { ArrowBackIcon, SettingsIcon } from "@chakra-ui/icons";
 import { FaAddressCard } from "react-icons/fa";
 import { PiUsersBold, PiPatreonLogoFill } from "react-icons/pi";
