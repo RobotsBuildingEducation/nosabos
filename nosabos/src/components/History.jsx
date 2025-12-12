@@ -1321,7 +1321,11 @@ export default function History({
             <Text fontWeight="semibold">{t("reading_title")}</Text>
           </HStack>
           {onSkip && (
-            <Button onClick={handleSkip} variant="outline" colorScheme="orange">
+            <Button
+              onClick={handleSkip}
+              variant="outline"
+              border="1px solid cyan"
+            >
               {t("reading_skip")}
             </Button>
           )}
