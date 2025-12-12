@@ -329,113 +329,87 @@ export default function IdentityDrawer({
               </Text>
             </Box>
 
-            <Accordion allowToggle reduceMotion>
-              {/* Install as App Accordion */}
-              <AccordionItem border="none">
-                <AccordionButton
-                  bg="gray.800"
-                  _hover={{ bg: "gray.700" }}
-                  rounded="md"
-                  px={4}
-                  py={3}
-                  w="fit-content"
-                  alignSelf="flex-start"
-                  minW={0}
-                  gap={2}
-                  border="2px solid"
-                  borderColor="cyan.400"
-                >
-                  <Text fontWeight="semibold">
-                    {t?.app_install_title || "Install as app"}
-                  </Text>
-                  <AccordionIcon flexShrink={0} />
-                </AccordionButton>
-                <AccordionPanel
-                  bg="gray.900"
-                  border="1px solid"
-                  borderColor="gray.800"
-                  rounded="md"
-                  mt={2}
-                  px={4}
-                  py={3}
-                >
-                  {installSteps.map((step, idx) => (
-                    <Box key={step.id} py={2}>
-                      <Flex align="center" gap={3}>
-                        <Box color="teal.200">{step.icon}</Box>
-                        <Text fontSize="sm">{step.text}</Text>
-                      </Flex>
-                      {idx < installSteps.length - 1 && (
-                        <Divider my={3} borderColor="gray.700" />
-                      )}
-                    </Box>
-                  ))}
-                </AccordionPanel>
-              </AccordionItem>
+            {/* Bitcoin Wallet Section (First) */}
+            {enableWallet && (
+              <Box bg="gray.800" p={4} rounded="md" border="2px solid" borderColor="orange.400">
+                <Text fontWeight="semibold" mb={3}>
+                  {appLanguage === "es"
+                    ? "Billetera Bitcoin (experimental)"
+                    : "Bitcoin wallet (experimental)"}
+                </Text>
+                <Box bg="gray.900" p={3} rounded="md">
+                  <BitcoinWalletSection
+                    userLanguage={appLanguage}
+                    identity={user?.identity || ""}
+                    onSelectIdentity={onSelectIdentity}
+                    isIdentitySaving={isIdentitySaving}
+                  />
 
-              {/* Bitcoin Wallet Accordion */}
-              {enableWallet && (
-                <AccordionItem border="none" mt={3}>
-                  <AccordionButton
-                    bg="gray.800"
-                    _hover={{ bg: "gray.700" }}
-                    rounded="md"
-                    px={4}
-                    py={3}
-                    w="fit-content"
-                    alignSelf="flex-start"
-                    minW={0}
-                    gap={2}
-                    border="2px solid"
-                    borderColor="orange.400"
-                  >
-                    <Text fontWeight="semibold">
-                      {appLanguage === "es"
-                        ? "Billetera Bitcoin (experimental)"
-                        : "Bitcoin wallet (experimental)"}
+                  <Box bg="gray.800" p={3} rounded="md" mt={3}>
+                    <Text fontSize="xs" opacity={0.8}>
+                      {reloadNote}
                     </Text>
-                    <AccordionIcon flexShrink={0} />
-                  </AccordionButton>
-                  <AccordionPanel
-                    bg="gray.900"
-                    border="1px solid"
-                    borderColor="gray.800"
-                    rounded="md"
-                    mt={2}
-                    px={4}
-                    py={3}
-                  >
-                    <BitcoinWalletSection
-                      userLanguage={appLanguage}
-                      identity={user?.identity || ""}
-                      onSelectIdentity={onSelectIdentity}
-                      isIdentitySaving={isIdentitySaving}
-                    />
+                  </Box>
 
-                    <Box bg="gray.800" p={3} rounded="md" mt={3}>
-                      <Text fontSize="xs" opacity={0.8}>
-                        {reloadNote}
-                      </Text>
-                    </Box>
+                  {reloadScheduled && (
+                    <Alert
+                      status="success"
+                      variant="left-accent"
+                      bg="green.900"
+                      color="green.100"
+                      mt={3}
+                    >
+                      <AlertIcon />
+                      <AlertDescription fontSize="sm">
+                        {successMessage}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </Box>
+              </Box>
+            )}
 
-                    {reloadScheduled && (
-                      <Alert
-                        status="success"
-                        variant="left-accent"
-                        bg="green.900"
-                        color="green.100"
-                        mt={3}
-                      >
-                        <AlertIcon />
-                        <AlertDescription fontSize="sm">
-                          {successMessage}
-                        </AlertDescription>
-                      </Alert>
+            {/* Install App Section (Always Visible - NOT an accordion) */}
+            <Box bg="gray.800" p={4} rounded="md" border="2px solid" borderColor="cyan.400">
+              <Text fontWeight="semibold" mb={3}>
+                {t?.app_install_title || "Install as app"}
+              </Text>
+              <Box bg="gray.900" p={3} rounded="md">
+                {installSteps.map((step, idx) => (
+                  <Box key={step.id} py={2}>
+                    <Flex align="center" gap={3}>
+                      <Box color="teal.200">{step.icon}</Box>
+                      <Text fontSize="sm">{step.text}</Text>
+                    </Flex>
+                    {idx < installSteps.length - 1 && (
+                      <Divider my={3} borderColor="gray.700" />
                     )}
-                  </AccordionPanel>
-                </AccordionItem>
-              )}
-            </Accordion>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Final Step: Copy Your Secret Key */}
+            <Box bg="gray.800" p={4} rounded="md" border="2px solid" borderColor="teal.400">
+              <Text fontWeight="semibold" mb={2}>
+                {t?.account_final_step_title || "Copy your secret key to sign into your account"}
+              </Text>
+              <Text fontSize="sm" color="teal.100" mb={3}>
+                {t?.account_final_step_description ||
+                  "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you."}
+              </Text>
+              <Button
+                size="sm"
+                colorScheme="orange"
+                onClick={() =>
+                  copy(currentSecret, t?.toast_secret_copied || "Secret copied")
+                }
+                isDisabled={!currentSecret}
+                width="full"
+              >
+                {t?.account_copy_secret || "Copy Secret Key"}
+              </Button>
+            </Box>
 
             {/* CEFR insight - Commented out for future development */}
             {/*
