@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   Checkbox,
+  Divider,
   Flex,
   HStack,
   Icon,
@@ -30,9 +31,14 @@ import {
   FiMessageCircle,
   FiTarget,
 } from "react-icons/fi";
+import { IoIosMore } from "react-icons/io";
+import { MdOutlineFileUpload } from "react-icons/md";
+import { CiSquarePlus } from "react-icons/ci";
+import { LuBadgeCheck } from "react-icons/lu";
 
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import RobotBuddyPro from "./RobotBuddyPro";
+import { BitcoinWalletSection } from "./IdentityDrawer";
 
 const FAQ_ITEMS = [
   {
@@ -350,7 +356,7 @@ const getStoredLanguage = () =>
     ? "es"
     : "en";
 
-const LandingPage = ({ onAuthenticated }) => {
+const LandingPage = ({ onAuthenticated, user, onSelectIdentity, isIdentitySaving }) => {
   const toast = useToast();
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
@@ -367,7 +373,6 @@ const LandingPage = ({ onAuthenticated }) => {
   const [displayName, setDisplayName] = useState("");
   const [secretKey, setSecretKey] = useState("");
   const [generatedKeys, setGeneratedKeys] = useState(null);
-  const [acknowledged, setAcknowledged] = useState(false);
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
@@ -390,7 +395,6 @@ const LandingPage = ({ onAuthenticated }) => {
   const handleCreateAccount = useCallback(async () => {
     if (!hasDisplayName || isCreatingAccount) return;
     setIsCreatingAccount(true);
-    setAcknowledged(false);
     setGeneratedKeys(null);
     setLoadingMessage(defaultLoadingMessage);
     setErrorMessage("");
@@ -479,9 +483,8 @@ const LandingPage = ({ onAuthenticated }) => {
   ]);
 
   const handleLaunch = useCallback(() => {
-    if (!acknowledged) return;
     onAuthenticated?.();
-  }, [acknowledged, onAuthenticated]);
+  }, [onAuthenticated]);
 
   const ActionButton = ({ variant = "primary", ...props }) => (
     <Button
@@ -554,6 +557,29 @@ const LandingPage = ({ onAuthenticated }) => {
   }
 
   if (view === "created") {
+    const installSteps = [
+      {
+        id: "step1",
+        icon: <IoIosMore size={28} />,
+        text: copy.app_install_step1 || "Open the browser menu.",
+      },
+      {
+        id: "step2",
+        icon: <MdOutlineFileUpload size={28} />,
+        text: copy.app_install_step2 || "Choose 'Share' or 'Install'.",
+      },
+      {
+        id: "step3",
+        icon: <CiSquarePlus size={28} />,
+        text: copy.app_install_step3 || "Add to Home Screen.",
+      },
+      {
+        id: "step4",
+        icon: <LuBadgeCheck size={28} />,
+        text: copy.app_install_step4 || "Launch from your Home Screen.",
+      },
+    ];
+
     return (
       <Flex
         minH="100vh"
@@ -567,70 +593,136 @@ const LandingPage = ({ onAuthenticated }) => {
         <VStack
           spacing={6}
           align="stretch"
-          maxW="lg"
+          maxW="2xl"
           w="full"
           bg="rgba(7, 17, 28, 0.95)"
           borderRadius="3xl"
           border="1px solid rgba(45, 212, 191, 0.4)"
           p={{ base: 6, md: 10 }}
         >
-          <Text fontSize="2xl" fontWeight="bold">
-            {copy.created_title}
-          </Text>
-          <Text color="teal.100">{copy.created_description}</Text>
+          {/* Bitcoin Section */}
           <Box
-            border="1px dashed"
-            borderColor="rgba(45, 212, 191, 0.45)"
+            bg="rgba(6, 18, 30, 0.85)"
             borderRadius="lg"
             p={4}
-            bg="rgba(6, 18, 30, 0.85)"
-            fontFamily="mono"
-            fontSize="sm"
-            wordBreak="break-all"
+            border="2px solid"
+            borderColor="orange.400"
           >
-            {generatedKeys?.nsec || copy.created_generating}
+            <Text fontSize="xl" fontWeight="bold" mb={4}>
+              {copy.bitcoin_modal_title || (landingLanguage === "es" ? "Apoya con Bitcoin" : "Support with Bitcoin")}
+            </Text>
+            <Text fontSize="sm" color="teal.100" mb={3}>
+              {landingLanguage === "es"
+                ? "Después de iniciar sesión, podrás crear una billetera Bitcoin para apoyar a la comunidad y crear becas."
+                : "After signing in, you'll be able to create a Bitcoin wallet to support the community and create scholarships."}
+            </Text>
+            {user && onSelectIdentity && typeof isIdentitySaving !== 'undefined' ? (
+              <BitcoinWalletSection
+                userLanguage={landingLanguage}
+                identity={user?.identity || ""}
+                onSelectIdentity={onSelectIdentity}
+                isIdentitySaving={isIdentitySaving}
+              />
+            ) : (
+              <Box bg="gray.900" p={4} rounded="md" border="1px dashed" borderColor="orange.300">
+                <Text fontSize="sm" textAlign="center" color="gray.300">
+                  {landingLanguage === "es"
+                    ? "La billetera Bitcoin estará disponible después de que inicies tu sesión."
+                    : "Bitcoin wallet will be available after you start your session."}
+                </Text>
+              </Box>
+            )}
           </Box>
-          <ActionButton
-            variant="secondary"
-            onClick={handleCopyKey}
-            colorScheme="blue"
+
+          {/* Install App Section (Always Visible) */}
+          <Box
+            bg="rgba(6, 18, 30, 0.85)"
+            borderRadius="lg"
+            p={4}
+            border="2px solid"
+            borderColor="cyan.400"
           >
-            {copy.created_copy}
-          </ActionButton>
-          <Checkbox
-            isChecked={acknowledged}
-            onChange={(event) => setAcknowledged(event.target.checked)}
-            colorScheme="teal"
+            <Text fontSize="xl" fontWeight="bold" mb={4}>
+              {copy.app_install_title || "Install as app"}
+            </Text>
+            <VStack align="stretch" spacing={3}>
+              {installSteps.map((step, idx) => (
+                <Box key={step.id}>
+                  <Flex align="center" gap={3}>
+                    <Box color="teal.200">{step.icon}</Box>
+                    <Text fontSize="sm">{step.text}</Text>
+                  </Flex>
+                  {idx < installSteps.length - 1 && (
+                    <Divider my={3} borderColor="gray.700" />
+                  )}
+                </Box>
+              ))}
+            </VStack>
+          </Box>
+
+          {/* Final Step: Copy Your Secret Key */}
+          <Box
+            bg="rgba(6, 18, 30, 0.85)"
+            borderRadius="lg"
+            p={4}
+            border="2px solid"
+            borderColor="teal.400"
           >
-            <Text fontSize={"sm"}>{copy.created_checkbox}</Text>
-          </Checkbox>
-          <VStack direction={{ base: "column", md: "row" }} spacing={4}>
+            <Text fontSize="xl" fontWeight="bold" mb={2}>
+              {copy.onboarding_final_step_title || "Copy your secret key to sign into your account"}
+            </Text>
+            <Text color="teal.100" mb={4} fontSize="sm">
+              {copy.onboarding_final_step_description || copy.created_description}
+            </Text>
+            <Box
+              border="1px dashed"
+              borderColor="rgba(45, 212, 191, 0.45)"
+              borderRadius="lg"
+              p={4}
+              bg="rgba(6, 18, 30, 0.85)"
+              fontFamily="mono"
+              fontSize="sm"
+              wordBreak="break-all"
+              mb={4}
+            >
+              {generatedKeys?.nsec || copy.created_generating}
+            </Box>
+            <ActionButton
+              variant="secondary"
+              onClick={handleCopyKey}
+              colorScheme="blue"
+              width="full"
+              mb={4}
+            >
+              {copy.onboarding_copy_key || copy.created_copy}
+            </ActionButton>
             <ActionButton
               variant="primary"
-              isDisabled={!acknowledged}
-              bg={!acknowledged ? "gray" : "teal"}
               onClick={handleLaunch}
               rightIcon={<ArrowForwardIcon />}
               color="white"
               colorScheme="teal"
+              width="full"
             >
-              {copy.created_launch}
+              {copy.onboarding_start_learning || copy.created_launch}
             </ActionButton>
-          </VStack>
+          </Box>
+
           {isCreatingAccount && (
-            <HStack color="gray.400">
+            <HStack color="gray.400" justify="center">
               <Spinner size="sm" />
               <Text fontSize="sm">{loadingMessage}</Text>
             </HStack>
           )}
+
           <ActionButton
             variant="ghost"
             onClick={() => {
               setView("landing");
             }}
-            width="100px"
+            alignSelf="center"
           >
-            {copy.created_back}
+            {copy.onboarding_go_back || copy.created_back}
           </ActionButton>
         </VStack>
       </Flex>
