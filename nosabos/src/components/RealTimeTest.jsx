@@ -1362,8 +1362,9 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     let roleplayPrompt = activeGoal.prompt || lesson?.prompt || "";
 
     // Check if scenario is too generic or missing - use AI to generate a better one
-    const lessonIsTutorial =
-      Boolean(lessonPropRef.current?.isTutorial || lesson?.isTutorial);
+    const lessonIsTutorial = Boolean(
+      lessonPropRef.current?.isTutorial || lesson?.isTutorial
+    );
     const hasExplicitGoal = Boolean(
       (lessonScenario && (activeGoal.prompt || activeGoal.successCriteria)) ||
         lessonIsTutorial
@@ -1492,10 +1493,18 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
     if (localizedTitle) return localizedTitle;
 
-    if (t === "es") return goal.title_es || goal.scenario_es || goal.title_en || goal.scenario;
-    if (t === "en") return goal.title_en || goal.scenario || goal.title_es || goal.scenario_es;
+    if (t === "es")
+      return (
+        goal.title_es || goal.scenario_es || goal.title_en || goal.scenario
+      );
+    if (t === "en")
+      return (
+        goal.title_en || goal.scenario || goal.title_es || goal.scenario_es
+      );
 
-    return goal.title_en || goal.scenario || goal.title_es || goal.scenario_es || "";
+    return (
+      goal.title_en || goal.scenario || goal.title_es || goal.scenario_es || ""
+    );
   }
   function goalRubricForTarget(goal) {
     if (!goal) return "";
@@ -1511,14 +1520,32 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     if (localizedRubric) return localizedRubric;
 
     if (t === "es") {
-      return goal.rubric_es || goal.successCriteria_es || goal.rubric_en || goal.successCriteria || "";
+      return (
+        goal.rubric_es ||
+        goal.successCriteria_es ||
+        goal.rubric_en ||
+        goal.successCriteria ||
+        ""
+      );
     }
 
     if (t === "en") {
-      return goal.rubric_en || goal.successCriteria || goal.rubric_es || goal.successCriteria_es || "";
+      return (
+        goal.rubric_en ||
+        goal.successCriteria ||
+        goal.rubric_es ||
+        goal.successCriteria_es ||
+        ""
+      );
     }
 
-    return goal.rubric_en || goal.successCriteria || goal.rubric_es || goal.successCriteria_es || "";
+    return (
+      goal.rubric_en ||
+      goal.successCriteria ||
+      goal.rubric_es ||
+      goal.successCriteria_es ||
+      ""
+    );
   }
 
   async function translateGoalText(text, target = "es") {
@@ -2752,7 +2779,7 @@ Do not return the whole sentence as a single chunk.`;
               color="white"
               textShadow="0px 0px 20px black"
               mb={20}
-              bg="gray.800"
+              bg={!goalCompleted ? "gray.800" : "cyan.700"}
               border="1px solid cyan"
               disabled={!goalCompleted}
             >
