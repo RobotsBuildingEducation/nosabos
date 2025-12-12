@@ -162,6 +162,7 @@ export default function TutorialStepper({
       {tutorialDescription && (
         <Box
           w="100%"
+          maxWidth="600px"
           bg="whiteAlpha.100"
           borderRadius="xl"
           p={4}

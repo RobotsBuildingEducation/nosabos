@@ -32,7 +32,7 @@ const baseLearningPath = {
   A1: [
     // Tutorial Unit - always at the very beginning
     {
-      id: "unit-tutorial",
+      id: "unit-tutorial-a1",
       title: {
         en: "Getting Started",
         es: "Primeros Pasos",
@@ -64,40 +64,40 @@ const baseLearningPath = {
               topic: "tutorial",
               focusPoints: ["basic words", "greetings"],
               tutorialDescription: {
-                en: "Learn new words through interactive flashcards. Swipe or click to reveal translations, then practice with drag-and-drop exercises.",
-                es: "Aprende nuevas palabras con tarjetas interactivas. Desliza o haz clic para ver traducciones, luego practica con ejercicios de arrastrar y soltar.",
+                en: "Learn new words with interactive questions.",
+                es: "Aprende nuevas palabras mediante preguntas interactivas.",
               },
             },
             grammar: {
               topic: "tutorial",
               focusPoints: ["basic patterns"],
               tutorialDescription: {
-                en: "Master grammar rules through clear explanations and fill-in-the-blank exercises. Build sentences step by step.",
-                es: "Domina las reglas gramaticales con explicaciones claras y ejercicios de completar espacios. Construye oraciones paso a paso.",
+                en: "Master grammar rules through exercises.",
+                es: "Domina las reglas gramaticales mediante ejercicios.",
               },
             },
             reading: {
               topic: "tutorial",
               prompt: "Introduction to reading comprehension",
               tutorialDescription: {
-                en: "Improve your reading skills with cultural and historical passages. Answer comprehension questions to test your understanding.",
-                es: "Mejora tus habilidades de lectura con pasajes culturales e históricos. Responde preguntas de comprensión para evaluar tu entendimiento.",
+                en: "Improve your reading skills by following along with passages.",
+                es: "Mejora tus habilidades de lectura siguiendo los textos.",
               },
             },
             stories: {
               topic: "tutorial",
               prompt: "Introduction to interactive stories",
               tutorialDescription: {
-                en: "Engage with interactive stories and roleplays. Practice real conversations in fun scenarios.",
-                es: "Participa en historias interactivas y juegos de rol. Practica conversaciones reales en escenarios divertidos.",
+                en: "Practice with interactive stories and roleplay by reading and speaking sentence by sentence.",
+                es: "Practica con historias interactivas y juegos de rol leyendo y hablando oración por oración.",
               },
             },
             realtime: {
               scenario: "tutorial conversation",
               prompt: "Introduction to real-time practice",
               tutorialDescription: {
-                en: "Practice speaking with AI conversations. Get real-time feedback on your pronunciation and responses.",
-                es: "Practica hablando con conversaciones de IA. Recibe retroalimentación en tiempo real sobre tu pronunciación y respuestas.",
+                en: "Practice speaking with realtime conversations and goal oriented chats.",
+                es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
               },
             },
           },
@@ -9541,7 +9541,8 @@ function getLessonXpReward(lessonId = "") {
   }
 
   const rewardOptions =
-    Math.floor((LESSON_XP_RANGE.max - LESSON_XP_RANGE.min) / LESSON_XP_STEP) + 1;
+    Math.floor((LESSON_XP_RANGE.max - LESSON_XP_RANGE.min) / LESSON_XP_STEP) +
+    1;
   return (hash % rewardOptions) * LESSON_XP_STEP + LESSON_XP_RANGE.min;
 }
 
