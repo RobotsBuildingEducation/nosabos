@@ -97,6 +97,10 @@ const baseLearningPath = {
             prompt: "Practice saying hello in a live chat",
             successCriteria: "Say hello.",
             successCriteria_es: "Di hola.",
+            successCriteria_pt: "Diga olá.",
+            successCriteria_fr: "Dis bonjour.",
+            successCriteria_it: "Di' ciao.",
+            successCriteria_nah: "Di niltze.",
             tutorialDescription: {
               en: "Practice speaking with realtime conversations and goal oriented chats.",
               es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",

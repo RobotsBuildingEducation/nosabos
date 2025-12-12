@@ -1485,21 +1485,40 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   function goalTitleForTarget(goal) {
     if (!goal) return "";
     const t = targetLangRef.current;
-    if (t === "es") return goal.title_es || goal.title_en;
-    if (t === "en") return goal.title_en || goal.title_es;
-    return "";
+    const suffix = t ? `_${t}` : "";
+
+    const localizedTitle =
+      goal?.[`title${suffix}`] || goal?.[`scenario${suffix}`] || "";
+
+    if (localizedTitle) return localizedTitle;
+
+    if (t === "es") return goal.title_es || goal.scenario_es || goal.title_en || goal.scenario;
+    if (t === "en") return goal.title_en || goal.scenario || goal.title_es || goal.scenario_es;
+
+    return goal.title_en || goal.scenario || goal.title_es || goal.scenario_es || "";
   }
   function goalRubricForTarget(goal) {
     if (!goal) return "";
     const t = targetLangRef.current;
+    const suffix = t ? `_${t}` : "";
+
+    const localizedRubric =
+      goal?.[`rubric${suffix}`] ||
+      goal?.[`successCriteria${suffix}`] ||
+      goal?.successCriteria ||
+      "";
+
+    if (localizedRubric) return localizedRubric;
+
     if (t === "es") {
-      return (
-        goal.rubric_es || goal.successCriteria_es || goal.rubric_en || goal.successCriteria || ""
-      );
+      return goal.rubric_es || goal.successCriteria_es || goal.rubric_en || goal.successCriteria || "";
     }
-    return (
-      goal.rubric_en || goal.successCriteria || goal.rubric_es || goal.successCriteria_es || ""
-    );
+
+    if (t === "en") {
+      return goal.rubric_en || goal.successCriteria || goal.rubric_es || goal.successCriteria_es || "";
+    }
+
+    return goal.rubric_en || goal.successCriteria || goal.rubric_es || goal.successCriteria_es || "";
   }
 
   async function translateGoalText(text, target = "es") {
@@ -1665,21 +1684,20 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     await persistCurrentGoal(patched);
 
     const rubricTL = goalRubricForTarget(goal);
+    const titleTL = goalTitleForTarget(goal);
     const gLang = goalUiLangCode();
     const uiLangName = gLang === "es" ? "Spanish" : "English";
 
     const judgePrompt =
       targetLangRef.current === "es"
-        ? `Evalúa si el siguiente enunciado cumple esta meta en español: "${
-            goal.title_es
-          }". Criterio: ${rubricTL}.
+        ? `Evalúa si el siguiente enunciado cumple esta meta en español: "${titleTL}". Criterio: ${rubricTL}.
 Devuelve SOLO JSON:
 {"met":true|false,"confidence":0..1,"feedback_tl":"mensaje breve y amable en el idioma meta (≤12 palabras)","feedback_ui":"mensaje breve y amable en ${
             gLang === "es" ? "español" : "inglés"
           } (≤12 palabras)"}`
         : `Evaluate whether the following utterance meets this goal in ${
             targetLangRef.current === "en" ? "English" : "the target language"
-          }: "${goal.title_en}". Criterion: ${rubricTL}.
+          }: "${titleTL || goal.title_en}". Criterion: ${rubricTL}.
 Return ONLY JSON:
 {"met":true|false,"confidence":0..1,"feedback_tl":"short, kind message in the target language (≤12 words)","feedback_ui":"short, kind message in ${uiLangName} (≤12 words)"}`;
 
