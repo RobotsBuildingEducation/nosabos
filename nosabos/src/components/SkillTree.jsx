@@ -1542,16 +1542,24 @@ function LessonDetailModal({
               </Flex>
             </Box>
 
-            {/* XP Goal / Passing Score */}
+            {/* XP Goal / Passing Score / Tutorial */}
             <Box
               p={5}
               borderRadius="xl"
               position="relative"
               overflow="hidden"
               border="1px solid"
-              borderColor={lesson.isFinalQuiz ? "purple.600" : "yellow.600"}
+              borderColor={
+                lesson.isTutorial
+                  ? "blue.600"
+                  : lesson.isFinalQuiz
+                  ? "purple.600"
+                  : "yellow.600"
+              }
               boxShadow={
-                lesson.isFinalQuiz
+                lesson.isTutorial
+                  ? "0 4px 12px rgba(99, 102, 241, 0.2)"
+                  : lesson.isFinalQuiz
                   ? "0 4px 12px rgba(159, 122, 234, 0.2)"
                   : "0 4px 12px rgba(251, 191, 36, 0.2)"
               }
@@ -1571,24 +1579,32 @@ function LessonDetailModal({
                     p={2}
                     borderRadius="lg"
                     bgGradient={
-                      lesson.isFinalQuiz
+                      lesson.isTutorial
+                        ? "linear(135deg, blue.400, indigo.600)"
+                        : lesson.isFinalQuiz
                         ? "linear(135deg, purple.400, purple.600)"
                         : "linear(135deg, yellow.400, orange.400)"
                     }
                     boxShadow={
-                      lesson.isFinalQuiz
+                      lesson.isTutorial
+                        ? "0 2px 10px rgba(99, 102, 241, 0.4)"
+                        : lesson.isFinalQuiz
                         ? "0 2px 10px rgba(159, 122, 234, 0.4)"
                         : "0 2px 10px rgba(251, 191, 36, 0.4)"
                     }
                   >
-                    {lesson.isFinalQuiz ? (
+                    {lesson.isTutorial ? (
+                      <RiBookOpenLine color="white" size={24} />
+                    ) : lesson.isFinalQuiz ? (
                       <RiTrophyLine color="white" size={24} />
                     ) : (
                       <RiStarFill color="white" size={24} />
                     )}
                   </Box>
                   <Text fontWeight="bold" color="white" fontSize="md">
-                    {lesson.isFinalQuiz
+                    {lesson.isTutorial
+                      ? getTranslation("skill_tree_tutorial_goal")
+                      : lesson.isFinalQuiz
                       ? getTranslation("skill_tree_passing_score")
                       : getTranslation("skill_tree_xp_reward")}
                   </Text>
@@ -1596,13 +1612,15 @@ function LessonDetailModal({
                 <Badge
                   bg="transparent"
                   color="white"
-                  fontSize="xl"
+                  fontSize={lesson.isTutorial ? "md" : "xl"}
                   px={5}
                   py={2}
                   borderRadius="full"
                   fontWeight="black"
                 >
-                  {lesson.isFinalQuiz
+                  {lesson.isTutorial
+                    ? getTranslation("skill_tree_tutorial_activities")
+                    : lesson.isFinalQuiz
                     ? `${Math.round(
                         (lesson.quizConfig?.passingScore /
                           lesson.quizConfig?.questionsRequired) *

@@ -131,9 +131,21 @@ export const translations = {
     onboarding_voice_shimmer: "Shimmer",
     onboarding_voice_verse: "Verse",
     onboarding_title: "Welcome",
-    onboarding_subtitle: "Let’s set up your AI experience before you start.",
+    onboarding_subtitle: "Let's set up your AI experience before you start.",
+    onboarding_app_language_title: "Application Language",
+    onboarding_app_language_desc:
+      "Choose the language for the app interface and instructions.",
+    onboarding_support_language_title: "Support Language",
+    onboarding_support_language_desc:
+      "The language used for explanations, hints, and AI-generated content to help you learn.",
+    onboarding_practice_language_title: "Practice Language",
+    onboarding_practice_language_desc:
+      "The language you want to learn and practice speaking.",
     onboarding_section_difficulty_support: "Difficulty & Language Support",
     onboarding_section_voice_persona: "Voice & Personality",
+    onboarding_vad_title: "Voice Activity Detection",
+    onboarding_vad_explanation:
+      "Voice features will pause before accepting your answer. This gives you time to finish speaking before the AI responds. Adjust the pause duration below.",
     onboarding_section_first_goal: "First goal",
     onboarding_level_beginner: "Beginner",
     onboarding_level_intermediate: "Intermediate",
@@ -453,6 +465,8 @@ export const translations = {
       "Mastery level demonstrating near-native control, nuance, and stylistic range.",
     skill_tree_cefr_default_desc: "CEFR proficiency level",
     skill_tree_passing_score: "Passing Score",
+    skill_tree_tutorial_goal: "Goal",
+    skill_tree_tutorial_activities: "Complete the 5 learning activities",
     // Flashcard Practice translations
     flashcard_translate_to: "Translate to {language}:",
     flashcard_show_answer: "Show answer",
@@ -913,8 +927,20 @@ export const translations = {
     onboarding_voice_verse: "Verse",
     onboarding_title: "Bienvenido",
     onboarding_subtitle: "Configura tu experiencia de IA antes de empezar.",
+    onboarding_app_language_title: "Idioma de la Aplicación",
+    onboarding_app_language_desc:
+      "Elige el idioma para la interfaz de la app y las instrucciones.",
+    onboarding_support_language_title: "Idioma de Apoyo",
+    onboarding_support_language_desc:
+      "El idioma usado para explicaciones, pistas y contenido generado por IA para ayudarte a aprender.",
+    onboarding_practice_language_title: "Idioma de Práctica",
+    onboarding_practice_language_desc:
+      "El idioma que quieres aprender y practicar hablando.",
     onboarding_section_difficulty_support: "Dificultad y apoyo de idioma",
     onboarding_section_voice_persona: "Voz y personalidad",
+    onboarding_vad_title: "Detección de Actividad de Voz",
+    onboarding_vad_explanation:
+      "Las funciones de voz harán una pausa antes de aceptar tu respuesta. Esto te da tiempo para terminar de hablar antes de que la IA responda. Ajusta la duración de la pausa abajo.",
     onboarding_section_first_goal: "Primer objetivo",
     onboarding_level_beginner: "Principiante",
     onboarding_level_intermediate: "Intermedio",
@@ -1026,6 +1052,8 @@ export const translations = {
       "Nivel de dominio con control casi nativo, matiz y amplitud estilística.",
     skill_tree_cefr_default_desc: "Nivel de competencia CEFR",
     skill_tree_passing_score: "Puntuación Requerida",
+    skill_tree_tutorial_goal: "Meta",
+    skill_tree_tutorial_activities: "Completa las 5 actividades de aprendizaje",
     // Flashcard Practice translations
     flashcard_translate_to: "Traduce al {language}:",
     flashcard_show_answer: "Mostrar respuesta",

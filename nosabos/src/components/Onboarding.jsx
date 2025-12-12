@@ -174,39 +174,13 @@ export default function Onboarding({
         >
           <DrawerHeader pb={4}>
             <Box maxW="600px" mx="auto" w="100%">
-              <VStack align="stretch" spacing={4}>
-                <HStack align="center" w="100%">
-                  <VStack align="stretch" spacing={1}>
-                    <Text fontWeight="bold" fontSize="lg">
-                      {ui.onboarding_title}
-                    </Text>
-                    <Text opacity={0.85} fontSize="sm">
-                      {ui.onboarding_subtitle}
-                    </Text>
-                  </VStack>
-                  <Spacer />
-                  <HStack spacing={2} align="center">
-                    <Text
-                      fontSize="sm"
-                      color={appLang === "en" ? "teal.300" : "gray.400"}
-                    >
-                      EN
-                    </Text>
-                    <Switch
-                      colorScheme="teal"
-                      isChecked={appLang === "es"}
-                      onChange={() =>
-                        persistAppLanguage(appLang === "en" ? "es" : "en")
-                      }
-                    />
-                    <Text
-                      fontSize="sm"
-                      color={appLang === "es" ? "teal.300" : "gray.400"}
-                    >
-                      ES
-                    </Text>
-                  </HStack>
-                </HStack>
+              <VStack align="stretch" spacing={1}>
+                <Text fontWeight="bold" fontSize="lg">
+                  {ui.onboarding_title}
+                </Text>
+                <Text opacity={0.85} fontSize="sm">
+                  {ui.onboarding_subtitle}
+                </Text>
               </VStack>
             </Box>
           </DrawerHeader>
@@ -214,99 +188,142 @@ export default function Onboarding({
           <DrawerBody pb={6}>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={4}>
-                {/* Language Selection */}
+                {/* Application Language - First Item */}
                 <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={2} opacity={0.85}>
-                    {ui.onboarding_section_difficulty_support}
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                    {ui.onboarding_app_language_title}
                   </Text>
-                  <Wrap spacing={2}>
-                    <WrapItem>
-                      <Menu autoSelect={false} isLazy>
-                        <MenuButton
-                          as={Button}
-                          rightIcon={<ChevronDownIcon />}
-                          variant="outline"
-                          size="sm"
-                          borderColor="gray.700"
-                          bg="gray.800"
-                          _hover={{ bg: "gray.750" }}
-                          _active={{ bg: "gray.750" }}
-                        >
-                          {supportLang === "en" && ui.onboarding_support_en}
-                          {supportLang === "es" && ui.onboarding_support_es}
-                        </MenuButton>
-                        <MenuList borderColor="gray.700" bg="gray.900">
-                          <MenuOptionGroup
-                            type="radio"
-                            value={supportLang}
-                            onChange={(value) => setSupportLang(value)}
-                          >
-                            <MenuItemOption value="en">
-                              {ui.onboarding_support_en}
-                            </MenuItemOption>
-                            <MenuItemOption value="es">
-                              {ui.onboarding_support_es}
-                            </MenuItemOption>
-                          </MenuOptionGroup>
-                        </MenuList>
-                      </Menu>
-                    </WrapItem>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_app_language_desc}
+                  </Text>
+                  <HStack spacing={2}>
+                    <Button
+                      size="sm"
+                      variant={appLang === "en" ? "solid" : "outline"}
+                      colorScheme={appLang === "en" ? "teal" : "gray"}
+                      onClick={() => persistAppLanguage("en")}
+                      borderColor="gray.600"
+                    >
+                      English
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={appLang === "es" ? "solid" : "outline"}
+                      colorScheme={appLang === "es" ? "teal" : "gray"}
+                      onClick={() => persistAppLanguage("es")}
+                      borderColor="gray.600"
+                    >
+                      Spanish
+                    </Button>
+                  </HStack>
+                </Box>
 
-                    <WrapItem>
-                      <Menu autoSelect={false} isLazy>
-                        <MenuButton
-                          as={Button}
-                          rightIcon={<ChevronDownIcon />}
-                          variant="outline"
-                          size="sm"
-                          borderColor="gray.700"
-                          bg="gray.800"
-                          _hover={{ bg: "gray.750" }}
-                          _active={{ bg: "gray.750" }}
-                          title={ui.onboarding_practice_label_title}
-                        >
-                          {targetLang === "nah" && ui.onboarding_practice_nah}
-                          {targetLang === "es" && ui.onboarding_practice_es}
-                          {targetLang === "pt" && ui.onboarding_practice_pt}
-                          {targetLang === "fr" && ui.onboarding_practice_fr}
-                          {targetLang === "it" && ui.onboarding_practice_it}
-                          {targetLang === "en" && ui.onboarding_practice_en}
-                        </MenuButton>
-                        <MenuList borderColor="gray.700" bg="gray.900">
-                          <MenuOptionGroup
-                            type="radio"
-                            value={targetLang}
-                            onChange={(value) => setTargetLang(value)}
-                          >
-                            <MenuItemOption value="nah">
-                              {ui.onboarding_practice_nah}
-                            </MenuItemOption>
-                            <MenuItemOption value="es">
-                              {ui.onboarding_practice_es}
-                            </MenuItemOption>
-                            <MenuItemOption value="pt">
-                              {ui.onboarding_practice_pt}
-                            </MenuItemOption>
-                            <MenuItemOption value="fr">
-                              {ui.onboarding_practice_fr}
-                            </MenuItemOption>
-                            <MenuItemOption value="it">
-                              {ui.onboarding_practice_it}
-                            </MenuItemOption>
-                            <MenuItemOption value="en">
-                              {ui.onboarding_practice_en}
-                            </MenuItemOption>
-                          </MenuOptionGroup>
-                        </MenuList>
-                      </Menu>
-                    </WrapItem>
-                  </Wrap>
+                {/* Support Language */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                    {ui.onboarding_support_language_title}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_support_language_desc}
+                  </Text>
+                  <Menu autoSelect={false} isLazy>
+                    <MenuButton
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                      variant="outline"
+                      size="sm"
+                      borderColor="gray.700"
+                      bg="gray.800"
+                      _hover={{ bg: "gray.750" }}
+                      _active={{ bg: "gray.750" }}
+                      w="100%"
+                      textAlign="left"
+                    >
+                      {supportLang === "en" && ui.onboarding_support_en}
+                      {supportLang === "es" && ui.onboarding_support_es}
+                    </MenuButton>
+                    <MenuList borderColor="gray.700" bg="gray.900">
+                      <MenuOptionGroup
+                        type="radio"
+                        value={supportLang}
+                        onChange={(value) => setSupportLang(value)}
+                      >
+                        <MenuItemOption value="en">
+                          {ui.onboarding_support_en}
+                        </MenuItemOption>
+                        <MenuItemOption value="es">
+                          {ui.onboarding_support_es}
+                        </MenuItemOption>
+                      </MenuOptionGroup>
+                    </MenuList>
+                  </Menu>
+                </Box>
+
+                {/* Practice Language */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                    {ui.onboarding_practice_language_title}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_practice_language_desc}
+                  </Text>
+                  <Menu autoSelect={false} isLazy>
+                    <MenuButton
+                      as={Button}
+                      rightIcon={<ChevronDownIcon />}
+                      variant="outline"
+                      size="sm"
+                      borderColor="gray.700"
+                      bg="gray.800"
+                      _hover={{ bg: "gray.750" }}
+                      _active={{ bg: "gray.750" }}
+                      w="100%"
+                      textAlign="left"
+                      title={ui.onboarding_practice_label_title}
+                    >
+                      {targetLang === "nah" && ui.onboarding_practice_nah}
+                      {targetLang === "es" && ui.onboarding_practice_es}
+                      {targetLang === "pt" && ui.onboarding_practice_pt}
+                      {targetLang === "fr" && ui.onboarding_practice_fr}
+                      {targetLang === "it" && ui.onboarding_practice_it}
+                      {targetLang === "en" && ui.onboarding_practice_en}
+                    </MenuButton>
+                    <MenuList borderColor="gray.700" bg="gray.900">
+                      <MenuOptionGroup
+                        type="radio"
+                        value={targetLang}
+                        onChange={(value) => setTargetLang(value)}
+                      >
+                        <MenuItemOption value="nah">
+                          {ui.onboarding_practice_nah}
+                        </MenuItemOption>
+                        <MenuItemOption value="es">
+                          {ui.onboarding_practice_es}
+                        </MenuItemOption>
+                        <MenuItemOption value="pt">
+                          {ui.onboarding_practice_pt}
+                        </MenuItemOption>
+                        <MenuItemOption value="fr">
+                          {ui.onboarding_practice_fr}
+                        </MenuItemOption>
+                        <MenuItemOption value="it">
+                          {ui.onboarding_practice_it}
+                        </MenuItemOption>
+                        <MenuItemOption value="en">
+                          {ui.onboarding_practice_en}
+                        </MenuItemOption>
+                      </MenuOptionGroup>
+                    </MenuList>
+                  </Menu>
                 </Box>
 
                 {/* Voice Personality */}
                 <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={2} opacity={0.85}>
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
                     {ui.onboarding_section_voice_persona}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_persona_help_text}
                   </Text>
                   <Input
                     value={voicePersona}
@@ -314,22 +331,22 @@ export default function Onboarding({
                     bg="gray.700"
                     placeholder={personaPlaceholder}
                   />
-                  <Text fontSize="xs" opacity={0.7} mt={1}>
-                    {ui.onboarding_persona_help_text}
-                  </Text>
                 </Box>
 
-                {/* Voice Pause Slider */}
+                {/* Voice Activity Pause Slider */}
                 <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
+                    {ui.onboarding_vad_title}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mb={3}>
+                    {ui.onboarding_vad_explanation}
+                  </Text>
                   <HStack justify="space-between" mb={2}>
                     <Text fontSize="sm">{VAD_LABEL}</Text>
                     <Text fontSize="sm" opacity={0.8}>
                       {pauseMs} ms
                     </Text>
                   </HStack>
-                  <Text fontSize="xs" opacity={0.7} mb={2}>
-                    {VAD_HINT}
-                  </Text>
                   <Slider
                     aria-label="onboarding-pause-slider"
                     min={200}
@@ -343,6 +360,9 @@ export default function Onboarding({
                     </SliderTrack>
                     <SliderThumb />
                   </Slider>
+                  <Text fontSize="xs" opacity={0.6} mt={2}>
+                    {VAD_HINT}
+                  </Text>
                 </Box>
               </VStack>
             </Box>

@@ -35,34 +35,34 @@ export const SKILL_TREE_A1 = [
         content: {
           vocabulary: {
             topic: "tutorial",
-            focusPoints: ["basic words", "greetings"],
+            focusPoints: ["hello", "greetings"],
             tutorialDescription: {
-              en: "Learn new words through interactive questions.",
-              es: "Aprende nuevas palabras mediante preguntas interactivas.",
+              en: "Learn new words through interactive questions. Practice saying 'hello'.",
+              es: "Aprende nuevas palabras mediante preguntas interactivas. Practica decir 'hola'.",
             },
           },
           grammar: {
             topic: "tutorial",
-            focusPoints: ["basic patterns"],
+            focusPoints: ["hello patterns"],
             tutorialDescription: {
-              en: "Master grammar rules through exercises.",
-              es: "Domina las reglas gramaticales mediante ejercicios.",
+              en: "Master grammar rules through exercises. Practice greeting patterns.",
+              es: "Domina las reglas gramaticales mediante ejercicios. Practica patrones de saludo.",
             },
           },
           reading: {
             topic: "tutorial",
-            prompt: "Introduction to reading comprehension",
+            prompt: "Read a simple greeting",
             tutorialDescription: {
-              en: "Improve your reading skills by following along with passages.",
-              es: "Mejora tus habilidades de lectura siguiendo los textos.",
+              en: "Improve your reading skills by following along with passages. Read a simple hello.",
+              es: "Mejora tus habilidades de lectura siguiendo los textos. Lee un saludo simple.",
             },
           },
           stories: {
             topic: "tutorial",
-            prompt: "Introduction to interactive stories",
+            prompt: "Practice saying hello in a story",
             tutorialDescription: {
-              en: "Practice with interactive stories and roleplay by reading and speaking sentence by sentence.",
-              es: "Practica con historias interactivas y juegos de rol leyendo y hablando oración por oración.",
+              en: "Practice with interactive stories by reading and speaking sentence by sentence. Say hello.",
+              es: "Practica con historias interactivas leyendo y hablando oración por oración. Di hola.",
             },
           },
           realtime: {
@@ -75,8 +75,8 @@ export const SKILL_TREE_A1 = [
             successCriteria_it: "Di' ciao.",
             successCriteria_nah: "Di niltze.",
             tutorialDescription: {
-              en: "Practice speaking with realtime conversations and goal oriented chats.",
-              es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
+              en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
+              es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
             },
           },
         },
