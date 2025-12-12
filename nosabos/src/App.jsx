@@ -2914,7 +2914,7 @@ export default function App() {
   // CEFR level configuration (shared across modes)
   const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
   const CEFR_LEVEL_COUNTS = {
-    A1: { flashcards: 300, lessons: 1 }, // 1 pre-unit (7) + 17 units (6 each) = 7 + 102
+    A1: { flashcards: 300, lessons: 110 }, // 1 pre-unit (7) + 17 units (6 each) = 7 + 102
     A2: { flashcards: 250, lessons: 108 }, // 18 units × 6 lessons per unit
     B1: { flashcards: 200, lessons: 90 }, // 15 units × 6 lessons per unit
     B2: { flashcards: 150, lessons: 72 }, // 12 units × 6 lessons per unit
@@ -2976,6 +2976,17 @@ export default function App() {
     },
   };
 
+  const getLessonLevelFromId = (lessonId = "") => {
+    const match = lessonId.match(/lesson-(?:pre-)?(?:tutorial-)?([a-z]\d+)/i);
+    if (match) return match[1].toUpperCase();
+
+    // Tutorial lessons like "lesson-tutorial-1" don't encode the CEFR level
+    // in their ID, but they belong to A1 for progression unlocking.
+    if (lessonId.includes("lesson-tutorial")) return "A1";
+
+    return null;
+  };
+
   // Calculate lesson mode completion status (independent from flashcards)
   const lessonLevelCompletionStatus = useMemo(() => {
     const status = {};
@@ -2984,12 +2995,8 @@ export default function App() {
     CEFR_LEVELS.forEach((level) => {
       // Count completed lessons for this level (including pre-level lessons)
       const completedLessons = Object.keys(lessons).filter((lessonId) => {
-        const match = lessonId.match(/lesson-(?:pre-)?([a-z]\d+)/i);
-        return (
-          match &&
-          match[1].toUpperCase() === level &&
-          lessons[lessonId]?.status === "completed"
-        );
+        const cefrLevel = getLessonLevelFromId(lessonId);
+        return cefrLevel === level && lessons[lessonId]?.status === "completed";
       }).length;
 
       const totalLessons = CEFR_LEVEL_COUNTS[level]?.lessons || 0;
