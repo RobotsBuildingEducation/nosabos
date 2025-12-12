@@ -1981,7 +1981,7 @@ Return ONLY JSON:
           JSON.stringify({
             type: "response.create",
             response: {
-              modalities: ["audio"],
+              modalities: ["audio", "text"],
               conversation: "none",
               instructions: `Say exactly: "${probeText}"`,
               metadata: { kind: "voice_probe" },
