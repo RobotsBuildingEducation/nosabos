@@ -15,9 +15,10 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@chakra-ui/icons";
-import { FaAddressCard } from "react-icons/fa";
 import { PiUsersBold, PiPatreonLogoFill } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
+import { LuKey, LuKeyRound } from "react-icons/lu";
+import { FaKey } from "react-icons/fa";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -40,11 +41,11 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "identity",
-    icon: FaAddressCard,
-    label: { en: "Identity", es: "Identidad" },
+    icon: LuKeyRound,
+    label: { en: "Account Key", es: "Llave de cuenta" },
     description: {
-      en: "View and manage your profile and learning statistics",
-      es: "Ver y gestionar tu perfil y estadísticas de aprendizaje",
+      en: "Access your account info to install the app and access your password",
+      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
     },
     position: 1,
   },

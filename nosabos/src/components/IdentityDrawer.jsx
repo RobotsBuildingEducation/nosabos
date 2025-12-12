@@ -40,7 +40,8 @@ import { SiCashapp } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck } from "react-icons/lu";
+import { LuBadgeCheck, LuKeyRound } from "react-icons/lu";
+import { LuKey } from "react-icons/lu";
 import { doc, updateDoc } from "firebase/firestore";
 
 import { database } from "../firebaseResources/firebaseResources";
@@ -48,6 +49,7 @@ import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
+import { FaKey } from "react-icons/fa";
 
 export default function IdentityDrawer({
   isOpen,
@@ -72,6 +74,7 @@ export default function IdentityDrawer({
 
   const rerunWallet = useNostrWalletStore((s) => s.rerunWallet);
   const [reloadScheduled, setReloadScheduled] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
 
   const lang = appLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
@@ -205,8 +208,31 @@ export default function IdentityDrawer({
         icon: <LuBadgeCheck size={28} />,
         text: t?.app_install_step4 || "Launch from your Home Screen.",
       },
+      {
+        id: "step5",
+        icon: <LuKeyRound size={24} />,
+        text:
+          t?.account_final_step_title ||
+          "Copy your secret key to sign into your account",
+        subText:
+          t?.account_final_step_description ||
+          "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
+        action: (
+          <Button
+            size="xs"
+            leftIcon={<LuKeyRound size={14} />}
+            colorScheme="orange"
+            onClick={() =>
+              copy(currentSecret, t?.toast_secret_copied || "Secret copied")
+            }
+            isDisabled={!currentSecret}
+          >
+            {t?.account_copy_secret || "Copy Secret Key"}
+          </Button>
+        ),
+      },
     ],
-    [t]
+    [t, copy, currentSecret]
   );
 
   return (
@@ -329,86 +355,106 @@ export default function IdentityDrawer({
               </Text>
             </Box>
 
-            {/* Bitcoin Wallet Section (First) */}
+            {/* Bitcoin Wallet Section (Accordion) */}
             {enableWallet && (
-              <Box bg="gray.800" p={4} rounded="md" border="2px solid" borderColor="orange.400">
-                <Text fontWeight="semibold" mb={3}>
-                  {appLanguage === "es"
-                    ? "Billetera Bitcoin (experimental)"
-                    : "Bitcoin wallet (experimental)"}
-                </Text>
-                <Box bg="gray.900" p={3} rounded="md">
-                  <BitcoinWalletSection
-                    userLanguage={appLanguage}
-                    identity={user?.identity || ""}
-                    onSelectIdentity={onSelectIdentity}
-                    isIdentitySaving={isIdentitySaving}
-                  />
+              <Accordion
+                allowMultiple
+                index={isWalletOpen ? [0] : []}
+                onChange={(index) => {
+                  if (Array.isArray(index)) {
+                    setIsWalletOpen(index.includes(0));
+                  } else {
+                    setIsWalletOpen(index === 0);
+                  }
+                }}
+                bg="gray.800"
+                rounded="md"
+                border="2px solid"
+                borderColor="orange.400"
+              >
+                <AccordionItem border="none">
+                  <AccordionButton px={4} py={3} _expanded={{ bg: "gray.750" }}>
+                    <Flex flex="1" textAlign="left" align="center" gap={3}>
+                      <Text fontWeight="semibold">
+                        {appLanguage === "es"
+                          ? "Billetera Bitcoin (experimental)"
+                          : "Bitcoin wallet (experimental)"}
+                      </Text>
+                    </Flex>
+                    <AccordionIcon />
+                  </AccordionButton>
+                  <AccordionPanel px={0} pb={4} pt={0}>
+                    <Box bg="gray.900" p={3} rounded="md" mx={3} mt={3}>
+                      <BitcoinWalletSection
+                        userLanguage={appLanguage}
+                        identity={user?.identity || ""}
+                        onSelectIdentity={onSelectIdentity}
+                        isIdentitySaving={isIdentitySaving}
+                      />
 
-                  <Box bg="gray.800" p={3} rounded="md" mt={3}>
-                    <Text fontSize="xs" opacity={0.8}>
-                      {reloadNote}
-                    </Text>
-                  </Box>
+                      <Box bg="gray.800" p={3} rounded="md" mt={3}>
+                        <Text fontSize="xs" opacity={0.8}>
+                          {reloadNote}
+                        </Text>
+                      </Box>
 
-                  {reloadScheduled && (
-                    <Alert
-                      status="success"
-                      variant="left-accent"
-                      bg="green.900"
-                      color="green.100"
-                      mt={3}
-                    >
-                      <AlertIcon />
-                      <AlertDescription fontSize="sm">
-                        {successMessage}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </Box>
-              </Box>
+                      {reloadScheduled && (
+                        <Alert
+                          status="success"
+                          variant="left-accent"
+                          bg="green.900"
+                          color="green.100"
+                          mt={3}
+                        >
+                          <AlertIcon />
+                          <AlertDescription fontSize="sm">
+                            {successMessage}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </Box>
+                  </AccordionPanel>
+                </AccordionItem>
+              </Accordion>
             )}
 
             {/* Install App Section (Always Visible - NOT an accordion) */}
-            <Box bg="gray.800" p={4} rounded="md" border="2px solid" borderColor="cyan.400">
+            <Box
+              bg="gray.800"
+              p={4}
+              rounded="md"
+              border="2px solid"
+              borderColor="cyan.400"
+            >
               <Text fontWeight="semibold" mb={3}>
                 {t?.app_install_title || "Install as app"}
               </Text>
               <Box bg="gray.900" p={3} rounded="md">
                 {installSteps.map((step, idx) => (
                   <Box key={step.id} py={2}>
-                    <Flex align="center" gap={3}>
-                      <Box color="teal.200">{step.icon}</Box>
-                      <Text fontSize="sm">{step.text}</Text>
+                    <Flex
+                      align="center"
+                      gap={3}
+                      justify="space-between"
+                      flexWrap="wrap"
+                    >
+                      <HStack align="center" gap={3}>
+                        <Box color="teal.200">{step.icon}</Box>
+                        <Text fontSize="sm">{step.text}</Text>
+                      </HStack>
+                      {step.action ? <Box>{step.action}</Box> : null}
                     </Flex>
+                    {step.subText ? (
+                      <Text fontSize="xs" color="teal.100" mt={2} ml={8}>
+                        {step.subText}
+                      </Text>
+                    ) : null}
                     {idx < installSteps.length - 1 && (
                       <Divider my={3} borderColor="gray.700" />
                     )}
                   </Box>
                 ))}
               </Box>
-            </Box>
-
-            {/* Final Step: Copy Your Secret Key */}
-            <Box bg="gray.800" p={4} rounded="md" border="2px solid" borderColor="teal.400">
-              <Text fontWeight="semibold" mb={2}>
-                {t?.account_final_step_title || "Copy your secret key to sign into your account"}
-              </Text>
-              <Text fontSize="sm" color="teal.100" mb={3}>
-                {t?.account_final_step_description ||
-                  "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you."}
-              </Text>
-              <Button
-                size="sm"
-                colorScheme="orange"
-                onClick={() =>
-                  copy(currentSecret, t?.toast_secret_copied || "Secret copied")
-                }
-                isDisabled={!currentSecret}
-                width="full"
-              >
-                {t?.account_copy_secret || "Copy Secret Key"}
-              </Button>
             </Box>
 
             {/* CEFR insight - Commented out for future development */}

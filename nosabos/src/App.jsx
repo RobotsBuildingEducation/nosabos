@@ -70,6 +70,7 @@ import {
   LuBookOpen,
   LuShuffle,
   LuLanguages,
+  LuKeyRound,
 } from "react-icons/lu";
 import {
   PiPatreonLogoFill,
@@ -104,7 +105,7 @@ import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
-import { FaAddressCard } from "react-icons/fa";
+import { LuKey } from "react-icons/lu";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
@@ -118,6 +119,7 @@ import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
+import { FaKey } from "react-icons/fa";
 
 /* ---------------------------
    Small helpers
@@ -4201,7 +4203,7 @@ function BottomActionBar({
           />
         )}
         <IconButton
-          icon={<FaAddressCard size={18} />}
+          icon={<LuKeyRound size={18} />}
           onClick={onOpenIdentity}
           aria-label={identityLabel}
           isLoading={isIdentitySaving}
