@@ -30,6 +30,80 @@ export const SKILL_STATUS = {
  */
 const baseLearningPath = {
   A1: [
+    // Tutorial Unit - always at the very beginning
+    {
+      id: "unit-tutorial-a1",
+      title: {
+        en: "Getting Started",
+        es: "Primeros Pasos",
+      },
+      description: {
+        en: "Learn how to use the app and explore all features",
+        es: "Aprende a usar la app y explora todas las funciones",
+      },
+      color: "#6366F1",
+      position: { row: -2, offset: 0 },
+      isTutorial: true,
+      lessons: [
+        {
+          id: "lesson-tutorial-1",
+          title: {
+            en: "Getting Started",
+            es: "Primeros Pasos",
+          },
+          description: {
+            en: "A guided tour of all learning modules",
+            es: "Un recorrido guiado por todos los módulos de aprendizaje",
+          },
+          xpRequired: 0,
+          xpReward: 50,
+          isTutorial: true,
+          modes: ["vocabulary", "grammar", "reading", "stories", "realtime"],
+          content: {
+            vocabulary: {
+              topic: "tutorial",
+              focusPoints: ["basic words", "greetings"],
+              tutorialDescription: {
+                en: "Learn new words with interactive questions.",
+                es: "Aprende nuevas palabras mediante preguntas interactivas.",
+              },
+            },
+            grammar: {
+              topic: "tutorial",
+              focusPoints: ["basic patterns"],
+              tutorialDescription: {
+                en: "Master grammar rules through exercises.",
+                es: "Domina las reglas gramaticales mediante ejercicios.",
+              },
+            },
+            reading: {
+              topic: "tutorial",
+              prompt: "Introduction to reading comprehension",
+              tutorialDescription: {
+                en: "Improve your reading skills by following along with passages.",
+                es: "Mejora tus habilidades de lectura siguiendo los textos.",
+              },
+            },
+            stories: {
+              topic: "tutorial",
+              prompt: "Introduction to interactive stories",
+              tutorialDescription: {
+                en: "Practice with interactive stories and roleplay by reading and speaking sentence by sentence.",
+                es: "Practica con historias interactivas y juegos de rol leyendo y hablando oración por oración.",
+              },
+            },
+            realtime: {
+              scenario: "tutorial conversation",
+              prompt: "Introduction to real-time practice",
+              tutorialDescription: {
+                en: "Practice speaking with realtime conversations and goal oriented chats.",
+                es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
+              },
+            },
+          },
+        },
+      ],
+    },
     {
       id: "unit-pre-a1-1",
       title: {
@@ -9467,7 +9541,8 @@ function getLessonXpReward(lessonId = "") {
   }
 
   const rewardOptions =
-    Math.floor((LESSON_XP_RANGE.max - LESSON_XP_RANGE.min) / LESSON_XP_STEP) + 1;
+    Math.floor((LESSON_XP_RANGE.max - LESSON_XP_RANGE.min) / LESSON_XP_STEP) +
+    1;
   return (hash % rewardOptions) * LESSON_XP_STEP + LESSON_XP_RANGE.min;
 }
 
@@ -9565,6 +9640,12 @@ function deriveLessonTopic(unit, lesson) {
 
 function addSupplementalLessons(level, unit) {
   const lessons = unit.lessons || [];
+
+  // Skip supplemental lessons for tutorial units
+  if (unit.isTutorial) {
+    return lessons;
+  }
+
   const nonQuizLessons = lessons.filter((lesson) => !lesson.isFinalQuiz);
   const maxNonQuizXp = Math.max(
     ...nonQuizLessons.map((lesson) => lesson.xpRequired || 0),
@@ -10317,6 +10398,11 @@ function ensureModeContent(mode, topic, lesson) {
 }
 
 function normalizeLessonModes(unit, lesson) {
+  // Skip normalization for tutorial lessons - preserve their exact modes
+  if (lesson.isTutorial) {
+    return lesson;
+  }
+
   const topic = deriveLessonTopic(unit, lesson);
   const isQuiz = lesson.isFinalQuiz;
   const isSkillBuilder = lesson.id?.includes("skill-builder");
