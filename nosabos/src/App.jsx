@@ -1204,97 +1204,6 @@ export default function App() {
   const lastTargetLangRef = useRef(resolvedTargetLang);
   const pendingLessonCompletionRef = useRef(null);
 
-  // Random mode switcher for lessons (sequential for tutorial mode)
-  const switchToRandomLessonMode = useCallback(() => {
-    console.log("[switchToRandomLessonMode] Called", {
-      viewMode,
-      hasActiveLesson: !!activeLesson,
-      activeLessonModes: activeLesson?.modes,
-      currentTab,
-      isTutorialMode,
-    });
-
-    if (viewMode !== "lesson" || !activeLesson?.modes?.length) {
-      console.log(
-        "[switchToRandomLessonMode] Exiting early - conditions not met"
-      );
-      return;
-    }
-
-    const availableModes = activeLesson.modes;
-
-    // TUTORIAL MODE: Sequential navigation through modules
-    if (isTutorialMode && activeLesson.isTutorial) {
-      const currentIndex = availableModes.indexOf(currentTab);
-
-      // Mark current module as completed
-      if (!tutorialCompletedModules.includes(currentTab)) {
-        setTutorialCompletedModules((prev) => [...prev, currentTab]);
-      }
-
-      // Check if this is the last module
-      if (currentIndex >= availableModes.length - 1) {
-        console.log(
-          "[Tutorial Mode] All modules completed, triggering lesson completion"
-        );
-        // Tutorial complete - will trigger lesson completion flow
-        return;
-      }
-
-      // Move to next module in sequence
-      const nextMode = availableModes[currentIndex + 1];
-      console.log("[Tutorial Mode] Sequential switch", {
-        from: currentTab,
-        to: nextMode,
-        currentIndex,
-        totalModules: availableModes.length,
-      });
-
-      setCurrentTab(nextMode);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("currentTab", nextMode);
-      }
-      return;
-    }
-
-    // NORMAL MODE: Random switching
-    if (availableModes.length <= 1) {
-      console.log(
-        "[switchToRandomLessonMode] Only one mode available, not switching"
-      );
-      return;
-    }
-
-    // Filter out current mode to ensure we switch to a different one
-    const otherModes = availableModes.filter((mode) => mode !== currentTab);
-    if (otherModes.length === 0) {
-      console.log("[switchToRandomLessonMode] No other modes to switch to");
-      return;
-    }
-
-    // Pick random mode from other modes
-    const randomMode =
-      otherModes[Math.floor(Math.random() * otherModes.length)];
-
-    console.log("[Random Mode Switch] Switching modes", {
-      from: currentTab,
-      to: randomMode,
-      availableModes,
-      otherModes,
-    });
-
-    setCurrentTab(randomMode);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("currentTab", randomMode);
-    }
-  }, [
-    viewMode,
-    activeLesson,
-    currentTab,
-    isTutorialMode,
-    tutorialCompletedModules,
-  ]);
-
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!activeNpub) {
@@ -2215,6 +2124,159 @@ export default function App() {
     }
   }, [resolvedTargetLang]);
 
+  const triggerLessonCompletion = useCallback(
+    async (reason = "manual") => {
+      if (!activeLesson || lessonCompletionTriggeredRef.current) return;
+
+      console.log("[Lesson Completion] Triggered", { reason, activeLesson });
+      lessonCompletionTriggeredRef.current = true;
+
+      const npub = resolveNpub();
+      if (!npub) {
+        lessonCompletionTriggeredRef.current = false;
+        return;
+      }
+
+      const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
+
+      try {
+        await completeLesson(
+          npub,
+          activeLesson.id,
+          activeLesson.xpReward,
+          lessonLang
+        );
+
+        await awardXp(npub, activeLesson.xpReward, "lesson");
+
+        const fresh = await loadUserObjectFromDB(database, npub);
+        if (fresh) setUser?.(fresh);
+
+        const lessonData = {
+          title: activeLesson.title,
+          xpEarned: activeLesson.xpReward,
+          lessonId: activeLesson.id,
+        };
+        setCompletedLessonData(lessonData);
+        pendingLessonCompletionRef.current = lessonData;
+
+        handleReturnToSkillTree();
+
+        setTimeout(() => {
+          if (
+            pendingLessonCompletionRef.current &&
+            !dailyGoalModalJustOpenedRef.current
+          ) {
+            setShowCompletionModal(true);
+            pendingLessonCompletionRef.current = null;
+          }
+        }, 150);
+      } catch (err) {
+        console.error("Failed to complete lesson:", err);
+        lessonCompletionTriggeredRef.current = false;
+      }
+    },
+    [
+      activeLesson,
+      handleReturnToSkillTree,
+      resolveNpub,
+      resolvedTargetLang,
+      setUser,
+    ]
+  );
+
+  // Random mode switcher for lessons (sequential for tutorial mode)
+  const switchToRandomLessonMode = useCallback(() => {
+    console.log("[switchToRandomLessonMode] Called", {
+      viewMode,
+      hasActiveLesson: !!activeLesson,
+      activeLessonModes: activeLesson?.modes,
+      currentTab,
+      isTutorialMode,
+    });
+
+    if (viewMode !== "lesson" || !activeLesson?.modes?.length) {
+      console.log(
+        "[switchToRandomLessonMode] Exiting early - conditions not met"
+      );
+      return;
+    }
+
+    const availableModes = activeLesson.modes;
+
+    // TUTORIAL MODE: Sequential navigation through modules
+    if (isTutorialMode && activeLesson.isTutorial) {
+      const currentIndex = availableModes.indexOf(currentTab);
+
+      // Mark current module as completed
+      if (!tutorialCompletedModules.includes(currentTab)) {
+        setTutorialCompletedModules((prev) => [...prev, currentTab]);
+      }
+
+      // Check if this is the last module
+      if (currentIndex >= availableModes.length - 1) {
+        console.log(
+          "[Tutorial Mode] All modules completed, triggering lesson completion"
+        );
+        triggerLessonCompletion("tutorial_sequence");
+        return;
+      }
+
+      // Move to next module in sequence
+      const nextMode = availableModes[currentIndex + 1];
+      console.log("[Tutorial Mode] Sequential switch", {
+        from: currentTab,
+        to: nextMode,
+        currentIndex,
+        totalModules: availableModes.length,
+      });
+
+      setCurrentTab(nextMode);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("currentTab", nextMode);
+      }
+      return;
+    }
+
+    // NORMAL MODE: Random switching
+    if (availableModes.length <= 1) {
+      console.log(
+        "[switchToRandomLessonMode] Only one mode available, not switching"
+      );
+      return;
+    }
+
+    // Filter out current mode to ensure we switch to a different one
+    const otherModes = availableModes.filter((mode) => mode !== currentTab);
+    if (otherModes.length === 0) {
+      console.log("[switchToRandomLessonMode] No other modes to switch to");
+      return;
+    }
+
+    // Pick random mode from other modes
+    const randomMode =
+      otherModes[Math.floor(Math.random() * otherModes.length)];
+
+    console.log("[Random Mode Switch] Switching modes", {
+      from: currentTab,
+      to: randomMode,
+      availableModes,
+      otherModes,
+    });
+
+    setCurrentTab(randomMode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("currentTab", randomMode);
+    }
+  }, [
+    viewMode,
+    activeLesson,
+    currentTab,
+    isTutorialMode,
+    tutorialCompletedModules,
+    triggerLessonCompletion,
+  ]);
+
   // Handle closing the completion modal and returning to skill tree
   const handleCloseCompletionModal = () => {
     setShowCompletionModal(false);
@@ -2687,52 +2749,7 @@ export default function App() {
             console.log(
               "[Lesson Completion] XP goal reached! Completing lesson..."
             );
-            lessonCompletionTriggeredRef.current = true;
-
-            const npub = resolveNpub();
-            if (npub) {
-              completeLesson(
-                npub,
-                activeLesson.id,
-                activeLesson.xpReward,
-                lessonLang
-              )
-                .then(async () => {
-                  // Award XP to trigger daily goal check
-                  await awardXp(npub, activeLesson.xpReward, "lesson");
-
-                  const fresh = await loadUserObjectFromDB(database, npub);
-                  if (fresh) setUser?.(fresh);
-
-                  // Store lesson completion data
-                  const lessonData = {
-                    title: activeLesson.title,
-                    xpEarned: activeLesson.xpReward,
-                    lessonId: activeLesson.id,
-                  };
-                  setCompletedLessonData(lessonData);
-                  pendingLessonCompletionRef.current = lessonData;
-
-                  handleReturnToSkillTree();
-
-                  // Delay showing lesson completion modal to allow daily goal modal to appear first
-                  setTimeout(() => {
-                    // Only show lesson modal if daily goal modal didn't open
-                    if (
-                      pendingLessonCompletionRef.current &&
-                      !dailyGoalModalJustOpenedRef.current
-                    ) {
-                      setShowCompletionModal(true);
-                      pendingLessonCompletionRef.current = null;
-                    }
-                    // If daily goal modal opened, keep the pending data to show after it closes
-                  }, 150);
-                })
-                .catch((err) => {
-                  console.error("Failed to complete lesson:", err);
-                  lessonCompletionTriggeredRef.current = false;
-                });
-            }
+            triggerLessonCompletion("xp_goal");
           }
         }
 
@@ -2758,6 +2775,7 @@ export default function App() {
     lessonStartXp,
     setUser,
     resolvedTargetLang,
+    triggerLessonCompletion,
   ]);
 
   const RandomHeader = (
