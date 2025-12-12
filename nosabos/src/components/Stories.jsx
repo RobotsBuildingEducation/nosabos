@@ -1678,8 +1678,9 @@ export default function StoryMode({
           initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={prefersReducedMotion ? {} : { duration: 0.5 }}
+          style={{ width: "100%" }}
         >
-          <VStack spacing={6} align="stretch" maxWidth="1280px">
+          <VStack spacing={6} align="stretch" w="100%" maxWidth="1280px">
             <Box
               bg="rgba(255, 255, 255, 0.05)"
               p={6}

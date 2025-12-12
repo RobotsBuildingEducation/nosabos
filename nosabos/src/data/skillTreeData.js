@@ -10397,6 +10397,11 @@ function ensureModeContent(mode, topic, lesson) {
 }
 
 function normalizeLessonModes(unit, lesson) {
+  // Skip normalization for tutorial lessons - preserve their exact modes
+  if (lesson.isTutorial) {
+    return lesson;
+  }
+
   const topic = deriveLessonTopic(unit, lesson);
   const isQuiz = lesson.isFinalQuiz;
   const isSkillBuilder = lesson.id?.includes("skill-builder");
