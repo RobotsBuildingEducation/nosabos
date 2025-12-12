@@ -240,26 +240,29 @@ function buildFillStreamPrompt({
   const diff = difficultyHint(cefrLevel);
 
   // If lesson content is provided, use specific grammar topic/focus
-  const topicDirective =
-    lessonContent?.topic || lessonContent?.focusPoints
-      ? [
-          lessonContent.topic
-            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
-            : null,
-          lessonContent.focusPoints
-            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-                lessonContent.focusPoints
-              )}. These are mandatory lesson objectives.`
-            : null,
-        ]
-          .filter(Boolean)
-          .join("\n")
-      : `- Consider learner recent corrects: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. The blank should be for a simple greeting word like "hello", "hola", "hi", or "buenos días". Keep everything at absolute beginner level. Example: "___ amigo!" where the answer is "Hola".`
+    : lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic
+          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+          : null,
+        lessonContent.focusPoints
+          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+              lessonContent.focusPoints
+            )}. These are mandatory lesson objectives.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
-    `Create ONE short ${TARGET} grammar fill-in-the-blank with a single blank "___". Difficulty: ${diff}`,
+    `Create ONE short ${TARGET} grammar fill-in-the-blank with a single blank "___". Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
     `- No meta like "(to go)" in the stem; ≤120 chars.`,
     topicDirective,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -374,26 +377,29 @@ function buildMCStreamPrompt({
     : `- Stem short (≤120 chars); may include a blank "___" or pose a concise grammar question.`;
 
   // If lesson content is provided, use specific grammar topic/focus
-  const topicDirective =
-    lessonContent?.topic || lessonContent?.focusPoints
-      ? [
-          lessonContent.topic
-            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
-            : null,
-          lessonContent.focusPoints
-            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-                lessonContent.focusPoints
-              )}. These are mandatory lesson objectives.`
-            : null,
-        ]
-          .filter(Boolean)
-          .join("\n")
-      : `- Consider learner recent corrects: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-choice about basic greetings only. The correct answer MUST be a simple greeting like "hello", "hola", "hi", "buenos días". Keep everything at absolute beginner level.`
+    : lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic
+          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+          : null,
+        lessonContent.focusPoints
+          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+              lessonContent.focusPoints
+            )}. These are mandatory lesson objectives.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
-    `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${diff}`,
+    `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
     stemDirective,
     `- 4 distinct choices in ${TARGET}.`,
     `- One of the distinct choices must be correct.`,
@@ -463,26 +469,29 @@ function buildMAStreamPrompt({
     : `- Stem short (≤120 chars), may include "___".`;
 
   // If lesson content is provided, use specific grammar topic/focus
-  const topicDirective =
-    lessonContent?.topic || lessonContent?.focusPoints
-      ? [
-          lessonContent.topic
-            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
-            : null,
-          lessonContent.focusPoints
-            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-                lessonContent.focusPoints
-              )}. These are mandatory lesson objectives.`
-            : null,
-        ]
-          .filter(Boolean)
-          .join("\n")
-      : `- Consider learner recent corrects: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE multiple-answer about basic greetings only. The correct answers MUST be simple greetings like "hello", "hola", "hi", "buenos días", "good morning". Keep everything at absolute beginner level.`
+    : lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic
+          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+          : null,
+        lessonContent.focusPoints
+          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+              lessonContent.focusPoints
+            )}. These are mandatory lesson objectives.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
-    `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct, NEVER just 1). Difficulty: ${diff}`,
+    `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct, NEVER just 1). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -517,26 +526,29 @@ function buildSpeakGrammarStreamPrompt({
   const diff = difficultyHint(cefrLevel);
 
   // If lesson content is provided, use specific grammar topic/focus
-  const topicDirective =
-    lessonContent?.topic || lessonContent?.focusPoints
-      ? [
-          lessonContent.topic
-            ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
-            : null,
-          lessonContent.focusPoints
-            ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
-                lessonContent.focusPoints
-              )}. These are mandatory lesson objectives.`
-            : null,
-        ]
-          .filter(Boolean)
-          .join("\n")
-      : `- Consider recent grammar successes: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking exercise about basic greetings only. The sentence MUST be a simple greeting like "Hello!", "¡Hola!", "Good morning!", "¡Buenos días!". Keep everything at absolute beginner level.`
+    : lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic
+          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. Do NOT test any other grammar concepts. This is lesson-specific content and you MUST NOT diverge.`
+          : null,
+        lessonContent.focusPoints
+          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+              lessonContent.focusPoints
+            )}. These are mandatory lesson objectives.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : `- Consider recent grammar successes: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
-    `Craft ONE short ${TARGET} sentence (≤8 words) that showcases a grammar feature. Difficulty: ${diff}`,
+    `Craft ONE short ${TARGET} sentence (≤8 words) that showcases a grammar feature. Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
     `- Provide an instruction line in ${TARGET} telling the learner to say it aloud (≤100 chars).`,
     `- Hint in ${SUPPORT} describing the grammar point (e.g., tense, agreement, mood).`,
     wantTranslation

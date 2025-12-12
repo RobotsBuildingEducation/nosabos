@@ -263,16 +263,19 @@ function buildFillVocabStreamPrompt({
   const diff = vocabDifficulty(cefrLevel);
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective =
-    lessonContent?.words || lessonContent?.topic
-      ? lessonContent.words
-        ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
-            lessonContent.words
-          )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-        : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-      : `- Consider learner recent corrects: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The word being tested MUST be "hello" or "hola" (greeting words). Use extremely simple vocabulary like: hello, hi, good morning, good afternoon, goodbye. Keep everything at absolute beginner level.`
+    : lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
+          lessonContent.words
+        )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
     `Create ONE short ${TARGET} VOCABULARY sentence with a single blank "___" that targets word choice (not grammar). Difficulty: ${diff}`,
@@ -318,19 +321,22 @@ function buildMCVocabStreamPrompt({
     : `- Stem ≤120 chars with a blank "___" OR a short definition asking for a word.`;
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective =
-    lessonContent?.words || lessonContent?.topic
-      ? lessonContent.words
-        ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
-            lessonContent.words
-          )}. The question must test one of these specific words. This is lesson-specific content and you MUST NOT diverge.`
-        : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-      : `- Consider learner recent corrects: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting word like "hello", "hola", "hi", "buenos días", etc. Keep everything at absolute beginner level.`
+    : lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
+          lessonContent.words
+        )}. The question must test one of these specific words. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
-    `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${diff}`,
+    `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
     stemDirective,
     `- 4 distinct word choices in ${TARGET}.`,
     `One of the distinct word choices must be correct.`,
@@ -374,19 +380,22 @@ function buildMAVocabStreamPrompt({
     : `- Stem ≤120 chars with context (e.g., "Which words fit the sentence?" or "Select all synonyms for ___").`;
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective =
-    lessonContent?.words || lessonContent?.topic
-      ? lessonContent.words
-        ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
-            lessonContent.words
-          )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-        : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-      : `- Consider learner recent corrects: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answers MUST be greeting words like "hello", "hola", "hi", "buenos días", "good morning", etc. Keep everything at absolute beginner level.`
+    : lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
+          lessonContent.words
+        )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
-    `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct, never just 1). Difficulty: ${diff}`,
+    `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct, never just 1). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -426,19 +435,22 @@ function buildSpeakVocabStreamPrompt({
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective =
-    lessonContent?.words || lessonContent?.topic
-      ? lessonContent.words
-        ? `- STRICT REQUIREMENT: The word/phrase being practiced MUST be from this exact list: ${JSON.stringify(
-            lessonContent.words
-          )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-        : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-      : `- Consider learner recent successes: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking practice about basic greetings only. The word/phrase MUST be "hello", "hola", "hi", or a simple greeting. Keep everything at absolute beginner level.`
+    : lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- STRICT REQUIREMENT: The word/phrase being practiced MUST be from this exact list: ${JSON.stringify(
+          lessonContent.words
+        )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+    : `- Consider learner recent successes: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
-    `Create ONE ${TARGET} speaking drill (difficulty: ${diff}). Choose VARIANT:`,
+    `Create ONE ${TARGET} speaking drill (difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}). Choose VARIANT:`,
     `- repeat: show the ${TARGET} word/phrase (≤4 words) to repeat aloud.`,
     allowTranslate
       ? `- translate: show a ${SUPPORT} word/phrase (≤3 words) and have them speak the ${TARGET} translation aloud.`
@@ -482,19 +494,22 @@ function buildMatchVocabStreamPrompt({
   const diff = vocabDifficulty(cefrLevel);
 
   // If lesson content is provided, use specific vocabulary/topic
-  const topicDirective =
-    lessonContent?.words || lessonContent?.topic
-      ? lessonContent.words
-        ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(
-            lessonContent.words
-          )}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
-        : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
-      : `- Consider learner recent corrects: ${JSON.stringify(
-          recentGood.slice(-3)
-        )}`;
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE matching exercise about basic greetings only. The left column MUST contain ONLY greeting words like "hello", "hola", "hi", "buenos días", "good morning", "goodbye", etc. Keep everything at absolute beginner level.`
+    : lessonContent?.words || lessonContent?.topic
+    ? lessonContent.words
+      ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(
+          lessonContent.words
+        )}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
+      : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
 
   return [
-    `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${diff}`,
+    `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
     topicDirective,
     `- Left column: ${TARGET} words (3–6 items, unique).`,
     `- Right column: ${SUPPORT} short definitions (unique).`,

@@ -1617,6 +1617,7 @@ function LessonDetailModal({
                   py={2}
                   borderRadius="full"
                   fontWeight="black"
+                  textTransform="none"
                 >
                   {lesson.isTutorial
                     ? getTranslation("skill_tree_tutorial_activities")
