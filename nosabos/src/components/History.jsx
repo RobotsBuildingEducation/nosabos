@@ -697,6 +697,10 @@ export default function History({
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
   const { xp, levelNumber, progressPct, progress, npub, isLoading } =
     useSharedProgress();
 
