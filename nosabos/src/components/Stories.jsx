@@ -557,10 +557,13 @@ export default function StoryMode({
       const storyUrl = "https://generatestory-hftgya63qa-uc.a.run.app";
 
       // Determine lesson context for the story
-      const lessonTopic =
-        lessonContent?.topic ||
-        lessonContent?.scenario ||
-        "general conversation";
+      // Special handling for tutorial mode - use very simple "hello" content only
+      const isTutorial = lessonContent?.topic === "tutorial";
+      const lessonTopic = isTutorial
+        ? "TUTORIAL: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning'. The story should have only 2-3 very short sentences (3-5 words each). This is for absolute beginners learning to say hello."
+        : lessonContent?.topic ||
+          lessonContent?.scenario ||
+          "general conversation";
 
       const response = await fetch(storyUrl, {
         method: "POST",
@@ -723,16 +726,21 @@ export default function StoryMode({
       const diff = getCEFRPromptHint(cefrLevel);
 
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
-      const scenarioDirective =
-        lessonContent?.scenario || lessonContent?.topic
-          ? lessonContent.scenario
-            ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
-            : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
-          : "Create a simple conversational story appropriate for language practice.";
+      // Special handling for tutorial mode - use very simple "hello" content only
+      const isTutorial = lessonContent?.topic === "tutorial";
+      const scenarioDirective = isTutorial
+        ? `TUTORIAL MODE - ABSOLUTE BEGINNER: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. Each sentence should be 3-5 words maximum. This is for absolute beginners learning their first greeting.`
+        : lessonContent?.scenario || lessonContent?.topic
+        ? lessonContent.scenario
+          ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
+          : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
+        : "Create a simple conversational story appropriate for language practice.";
 
       const prompt = [
         "You are a language tutor. Generate a short, engaging conversational story",
-        `for a learner practicing ${tName} (${tLang}). Difficulty: ${diff}.`,
+        `for a learner practicing ${tName} (${tLang}). Difficulty: ${
+          isTutorial ? "absolute beginner, very easy" : diff
+        }.`,
         `Also provide a brief support translation in ${sName} (${sLang}).`,
         scenarioDirective,
         "",
@@ -1519,7 +1527,7 @@ export default function StoryMode({
 
   /* ----------------------------- Derived ----------------------------- */
   const progressPercentage = storyData
-    ? ((currentSentenceIndex + 1) / storyData.sentences.length) * 100
+    ? (currentSentenceIndex / storyData.sentences.length) * 100
     : 0;
   const prefersReducedMotion =
     typeof window !== "undefined" &&
@@ -1640,9 +1648,9 @@ export default function StoryMode({
             <Text fontSize="sm" color="#94a3b8">
               {showFullStory
                 ? uiLang === "es"
-                  ? "Narrativa"
-                  : "Narrative"
-                : `${currentSentenceIndex + 1} / ${
+                  ? ""
+                  : ""
+                : `${currentSentenceIndex} / ${
                     storyData?.sentences?.length || 0
                   }`}
             </Text>
@@ -1866,7 +1874,7 @@ export default function StoryMode({
                       mt={2}
                     >
                       {uiLang === "es" ? "Oración" : "Sentence"}{" "}
-                      {currentSentenceIndex + 1} {uiLang === "es" ? "de" : "of"}{" "}
+                      {currentSentenceIndex} {uiLang === "es" ? "de" : "of"}{" "}
                       {storyData.sentences.length}
                     </Text>
                   </Box>

@@ -353,14 +353,29 @@ function buildSeedLecturePrompt({
   const SUPPORT = LANG_NAME(supportLang);
   const diff = difficultyHint(cefrLevel);
 
-  const topicText =
-    lessonContent?.topic ||
-    lessonContent?.scenario ||
-    "general cultural and linguistic concepts";
-  const promptText = lessonContent?.prompt || "";
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicText = isTutorial
+    ? "basic greetings and saying hello"
+    : lessonContent?.topic ||
+      lessonContent?.scenario ||
+      "general cultural and linguistic concepts";
+  const promptText = isTutorial
+    ? "Focus ONLY on the word 'hello' and simple greetings. This is for absolute beginners."
+    : lessonContent?.prompt || "";
+  const tutorialDirective = isTutorial
+    ? `
+TUTORIAL MODE - ABSOLUTE BEGINNER CONTENT:
+- This is a tutorial for complete beginners
+- Focus ONLY on the greeting "hello" and its equivalents
+- Use extremely simple vocabulary (hello, hi, good morning, goodbye)
+- Keep sentences very short (3-5 words maximum)
+- Length should be only 50-80 words total
+- Make it feel welcoming and encouraging`
+    : "";
 
   return `
-Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${diff}.
+Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}.${tutorialDirective}
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. Most importantly, the lecture generated is suitable for a ${cefrLevel} level reader. 
@@ -412,14 +427,27 @@ function buildLecturePrompt({
       ? previousTitles.map((t) => `- ${t}`).join("\n")
       : "(none yet)";
 
-  const topicText =
-    lessonContent?.topic ||
-    lessonContent?.scenario ||
-    "general cultural and linguistic concepts";
-  const promptText = lessonContent?.prompt || "";
+  // Special handling for tutorial mode - use very simple "hello" content only
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const topicText = isTutorial
+    ? "basic greetings and saying hello"
+    : lessonContent?.topic ||
+      lessonContent?.scenario ||
+      "general cultural and linguistic concepts";
+  const promptText = isTutorial
+    ? "Focus ONLY on the word 'hello' and simple greetings. This is for absolute beginners."
+    : lessonContent?.prompt || "";
+  const tutorialDirective = isTutorial
+    ? `
+TUTORIAL MODE - ABSOLUTE BEGINNER CONTENT:
+- Focus ONLY on the greeting "hello" and its equivalents
+- Use extremely simple vocabulary (hello, hi, good morning, goodbye)
+- Keep sentences very short (3-5 words maximum)
+- Length should be only 50-80 words total`
+    : "";
 
   return `
-You are creating educational reading material for language learners focused on ${topicText}. ${promptText}
+You are creating educational reading material for language learners focused on ${topicText}. ${promptText}${tutorialDirective}
 Choose the **next related sub-topic** based on the list of previous lecture titles.
 Avoid repetition but maintain thematic coherence with ${topicText}.
 
