@@ -37,7 +37,7 @@ import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck } from "react-icons/lu";
 import { keyframes } from "@emotion/react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import RobotBuddyPro from "./RobotBuddyPro";
@@ -461,8 +461,6 @@ const LandingPage = ({
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
   );
-  const { scrollYProgress } = useScroll();
-
   const [landingLanguage, setLandingLanguage] = useState(
     getInitialLandingLanguage
   );
@@ -470,16 +468,6 @@ const LandingPage = ({
   const defaultLoadingMessage = copy.default_loading;
   const englishLabel = copy.language_en || landingTranslations.en.language_en;
   const spanishLabel = copy.language_es || landingTranslations.en.language_es;
-  const heroParallax = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [0, prefersReducedMotion ? 0 : -140]
-  );
-  const floatingBadge = useTransform(
-    scrollYProgress,
-    [0, 1],
-    [0, prefersReducedMotion ? 0 : 40]
-  );
 
   const [view, setView] = useState("landing");
   const [displayName, setDisplayName] = useState("");
@@ -496,15 +484,6 @@ const LandingPage = ({
         y: 0,
         transition: { duration: 0.7, ease: "easeOut" },
       },
-      floating: {
-        y: [0, -8, 0],
-        transition: {
-          duration: 8,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
-        },
-      },
     }),
     []
   );
@@ -516,15 +495,6 @@ const LandingPage = ({
         y: 0,
         transition: { duration: 0.65, ease: "easeOut" },
       },
-      floating: {
-        y: [0, -10, 0],
-        transition: {
-          duration: 7,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
-        },
-      },
     }),
     []
   );
@@ -535,15 +505,6 @@ const LandingPage = ({
         opacity: 1,
         y: 0,
         transition: { duration: 0.75, ease: "easeOut" },
-      },
-      floating: {
-        y: [4, -10, 4],
-        transition: {
-          duration: 7.5,
-          repeat: Infinity,
-          repeatType: "mirror",
-          ease: "easeInOut",
-        },
       },
     }),
     []
@@ -720,7 +681,6 @@ const LandingPage = ({
           initial={prefersReducedMotion ? undefined : { opacity: 0, y: 24 }}
           animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          style={prefersReducedMotion ? undefined : { y: heroParallax }}
         >
           <MotionVStack spacing={3} align="center">
             {copy.hero_badge ? (
@@ -742,7 +702,6 @@ const LandingPage = ({
                 initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
                 animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.15 }}
-                style={prefersReducedMotion ? undefined : { y: floatingBadge }}
               >
                 {copy.hero_badge}
               </MotionBox>
@@ -785,7 +744,7 @@ const LandingPage = ({
             display="flex"
             alignItems={"center"}
             initial={prefersReducedMotion ? undefined : "hidden"}
-            animate={prefersReducedMotion ? undefined : ["visible", "floating"]}
+            animate={prefersReducedMotion ? undefined : "visible"}
             variants={prefersReducedMotion ? undefined : stackedVariant}
             transition={{ staggerChildren: 0.08 }}
           >
@@ -860,7 +819,7 @@ const LandingPage = ({
             bg="rgba(4, 12, 22, 0.92)"
             borderRadius="3xl"
             initial={prefersReducedMotion ? undefined : "hidden"}
-            animate={prefersReducedMotion ? undefined : ["visible", "floating"]}
+            animate={prefersReducedMotion ? undefined : "visible"}
             variants={prefersReducedMotion ? undefined : revealVariant}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
@@ -889,7 +848,7 @@ const LandingPage = ({
                       prefersReducedMotion
                         ? undefined
                         : index < 2
-                        ? ["visible", "floating"]
+                        ? "visible"
                         : undefined
                     }
                     whileInView={
@@ -897,7 +856,7 @@ const LandingPage = ({
                         ? undefined
                         : index < 2
                         ? undefined
-                        : ["visible", "floating"]
+                        : "visible"
                     }
                     variants={prefersReducedMotion ? undefined : featureVariant}
                     transition={{
@@ -948,9 +907,7 @@ const LandingPage = ({
             bg="rgba(8, 26, 36, 0.9)"
             borderRadius="3xl"
             initial={prefersReducedMotion ? undefined : "hidden"}
-            whileInView={
-              prefersReducedMotion ? undefined : ["visible", "floating"]
-            }
+            whileInView={prefersReducedMotion ? undefined : "visible"}
             variants={prefersReducedMotion ? undefined : revealVariant}
             viewport={{ once: true, amount: 0.35 }}
             transition={{ duration: 0.6, delay: 0.1 }}
@@ -983,9 +940,7 @@ const LandingPage = ({
             bg="rgba(6, 18, 30, 0.9)"
             borderRadius="3xl"
             initial={prefersReducedMotion ? undefined : "hidden"}
-            whileInView={
-              prefersReducedMotion ? undefined : ["visible", "floating"]
-            }
+            whileInView={prefersReducedMotion ? undefined : "visible"}
             variants={prefersReducedMotion ? undefined : revealVariant}
             viewport={{ once: true, amount: 0.35 }}
             transition={{ duration: 0.6, delay: 0.12 }}
