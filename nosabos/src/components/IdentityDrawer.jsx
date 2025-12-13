@@ -559,14 +559,11 @@ export default function IdentityDrawer({
           <Flex mt="auto" justify="flex-end">
             <Button
               mt={6}
-              variant="outline"
-              colorScheme="red"
               leftIcon={<LuDoorOpen size={18} />}
               onClick={handleSignOut}
               px={5}
               py={3}
               borderRadius="lg"
-              boxShadow="0 4px 12px rgba(0, 0, 0, 0.25)"
             >
               {t?.app_sign_out || "Sign out"}
             </Button>
