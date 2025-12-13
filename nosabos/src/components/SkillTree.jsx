@@ -1594,7 +1594,7 @@ function LessonDetailModal({
                     }
                   >
                     {lesson.isTutorial ? (
-                      <RiBookOpenLine color="white" size={24} />
+                      <RiTrophyLine color="white" size={24} />
                     ) : lesson.isFinalQuiz ? (
                       <RiTrophyLine color="white" size={24} />
                     ) : (
@@ -1611,7 +1611,11 @@ function LessonDetailModal({
                 </HStack>
                 <Text
                   color="white"
-                  fontSize={{ base: "xs", sm: "sm", md: lesson.isTutorial ? "md" : "xl" }}
+                  fontSize={{
+                    base: "xs",
+                    sm: "sm",
+                    md: lesson.isTutorial ? "md" : "xl",
+                  }}
                   px={{ base: 2, md: 5 }}
                   py={2}
                   fontWeight="bold"

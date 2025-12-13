@@ -4167,7 +4167,7 @@ function BottomActionBar({
       right={0}
       zIndex={80}
       bg="rgba(6, 10, 24, 0.2)"
-      backdropFilter="blur(4px)"
+      backdropFilter="blur(2px)"
       py={3}
       px={{ base: 3, md: 6 }}
       width="100%"

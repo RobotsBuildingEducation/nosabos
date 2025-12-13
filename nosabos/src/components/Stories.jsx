@@ -738,7 +738,9 @@ export default function StoryMode({
 
       const prompt = [
         "You are a language tutor. Generate a short, engaging conversational story",
-        `for a learner practicing ${tName} (${tLang}). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}.`,
+        `for a learner practicing ${tName} (${tLang}). Difficulty: ${
+          isTutorial ? "absolute beginner, very easy" : diff
+        }.`,
         `Also provide a brief support translation in ${sName} (${sLang}).`,
         scenarioDirective,
         "",
@@ -1525,7 +1527,7 @@ export default function StoryMode({
 
   /* ----------------------------- Derived ----------------------------- */
   const progressPercentage = storyData
-    ? ((currentSentenceIndex + 1) / storyData.sentences.length) * 100
+    ? (currentSentenceIndex / storyData.sentences.length) * 100
     : 0;
   const prefersReducedMotion =
     typeof window !== "undefined" &&
@@ -1646,9 +1648,9 @@ export default function StoryMode({
             <Text fontSize="sm" color="#94a3b8">
               {showFullStory
                 ? uiLang === "es"
-                  ? "Narrativa"
-                  : "Narrative"
-                : `${currentSentenceIndex + 1} / ${
+                  ? ""
+                  : ""
+                : `${currentSentenceIndex} / ${
                     storyData?.sentences?.length || 0
                   }`}
             </Text>
@@ -1872,7 +1874,7 @@ export default function StoryMode({
                       mt={2}
                     >
                       {uiLang === "es" ? "Oración" : "Sentence"}{" "}
-                      {currentSentenceIndex + 1} {uiLang === "es" ? "de" : "of"}{" "}
+                      {currentSentenceIndex} {uiLang === "es" ? "de" : "of"}{" "}
                       {storyData.sentences.length}
                     </Text>
                   </Box>
