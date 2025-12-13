@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -37,6 +37,7 @@ import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck } from "react-icons/lu";
 import { keyframes } from "@emotion/react";
+import { motion, useScroll, useTransform } from "framer-motion";
 
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import RobotBuddyPro from "./RobotBuddyPro";
@@ -155,6 +156,10 @@ const LandingSection = ({ children, ...rest }) => (
     {children}
   </Box>
 );
+
+const MotionBox = motion(Box);
+const MotionVStack = motion(VStack);
+const MotionText = motion(Text);
 const glowPulse = keyframes`
   0% { transform: translateY(0) scale(1); opacity: 0.65; }
   50% { transform: translateY(-12px) scale(1.04); opacity: 0.9; }
@@ -453,6 +458,7 @@ const LandingPage = ({
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
   );
+  const { scrollYProgress } = useScroll();
 
   const [landingLanguage, setLandingLanguage] = useState(
     getInitialLandingLanguage
@@ -461,6 +467,16 @@ const LandingPage = ({
   const defaultLoadingMessage = copy.default_loading;
   const englishLabel = copy.language_en || landingTranslations.en.language_en;
   const spanishLabel = copy.language_es || landingTranslations.en.language_es;
+  const heroParallax = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [0, prefersReducedMotion ? 0 : -140]
+  );
+  const floatingBadge = useTransform(
+    scrollYProgress,
+    [0, 1],
+    [0, prefersReducedMotion ? 0 : 40]
+  );
 
   const [view, setView] = useState("landing");
   const [displayName, setDisplayName] = useState("");
@@ -469,6 +485,20 @@ const LandingPage = ({
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
   const [errorMessage, setErrorMessage] = useState("");
+  const revealVariant = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: 32 },
+      visible: { opacity: 1, y: 0 },
+    }),
+    []
+  );
+  const featureVariant = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: 18 },
+      visible: { opacity: 1, y: 0 },
+    }),
+    []
+  );
 
   useEffect(() => {
     setLoadingMessage(copy.default_loading);
@@ -631,46 +661,73 @@ const LandingPage = ({
         py={{ base: 4, md: 4 }}
         textAlign="center"
       >
-        <VStack
+        <MotionVStack
           spacing={8}
           bg="rgba(8, 18, 29, 0.92)"
           borderRadius="3xl"
-          boxShadow="0 12px 60px rgba(20, 184, 166, 0.25)"
           p={{ base: 8, md: 12 }}
           maxW="lg"
           w="full"
+          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 24 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          style={prefersReducedMotion ? undefined : { y: heroParallax }}
         >
-          <VStack spacing={3}>
-            <Box
-              px={4}
-              py={1}
-              borderRadius="full"
-              bgGradient="linear(to-r, teal.300, cyan.200, teal.300)"
-              backgroundSize="200% 200%"
-              color="gray.900"
-              fontWeight="bold"
-              fontSize="xs"
-              letterSpacing="0.08em"
-              animation={
-                prefersReducedMotion ? undefined : `${gradientShift} 12s ease-in-out infinite`
-              }
-              boxShadow="0 10px 30px rgba(45, 212, 191, 0.25)"
-            >
-              {copy.hero_badge || "Human-paced, AI-assisted practice"}
-            </Box>
+          <MotionVStack spacing={3} align="center">
+            {copy.hero_badge ? (
+              <MotionBox
+                px={4}
+                py={1}
+                borderRadius="full"
+                bgGradient="linear(to-r, teal.300, cyan.200, teal.300)"
+                backgroundSize="200% 200%"
+                color="gray.900"
+                fontWeight="bold"
+                fontSize="xs"
+                letterSpacing="0.08em"
+                animation={
+                  prefersReducedMotion
+                    ? undefined
+                    : `${gradientShift} 12s ease-in-out infinite`
+                }
+                initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
+                animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.7, delay: 0.15 }}
+                style={prefersReducedMotion ? undefined : { y: floatingBadge }}
+              >
+                {copy.hero_badge}
+              </MotionBox>
+            ) : null}
             <RobotBuddyPro palette="ocean" variant="abstract" />
-            <Text fontSize="2xl" fontWeight="semibold" color="cyan.200">
+            <MotionText
+              fontSize="2xl"
+              fontWeight="semibold"
+              color="cyan.200"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.25 }}
+            >
               {copy.brand_name}
-            </Text>
-            <Text
+            </MotionText>
+            <MotionText
               fontSize={{ base: "xl", md: "xl" }}
               fontWeight="black"
               lineHeight="1.1"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.35 }}
             >
               {copy.hero_title}
-            </Text>
-            <Text color="teal.100">{copy.hero_languages}</Text>
-          </VStack>
+            </MotionText>
+            <MotionText
+              color="teal.100"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.45 }}
+            >
+              {copy.hero_languages}
+            </MotionText>
+          </MotionVStack>
 
           <Stack
             direction={{ base: "column", md: "column" }}
@@ -696,16 +753,7 @@ const LandingPage = ({
               width="75%"
               p={6}
               bgGradient="linear(to-r, teal.300, cyan.200)"
-              _hover={{
-                bgGradient: "linear(to-r, teal.200, cyan.100)",
-                transform: prefersReducedMotion ? undefined : "translateY(-2px)",
-                boxShadow: "0 12px 30px rgba(34, 211, 238, 0.35)",
-              }}
-              _active={{
-                transform: prefersReducedMotion ? undefined : "translateY(0px)",
-              }}
               transition="all 0.25s ease"
-              // w={{ base: "full", md: "auto" }}
             >
               {isCreatingAccount ? copy.create_loading : copy.create_button}
             </Button>
@@ -746,12 +794,21 @@ const LandingPage = ({
               {spanishLabel}
             </Button>
           </HStack>
-        </VStack>
+        </MotionVStack>
       </Flex>
 
       <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
         <Flex direction="column" align="center" gap={12}>
-          <LandingSection bg="rgba(4, 12, 22, 0.92)" borderRadius="3xl">
+          <LandingSection
+            as={MotionBox}
+            bg="rgba(4, 12, 22, 0.92)"
+            borderRadius="3xl"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            whileInView={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : revealVariant}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.6 }}
+          >
             <VStack spacing={8} align="stretch">
               <Text
                 textAlign="center"
@@ -762,23 +819,18 @@ const LandingPage = ({
                 {copy.section_features_title}
               </Text>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                {FEATURE_CARD_CONFIG.map((feature) => (
-                  <Box
+                {FEATURE_CARD_CONFIG.map((feature, index) => (
+                  <MotionBox
                     key={feature.titleKey}
                     p={6}
                     borderRadius="xl"
                     bg="rgba(6, 18, 30, 0.95)"
                     border="1px solid rgba(45, 212, 191, 0.18)"
-                    boxShadow="0 8px 30px rgba(0, 0, 0, 0.35)"
-                    transition="all 0.35s ease"
-                    _hover={{
-                      transform: prefersReducedMotion
-                        ? undefined
-                        : "translateY(-6px) scale(1.01)",
-                      borderColor: "rgba(45, 212, 191, 0.35)",
-                      boxShadow: "0 16px 50px rgba(20, 184, 166, 0.28)",
-                      bg: "rgba(7, 22, 34, 0.98)",
-                    }}
+                    initial={prefersReducedMotion ? undefined : "hidden"}
+                    whileInView={prefersReducedMotion ? undefined : "visible"}
+                    variants={prefersReducedMotion ? undefined : featureVariant}
+                    transition={{ duration: 0.6, delay: index * 0.05 }}
+                    viewport={{ once: true, amount: 0.35 }}
                   >
                     <VStack align="flex-start" spacing={4}>
                       <Icon as={feature.icon} color="teal.200" boxSize={8} />
@@ -807,13 +859,22 @@ const LandingPage = ({
                           feature.descriptionKey}
                       </Text>
                     </VStack>
-                  </Box>
+                  </MotionBox>
                 ))}
               </SimpleGrid>
             </VStack>
           </LandingSection>
 
-          <LandingSection bg="rgba(8, 26, 36, 0.9)" borderRadius="3xl">
+          <LandingSection
+            as={MotionBox}
+            bg="rgba(8, 26, 36, 0.9)"
+            borderRadius="3xl"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            whileInView={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : revealVariant}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
             <VStack spacing={5} align="center">
               <Text fontSize="3xl" fontWeight="bold" textAlign="center">
                 {copy.wallet_section_title}
@@ -837,7 +898,16 @@ const LandingPage = ({
             </VStack>
           </LandingSection>
 
-          <LandingSection bg="rgba(6, 18, 30, 0.9)" borderRadius="3xl">
+          <LandingSection
+            as={MotionBox}
+            bg="rgba(6, 18, 30, 0.9)"
+            borderRadius="3xl"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            whileInView={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : revealVariant}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.6, delay: 0.12 }}
+          >
             <VStack spacing={6} align="center">
               <Text fontSize="3xl" fontWeight="bold" textAlign="center">
                 {copy.ready_title}
