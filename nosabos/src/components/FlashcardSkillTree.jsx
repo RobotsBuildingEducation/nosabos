@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Box,
-  VStack,
-  HStack,
-  Text,
-  Button,
-  Badge,
-  keyframes,
-} from "@chakra-ui/react";
+import { Box, VStack, HStack, Text, Button, Badge } from "@chakra-ui/react";
+import { keyframes } from "@emotion/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RiStarLine,
@@ -74,20 +67,20 @@ const FlashcardCard = React.memo(function FlashcardCard({
   const isLocked = status === "locked";
   const isStacked = stackPosition !== undefined;
 
-  const glowColor = `${cefrColor.primary}66`;
-  const softGlowColor = `${cefrColor.primary}33`;
+  const glowColor = `${cefrColor.primary}90`;
+  const softGlowColor = `${cefrColor.primary}66`;
 
   const activeGlow = useMemo(
     () =>
       keyframes`
         0% {
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), 0 0 0 0 ${glowColor};
+          box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.28), 0 0 0 0 ${glowColor};
         }
         50% {
-          box-shadow: 0 16px 38px rgba(0, 0, 0, 0.32), 0 0 0 10px ${softGlowColor};
+          box-shadow: 0px 4px 4px rgba(0, 0, 0, 1), 0 0 0 6px ${softGlowColor};
         }
         100% {
-          box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28), 0 0 0 0 ${glowColor};
+          box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.28), 0 0 0 0 ${glowColor};
         }
       `,
     [glowColor, softGlowColor]
@@ -146,7 +139,9 @@ const FlashcardCard = React.memo(function FlashcardCard({
             ? "0 12px 32px rgba(0, 0, 0, 0.28), 0 0 0 0 rgba(0,0,0,0)"
             : "0 8px 24px rgba(0, 0, 0, 0.28)"
         }
-        animation={isActive ? `${activeGlow} 2.8s ease-in-out infinite` : undefined}
+        animation={
+          isActive ? `${activeGlow} 2s ease-in-out infinite` : undefined
+        }
         backdropFilter="blur(10px)"
         position="relative"
         overflow="hidden"
@@ -489,7 +484,7 @@ export default function FlashcardSkillTree({
                 scrollbarWidth: "none",
               }}
             >
-              <HStack spacing={6} px={4} minW="min-content">
+              <HStack spacing={6} px={4} minW="min-content" padding={6}>
                 <AnimatePresence initial={false}>
                   {upcomingCards.map((card) => (
                     <FlashcardCard
