@@ -351,10 +351,36 @@ const landingTranslations = {
   }),
 };
 
-const getStoredLanguage = () =>
-  typeof window !== "undefined" && localStorage.getItem("appLanguage") === "es"
-    ? "es"
-    : "en";
+const MEXICO_TIMEZONES = new Set([
+  "America/Mexico_City",
+  "America/Cancun",
+  "America/Chihuahua",
+  "America/Hermosillo",
+]);
+
+const getInitialLandingLanguage = () => {
+  if (typeof window === "undefined") return "en";
+
+  try {
+    const stored = localStorage.getItem("appLanguage");
+    if (stored === "es" || stored === "en") return stored;
+
+    const languages = navigator.languages || [navigator.language];
+    const isMexicoLocale = languages?.some((lang) =>
+      typeof lang === "string" && lang.toLowerCase().startsWith("es-mx")
+    );
+
+    const timeZone = Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone;
+    const isMexicoTimeZone = timeZone && MEXICO_TIMEZONES.has(timeZone);
+
+    if (isMexicoLocale || isMexicoTimeZone) {
+      localStorage.setItem("appLanguage", "es");
+      return "es";
+    }
+  } catch {}
+
+  return "en";
+};
 
 const LandingPage = ({
   onAuthenticated,
@@ -368,7 +394,9 @@ const LandingPage = ({
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
   );
 
-  const [landingLanguage, setLandingLanguage] = useState(getStoredLanguage);
+  const [landingLanguage, setLandingLanguage] = useState(
+    getInitialLandingLanguage
+  );
   const copy = landingTranslations[landingLanguage] || landingTranslations.en;
   const defaultLoadingMessage = copy.default_loading;
   const englishLabel = copy.language_en || landingTranslations.en.language_en;
