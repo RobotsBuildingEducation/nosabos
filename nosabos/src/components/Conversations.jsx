@@ -462,6 +462,10 @@ export default function Conversations({
   const user = useUserStore((s) => s.user);
   const currentNpub = activeNpub?.trim?.() || strongNpub(user);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
   // Refs for realtime
   const audioRef = useRef(null);
   const pcRef = useRef(null);

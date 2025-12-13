@@ -704,6 +704,10 @@ export default function GrammarBook({
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
   // Extract CEFR level from lesson ID
   const cefrLevel = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
 

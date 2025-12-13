@@ -485,7 +485,7 @@ export default function RealTimeTest({
 
   // Scroll to top when component mounts or lesson changes
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [lesson?.id]);
 
   // User id

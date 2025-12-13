@@ -321,6 +321,10 @@ export default function StoryMode({
   const toast = useToast();
   const user = useUserStore((s) => s.user);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
   // Shared settings + XP
   const { xp, levelNumber, progressPct, progress, npub, progressReady } =
     useSharedProgress();
