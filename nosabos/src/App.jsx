@@ -1994,6 +1994,7 @@ export default function App() {
       setViewMode("lesson");
       if (typeof window !== "undefined") {
         localStorage.setItem("viewMode", "lesson");
+        window.scrollTo({ top: 0 });
       }
 
       // Check if this is a tutorial lesson
