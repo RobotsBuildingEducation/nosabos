@@ -137,11 +137,11 @@ export default function CEFRLevelNavigator({
     borderWidth: "2px",
     color: "blue.100",
     bg: "whiteAlpha.50",
-    _hover: { bg: "whiteAlpha.100", borderColor: "blue.200", color: "white" },
+
     px: 4,
     py: 3,
     size: "sm",
-    minW: "110px",
+    minW: "50px",
   };
 
   return (
@@ -152,21 +152,10 @@ export default function CEFRLevelNavigator({
       w="100%"
       mb={6}
     >
-      <VStack spacing={4} align="stretch">
+      <VStack spacing={4} align="center">
         {/* Level Header */}
         <HStack justify="space-between" align="center">
           {/* Previous Level Button */}
-          {hasPrevious ? (
-            <Button
-              leftIcon={<RiArrowLeftLine />}
-              onClick={handlePrevious}
-              {...navButtonStyles}
-            >
-              {previousLevel}
-            </Button>
-          ) : (
-            <Box minW={navButtonStyles.minW} />
-          )}
 
           {/* Current Level Badge */}
           <VStack spacing={2} flex={1} align="center">
@@ -182,7 +171,12 @@ export default function CEFRLevelNavigator({
             >
               {activeCEFRLevel}
             </Badge>
-            <Text fontSize="lg" fontWeight="bold" color="white">
+            <Text
+              fontSize="lg"
+              fontWeight="bold"
+              color="white"
+              textAlign={"center"}
+            >
               {levelInfo.name[getAppLanguage()] || levelInfo.name.en}
             </Text>
             <Text fontSize="sm" color="gray.400" textAlign="center">
@@ -192,6 +186,20 @@ export default function CEFRLevelNavigator({
           </VStack>
 
           {/* Next Level Button */}
+        </HStack>
+
+        <HStack justifyContent={"center"}>
+          {hasPrevious ? (
+            <Button
+              leftIcon={<RiArrowLeftLine />}
+              onClick={handlePrevious}
+              {...navButtonStyles}
+            >
+              {previousLevel}
+            </Button>
+          ) : (
+            <Box />
+          )}
           {hasNext ? (
             <Button
               rightIcon={
@@ -206,10 +214,9 @@ export default function CEFRLevelNavigator({
               {nextLevel}
             </Button>
           ) : (
-            <Box minW={navButtonStyles.minW} />
+            <Box />
           )}
         </HStack>
-
         {/* Completion Badge */}
         {levelProgress >= 100 && isCurrentUserLevel && (
           <MotionBox
