@@ -354,7 +354,7 @@ const BUTTON_VARIANTS = {
 const landingTranslations = {
   en: extendWithFeatureAliases({
     language_en: "English",
-    language_es: "Español",
+    language_es: "Spanish",
     default_loading: "Setting up your study space...",
     toast_account_created_title: "Account created",
     toast_account_created_desc: "Save your secret key before you continue.",
@@ -426,7 +426,7 @@ const landingTranslations = {
     created_back: "Go back",
   }),
   es: extendWithFeatureAliases({
-    language_en: "English",
+    language_en: "Inglés",
     language_es: "Español",
     default_loading: "Preparando tu espacio de estudio...",
     toast_account_created_title: "Cuenta creada",
