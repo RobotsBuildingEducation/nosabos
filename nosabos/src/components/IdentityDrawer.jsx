@@ -132,7 +132,7 @@ export default function IdentityDrawer({
       localStorage.clear();
       localStorage.removeItem("local_nsec");
       localStorage.removeItem("local_npub");
-      window.reload();
+      window.location.reload();
     } catch (err) {
       console.error("signOut error:", err);
     } finally {
