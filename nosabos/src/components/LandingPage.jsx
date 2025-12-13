@@ -800,14 +800,8 @@ const LandingPage = ({
       <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
         <Flex direction="column" align="center" gap={12}>
           <LandingSection
-            as={MotionBox}
             bg="rgba(4, 12, 22, 0.92)"
             borderRadius="3xl"
-            initial={prefersReducedMotion ? undefined : "hidden"}
-            whileInView={prefersReducedMotion ? undefined : "visible"}
-            variants={prefersReducedMotion ? undefined : revealVariant}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: 0.6 }}
           >
             <VStack spacing={8} align="stretch">
               <Text
@@ -826,11 +820,22 @@ const LandingPage = ({
                     borderRadius="xl"
                     bg="rgba(6, 18, 30, 0.95)"
                     border="1px solid rgba(45, 212, 191, 0.18)"
-                    initial={prefersReducedMotion ? undefined : "hidden"}
-                    whileInView={prefersReducedMotion ? undefined : "visible"}
-                    variants={prefersReducedMotion ? undefined : featureVariant}
-                    transition={{ duration: 0.6, delay: index * 0.05 }}
-                    viewport={{ once: true, amount: 0.35 }}
+                    initial={
+                      index < 2 || prefersReducedMotion ? undefined : "hidden"
+                    }
+                    whileInView={
+                      index < 2 || prefersReducedMotion ? undefined : "visible"
+                    }
+                    variants={
+                      index < 2 || prefersReducedMotion
+                        ? undefined
+                        : featureVariant
+                    }
+                    transition={{
+                      duration: 0.6,
+                      delay: index < 2 ? 0 : (index - 2) * 0.05,
+                    }}
+                    viewport={index < 2 ? undefined : { once: true, amount: 0.35 }}
                   >
                     <VStack align="flex-start" spacing={4}>
                       <Icon as={feature.icon} color="teal.200" boxSize={8} />
