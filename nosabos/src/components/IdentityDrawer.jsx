@@ -129,8 +129,10 @@ export default function IdentityDrawer({
     if (typeof window === "undefined") return;
 
     try {
+      localStorage.clear();
       localStorage.removeItem("local_nsec");
       localStorage.removeItem("local_npub");
+      window.reload();
     } catch (err) {
       console.error("signOut error:", err);
     } finally {
