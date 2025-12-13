@@ -3783,6 +3783,7 @@ export default function App() {
         onClose={handleDailyGoalClose}
         npub={activeNpub}
         lang={appLanguage}
+        defaultGoal={dailyGoalXp || 100}
         t={t}
       />
 
