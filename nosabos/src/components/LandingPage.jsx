@@ -162,6 +162,7 @@ const MotionVStack = motion(VStack);
 const MotionText = motion(Text);
 const MotionInput = motion(Input);
 const MotionButton = motion(Button);
+const MotionStack = motion(Stack);
 const glowPulse = keyframes`
   0% { transform: translateY(0) scale(1); opacity: 0.65; }
   50% { transform: translateY(-12px) scale(1.04); opacity: 0.9; }
@@ -489,15 +490,61 @@ const LandingPage = ({
   const [errorMessage, setErrorMessage] = useState("");
   const revealVariant = useMemo(
     () => ({
-      hidden: { opacity: 0, y: 32 },
-      visible: { opacity: 1, y: 0 },
+      hidden: { opacity: 0, y: 42 },
+      visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.7, ease: "easeOut" },
+      },
+      floating: {
+        y: [0, -8, 0],
+        transition: {
+          duration: 8,
+          repeat: Infinity,
+          repeatType: "mirror",
+          ease: "easeInOut",
+        },
+      },
     }),
     []
   );
   const featureVariant = useMemo(
     () => ({
-      hidden: { opacity: 0, y: 18 },
-      visible: { opacity: 1, y: 0 },
+      hidden: { opacity: 0, y: 26 },
+      visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.65, ease: "easeOut" },
+      },
+      floating: {
+        y: [0, -10, 0],
+        transition: {
+          duration: 7,
+          repeat: Infinity,
+          repeatType: "mirror",
+          ease: "easeInOut",
+        },
+      },
+    }),
+    []
+  );
+  const stackedVariant = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: 30 },
+      visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.75, ease: "easeOut" },
+      },
+      floating: {
+        y: [4, -10, 4],
+        transition: {
+          duration: 7.5,
+          repeat: Infinity,
+          repeatType: "mirror",
+          ease: "easeInOut",
+        },
+      },
     }),
     []
   );
@@ -731,22 +778,28 @@ const LandingPage = ({
             </MotionText>
           </MotionVStack>
 
-          <Stack
+          <MotionStack
             direction={{ base: "column", md: "column" }}
             spacing={4}
             w="full"
             display="flex"
             alignItems={"center"}
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            animate={prefersReducedMotion ? undefined : ["visible", "floating"]}
+            variants={prefersReducedMotion ? undefined : stackedVariant}
+            transition={{ staggerChildren: 0.08 }}
           >
-            <Input
+            <MotionInput
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               placeholder={copy.display_name_placeholder}
               bg="rgba(6, 18, 30, 0.95)"
               borderColor="rgba(45, 212, 191, 0.45)"
               color="white"
+              variants={prefersReducedMotion ? undefined : featureVariant}
+              transition={{ duration: 0.55, ease: "easeOut" }}
             />
-            <Button
+            <MotionButton
               color="gray.900"
               onClick={handleCreateAccount}
               isLoading={isCreatingAccount}
@@ -755,11 +808,12 @@ const LandingPage = ({
               width="75%"
               p={6}
               bgGradient="linear(to-r, teal.300, cyan.200)"
-              transition="all 0.25s ease"
+              variants={prefersReducedMotion ? undefined : featureVariant}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }}
             >
               {isCreatingAccount ? copy.create_loading : copy.create_button}
-            </Button>
-          </Stack>
+            </MotionButton>
+          </MotionStack>
           {errorMessage && (
             <Text color="red.300" fontSize="sm">
               {errorMessage}
@@ -806,7 +860,7 @@ const LandingPage = ({
             bg="rgba(4, 12, 22, 0.92)"
             borderRadius="3xl"
             initial={prefersReducedMotion ? undefined : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
+            animate={prefersReducedMotion ? undefined : ["visible", "floating"]}
             variants={prefersReducedMotion ? undefined : revealVariant}
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
@@ -835,7 +889,7 @@ const LandingPage = ({
                       prefersReducedMotion
                         ? undefined
                         : index < 2
-                        ? "visible"
+                        ? ["visible", "floating"]
                         : undefined
                     }
                     whileInView={
@@ -843,7 +897,7 @@ const LandingPage = ({
                         ? undefined
                         : index < 2
                         ? undefined
-                        : "visible"
+                        : ["visible", "floating"]
                     }
                     variants={prefersReducedMotion ? undefined : featureVariant}
                     transition={{
@@ -894,7 +948,9 @@ const LandingPage = ({
             bg="rgba(8, 26, 36, 0.9)"
             borderRadius="3xl"
             initial={prefersReducedMotion ? undefined : "hidden"}
-            whileInView={prefersReducedMotion ? undefined : "visible"}
+            whileInView={
+              prefersReducedMotion ? undefined : ["visible", "floating"]
+            }
             variants={prefersReducedMotion ? undefined : revealVariant}
             viewport={{ once: true, amount: 0.35 }}
             transition={{ duration: 0.6, delay: 0.1 }}
@@ -927,7 +983,9 @@ const LandingPage = ({
             bg="rgba(6, 18, 30, 0.9)"
             borderRadius="3xl"
             initial={prefersReducedMotion ? undefined : "hidden"}
-            whileInView={prefersReducedMotion ? undefined : "visible"}
+            whileInView={
+              prefersReducedMotion ? undefined : ["visible", "floating"]
+            }
             variants={prefersReducedMotion ? undefined : revealVariant}
             viewport={{ once: true, amount: 0.35 }}
             transition={{ duration: 0.6, delay: 0.12 }}
