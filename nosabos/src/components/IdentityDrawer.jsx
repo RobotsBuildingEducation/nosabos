@@ -324,9 +324,13 @@ export default function IdentityDrawer({
                   colorScheme="teal"
                   fontSize="sm"
                   fontWeight="bold"
-                  aria-label={t?.language_en || t?.app_language_en || "English"}
+                  aria-label={
+                    t?.language_en ||
+                    t?.app_language_en ||
+                    "English / Inglés"
+                  }
                 >
-                  EN
+                  English / Inglés
                 </Button>
                 <Button
                   onClick={() => onSelectLanguage?.("es")}
@@ -334,9 +338,13 @@ export default function IdentityDrawer({
                   colorScheme="teal"
                   fontSize="sm"
                   fontWeight="bold"
-                  aria-label={t?.language_es || t?.app_language_es || "Spanish"}
+                  aria-label={
+                    t?.language_es ||
+                    t?.app_language_es ||
+                    "Spanish / Español"
+                  }
                 >
-                  ES
+                  Spanish / Español
                 </Button>
               </ButtonGroup>
             </HStack>
@@ -534,20 +542,21 @@ export default function IdentityDrawer({
             */}
           </VStack>
 
-          <Button
-            mt={6}
-            variant="outline"
-            colorScheme="red"
-            leftIcon={<LuDoorOpen size={18} />}
-            onClick={handleSignOut}
-            alignSelf="flex-start"
-            px={5}
-            py={3}
-            borderRadius="lg"
-            boxShadow="0 4px 12px rgba(0, 0, 0, 0.25)"
-          >
-            {t?.app_sign_out || "Sign out"}
-          </Button>
+          <Flex mt="auto" justify="flex-end">
+            <Button
+              mt={6}
+              variant="outline"
+              colorScheme="red"
+              leftIcon={<LuDoorOpen size={18} />}
+              onClick={handleSignOut}
+              px={5}
+              py={3}
+              borderRadius="lg"
+              boxShadow="0 4px 12px rgba(0, 0, 0, 0.25)"
+            >
+              {t?.app_sign_out || "Sign out"}
+            </Button>
+          </Flex>
         </DrawerBody>
       </DrawerContent>
     </Drawer>
