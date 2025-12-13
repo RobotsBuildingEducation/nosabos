@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -19,6 +19,7 @@ import {
   Stack,
   Text,
   VStack,
+  usePrefersReducedMotion,
   useToast,
 } from "@chakra-ui/react";
 import { ArrowForwardIcon, LockIcon } from "@chakra-ui/icons";
@@ -35,6 +36,8 @@ import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck } from "react-icons/lu";
+import { keyframes } from "@emotion/react";
+import { motion } from "framer-motion";
 
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import RobotBuddyPro from "./RobotBuddyPro";
@@ -154,19 +157,93 @@ const LandingSection = ({ children, ...rest }) => (
   </Box>
 );
 
-const HeroBackground = () => (
-  <Box
-    position="absolute"
-    inset={0}
-    bgGradient="linear(to-br, #06111f, #0f202f)"
-    zIndex={-2}
-  />
+const MotionBox = motion(Box);
+const MotionVStack = motion(VStack);
+const MotionText = motion(Text);
+const MotionInput = motion(Input);
+const MotionButton = motion(Button);
+const MotionHStack = motion(HStack);
+const MotionStack = motion(Stack);
+const glowPulse = keyframes`
+  0% { transform: translateY(0) scale(1); opacity: 0.65; }
+  50% { transform: translateY(-12px) scale(1.04); opacity: 0.9; }
+  100% { transform: translateY(0) scale(1); opacity: 0.65; }
+`;
+
+const gradientShift = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
+
+const shimmerSweep = keyframes`
+  0% { transform: translateX(-20%) rotate(-6deg); opacity: 0; }
+  40% { opacity: 0.45; }
+  60% { opacity: 0.6; }
+  100% { transform: translateX(120%) rotate(-6deg); opacity: 0; }
+`;
+
+const HeroBackground = ({ prefersReducedMotion }) => (
+  <Box position="absolute" inset={0} overflow="hidden" zIndex={-2}>
+    <Box
+      position="absolute"
+      inset={0}
+      bgGradient="linear(to-br, #040b14, #0c1e31 45%, #0a2f40)"
+      backgroundSize="200% 200%"
+      animation={
+        prefersReducedMotion
+          ? undefined
+          : `${gradientShift} 20s ease-in-out infinite`
+      }
+    />
+
+    <Box
+      position="absolute"
+      top="-10%"
+      left="-12%"
+      w="60%"
+      h="60%"
+      bgGradient="radial(closest-side, rgba(32, 197, 190, 0.35), transparent 60%)"
+      filter="blur(40px)"
+      animation={
+        prefersReducedMotion
+          ? undefined
+          : `${glowPulse} 14s ease-in-out infinite alternate`
+      }
+    />
+    <Box
+      position="absolute"
+      bottom="-12%"
+      right="-16%"
+      w="55%"
+      h="55%"
+      bgGradient="radial(closest-side, rgba(79, 70, 229, 0.28), transparent 60%)"
+      filter="blur(40px)"
+      animation={
+        prefersReducedMotion
+          ? undefined
+          : `${glowPulse} 16s ease-in-out infinite alternate`
+      }
+    />
+
+    <Box
+      position="absolute"
+      insetY={-10}
+      left="-30%"
+      w="50%"
+      bgGradient="linear(to-b, rgba(255,255,255,0.12), transparent 60%)"
+      filter="blur(18px)"
+      opacity={0.35}
+      animation={
+        prefersReducedMotion ? undefined : `${shimmerSweep} 18s linear infinite`
+      }
+    />
+  </Box>
 );
 
 const BASE_BUTTON_PROPS = {
   size: "lg",
   fontWeight: "semibold",
-  borderRadius: "full",
   px: 8,
   minH: 12,
   transition: "all 0.2s ease",
@@ -366,8 +443,9 @@ const getInitialLandingLanguage = () => {
     if (stored === "es" || stored === "en") return stored;
 
     const languages = navigator.languages || [navigator.language];
-    const isMexicoLocale = languages?.some((lang) =>
-      typeof lang === "string" && lang.toLowerCase().startsWith("es-mx")
+    const isMexicoLocale = languages?.some(
+      (lang) =>
+        typeof lang === "string" && lang.toLowerCase().startsWith("es-mx")
     );
 
     const timeZone = Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone;
@@ -389,11 +467,11 @@ const LandingPage = ({
   isIdentitySaving,
 }) => {
   const toast = useToast();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
   );
-
   const [landingLanguage, setLandingLanguage] = useState(
     getInitialLandingLanguage
   );
@@ -409,6 +487,39 @@ const LandingPage = ({
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
   const [errorMessage, setErrorMessage] = useState("");
+  const revealVariant = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: 42 },
+      visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.7, ease: "easeOut" },
+      },
+    }),
+    []
+  );
+  const featureVariant = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: 26 },
+      visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.65, ease: "easeOut" },
+      },
+    }),
+    []
+  );
+  const stackedVariant = useMemo(
+    () => ({
+      hidden: { opacity: 0, y: 30 },
+      visible: {
+        opacity: 1,
+        y: 0,
+        transition: { duration: 0.75, ease: "easeOut" },
+      },
+    }),
+    []
+  );
 
   useEffect(() => {
     setLoadingMessage(copy.default_loading);
@@ -527,6 +638,7 @@ const LandingPage = ({
             borderColor="rgba(45, 212, 191, 0.4)"
             color="white"
             _placeholder={{ color: "cyan.500" }}
+            fontSize="16px"
           />
           {errorMessage && (
             <Text color="red.300" fontSize="sm">
@@ -556,8 +668,14 @@ const LandingPage = ({
   }
 
   return (
-    <Box position="relative" minH="100vh" color="gray.100" pb={24}>
-      <HeroBackground />
+    <Box
+      position="relative"
+      minH="100vh"
+      color="gray.100"
+      pb={24}
+      overflow="hidden"
+    >
+      <HeroBackground prefersReducedMotion={prefersReducedMotion} />
       <Flex
         align="center"
         justify="center"
@@ -565,64 +683,119 @@ const LandingPage = ({
         py={{ base: 4, md: 4 }}
         textAlign="center"
       >
-        <VStack
+        <MotionVStack
           spacing={8}
           bg="rgba(8, 18, 29, 0.92)"
           borderRadius="3xl"
           p={{ base: 8, md: 12 }}
           maxW="lg"
           w="full"
+          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 24 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
         >
-          <VStack spacing={3}>
+          <MotionVStack spacing={3} align="center">
+            {copy.hero_badge ? (
+              <MotionBox
+                px={4}
+                py={1}
+                borderRadius="full"
+                bgGradient="linear(to-r, teal.300, cyan.200, teal.300)"
+                backgroundSize="200% 200%"
+                color="gray.900"
+                fontWeight="bold"
+                fontSize="xs"
+                letterSpacing="0.08em"
+                animation={
+                  prefersReducedMotion
+                    ? undefined
+                    : `${gradientShift} 12s ease-in-out infinite`
+                }
+                initial={
+                  prefersReducedMotion ? undefined : { opacity: 0, y: 12 }
+                }
+                animate={
+                  prefersReducedMotion ? undefined : { opacity: 1, y: 0 }
+                }
+                transition={{ duration: 0.7, delay: 0.15 }}
+              >
+                {copy.hero_badge}
+              </MotionBox>
+            ) : null}
             <RobotBuddyPro palette="ocean" variant="abstract" />
-            <Text fontSize="2xl" fontWeight="semibold" color="cyan.200">
+            <MotionText
+              fontSize="2xl"
+              fontWeight="semibold"
+              color="cyan.200"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.25 }}
+            >
               {copy.brand_name}
-            </Text>
-            <Text
+            </MotionText>
+            <MotionText
               fontSize={{ base: "xl", md: "xl" }}
               fontWeight="black"
               lineHeight="1.1"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.35 }}
             >
               {copy.hero_title}
-            </Text>
-            <Text color="teal.100">{copy.hero_languages}</Text>
-          </VStack>
+            </MotionText>
+            <MotionText
+              color="teal.100"
+              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
+              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.45 }}
+            >
+              {copy.hero_languages}
+            </MotionText>
+          </MotionVStack>
 
-          <Stack
+          <MotionStack
             direction={{ base: "column", md: "column" }}
             spacing={4}
             w="full"
             display="flex"
             alignItems={"center"}
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : stackedVariant}
+            transition={{ staggerChildren: 0.08 }}
           >
-            <Input
+            <MotionInput
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
               placeholder={copy.display_name_placeholder}
               bg="rgba(6, 18, 30, 0.95)"
               borderColor="rgba(45, 212, 191, 0.45)"
               color="white"
+              variants={prefersReducedMotion ? undefined : featureVariant}
+              transition={{ duration: 0.55, ease: "easeOut" }}
             />
             <Button
-              color="white"
+              // color="gray.900"
               onClick={handleCreateAccount}
               isLoading={isCreatingAccount}
               isDisabled={!hasDisplayName}
-              rightIcon={<ArrowForwardIcon />}
               width="75%"
               p={6}
-              // w={{ base: "full", md: "auto" }}
+              variants={prefersReducedMotion ? undefined : featureVariant}
+              transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }}
             >
               {isCreatingAccount ? copy.create_loading : copy.create_button}
             </Button>
-          </Stack>
+          </MotionStack>
           {errorMessage && (
             <Text color="red.300" fontSize="sm">
               {errorMessage}
             </Text>
           )}
 
-          <ActionButton
+          <MotionButton
+            {...BASE_BUTTON_PROPS}
+            {...BUTTON_VARIANTS.primary}
             onClick={() => {
               setView("signIn");
             }}
@@ -630,50 +803,110 @@ const LandingPage = ({
             width="75%"
             p={6}
             colorScheme="teal"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : featureVariant}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.16 }}
           >
             {copy.have_key_button}
-          </ActionButton>
+          </MotionButton>
 
-          <HStack spacing={2} justify="center">
-            <Button
+          <MotionHStack
+            spacing={2}
+            justify="center"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : featureVariant}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+          >
+            <MotionButton
               size="sm"
               variant={landingLanguage === "en" ? "solid" : "ghost"}
               colorScheme="teal"
               onClick={() => handleLanguageChange("en")}
+              initial={prefersReducedMotion ? undefined : "hidden"}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={prefersReducedMotion ? undefined : featureVariant}
+              transition={{ duration: 0.55, ease: "easeOut", delay: 0.22 }}
             >
               {englishLabel}
-            </Button>
-            <Button
+            </MotionButton>
+            <MotionButton
               size="sm"
               variant={landingLanguage === "es" ? "solid" : "ghost"}
               colorScheme="teal"
               onClick={() => handleLanguageChange("es")}
+              initial={prefersReducedMotion ? undefined : "hidden"}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={prefersReducedMotion ? undefined : featureVariant}
+              transition={{ duration: 0.55, ease: "easeOut", delay: 0.26 }}
             >
               {spanishLabel}
-            </Button>
-          </HStack>
-        </VStack>
+            </MotionButton>
+          </MotionHStack>
+        </MotionVStack>
       </Flex>
 
       <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
         <Flex direction="column" align="center" gap={12}>
-          <LandingSection bg="rgba(4, 12, 22, 0.92)" borderRadius="3xl">
+          <LandingSection
+            as={MotionBox}
+            bg="rgba(4, 12, 22, 0.92)"
+            borderRadius="3xl"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : revealVariant}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+          >
             <VStack spacing={8} align="stretch">
-              <Text
+              <MotionText
                 textAlign="center"
                 fontSize="3xl"
                 fontWeight="bold"
                 color="white"
+                initial={
+                  prefersReducedMotion ? undefined : { opacity: 0, y: 18 }
+                }
+                animate={
+                  prefersReducedMotion ? undefined : { opacity: 1, y: 0 }
+                }
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.05 }}
               >
                 {copy.section_features_title}
-              </Text>
+              </MotionText>
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                {FEATURE_CARD_CONFIG.map((feature) => (
-                  <Box
+                {FEATURE_CARD_CONFIG.map((feature, index) => (
+                  <MotionBox
                     key={feature.titleKey}
                     p={6}
                     borderRadius="xl"
                     bg="rgba(6, 18, 30, 0.95)"
+                    border="1px solid rgba(45, 212, 191, 0.18)"
+                    initial={prefersReducedMotion ? undefined : "hidden"}
+                    animate={
+                      prefersReducedMotion
+                        ? undefined
+                        : index < 2
+                        ? "visible"
+                        : undefined
+                    }
+                    whileInView={
+                      prefersReducedMotion
+                        ? undefined
+                        : index < 2
+                        ? undefined
+                        : "visible"
+                    }
+                    variants={prefersReducedMotion ? undefined : featureVariant}
+                    transition={{
+                      duration: 0.6,
+                      delay: index < 2 ? 0 : (index - 2) * 0.05,
+                    }}
+                    viewport={
+                      index < 2 || prefersReducedMotion
+                        ? undefined
+                        : { once: true, amount: 0.35 }
+                    }
                   >
                     <VStack align="flex-start" spacing={4}>
                       <Icon as={feature.icon} color="teal.200" boxSize={8} />
@@ -702,13 +935,22 @@ const LandingPage = ({
                           feature.descriptionKey}
                       </Text>
                     </VStack>
-                  </Box>
+                  </MotionBox>
                 ))}
               </SimpleGrid>
             </VStack>
           </LandingSection>
 
-          <LandingSection bg="rgba(8, 26, 36, 0.9)" borderRadius="3xl">
+          <LandingSection
+            as={MotionBox}
+            bg="rgba(8, 26, 36, 0.9)"
+            borderRadius="3xl"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            whileInView={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : revealVariant}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
             <VStack spacing={5} align="center">
               <Text fontSize="3xl" fontWeight="bold" textAlign="center">
                 {copy.wallet_section_title}
@@ -732,36 +974,81 @@ const LandingPage = ({
             </VStack>
           </LandingSection>
 
-          <LandingSection bg="rgba(6, 18, 30, 0.9)" borderRadius="3xl">
+          <LandingSection
+            as={MotionBox}
+            bg="rgba(6, 18, 30, 0.9)"
+            borderRadius="3xl"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            whileInView={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : revealVariant}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.6, delay: 0.12 }}
+          >
             <VStack spacing={6} align="center">
-              <Text fontSize="3xl" fontWeight="bold" textAlign="center">
+              <MotionText
+                fontSize="3xl"
+                fontWeight="bold"
+                textAlign="center"
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.55, delay: 0.02 }}
+              >
                 {copy.ready_title}
-              </Text>
-              <Text textAlign="center" color="cyan.100" maxW="2xl">
+              </MotionText>
+              <MotionText
+                textAlign="center"
+                color="cyan.100"
+                maxW="2xl"
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.6, delay: 0.06 }}
+              >
                 {copy.ready_subtitle}
-              </Text>
-              <Button
-                rightIcon={<ArrowForwardIcon />}
+              </MotionText>
+              <MotionInput
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder={copy.display_name_placeholder}
+                bg="rgba(6, 18, 30, 0.95)"
+                borderColor="rgba(45, 212, 191, 0.45)"
+                color="white"
+                maxW="400px"
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                fontSize="16px"
+              />
+              <MotionButton
                 onClick={handleCreateAccount}
                 isDisabled={!hasDisplayName || isCreatingAccount}
                 width="75%"
-                maxWidth="300px"
                 p={6}
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.6, delay: 0.14 }}
               >
                 {copy.ready_cta}
-              </Button>
-              <ActionButton
+              </MotionButton>
+              <MotionButton
+                as={ActionButton}
                 color="white"
                 onClick={() => {
                   setView("signIn");
                 }}
                 width="75%"
-                maxWidth="300px"
                 p={6}
                 colorScheme="teal"
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.6, delay: 0.18 }}
               >
                 {copy.have_key_button}
-              </ActionButton>
+              </MotionButton>
             </VStack>
           </LandingSection>
         </Flex>
