@@ -50,6 +50,8 @@ export default function Onboarding({
 
   const [appLang, setAppLang] = useState(userLanguage === "es" ? "es" : "en");
   const ui = translations[appLang] || translations.en;
+  const englishLabel = ui.language_en || translations.en.language_en;
+  const spanishLabel = ui.language_es || translations.en.language_es;
 
   const defaults = useMemo(() => {
     return {
@@ -204,7 +206,7 @@ export default function Onboarding({
                       onClick={() => persistAppLanguage("en")}
                       borderColor="gray.600"
                     >
-                      English
+                      {englishLabel}
                     </Button>
                     <Button
                       size="sm"
@@ -213,7 +215,7 @@ export default function Onboarding({
                       onClick={() => persistAppLanguage("es")}
                       borderColor="gray.600"
                     >
-                      Spanish
+                      {spanishLabel}
                     </Button>
                   </HStack>
                 </Box>

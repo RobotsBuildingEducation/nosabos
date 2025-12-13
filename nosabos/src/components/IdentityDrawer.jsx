@@ -1,5 +1,5 @@
 // src/components/IdentityDrawer.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -40,7 +40,7 @@ import { SiCashapp } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuDoorOpen, LuKeyRound } from "react-icons/lu";
 import { LuKey } from "react-icons/lu";
 import { doc, updateDoc } from "firebase/firestore";
 
@@ -124,6 +124,19 @@ export default function IdentityDrawer({
       });
     }
   };
+
+  const handleSignOut = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      localStorage.removeItem("local_nsec");
+      localStorage.removeItem("local_npub");
+    } catch (err) {
+      console.error("signOut error:", err);
+    } finally {
+      window.location.href = "/";
+    }
+  }, []);
 
   // Switch account
   const [switchNsec, setSwitchNsec] = useState("");
@@ -249,6 +262,8 @@ export default function IdentityDrawer({
         color="gray.100"
         borderTopRadius="24px"
         maxH="100vh"
+        display="flex"
+        flexDirection="column"
         sx={{
           "@supports (height: 100dvh)": {
             maxHeight: "100dvh",
@@ -264,8 +279,8 @@ export default function IdentityDrawer({
         <DrawerHeader pb={2} pr={12}>
           {t?.app_account_title || "Account"}
         </DrawerHeader>
-        <DrawerBody pb={6}>
-          <VStack align="stretch" spacing={3}>
+        <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
+          <VStack align="stretch" spacing={3} flex={1}>
             {/* Top HStack with Copy ID, Secret Key, and Language Switch */}
             <HStack spacing={2} align="flex-start" flexWrap="wrap">
               {/* Copy ID Button */}
@@ -303,26 +318,46 @@ export default function IdentityDrawer({
                 borderColor="gray.700"
                 width="fit-content"
               >
-                <Button
-                  onClick={() => onSelectLanguage?.("en")}
-                  variant={appLanguage === "en" ? "solid" : "ghost"}
-                  colorScheme="teal"
-                  fontSize="sm"
-                  fontWeight="bold"
-                  aria-label={t?.language_en || t?.app_language_en || "English"}
-                >
-                  EN
-                </Button>
-                <Button
-                  onClick={() => onSelectLanguage?.("es")}
-                  variant={appLanguage === "es" ? "solid" : "ghost"}
-                  colorScheme="teal"
-                  fontSize="sm"
-                  fontWeight="bold"
-                  aria-label={t?.language_es || t?.app_language_es || "Spanish"}
-                >
-                  ES
-                </Button>
+                {/**
+                 * Render language labels based on the current app language.
+                 * When the UI is in English, show English labels; when in Spanish,
+                 * show Spanish labels.
+                 */}
+                {(() => {
+                  const labels =
+                    appLanguage === "es"
+                      ? { en: "Inglés", es: "Español" }
+                      : { en: "English", es: "Spanish" };
+
+                  return (
+                    <>
+                      <Button
+                        onClick={() => onSelectLanguage?.("en")}
+                        variant={appLanguage === "en" ? "solid" : "ghost"}
+                        colorScheme="teal"
+                        fontSize="sm"
+                        fontWeight="bold"
+                        aria-label={
+                          t?.language_en || t?.app_language_en || labels.en
+                        }
+                      >
+                        {labels.en}
+                      </Button>
+                      <Button
+                        onClick={() => onSelectLanguage?.("es")}
+                        variant={appLanguage === "es" ? "solid" : "ghost"}
+                        colorScheme="teal"
+                        fontSize="sm"
+                        fontWeight="bold"
+                        aria-label={
+                          t?.language_es || t?.app_language_es || labels.es
+                        }
+                      >
+                        {labels.es}
+                      </Button>
+                    </>
+                  );
+                })()}
               </ButtonGroup>
             </HStack>
 
@@ -518,6 +553,22 @@ export default function IdentityDrawer({
             </Box>
             */}
           </VStack>
+
+          <Flex mt="auto" justify="flex-end">
+            <Button
+              mt={6}
+              variant="outline"
+              colorScheme="red"
+              leftIcon={<LuDoorOpen size={18} />}
+              onClick={handleSignOut}
+              px={5}
+              py={3}
+              borderRadius="lg"
+              boxShadow="0 4px 12px rgba(0, 0, 0, 0.25)"
+            >
+              {t?.app_sign_out || "Sign out"}
+            </Button>
+          </Flex>
         </DrawerBody>
       </DrawerContent>
     </Drawer>
