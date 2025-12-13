@@ -39,6 +39,7 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { FiCopy } from "react-icons/fi";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { awardXp } from "../utils/utils";
 import { completeLesson } from "../utils/progressTracking";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import {
@@ -1110,8 +1111,10 @@ YES or NO
 
     if (passed && lessonId && npub) {
       try {
-        // completeLesson already awards XP internally, no need to call awardXp separately
+        // completeLesson marks the lesson complete (status tracking only)
         await completeLesson(npub, lessonId, xpReward, targetLang);
+        // awardXp handles XP with proper daily goal checking and celebration events
+        await awardXp(npub, xpReward, targetLang);
 
         toast({
           title: userLanguage === "es" ? "¡Examen aprobado!" : "Quiz Passed!",
