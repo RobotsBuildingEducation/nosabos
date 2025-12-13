@@ -2143,14 +2143,14 @@ export default function App() {
       const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
 
       try {
+        // completeLesson already awards XP internally (increments xp, progress.totalXp,
+        // languageXp, and dailyXp), so we don't call awardXp separately to avoid double-counting
         await completeLesson(
           npub,
           activeLesson.id,
           activeLesson.xpReward,
           lessonLang
         );
-
-        await awardXp(npub, activeLesson.xpReward, "lesson");
 
         const fresh = await loadUserObjectFromDB(database, npub);
         if (fresh) setUser?.(fresh);
