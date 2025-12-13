@@ -1097,12 +1097,12 @@ export const translations = {
     mode_vocabulary: "Vocabulario",
     mode_grammar: "Gramática",
     mode_reading: "Lectura",
-    mode_realtime: "Platicar",
+    mode_realtime: "Chat",
     mode_stories: "Narrativos",
     // PathSwitcher tabs
     path_switcher_path: "Ruta",
     path_switcher_flashcards: "Tarjetas",
-    path_switcher_conversations: "Conversaciones",
+    path_switcher_conversations: "Chat",
     // Session timer modal
     timer_modal_title: "Temporizador de sesión",
     timer_modal_description:

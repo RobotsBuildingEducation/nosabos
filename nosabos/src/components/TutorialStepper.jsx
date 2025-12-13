@@ -48,7 +48,7 @@ const MODULE_CONFIG = {
   realtime: {
     icon: FaMicrophone,
     color: "#8B5CF6",
-    label: { en: "Chat", es: "Conversación" },
+    label: { en: "Chat", es: "Chat" },
     shortLabel: { en: "Chat", es: "Hablar" },
   },
 };

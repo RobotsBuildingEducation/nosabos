@@ -294,6 +294,7 @@ export default function IdentityDrawer({
                 }
                 isDisabled={!currentId}
                 colorScheme="teal"
+                padding={5}
               >
                 {t?.app_copy_id || "Copy User ID"}
               </Button>
@@ -306,6 +307,7 @@ export default function IdentityDrawer({
                   copy(currentSecret, t?.toast_secret_copied || "Secret copied")
                 }
                 isDisabled={!currentSecret}
+                padding={5}
               >
                 {t?.app_copy_secret || "Copy Secret Key"}
               </Button>
@@ -343,6 +345,7 @@ export default function IdentityDrawer({
                         aria-label={
                           t?.language_en || t?.app_language_en || labels.en
                         }
+                        padding={5}
                       >
                         {labels.en}
                       </Button>
@@ -355,6 +358,7 @@ export default function IdentityDrawer({
                         aria-label={
                           t?.language_es || t?.app_language_es || labels.es
                         }
+                        padding={5}
                       >
                         {labels.es}
                       </Button>
@@ -368,6 +372,10 @@ export default function IdentityDrawer({
             <Box bg="gray.800" p={3} rounded="md">
               <Text fontSize="sm" mb={2}>
                 {t?.app_switch_account || "Switch account"}
+              </Text>
+              <Text fontSize="xs" opacity={0.75} mt={1} mb={1}>
+                {t?.app_switch_note ||
+                  "We'll derive your public key (npub) from the secret and switch safely."}
               </Text>
               <Input
                 value={switchNsec}
@@ -387,10 +395,6 @@ export default function IdentityDrawer({
                   {t?.app_switch || "Switch"}
                 </Button>
               </HStack>
-              <Text fontSize="xs" opacity={0.75} mt={1}>
-                {t?.app_switch_note ||
-                  "We'll derive your public key (npub) from the secret and switch safely."}
-              </Text>
             </Box>
 
             {/* Bitcoin Wallet Section (Accordion) */}
