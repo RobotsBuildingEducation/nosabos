@@ -190,7 +190,11 @@ const HeroBackground = ({ prefersReducedMotion }) => (
       inset={0}
       bgGradient="linear(to-br, #040b14, #0c1e31 45%, #0a2f40)"
       backgroundSize="200% 200%"
-      animation={prefersReducedMotion ? undefined : `${gradientShift} 20s ease-in-out infinite`}
+      animation={
+        prefersReducedMotion
+          ? undefined
+          : `${gradientShift} 20s ease-in-out infinite`
+      }
     />
 
     <Box
@@ -202,7 +206,9 @@ const HeroBackground = ({ prefersReducedMotion }) => (
       bgGradient="radial(closest-side, rgba(32, 197, 190, 0.35), transparent 60%)"
       filter="blur(40px)"
       animation={
-        prefersReducedMotion ? undefined : `${glowPulse} 14s ease-in-out infinite alternate`
+        prefersReducedMotion
+          ? undefined
+          : `${glowPulse} 14s ease-in-out infinite alternate`
       }
     />
     <Box
@@ -214,7 +220,9 @@ const HeroBackground = ({ prefersReducedMotion }) => (
       bgGradient="radial(closest-side, rgba(79, 70, 229, 0.28), transparent 60%)"
       filter="blur(40px)"
       animation={
-        prefersReducedMotion ? undefined : `${glowPulse} 16s ease-in-out infinite alternate`
+        prefersReducedMotion
+          ? undefined
+          : `${glowPulse} 16s ease-in-out infinite alternate`
       }
     />
 
@@ -226,7 +234,9 @@ const HeroBackground = ({ prefersReducedMotion }) => (
       bgGradient="linear(to-b, rgba(255,255,255,0.12), transparent 60%)"
       filter="blur(18px)"
       opacity={0.35}
-      animation={prefersReducedMotion ? undefined : `${shimmerSweep} 18s linear infinite`}
+      animation={
+        prefersReducedMotion ? undefined : `${shimmerSweep} 18s linear infinite`
+      }
     />
   </Box>
 );
@@ -234,7 +244,6 @@ const HeroBackground = ({ prefersReducedMotion }) => (
 const BASE_BUTTON_PROPS = {
   size: "lg",
   fontWeight: "semibold",
-  borderRadius: "full",
   px: 8,
   minH: 12,
   transition: "all 0.2s ease",
@@ -434,8 +443,9 @@ const getInitialLandingLanguage = () => {
     if (stored === "es" || stored === "en") return stored;
 
     const languages = navigator.languages || [navigator.language];
-    const isMexicoLocale = languages?.some((lang) =>
-      typeof lang === "string" && lang.toLowerCase().startsWith("es-mx")
+    const isMexicoLocale = languages?.some(
+      (lang) =>
+        typeof lang === "string" && lang.toLowerCase().startsWith("es-mx")
     );
 
     const timeZone = Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone;
@@ -628,6 +638,7 @@ const LandingPage = ({
             borderColor="rgba(45, 212, 191, 0.4)"
             color="white"
             _placeholder={{ color: "cyan.500" }}
+            fontSize="16px"
           />
           {errorMessage && (
             <Text color="red.300" fontSize="sm">
@@ -700,8 +711,12 @@ const LandingPage = ({
                     ? undefined
                     : `${gradientShift} 12s ease-in-out infinite`
                 }
-                initial={prefersReducedMotion ? undefined : { opacity: 0, y: 12 }}
-                animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                initial={
+                  prefersReducedMotion ? undefined : { opacity: 0, y: 12 }
+                }
+                animate={
+                  prefersReducedMotion ? undefined : { opacity: 1, y: 0 }
+                }
                 transition={{ duration: 0.7, delay: 0.15 }}
               >
                 {copy.hero_badge}
@@ -759,20 +774,18 @@ const LandingPage = ({
               variants={prefersReducedMotion ? undefined : featureVariant}
               transition={{ duration: 0.55, ease: "easeOut" }}
             />
-            <MotionButton
-              color="gray.900"
+            <Button
+              // color="gray.900"
               onClick={handleCreateAccount}
               isLoading={isCreatingAccount}
               isDisabled={!hasDisplayName}
-              rightIcon={<ArrowForwardIcon />}
               width="75%"
               p={6}
-              bgGradient="linear(to-r, teal.300, cyan.200)"
               variants={prefersReducedMotion ? undefined : featureVariant}
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }}
             >
               {isCreatingAccount ? copy.create_loading : copy.create_button}
-            </MotionButton>
+            </Button>
           </MotionStack>
           {errorMessage && (
             <Text color="red.300" fontSize="sm">
@@ -851,8 +864,12 @@ const LandingPage = ({
                 fontSize="3xl"
                 fontWeight="bold"
                 color="white"
-                initial={prefersReducedMotion ? undefined : { opacity: 0, y: 18 }}
-                animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+                initial={
+                  prefersReducedMotion ? undefined : { opacity: 0, y: 18 }
+                }
+                animate={
+                  prefersReducedMotion ? undefined : { opacity: 1, y: 0 }
+                }
                 transition={{ duration: 0.6, ease: "easeOut", delay: 0.05 }}
               >
                 {copy.section_features_title}
@@ -1002,13 +1019,12 @@ const LandingPage = ({
                 animate={prefersReducedMotion ? undefined : "visible"}
                 variants={prefersReducedMotion ? undefined : featureVariant}
                 transition={{ duration: 0.6, delay: 0.1 }}
+                fontSize="16px"
               />
               <MotionButton
-                rightIcon={<ArrowForwardIcon />}
                 onClick={handleCreateAccount}
                 isDisabled={!hasDisplayName || isCreatingAccount}
                 width="75%"
-                maxWidth="300px"
                 p={6}
                 initial={prefersReducedMotion ? undefined : "hidden"}
                 animate={prefersReducedMotion ? undefined : "visible"}
@@ -1024,7 +1040,6 @@ const LandingPage = ({
                   setView("signIn");
                 }}
                 width="75%"
-                maxWidth="300px"
                 p={6}
                 colorScheme="teal"
                 initial={prefersReducedMotion ? undefined : "hidden"}
