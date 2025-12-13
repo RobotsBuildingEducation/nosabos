@@ -1609,15 +1609,15 @@ function LessonDetailModal({
                       : getTranslation("skill_tree_xp_reward")}
                   </Text>
                 </HStack>
-                <Badge
-                  bg="transparent"
+                <Text
                   color="white"
-                  fontSize={lesson.isTutorial ? "md" : "xl"}
-                  px={5}
+                  fontSize={{ base: "xs", sm: "sm", md: lesson.isTutorial ? "md" : "xl" }}
+                  px={{ base: 2, md: 5 }}
                   py={2}
-                  borderRadius="full"
-                  fontWeight="black"
-                  textTransform="none"
+                  fontWeight="bold"
+                  whiteSpace={{ base: "normal", md: "nowrap" }}
+                  textAlign="right"
+                  maxW={{ base: "140px", sm: "200px", md: "none" }}
                 >
                   {lesson.isTutorial
                     ? getTranslation("skill_tree_tutorial_activities")
@@ -1628,7 +1628,7 @@ function LessonDetailModal({
                           100
                       )}%`
                     : `+${lesson.xpReward} XP`}
-                </Badge>
+                </Text>
               </HStack>
             </Box>
 
