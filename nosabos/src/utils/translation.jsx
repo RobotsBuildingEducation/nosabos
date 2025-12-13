@@ -202,6 +202,8 @@ export const translations = {
     app_install_step3: "Add to Home Screen.",
     app_install_step4: "Launch from your Home Screen.",
     app_close: "Close",
+    app_copy_id: "Copy User ID",
+    app_copy_secret: "Copy Secret Key",
     account_final_step_title: "Copy your secret key to sign into your account",
     account_final_step_description:
       "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
@@ -747,6 +749,8 @@ export const translations = {
     app_install_step4:
       "4. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
     app_close: "Cerrar",
+    app_copy_id: "Copiar ID de usuario",
+    app_copy_secret: "Copiar llave secreta",
     toast_copied: "Copiado",
     toast_copy_failed: "Fallo al copiar",
     toast_paste_nsec: "Pega tu nsec primero",
@@ -1093,12 +1097,12 @@ export const translations = {
     mode_vocabulary: "Vocabulario",
     mode_grammar: "Gramática",
     mode_reading: "Lectura",
-    mode_realtime: "Platicar",
+    mode_realtime: "Chat",
     mode_stories: "Narrativos",
     // PathSwitcher tabs
     path_switcher_path: "Ruta",
     path_switcher_flashcards: "Tarjetas",
-    path_switcher_conversations: "Conversaciones",
+    path_switcher_conversations: "Chat",
     // Session timer modal
     timer_modal_title: "Temporizador de sesión",
     timer_modal_description:
