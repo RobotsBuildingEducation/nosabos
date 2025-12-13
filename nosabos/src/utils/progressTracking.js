@@ -50,7 +50,8 @@ export async function startLesson(npub, lessonId, targetLang = 'es') {
 }
 
 /**
- * Complete a lesson and award XP
+ * Complete a lesson - marks it complete but does NOT award XP.
+ * Callers should use awardXp() separately to handle XP with proper daily goal tracking.
  */
 export async function completeLesson(
   npub,
@@ -61,7 +62,6 @@ export async function completeLesson(
   if (!npub || !lessonId || !xpReward) return;
 
   const languageKey = (targetLang || 'es').toLowerCase();
-  const languageXpField = `progress.languageXp.${languageKey}`;
   const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
 
   const userRef = doc(database, 'users', npub);
@@ -76,25 +76,10 @@ export async function completeLesson(
       [`${languageLessonBase}.completedAt`]: serverTimestamp(),
       [`${languageLessonBase}.xpEarned`]: xpReward,
 
-      // Award XP
-      'progress.totalXp': increment(xpReward),
-      xp: increment(xpReward), // Also update global XP
-      [languageXpField]: increment(xpReward),
-
-      // Update daily XP (for daily goals)
-      dailyXp: increment(xpReward),
-
       // Clear current lesson
       'progress.currentLesson': null,
       'progress.lastActiveAt': serverTimestamp(),
     });
-
-    // Dispatch XP award event for celebration animations
-    window.dispatchEvent(
-      new CustomEvent('xp:awarded', {
-        detail: { amount: xpReward, source: 'lesson', lessonId },
-      })
-    );
 
     return true;
   } catch (error) {

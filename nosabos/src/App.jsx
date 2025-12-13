@@ -2143,6 +2143,7 @@ export default function App() {
       const lessonLang = activeLessonLanguageRef.current || resolvedTargetLang;
 
       try {
+        // completeLesson marks the lesson complete (status tracking only, no XP)
         await completeLesson(
           npub,
           activeLesson.id,
@@ -2150,7 +2151,8 @@ export default function App() {
           lessonLang
         );
 
-        await awardXp(npub, activeLesson.xpReward, "lesson");
+        // awardXp handles all XP awarding with proper daily goal checking and celebration events
+        await awardXp(npub, activeLesson.xpReward, lessonLang);
 
         const fresh = await loadUserObjectFromDB(database, npub);
         if (fresh) setUser?.(fresh);

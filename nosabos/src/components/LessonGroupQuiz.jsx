@@ -1111,8 +1111,10 @@ YES or NO
 
     if (passed && lessonId && npub) {
       try {
+        // completeLesson marks the lesson complete (status tracking only)
         await completeLesson(npub, lessonId, xpReward, targetLang);
-        await awardXp(npub, xpReward, "lesson");
+        // awardXp handles XP with proper daily goal checking and celebration events
+        await awardXp(npub, xpReward, targetLang);
 
         toast({
           title: userLanguage === "es" ? "¡Examen aprobado!" : "Quiz Passed!",
