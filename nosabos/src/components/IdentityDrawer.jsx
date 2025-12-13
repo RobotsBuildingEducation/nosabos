@@ -1,5 +1,5 @@
 // src/components/IdentityDrawer.jsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -40,7 +40,7 @@ import { SiCashapp } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck, LuKeyRound } from "react-icons/lu";
+import { LuBadgeCheck, LuDoorOpen, LuKeyRound } from "react-icons/lu";
 import { LuKey } from "react-icons/lu";
 import { doc, updateDoc } from "firebase/firestore";
 
@@ -124,6 +124,19 @@ export default function IdentityDrawer({
       });
     }
   };
+
+  const handleSignOut = useCallback(() => {
+    if (typeof window === "undefined") return;
+
+    try {
+      localStorage.removeItem("local_nsec");
+      localStorage.removeItem("local_npub");
+    } catch (err) {
+      console.error("signOut error:", err);
+    } finally {
+      window.location.href = "/";
+    }
+  }, []);
 
   // Switch account
   const [switchNsec, setSwitchNsec] = useState("");
@@ -249,6 +262,8 @@ export default function IdentityDrawer({
         color="gray.100"
         borderTopRadius="24px"
         maxH="100vh"
+        display="flex"
+        flexDirection="column"
         sx={{
           "@supports (height: 100dvh)": {
             maxHeight: "100dvh",
@@ -264,8 +279,8 @@ export default function IdentityDrawer({
         <DrawerHeader pb={2} pr={12}>
           {t?.app_account_title || "Account"}
         </DrawerHeader>
-        <DrawerBody pb={6}>
-          <VStack align="stretch" spacing={3}>
+        <DrawerBody pb={6} display="flex" flexDirection="column" flex={1}>
+          <VStack align="stretch" spacing={3} flex={1}>
             {/* Top HStack with Copy ID, Secret Key, and Language Switch */}
             <HStack spacing={2} align="flex-start" flexWrap="wrap">
               {/* Copy ID Button */}
@@ -518,6 +533,21 @@ export default function IdentityDrawer({
             </Box>
             */}
           </VStack>
+
+          <Button
+            mt={6}
+            variant="outline"
+            colorScheme="red"
+            leftIcon={<LuDoorOpen size={18} />}
+            onClick={handleSignOut}
+            alignSelf="flex-start"
+            px={5}
+            py={3}
+            borderRadius="lg"
+            boxShadow="0 4px 12px rgba(0, 0, 0, 0.25)"
+          >
+            {t?.app_sign_out || "Sign out"}
+          </Button>
         </DrawerBody>
       </DrawerContent>
     </Drawer>

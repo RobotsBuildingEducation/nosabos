@@ -8,6 +8,7 @@ import React, {
 } from "react";
 import {
   Box,
+  Flex,
   Drawer,
   DrawerBody,
   DrawerContent,
@@ -3436,9 +3437,16 @@ export default function App() {
   ----------------------------------- */
   if (isLoadingApp || !user) {
     return (
-      <Box minH="100vh" bg="gray.900" color="gray.100" p={6}>
+      <Flex
+        minH="100vh"
+        bg="gray.900"
+        color="gray.100"
+        align="center"
+        justify="center"
+        p={6}
+      >
         <RobotBuddyPro state="Loading" />
-      </Box>
+      </Flex>
     );
   }
 
