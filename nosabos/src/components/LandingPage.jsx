@@ -162,6 +162,7 @@ const MotionVStack = motion(VStack);
 const MotionText = motion(Text);
 const MotionInput = motion(Input);
 const MotionButton = motion(Button);
+const MotionHStack = motion(HStack);
 const MotionStack = motion(Stack);
 const glowPulse = keyframes`
   0% { transform: translateY(0) scale(1); opacity: 0.65; }
@@ -779,7 +780,9 @@ const LandingPage = ({
             </Text>
           )}
 
-          <ActionButton
+          <MotionButton
+            {...BASE_BUTTON_PROPS}
+            {...BUTTON_VARIANTS.primary}
             onClick={() => {
               setView("signIn");
             }}
@@ -787,28 +790,47 @@ const LandingPage = ({
             width="75%"
             p={6}
             colorScheme="teal"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : featureVariant}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.16 }}
           >
             {copy.have_key_button}
-          </ActionButton>
+          </MotionButton>
 
-          <HStack spacing={2} justify="center">
-            <Button
+          <MotionHStack
+            spacing={2}
+            justify="center"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : featureVariant}
+            transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
+          >
+            <MotionButton
               size="sm"
               variant={landingLanguage === "en" ? "solid" : "ghost"}
               colorScheme="teal"
               onClick={() => handleLanguageChange("en")}
+              initial={prefersReducedMotion ? undefined : "hidden"}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={prefersReducedMotion ? undefined : featureVariant}
+              transition={{ duration: 0.55, ease: "easeOut", delay: 0.22 }}
             >
               {englishLabel}
-            </Button>
-            <Button
+            </MotionButton>
+            <MotionButton
               size="sm"
               variant={landingLanguage === "es" ? "solid" : "ghost"}
               colorScheme="teal"
               onClick={() => handleLanguageChange("es")}
+              initial={prefersReducedMotion ? undefined : "hidden"}
+              animate={prefersReducedMotion ? undefined : "visible"}
+              variants={prefersReducedMotion ? undefined : featureVariant}
+              transition={{ duration: 0.55, ease: "easeOut", delay: 0.26 }}
             >
               {spanishLabel}
-            </Button>
-          </HStack>
+            </MotionButton>
+          </MotionHStack>
         </MotionVStack>
       </Flex>
 
