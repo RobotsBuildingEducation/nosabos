@@ -235,6 +235,7 @@ export default function IdentityDrawer({
         action: (
           <Button
             size="xs"
+            padding={4}
             leftIcon={<LuKeyRound size={14} />}
             colorScheme="orange"
             onClick={() =>
@@ -406,8 +407,7 @@ export default function IdentityDrawer({
                 }}
                 bg="gray.800"
                 rounded="md"
-                border="2px solid"
-                borderColor="orange.400"
+                width="fit-content"
               >
                 <AccordionItem border="none">
                   <AccordionButton px={4} py={3} _expanded={{ bg: "gray.750" }}>
@@ -456,13 +456,7 @@ export default function IdentityDrawer({
             )}
 
             {/* Install App Section (Always Visible - NOT an accordion) */}
-            <Box
-              bg="gray.800"
-              p={4}
-              rounded="md"
-              border="2px solid"
-              borderColor="cyan.400"
-            >
+            <Box bg="gray.800" p={4} rounded="md">
               <Text fontWeight="semibold" mb={3}>
                 {t?.app_install_title || "Install as app"}
               </Text>
@@ -561,8 +555,7 @@ export default function IdentityDrawer({
               mt={6}
               leftIcon={<LuDoorOpen size={18} />}
               onClick={handleSignOut}
-              px={5}
-              py={3}
+              padding={6}
               borderRadius="lg"
             >
               {t?.app_sign_out || "Sign out"}
