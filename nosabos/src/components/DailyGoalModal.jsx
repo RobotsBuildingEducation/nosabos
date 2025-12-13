@@ -25,7 +25,11 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { FiTarget, FiZap, FiClock } from "react-icons/fi";
 import { database } from "../firebaseResources/firebaseResources";
-import { translations as allTranslations, t as translate } from "../utils/translation.jsx";
+import {
+  translations as allTranslations,
+  t as translate,
+} from "../utils/translation.jsx";
+import { WaveBar } from "./WaveBar.jsx";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [25, 50, 75, 100, 150];
@@ -80,10 +84,7 @@ export default function DailyGoalModal({
         "daily_goal_error_no_user_desc",
         "Please sign in again."
       ),
-      errSaveTitle: getLabel(
-        "daily_goal_error_save",
-        "Could not save goal"
-      ),
+      errSaveTitle: getLabel("daily_goal_error_save", "Could not save goal"),
     }),
     [getLabel]
   );
@@ -213,26 +214,6 @@ export default function DailyGoalModal({
               </HStack>
             </Box>
 
-            {/* Slider */}
-            <Box>
-              <Text fontSize="sm" mb={2} opacity={0.85}>
-                {L.fineTune}
-              </Text>
-              <Slider
-                aria-label="daily-goal-slider"
-                min={10}
-                max={500}
-                step={10}
-                value={Math.min(500, Math.max(10, parsed))}
-                onChange={(val) => setGoal(String(val))}
-              >
-                <SliderTrack>
-                  <SliderFilledTrack />
-                </SliderTrack>
-                <SliderThumb boxSize={5} />
-              </Slider>
-            </Box>
-
             {/* Simple text field (no steppers) */}
             <FormControl>
               <FormLabel>{ui.inputLabel || L.inputLabel}</FormLabel>
@@ -265,13 +246,14 @@ export default function DailyGoalModal({
                 <Box as={FiZap} aria-hidden fontSize="18px" color="teal.300" />
                 <Text fontWeight="semibold">{L.goalPreview}</Text>
               </HStack>
-              <Progress
+              <WaveBar
                 value={Math.min(levelPct, 100)}
                 size="sm"
                 rounded="md"
                 hasStripe
                 isAnimated
-                colorScheme="teal"
+                start="rgba(28, 145, 248, 1)"
+                end="rgba(0, 157, 255, 1)"
               />
               <HStack mt={2} justify="space-between" fontSize="sm">
                 <Text opacity={0.85}>

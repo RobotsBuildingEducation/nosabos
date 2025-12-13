@@ -18,16 +18,15 @@ export const translations = {
   en: {
     correct: "Correct!",
     dailyGoalProgress: "Goal",
-    daily_goal_title: "Daily XP goal",
-    daily_goal_subtitle:
-      "Each level = 100 XP. How many XP do you want to earn per day?",
+    daily_goal_title: "Daily Experience (XP) Goal",
+    daily_goal_subtitle: "How many XP do you want to earn per day?",
     daily_goal_input_label: "XP per day",
     daily_goal_save: "Save",
     daily_goal_quick_picks: "Quick picks",
     daily_goal_fine_tune: "Fine-tune",
     daily_goal_xp_unit: "XP / day",
     daily_goal_level_explainer:
-      "Each level is 100 XP. This goal is {pct}% of a level (≈ {levels} level(s) per day).",
+      "Each level is 100 XP. This goal is {pct}% of a level per day.",
     daily_goal_preview: "Goal preview",
     daily_goal_resets_in: "Resets in 24h · {when}",
     daily_goal_error_no_user: "No user ID",
@@ -600,16 +599,15 @@ export const translations = {
   es: {
     correct: "¡Correcto!",
     dailyGoalProgress: "Meta",
-    daily_goal_title: "Meta diaria de XP",
-    daily_goal_subtitle:
-      "Cada nivel = 100 XP. ¿Cuántos XP quieres ganar al día?",
+    daily_goal_title: "Meta diaria de experiencia (XP)",
+    daily_goal_subtitle: "¿Cuántos XP quieres ganar al día?",
     daily_goal_input_label: "XP por día",
     daily_goal_save: "Guardar",
     daily_goal_quick_picks: "Atajos",
     daily_goal_fine_tune: "Ajuste fino",
     daily_goal_xp_unit: "XP / día",
     daily_goal_level_explainer:
-      "Cada nivel = 100 XP. Esta meta es el {pct}% de un nivel (≈ {levels} nivel(es) por día).",
+      "Cada nivel = 100 XP. Esta meta es el {pct}% de un nivel por día.",
     daily_goal_preview: "Vista previa de la meta",
     daily_goal_resets_in: "Se reinicia en 24 h · {when}",
     daily_goal_error_no_user: "Sin ID de usuario",
