@@ -19,6 +19,8 @@ import {
   Stack,
   Text,
   VStack,
+  keyframes,
+  usePrefersReducedMotion,
   useToast,
 } from "@chakra-ui/react";
 import { ArrowForwardIcon, LockIcon } from "@chakra-ui/icons";
@@ -153,14 +155,71 @@ const LandingSection = ({ children, ...rest }) => (
     {children}
   </Box>
 );
+const glowPulse = keyframes`
+  0% { transform: translateY(0) scale(1); opacity: 0.65; }
+  50% { transform: translateY(-12px) scale(1.04); opacity: 0.9; }
+  100% { transform: translateY(0) scale(1); opacity: 0.65; }
+`;
 
-const HeroBackground = () => (
-  <Box
-    position="absolute"
-    inset={0}
-    bgGradient="linear(to-br, #06111f, #0f202f)"
-    zIndex={-2}
-  />
+const gradientShift = keyframes`
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+`;
+
+const shimmerSweep = keyframes`
+  0% { transform: translateX(-20%) rotate(-6deg); opacity: 0; }
+  40% { opacity: 0.45; }
+  60% { opacity: 0.6; }
+  100% { transform: translateX(120%) rotate(-6deg); opacity: 0; }
+`;
+
+const HeroBackground = ({ prefersReducedMotion }) => (
+  <Box position="absolute" inset={0} overflow="hidden" zIndex={-2}>
+    <Box
+      position="absolute"
+      inset={0}
+      bgGradient="linear(to-br, #040b14, #0c1e31 45%, #0a2f40)"
+      backgroundSize="200% 200%"
+      animation={prefersReducedMotion ? undefined : `${gradientShift} 20s ease-in-out infinite`}
+    />
+
+    <Box
+      position="absolute"
+      top="-10%"
+      left="-12%"
+      w="60%"
+      h="60%"
+      bgGradient="radial(closest-side, rgba(32, 197, 190, 0.35), transparent 60%)"
+      filter="blur(40px)"
+      animation={
+        prefersReducedMotion ? undefined : `${glowPulse} 14s ease-in-out infinite alternate`
+      }
+    />
+    <Box
+      position="absolute"
+      bottom="-12%"
+      right="-16%"
+      w="55%"
+      h="55%"
+      bgGradient="radial(closest-side, rgba(79, 70, 229, 0.28), transparent 60%)"
+      filter="blur(40px)"
+      animation={
+        prefersReducedMotion ? undefined : `${glowPulse} 16s ease-in-out infinite alternate`
+      }
+    />
+
+    <Box
+      position="absolute"
+      insetY={-10}
+      left="-30%"
+      w="50%"
+      bgGradient="linear(to-b, rgba(255,255,255,0.12), transparent 60%)"
+      filter="blur(18px)"
+      opacity={0.35}
+      animation={prefersReducedMotion ? undefined : `${shimmerSweep} 18s linear infinite`}
+    />
+  </Box>
 );
 
 const BASE_BUTTON_PROPS = {
@@ -389,6 +448,7 @@ const LandingPage = ({
   isIdentitySaving,
 }) => {
   const toast = useToast();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const { generateNostrKeys, auth } = useDecentralizedIdentity(
     typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
     typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
@@ -556,8 +616,14 @@ const LandingPage = ({
   }
 
   return (
-    <Box position="relative" minH="100vh" color="gray.100" pb={24}>
-      <HeroBackground />
+    <Box
+      position="relative"
+      minH="100vh"
+      color="gray.100"
+      pb={24}
+      overflow="hidden"
+    >
+      <HeroBackground prefersReducedMotion={prefersReducedMotion} />
       <Flex
         align="center"
         justify="center"
@@ -569,11 +635,29 @@ const LandingPage = ({
           spacing={8}
           bg="rgba(8, 18, 29, 0.92)"
           borderRadius="3xl"
+          boxShadow="0 12px 60px rgba(20, 184, 166, 0.25)"
           p={{ base: 8, md: 12 }}
           maxW="lg"
           w="full"
         >
           <VStack spacing={3}>
+            <Box
+              px={4}
+              py={1}
+              borderRadius="full"
+              bgGradient="linear(to-r, teal.300, cyan.200, teal.300)"
+              backgroundSize="200% 200%"
+              color="gray.900"
+              fontWeight="bold"
+              fontSize="xs"
+              letterSpacing="0.08em"
+              animation={
+                prefersReducedMotion ? undefined : `${gradientShift} 12s ease-in-out infinite`
+              }
+              boxShadow="0 10px 30px rgba(45, 212, 191, 0.25)"
+            >
+              {copy.hero_badge || "Human-paced, AI-assisted practice"}
+            </Box>
             <RobotBuddyPro palette="ocean" variant="abstract" />
             <Text fontSize="2xl" fontWeight="semibold" color="cyan.200">
               {copy.brand_name}
@@ -604,13 +688,23 @@ const LandingPage = ({
               color="white"
             />
             <Button
-              color="white"
+              color="gray.900"
               onClick={handleCreateAccount}
               isLoading={isCreatingAccount}
               isDisabled={!hasDisplayName}
               rightIcon={<ArrowForwardIcon />}
               width="75%"
               p={6}
+              bgGradient="linear(to-r, teal.300, cyan.200)"
+              _hover={{
+                bgGradient: "linear(to-r, teal.200, cyan.100)",
+                transform: prefersReducedMotion ? undefined : "translateY(-2px)",
+                boxShadow: "0 12px 30px rgba(34, 211, 238, 0.35)",
+              }}
+              _active={{
+                transform: prefersReducedMotion ? undefined : "translateY(0px)",
+              }}
+              transition="all 0.25s ease"
               // w={{ base: "full", md: "auto" }}
             >
               {isCreatingAccount ? copy.create_loading : copy.create_button}
@@ -674,6 +768,17 @@ const LandingPage = ({
                     p={6}
                     borderRadius="xl"
                     bg="rgba(6, 18, 30, 0.95)"
+                    border="1px solid rgba(45, 212, 191, 0.18)"
+                    boxShadow="0 8px 30px rgba(0, 0, 0, 0.35)"
+                    transition="all 0.35s ease"
+                    _hover={{
+                      transform: prefersReducedMotion
+                        ? undefined
+                        : "translateY(-6px) scale(1.01)",
+                      borderColor: "rgba(45, 212, 191, 0.35)",
+                      boxShadow: "0 16px 50px rgba(20, 184, 166, 0.28)",
+                      bg: "rgba(7, 22, 34, 0.98)",
+                    }}
                   >
                     <VStack align="flex-start" spacing={4}>
                       <Icon as={feature.icon} color="teal.200" boxSize={8} />
