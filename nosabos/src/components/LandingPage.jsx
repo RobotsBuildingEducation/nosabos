@@ -160,6 +160,8 @@ const LandingSection = ({ children, ...rest }) => (
 const MotionBox = motion(Box);
 const MotionVStack = motion(VStack);
 const MotionText = motion(Text);
+const MotionInput = motion(Input);
+const MotionButton = motion(Button);
 const glowPulse = keyframes`
   0% { transform: translateY(0) scale(1); opacity: 0.65; }
   50% { transform: translateY(-12px) scale(1.04); opacity: 0.9; }
@@ -800,8 +802,13 @@ const LandingPage = ({
       <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
         <Flex direction="column" align="center" gap={12}>
           <LandingSection
+            as={MotionBox}
             bg="rgba(4, 12, 22, 0.92)"
             borderRadius="3xl"
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            animate={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : revealVariant}
+            transition={{ duration: 0.7, ease: "easeOut" }}
           >
             <VStack spacing={8} align="stretch">
               <MotionText
@@ -811,7 +818,7 @@ const LandingPage = ({
                 color="white"
                 initial={prefersReducedMotion ? undefined : { opacity: 0, y: 18 }}
                 animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
+                transition={{ duration: 0.6, ease: "easeOut", delay: 0.05 }}
               >
                 {copy.section_features_title}
               </MotionText>
@@ -926,13 +933,29 @@ const LandingPage = ({
             transition={{ duration: 0.6, delay: 0.12 }}
           >
             <VStack spacing={6} align="center">
-              <Text fontSize="3xl" fontWeight="bold" textAlign="center">
+              <MotionText
+                fontSize="3xl"
+                fontWeight="bold"
+                textAlign="center"
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.55, delay: 0.02 }}
+              >
                 {copy.ready_title}
-              </Text>
-              <Text textAlign="center" color="cyan.100" maxW="2xl">
+              </MotionText>
+              <MotionText
+                textAlign="center"
+                color="cyan.100"
+                maxW="2xl"
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.6, delay: 0.06 }}
+              >
                 {copy.ready_subtitle}
-              </Text>
-              <Input
+              </MotionText>
+              <MotionInput
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
                 placeholder={copy.display_name_placeholder}
@@ -940,18 +963,27 @@ const LandingPage = ({
                 borderColor="rgba(45, 212, 191, 0.45)"
                 color="white"
                 maxW="400px"
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.6, delay: 0.1 }}
               />
-              <Button
+              <MotionButton
                 rightIcon={<ArrowForwardIcon />}
                 onClick={handleCreateAccount}
                 isDisabled={!hasDisplayName || isCreatingAccount}
                 width="75%"
                 maxWidth="300px"
                 p={6}
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.6, delay: 0.14 }}
               >
                 {copy.ready_cta}
-              </Button>
-              <ActionButton
+              </MotionButton>
+              <MotionButton
+                as={ActionButton}
                 color="white"
                 onClick={() => {
                   setView("signIn");
@@ -960,9 +992,13 @@ const LandingPage = ({
                 maxWidth="300px"
                 p={6}
                 colorScheme="teal"
+                initial={prefersReducedMotion ? undefined : "hidden"}
+                animate={prefersReducedMotion ? undefined : "visible"}
+                variants={prefersReducedMotion ? undefined : featureVariant}
+                transition={{ duration: 0.6, delay: 0.18 }}
               >
                 {copy.have_key_button}
-              </ActionButton>
+              </MotionButton>
             </VStack>
           </LandingSection>
         </Flex>
