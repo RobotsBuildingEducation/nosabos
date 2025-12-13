@@ -19,7 +19,6 @@ import {
   Stack,
   Text,
   VStack,
-  keyframes,
   usePrefersReducedMotion,
   useToast,
 } from "@chakra-ui/react";
@@ -37,6 +36,7 @@ import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck } from "react-icons/lu";
+import { keyframes } from "@emotion/react";
 
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import RobotBuddyPro from "./RobotBuddyPro";
@@ -845,6 +845,15 @@ const LandingPage = ({
               <Text textAlign="center" color="cyan.100" maxW="2xl">
                 {copy.ready_subtitle}
               </Text>
+              <Input
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                placeholder={copy.display_name_placeholder}
+                bg="rgba(6, 18, 30, 0.95)"
+                borderColor="rgba(45, 212, 191, 0.45)"
+                color="white"
+                maxW="400px"
+              />
               <Button
                 rightIcon={<ArrowForwardIcon />}
                 onClick={handleCreateAccount}
