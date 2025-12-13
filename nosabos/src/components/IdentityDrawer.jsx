@@ -318,34 +318,46 @@ export default function IdentityDrawer({
                 borderColor="gray.700"
                 width="fit-content"
               >
-                <Button
-                  onClick={() => onSelectLanguage?.("en")}
-                  variant={appLanguage === "en" ? "solid" : "ghost"}
-                  colorScheme="teal"
-                  fontSize="sm"
-                  fontWeight="bold"
-                  aria-label={
-                    t?.language_en ||
-                    t?.app_language_en ||
-                    "English / Inglés"
-                  }
-                >
-                  English / Inglés
-                </Button>
-                <Button
-                  onClick={() => onSelectLanguage?.("es")}
-                  variant={appLanguage === "es" ? "solid" : "ghost"}
-                  colorScheme="teal"
-                  fontSize="sm"
-                  fontWeight="bold"
-                  aria-label={
-                    t?.language_es ||
-                    t?.app_language_es ||
-                    "Spanish / Español"
-                  }
-                >
-                  Spanish / Español
-                </Button>
+                {/**
+                 * Render language labels based on the current app language.
+                 * When the UI is in English, show English labels; when in Spanish,
+                 * show Spanish labels.
+                 */}
+                {(() => {
+                  const labels =
+                    appLanguage === "es"
+                      ? { en: "Inglés", es: "Español" }
+                      : { en: "English", es: "Spanish" };
+
+                  return (
+                    <>
+                      <Button
+                        onClick={() => onSelectLanguage?.("en")}
+                        variant={appLanguage === "en" ? "solid" : "ghost"}
+                        colorScheme="teal"
+                        fontSize="sm"
+                        fontWeight="bold"
+                        aria-label={
+                          t?.language_en || t?.app_language_en || labels.en
+                        }
+                      >
+                        {labels.en}
+                      </Button>
+                      <Button
+                        onClick={() => onSelectLanguage?.("es")}
+                        variant={appLanguage === "es" ? "solid" : "ghost"}
+                        colorScheme="teal"
+                        fontSize="sm"
+                        fontWeight="bold"
+                        aria-label={
+                          t?.language_es || t?.app_language_es || labels.es
+                        }
+                      >
+                        {labels.es}
+                      </Button>
+                    </>
+                  );
+                })()}
               </ButtonGroup>
             </HStack>
 
