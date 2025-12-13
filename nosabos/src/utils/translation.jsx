@@ -189,6 +189,8 @@ export const translations = {
     app_install_step2: "Choose 'Share' or 'Install'.",
     app_install_step3: "Add to Home Screen.",
     app_install_step4: "Launch from your Home Screen.",
+    app_copy_id: "Copy User ID",
+    app_copy_secret: "Copy Secret Key",
     app_close: "Close",
     account_final_step_title: "Copy your secret key to sign into your account",
     account_final_step_description:
@@ -732,6 +734,8 @@ export const translations = {
       "3. Presiona el botón de Agregar a la Pantalla de Inicio",
     app_install_step4:
       "4. ¡Eso es todo! No necesitas descargar la app a través de una tienda de apps porque usamos estándares de código abierto llamados Progressive Web Apps.",
+    app_copy_id: "Copiar ID de usuario",
+    app_copy_secret: "Copiar llave secreta",
     app_close: "Cerrar",
     toast_copied: "Copiado",
     toast_copy_failed: "Fallo al copiar",

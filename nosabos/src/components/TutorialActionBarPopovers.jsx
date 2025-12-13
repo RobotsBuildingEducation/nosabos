@@ -15,9 +15,9 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@chakra-ui/icons";
-import { FaAddressCard } from "react-icons/fa";
 import { PiUsersBold, PiPatreonLogoFill } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
+import { LuKey } from "react-icons/lu";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -40,11 +40,11 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "identity",
-    icon: FaAddressCard,
-    label: { en: "Identity", es: "Identidad" },
+    icon: LuKey,
+    label: { en: "Account Key", es: "Llave de cuenta" },
     description: {
-      en: "View and manage your profile and learning statistics",
-      es: "Ver y gestionar tu perfil y estadísticas de aprendizaje",
+      en: "Access your account drawer to view your keys and wallet",
+      es: "Abre tu cuenta para ver tus llaves y la billetera",
     },
     position: 1,
   },
