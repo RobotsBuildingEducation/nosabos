@@ -39,7 +39,7 @@ export default function DailyGoalModal({
   onClose,
   npub,
   lang = "en",
-  defaultGoal = 50,
+  defaultGoal = 100,
   t,
   ui = {},
 }) {
