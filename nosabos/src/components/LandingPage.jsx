@@ -192,7 +192,7 @@ const StreamingText = ({
   text = "",
   as: Component = Text,
   delay = 120,
-  speed = 22,
+  speed = 8,
   caretColor = "teal.200",
   prefersReducedMotion: prefersReducedMotionProp,
   ...rest
@@ -234,7 +234,8 @@ const StreamingText = ({
     };
   }, [characters.length, delay, prefersReducedMotion, speed]);
 
-  const caretVisible = !prefersReducedMotion && visibleCount < characters.length;
+  const caretVisible =
+    !prefersReducedMotion && visibleCount < characters.length;
 
   return (
     <Component {...rest} whiteSpace="pre-wrap">
@@ -1049,15 +1050,17 @@ const LandingPage = ({
                           : null) ||
                         landingTranslations.en[feature.descriptionKey] ||
                         (feature.legacyDescriptionKey
-                          ? landingTranslations.en[
-                              feature.legacyDescriptionKey
-                            ]
+                          ? landingTranslations.en[feature.legacyDescriptionKey]
                           : null) ||
                         feature.descriptionKey;
 
                       return (
                         <VStack align="flex-start" spacing={4}>
-                          <Icon as={feature.icon} color="teal.200" boxSize={8} />
+                          <Icon
+                            as={feature.icon}
+                            color="teal.200"
+                            boxSize={8}
+                          />
                           <StreamingText
                             as={Text}
                             fontSize="xl"
@@ -1085,58 +1088,58 @@ const LandingPage = ({
             as={MotionBox}
             bg="rgba(8, 26, 36, 0.9)"
             borderRadius="3xl"
-          initial={prefersReducedMotion ? undefined : "hidden"}
-          whileInView={prefersReducedMotion ? undefined : "visible"}
-          variants={prefersReducedMotion ? undefined : revealVariant}
-          viewport={{ once: true, amount: 0.35 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
-        >
-          <VStack spacing={5} align="center">
-            <StreamingText
-              as={Text}
-              fontSize="3xl"
-              fontWeight="bold"
-              textAlign="center"
-              text={copy.wallet_section_title}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-            <Text textAlign="center" color="cyan.100" maxW="3xl">
+            initial={prefersReducedMotion ? undefined : "hidden"}
+            whileInView={prefersReducedMotion ? undefined : "visible"}
+            variants={prefersReducedMotion ? undefined : revealVariant}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+          >
+            <VStack spacing={5} align="center">
               <StreamingText
-                as="span"
-                text={copy.wallet_section_description_prefix}
-                prefersReducedMotion={prefersReducedMotion}
-              />{" "}
-              <Link
-                href="https://robotsbuildingeducation.com/learning"
-                isExternal
-                color="teal.200"
-                textDecoration="underline"
-              >
-                <StreamingText
-                  as="span"
-                  text={
-                    copy.wallet_section_link_label ||
-                    landingTranslations.en.wallet_section_link_label
-                  }
-                  prefersReducedMotion={prefersReducedMotion}
-                />
-              </Link>
-              <StreamingText
-                as="span"
-                text={copy.wallet_section_description_suffix}
+                as={Text}
+                fontSize="3xl"
+                fontWeight="bold"
+                textAlign="center"
+                text={copy.wallet_section_title}
                 prefersReducedMotion={prefersReducedMotion}
               />
-            </Text>
-            <StreamingText
-              as={Text}
-              textAlign="center"
-              color="teal.100"
-              maxW="2xl"
-              text={copy.wallet_section_note}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-          </VStack>
-        </LandingSection>
+              <Text textAlign="center" color="cyan.100" maxW="3xl">
+                <StreamingText
+                  as="span"
+                  text={copy.wallet_section_description_prefix}
+                  prefersReducedMotion={prefersReducedMotion}
+                />{" "}
+                <Link
+                  href="https://robotsbuildingeducation.com/learning"
+                  isExternal
+                  color="teal.200"
+                  textDecoration="underline"
+                >
+                  <StreamingText
+                    as="span"
+                    text={
+                      copy.wallet_section_link_label ||
+                      landingTranslations.en.wallet_section_link_label
+                    }
+                    prefersReducedMotion={prefersReducedMotion}
+                  />
+                </Link>
+                <StreamingText
+                  as="span"
+                  text={copy.wallet_section_description_suffix}
+                  prefersReducedMotion={prefersReducedMotion}
+                />
+              </Text>
+              <StreamingText
+                as={Text}
+                textAlign="center"
+                color="teal.100"
+                maxW="2xl"
+                text={copy.wallet_section_note}
+                prefersReducedMotion={prefersReducedMotion}
+              />
+            </VStack>
+          </LandingSection>
 
           <LandingSection
             as={MotionBox}
