@@ -183,6 +183,78 @@ const shimmerSweep = keyframes`
   100% { transform: translateX(120%) rotate(-6deg); opacity: 0; }
 `;
 
+const caretBlink = keyframes`
+  0%, 55% { opacity: 0.82; }
+  55%, 100% { opacity: 0; }
+`;
+
+const StreamingText = ({
+  text = "",
+  as: Component = Text,
+  delay = 120,
+  speed = 22,
+  caretColor = "teal.200",
+  prefersReducedMotion: prefersReducedMotionProp,
+  ...rest
+}) => {
+  const motionPreference = usePrefersReducedMotion();
+  const prefersReducedMotion =
+    prefersReducedMotionProp !== undefined
+      ? prefersReducedMotionProp
+      : motionPreference;
+
+  const characters = useMemo(() => Array.from(text ?? ""), [text]);
+  const [visibleCount, setVisibleCount] = useState(
+    prefersReducedMotion ? characters.length : 0
+  );
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setVisibleCount(characters.length);
+      return undefined;
+    }
+
+    setVisibleCount(0);
+    let streamInterval;
+    const delayTimer = setTimeout(() => {
+      streamInterval = setInterval(() => {
+        setVisibleCount((current) => {
+          if (current >= characters.length) {
+            clearInterval(streamInterval);
+            return current;
+          }
+          return current + 1;
+        });
+      }, speed);
+    }, delay);
+
+    return () => {
+      clearTimeout(delayTimer);
+      clearInterval(streamInterval);
+    };
+  }, [characters.length, delay, prefersReducedMotion, speed]);
+
+  const caretVisible = !prefersReducedMotion && visibleCount < characters.length;
+
+  return (
+    <Component {...rest} whiteSpace="pre-wrap">
+      {characters.slice(0, visibleCount).join("")}
+      {caretVisible ? (
+        <Box
+          as="span"
+          ml="4px"
+          display="inline-block"
+          w="7px"
+          h="1.15em"
+          bg={caretColor}
+          borderRadius="full"
+          animation={`${caretBlink} 1s steps(2) infinite`}
+        />
+      ) : null}
+    </Component>
+  );
+};
+
 const HeroBackground = ({ prefersReducedMotion }) => (
   <Box position="absolute" inset={0} overflow="hidden" zIndex={-2}>
     <Box
@@ -624,12 +696,20 @@ const LandingPage = ({
           border="1px solid rgba(45, 212, 191, 0.35)"
           p={{ base: 6, md: 8 }}
         >
-          <Text fontSize="2xl" fontWeight="bold">
-            {copy.signin_title}
-          </Text>
-          <Text fontSize="sm" color="teal.100">
-            {copy.signin_subtitle}
-          </Text>
+          <StreamingText
+            as={Text}
+            fontSize="2xl"
+            fontWeight="bold"
+            text={copy.signin_title}
+            prefersReducedMotion={prefersReducedMotion}
+          />
+          <StreamingText
+            as={Text}
+            fontSize="sm"
+            color="teal.100"
+            text={copy.signin_subtitle}
+            prefersReducedMotion={prefersReducedMotion}
+          />
           <Input
             value={secretKey}
             onChange={(event) => setSecretKey(event.target.value)}
@@ -641,9 +721,13 @@ const LandingPage = ({
             fontSize="16px"
           />
           {errorMessage && (
-            <Text color="red.300" fontSize="sm">
-              {errorMessage}
-            </Text>
+            <StreamingText
+              as={Text}
+              color="red.300"
+              fontSize="sm"
+              text={errorMessage}
+              prefersReducedMotion={prefersReducedMotion}
+            />
           )}
           <ActionButton
             onClick={handleSignIn}
@@ -652,7 +736,11 @@ const LandingPage = ({
             colorScheme="teal"
             color="white"
           >
-            {copy.signin_button}
+            <StreamingText
+              as="span"
+              text={copy.signin_button}
+              prefersReducedMotion={prefersReducedMotion}
+            />
           </ActionButton>
           <ActionButton
             variant="ghost"
@@ -660,7 +748,11 @@ const LandingPage = ({
               setView("landing");
             }}
           >
-            {copy.back_button}
+            <StreamingText
+              as="span"
+              text={copy.back_button}
+              prefersReducedMotion={prefersReducedMotion}
+            />
           </ActionButton>
         </VStack>
       </Flex>
@@ -719,38 +811,46 @@ const LandingPage = ({
                 }
                 transition={{ duration: 0.7, delay: 0.15 }}
               >
-                {copy.hero_badge}
+                <StreamingText
+                  as="span"
+                  text={copy.hero_badge}
+                  caretColor="gray.900"
+                  prefersReducedMotion={prefersReducedMotion}
+                />
               </MotionBox>
             ) : null}
             <RobotBuddyPro palette="ocean" variant="abstract" />
-            <MotionText
+            <StreamingText
+              as={MotionText}
               fontSize="2xl"
               fontWeight="semibold"
               color="cyan.200"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
               animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.25 }}
-            >
-              {copy.brand_name}
-            </MotionText>
-            <MotionText
+              text={copy.brand_name}
+              prefersReducedMotion={prefersReducedMotion}
+            />
+            <StreamingText
+              as={MotionText}
               fontSize={{ base: "xl", md: "xl" }}
               fontWeight="black"
               lineHeight="1.1"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
               animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.35 }}
-            >
-              {copy.hero_title}
-            </MotionText>
-            <MotionText
+              text={copy.hero_title}
+              prefersReducedMotion={prefersReducedMotion}
+            />
+            <StreamingText
+              as={MotionText}
               color="teal.100"
               initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
               animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.45 }}
-            >
-              {copy.hero_languages}
-            </MotionText>
+              text={copy.hero_languages}
+              prefersReducedMotion={prefersReducedMotion}
+            />
           </MotionVStack>
 
           <MotionStack
@@ -784,13 +884,23 @@ const LandingPage = ({
               variants={prefersReducedMotion ? undefined : featureVariant}
               transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }}
             >
-              {isCreatingAccount ? copy.create_loading : copy.create_button}
+              <StreamingText
+                as="span"
+                text={
+                  isCreatingAccount ? copy.create_loading : copy.create_button
+                }
+                prefersReducedMotion={prefersReducedMotion}
+              />
             </Button>
           </MotionStack>
           {errorMessage && (
-            <Text color="red.300" fontSize="sm">
-              {errorMessage}
-            </Text>
+            <StreamingText
+              as={Text}
+              color="red.300"
+              fontSize="sm"
+              text={errorMessage}
+              prefersReducedMotion={prefersReducedMotion}
+            />
           )}
 
           <MotionButton
@@ -808,7 +918,11 @@ const LandingPage = ({
             variants={prefersReducedMotion ? undefined : featureVariant}
             transition={{ duration: 0.6, ease: "easeOut", delay: 0.16 }}
           >
-            {copy.have_key_button}
+            <StreamingText
+              as="span"
+              text={copy.have_key_button}
+              prefersReducedMotion={prefersReducedMotion}
+            />
           </MotionButton>
 
           <MotionHStack
@@ -829,7 +943,11 @@ const LandingPage = ({
               variants={prefersReducedMotion ? undefined : featureVariant}
               transition={{ duration: 0.55, ease: "easeOut", delay: 0.22 }}
             >
-              {englishLabel}
+              <StreamingText
+                as="span"
+                text={englishLabel}
+                prefersReducedMotion={prefersReducedMotion}
+              />
             </MotionButton>
             <MotionButton
               size="sm"
@@ -841,7 +959,11 @@ const LandingPage = ({
               variants={prefersReducedMotion ? undefined : featureVariant}
               transition={{ duration: 0.55, ease: "easeOut", delay: 0.26 }}
             >
-              {spanishLabel}
+              <StreamingText
+                as="span"
+                text={spanishLabel}
+                prefersReducedMotion={prefersReducedMotion}
+              />
             </MotionButton>
           </MotionHStack>
         </MotionVStack>
@@ -859,7 +981,8 @@ const LandingPage = ({
             transition={{ duration: 0.7, ease: "easeOut" }}
           >
             <VStack spacing={8} align="stretch">
-              <MotionText
+              <StreamingText
+                as={MotionText}
                 textAlign="center"
                 fontSize="3xl"
                 fontWeight="bold"
@@ -871,9 +994,9 @@ const LandingPage = ({
                   prefersReducedMotion ? undefined : { opacity: 1, y: 0 }
                 }
                 transition={{ duration: 0.6, ease: "easeOut", delay: 0.05 }}
-              >
-                {copy.section_features_title}
-              </MotionText>
+                text={copy.section_features_title}
+                prefersReducedMotion={prefersReducedMotion}
+              />
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
                 {FEATURE_CARD_CONFIG.map((feature, index) => (
                   <MotionBox
@@ -908,33 +1031,50 @@ const LandingPage = ({
                         : { once: true, amount: 0.35 }
                     }
                   >
-                    <VStack align="flex-start" spacing={4}>
-                      <Icon as={feature.icon} color="teal.200" boxSize={8} />
-                      <Text fontSize="xl" fontWeight="semibold" color="white">
-                        {copy[feature.titleKey] ||
-                          (feature.legacyTitleKey
-                            ? copy[feature.legacyTitleKey]
-                            : null) ||
-                          landingTranslations.en[feature.titleKey] ||
-                          (feature.legacyTitleKey
-                            ? landingTranslations.en[feature.legacyTitleKey]
-                            : null) ||
-                          feature.titleKey}
-                      </Text>
-                      <Text color="cyan.100">
-                        {copy[feature.descriptionKey] ||
-                          (feature.legacyDescriptionKey
-                            ? copy[feature.legacyDescriptionKey]
-                            : null) ||
-                          landingTranslations.en[feature.descriptionKey] ||
-                          (feature.legacyDescriptionKey
-                            ? landingTranslations.en[
-                                feature.legacyDescriptionKey
-                              ]
-                            : null) ||
-                          feature.descriptionKey}
-                      </Text>
-                    </VStack>
+                    {(() => {
+                      const featureTitle =
+                        copy[feature.titleKey] ||
+                        (feature.legacyTitleKey
+                          ? copy[feature.legacyTitleKey]
+                          : null) ||
+                        landingTranslations.en[feature.titleKey] ||
+                        (feature.legacyTitleKey
+                          ? landingTranslations.en[feature.legacyTitleKey]
+                          : null) ||
+                        feature.titleKey;
+                      const featureDescription =
+                        copy[feature.descriptionKey] ||
+                        (feature.legacyDescriptionKey
+                          ? copy[feature.legacyDescriptionKey]
+                          : null) ||
+                        landingTranslations.en[feature.descriptionKey] ||
+                        (feature.legacyDescriptionKey
+                          ? landingTranslations.en[
+                              feature.legacyDescriptionKey
+                            ]
+                          : null) ||
+                        feature.descriptionKey;
+
+                      return (
+                        <VStack align="flex-start" spacing={4}>
+                          <Icon as={feature.icon} color="teal.200" boxSize={8} />
+                          <StreamingText
+                            as={Text}
+                            fontSize="xl"
+                            fontWeight="semibold"
+                            color="white"
+                            text={featureTitle}
+                            prefersReducedMotion={prefersReducedMotion}
+                          />
+                          <StreamingText
+                            as={Text}
+                            color="cyan.100"
+                            text={featureDescription}
+                            prefersReducedMotion={prefersReducedMotion}
+                          />
+                        </VStack>
+                      );
+                    })()}
                   </MotionBox>
                 ))}
               </SimpleGrid>
@@ -945,34 +1085,58 @@ const LandingPage = ({
             as={MotionBox}
             bg="rgba(8, 26, 36, 0.9)"
             borderRadius="3xl"
-            initial={prefersReducedMotion ? undefined : "hidden"}
-            whileInView={prefersReducedMotion ? undefined : "visible"}
-            variants={prefersReducedMotion ? undefined : revealVariant}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            <VStack spacing={5} align="center">
-              <Text fontSize="3xl" fontWeight="bold" textAlign="center">
-                {copy.wallet_section_title}
-              </Text>
-              <Text textAlign="center" color="cyan.100" maxW="3xl">
-                {copy.wallet_section_description_prefix}{" "}
-                <Link
-                  href="https://robotsbuildingeducation.com/learning"
-                  isExternal
-                  color="teal.200"
-                  textDecoration="underline"
-                >
-                  {copy.wallet_section_link_label ||
-                    landingTranslations.en.wallet_section_link_label}
-                </Link>
-                {copy.wallet_section_description_suffix}
-              </Text>
-              <Text textAlign="center" color="teal.100" maxW="2xl">
-                {copy.wallet_section_note}
-              </Text>
-            </VStack>
-          </LandingSection>
+          initial={prefersReducedMotion ? undefined : "hidden"}
+          whileInView={prefersReducedMotion ? undefined : "visible"}
+          variants={prefersReducedMotion ? undefined : revealVariant}
+          viewport={{ once: true, amount: 0.35 }}
+          transition={{ duration: 0.6, delay: 0.1 }}
+        >
+          <VStack spacing={5} align="center">
+            <StreamingText
+              as={Text}
+              fontSize="3xl"
+              fontWeight="bold"
+              textAlign="center"
+              text={copy.wallet_section_title}
+              prefersReducedMotion={prefersReducedMotion}
+            />
+            <Text textAlign="center" color="cyan.100" maxW="3xl">
+              <StreamingText
+                as="span"
+                text={copy.wallet_section_description_prefix}
+                prefersReducedMotion={prefersReducedMotion}
+              />{" "}
+              <Link
+                href="https://robotsbuildingeducation.com/learning"
+                isExternal
+                color="teal.200"
+                textDecoration="underline"
+              >
+                <StreamingText
+                  as="span"
+                  text={
+                    copy.wallet_section_link_label ||
+                    landingTranslations.en.wallet_section_link_label
+                  }
+                  prefersReducedMotion={prefersReducedMotion}
+                />
+              </Link>
+              <StreamingText
+                as="span"
+                text={copy.wallet_section_description_suffix}
+                prefersReducedMotion={prefersReducedMotion}
+              />
+            </Text>
+            <StreamingText
+              as={Text}
+              textAlign="center"
+              color="teal.100"
+              maxW="2xl"
+              text={copy.wallet_section_note}
+              prefersReducedMotion={prefersReducedMotion}
+            />
+          </VStack>
+        </LandingSection>
 
           <LandingSection
             as={MotionBox}
@@ -985,7 +1149,8 @@ const LandingPage = ({
             transition={{ duration: 0.6, delay: 0.12 }}
           >
             <VStack spacing={6} align="center">
-              <MotionText
+              <StreamingText
+                as={MotionText}
                 fontSize="3xl"
                 fontWeight="bold"
                 textAlign="center"
@@ -993,10 +1158,11 @@ const LandingPage = ({
                 animate={prefersReducedMotion ? undefined : "visible"}
                 variants={prefersReducedMotion ? undefined : featureVariant}
                 transition={{ duration: 0.55, delay: 0.02 }}
-              >
-                {copy.ready_title}
-              </MotionText>
-              <MotionText
+                text={copy.ready_title}
+                prefersReducedMotion={prefersReducedMotion}
+              />
+              <StreamingText
+                as={MotionText}
                 textAlign="center"
                 color="cyan.100"
                 maxW="2xl"
@@ -1004,9 +1170,9 @@ const LandingPage = ({
                 animate={prefersReducedMotion ? undefined : "visible"}
                 variants={prefersReducedMotion ? undefined : featureVariant}
                 transition={{ duration: 0.6, delay: 0.06 }}
-              >
-                {copy.ready_subtitle}
-              </MotionText>
+                text={copy.ready_subtitle}
+                prefersReducedMotion={prefersReducedMotion}
+              />
               <MotionInput
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
@@ -1031,7 +1197,11 @@ const LandingPage = ({
                 variants={prefersReducedMotion ? undefined : featureVariant}
                 transition={{ duration: 0.6, delay: 0.14 }}
               >
-                {copy.ready_cta}
+                <StreamingText
+                  as="span"
+                  text={copy.ready_cta}
+                  prefersReducedMotion={prefersReducedMotion}
+                />
               </MotionButton>
               <MotionButton
                 as={ActionButton}
@@ -1047,7 +1217,11 @@ const LandingPage = ({
                 variants={prefersReducedMotion ? undefined : featureVariant}
                 transition={{ duration: 0.6, delay: 0.18 }}
               >
-                {copy.have_key_button}
+                <StreamingText
+                  as="span"
+                  text={copy.have_key_button}
+                  prefersReducedMotion={prefersReducedMotion}
+                />
               </MotionButton>
             </VStack>
           </LandingSection>
