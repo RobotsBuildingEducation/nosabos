@@ -3803,6 +3803,7 @@ export default function App() {
                           }
                           onSkip={switchToRandomLessonMode}
                           onSendHelpRequest={handleSendToHelpChat}
+                          lessonStartXp={lessonStartXp}
                         />
                       </TabPanel>
                     );
@@ -3826,6 +3827,7 @@ export default function App() {
                           onSkip={switchToRandomLessonMode}
                           onExitQuiz={handleReturnToSkillTree}
                           onSendHelpRequest={handleSendToHelpChat}
+                          lessonStartXp={lessonStartXp}
                         />
                       </TabPanel>
                     );

@@ -11,6 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
 import ReactMarkdown from "react-markdown";
+import { WaveBar } from "./WaveBar";
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -29,6 +30,7 @@ const FeedbackRail = React.memo(
     onExplainAnswer,
     explanationText,
     isLoadingExplanation,
+    lessonProgress,
   }) => {
     if (ok === null) return null;
 
@@ -84,6 +86,20 @@ const FeedbackRail = React.memo(
                 </Text>
               </Box>
             </HStack>
+
+            {ok && lessonProgress && lessonProgress.total > 0 && (
+              <VStack align="stretch" spacing={2} mt={2} px={1}>
+                <HStack justify="space-between" fontSize="xs">
+                  <Text color="whiteAlpha.800" fontWeight="semibold">
+                    {lessonProgress.label}
+                  </Text>
+                  <Text color="whiteAlpha.800" fontWeight="semibold">
+                    {lessonProgress.earned}/{lessonProgress.total} XP
+                  </Text>
+                </HStack>
+                <WaveBar value={lessonProgress.pct} height={10} />
+              </VStack>
+            )}
 
             {!ok && onExplainAnswer && (
               <Button
