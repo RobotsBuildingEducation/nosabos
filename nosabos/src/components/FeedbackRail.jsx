@@ -88,16 +88,16 @@ const FeedbackRail = React.memo(
             </HStack>
 
             {ok && lessonProgress && lessonProgress.total > 0 && (
-              <VStack align="stretch" spacing={2} mt={2} px={1}>
-                <HStack justify="space-between" fontSize="xs">
-                  <Text color="whiteAlpha.800" fontWeight="semibold">
+              <VStack align="center" spacing={2} mt={2} px={1} width="full">
+                <HStack justify="center" align="center" spacing={3} fontSize="xs">
+                  <Text color="whiteAlpha.800" fontWeight="semibold" textAlign="center">
                     {lessonProgress.label}
                   </Text>
-                  <Text color="whiteAlpha.800" fontWeight="semibold">
+                  <Text color="whiteAlpha.800" fontWeight="semibold" textAlign="center">
                     {Math.round(lessonProgress.pct)}%
                   </Text>
                 </HStack>
-                <Box width="60%">
+                <Box width="60%" mx="auto">
                   <WaveBar
                     value={lessonProgress.pct}
                     height={14}
