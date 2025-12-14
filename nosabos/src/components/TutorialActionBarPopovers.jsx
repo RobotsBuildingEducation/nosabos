@@ -22,9 +22,9 @@ import { FaKey } from "react-icons/fa";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
-  0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.02); opacity: 0.95; }
-  100% { transform: scale(1); opacity: 1; }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1);  }
 `;
 
 // Button explanations configuration
@@ -152,12 +152,13 @@ export default function TutorialActionBarPopovers({
     >
       <Fade in={isVisible}>
         <Box
-          bg="linear-gradient(135deg, rgba(99, 102, 241, 0.95) 0%, rgba(139, 92, 246, 0.95) 100%)"
+          bg="linear-gradient(135deg, rgba(95, 51, 189, 0.95) 0%, rgba(131, 61, 244, 0.95) 100%)"
           borderRadius="2xl"
           p={5}
           boxShadow="0 8px 32px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(255,255,255,0.1)"
           backdropFilter="blur(12px)"
           animation={`${pulseKeyframes} 2s ease-in-out infinite`}
+          border="1px solid cyan"
         >
           <VStack spacing={3} align="center">
             {/* Icon and Label */}
@@ -213,9 +214,8 @@ export default function TutorialActionBarPopovers({
                 isDisabled={isFirstStep}
                 aria-label={lang === "es" ? "Anterior" : "Previous"}
                 size="sm"
-                variant="ghost"
                 color="white"
-                _hover={{ bg: "whiteAlpha.200" }}
+                colorScheme="purple"
                 _disabled={{ opacity: 0.3, cursor: "not-allowed" }}
               />
 
@@ -231,7 +231,7 @@ export default function TutorialActionBarPopovers({
               {isLastStep ? (
                 <Button
                   size="sm"
-                  colorScheme="whiteAlpha"
+                  colorScheme="purple"
                   onClick={handleFinish}
                   px={4}
                 >
@@ -243,9 +243,8 @@ export default function TutorialActionBarPopovers({
                   onClick={handleNext}
                   aria-label={lang === "es" ? "Siguiente" : "Next"}
                   size="sm"
-                  variant="ghost"
                   color="white"
-                  _hover={{ bg: "whiteAlpha.200" }}
+                  colorScheme="purple"
                 />
               )}
             </HStack>
