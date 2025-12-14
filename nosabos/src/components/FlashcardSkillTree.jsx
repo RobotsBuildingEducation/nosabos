@@ -17,6 +17,7 @@ import {
 import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { translations } from "../utils/translation";
+import { getLanguageXp } from "../utils/progressTracking";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -233,6 +234,11 @@ export default function FlashcardSkillTree({
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
+
+  const languageXp = useMemo(
+    () => getLanguageXp(userProgress, targetLang),
+    [userProgress, targetLang]
+  );
 
   // Skip initial animation on first render to prevent stutter
   // Use double RAF to ensure we're past layout and paint
@@ -590,6 +596,7 @@ export default function FlashcardSkillTree({
           targetLang={targetLang}
           supportLang={supportLang}
           pauseMs={pauseMs}
+          languageXp={languageXp}
         />
       )}
     </MotionBox>
