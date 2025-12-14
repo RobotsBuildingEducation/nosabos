@@ -493,16 +493,6 @@ function TopBar({
     }
   };
 
-  const handleSendToHelpChat = useCallback(
-    (text) => {
-      const payload = (text || "").trim();
-      if (!payload) return;
-      helpChatDisclosure.onOpen();
-      helpChatRef.current?.openAndSend(payload);
-    },
-    [helpChatDisclosure.onOpen]
-  );
-
   const switchAccountWithNsec = async () => {
     const nsec = (switchNsec || "").trim();
     if (!nsec) {
@@ -1038,6 +1028,15 @@ export default function App() {
   const location = useLocation();
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
+  const handleSendToHelpChat = useCallback(
+    (text) => {
+      const payload = (text || "").trim();
+      if (!payload) return;
+      helpChatDisclosure.onOpen();
+      helpChatRef.current?.openAndSend(payload);
+    },
+    [helpChatDisclosure]
+  );
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
 
