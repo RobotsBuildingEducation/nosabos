@@ -89,11 +89,24 @@ const FeedbackRail = React.memo(
 
             {ok && lessonProgress && lessonProgress.total > 0 && (
               <VStack align="center" spacing={2} mt={2} px={1} width="full">
-                <HStack justify="center" align="center" spacing={3} fontSize="xs">
-                  <Text color="whiteAlpha.800" fontWeight="semibold" textAlign="center">
+                <HStack
+                  justify="center"
+                  align="center"
+                  spacing={3}
+                  fontSize="xs"
+                >
+                  <Text
+                    color="whiteAlpha.800"
+                    fontWeight="semibold"
+                    textAlign="center"
+                  >
                     {lessonProgress.label}
                   </Text>
-                  <Text color="whiteAlpha.800" fontWeight="semibold" textAlign="center">
+                  <Text
+                    color="whiteAlpha.800"
+                    fontWeight="semibold"
+                    textAlign="center"
+                  >
                     {Math.round(lessonProgress.pct)}%
                   </Text>
                 </HStack>
@@ -102,7 +115,7 @@ const FeedbackRail = React.memo(
                     value={lessonProgress.pct}
                     height={14}
                     start="#4aa8ff"
-                    end="#2979ff"
+                    end="#75f8ffff"
                   />
                 </Box>
               </VStack>
