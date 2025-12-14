@@ -94,10 +94,17 @@ const FeedbackRail = React.memo(
                     {lessonProgress.label}
                   </Text>
                   <Text color="whiteAlpha.800" fontWeight="semibold">
-                    {lessonProgress.earned}/{lessonProgress.total} XP
+                    {Math.round(lessonProgress.pct)}%
                   </Text>
                 </HStack>
-                <WaveBar value={lessonProgress.pct} height={10} />
+                <Box width="60%">
+                  <WaveBar
+                    value={lessonProgress.pct}
+                    height={14}
+                    start="#4aa8ff"
+                    end="#2979ff"
+                  />
+                </Box>
               </VStack>
             )}
 
