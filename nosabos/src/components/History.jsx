@@ -378,13 +378,14 @@ TUTORIAL MODE - ABSOLUTE BEGINNER CONTENT:
 Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}.${tutorialDirective}
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
-1. Most importantly, the lecture generated is suitable for a ${cefrLevel} level reader. 
+1. Most importantly, the lecture generated is suitable for a ${cefrLevel} level reader.
 2. The target language for learning is: ${TARGET} (language code: ${targetLang})
 3. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
-4. Write the ENTIRE lecture content (title, body, takeaways) in ${TARGET} ONLY
-5. Write the translation in ${SUPPORT} ONLY
-6. Do NOT write in any other language regardless of what the topic mentions
-7. Even if the topic references other cultures or languages, you MUST write in ${TARGET}
+4. Write the title and lecture body in ${TARGET} ONLY
+5. Write all takeaways in ${SUPPORT} ONLY
+6. Write the translation in ${SUPPORT} ONLY
+7. Do NOT write in any other language regardless of what the topic mentions
+8. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for the title/body
 
 IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
 
@@ -398,14 +399,14 @@ Content requirements:
 Include:
 - A concise title (<= 60 chars) in ${TARGET}
 - Lecture body in ${TARGET}
-- 3 concise bullet takeaways in ${TARGET}
+- 3 concise bullet takeaways in ${SUPPORT}
 - A full ${SUPPORT} translation of the lecture body (NOT the takeaways)
 
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
   "target": "<lecture body in ${TARGET}>",
-  "takeaways": ["<3 bullets in ${TARGET}>"],
+  "takeaways": ["<3 bullets in ${SUPPORT}>"],
   "support": "<full translation in ${SUPPORT}>"
 }
 `.trim();
@@ -457,10 +458,11 @@ ${prev}
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. The target language for learning is: ${TARGET} (language code: ${targetLang})
 2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})
-3. Write the ENTIRE lecture content (title, body, takeaways) in ${TARGET} ONLY
-4. Write the translation in ${SUPPORT} ONLY
-5. Do NOT write in any other language regardless of what the topic mentions
-6. Even if the topic references other cultures or languages, you MUST write in ${TARGET}
+3. Write the title and lecture body in ${TARGET} ONLY
+4. Write all takeaways in ${SUPPORT} ONLY
+5. Write the translation in ${SUPPORT} ONLY
+6. Do NOT write in any other language regardless of what the topic mentions
+7. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body
 
 IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
 
@@ -473,14 +475,14 @@ Content requirements:
 Include:
 - A concise title (<= 60 chars) related to ${topicText} in ${TARGET}
 - Lecture body in ${TARGET}
-- 3 concise bullet takeaways in ${TARGET}
+- 3 concise bullet takeaways in ${SUPPORT}
 - A full ${SUPPORT} translation of the lecture body (NOT the takeaways)
 
 Return JSON ONLY:
 {
   "title": "<short title in ${TARGET}>",
   "target": "<lecture body in ${TARGET}>",
-  "takeaways": ["<3 bullets in ${TARGET}>"],
+  "takeaways": ["<3 bullets in ${SUPPORT}>"],
   "support": "<full translation in ${SUPPORT}>"
 }
 `.trim();
@@ -659,10 +661,11 @@ function buildStreamingPrompt({
     "CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:",
     `1. The target language for learning is: ${TARGET} (language code: ${targetLang})`,
     `2. The support/translation language is: ${SUPPORT} (language code: ${supportLang})`,
-    `3. Write ALL lecture content (title, body, takeaways) in ${TARGET} ONLY`,
-    `4. Write the translation in ${SUPPORT} ONLY`,
-    `5. Do NOT write in any other language regardless of what the topic mentions`,
-    `6. Even if the topic references other cultures or languages, you MUST write in ${TARGET}`,
+    `3. Write the title and lecture body in ${TARGET} ONLY`,
+    `4. Write ALL takeaways in ${SUPPORT} ONLY`,
+    `5. Write the translation in ${SUPPORT} ONLY`,
+    `6. Do NOT write in any other language regardless of what the topic mentions`,
+    `7. Even if the topic references other cultures or languages, you MUST write in ${TARGET} for title/body`,
     "",
     `IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by ${TARGET} and ${SUPPORT}.`,
     "",
@@ -672,12 +675,12 @@ function buildStreamingPrompt({
     `1) {"type":"title","text":"<title in ${TARGET} (<=60 chars)>"} (emit once, early)`,
     `2) Emit the lecture body sentence-by-sentence in ${TARGET}: {"type":"target","text":"<one sentence>"} (4–10 lines total)`,
     `3) Then emit the full translation sentence-by-sentence in ${SUPPORT}: {"type":"support","text":"<one sentence>"} (mirrors the body)`,
-    `4) Emit exactly three takeaways (bullets) in ${TARGET}: {"type":"takeaway","text":"<concise takeaway>"} (3 lines)`,
+    `4) Emit exactly three takeaways (bullets) in ${SUPPORT}: {"type":"takeaway","text":"<concise takeaway>"} (3 lines)`,
     '5) Finally emit {"type":"done"}',
     "",
     "STRICT RULES:",
-    `- Use ${TARGET} ONLY for \"title\", \"target\", and \"takeaway\" lines.`,
-    `- Use ${SUPPORT} ONLY for \"support\" lines.`,
+    `- Use ${TARGET} ONLY for \"title\" and \"target\" lines.`,
+    `- Use ${SUPPORT} ONLY for \"support\" and \"takeaway\" lines.`,
     "- Do not include any other languages, labels, or commentary.",
     "- Do not output code fences or commentary.",
     "- Each line must be a single valid JSON object matching one of the types above.",
@@ -905,15 +908,15 @@ export default function History({
             ? "Una fase importante se desarrolló cuando las comunidades consolidaron la agricultura..."
             : "An important phase unfolded as communities consolidated agriculture...",
         takeaways: [
-          targetLang === "en"
-            ? "Stronger villages and exchanges."
-            : "Aldeas y trueques más fuertes.",
-          targetLang === "en"
-            ? "New identities and beliefs."
-            : "Nuevas identidades y creencias.",
-          targetLang === "en"
-            ? "Technology spread regionally."
-            : "Tecnología difundida regionalmente.",
+          supportLang === "es"
+            ? "Intercambios y aldeas más fuertes."
+            : "Stronger villages and exchanges.",
+          supportLang === "es"
+            ? "Nuevas identidades y creencias."
+            : "New identities and beliefs.",
+          supportLang === "es"
+            ? "La tecnología se difundió en la región."
+            : "Technology spread regionally.",
         ],
       };
     }
@@ -932,7 +935,7 @@ export default function History({
       safeTarget;
     const cleanTakeaways = Array.isArray(parsed.takeaways)
       ? parsed.takeaways
-          .map((t) => stripLineLabel(String(t || ""), targetLang))
+          .map((t) => stripLineLabel(String(t || ""), supportLang))
           .filter(Boolean)
           .slice(0, 3)
       : [];
@@ -1044,10 +1047,10 @@ export default function History({
       const type = obj?.type;
       if (!type || !text) return;
 
-      const cleaned =
-        type === "support"
-          ? stripLineLabel(text, supportLang)
-          : stripLineLabel(text, targetLang);
+        const cleaned =
+          type === "support" || type === "takeaway"
+            ? stripLineLabel(text, supportLang)
+            : stripLineLabel(text, targetLang);
       const normalized = cleaned.replace(/\s+/g, " ").trim();
       if (!normalized) return;
 
