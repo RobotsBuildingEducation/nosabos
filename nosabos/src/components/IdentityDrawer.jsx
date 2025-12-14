@@ -12,7 +12,6 @@ import {
   Badge,
   Box,
   Button,
-  ButtonGroup,
   Center,
   Divider,
   Drawer,
@@ -56,7 +55,6 @@ export default function IdentityDrawer({
   onClose,
   t,
   appLanguage = "en",
-  onSelectLanguage,
   activeNpub,
   activeNsec,
   auth,
@@ -311,61 +309,6 @@ export default function IdentityDrawer({
               >
                 {t?.app_copy_secret || "Copy Secret Key"}
               </Button>
-
-              {/* Language Switcher */}
-              <ButtonGroup
-                size="sm"
-                isAttached
-                variant="outline"
-                borderRadius="md"
-                bg="rgba(255, 255, 255, 0.04)"
-                border="1px solid"
-                borderColor="gray.700"
-                width="fit-content"
-              >
-                {/**
-                 * Render language labels based on the current app language.
-                 * When the UI is in English, show English labels; when in Spanish,
-                 * show Spanish labels.
-                 */}
-                {(() => {
-                  const labels =
-                    appLanguage === "es"
-                      ? { en: "Inglés", es: "Español" }
-                      : { en: "English", es: "Spanish" };
-
-                  return (
-                    <>
-                      <Button
-                        onClick={() => onSelectLanguage?.("en")}
-                        variant={appLanguage === "en" ? "solid" : "ghost"}
-                        colorScheme="teal"
-                        fontSize="sm"
-                        fontWeight="bold"
-                        aria-label={
-                          t?.language_en || t?.app_language_en || labels.en
-                        }
-                        padding={5}
-                      >
-                        {labels.en}
-                      </Button>
-                      <Button
-                        onClick={() => onSelectLanguage?.("es")}
-                        variant={appLanguage === "es" ? "solid" : "ghost"}
-                        colorScheme="teal"
-                        fontSize="sm"
-                        fontWeight="bold"
-                        aria-label={
-                          t?.language_es || t?.app_language_es || labels.es
-                        }
-                        padding={5}
-                      >
-                        {labels.es}
-                      </Button>
-                    </>
-                  );
-                })()}
-              </ButtonGroup>
             </HStack>
 
             {/* Switch account */}

@@ -101,7 +101,7 @@ export const translations = {
     ra_persona_help: "A short vibe/style hint for the AI voice.",
     ra_progress_header: "Progress",
     ra_progress_xp_to_level: "{remaining} XP to level",
-    ra_vad_label: "Voice activity pause (ms)",
+    ra_vad_label: "Voice activity pause (seconds)",
     ra_translating: "Translating…",
     ra_delete_confirm:
       "Delete all saved turns for this account? This cannot be undone.",
@@ -718,7 +718,7 @@ export const translations = {
     ra_help_placeholder:
       "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…",
     ra_help_help: "Describe tu meta o contexto (esto guía la experiencia).",
-    ra_vad_label: "Pausa entre turnos (1000 ms = 1 segundo)",
+    ra_vad_label: "Pausa entre turnos (segundos)",
     account_final_step_title:
       "Copia tu llave secreta para iniciar sesión en tu cuenta",
     account_final_step_description:
@@ -779,7 +779,7 @@ export const translations = {
     grammar_btn_match: "Emparejar",
     grammar_btn_speak: "Pronunciar",
     grammar_input_placeholder_answer: "Escribe tu respuesta…",
-    grammar_submit: "Enviar",
+    grammar_submit: "Comprobar",
     grammar_select_all_apply: "Selecciona todas las que correspondan.",
     grammar_dnd_drop_here: "Suelta aquí",
     grammar_dnd_bank: "Banco",
@@ -806,7 +806,7 @@ export const translations = {
     vocab_btn_match: "Emparejar",
     vocab_btn_speak: "Pronunciar",
     vocab_input_placeholder_word: "Escribe la palabra…",
-    vocab_submit: "Enviar",
+    vocab_submit: "Comprobar",
     vocab_select_all_apply: "Selecciona todas las que correspondan.",
     vocab_dnd_drop_here: "Suelta aquí",
     vocab_dnd_bank: "Banco",
