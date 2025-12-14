@@ -418,7 +418,7 @@ function TopBar({
     typeof p.showTranslations === "boolean" ? p.showTranslations : true
   );
   const [pauseMs, setPauseMs] = useState(
-    Number.isFinite(p.pauseMs) ? p.pauseMs : 2000
+    Number.isFinite(p.pauseMs) ? p.pauseMs : 1200
   );
   const [helpRequest, setHelpRequest] = useState(
     (p.helpRequest || user?.helpRequest || "").trim()
@@ -426,6 +426,13 @@ function TopBar({
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!p.practicePronunciation
   );
+  const vadSecondsLabel = appLanguage === "es" ? "segundos" : "seconds";
+  const pauseSeconds = (pauseMs / 1000).toFixed(1);
+  const vadHint =
+    t.onboarding_vad_hint ||
+    (appLanguage === "es"
+      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
+      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
 
   // Refill draft when store changes
   useEffect(() => {
@@ -442,7 +449,7 @@ function TopBar({
     setShowTranslations(
       typeof q.showTranslations === "boolean" ? q.showTranslations : true
     );
-    setPauseMs(Number.isFinite(q.pauseMs) ? q.pauseMs : 2000);
+    setPauseMs(Number.isFinite(q.pauseMs) ? q.pauseMs : 1200);
     setHelpRequest((q.helpRequest || user?.helpRequest || "").trim());
     setPracticePronunciation(!!q.practicePronunciation);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -924,10 +931,10 @@ function TopBar({
                 <Box bg="gray.800" p={3} rounded="md">
                   <HStack justifyContent="space-between" mb={2}>
                     <Text fontSize="sm">
-                      {t.ra_vad_label || "Voice activity pause (ms)"}
+                      {t.ra_vad_label || "Voice activity pause (seconds)"}
                     </Text>
                     <Text fontSize="sm" opacity={0.8}>
-                      {pauseMs} ms
+                      {pauseSeconds} {vadSecondsLabel}
                     </Text>
                   </HStack>
                   <Slider
@@ -943,6 +950,9 @@ function TopBar({
                     </SliderTrack>
                     <SliderThumb />
                   </Slider>
+                  <Text fontSize="xs" opacity={0.6} mt={2}>
+                    {vadHint}
+                  </Text>
                 </Box>
 
                 {/* Daily XP Goal (part of single Save) */}
@@ -1372,7 +1382,7 @@ export default function App() {
       "",
     targetLang: "es",
     showTranslations: true,
-    pauseMs: 2000,
+    pauseMs: 1200,
     helpRequest: "",
     practicePronunciation: false,
   };
@@ -1795,7 +1805,7 @@ export default function App() {
     if (!npub) return;
 
     const clampPause = (v) => {
-      const n = Number.isFinite(v) ? Math.round(v) : 800;
+      const n = Number.isFinite(v) ? Math.round(v) : 1200;
       return Math.max(200, Math.min(4000, Math.round(n / 100) * 100));
     };
 
@@ -1806,7 +1816,7 @@ export default function App() {
       voicePersona: translations?.en?.onboarding_persona_default_example || "",
       targetLang: "es",
       showTranslations: true,
-      pauseMs: 2000,
+      pauseMs: 1200,
       helpRequest: "",
       practicePronunciation: false,
     };

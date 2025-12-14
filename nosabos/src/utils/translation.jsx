@@ -101,7 +101,7 @@ export const translations = {
     ra_persona_help: "A short vibe/style hint for the AI voice.",
     ra_progress_header: "Progress",
     ra_progress_xp_to_level: "{remaining} XP to level",
-    ra_vad_label: "Voice activity pause (ms)",
+    ra_vad_label: "Voice activity pause (seconds)",
     ra_translating: "Translating…",
     ra_delete_confirm:
       "Delete all saved turns for this account? This cannot be undone.",
@@ -144,7 +144,7 @@ export const translations = {
     onboarding_section_voice_persona: "Voice & Personality",
     onboarding_vad_title: "Voice Activity Detection",
     onboarding_vad_explanation:
-      "Voice features will pause before accepting your answer. This gives you time to finish speaking before the AI responds. Adjust the pause duration below.",
+      "Voice features will pause before accepting your answer. This gives you time to finish speaking before the AI responds. Adjust the pause duration below — 1.2 seconds is recommended for natural speech.",
     onboarding_section_first_goal: "First goal",
     onboarding_level_beginner: "Beginner",
     onboarding_level_intermediate: "Intermediate",
@@ -718,7 +718,7 @@ export const translations = {
     ra_help_placeholder:
       "Ej.: practicar conversación para entrevistas; repasar tiempos pasados; español para turismo…",
     ra_help_help: "Describe tu meta o contexto (esto guía la experiencia).",
-    ra_vad_label: "Pausa entre turnos (1000 ms = 1 segundo)",
+    ra_vad_label: "Pausa entre turnos (segundos)",
     account_final_step_title:
       "Copia tu llave secreta para iniciar sesión en tu cuenta",
     account_final_step_description:
@@ -942,7 +942,7 @@ export const translations = {
     onboarding_section_voice_persona: "Voz y personalidad",
     onboarding_vad_title: "Detección de Actividad de Voz",
     onboarding_vad_explanation:
-      "Las funciones de voz harán una pausa antes de aceptar tu respuesta. Esto te da tiempo para terminar de hablar antes de que la IA responda. Ajusta la duración de la pausa abajo.",
+      "Las funciones de voz harán una pausa antes de aceptar tu respuesta. Esto te da tiempo para terminar de hablar antes de que la IA responda. Ajusta la duración de la pausa abajo; 1.2 segundos es lo recomendado para un habla natural.",
     onboarding_section_first_goal: "Primer objetivo",
     onboarding_level_beginner: "Principiante",
     onboarding_level_intermediate: "Intermedio",

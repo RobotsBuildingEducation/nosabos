@@ -65,7 +65,7 @@ export default function Onboarding({
       pauseMs:
         typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
           ? initialDraft.pauseMs
-          : 800,
+          : 1200,
     };
   }, [initialDraft, ui.DEFAULT_PERSONA]);
 
@@ -147,8 +147,10 @@ export default function Onboarding({
   const VAD_HINT =
     ui.onboarding_vad_hint ||
     (appLang === "es"
-      ? "Más corta = más sensible; más larga = te deja terminar de hablar."
-      : "Shorter = more responsive; longer = gives you time to finish speaking.");
+      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
+      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+  const pauseSeconds = (pauseMs / 1000).toFixed(1);
+  const secondsLabel = appLang === "es" ? "segundos" : "seconds";
 
   return (
     <Box
@@ -346,7 +348,7 @@ export default function Onboarding({
                   <HStack justify="space-between" mb={2}>
                     <Text fontSize="sm">{VAD_LABEL}</Text>
                     <Text fontSize="sm" opacity={0.8}>
-                      {pauseMs} ms
+                      {pauseSeconds} {secondsLabel}
                     </Text>
                   </HStack>
                   <Slider
