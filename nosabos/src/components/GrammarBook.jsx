@@ -41,7 +41,7 @@ import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
-import { FiCopy } from "react-icons/fi";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -262,7 +262,9 @@ function buildFillStreamPrompt({
       )}`;
 
   return [
-    `Create ONE short ${TARGET} grammar fill-in-the-blank with a single blank "___". Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
+    `Create ONE short ${TARGET} grammar fill-in-the-blank with a single blank "___". Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
     `- No meta like "(to go)" in the stem; ≤120 chars.`,
     topicDirective,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -399,7 +401,9 @@ function buildMCStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
+    `Create ONE ${TARGET} multiple-choice grammar question (EXACTLY one correct). Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
     stemDirective,
     `- 4 distinct choices in ${TARGET}.`,
     `- One of the distinct choices must be correct.`,
@@ -491,7 +495,9 @@ function buildMAStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct, NEVER just 1). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
+    `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct, NEVER just 1). Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -548,7 +554,9 @@ function buildSpeakGrammarStreamPrompt({
       )}`;
 
   return [
-    `Craft ONE short ${TARGET} sentence (≤8 words) that showcases a grammar feature. Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
+    `Craft ONE short ${TARGET} sentence (≤8 words) that showcases a grammar feature. Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
     `- Provide an instruction line in ${TARGET} telling the learner to say it aloud (≤100 chars).`,
     `- Hint in ${SUPPORT} describing the grammar point (e.g., tense, agreement, mood).`,
     wantTranslation
@@ -699,6 +707,7 @@ export default function GrammarBook({
   quizConfig = { questionsRequired: 10, passingScore: 8 },
   onSkip = null,
   pauseMs = 2000,
+  onSendHelpRequest = null,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -876,6 +885,7 @@ export default function GrammarBook({
         showCopyToast();
       } catch {}
     }
+    if (onSendHelpRequest) onSendHelpRequest(text);
   }
 
   // Quiz mode helper function
@@ -921,7 +931,8 @@ export default function GrammarBook({
 
     try {
       // Build prompt for explanation
-      const { question, userAnswer, correctAnswer, questionType } = currentQuestionData;
+      const { question, userAnswer, correctAnswer, questionType } =
+        currentQuestionData;
 
       // Get the prompt template based on question type and user language
       const getLangPrompt = (type) => {
@@ -1105,9 +1116,12 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
           model: MODEL,
           input: prompt,
         });
-        setExplanationText(explanation || (userLanguage === "es"
-          ? "No se pudo generar una explicación en este momento."
-          : "Could not generate an explanation at this time."));
+        setExplanationText(
+          explanation ||
+            (userLanguage === "es"
+              ? "No se pudo generar una explicación en este momento."
+              : "Could not generate an explanation at this time.")
+        );
       }
     } catch (error) {
       console.error("Failed to generate explanation:", error);
@@ -2785,7 +2799,9 @@ Return JSON ONLY:
 
     // Store question data for explanation feature
     if (!ok) {
-      const userMappings = userPairs.map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`).join(", ");
+      const userMappings = userPairs
+        .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
+        .join(", ");
       setCurrentQuestionData({
         question: mStem || "Match the items:",
         userAnswer: userMappings,
@@ -3049,9 +3065,13 @@ Return JSON ONLY:
       >
         <IconButton
           aria-label="Copy all"
-          icon={<FiCopy />}
-          size="xs"
-          variant="ghost"
+          icon={<MdOutlineSupportAgent />}
+          size="sm"
+          fontSize="lg"
+          bg="white"
+          color="blue"
+          border="3px solid skyblue"
+          boxShadow={"lg"}
           onClick={() => copyAll(q, h, tr)}
           mr={1}
         />
@@ -3678,7 +3698,8 @@ Return JSON ONLY:
                           <IconButton
                             aria-label={questionListenLabel}
                             icon={<PiSpeakerHighDuotone />}
-                            size="xs"
+                            size="sm"
+                            fontSize="lg"
                             variant="ghost"
                             isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(mcQ)}
@@ -3810,7 +3831,8 @@ Return JSON ONLY:
                         <IconButton
                           aria-label={questionListenLabel}
                           icon={<PiSpeakerHighDuotone />}
-                          size="xs"
+                          size="sm"
+                          fontSize="lg"
                           variant="ghost"
                           isLoading={isQuestionSynthesizing}
                           onClick={() => handlePlayQuestionTTS(mcQ)}
@@ -4002,7 +4024,8 @@ Return JSON ONLY:
                           <IconButton
                             aria-label={questionListenLabel}
                             icon={<PiSpeakerHighDuotone />}
-                            size="xs"
+                            size="sm"
+                            fontSize="lg"
                             variant="ghost"
                             isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(maQ)}
@@ -4141,7 +4164,8 @@ Return JSON ONLY:
                         <IconButton
                           aria-label={questionListenLabel}
                           icon={<PiSpeakerHighDuotone />}
-                          size="xs"
+                          size="sm"
+                          fontSize="lg"
                           variant="ghost"
                           isLoading={isQuestionSynthesizing}
                           onClick={() => handlePlayQuestionTTS(maQ)}
@@ -4398,7 +4422,7 @@ Return JSON ONLY:
                       spinnerPlacement="start"
                     >
                       {t("practice_play") ||
-                        (userLanguage === "es" ? "Reproducir" : "Play")}
+                        (userLanguage === "es" ? "▶" : "Play")}
                     </Button>
                   </Tooltip>
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">

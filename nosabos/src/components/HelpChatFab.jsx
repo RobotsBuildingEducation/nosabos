@@ -1,5 +1,12 @@
 // components/HelpChatFab.jsx
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import {
   Badge,
   Box,
@@ -148,14 +155,18 @@ function Markdown({ children }) {
 /**
  * Floating Help Chat (Gemini, client-side streaming via generateContentStream)
  */
-export default function HelpChatFab({
-  progress,
-  appLanguage = "en",
-  isOpen: controlledIsOpen,
-  onOpen: controlledOnOpen,
-  onClose: controlledOnClose,
-  showFloatingTrigger = true,
-}) {
+const HelpChatFab = forwardRef(
+  (
+    {
+      progress,
+      appLanguage = "en",
+      isOpen: controlledIsOpen,
+      onOpen: controlledOnOpen,
+      onClose: controlledOnClose,
+      showFloatingTrigger = true,
+    },
+    ref
+  ) => {
   const disclosure = useDisclosure();
   const isControlled = typeof controlledIsOpen === "boolean";
   const isOpen = isControlled ? controlledIsOpen : disclosure.isOpen;
@@ -292,9 +303,10 @@ export default function HelpChatFab({
 
   // -- actions ---------------------------------------------------------------
 
-  const handleSend = async () => {
-    const question = input.trim();
-    if (!question || sending) return;
+  const handleSend = useCallback(
+    async (overrideText) => {
+      const question = (overrideText ?? input).trim();
+      if (!question || sending) return;
 
     if (!simplemodel) {
       return toast({
@@ -304,7 +316,7 @@ export default function HelpChatFab({
       });
     }
 
-    setInput("");
+      setInput("");
     stopRef.current = false;
 
     const instruction = buildInstruction();
@@ -367,12 +379,43 @@ export default function HelpChatFab({
     } finally {
       setSending(false);
     }
-  };
+    },
+    [
+      appLanguage,
+      buildHistoryBlock,
+      buildInstruction,
+      patchLastAssistant,
+      pushMessage,
+      sending,
+      input,
+      toast,
+    ]
+  );
 
   const handleStop = () => {
     stopRef.current = true;
     setSending(false);
   };
+
+  const openAndSend = useCallback(
+    (text) => {
+      const payload = (text || "").trim();
+      if (!payload) return;
+      onOpen();
+      setInput(payload);
+      setTimeout(() => handleSend(payload), 0);
+    },
+    [handleSend, onOpen]
+  );
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      open: onOpen,
+      openAndSend,
+    }),
+    [openAndSend, onOpen]
+  );
 
   const scrollToBottom = useCallback(() => {
     const el = scrollRef.current;
@@ -564,4 +607,7 @@ export default function HelpChatFab({
       </Modal>
     </>
   );
-}
+  }
+);
+
+export default HelpChatFab;

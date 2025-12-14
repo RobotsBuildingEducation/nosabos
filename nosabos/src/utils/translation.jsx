@@ -55,7 +55,7 @@ export const translations = {
     practice_drag_drop_multi_instruction:
       "Drag or select each correct answer into the matching blank.",
     practice_drag_blank_label: "Blank {index}",
-    practice_play: "Play",
+    practice_play: "▶",
     practice_next_ready: "Great work! Keep the streak going.",
     practice_try_again_hint: "Review the prompt and try again.",
     quiz_correct: "Correct",
@@ -636,7 +636,7 @@ export const translations = {
     practice_drag_drop_multi_instruction:
       "Arrastra cada respuesta correcta al espacio correspondiente.",
     practice_drag_blank_label: "Espacio {index}",
-    practice_play: "Reproducir",
+    practice_play: "▶",
     practice_next_ready: "¡Buen trabajo! Sigue con la racha.",
     practice_try_again_hint: "Revisa la consigna y vuelve a intentarlo.",
     generic_loading: "Cargando...",

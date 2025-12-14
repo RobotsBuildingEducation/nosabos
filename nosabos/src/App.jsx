@@ -1027,6 +1027,16 @@ export default function App() {
   const initRef = useRef(false);
   const location = useLocation();
   const helpChatDisclosure = useDisclosure();
+  const helpChatRef = useRef(null);
+  const handleSendToHelpChat = useCallback(
+    (text) => {
+      const payload = (text || "").trim();
+      if (!payload) return;
+      helpChatDisclosure.onOpen();
+      helpChatRef.current?.openAndSend(payload);
+    },
+    [helpChatDisclosure]
+  );
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
 
@@ -2921,6 +2931,7 @@ export default function App() {
               userLanguage={appLanguage}
               activeNpub={activeNpub}
               activeNsec={activeNsec}
+              onSendHelpRequest={handleSendToHelpChat}
             />
           </>
         );
@@ -2934,6 +2945,7 @@ export default function App() {
               activeNpub={activeNpub}
               activeNsec={activeNsec}
               onExitQuiz={handleReturnToSkillTree}
+              onSendHelpRequest={handleSendToHelpChat}
             />
           </>
         );
@@ -3790,6 +3802,7 @@ export default function App() {
                             }
                           }
                           onSkip={switchToRandomLessonMode}
+                          onSendHelpRequest={handleSendToHelpChat}
                         />
                       </TabPanel>
                     );
@@ -3812,6 +3825,7 @@ export default function App() {
                           }
                           onSkip={switchToRandomLessonMode}
                           onExitQuiz={handleReturnToSkillTree}
+                          onSendHelpRequest={handleSendToHelpChat}
                         />
                       </TabPanel>
                     );
@@ -3831,9 +3845,11 @@ export default function App() {
       )}
 
       <HelpChatFab
+        ref={helpChatRef}
         progress={user?.progress}
         appLanguage={appLanguage}
         isOpen={helpChatDisclosure.isOpen}
+        onOpen={helpChatDisclosure.onOpen}
         onClose={helpChatDisclosure.onClose}
         showFloatingTrigger={false}
       />

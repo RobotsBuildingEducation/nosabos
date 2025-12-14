@@ -46,7 +46,7 @@ import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
-import { FiCopy } from "react-icons/fi";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -336,7 +336,9 @@ function buildMCVocabStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
+    `Create ONE ${TARGET} vocabulary multiple-choice question (exactly one correct). Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
     stemDirective,
     `- 4 distinct word choices in ${TARGET}.`,
     `One of the distinct word choices must be correct.`,
@@ -395,7 +397,9 @@ function buildMAVocabStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct, never just 1). Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
+    `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct, never just 1). Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -450,7 +454,9 @@ function buildSpeakVocabStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} speaking drill (difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}). Choose VARIANT:`,
+    `Create ONE ${TARGET} speaking drill (difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }). Choose VARIANT:`,
     `- repeat: show the ${TARGET} word/phrase (≤4 words) to repeat aloud.`,
     allowTranslate
       ? `- translate: show a ${SUPPORT} word/phrase (≤3 words) and have them speak the ${TARGET} translation aloud.`
@@ -509,7 +515,9 @@ function buildMatchVocabStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}`,
+    `Create ONE ${TARGET} vocabulary matching exercise. Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
     topicDirective,
     `- Left column: ${TARGET} words (3–6 items, unique).`,
     `- Right column: ${SUPPORT} short definitions (unique).`,
@@ -770,6 +778,7 @@ export default function Vocabulary({
   onSkip = null,
   onExitQuiz = null,
   pauseMs = 2000,
+  onSendHelpRequest = null,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -962,6 +971,7 @@ export default function Vocabulary({
         showCopyToast();
       } catch {}
     }
+    if (onSendHelpRequest) onSendHelpRequest(text);
   }
 
   // Quiz mode helper function
@@ -1021,7 +1031,8 @@ export default function Vocabulary({
 
     try {
       // Build prompt for explanation
-      const { question, userAnswer, correctAnswer, questionType } = currentQuestionData;
+      const { question, userAnswer, correctAnswer, questionType } =
+        currentQuestionData;
 
       // Get the prompt template based on question type and user language
       const getLangPrompt = (type) => {
@@ -1205,9 +1216,12 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
           model: MODEL,
           input: prompt,
         });
-        setExplanationText(explanation || (userLanguage === "es"
-          ? "No se pudo generar una explicación en este momento."
-          : "Could not generate an explanation at this time."));
+        setExplanationText(
+          explanation ||
+            (userLanguage === "es"
+              ? "No se pudo generar una explicación en este momento."
+              : "Could not generate an explanation at this time.")
+        );
       }
     } catch (error) {
       console.error("Failed to generate explanation:", error);
@@ -3018,7 +3032,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
     // Store question data for explanation feature
     if (!ok) {
-      const userMappings = userPairs.map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`).join(", ");
+      const userMappings = userPairs
+        .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
+        .join(", ");
       setCurrentQuestionData({
         question: mStem || "Match the items:",
         userAnswer: userMappings,
@@ -3320,9 +3336,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       >
         <IconButton
           aria-label="Copy all"
-          icon={<FiCopy />}
-          size="xs"
-          variant="ghost"
+          icon={<MdOutlineSupportAgent />}
+          size="sm"
+          fontSize="lg"
+          bg="white"
+          color="blue"
+          border="3px solid skyblue"
+          boxShadow={"lg"}
           onClick={() => copyAll(q, h, tr)}
           mr={1}
         />
@@ -3948,7 +3968,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           <IconButton
                             aria-label={questionListenLabel}
                             icon={<PiSpeakerHighDuotone />}
-                            size="xs"
+                            size="sm"
+                            fontSize="lg"
                             variant="ghost"
                             isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(qMC)}
@@ -4076,7 +4097,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         <IconButton
                           aria-label={questionListenLabel}
                           icon={<PiSpeakerHighDuotone />}
-                          size="xs"
+                          size="sm"
+                          fontSize="lg"
                           variant="ghost"
                           isLoading={isQuestionSynthesizing}
                           onClick={() => handlePlayQuestionTTS(qMC)}
@@ -4264,7 +4286,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           <IconButton
                             aria-label={questionListenLabel}
                             icon={<PiSpeakerHighDuotone />}
-                            size="xs"
+                            size="sm"
+                            fontSize="lg"
                             variant="ghost"
                             isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(qMA)}
@@ -4399,7 +4422,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         <IconButton
                           aria-label={questionListenLabel}
                           icon={<PiSpeakerHighDuotone />}
-                          size="xs"
+                          size="sm"
+                          fontSize="lg"
                           variant="ghost"
                           isLoading={isQuestionSynthesizing}
                           onClick={() => handlePlayQuestionTTS(qMA)}
