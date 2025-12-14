@@ -770,6 +770,7 @@ export default function Vocabulary({
   onSkip = null,
   onExitQuiz = null,
   pauseMs = 2000,
+  onSendHelpRequest = null,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -962,6 +963,7 @@ export default function Vocabulary({
         showCopyToast();
       } catch {}
     }
+    if (onSendHelpRequest) onSendHelpRequest(text);
   }
 
   // Quiz mode helper function
@@ -3321,7 +3323,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         <IconButton
           aria-label="Copy all"
           icon={<FiCopy />}
-          size="xs"
+          size="sm"
+          fontSize="lg"
           variant="ghost"
           onClick={() => copyAll(q, h, tr)}
           mr={1}
@@ -3948,7 +3951,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           <IconButton
                             aria-label={questionListenLabel}
                             icon={<PiSpeakerHighDuotone />}
-                            size="xs"
+                            size="sm"
+                            fontSize="lg"
                             variant="ghost"
                             isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(qMC)}
@@ -4076,7 +4080,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         <IconButton
                           aria-label={questionListenLabel}
                           icon={<PiSpeakerHighDuotone />}
-                          size="xs"
+                          size="sm"
+                          fontSize="lg"
                           variant="ghost"
                           isLoading={isQuestionSynthesizing}
                           onClick={() => handlePlayQuestionTTS(qMC)}
@@ -4264,7 +4269,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           <IconButton
                             aria-label={questionListenLabel}
                             icon={<PiSpeakerHighDuotone />}
-                            size="xs"
+                            size="sm"
+                            fontSize="lg"
                             variant="ghost"
                             isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(qMA)}
@@ -4399,7 +4405,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         <IconButton
                           aria-label={questionListenLabel}
                           icon={<PiSpeakerHighDuotone />}
-                          size="xs"
+                          size="sm"
+                          fontSize="lg"
                           variant="ghost"
                           isLoading={isQuestionSynthesizing}
                           onClick={() => handlePlayQuestionTTS(qMA)}
