@@ -82,10 +82,10 @@ const BUTTON_EXPLANATIONS = [
   {
     id: "support",
     icon: PiPatreonLogoFill,
-    label: { en: "Support Us", es: "Apóyanos" },
+    label: { en: "Join Us", es: "Suscríbete" },
     description: {
-      en: "Support the project on Patreon to help us grow",
-      es: "Apoya el proyecto en Patreon para ayudarnos a crecer",
+      en: "Join us on Patreon to access more education apps and content on startups, advanced engineering, investing and business.",
+      es: "Únete a nosotros en Patreon para acceder a más apps educativas y contenido sobre startups, ingeniería avanzada, inversión y negocios.",
     },
     position: 5,
   },
