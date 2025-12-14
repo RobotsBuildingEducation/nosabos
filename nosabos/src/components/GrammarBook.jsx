@@ -41,7 +41,7 @@ import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
-import { FiCopy } from "react-icons/fi";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -3051,7 +3051,7 @@ Return JSON ONLY:
       >
         <IconButton
           aria-label="Copy all"
-          icon={<FiCopy />}
+          icon={<MdOutlineSupportAgent />}
           size="sm"
           fontSize="lg"
           variant="ghost"
