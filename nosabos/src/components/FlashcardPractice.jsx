@@ -751,35 +751,25 @@ export default function FlashcardPractice({
                     )}
 
                     {isCorrect && (
-                      <VStack
-                        align="stretch"
-                        spacing={3}
-                        w="100%"
-                        bg="whiteAlpha.100"
-                        border="1px solid"
-                        borderColor="whiteAlpha.200"
-                        borderRadius="lg"
-                        p={4}
-                      >
+                      <VStack align="stretch" spacing={3} w="100%" p={4}>
                         <HStack justify="space-between" w="100%">
-                          <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
+                          <Badge
+                            colorScheme="cyan"
+                            variant="subtle"
+                            fontSize="10px"
+                          >
                             Level {xpLevelNumber}
                           </Badge>
-                          <Badge colorScheme="teal" variant="subtle" fontSize="10px">
+                          <Badge
+                            colorScheme="teal"
+                            variant="subtle"
+                            fontSize="10px"
+                          >
                             Total XP {updatedTotalXp}
                           </Badge>
                         </HStack>
 
-                        <WaveBar
-                          value={nextLevelProgressPct}
-                          start={cefrColor.primary}
-                          end={cefrColor.secondary || cefrColor.primary}
-                          bg="rgba(255,255,255,0.08)"
-                          border="rgba(255,255,255,0.12)"
-                        />
-                        <Text fontSize="sm" color="gray.200" textAlign="right">
-                          {nextLevelProgressPct}% to next level
-                        </Text>
+                        <WaveBar value={nextLevelProgressPct} />
                       </VStack>
                     )}
                   </VStack>
