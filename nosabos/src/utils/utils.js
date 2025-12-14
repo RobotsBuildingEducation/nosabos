@@ -49,7 +49,9 @@ export async function awardXp(npub, amount, targetLang = "es") {
 
     // Celebrate once per day upon reaching goal
     const goal = data.dailyGoalXp || 0;
-    const reached = goal > 0 && nextDaily >= goal && !data.dailyHasCelebrated;
+    const reached =
+      goal > 0 && existingProgress?.totalXp && !data.dailyHasCelebrated;
+    console.log("existingProgress?.totalXp", existingProgress?.totalXp);
     if (reached) shouldCelebrateGoal = true;
 
     tx.set(

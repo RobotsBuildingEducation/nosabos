@@ -3861,6 +3861,7 @@ export default function App() {
         npub={activeNpub}
         lang={appLanguage}
         t={t}
+        defaultGoal={dailyGoalTarget > 0 ? dailyGoalTarget : 100}
       />
 
       <SessionTimerModal
