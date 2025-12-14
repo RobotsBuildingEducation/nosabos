@@ -751,6 +751,56 @@ function TopBar({
           <DrawerBody pb={2}>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={3}>
+                <Box bg="gray.800" p={3} rounded="md">
+                  <Text fontSize="sm" mb={2}>
+                    {appLanguage === "es" ? "Idioma de la app" : "App language"}
+                  </Text>
+                  <ButtonGroup
+                    size="sm"
+                    isAttached
+                    variant="outline"
+                    borderRadius="md"
+                    bg="rgba(255, 255, 255, 0.04)"
+                    border="1px solid"
+                    borderColor="gray.700"
+                    width="fit-content"
+                  >
+                    {(() => {
+                      const labels =
+                        appLanguage === "es"
+                          ? { en: "Inglés", es: "Español" }
+                          : { en: "English", es: "Spanish" };
+
+                      return (
+                        <>
+                          <Button
+                            onClick={() => onSelectLanguage?.("en")}
+                            variant={appLanguage === "en" ? "solid" : "ghost"}
+                            colorScheme="teal"
+                            fontSize="sm"
+                            fontWeight="bold"
+                            aria-label={labels.en}
+                            padding={5}
+                          >
+                            {labels.en}
+                          </Button>
+                          <Button
+                            onClick={() => onSelectLanguage?.("es")}
+                            variant={appLanguage === "es" ? "solid" : "ghost"}
+                            colorScheme="teal"
+                            fontSize="sm"
+                            fontWeight="bold"
+                            aria-label={labels.es}
+                            padding={5}
+                          >
+                            {labels.es}
+                          </Button>
+                        </>
+                      );
+                    })()}
+                  </ButtonGroup>
+                </Box>
+
                 <Wrap spacing={2}>
                   <Menu autoSelect={false} isLazy>
                     <MenuButton
@@ -943,7 +993,6 @@ function TopBar({
         onClose={closeAccount}
         t={t}
         appLanguage={appLanguage}
-        onSelectLanguage={onSelectLanguage}
         activeNpub={currentId} // or props.activeNpub; both mirror each other
         activeNsec={currentSecret} // or props.activeNsec
         auth={auth}
