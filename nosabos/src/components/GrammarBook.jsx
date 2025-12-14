@@ -708,6 +708,7 @@ export default function GrammarBook({
   onSkip = null,
   pauseMs = 2000,
   onSendHelpRequest = null,
+  lessonStartXp = null,
 }) {
   const t = useT(userLanguage);
   const toast = useToast();
@@ -790,6 +791,26 @@ export default function GrammarBook({
 
   const { xp, levelNumber, progressPct, progress, npub, ready } =
     useSharedProgress();
+
+  const lessonXpGoal = lesson?.xpReward || 0;
+  const lessonXpEarned =
+    lessonStartXp == null ? 0 : Math.max(0, xp - lessonStartXp);
+  const lessonProgressPct =
+    lessonXpGoal > 0 ? Math.min(100, (lessonXpEarned / lessonXpGoal) * 100) : 0;
+  const lessonProgress =
+    lesson &&
+    !lesson.isTutorial &&
+    !isFinalQuiz &&
+    lessonStartXp != null &&
+    lessonXpGoal > 0
+      ? {
+          pct: lessonProgressPct,
+          earned: Math.min(lessonXpEarned, lessonXpGoal),
+          total: lessonXpGoal,
+          label:
+            userLanguage === "es" ? "Progreso de la lección" : "Lesson progress",
+        }
+      : null;
 
   const level = progress.level || "beginner";
   const targetLang = ["en", "es", "pt", "nah", "fr", "it"].includes(
@@ -3670,6 +3691,7 @@ Return JSON ONLY:
               onExplainAnswer={handleExplainAnswer}
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
             />
           </VStack>
         ) : null}
@@ -3997,6 +4019,7 @@ Return JSON ONLY:
               onExplainAnswer={handleExplainAnswer}
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
             />
           </>
         ) : null}
@@ -4345,6 +4368,7 @@ Return JSON ONLY:
               onExplainAnswer={handleExplainAnswer}
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
             />
           </>
         ) : null}
@@ -4616,6 +4640,7 @@ Return JSON ONLY:
               onExplainAnswer={handleExplainAnswer}
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
             />
           </>
         ) : null}
@@ -4878,6 +4903,7 @@ Return JSON ONLY:
               onExplainAnswer={handleExplainAnswer}
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
             />
           </>
         ) : null}
