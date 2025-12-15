@@ -36,7 +36,7 @@ import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
-import { getRandomVoice } from "../utils/tts";
+import { getRandomVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 
 /* ---------------------------
    Minimal i18n helper
@@ -1217,35 +1217,27 @@ export default function History({
     setReading(true);
 
     try {
-      const res = await fetch(
-        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: text,
-            voice: getRandomVoice(),
-            model: "gpt-4o-mini-tts",
-            response_format: "mp3",
-          }),
-        }
-      );
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      currentAudioRef.current = audio;
+      const player = await getTTSPlayer({
+        text,
+        langTag: langTag || TTS_LANG_TAG.es,
+        voice: getRandomVoice(),
+      });
+
+      currentAudioRef.current = player.audio;
 
       const cleanup = () => {
-        URL.revokeObjectURL(url);
         setReading(false);
         currentAudioRef.current = null;
+        player.cleanup?.();
+        player.finalize?.catch?.(() => {});
         onDone?.();
       };
-      audio.onended = cleanup;
-      audio.onerror = cleanup;
 
-      await audio.play();
+      player.audio.onended = cleanup;
+      player.audio.onerror = cleanup;
+
+      await player.ready;
+      await player.audio.play();
       return;
     } catch {
       if ("speechSynthesis" in window) {

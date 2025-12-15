@@ -25,7 +25,7 @@ import {
   RiEyeLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
-import { getRandomVoice } from "../utils/tts";
+import { getRandomVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
@@ -357,37 +357,26 @@ export default function FlashcardPractice({
     setIsPlayingAudio(true);
 
     try {
-      const res = await fetch(
-        "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            input: streamedAnswer,
-            voice: getRandomVoice(),
-            model: "gpt-4o-mini-tts",
-            response_format: "mp3",
-          }),
-        }
-      );
+      const player = await getTTSPlayer({
+        text: streamedAnswer,
+        langTag: TTS_LANG_TAG[targetLanguage] || TTS_LANG_TAG.en,
+        voice: getRandomVoice(),
+      });
 
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const audio = new Audio(url);
-      audioRef.current = audio;
+      audioRef.current = player.audio;
 
       const cleanup = () => {
-        URL.revokeObjectURL(url);
         setIsPlayingAudio(false);
         audioRef.current = null;
+        player.cleanup?.();
+        player.finalize?.catch?.(() => {});
       };
 
-      audio.onended = cleanup;
-      audio.onerror = cleanup;
+      player.audio.onended = cleanup;
+      player.audio.onerror = cleanup;
 
-      await audio.play();
+      await player.ready;
+      await player.audio.play();
     } catch (error) {
       console.error("TTS error:", error);
       setIsPlayingAudio(false);
