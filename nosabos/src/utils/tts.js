@@ -275,10 +275,32 @@ async function getRealtimePlayer({ text, voice }) {
     { once: true }
   );
 
+  let readyResolved = false;
   const ready = new Promise((resolve, reject) => {
+    const resolveOnce = () => {
+      if (!readyResolved) {
+        readyResolved = true;
+        resolve();
+      }
+    };
+
     pc.ontrack = (event) => {
       event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
-      resolve();
+      resolveOnce();
+
+      const [audioTrack] = event.streams[0].getAudioTracks();
+      if (audioTrack) {
+        // Some deployments (e.g., gpt-realtime-mini) may not emit response.done,
+        // so also finish when the audio track stops sending data.
+        audioTrack.addEventListener("ended", () => {
+          if (!intentionalEnd) scheduleFinalize();
+        });
+        audioTrack.addEventListener("mute", () => {
+          // If the sender goes quiet and we've already started playing, treat it
+          // as completion to avoid hanging the UI.
+          if (audioStarted && !intentionalEnd) scheduleFinalize();
+        });
+      }
     };
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === "failed") {
@@ -329,28 +351,36 @@ async function getRealtimePlayer({ text, voice }) {
     // Stopping the tracks is sufficient cleanup
   });
 
-  // Listen for response.done to know when speech synthesis is complete
+  // Listen for response completion signals to know when synthesis is complete
+  const scheduleFinalize = () => {
+    // Wait for audio to have started before cleaning up so the UI doesn't end
+    // before playback begins (occasionally the server can reply immediately).
+    const checkAndFinalize = () => {
+      if (audioStarted) {
+        try {
+          audio.dispatchEvent(new Event("ended"));
+        } catch {}
+        resolveFinalize?.();
+      } else {
+        setTimeout(checkAndFinalize, 50);
+      }
+    };
+
+    // Give the buffer a short tail to avoid clipping the last syllable.
+    setTimeout(checkAndFinalize, 200);
+  };
+
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
       // Close connection when response is done (speech finished)
-      if (msg.type === "response.done") {
+      if (
+        msg.type === "response.done" ||
+        msg.type === "response.output_item.done" ||
+        msg.type === "response.audio.done"
+      ) {
         intentionalEnd = true;
-        // Wait for audio to have started before cleaning up
-        const checkAndFinalize = () => {
-          if (audioStarted) {
-            // Audio has started, safe to dispatch ended and clean up
-            try {
-              audio.dispatchEvent(new Event("ended"));
-            } catch {}
-            resolveFinalize?.();
-          } else {
-            // Audio hasn't started yet, wait a bit more
-            setTimeout(checkAndFinalize, 50);
-          }
-        };
-        // Give audio buffer time to play, then clean up
-        setTimeout(checkAndFinalize, 500);
+        scheduleFinalize();
       }
     } catch {}
   };
