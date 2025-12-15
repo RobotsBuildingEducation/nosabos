@@ -1,18 +1,11 @@
 const REALTIME_MODEL =
   (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
-
-function appendModelParam(baseUrl, model) {
-  if (!baseUrl) return "";
-  const separator = baseUrl.includes("?") ? "&" : "?";
-  return `${baseUrl}${separator}model=${encodeURIComponent(model)}`;
-}
-
-const REALTIME_URL = appendModelParam(
-  (import.meta.env?.VITE_REALTIME_URL ||
-    import.meta.env?.VITE_RESPONSES_URL ||
-    "/exchangeRealtimeSDP") + "",
-  REALTIME_MODEL
-);
+const REALTIME_URL =
+  import.meta.env?.VITE_REALTIME_URL || ""
+    ? `${import.meta.env?.VITE_REALTIME_URL}?model=${encodeURIComponent(
+        REALTIME_MODEL
+      )}`
+    : "";
 
 export const TTS_LANG_TAG = {
   en: "en-US",
@@ -254,24 +247,14 @@ export async function fetchTTSBlob() {
   throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
 }
 
-export async function getTTSPlayer({
-  text,
-  voice,
-} = {}) {
+export async function getTTSPlayer({ text, voice } = {}) {
   return getRealtimePlayer({ text, voice });
 }
 
 async function getRealtimePlayer({ text, voice }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
-  const promptText = String(text || "").trim();
-  if (!promptText) throw new Error("No text provided for realtime playback");
-
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
-
-  const cleanedText = promptText.replace(/\s+/g, " ").trim();
-  const strictReadbackInstruction =
-    "You are a text-to-speech voice. Read the provided text aloud exactly once, without answering questions, adding commentary, continuing a conversation, or translating. Stop after speaking the text.";
 
   const remoteStream = new MediaStream();
   const audio = new Audio();
@@ -298,9 +281,7 @@ async function getRealtimePlayer({ text, voice }) {
     const cleanupListener = () => resolve();
     pc.onconnectionstatechange = () => {
       if (
-        ["disconnected", "closed", "failed"].includes(
-          pc.connectionState || ""
-        )
+        ["disconnected", "closed", "failed"].includes(pc.connectionState || "")
       ) {
         resolve();
       }
@@ -331,7 +312,6 @@ async function getRealtimePlayer({ text, voice }) {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
-            instructions: `${strictReadbackInstruction} Text to read: "${cleanedText}"`,
           },
         })
       );
@@ -344,7 +324,7 @@ async function getRealtimePlayer({ text, voice }) {
             content: [
               {
                 type: "input_text",
-                text: cleanedText,
+                text,
               },
             ],
           },
@@ -355,8 +335,8 @@ async function getRealtimePlayer({ text, voice }) {
           type: "response.create",
           response: {
             modalities: ["audio", "text"],
-            instructions: `${strictReadbackInstruction} Speak exactly: "${cleanedText}"`,
-            temperature: 0,
+            instructions:
+              "Speak the provided user text verbatim as quickly as possible.",
           },
         })
       );
@@ -473,7 +453,10 @@ function appendToSourceBuffer(sourceBuffer, chunk) {
     const buffer =
       chunk instanceof ArrayBuffer
         ? chunk
-        : chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength);
+        : chunk.buffer.slice(
+            chunk.byteOffset,
+            chunk.byteOffset + chunk.byteLength
+          );
     sourceBuffer.appendBuffer(buffer);
   });
 }
@@ -563,5 +546,11 @@ function streamResponseToAudio({ response, mimeType, cacheKey }) {
     })
     .catch(() => {});
 
-  return { audio, audioUrl, ready, finalize, cleanup: () => URL.revokeObjectURL(audioUrl) };
+  return {
+    audio,
+    audioUrl,
+    ready,
+    finalize,
+    cleanup: () => URL.revokeObjectURL(audioUrl),
+  };
 }
