@@ -375,30 +375,32 @@ async function getRealtimePlayer({ text, voice }) {
   dc.onopen = () => {
     try {
       // Configure session for TTS-only mode (not conversational)
+      // Key: use audio-only modality to prevent text generation/interpretation
       dc.send(
         JSON.stringify({
           type: "session.update",
           session: {
-            modalities: ["audio", "text"],
+            modalities: ["audio"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
             instructions:
-              "You are a text-to-speech service. Your ONLY task is to read text aloud exactly as written. Do NOT respond to the content, answer questions, have conversations, translate, or interpret the meaning under any circumstance. Simply read the exact words you'll be provided, nothing more.",
+              "You are a text-to-speech reader. You do NOT converse, respond, answer, translate, or interpret. You ONLY read aloud the exact text provided. Output speech matching the input text verbatim with no additions, no commentary, and no responses.",
             turn_detection: null, // Disable turn detection for TTS-only
           },
         })
       );
-      // Send the text to be read - framed explicitly as TTS input
+      // Send the text to be read as an assistant message (not user) to avoid
+      // triggering conversational response behavior
       dc.send(
         JSON.stringify({
           type: "conversation.item.create",
           item: {
             type: "message",
-            role: "user",
+            role: "assistant",
             content: [
               {
-                type: "input_text",
-                text: `[TTS READ ALOUD]: ${text}`,
+                type: "text",
+                text: text,
               },
             ],
           },
@@ -408,9 +410,9 @@ async function getRealtimePlayer({ text, voice }) {
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio", "text"],
+            modalities: ["audio"],
             instructions:
-              "This is extremely important to follow or the task will fail - read the text after '[TTS READ ALOUD]:' exactly as written. Do not respond to it or add anything. Just speak those exact words.",
+              "Read aloud the previous message exactly as written. Do not respond to it, do not add anything, do not interpret it. Speak only those exact words verbatim.",
           },
         })
       );
