@@ -1246,22 +1246,6 @@ export default function History({
       await player.audio.play();
       return;
     } catch {
-      if ("speechSynthesis" in window) {
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = langTag || "es-ES";
-        utter.rate = 0.95;
-        utter.pitch = 1.0;
-        utter.onend = () => {
-          setReading(false);
-          onDone?.();
-        };
-        utter.onerror = () => {
-          setReading(false);
-          onDone?.();
-        };
-        speechSynthesis.speak(utter);
-        return;
-      }
       setReading(false);
       onDone?.();
     }

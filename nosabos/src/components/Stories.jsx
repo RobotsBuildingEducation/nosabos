@@ -1082,13 +1082,6 @@ export default function StoryMode({
     setIsPlayingTarget(true);
     try {
       const langTag = (BCP47[targetLang] || BCP47.es).tts;
-      if (text.length < 50) {
-        setIsSynthesizingTarget(true);
-        await playEnhancedWebSpeech(text, langTag, {
-          setSynthesizing: setIsSynthesizingTarget,
-        });
-        return;
-      }
       await playWithOpenAITTS(text, langTag, {
         alignToText: true,
         onStart: () => {},
@@ -1099,9 +1092,8 @@ export default function StoryMode({
         setSynthesizing: setIsSynthesizingTarget,
       });
     } catch (err) {
-      console.error("TTS failed; falling back:", err);
+      console.error("TTS failed; ending playback:", err);
       stopAllAudio();
-      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts);
     }
   };
 
@@ -1117,10 +1109,7 @@ export default function StoryMode({
       });
     } catch {
       stopAllAudio();
-      setIsSynthesizingTarget(true);
-      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts, {
-        setSynthesizing: setIsSynthesizingTarget,
-      });
+      setIsSynthesizingTarget(false);
     }
   };
 
@@ -1135,12 +1124,9 @@ export default function StoryMode({
         setSynthesizing: setIsSynthesizingSupport,
       });
     } catch (e) {
-      console.error("Support TTS failed; falling back to Web Speech", e);
-      setIsSynthesizingSupport(true);
-      await playEnhancedWebSpeech(text, (BCP47[supportLang] || BCP47.en).tts, {
-        setSynthesizing: setIsSynthesizingSupport,
-        onEnd: () => setIsPlayingSupport(false),
-      });
+      console.error("Support TTS failed; ending playback", e);
+      stopAllAudio();
+      setIsSynthesizingSupport(false);
     }
   };
 
@@ -1167,88 +1153,10 @@ export default function StoryMode({
 
       const handleBoundary = () => updateHighlight(currentWordIndex + 1);
 
-      const fallbackTiming = () => {
-        let i = 0;
-        const words = text.split(/\s+/);
-        const tick = () => {
-          if (i >= words.length) return onComplete?.();
-          updateHighlight(i);
-          const w = words[i];
-          const base = 200;
-          const ms = Math.max(150, Math.min(800, base + w.length * 50));
-          i++;
-          highlightIntervalRef.current = setTimeout(tick, ms);
-        };
-        tick();
-      };
-
-      return { handleBoundary, fallbackTiming, tokenMap };
+      return { handleBoundary, tokenMap };
     },
     [createTokenMap, currentWordIndex]
   );
-
-  const playEnhancedWebSpeech = async (
-    text,
-    langTag,
-    { onStart = null, onEnd = null, setSynthesizing = null } = {}
-  ) => {
-    const { handleBoundary, fallbackTiming } = setupBoundaryHighlighting(
-      text,
-      () => {
-        setIsAutoPlaying(false);
-        setIsPlayingTarget(false);
-        onEnd?.();
-      }
-    );
-    setSynthesizing?.(true);
-    if (!("speechSynthesis" in window)) {
-      setIsPlayingTarget(false);
-      setIsAutoPlaying(false);
-      setSynthesizing?.(false);
-      onEnd?.();
-      return;
-    }
-
-    const ensureVoices = () =>
-      new Promise((res) => {
-        const v = speechSynthesis.getVoices();
-        if (v.length) return res(v);
-        speechSynthesis.addEventListener(
-          "voiceschanged",
-          () => res(speechSynthesis.getVoices()),
-          { once: true }
-        );
-      });
-
-    await ensureVoices();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = langTag || "es-ES";
-    utter.rate = 0.85;
-    utter.pitch = 1.02;
-    utter.volume = 0.95;
-
-    utter.onstart = () => {
-      setIsPlayingTarget(true);
-      setBoundarySupported(!!utter.onboundary);
-      if (!utter.onboundary) fallbackTiming();
-      setSynthesizing?.(false);
-      onStart?.();
-    };
-    utter.onboundary = (evt) => handleBoundary(evt);
-    utter.onend = () => {
-      setIsPlayingTarget(false);
-      setIsAutoPlaying(false);
-      setSynthesizing?.(false);
-      onEnd?.();
-    };
-    utter.onerror = () => {
-      setIsPlayingTarget(false);
-      setIsAutoPlaying(false);
-      setSynthesizing?.(false);
-      onEnd?.();
-    };
-    speechSynthesis.speak(utter);
-  };
 
   /* ----------------------------- Recording + strict scoring ----------------------------- */
   const currentSentence = storyData?.sentences?.[currentSentenceIndex];
