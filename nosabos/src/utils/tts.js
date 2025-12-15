@@ -339,7 +339,7 @@ async function getRealtimePlayer({ text, voice }) {
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio"],
+            modalities: ["audio", "text"],
             instructions:
               "Read the text after '[TTS READ ALOUD]:' exactly as written. Do not respond to it or add anything. Just speak those exact words.",
           },
