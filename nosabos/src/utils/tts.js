@@ -1,12 +1,10 @@
-export const TTS_ENDPOINT = "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS";
-
 const REALTIME_MODEL =
   (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
-const REALTIME_URL = `${
-  import.meta.env?.VITE_REALTIME_URL || ""
-}?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
-  REALTIME_MODEL
-)}`;
+const REALTIME_URL = (import.meta.env?.VITE_REALTIME_URL || "")
+  ? `${import.meta.env?.VITE_REALTIME_URL}?model=${encodeURIComponent(
+      REALTIME_MODEL
+    )}`
+  : "";
 
 export const TTS_LANG_TAG = {
   en: "en-US",
@@ -244,139 +242,21 @@ const inFlightRequests = new Map();
  * @param {string} options.voice - Optional specific voice (defaults to random)
  * @returns {Promise<Blob>} Audio blob
  */
-export async function fetchTTSBlob({
-  text,
-  langTag = TTS_LANG_TAG.es,
-  voice,
-  responseFormat = DEFAULT_TTS_FORMAT,
-}) {
-  const cacheKey = getCacheKey(text, langTag, responseFormat);
-
-  // 1. Check in-memory cache (instant)
-  if (memoryCache.has(cacheKey)) {
-    return memoryCache.get(cacheKey);
-  }
-
-  // 2. Check if there's already an in-flight request for this key
-  if (inFlightRequests.has(cacheKey)) {
-    return inFlightRequests.get(cacheKey);
-  }
-
-  // 3. Create the fetch promise (checks IndexedDB, then network)
-  const fetchPromise = (async () => {
-    try {
-      // Check IndexedDB cache
-      const cachedBlob = await getFromIndexedDB(cacheKey);
-      if (cachedBlob) {
-        // Store in memory for even faster subsequent access
-        memoryCache.set(cacheKey, cachedBlob);
-        return cachedBlob;
-      }
-
-      // Fetch from API
-      const resolvedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
-
-      const payload = {
-        input: text,
-        voice: resolvedVoice,
-        model: "tts-1",
-        response_format: responseFormat,
-      };
-
-      const res = await fetch(TTS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error(`OpenAI TTS ${res.status}`);
-      }
-
-      const blob = await res.blob();
-
-      // Cache in both layers
-      addToCache(cacheKey, blob);
-
-      return blob;
-    } finally {
-      // Remove from in-flight after completion
-      inFlightRequests.delete(cacheKey);
-    }
-  })();
-
-  // Track in-flight request
-  inFlightRequests.set(cacheKey, fetchPromise);
-
-  return fetchPromise;
+export async function fetchTTSBlob() {
+  throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
 }
 
-/**
- * Create an Audio element that starts playing from the first streamed bytes when available.
- * Falls back to cached blobs or full downloads when streaming isn't supported.
- */
 export async function getTTSPlayer({
   text,
-  langTag = TTS_LANG_TAG.es,
   voice,
-  responseFormat = DEFAULT_TTS_FORMAT,
 } = {}) {
-  try {
-    return await getRealtimePlayer({ text, voice });
-  } catch (err) {
-    console.warn("Realtime TTS failed, falling back to REST:", err);
-  }
-
-  const cacheKey = getCacheKey(text, langTag, responseFormat);
-
-  if (memoryCache.has(cacheKey)) {
-    return createAudioFromBlob(memoryCache.get(cacheKey));
-  }
-
-  const cachedBlob = await getFromIndexedDB(cacheKey);
-  if (cachedBlob) {
-    memoryCache.set(cacheKey, cachedBlob);
-    return createAudioFromBlob(cachedBlob);
-  }
-
-  const resolvedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
-
-  const res = await fetch(TTS_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      input: text,
-      voice: resolvedVoice,
-      model: "tts-1",
-      response_format: responseFormat,
-    }),
-  });
-
-  if (!res.ok) {
-    throw new Error(`OpenAI TTS ${res.status}`);
-  }
-
-  const mimeType = inferMimeType(res.headers.get("content-type"), responseFormat);
-
-  const canStream =
-    typeof window !== "undefined" &&
-    res.body &&
-    window.MediaSource &&
-    MediaSource.isTypeSupported(mimeType);
-
-  if (!canStream) {
-    const blob = await res.blob();
-    addToCache(cacheKey, blob);
-    return createAudioFromBlob(blob);
-  }
-
-  const player = streamResponseToAudio({ response: res, mimeType, cacheKey });
-  player.finalize.catch(() => {});
-  return player;
+  return getRealtimePlayer({ text, voice });
 }
 
 async function getRealtimePlayer({ text, voice }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
+
+  const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
 
   const remoteStream = new MediaStream();
   const audio = new Audio();
@@ -435,7 +315,22 @@ async function getRealtimePlayer({ text, voice }) {
           session: {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
-            voice: voice || DEFAULT_TTS_VOICE,
+            voice: sanitizedVoice,
+          },
+        })
+      );
+      dc.send(
+        JSON.stringify({
+          type: "conversation.item.create",
+          item: {
+            type: "message",
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text,
+              },
+            ],
           },
         })
       );
@@ -444,8 +339,8 @@ async function getRealtimePlayer({ text, voice }) {
           type: "response.create",
           response: {
             modalities: ["audio", "text"],
-            conversation: "none",
-            instructions: `Say exactly: "${text}"`,
+            instructions:
+              "Speak the provided user text verbatim as quickly as possible.",
           },
         })
       );
@@ -477,25 +372,7 @@ async function getRealtimePlayer({ text, voice }) {
  */
 export async function prefetchTTS(items) {
   if (!items || items.length === 0) return;
-
-  const promises = items.map(({
-    text,
-    langTag = TTS_LANG_TAG.es,
-    responseFormat = DEFAULT_TTS_FORMAT,
-  }) => {
-    // Skip if already cached in memory
-    const cacheKey = getCacheKey(text, langTag, responseFormat);
-    if (memoryCache.has(cacheKey)) {
-      return Promise.resolve();
-    }
-
-    // Fetch silently (don't throw on error)
-    return fetchTTSBlob({ text, langTag, responseFormat }).catch(() => {
-      // Ignore pre-fetch errors silently
-    });
-  });
-
-  await Promise.all(promises);
+  console.warn("prefetchTTS is disabled; realtime playback streams on demand.");
 }
 
 /**
