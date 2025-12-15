@@ -374,7 +374,7 @@ async function getRealtimePlayer({ text, voice }) {
 
   dc.onopen = () => {
     try {
-      // Configure session for TTS-only mode (not conversational)
+      // Configure session for narration/read-aloud mode
       dc.send(
         JSON.stringify({
           type: "session.update",
@@ -383,12 +383,12 @@ async function getRealtimePlayer({ text, voice }) {
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
             instructions:
-              "You are a text-to-speech service. Your ONLY task is to read text aloud exactly as written. Do NOT respond to the content, answer questions, have conversations, translate, or interpret the meaning under any circumstance. Simply read the exact words you'll be provided, nothing more.",
-            turn_detection: null, // Disable turn detection for TTS-only
+              "You are an audiobook narrator. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.",
+            turn_detection: null,
           },
         })
       );
-      // Send the text to be read - framed explicitly as TTS input
+      // Send text as content to narrate
       dc.send(
         JSON.stringify({
           type: "conversation.item.create",
@@ -398,7 +398,7 @@ async function getRealtimePlayer({ text, voice }) {
             content: [
               {
                 type: "input_text",
-                text: `[TTS READ ALOUD]: ${text}`,
+                text: `[NARRATE THIS TEXT EXACTLY]: ${text}`,
               },
             ],
           },
@@ -409,8 +409,6 @@ async function getRealtimePlayer({ text, voice }) {
           type: "response.create",
           response: {
             modalities: ["audio", "text"],
-            instructions:
-              "This is extremely important to follow or the task will fail - read the text after '[TTS READ ALOUD]:' exactly as written. Do not respond to it or add anything. Just speak those exact words.",
           },
         })
       );
