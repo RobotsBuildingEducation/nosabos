@@ -359,7 +359,7 @@ export default function FlashcardPractice({
     try {
       const player = await getTTSPlayer({
         text: streamedAnswer,
-        langTag: TTS_LANG_TAG[targetLanguage] || TTS_LANG_TAG.en,
+        langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.en,
         voice: getRandomVoice(),
       });
 
