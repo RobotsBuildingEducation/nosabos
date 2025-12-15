@@ -379,12 +379,13 @@ async function getRealtimePlayer({ text, voice }) {
         JSON.stringify({
           type: "session.update",
           session: {
-            modalities: ["audio", "text"],
+            modalities: ["audio"], // audio-only to avoid conversational text replies
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
             instructions:
               "You are a text-to-speech service. Your ONLY task is to read text aloud exactly as written. Do NOT respond to the content, answer questions, have conversations, translate, or interpret the meaning under any circumstance. Simply read the exact words you'll be provided, nothing more.",
             turn_detection: null, // Disable turn detection for TTS-only
+            temperature: 0, // deterministic reading, no improvisation
           },
         })
       );
@@ -408,9 +409,10 @@ async function getRealtimePlayer({ text, voice }) {
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio", "text"],
+            modalities: ["audio"], // no text responses, just speech playback
             instructions:
               "This is extremely important to follow or the task will fail - read the text after '[TTS READ ALOUD]:' exactly as written. Do not respond to it or add anything. Just speak those exact words.",
+            temperature: 0,
           },
         })
       );
