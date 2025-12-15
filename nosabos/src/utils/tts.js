@@ -277,8 +277,12 @@ async function getRealtimePlayer({ text, voice }) {
     };
   });
 
+  const dc = pc.createDataChannel("oai-events");
+
+  // Track when response is done via data channel messages
+  let resolveFinalize;
   const finalize = new Promise((resolve) => {
-    const cleanupListener = () => resolve();
+    resolveFinalize = resolve;
     pc.onconnectionstatechange = () => {
       if (
         ["disconnected", "closed", "failed"].includes(pc.connectionState || "")
@@ -286,9 +290,13 @@ async function getRealtimePlayer({ text, voice }) {
         resolve();
       }
     };
-    audio.addEventListener("ended", cleanupListener, { once: true });
-    setTimeout(resolve, 20000);
+    audio.addEventListener("ended", () => resolve(), { once: true });
+    // Fallback timeout reduced from 20s to 30s (only as safety net)
+    setTimeout(resolve, 30000);
   }).finally(() => {
+    try {
+      dc.close();
+    } catch {}
     try {
       pc.close();
     } catch {}
@@ -300,8 +308,23 @@ async function getRealtimePlayer({ text, voice }) {
     } catch {}
   });
 
-  const dc = pc.createDataChannel("oai-events");
-  dc.onmessage = () => {};
+  // Listen for response.done to know when speech synthesis is complete
+  dc.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      // Close connection when response is done (speech finished)
+      if (msg.type === "response.done") {
+        // Give a small delay for audio buffer to finish playing
+        setTimeout(() => {
+          // Dispatch 'ended' event so component callbacks fire properly
+          try {
+            audio.dispatchEvent(new Event("ended"));
+          } catch {}
+          resolveFinalize?.();
+        }, 500);
+      }
+    } catch {}
+  };
 
   dc.onopen = () => {
     try {
