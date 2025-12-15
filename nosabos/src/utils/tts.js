@@ -294,18 +294,22 @@ async function getRealtimePlayer({ text, voice }) {
 
   // Track when response is done via data channel messages
   let resolveFinalize;
+  let fallbackTimeoutId;
   const finalize = new Promise((resolve) => {
-    resolveFinalize = resolve;
+    resolveFinalize = () => {
+      clearTimeout(fallbackTimeoutId);
+      resolve();
+    };
     pc.onconnectionstatechange = () => {
       if (
         ["disconnected", "closed", "failed"].includes(pc.connectionState || "")
       ) {
-        resolve();
+        resolveFinalize();
       }
     };
-    audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout reduced from 20s to 30s (only as safety net)
-    setTimeout(resolve, 30000);
+    audio.addEventListener("ended", () => resolveFinalize(), { once: true });
+    // Fallback timeout only as safety net (will be cleared when speech finishes)
+    fallbackTimeoutId = setTimeout(resolveFinalize, 30000);
   }).finally(() => {
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
