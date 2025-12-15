@@ -371,15 +371,19 @@ export default function FlashcardPractice({
 
       audioRef.current = player.audio;
 
+      let cleanedUp = false;
       const cleanup = () => {
+        if (cleanedUp) return; // Prevent double cleanup
+        cleanedUp = true;
         setIsPlayingAudio(false);
         audioRef.current = null;
         player.cleanup?.();
-        player.finalize?.catch?.(() => {});
       };
 
       player.audio.onended = cleanup;
       player.audio.onerror = cleanup;
+      // Also listen to finalize promise as backup for cleanup
+      player.finalize?.then?.(cleanup)?.catch?.(() => {});
 
       await player.ready;
       await player.audio.play();
@@ -555,12 +559,22 @@ export default function FlashcardPractice({
                         variant="solid"
                         colorScheme="purple"
                         color="white"
-                        leftIcon={<RiVolumeUpLine size={14} />}
+                        leftIcon={
+                          isPlayingAudio ? (
+                            <Spinner size="xs" />
+                          ) : (
+                            <RiVolumeUpLine size={14} />
+                          )
+                        }
                         onClick={handleListenToAnswer}
+                        isDisabled={isPlayingAudio}
                         _hover={{ bg: "whiteAlpha.300" }}
                         fontSize="xs"
                       >
-                        {getTranslation("flashcard_listen")}
+                        {isPlayingAudio
+                          ? getTranslation("flashcard_playing") ||
+                            "Playing..."
+                          : getTranslation("flashcard_listen")}
                       </Button>
                     )}
                     <Text
