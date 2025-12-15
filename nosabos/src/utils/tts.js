@@ -374,8 +374,7 @@ async function getRealtimePlayer({ text, voice }) {
 
   dc.onopen = () => {
     try {
-      // Configure session for TTS-only mode
-      // Embed the text directly in session instructions to avoid conversation framing
+      // Configure session for narration/read-aloud mode
       dc.send(
         JSON.stringify({
           type: "session.update",
@@ -383,18 +382,33 @@ async function getRealtimePlayer({ text, voice }) {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
-            instructions: `You are a text-to-speech system. Your only function is to speak text verbatim. Never respond, answer, converse, or add commentary. When prompted, speak ONLY these exact words: "${text.replace(/"/g, '\\"')}"`,
+            instructions:
+              "You are an audiobook narrator. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.",
             turn_detection: null,
           },
         })
       );
-      // Trigger speech generation - text is already in instructions
+      // Send text as content to narrate
+      dc.send(
+        JSON.stringify({
+          type: "conversation.item.create",
+          item: {
+            type: "message",
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: `[NARRATE THIS TEXT EXACTLY]: ${text}`,
+              },
+            ],
+          },
+        })
+      );
       dc.send(
         JSON.stringify({
           type: "response.create",
           response: {
             modalities: ["audio", "text"],
-            instructions: "Speak the exact text from your instructions now. Output only those words, nothing else.",
           },
         })
       );
