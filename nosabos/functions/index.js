@@ -236,7 +236,7 @@ exports.proxyResponses = onRequest(
 exports.proxyTTS = onRequest(
   {
     region: REGION,
-    minInstances: 1,
+
     maxInstances: 20,
     concurrency: 80,
     cors: false,
@@ -255,7 +255,9 @@ exports.proxyTTS = onRequest(
       return res.status(500).json(keyError);
     }
 
-    functions.logger.warn("Legacy REST TTS proxy is disabled; use Realtime TTS instead.");
+    functions.logger.warn(
+      "Legacy REST TTS proxy is disabled; use Realtime TTS instead."
+    );
     return res.status(410).json({
       error: "Legacy TTS path removed",
       details: "Use realtime GPT playback instead of /proxyTTS.",
