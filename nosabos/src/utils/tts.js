@@ -275,10 +275,66 @@ async function getRealtimePlayer({ text, voice }) {
     { once: true }
   );
 
+  let readyResolved = false;
   const ready = new Promise((resolve, reject) => {
+    const resolveOnce = () => {
+      if (!readyResolved) {
+        readyResolved = true;
+        resolve();
+      }
+    };
+
     pc.ontrack = (event) => {
       event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
-      resolve();
+      resolveOnce();
+
+      const [audioTrack] = event.streams[0].getAudioTracks();
+      if (audioTrack) {
+        // Some deployments (e.g., gpt-realtime-mini) may not emit response.done,
+        // so also finish when the audio track stops sending data.
+        audioTrack.addEventListener("ended", () => {
+          if (!intentionalEnd) scheduleFinalize();
+        });
+        audioTrack.addEventListener("mute", () => {
+          // If the sender goes quiet and we've already started playing, treat it
+          // as completion to avoid hanging the UI.
+          if (audioStarted && !intentionalEnd) scheduleFinalize();
+        });
+
+        // Monitor inbound RTP stats to detect when audio stops arriving even if
+        // the track never fires ended/mute events.
+        const startSilenceMonitor = (receiver) => {
+          if (!receiver || silenceMonitor) return;
+          let lastSamples = 0;
+          let lastChangeTs = Date.now();
+
+          silenceMonitor = setInterval(async () => {
+            try {
+              const stats = await receiver.getStats();
+              const inbound = Array.from(stats.values()).find(
+                (r) => r.type === "inbound-rtp" && r.kind === "audio"
+              );
+              if (!inbound) return;
+
+              const samples =
+                inbound.totalSamplesReceived ?? inbound.packetsReceived ?? 0;
+              if (samples > lastSamples) {
+                lastSamples = samples;
+                lastChangeTs = Date.now();
+                return;
+              }
+
+              if (audioStarted && Date.now() - lastChangeTs > 1200) {
+                scheduleFinalize();
+              }
+            } catch {
+              // Ignore stats errors; other completion paths will handle cleanup.
+            }
+          }, 200);
+        };
+
+        startSilenceMonitor(event.receiver);
+      }
     };
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === "failed") {
@@ -291,9 +347,13 @@ async function getRealtimePlayer({ text, voice }) {
 
   // Track when we're intentionally ending to prevent spurious error events
   let intentionalEnd = false;
+  let finalizeScheduled = false;
 
   // Track when response is done via data channel messages
   let resolveFinalize;
+  let endedEventFired = false;
+  let silenceMonitor;
+
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
     pc.onconnectionstatechange = () => {
@@ -303,25 +363,39 @@ async function getRealtimePlayer({ text, voice }) {
         resolve();
       }
     };
-    audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout reduced from 20s to 30s (only as safety net)
-    setTimeout(resolve, 30000);
-  }).finally(() => {
-    // Mark as intentionally ended so components can ignore errors
-    intentionalEnd = true;
-    // Clear error handler first to prevent AbortError from firing
-    try {
-      audio.onerror = null;
-    } catch {}
-    try {
-      dc.close();
-    } catch {}
-    try {
-      dc.close();
-    } catch {}
-    try {
-      pc.close();
-    } catch {}
+    audio.addEventListener(
+      "ended",
+      () => {
+        endedEventFired = true;
+        resolve();
+      },
+      { once: true }
+    );
+  })
+    .then(() => {
+      // If we finalized without the media element ending, emit an ended event
+      // so UI listeners can clear their playing state reliably.
+      if (!endedEventFired) {
+        endedEventFired = true;
+        try {
+          audio.dispatchEvent(new Event("ended"));
+        } catch {}
+      }
+    })
+    .finally(() => {
+      // Mark as intentionally ended so components can ignore errors
+      intentionalEnd = true;
+      // Clear error handler first to prevent AbortError from firing
+      try {
+        audio.onerror = null;
+      } catch {}
+      try {
+        dc.close();
+      } catch {}
+      try {
+        pc.close();
+      } catch {}
+      if (silenceMonitor) clearInterval(silenceMonitor);
     try {
       remoteStream.getTracks().forEach((t) => t.stop());
     } catch {}
@@ -329,28 +403,39 @@ async function getRealtimePlayer({ text, voice }) {
     // Stopping the tracks is sufficient cleanup
   });
 
-  // Listen for response.done to know when speech synthesis is complete
+  // Listen for response completion signals to know when synthesis is complete
+  const scheduleFinalize = () => {
+    if (finalizeScheduled) return;
+    finalizeScheduled = true;
+
+    // Wait for audio to have started before cleaning up so the UI doesn't end
+    // before playback begins (occasionally the server can reply immediately).
+    const checkAndFinalize = () => {
+      if (audioStarted) {
+        try {
+          audio.dispatchEvent(new Event("ended"));
+        } catch {}
+        resolveFinalize?.();
+      } else {
+        setTimeout(checkAndFinalize, 50);
+      }
+    };
+
+    // Give the buffer a short tail to avoid clipping the last syllable.
+    setTimeout(checkAndFinalize, 200);
+  };
+
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
       // Close connection when response is done (speech finished)
-      if (msg.type === "response.done") {
+      if (
+        msg.type === "response.done" ||
+        msg.type === "response.output_item.done" ||
+        msg.type === "response.audio.done"
+      ) {
         intentionalEnd = true;
-        // Wait for audio to have started before cleaning up
-        const checkAndFinalize = () => {
-          if (audioStarted) {
-            // Audio has started, safe to dispatch ended and clean up
-            try {
-              audio.dispatchEvent(new Event("ended"));
-            } catch {}
-            resolveFinalize?.();
-          } else {
-            // Audio hasn't started yet, wait a bit more
-            setTimeout(checkAndFinalize, 50);
-          }
-        };
-        // Give audio buffer time to play, then clean up
-        setTimeout(checkAndFinalize, 500);
+        scheduleFinalize();
       }
     } catch {}
   };
