@@ -764,7 +764,6 @@ export default function History({
 
   // Reading state
   const [isReadingTarget, setIsReadingTarget] = useState(false);
-  const [isReadingSupport, setIsReadingSupport] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
   // Refs for audio
@@ -1213,7 +1212,6 @@ export default function History({
       }
     } catch {}
     setIsReadingTarget(false);
-    setIsReadingSupport(false);
   };
 
   async function speak({ text, langTag, setReading, onDone }) {
@@ -1257,14 +1255,6 @@ export default function History({
       langTag: (BCP47[targetLang] || BCP47.es).tts,
       onDone: () => {},
       setReading: setIsReadingTarget,
-    });
-
-  const readSupport = async () =>
-    speak({
-      text: viewLecture?.support,
-      langTag: (BCP47[supportLang] || BCP47.en).tts,
-      onDone: () => {},
-      setReading: setIsReadingSupport,
     });
 
   const xpReasonText =
@@ -1536,32 +1526,16 @@ export default function History({
                       onClick={readTarget}
                       leftIcon={<PiSpeakerHighDuotone />}
                       size="sm"
+                      isLoading={isReadingTarget}
+                      loadingText={t("tts_synthesizing") || "Playing"}
                       isDisabled={
                         !viewLecture?.target ||
                         draftLecture ||
-                        isGenerating ||
-                        isReadingTarget ||
-                        isReadingSupport
+                        isGenerating
                       }
                     >
                       {t("reading_read_in", { language: targetDisplay })}
                     </Button>
-                    {showTranslations && viewLecture?.support ? (
-                      <Button
-                        onClick={readSupport}
-                        leftIcon={<PiSpeakerHighDuotone />}
-                        size="sm"
-                        variant="outline"
-                        isDisabled={
-                          draftLecture ||
-                          isGenerating ||
-                          isReadingTarget ||
-                          isReadingSupport
-                        }
-                      >
-                        {t("reading_read_in", { language: supportDisplay })}
-                      </Button>
-                    ) : null}
                   </HStack>
                 </HStack>
 

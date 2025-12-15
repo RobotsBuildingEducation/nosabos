@@ -354,7 +354,6 @@ export default function StoryMode({
       : progress.supportLang;
 
   const targetDisplayName = DISPLAY_LANG_NAME(targetLang, uiLang);
-  const supportDisplayName = DISPLAY_LANG_NAME(supportLang, uiLang);
 
   // State
   const [storyData, setStoryData] = useState(null);
@@ -362,9 +361,7 @@ export default function StoryMode({
   const [isLoading, setIsLoading] = useState(false);
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
-  const [isPlayingSupport, setIsPlayingSupport] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
-  const [isSynthesizingSupport, setIsSynthesizingSupport] = useState(false);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
   const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
 
@@ -550,9 +547,7 @@ export default function StoryMode({
       animationFrameRef.current = null;
     }
     setIsPlayingTarget(false);
-    setIsPlayingSupport(false);
     setIsSynthesizingTarget(false);
-    setIsSynthesizingSupport(false);
     setIsAutoPlaying(false);
     setHighlightedWordIndex(-1);
   }, []);
@@ -1113,23 +1108,6 @@ export default function StoryMode({
     }
   };
 
-  const playSupportTTS = async (text) => {
-    if (!text) return;
-    stopAllAudio();
-    setIsPlayingSupport(true);
-    try {
-      await playWithOpenAITTS(text, (BCP47[supportLang] || BCP47.en).tts, {
-        alignToText: false,
-        onEnd: () => setIsPlayingSupport(false),
-        setSynthesizing: setIsSynthesizingSupport,
-      });
-    } catch (e) {
-      console.error("Support TTS failed; ending playback", e);
-      stopAllAudio();
-      setIsSynthesizingSupport(false);
-    }
-  };
-
   const setupBoundaryHighlighting = useCallback(
     (text, onComplete) => {
       const tokenMap = createTokenMap(text);
@@ -1677,34 +1655,19 @@ export default function StoryMode({
                       }
                       leftIcon={<PiSpeakerHighDuotone />}
                       color="white"
+                      isLoading={isPlayingTarget || isSynthesizingTarget}
+                      loadingText={
+                        isSynthesizingTarget
+                          ? uiText.tts_synthesizing
+                          : uiText.playing
+                      }
                       isDisabled={
-                        isPlayingTarget ||
-                        isPlayingSupport ||
                         isAutoPlaying ||
-                        isSynthesizingTarget ||
-                        isSynthesizingSupport
+                        isSynthesizingTarget
                       }
                     >
                       {uiText.playTarget(targetDisplayName)}
                     </Button>
-                    {!!storyData.fullStory?.sup && (
-                      <Button
-                        onClick={() => playSupportTTS(storyData.fullStory?.sup)}
-                        leftIcon={<PiSpeakerHighDuotone />}
-                        variant="outline"
-                        borderColor="rgba(255, 255, 255, 0.3)"
-                        color="white"
-                        isDisabled={
-                          isPlayingTarget ||
-                          isPlayingSupport ||
-                          isAutoPlaying ||
-                          isSynthesizingTarget ||
-                          isSynthesizingSupport
-                        }
-                      >
-                        {supportDisplayName}
-                      </Button>
-                    )}
                   </HStack>
 
                   <Center>
