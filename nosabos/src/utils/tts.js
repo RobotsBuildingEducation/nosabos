@@ -265,6 +265,16 @@ async function getRealtimePlayer({ text, voice }) {
   const pc = new RTCPeerConnection();
   pc.addTransceiver("audio", { direction: "recvonly" });
 
+  // Track when audio playback has actually started (play() resolved)
+  let audioStarted = false;
+  audio.addEventListener(
+    "playing",
+    () => {
+      audioStarted = true;
+    },
+    { once: true }
+  );
+
   const ready = new Promise((resolve, reject) => {
     pc.ontrack = (event) => {
       event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
@@ -277,8 +287,15 @@ async function getRealtimePlayer({ text, voice }) {
     };
   });
 
+  const dc = pc.createDataChannel("oai-events");
+
+  // Track when we're intentionally ending to prevent spurious error events
+  let intentionalEnd = false;
+
+  // Track when response is done via data channel messages
+  let resolveFinalize;
   const finalize = new Promise((resolve) => {
-    const cleanupListener = () => resolve();
+    resolveFinalize = resolve;
     pc.onconnectionstatechange = () => {
       if (
         ["disconnected", "closed", "failed"].includes(pc.connectionState || "")
@@ -286,22 +303,57 @@ async function getRealtimePlayer({ text, voice }) {
         resolve();
       }
     };
-    audio.addEventListener("ended", cleanupListener, { once: true });
-    setTimeout(resolve, 20000);
+    audio.addEventListener("ended", () => resolve(), { once: true });
+    // Fallback timeout reduced from 20s to 30s (only as safety net)
+    setTimeout(resolve, 30000);
   }).finally(() => {
+    // Mark as intentionally ended so components can ignore errors
+    intentionalEnd = true;
+    // Clear error handler first to prevent AbortError from firing
+    try {
+      audio.onerror = null;
+    } catch {}
+    try {
+      dc.close();
+    } catch {}
     try {
       pc.close();
     } catch {}
     try {
       remoteStream.getTracks().forEach((t) => t.stop());
     } catch {}
-    try {
-      audio.srcObject = null;
-    } catch {}
+    // Note: Don't set audio.srcObject = null as it causes AbortError
+    // Stopping the tracks is sufficient cleanup
   });
 
-  const dc = pc.createDataChannel("oai-events");
-  dc.onmessage = () => {};
+  // Listen for response.done to know when speech synthesis is complete
+  dc.onmessage = (event) => {
+    try {
+      const msg = JSON.parse(event.data);
+      // Close connection when response is done (speech finished)
+      if (msg.type === "response.done") {
+        intentionalEnd = true;
+        // Wait for audio to have started before cleaning up
+        const checkAndFinalize = () => {
+          if (audioStarted) {
+            // Audio has started, safe to dispatch ended and clean up
+            try {
+              audio.dispatchEvent(new Event("ended"));
+            } catch {}
+            resolveFinalize?.();
+          } else {
+            // Audio hasn't started yet, wait a bit more
+            setTimeout(checkAndFinalize, 50);
+          }
+        };
+        // Give audio buffer time to play, then clean up
+        setTimeout(checkAndFinalize, 500);
+      }
+    } catch {}
+  };
+
+  // Expose intentionalEnd flag on audio element for components to check
+  audio._ttsIntentionalEnd = () => intentionalEnd;
 
   dc.onopen = () => {
     try {
