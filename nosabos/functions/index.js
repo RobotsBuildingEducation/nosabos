@@ -260,7 +260,7 @@ exports.proxyTTS = onRequest(
     const {
       input,
       voice = "alloy",
-      model = "gpt-4o-mini-tts",
+      model = "tts-1",
       response_format = "opus",
     } = body;
 

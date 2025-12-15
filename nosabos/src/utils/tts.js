@@ -271,7 +271,7 @@ export async function fetchTTSBlob({
       const payload = {
         input: text,
         voice: resolvedVoice,
-        model: "gpt-4o-mini-tts",
+        model: "tts-1",
         response_format: responseFormat,
       };
 
@@ -333,7 +333,7 @@ export async function getTTSPlayer({
     body: JSON.stringify({
       input: text,
       voice: resolvedVoice,
-      model: "gpt-4o-mini-tts",
+      model: "tts-1",
       response_format: responseFormat,
     }),
   });
