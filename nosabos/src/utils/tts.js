@@ -1,10 +1,18 @@
 const REALTIME_MODEL =
   (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
-const REALTIME_URL = (import.meta.env?.VITE_REALTIME_URL || "")
-  ? `${import.meta.env?.VITE_REALTIME_URL}?model=${encodeURIComponent(
-      REALTIME_MODEL
-    )}`
-  : "";
+
+function appendModelParam(baseUrl, model) {
+  if (!baseUrl) return "";
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}model=${encodeURIComponent(model)}`;
+}
+
+const REALTIME_URL = appendModelParam(
+  (import.meta.env?.VITE_REALTIME_URL ||
+    import.meta.env?.VITE_RESPONSES_URL ||
+    "/exchangeRealtimeSDP") + "",
+  REALTIME_MODEL
+);
 
 export const TTS_LANG_TAG = {
   en: "en-US",
