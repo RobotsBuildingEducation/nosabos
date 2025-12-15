@@ -265,16 +265,6 @@ async function getRealtimePlayer({ text, voice }) {
   const pc = new RTCPeerConnection();
   pc.addTransceiver("audio", { direction: "recvonly" });
 
-  // Track when audio playback has actually started (play() resolved)
-  let audioStarted = false;
-  audio.addEventListener(
-    "playing",
-    () => {
-      audioStarted = true;
-    },
-    { once: true }
-  );
-
   const ready = new Promise((resolve, reject) => {
     pc.ontrack = (event) => {
       event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
@@ -338,25 +328,9 @@ async function getRealtimePlayer({ text, voice }) {
       // Close connection when response is done (speech finished)
       if (msg.type === "response.done") {
         intentionalEnd = true;
-        // Wait for audio to have started before cleaning up
-        // But limit retries to prevent infinite loop if audio never starts
-        let retries = 0;
-        const maxRetries = 100; // 5 seconds max (100 * 50ms)
-        const checkAndFinalize = () => {
-          if (audioStarted || retries >= maxRetries) {
-            // Audio has started or we've waited long enough, clean up
-            try {
-              audio.dispatchEvent(new Event("ended"));
-            } catch {}
-            resolveFinalize?.();
-          } else {
-            // Audio hasn't started yet, wait a bit more
-            retries++;
-            setTimeout(checkAndFinalize, 50);
-          }
-        };
-        // Give audio buffer time to play, then clean up
-        setTimeout(checkAndFinalize, 500);
+        // Server finished generating audio - clean up immediately
+        // The finalize cleanup will dispatch "ended" event for components
+        resolveFinalize?.();
       }
     } catch {}
   };
