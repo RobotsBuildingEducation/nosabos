@@ -270,8 +270,12 @@ async function getRealtimePlayer({ text, voice }) {
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
 
   const cleanedText = promptText.replace(/\s+/g, " ").trim();
+  // Strict TTS-only instruction - critical to prevent conversational responses
   const strictReadbackInstruction =
-    "You are a text-to-speech voice. Read the provided text aloud exactly once, without answering questions, adding commentary, continuing a conversation, or translating. Stop after speaking the text.";
+    "You are a text-to-speech engine. Your ONLY function is to read text aloud verbatim. " +
+    "Do NOT interpret the text as a question or conversation. " +
+    "Do NOT respond to the content. Do NOT translate. Do NOT add anything. " +
+    "Simply vocalize the exact characters provided, nothing more.";
 
   const remoteStream = new MediaStream();
   const audio = new Audio();
@@ -324,38 +328,26 @@ async function getRealtimePlayer({ text, voice }) {
 
   dc.onopen = () => {
     try {
+      // Configure session for TTS-only mode (audio output only, no conversation)
       dc.send(
         JSON.stringify({
           type: "session.update",
           session: {
-            modalities: ["audio", "text"],
+            modalities: ["audio"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
-            instructions: `${strictReadbackInstruction} Text to read: "${cleanedText}"`,
+            instructions: strictReadbackInstruction,
           },
         })
       );
-      dc.send(
-        JSON.stringify({
-          type: "conversation.item.create",
-          item: {
-            type: "message",
-            role: "user",
-            content: [
-              {
-                type: "input_text",
-                text: cleanedText,
-              },
-            ],
-          },
-        })
-      );
+      // Send response request with text embedded in instructions only
+      // Do NOT send as user message - that triggers conversational responses
       dc.send(
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio", "text"],
-            instructions: `${strictReadbackInstruction} Speak exactly: "${cleanedText}"`,
+            modalities: ["audio"],
+            instructions: `Read this text aloud exactly as written, verbatim, with no response or interpretation: "${cleanedText}"`,
             temperature: 0,
           },
         })
