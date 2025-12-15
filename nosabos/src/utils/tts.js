@@ -337,24 +337,10 @@ async function getRealtimePlayer({ text, voice }) {
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
-      // Close connection when response is done (speech finished)
+      // Close connection immediately when response is done (speech finished)
       if (msg.type === "response.done") {
         intentionalEnd = true;
-        // Wait for audio to have started before cleaning up
-        const checkAndFinalize = () => {
-          if (audioStarted) {
-            // Audio has started, safe to dispatch ended and clean up
-            try {
-              audio.dispatchEvent(new Event("ended"));
-            } catch {}
-            resolveFinalize?.();
-          } else {
-            // Audio hasn't started yet, wait a bit more
-            setTimeout(checkAndFinalize, 50);
-          }
-        };
-        // Give audio buffer time to play, then clean up
-        setTimeout(checkAndFinalize, 500);
+        pc.close();
       }
     } catch {}
   };
