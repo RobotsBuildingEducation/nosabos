@@ -275,11 +275,12 @@ async function getRealtimePlayer({ text, voice }) {
     { once: true }
   );
 
+  // Track when the server has finished sending audio
+  let responseDone = false;
+
+  let readyResolver;
   const ready = new Promise((resolve, reject) => {
-    pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
-      resolve();
-    };
+    readyResolver = resolve;
     pc.oniceconnectionstatechange = () => {
       if (pc.iceConnectionState === "failed") {
         reject(new Error("RTC connection failed"));
@@ -294,27 +295,24 @@ async function getRealtimePlayer({ text, voice }) {
 
   // Track when response is done via data channel messages
   let resolveFinalize;
-  const finalize = new Promise((resolve) => {
-    resolveFinalize = resolve;
-    pc.onconnectionstatechange = () => {
-      if (
-        ["disconnected", "closed", "failed"].includes(pc.connectionState || "")
-      ) {
-        resolve();
-      }
-    };
-    audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout reduced from 20s to 30s (only as safety net)
-    setTimeout(resolve, 30000);
-  }).finally(() => {
-    // Mark as intentionally ended so components can ignore errors
+  let finalizeResolved = false;
+  let finalizeTimeout = null;
+
+  const cleanupConnections = () => {
+    if (intentionalEnd) return;
     intentionalEnd = true;
-    // Clear error handler first to prevent AbortError from firing
+
     try {
       audio.onerror = null;
     } catch {}
     try {
-      dc.close();
+      audio.pause();
+    } catch {}
+    try {
+      audio.srcObject = null;
+    } catch {}
+    try {
+      remoteStream.getTracks().forEach((t) => t.stop());
     } catch {}
     try {
       dc.close();
@@ -322,11 +320,46 @@ async function getRealtimePlayer({ text, voice }) {
     try {
       pc.close();
     } catch {}
-    try {
-      remoteStream.getTracks().forEach((t) => t.stop());
-    } catch {}
-    // Note: Don't set audio.srcObject = null as it causes AbortError
-    // Stopping the tracks is sufficient cleanup
+  };
+
+  const resolveOnce = () => {
+    if (finalizeResolved) return;
+    finalizeResolved = true;
+    if (finalizeTimeout) {
+      clearTimeout(finalizeTimeout);
+      finalizeTimeout = null;
+    }
+    cleanupConnections();
+    resolveFinalize?.();
+  };
+
+  const hasLiveTracks = () =>
+    remoteStream.getTracks().some((t) => t.readyState === "live");
+
+  const finalizeWhenBufferDrains = () => {
+    if (!responseDone) return;
+    if (audio.ended || (!hasLiveTracks() && (audioStarted || responseDone))) {
+      resolveOnce();
+      return;
+    }
+    setTimeout(finalizeWhenBufferDrains, 120);
+  };
+
+  const finalize = new Promise((resolve) => {
+    resolveFinalize = resolve;
+
+    finalizeTimeout = setTimeout(resolveOnce, 30000);
+
+    pc.onconnectionstatechange = () => {
+      if (
+        ["disconnected", "closed", "failed"].includes(pc.connectionState || "")
+      ) {
+        resolveOnce();
+      }
+    };
+    audio.addEventListener("ended", resolveOnce, { once: true });
+  }).finally(() => {
+    cleanupConnections();
   });
 
   // Listen for response.done to know when speech synthesis is complete
@@ -335,24 +368,30 @@ async function getRealtimePlayer({ text, voice }) {
       const msg = JSON.parse(event.data);
       // Close connection when response is done (speech finished)
       if (msg.type === "response.done") {
-        intentionalEnd = true;
-        // Wait for audio to have started before cleaning up
-        const checkAndFinalize = () => {
-          if (audioStarted) {
-            // Audio has started, safe to dispatch ended and clean up
-            try {
-              audio.dispatchEvent(new Event("ended"));
-            } catch {}
-            resolveFinalize?.();
-          } else {
-            // Audio hasn't started yet, wait a bit more
-            setTimeout(checkAndFinalize, 50);
-          }
-        };
-        // Give audio buffer time to play, then clean up
-        setTimeout(checkAndFinalize, 500);
+        responseDone = true;
+        // Wait for playback to actually start before watching for completion
+        if (audioStarted) {
+          finalizeWhenBufferDrains();
+        } else {
+          audio.addEventListener("playing", finalizeWhenBufferDrains, { once: true });
+        }
       }
     } catch {}
+  };
+
+  // If the media track itself ends, finalize the session
+  pc.ontrack = (event) => {
+    event.streams[0].getTracks().forEach((t) => {
+      remoteStream.addTrack(t);
+      t.onended = () => {
+        if (responseDone) {
+          finalizeWhenBufferDrains();
+        } else {
+          resolveOnce();
+        }
+      };
+    });
+    readyResolver?.();
   };
 
   // Expose intentionalEnd flag on audio element for components to check
@@ -416,7 +455,7 @@ async function getRealtimePlayer({ text, voice }) {
   if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
   await pc.setRemoteDescription({ type: "answer", sdp: answer });
 
-  return { audio, audioUrl: null, ready, finalize, cleanup: () => {} };
+  return { audio, audioUrl: null, ready, finalize, cleanup: resolveOnce };
 }
 
 /**
