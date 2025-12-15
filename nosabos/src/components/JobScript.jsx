@@ -2220,6 +2220,8 @@ export default function JobScript({
                         color="white"
                         _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
                         size="sm"
+                        isLoading={isPlayingTarget}
+                        loadingText={uiText.playing}
                       >
                         {uiText.listen}
                       </Button>
