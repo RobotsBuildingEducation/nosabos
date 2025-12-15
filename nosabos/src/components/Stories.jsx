@@ -47,7 +47,12 @@ import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { getRandomVoice, TTS_LANG_TAG, TTS_ENDPOINT } from "../utils/tts";
+import {
+  LOW_LATENCY_TTS_FORMAT,
+  getRandomVoice,
+  getTTSPlayer,
+  TTS_LANG_TAG,
+} from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
@@ -1016,23 +1021,13 @@ export default function StoryMode({
 
       usageStatsRef.current.ttsCalls++;
 
-      const res = await fetch(TTS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: text,
-          voice: getRandomVoice(),
-          model: "gpt-4o-mini-tts",
-          response_format: "mp3",
-          language: langTag,
-        }),
+      const player = await getTTSPlayer({
+        text,
+        langTag,
+        voice: getRandomVoice(),
+        responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
-
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      currentAudioUrlRef.current = audioUrl;
+      currentAudioUrlRef.current = player.audioUrl;
 
       let tokenMap = null;
       if (alignToText) {
@@ -1041,7 +1036,7 @@ export default function StoryMode({
         setHighlightedWordIndex(-1);
       }
 
-      const audio = new Audio(audioUrl);
+      const audio = player.audio;
       currentAudioRef.current = audio;
 
       let stopHighlighter = null;
@@ -1060,6 +1055,7 @@ export default function StoryMode({
         onEnd?.();
         setSynthesizing?.(false);
         currentAudioRef.current = null;
+        player.cleanup?.();
       };
       audio.onerror = (e) => {
         stopHighlighter?.();
@@ -1067,8 +1063,10 @@ export default function StoryMode({
         onEnd?.();
         setSynthesizing?.(false);
         currentAudioRef.current = null;
+        player.cleanup?.();
       };
 
+      await player.ready;
       await audio.play();
       setSynthesizing?.(false);
     } catch (e) {
@@ -1084,13 +1082,6 @@ export default function StoryMode({
     setIsPlayingTarget(true);
     try {
       const langTag = (BCP47[targetLang] || BCP47.es).tts;
-      if (text.length < 50) {
-        setIsSynthesizingTarget(true);
-        await playEnhancedWebSpeech(text, langTag, {
-          setSynthesizing: setIsSynthesizingTarget,
-        });
-        return;
-      }
       await playWithOpenAITTS(text, langTag, {
         alignToText: true,
         onStart: () => {},
@@ -1101,9 +1092,8 @@ export default function StoryMode({
         setSynthesizing: setIsSynthesizingTarget,
       });
     } catch (err) {
-      console.error("TTS failed; falling back:", err);
+      console.error("TTS failed; ending playback:", err);
       stopAllAudio();
-      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts);
     }
   };
 
@@ -1119,10 +1109,7 @@ export default function StoryMode({
       });
     } catch {
       stopAllAudio();
-      setIsSynthesizingTarget(true);
-      await playEnhancedWebSpeech(text, (BCP47[targetLang] || BCP47.es).tts, {
-        setSynthesizing: setIsSynthesizingTarget,
-      });
+      setIsSynthesizingTarget(false);
     }
   };
 
@@ -1137,12 +1124,9 @@ export default function StoryMode({
         setSynthesizing: setIsSynthesizingSupport,
       });
     } catch (e) {
-      console.error("Support TTS failed; falling back to Web Speech", e);
-      setIsSynthesizingSupport(true);
-      await playEnhancedWebSpeech(text, (BCP47[supportLang] || BCP47.en).tts, {
-        setSynthesizing: setIsSynthesizingSupport,
-        onEnd: () => setIsPlayingSupport(false),
-      });
+      console.error("Support TTS failed; ending playback", e);
+      stopAllAudio();
+      setIsSynthesizingSupport(false);
     }
   };
 
@@ -1169,88 +1153,10 @@ export default function StoryMode({
 
       const handleBoundary = () => updateHighlight(currentWordIndex + 1);
 
-      const fallbackTiming = () => {
-        let i = 0;
-        const words = text.split(/\s+/);
-        const tick = () => {
-          if (i >= words.length) return onComplete?.();
-          updateHighlight(i);
-          const w = words[i];
-          const base = 200;
-          const ms = Math.max(150, Math.min(800, base + w.length * 50));
-          i++;
-          highlightIntervalRef.current = setTimeout(tick, ms);
-        };
-        tick();
-      };
-
-      return { handleBoundary, fallbackTiming, tokenMap };
+      return { handleBoundary, tokenMap };
     },
     [createTokenMap, currentWordIndex]
   );
-
-  const playEnhancedWebSpeech = async (
-    text,
-    langTag,
-    { onStart = null, onEnd = null, setSynthesizing = null } = {}
-  ) => {
-    const { handleBoundary, fallbackTiming } = setupBoundaryHighlighting(
-      text,
-      () => {
-        setIsAutoPlaying(false);
-        setIsPlayingTarget(false);
-        onEnd?.();
-      }
-    );
-    setSynthesizing?.(true);
-    if (!("speechSynthesis" in window)) {
-      setIsPlayingTarget(false);
-      setIsAutoPlaying(false);
-      setSynthesizing?.(false);
-      onEnd?.();
-      return;
-    }
-
-    const ensureVoices = () =>
-      new Promise((res) => {
-        const v = speechSynthesis.getVoices();
-        if (v.length) return res(v);
-        speechSynthesis.addEventListener(
-          "voiceschanged",
-          () => res(speechSynthesis.getVoices()),
-          { once: true }
-        );
-      });
-
-    await ensureVoices();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = langTag || "es-ES";
-    utter.rate = 0.85;
-    utter.pitch = 1.02;
-    utter.volume = 0.95;
-
-    utter.onstart = () => {
-      setIsPlayingTarget(true);
-      setBoundarySupported(!!utter.onboundary);
-      if (!utter.onboundary) fallbackTiming();
-      setSynthesizing?.(false);
-      onStart?.();
-    };
-    utter.onboundary = (evt) => handleBoundary(evt);
-    utter.onend = () => {
-      setIsPlayingTarget(false);
-      setIsAutoPlaying(false);
-      setSynthesizing?.(false);
-      onEnd?.();
-    };
-    utter.onerror = () => {
-      setIsPlayingTarget(false);
-      setIsAutoPlaying(false);
-      setSynthesizing?.(false);
-      onEnd?.();
-    };
-    speechSynthesis.speak(utter);
-  };
 
   /* ----------------------------- Recording + strict scoring ----------------------------- */
   const currentSentence = storyData?.sentences?.[currentSentenceIndex];

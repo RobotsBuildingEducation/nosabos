@@ -236,6 +236,7 @@ exports.proxyResponses = onRequest(
 exports.proxyTTS = onRequest(
   {
     region: REGION,
+
     maxInstances: 20,
     concurrency: 80,
     cors: false,
@@ -254,54 +255,13 @@ exports.proxyTTS = onRequest(
       return res.status(500).json(keyError);
     }
 
-    const body = req.body || {};
-    const {
-      input,
-      voice = "alloy",
-      model = "gpt-4o-mini-tts",
-      response_format = "mp3",
-    } = body;
-
-    if (!input) {
-      return res.status(400).json({ error: "Missing 'input' text" });
-    }
-
-    try {
-      const response = await fetch("https://api.openai.com/v1/audio/speech", {
-        method: "POST",
-        headers: {
-          ...authzHeader(),
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          input,
-          voice,
-          response_format,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        functions.logger.error("OpenAI TTS error:", response.status, errorText);
-        return res.status(response.status).json({
-          error: "OpenAI TTS error",
-          details: errorText,
-        });
-      }
-
-      const audioBuffer = await response.arrayBuffer();
-
-      res.setHeader("Content-Type", `audio/${response_format}`);
-      res.setHeader("Content-Length", audioBuffer.byteLength);
-      return res.send(Buffer.from(audioBuffer));
-    } catch (error) {
-      functions.logger.error("TTS proxy error:", error);
-      return res.status(500).json({
-        error: "TTS generation failed",
-        details: error.message,
-      });
-    }
+    functions.logger.warn(
+      "Legacy REST TTS proxy is disabled; use Realtime TTS instead."
+    );
+    return res.status(410).json({
+      error: "Legacy TTS path removed",
+      details: "Use realtime GPT playback instead of /proxyTTS.",
+    });
   }
 );
 

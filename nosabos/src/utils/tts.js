@@ -1,4 +1,18 @@
-export const TTS_ENDPOINT = "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS";
+const REALTIME_MODEL =
+  (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
+
+function appendModelParam(baseUrl, model) {
+  if (!baseUrl) return "";
+  const separator = baseUrl.includes("?") ? "&" : "?";
+  return `${baseUrl}${separator}model=${encodeURIComponent(model)}`;
+}
+
+const REALTIME_URL = appendModelParam(
+  (import.meta.env?.VITE_REALTIME_URL ||
+    import.meta.env?.VITE_RESPONSES_URL ||
+    "/exchangeRealtimeSDP") + "",
+  REALTIME_MODEL
+);
 
 export const TTS_LANG_TAG = {
   en: "en-US",
@@ -11,8 +25,16 @@ export const TTS_LANG_TAG = {
 
 export const DEFAULT_TTS_VOICE = "alloy";
 
-// Use opus format for faster transfer (smaller files than mp3)
-const TTS_FORMAT = "opus";
+// Default to opus for size efficiency; allow callers to request lower-latency formats
+export const DEFAULT_TTS_FORMAT = "opus";
+export const LOW_LATENCY_TTS_FORMAT = "wav";
+
+const MIME_BY_FORMAT = {
+  opus: "audio/ogg; codecs=opus",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  pcm: "audio/pcm",
+};
 
 // Voices supported by BOTH TTS API and Realtime API
 // Note: fable, onyx, nova are TTS-only and NOT supported by Realtime API
@@ -45,15 +67,6 @@ function sanitizeVoice(voice) {
   return SUPPORTED_TTS_VOICES.has(voice) ? voice : DEFAULT_TTS_VOICE;
 }
 
-/**
- * Resolves which voice to use for TTS playback.
- * Now defaults to random voice selection for variety.
- */
-export function resolveVoicePreference({ lang, langTag } = {}) {
-  // Always use random voice for variety
-  return getRandomVoice();
-}
-
 // ============================================================================
 // CACHING LAYER
 // ============================================================================
@@ -73,10 +86,10 @@ let dbPromise = null;
 /**
  * Generate a cache key from text (voice-agnostic for better cache hits)
  */
-function getCacheKey(text, langTag) {
+function getCacheKey(text, langTag, responseFormat = DEFAULT_TTS_FORMAT) {
   // Normalize text: lowercase, trim, collapse whitespace
   const normalized = text.toLowerCase().trim().replace(/\s+/g, " ");
-  return `${langTag}::${normalized}`;
+  return `${responseFormat}::${langTag}::${normalized}`;
 }
 
 /**
@@ -237,67 +250,133 @@ const inFlightRequests = new Map();
  * @param {string} options.voice - Optional specific voice (defaults to random)
  * @returns {Promise<Blob>} Audio blob
  */
-export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
-  const cacheKey = getCacheKey(text, langTag);
+export async function fetchTTSBlob() {
+  throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
+}
 
-  // 1. Check in-memory cache (instant)
-  if (memoryCache.has(cacheKey)) {
-    return memoryCache.get(cacheKey);
-  }
+export async function getTTSPlayer({
+  text,
+  voice,
+} = {}) {
+  return getRealtimePlayer({ text, voice });
+}
 
-  // 2. Check if there's already an in-flight request for this key
-  if (inFlightRequests.has(cacheKey)) {
-    return inFlightRequests.get(cacheKey);
-  }
+async function getRealtimePlayer({ text, voice }) {
+  if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
-  // 3. Create the fetch promise (checks IndexedDB, then network)
-  const fetchPromise = (async () => {
+  const promptText = String(text || "").trim();
+  if (!promptText) throw new Error("No text provided for realtime playback");
+
+  const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
+
+  const cleanedText = promptText.replace(/\s+/g, " ").trim();
+  const strictReadbackInstruction =
+    "You are a text-to-speech voice. Read the provided text aloud exactly once, without answering questions, adding commentary, continuing a conversation, or translating. Stop after speaking the text.";
+
+  const remoteStream = new MediaStream();
+  const audio = new Audio();
+  audio.srcObject = remoteStream;
+  audio.autoplay = true;
+  audio.playsInline = true;
+
+  const pc = new RTCPeerConnection();
+  pc.addTransceiver("audio", { direction: "recvonly" });
+
+  const ready = new Promise((resolve, reject) => {
+    pc.ontrack = (event) => {
+      event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
+      resolve();
+    };
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "failed") {
+        reject(new Error("RTC connection failed"));
+      }
+    };
+  });
+
+  const finalize = new Promise((resolve) => {
+    const cleanupListener = () => resolve();
+    pc.onconnectionstatechange = () => {
+      if (
+        ["disconnected", "closed", "failed"].includes(
+          pc.connectionState || ""
+        )
+      ) {
+        resolve();
+      }
+    };
+    audio.addEventListener("ended", cleanupListener, { once: true });
+    setTimeout(resolve, 20000);
+  }).finally(() => {
     try {
-      // Check IndexedDB cache
-      const cachedBlob = await getFromIndexedDB(cacheKey);
-      if (cachedBlob) {
-        // Store in memory for even faster subsequent access
-        memoryCache.set(cacheKey, cachedBlob);
-        return cachedBlob;
-      }
+      pc.close();
+    } catch {}
+    try {
+      remoteStream.getTracks().forEach((t) => t.stop());
+    } catch {}
+    try {
+      audio.srcObject = null;
+    } catch {}
+  });
 
-      // Fetch from API
-      const resolvedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
+  const dc = pc.createDataChannel("oai-events");
+  dc.onmessage = () => {};
 
-      const payload = {
-        input: text,
-        voice: resolvedVoice,
-        model: "gpt-4o-mini-tts",
-        response_format: TTS_FORMAT,
-      };
-
-      const res = await fetch(TTS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        throw new Error(`OpenAI TTS ${res.status}`);
-      }
-
-      const blob = await res.blob();
-
-      // Cache in both layers
-      memoryCache.set(cacheKey, blob);
-      saveToIndexedDB(cacheKey, blob); // async, don't await
-
-      return blob;
-    } finally {
-      // Remove from in-flight after completion
-      inFlightRequests.delete(cacheKey);
+  dc.onopen = () => {
+    try {
+      dc.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            modalities: ["audio", "text"],
+            output_audio_format: "pcm16",
+            voice: sanitizedVoice,
+            instructions: `${strictReadbackInstruction} Text to read: "${cleanedText}"`,
+          },
+        })
+      );
+      dc.send(
+        JSON.stringify({
+          type: "conversation.item.create",
+          item: {
+            type: "message",
+            role: "user",
+            content: [
+              {
+                type: "input_text",
+                text: cleanedText,
+              },
+            ],
+          },
+        })
+      );
+      dc.send(
+        JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["audio", "text"],
+            instructions: `${strictReadbackInstruction} Speak exactly: "${cleanedText}"`,
+            temperature: 0,
+          },
+        })
+      );
+    } catch (err) {
+      console.warn("Realtime prompt send failed", err);
     }
-  })();
+  };
 
-  // Track in-flight request
-  inFlightRequests.set(cacheKey, fetchPromise);
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  const resp = await fetch(REALTIME_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/sdp" },
+    body: offer.sdp,
+  });
+  const answer = await resp.text();
+  if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
+  await pc.setRemoteDescription({ type: "answer", sdp: answer });
 
-  return fetchPromise;
+  return { audio, audioUrl: null, ready, finalize, cleanup: () => {} };
 }
 
 /**
@@ -309,21 +388,7 @@ export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
  */
 export async function prefetchTTS(items) {
   if (!items || items.length === 0) return;
-
-  const promises = items.map(({ text, langTag = TTS_LANG_TAG.es }) => {
-    // Skip if already cached in memory
-    const cacheKey = getCacheKey(text, langTag);
-    if (memoryCache.has(cacheKey)) {
-      return Promise.resolve();
-    }
-
-    // Fetch silently (don't throw on error)
-    return fetchTTSBlob({ text, langTag }).catch(() => {
-      // Ignore pre-fetch errors silently
-    });
-  });
-
-  await Promise.all(promises);
+  console.warn("prefetchTTS is disabled; realtime playback streams on demand.");
 }
 
 /**
@@ -374,4 +439,129 @@ if (typeof window !== "undefined") {
   setTimeout(() => {
     cleanupExpiredCache();
   }, 5000);
+}
+
+function addToCache(cacheKey, blob) {
+  memoryCache.set(cacheKey, blob);
+  saveToIndexedDB(cacheKey, blob); // async
+}
+
+function inferMimeType(contentType, responseFormat = DEFAULT_TTS_FORMAT) {
+  if (!contentType) return MIME_BY_FORMAT[responseFormat] || "audio/mpeg";
+  const lower = contentType.toLowerCase();
+  if (lower.includes("audio/opus")) return MIME_BY_FORMAT.opus;
+  if (lower.includes("audio/ogg")) return MIME_BY_FORMAT.opus;
+  if (lower.includes("mpeg")) return MIME_BY_FORMAT.mp3;
+  return lower.split(",")[0].trim();
+}
+
+function appendToSourceBuffer(sourceBuffer, chunk) {
+  return new Promise((resolve, reject) => {
+    const onError = (err) => {
+      sourceBuffer.removeEventListener("error", onError);
+      reject(err);
+    };
+    sourceBuffer.addEventListener("error", onError);
+    sourceBuffer.addEventListener(
+      "updateend",
+      () => {
+        sourceBuffer.removeEventListener("error", onError);
+        resolve();
+      },
+      { once: true }
+    );
+    const buffer =
+      chunk instanceof ArrayBuffer
+        ? chunk
+        : chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength);
+    sourceBuffer.appendBuffer(buffer);
+  });
+}
+
+function createAudioFromBlob(blob) {
+  const audioUrl = URL.createObjectURL(blob);
+  return {
+    audio: new Audio(audioUrl),
+    audioUrl,
+    ready: Promise.resolve(),
+    finalize: Promise.resolve(),
+    cleanup: () => {
+      try {
+        URL.revokeObjectURL(audioUrl);
+      } catch {}
+    },
+  };
+}
+
+function streamResponseToAudio({ response, mimeType, cacheKey }) {
+  const mediaSource = new MediaSource();
+  const audioUrl = URL.createObjectURL(mediaSource);
+  const audio = new Audio(audioUrl);
+  const reader = response.body.getReader();
+  const chunks = [];
+
+  let pumpResolve;
+  let pumpReject;
+  const pumpDone = new Promise((resolve, reject) => {
+    pumpResolve = resolve;
+    pumpReject = reject;
+  });
+
+  const ready = new Promise((resolve, reject) => {
+    mediaSource.addEventListener(
+      "sourceopen",
+      () => {
+        let sourceBuffer;
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+        } catch (err) {
+          reject(err);
+          pumpReject(err);
+          return;
+        }
+
+        (async () => {
+          let started = false;
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (value && value.length) {
+                const buffer = value.buffer.slice(
+                  value.byteOffset,
+                  value.byteOffset + value.byteLength
+                );
+                chunks.push(buffer);
+                await appendToSourceBuffer(sourceBuffer, buffer);
+                if (!started) {
+                  started = true;
+                  resolve();
+                }
+              }
+              if (done) break;
+            }
+            mediaSource.endOfStream();
+            if (!started) resolve();
+            pumpResolve();
+          } catch (err) {
+            mediaSource.endOfStream();
+            reject(err);
+            pumpReject(err);
+          }
+        })();
+      },
+      { once: true }
+    );
+  });
+
+  const finalize = pumpDone
+    .then(() => {
+      if (!chunks.length) return null;
+      return new Blob(chunks, { type: mimeType });
+    })
+    .then((blob) => {
+      if (blob && cacheKey) addToCache(cacheKey, blob);
+    })
+    .catch(() => {});
+
+  return { audio, audioUrl, ready, finalize, cleanup: () => URL.revokeObjectURL(audioUrl) };
 }
