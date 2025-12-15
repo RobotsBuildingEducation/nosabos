@@ -1675,30 +1675,14 @@ export default function StoryMode({
                       onClick={() =>
                         playNarrationWithHighlighting(storyData.fullStory?.tgt)
                       }
-                      isLoading={
-                        isPlayingTarget || isSynthesizingTarget || isAutoPlaying
-                      }
-                      loadingText={
-                        isSynthesizingTarget
-                          ? uiText.tts_synthesizing
-                          : uiText.playing
-                      }
                       leftIcon={<PiSpeakerHighDuotone />}
                       color="white"
                     >
-                      {isAutoPlaying
-                        ? uiText.playing
-                        : uiText.playTarget(targetDisplayName)}
+                      {uiText.playTarget(targetDisplayName)}
                     </Button>
                     {!!storyData.fullStory?.sup && (
                       <Button
                         onClick={() => playSupportTTS(storyData.fullStory?.sup)}
-                        isLoading={isPlayingSupport || isSynthesizingSupport}
-                        loadingText={
-                          isSynthesizingSupport
-                            ? uiText.tts_synthesizing
-                            : uiText.playing
-                        }
                         leftIcon={<PiSpeakerHighDuotone />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"

@@ -557,8 +557,6 @@ export default function FlashcardPractice({
                         color="white"
                         leftIcon={<RiVolumeUpLine size={14} />}
                         onClick={handleListenToAnswer}
-                        isLoading={isPlayingAudio}
-                        loadingText={getTranslation("flashcard_listening")}
                         _hover={{ bg: "whiteAlpha.300" }}
                         fontSize="xs"
                       >

@@ -3717,7 +3717,6 @@ Return JSON ONLY:
                             size="sm"
                             fontSize="lg"
                             variant="ghost"
-                            isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(mcQ)}
                             mr={1}
                           />
@@ -4044,7 +4043,6 @@ Return JSON ONLY:
                             size="sm"
                             fontSize="lg"
                             variant="ghost"
-                            isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(maQ)}
                             mr={1}
                           />
@@ -4436,8 +4434,6 @@ Return JSON ONLY:
                       right="3"
                       onClick={handleToggleSpeakPlayback}
                       isDisabled={!sTarget}
-                      isLoading={isSpeakSynthesizing}
-                      spinnerPlacement="start"
                     >
                       {t("practice_play") ||
                         (userLanguage === "es" ? "▶" : "Play")}
@@ -4449,17 +4445,6 @@ Return JSON ONLY:
                   <Text fontSize="3xl" fontWeight="700">
                     {sTarget || "…"}
                   </Text>
-                  {isSpeakSynthesizing ? (
-                    <HStack
-                      spacing={2}
-                      justify="center"
-                      mt={3}
-                      color="gray.200"
-                    >
-                      <Spinner size="sm" />
-                      <Text fontSize="xs">{synthLabel}</Text>
-                    </HStack>
-                  ) : null}
                 </Box>
 
                 {sHint ? (

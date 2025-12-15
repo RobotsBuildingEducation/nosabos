@@ -3988,7 +3988,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             size="sm"
                             fontSize="lg"
                             variant="ghost"
-                            isLoading={isQuestionSynthesizing}
                             onClick={() => handlePlayQuestionTTS(qMC)}
                             mr={1}
                           />
@@ -4697,8 +4696,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       right="3"
                       onClick={handleToggleSpeakPlayback}
                       isDisabled={!sTarget}
-                      isLoading={isSpeakSynthesizing}
-                      spinnerPlacement="start"
                     >
                       {t("practice_play") ||
                         (userLanguage === "es" ? "Reproducir" : "Play")}
@@ -4710,17 +4707,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <Text fontSize="3xl" fontWeight="700">
                     {sStimulus || sTarget || "…"}
                   </Text>
-                  {isSpeakSynthesizing ? (
-                    <HStack
-                      spacing={2}
-                      justify="center"
-                      mt={3}
-                      color="gray.200"
-                    >
-                      <Spinner size="sm" />
-                      <Text fontSize="xs">{synthLabel}</Text>
-                    </HStack>
-                  ) : null}
                 </Box>
 
                 {sHint ? (
