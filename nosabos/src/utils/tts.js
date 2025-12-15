@@ -294,18 +294,22 @@ async function getRealtimePlayer({ text, voice }) {
 
   // Track when response is done via data channel messages
   let resolveFinalize;
+  let fallbackTimeoutId;
   const finalize = new Promise((resolve) => {
-    resolveFinalize = resolve;
+    resolveFinalize = () => {
+      clearTimeout(fallbackTimeoutId);
+      resolve();
+    };
     pc.onconnectionstatechange = () => {
       if (
         ["disconnected", "closed", "failed"].includes(pc.connectionState || "")
       ) {
-        resolve();
+        resolveFinalize();
       }
     };
-    audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout reduced from 20s to 30s (only as safety net)
-    setTimeout(resolve, 30000);
+    audio.addEventListener("ended", () => resolveFinalize(), { once: true });
+    // Fallback timeout only as safety net (will be cleared when speech finishes)
+    fallbackTimeoutId = setTimeout(resolveFinalize, 30000);
   }).finally(() => {
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
@@ -333,24 +337,10 @@ async function getRealtimePlayer({ text, voice }) {
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
-      // Close connection when response is done (speech finished)
+      // Close connection immediately when response is done (speech finished)
       if (msg.type === "response.done") {
         intentionalEnd = true;
-        // Wait for audio to have started before cleaning up
-        const checkAndFinalize = () => {
-          if (audioStarted) {
-            // Audio has started, safe to dispatch ended and clean up
-            try {
-              audio.dispatchEvent(new Event("ended"));
-            } catch {}
-            resolveFinalize?.();
-          } else {
-            // Audio hasn't started yet, wait a bit more
-            setTimeout(checkAndFinalize, 50);
-          }
-        };
-        // Give audio buffer time to play, then clean up
-        setTimeout(checkAndFinalize, 500);
+        pc.close();
       }
     } catch {}
   };
