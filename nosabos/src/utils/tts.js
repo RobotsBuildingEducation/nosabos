@@ -1,5 +1,13 @@
 export const TTS_ENDPOINT = "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS";
 
+const REALTIME_MODEL =
+  (import.meta.env?.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
+const REALTIME_URL = `${
+  import.meta.env?.VITE_REALTIME_URL || ""
+}?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
+  REALTIME_MODEL
+)}`;
+
 export const TTS_LANG_TAG = {
   en: "en-US",
   es: "es-ES",
@@ -313,6 +321,12 @@ export async function getTTSPlayer({
   voice,
   responseFormat = DEFAULT_TTS_FORMAT,
 } = {}) {
+  try {
+    return await getRealtimePlayer({ text, voice });
+  } catch (err) {
+    console.warn("Realtime TTS failed, falling back to REST:", err);
+  }
+
   const cacheKey = getCacheKey(text, langTag, responseFormat);
 
   if (memoryCache.has(cacheKey)) {
@@ -359,6 +373,99 @@ export async function getTTSPlayer({
   const player = streamResponseToAudio({ response: res, mimeType, cacheKey });
   player.finalize.catch(() => {});
   return player;
+}
+
+async function getRealtimePlayer({ text, voice }) {
+  if (!REALTIME_URL) throw new Error("Realtime URL not configured");
+
+  const remoteStream = new MediaStream();
+  const audio = new Audio();
+  audio.srcObject = remoteStream;
+  audio.autoplay = true;
+  audio.playsInline = true;
+
+  const pc = new RTCPeerConnection();
+  pc.addTransceiver("audio", { direction: "recvonly" });
+
+  const ready = new Promise((resolve, reject) => {
+    pc.ontrack = (event) => {
+      event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
+      resolve();
+    };
+    pc.oniceconnectionstatechange = () => {
+      if (pc.iceConnectionState === "failed") {
+        reject(new Error("RTC connection failed"));
+      }
+    };
+  });
+
+  const finalize = new Promise((resolve) => {
+    const cleanupListener = () => resolve();
+    pc.onconnectionstatechange = () => {
+      if (
+        ["disconnected", "closed", "failed"].includes(
+          pc.connectionState || ""
+        )
+      ) {
+        resolve();
+      }
+    };
+    audio.addEventListener("ended", cleanupListener, { once: true });
+    setTimeout(resolve, 20000);
+  }).finally(() => {
+    try {
+      pc.close();
+    } catch {}
+    try {
+      remoteStream.getTracks().forEach((t) => t.stop());
+    } catch {}
+    try {
+      audio.srcObject = null;
+    } catch {}
+  });
+
+  const dc = pc.createDataChannel("oai-events");
+  dc.onmessage = () => {};
+
+  dc.onopen = () => {
+    try {
+      dc.send(
+        JSON.stringify({
+          type: "session.update",
+          session: {
+            modalities: ["audio", "text"],
+            output_audio_format: "pcm16",
+            voice: voice || DEFAULT_TTS_VOICE,
+          },
+        })
+      );
+      dc.send(
+        JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["audio", "text"],
+            conversation: "none",
+            instructions: `Say exactly: "${text}"`,
+          },
+        })
+      );
+    } catch (err) {
+      console.warn("Realtime prompt send failed", err);
+    }
+  };
+
+  const offer = await pc.createOffer();
+  await pc.setLocalDescription(offer);
+  const resp = await fetch(REALTIME_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/sdp" },
+    body: offer.sdp,
+  });
+  const answer = await resp.text();
+  if (!resp.ok) throw new Error(`SDP exchange failed: ${resp.status}`);
+  await pc.setRemoteDescription({ type: "answer", sdp: answer });
+
+  return { audio, audioUrl: null, ready, finalize, cleanup: () => {} };
 }
 
 /**
