@@ -4,6 +4,7 @@
 const functions = require("firebase-functions/v2");
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const WebSocket = require("ws");
 
 // Initialize Admin SDK once
 try {
@@ -304,6 +305,241 @@ exports.proxyTTS = onRequest(
     }
   }
 );
+
+// ======================================================
+// 4) Realtime API TTS Proxy
+//    Uses WebSocket to OpenAI Realtime API for text-to-speech
+// ------------------------------------------------------
+exports.proxyRealtimeTTS = onRequest(
+  {
+    region: REGION,
+    maxInstances: 20,
+    concurrency: 40,
+    cors: false,
+    timeoutSeconds: 120, // Longer timeout for WebSocket connection
+    memory: "512MiB",
+  },
+  async (req, res) => {
+    if (applyCors(req, res)) return;
+    if (req.method !== "POST")
+      return res.status(405).send("Method Not Allowed");
+
+    // Validate API key
+    const keyError = validateApiKey();
+    if (keyError) {
+      functions.logger.error("API key validation failed");
+      return res.status(500).json(keyError);
+    }
+
+    const body = req.body || {};
+    const {
+      input,
+      voice = "alloy",
+      model = "gpt-4o-mini-realtime-preview",
+    } = body;
+
+    if (!input) {
+      return res.status(400).json({ error: "Missing 'input' text" });
+    }
+
+    try {
+      const audioBase64 = await generateRealtimeTTS(input, voice, model);
+
+      // Convert base64 PCM16 to buffer
+      const pcmBuffer = Buffer.from(audioBase64, "base64");
+
+      // Convert PCM16 to WAV for browser compatibility
+      const wavBuffer = pcm16ToWav(pcmBuffer, 24000);
+
+      res.setHeader("Content-Type", "audio/wav");
+      res.setHeader("Content-Length", wavBuffer.byteLength);
+      return res.send(wavBuffer);
+    } catch (error) {
+      functions.logger.error("Realtime TTS proxy error:", error);
+      return res.status(500).json({
+        error: "Realtime TTS generation failed",
+        details: error.message,
+      });
+    }
+  }
+);
+
+/**
+ * Convert PCM16 audio buffer to WAV format
+ * @param {Buffer} pcmBuffer - Raw PCM16 audio data
+ * @param {number} sampleRate - Sample rate (default 24000 for Realtime API)
+ * @returns {Buffer} WAV formatted audio buffer
+ */
+function pcm16ToWav(pcmBuffer, sampleRate = 24000) {
+  const numChannels = 1; // Mono
+  const bitsPerSample = 16;
+  const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
+  const blockAlign = numChannels * (bitsPerSample / 8);
+  const dataSize = pcmBuffer.length;
+  const headerSize = 44;
+  const fileSize = headerSize + dataSize;
+
+  const wavBuffer = Buffer.alloc(fileSize);
+
+  // RIFF header
+  wavBuffer.write("RIFF", 0);
+  wavBuffer.writeUInt32LE(fileSize - 8, 4);
+  wavBuffer.write("WAVE", 8);
+
+  // fmt sub-chunk
+  wavBuffer.write("fmt ", 12);
+  wavBuffer.writeUInt32LE(16, 16); // Subchunk1Size (16 for PCM)
+  wavBuffer.writeUInt16LE(1, 20); // AudioFormat (1 for PCM)
+  wavBuffer.writeUInt16LE(numChannels, 22);
+  wavBuffer.writeUInt32LE(sampleRate, 24);
+  wavBuffer.writeUInt32LE(byteRate, 28);
+  wavBuffer.writeUInt16LE(blockAlign, 32);
+  wavBuffer.writeUInt16LE(bitsPerSample, 34);
+
+  // data sub-chunk
+  wavBuffer.write("data", 36);
+  wavBuffer.writeUInt32LE(dataSize, 40);
+
+  // Copy PCM data
+  pcmBuffer.copy(wavBuffer, 44);
+
+  return wavBuffer;
+}
+
+/**
+ * Generate TTS using OpenAI Realtime API via WebSocket
+ * @param {string} text - Text to convert to speech
+ * @param {string} voice - Voice to use
+ * @param {string} model - Realtime model to use
+ * @returns {Promise<string>} Base64 encoded audio (PCM16 24kHz)
+ */
+function generateRealtimeTTS(text, voice, model) {
+  return new Promise((resolve, reject) => {
+    const wsUrl = `wss://api.openai.com/v1/realtime?model=${encodeURIComponent(model)}`;
+
+    const ws = new WebSocket(wsUrl, {
+      headers: {
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+        "OpenAI-Beta": "realtime=v1",
+      },
+    });
+
+    const audioChunks = [];
+    let sessionCreated = false;
+    let timeoutId = null;
+
+    // Set timeout for the entire operation
+    timeoutId = setTimeout(() => {
+      ws.close();
+      reject(new Error("Realtime TTS timeout - operation took too long"));
+    }, 60000); // 60 second timeout
+
+    ws.on("open", () => {
+      functions.logger.info("Realtime WebSocket connected");
+    });
+
+    ws.on("message", (data) => {
+      try {
+        const event = JSON.parse(data.toString());
+
+        switch (event.type) {
+          case "session.created":
+            sessionCreated = true;
+            functions.logger.info("Session created, configuring...");
+
+            // Configure the session with voice and modalities
+            ws.send(JSON.stringify({
+              type: "session.update",
+              session: {
+                modalities: ["text", "audio"],
+                voice: voice,
+                instructions: "You are a text-to-speech system. Read the provided text exactly as written, clearly and naturally. Do not add any commentary or modifications.",
+                input_audio_format: "pcm16",
+                output_audio_format: "pcm16",
+                turn_detection: null, // Disable turn detection for TTS-only
+              },
+            }));
+            break;
+
+          case "session.updated":
+            functions.logger.info("Session configured, sending text...");
+
+            // Create a conversation item with the text to read
+            ws.send(JSON.stringify({
+              type: "conversation.item.create",
+              item: {
+                type: "message",
+                role: "user",
+                content: [{
+                  type: "input_text",
+                  text: `Read this aloud exactly as written: ${text}`,
+                }],
+              },
+            }));
+
+            // Request the model to respond (generate audio)
+            ws.send(JSON.stringify({
+              type: "response.create",
+              response: {
+                modalities: ["audio"],
+              },
+            }));
+            break;
+
+          case "response.audio.delta":
+            // Collect audio chunks
+            if (event.delta) {
+              audioChunks.push(event.delta);
+            }
+            break;
+
+          case "response.audio.done":
+            functions.logger.info("Audio generation complete");
+            break;
+
+          case "response.done":
+            functions.logger.info("Response complete, closing connection");
+            clearTimeout(timeoutId);
+            ws.close();
+
+            // Combine all audio chunks
+            const fullAudio = audioChunks.join("");
+            resolve(fullAudio);
+            break;
+
+          case "error":
+            functions.logger.error("Realtime API error:", event.error);
+            clearTimeout(timeoutId);
+            ws.close();
+            reject(new Error(event.error?.message || "Realtime API error"));
+            break;
+
+          default:
+            // Log other events for debugging
+            functions.logger.debug("Realtime event:", event.type);
+        }
+      } catch (parseError) {
+        functions.logger.error("Failed to parse WebSocket message:", parseError);
+      }
+    });
+
+    ws.on("error", (error) => {
+      functions.logger.error("WebSocket error:", error);
+      clearTimeout(timeoutId);
+      reject(error);
+    });
+
+    ws.on("close", (code, reason) => {
+      functions.logger.info(`WebSocket closed: ${code} - ${reason}`);
+      clearTimeout(timeoutId);
+
+      // If we haven't resolved yet and have audio, resolve with what we have
+      if (audioChunks.length > 0) {
+        resolve(audioChunks.join(""));
+      }
+    });
+  });
+}
 
 exports.generateStory = onRequest(
   {

@@ -1,4 +1,11 @@
-export const TTS_ENDPOINT = "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS";
+// Realtime API TTS endpoint (uses OpenAI's gpt-4o-mini-realtime-preview)
+export const TTS_ENDPOINT = "https://proxyrealtimettsv2-hftgya63qa-uc.a.run.app/proxyRealtimeTTS";
+
+// Legacy TTS endpoint (uses OpenAI's gpt-4o-mini-tts)
+export const LEGACY_TTS_ENDPOINT = "https://proxytts-hftgya63qa-uc.a.run.app/proxyTTS";
+
+// Flag to use Realtime API for TTS (set to false to fall back to legacy TTS)
+export const USE_REALTIME_TTS = true;
 
 export const TTS_LANG_TAG = {
   en: "en-US",
@@ -10,9 +17,6 @@ export const TTS_LANG_TAG = {
 };
 
 export const DEFAULT_TTS_VOICE = "alloy";
-
-// Use opus format for faster transfer (smaller files than mp3)
-const TTS_FORMAT = "opus";
 
 // Voices supported by BOTH TTS API and Realtime API
 // Note: fable, onyx, nova are TTS-only and NOT supported by Realtime API
@@ -264,11 +268,10 @@ export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
       // Fetch from API
       const resolvedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
 
+      // Realtime API payload (simpler - just input and voice)
       const payload = {
         input: text,
         voice: resolvedVoice,
-        model: "gpt-4o-mini-tts",
-        response_format: TTS_FORMAT,
       };
 
       const res = await fetch(TTS_ENDPOINT, {
@@ -278,7 +281,7 @@ export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
       });
 
       if (!res.ok) {
-        throw new Error(`OpenAI TTS ${res.status}`);
+        throw new Error(`Realtime TTS ${res.status}`);
       }
 
       const blob = await res.blob();
