@@ -305,8 +305,10 @@ async function getRealtimePlayer({ text, voice }) {
       }
     };
     audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout - 10 seconds max (only as safety net)
-    setTimeout(resolve, 10000);
+    // Fallback timeout based on text length (minimum 15s, ~70ms per char + buffer)
+    // This is only a safety net - normal cleanup happens via response.done
+    const fallbackTimeoutMs = Math.max(15000, text.length * 70 + 5000);
+    setTimeout(resolve, fallbackTimeoutMs);
   }).finally(() => {
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
@@ -357,9 +359,12 @@ async function getRealtimePlayer({ text, voice }) {
             setTimeout(checkAndFinalize, 50);
           }
         };
+        // Estimate audio duration based on text length
+        // Average TTS speaking rate is ~12-15 characters per second
+        // Use ~70ms per character as a safe estimate, minimum 1 second
+        const estimatedDurationMs = Math.max(1000, text.length * 70);
         // Give audio buffer time to play, then clean up
-        // Use 800ms initial delay to let buffered audio play out
-        setTimeout(checkAndFinalize, 800);
+        setTimeout(checkAndFinalize, estimatedDurationMs);
       }
     } catch {}
   };
