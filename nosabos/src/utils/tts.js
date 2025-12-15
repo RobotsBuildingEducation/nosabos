@@ -374,45 +374,27 @@ async function getRealtimePlayer({ text, voice }) {
 
   dc.onopen = () => {
     try {
-      // Configure session for TTS-only mode (not conversational)
-      // Key: use audio-only modality to prevent text generation/interpretation
+      // Configure session for TTS-only mode
+      // Embed the text directly in session instructions to avoid conversation framing
       dc.send(
         JSON.stringify({
           type: "session.update",
           session: {
-            modalities: ["audio"],
+            modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
-            instructions:
-              "You are a text-to-speech reader. You do NOT converse, respond, answer, translate, or interpret. You ONLY read aloud the exact text provided. Output speech matching the input text verbatim with no additions, no commentary, and no responses.",
-            turn_detection: null, // Disable turn detection for TTS-only
+            instructions: `You are a text-to-speech system. Your only function is to speak text verbatim. Never respond, answer, converse, or add commentary. When prompted, speak ONLY these exact words: "${text.replace(/"/g, '\\"')}"`,
+            turn_detection: null,
           },
         })
       );
-      // Send the text to be read as an assistant message (not user) to avoid
-      // triggering conversational response behavior
-      dc.send(
-        JSON.stringify({
-          type: "conversation.item.create",
-          item: {
-            type: "message",
-            role: "assistant",
-            content: [
-              {
-                type: "text",
-                text: text,
-              },
-            ],
-          },
-        })
-      );
+      // Trigger speech generation - text is already in instructions
       dc.send(
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio"],
-            instructions:
-              "Read aloud the previous message exactly as written. Do not respond to it, do not add anything, do not interpret it. Speak only those exact words verbatim.",
+            modalities: ["audio", "text"],
+            instructions: "Speak the exact text from your instructions now. Output only those words, nothing else.",
           },
         })
       );
