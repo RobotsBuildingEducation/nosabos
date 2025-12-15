@@ -61,6 +61,7 @@ import {
   TTS_LANG_TAG,
   getRandomVoice,
   getTTSPlayer,
+  LOW_LATENCY_TTS_FORMAT,
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
@@ -3627,7 +3628,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         speakAudioUrlRef.current = null;
       }
 
-      const player = await getTTSPlayer({ text });
+      const player = await getTTSPlayer({
+        text,
+        responseFormat: LOW_LATENCY_TTS_FORMAT,
+      });
       speakAudioUrlRef.current = player.audioUrl;
 
       const audio = player.audio;
@@ -3696,6 +3700,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          responseFormat: LOW_LATENCY_TTS_FORMAT,
         });
 
         questionAudioUrlRef.current = player.audioUrl;

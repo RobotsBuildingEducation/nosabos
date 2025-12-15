@@ -11,8 +11,9 @@ export const TTS_LANG_TAG = {
 
 export const DEFAULT_TTS_VOICE = "alloy";
 
-// Use opus format for faster transfer (smaller files than mp3)
-const TTS_FORMAT = "opus";
+// Default to opus for size efficiency; allow callers to request lower-latency formats
+export const DEFAULT_TTS_FORMAT = "opus";
+export const LOW_LATENCY_TTS_FORMAT = "wav";
 
 const MIME_BY_FORMAT = {
   opus: "audio/ogg; codecs=opus",
@@ -71,10 +72,10 @@ let dbPromise = null;
 /**
  * Generate a cache key from text (voice-agnostic for better cache hits)
  */
-function getCacheKey(text, langTag) {
+function getCacheKey(text, langTag, responseFormat = DEFAULT_TTS_FORMAT) {
   // Normalize text: lowercase, trim, collapse whitespace
   const normalized = text.toLowerCase().trim().replace(/\s+/g, " ");
-  return `${langTag}::${normalized}`;
+  return `${responseFormat}::${langTag}::${normalized}`;
 }
 
 /**
@@ -235,8 +236,13 @@ const inFlightRequests = new Map();
  * @param {string} options.voice - Optional specific voice (defaults to random)
  * @returns {Promise<Blob>} Audio blob
  */
-export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
-  const cacheKey = getCacheKey(text, langTag);
+export async function fetchTTSBlob({
+  text,
+  langTag = TTS_LANG_TAG.es,
+  voice,
+  responseFormat = DEFAULT_TTS_FORMAT,
+}) {
+  const cacheKey = getCacheKey(text, langTag, responseFormat);
 
   // 1. Check in-memory cache (instant)
   if (memoryCache.has(cacheKey)) {
@@ -266,7 +272,7 @@ export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
         input: text,
         voice: resolvedVoice,
         model: "gpt-4o-mini-tts",
-        response_format: TTS_FORMAT,
+        response_format: responseFormat,
       };
 
       const res = await fetch(TTS_ENDPOINT, {
@@ -305,8 +311,9 @@ export async function getTTSPlayer({
   text,
   langTag = TTS_LANG_TAG.es,
   voice,
+  responseFormat = DEFAULT_TTS_FORMAT,
 } = {}) {
-  const cacheKey = getCacheKey(text, langTag);
+  const cacheKey = getCacheKey(text, langTag, responseFormat);
 
   if (memoryCache.has(cacheKey)) {
     return createAudioFromBlob(memoryCache.get(cacheKey));
@@ -327,7 +334,7 @@ export async function getTTSPlayer({
       input: text,
       voice: resolvedVoice,
       model: "gpt-4o-mini-tts",
-      response_format: TTS_FORMAT,
+      response_format: responseFormat,
     }),
   });
 
@@ -335,7 +342,7 @@ export async function getTTSPlayer({
     throw new Error(`OpenAI TTS ${res.status}`);
   }
 
-  const mimeType = inferMimeType(res.headers.get("content-type"));
+  const mimeType = inferMimeType(res.headers.get("content-type"), responseFormat);
 
   const canStream =
     typeof window !== "undefined" &&
@@ -364,15 +371,19 @@ export async function getTTSPlayer({
 export async function prefetchTTS(items) {
   if (!items || items.length === 0) return;
 
-  const promises = items.map(({ text, langTag = TTS_LANG_TAG.es }) => {
+  const promises = items.map(({
+    text,
+    langTag = TTS_LANG_TAG.es,
+    responseFormat = DEFAULT_TTS_FORMAT,
+  }) => {
     // Skip if already cached in memory
-    const cacheKey = getCacheKey(text, langTag);
+    const cacheKey = getCacheKey(text, langTag, responseFormat);
     if (memoryCache.has(cacheKey)) {
       return Promise.resolve();
     }
 
     // Fetch silently (don't throw on error)
-    return fetchTTSBlob({ text, langTag }).catch(() => {
+    return fetchTTSBlob({ text, langTag, responseFormat }).catch(() => {
       // Ignore pre-fetch errors silently
     });
   });
@@ -435,8 +446,8 @@ function addToCache(cacheKey, blob) {
   saveToIndexedDB(cacheKey, blob); // async
 }
 
-function inferMimeType(contentType) {
-  if (!contentType) return MIME_BY_FORMAT[TTS_FORMAT] || "audio/mpeg";
+function inferMimeType(contentType, responseFormat = DEFAULT_TTS_FORMAT) {
+  if (!contentType) return MIME_BY_FORMAT[responseFormat] || "audio/mpeg";
   const lower = contentType.toLowerCase();
   if (lower.includes("audio/opus")) return MIME_BY_FORMAT.opus;
   if (lower.includes("audio/ogg")) return MIME_BY_FORMAT.opus;

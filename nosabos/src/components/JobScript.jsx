@@ -39,7 +39,7 @@ import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { getTTSPlayer } from "../utils/tts";
+import { LOW_LATENCY_TTS_FORMAT, getTTSPlayer } from "../utils/tts";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -1281,7 +1281,11 @@ export default function JobScript({
         currentAudioUrlRef.current = null;
       }
 
-      const player = await getTTSPlayer({ text, langTag });
+      const player = await getTTSPlayer({
+        text,
+        langTag,
+        responseFormat: LOW_LATENCY_TTS_FORMAT,
+      });
       currentAudioUrlRef.current = player.audioUrl;
 
       const audio = player.audio;

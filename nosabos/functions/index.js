@@ -237,6 +237,7 @@ exports.proxyResponses = onRequest(
 exports.proxyTTS = onRequest(
   {
     region: REGION,
+    minInstances: 1,
     maxInstances: 20,
     concurrency: 80,
     cors: false,

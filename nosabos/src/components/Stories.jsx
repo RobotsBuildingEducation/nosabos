@@ -47,7 +47,12 @@ import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { getRandomVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
+import {
+  LOW_LATENCY_TTS_FORMAT,
+  getRandomVoice,
+  getTTSPlayer,
+  TTS_LANG_TAG,
+} from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
@@ -1020,6 +1025,7 @@ export default function StoryMode({
         text,
         langTag,
         voice: getRandomVoice(),
+        responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       currentAudioUrlRef.current = player.audioUrl;
 

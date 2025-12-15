@@ -25,7 +25,12 @@ import {
   RiEyeLine,
   RiVolumeUpLine,
 } from "react-icons/ri";
-import { getRandomVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
+import {
+  LOW_LATENCY_TTS_FORMAT,
+  getRandomVoice,
+  getTTSPlayer,
+  TTS_LANG_TAG,
+} from "../utils/tts";
 import { CEFR_COLORS, getConceptText } from "../data/flashcardData";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
@@ -361,6 +366,7 @@ export default function FlashcardPractice({
         text: streamedAnswer,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.en,
         voice: getRandomVoice(),
+        responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
 
       audioRef.current = player.audio;

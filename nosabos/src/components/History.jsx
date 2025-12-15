@@ -36,7 +36,12 @@ import { getLanguageXp } from "../utils/progressTracking";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
-import { getRandomVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
+import {
+  LOW_LATENCY_TTS_FORMAT,
+  getRandomVoice,
+  getTTSPlayer,
+  TTS_LANG_TAG,
+} from "../utils/tts";
 
 /* ---------------------------
    Minimal i18n helper
@@ -1221,6 +1226,7 @@ export default function History({
         text,
         langTag: langTag || TTS_LANG_TAG.es,
         voice: getRandomVoice(),
+        responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
 
       currentAudioRef.current = player.audio;
