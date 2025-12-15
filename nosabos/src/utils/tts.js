@@ -275,6 +275,9 @@ async function getRealtimePlayer({ text, voice }) {
     { once: true }
   );
 
+  // Track when the server has finished sending audio
+  let responseDone = false;
+
   let readyResolver;
   const ready = new Promise((resolve, reject) => {
     readyResolver = resolve;
@@ -330,6 +333,18 @@ async function getRealtimePlayer({ text, voice }) {
     resolveFinalize?.();
   };
 
+  const hasLiveTracks = () =>
+    remoteStream.getTracks().some((t) => t.readyState === "live");
+
+  const finalizeWhenBufferDrains = () => {
+    if (!responseDone) return;
+    if (audio.ended || (!hasLiveTracks() && (audioStarted || responseDone))) {
+      resolveOnce();
+      return;
+    }
+    setTimeout(finalizeWhenBufferDrains, 120);
+  };
+
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
 
@@ -353,22 +368,12 @@ async function getRealtimePlayer({ text, voice }) {
       const msg = JSON.parse(event.data);
       // Close connection when response is done (speech finished)
       if (msg.type === "response.done") {
-        const finalizeWhenBufferDrains = () => {
-          if (audio.ended) {
-            resolveOnce();
-            return;
-          }
-          // Wait until playback reports ended
-          setTimeout(finalizeWhenBufferDrains, 120);
-        };
-
+        responseDone = true;
+        // Wait for playback to actually start before watching for completion
         if (audioStarted) {
           finalizeWhenBufferDrains();
         } else {
-          // Wait for playback to begin before draining, avoiding premature cleanup
-          audio.addEventListener("playing", finalizeWhenBufferDrains, {
-            once: true,
-          });
+          audio.addEventListener("playing", finalizeWhenBufferDrains, { once: true });
         }
       }
     } catch {}
@@ -378,7 +383,13 @@ async function getRealtimePlayer({ text, voice }) {
   pc.ontrack = (event) => {
     event.streams[0].getTracks().forEach((t) => {
       remoteStream.addTrack(t);
-      t.onended = resolveOnce;
+      t.onended = () => {
+        if (responseDone) {
+          finalizeWhenBufferDrains();
+        } else {
+          resolveOnce();
+        }
+      };
     });
     readyResolver?.();
   };
