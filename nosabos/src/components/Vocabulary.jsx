@@ -58,10 +58,9 @@ import {
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import {
-  TTS_ENDPOINT,
   TTS_LANG_TAG,
-  fetchTTSBlob,
   getRandomVoice,
+  getTTSPlayer,
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
@@ -3628,33 +3627,22 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         speakAudioUrlRef.current = null;
       }
 
-      const res = await fetch(TTS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: text,
-          voice: getRandomVoice(),
-          model: "gpt-4o-mini-tts",
-          response_format: "mp3",
-        }),
-      });
+      const player = await getTTSPlayer({ text });
+      speakAudioUrlRef.current = player.audioUrl;
 
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      speakAudioUrlRef.current = audioUrl;
-
-      const audio = new Audio(audioUrl);
+      const audio = player.audio;
       speakAudioRef.current = audio;
       audio.onended = () => {
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
+        player.cleanup?.();
       };
       audio.onerror = () => {
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
+        player.cleanup?.();
       };
+      await player.ready;
       await audio.play();
       setIsSpeakSynthesizing(false);
     } catch (err) {
@@ -3705,23 +3693,25 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           questionAudioUrlRef.current = null;
         }
 
-        const blob = await fetchTTSBlob({
+        const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
         });
 
-        const audioUrl = URL.createObjectURL(blob);
-        questionAudioUrlRef.current = audioUrl;
-        const audio = new Audio(audioUrl);
+        questionAudioUrlRef.current = player.audioUrl;
+        const audio = player.audio;
         questionAudioRef.current = audio;
         audio.onended = () => {
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
+          player.cleanup?.();
         };
         audio.onerror = () => {
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
+          player.cleanup?.();
         };
+        await player.ready;
         await audio.play();
         setIsQuestionPlaying(true);
       } catch (err) {

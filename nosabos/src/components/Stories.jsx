@@ -47,7 +47,7 @@ import { t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { getRandomVoice, TTS_LANG_TAG, TTS_ENDPOINT } from "../utils/tts";
+import { getRandomVoice, getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini client
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
@@ -1016,23 +1016,12 @@ export default function StoryMode({
 
       usageStatsRef.current.ttsCalls++;
 
-      const res = await fetch(TTS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: text,
-          voice: getRandomVoice(),
-          model: "gpt-4o-mini-tts",
-          response_format: "mp3",
-          language: langTag,
-        }),
+      const player = await getTTSPlayer({
+        text,
+        langTag,
+        voice: getRandomVoice(),
       });
-
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      currentAudioUrlRef.current = audioUrl;
+      currentAudioUrlRef.current = player.audioUrl;
 
       let tokenMap = null;
       if (alignToText) {
@@ -1041,7 +1030,7 @@ export default function StoryMode({
         setHighlightedWordIndex(-1);
       }
 
-      const audio = new Audio(audioUrl);
+      const audio = player.audio;
       currentAudioRef.current = audio;
 
       let stopHighlighter = null;
@@ -1060,6 +1049,7 @@ export default function StoryMode({
         onEnd?.();
         setSynthesizing?.(false);
         currentAudioRef.current = null;
+        player.cleanup?.();
       };
       audio.onerror = (e) => {
         stopHighlighter?.();
@@ -1067,8 +1057,10 @@ export default function StoryMode({
         onEnd?.();
         setSynthesizing?.(false);
         currentAudioRef.current = null;
+        player.cleanup?.();
       };
 
+      await player.ready;
       await audio.play();
       setSynthesizing?.(false);
     } catch (e) {

@@ -39,7 +39,7 @@ import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { fetchTTSBlob } from "../utils/tts";
+import { getTTSPlayer } from "../utils/tts";
 
 // File parsers
 import * as mammoth from "mammoth/mammoth.browser";
@@ -1281,26 +1281,24 @@ export default function JobScript({
         currentAudioUrlRef.current = null;
       }
 
-      // Global cache in tts.js handles caching (memory + IndexedDB)
-      const blob = await fetchTTSBlob({
-        text,
-        langTag,
-      });
-      const audioUrl = URL.createObjectURL(blob);
-      currentAudioUrlRef.current = audioUrl;
+      const player = await getTTSPlayer({ text, langTag });
+      currentAudioUrlRef.current = player.audioUrl;
 
-      const audio = new Audio(audioUrl);
+      const audio = player.audio;
       currentAudioRef.current = audio;
 
       audio.onended = () => {
         setLoading(false);
         currentAudioRef.current = null;
+        player.cleanup?.();
       };
       audio.onerror = () => {
         setLoading(false);
         currentAudioRef.current = null;
+        player.cleanup?.();
       };
 
+      await player.ready;
       await audio.play();
     } catch (e) {
       setLoading(false);

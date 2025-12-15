@@ -14,6 +14,13 @@ export const DEFAULT_TTS_VOICE = "alloy";
 // Use opus format for faster transfer (smaller files than mp3)
 const TTS_FORMAT = "opus";
 
+const MIME_BY_FORMAT = {
+  opus: "audio/ogg; codecs=opus",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  pcm: "audio/pcm",
+};
+
 // Voices supported by BOTH TTS API and Realtime API
 // Note: fable, onyx, nova are TTS-only and NOT supported by Realtime API
 const SUPPORTED_TTS_VOICES = new Set([
@@ -43,15 +50,6 @@ export function getRandomVoice() {
 
 function sanitizeVoice(voice) {
   return SUPPORTED_TTS_VOICES.has(voice) ? voice : DEFAULT_TTS_VOICE;
-}
-
-/**
- * Resolves which voice to use for TTS playback.
- * Now defaults to random voice selection for variety.
- */
-export function resolveVoicePreference({ lang, langTag } = {}) {
-  // Always use random voice for variety
-  return getRandomVoice();
 }
 
 // ============================================================================
@@ -284,8 +282,7 @@ export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
       const blob = await res.blob();
 
       // Cache in both layers
-      memoryCache.set(cacheKey, blob);
-      saveToIndexedDB(cacheKey, blob); // async, don't await
+      addToCache(cacheKey, blob);
 
       return blob;
     } finally {
@@ -298,6 +295,63 @@ export async function fetchTTSBlob({ text, langTag = TTS_LANG_TAG.es, voice }) {
   inFlightRequests.set(cacheKey, fetchPromise);
 
   return fetchPromise;
+}
+
+/**
+ * Create an Audio element that starts playing from the first streamed bytes when available.
+ * Falls back to cached blobs or full downloads when streaming isn't supported.
+ */
+export async function getTTSPlayer({
+  text,
+  langTag = TTS_LANG_TAG.es,
+  voice,
+} = {}) {
+  const cacheKey = getCacheKey(text, langTag);
+
+  if (memoryCache.has(cacheKey)) {
+    return createAudioFromBlob(memoryCache.get(cacheKey));
+  }
+
+  const cachedBlob = await getFromIndexedDB(cacheKey);
+  if (cachedBlob) {
+    memoryCache.set(cacheKey, cachedBlob);
+    return createAudioFromBlob(cachedBlob);
+  }
+
+  const resolvedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
+
+  const res = await fetch(TTS_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      input: text,
+      voice: resolvedVoice,
+      model: "gpt-4o-mini-tts",
+      response_format: TTS_FORMAT,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(`OpenAI TTS ${res.status}`);
+  }
+
+  const mimeType = inferMimeType(res.headers.get("content-type"));
+
+  const canStream =
+    typeof window !== "undefined" &&
+    res.body &&
+    window.MediaSource &&
+    MediaSource.isTypeSupported(mimeType);
+
+  if (!canStream) {
+    const blob = await res.blob();
+    addToCache(cacheKey, blob);
+    return createAudioFromBlob(blob);
+  }
+
+  const player = streamResponseToAudio({ response: res, mimeType, cacheKey });
+  player.finalize.catch(() => {});
+  return player;
 }
 
 /**
@@ -374,4 +428,129 @@ if (typeof window !== "undefined") {
   setTimeout(() => {
     cleanupExpiredCache();
   }, 5000);
+}
+
+function addToCache(cacheKey, blob) {
+  memoryCache.set(cacheKey, blob);
+  saveToIndexedDB(cacheKey, blob); // async
+}
+
+function inferMimeType(contentType) {
+  if (!contentType) return MIME_BY_FORMAT[TTS_FORMAT] || "audio/mpeg";
+  const lower = contentType.toLowerCase();
+  if (lower.includes("audio/opus")) return MIME_BY_FORMAT.opus;
+  if (lower.includes("audio/ogg")) return MIME_BY_FORMAT.opus;
+  if (lower.includes("mpeg")) return MIME_BY_FORMAT.mp3;
+  return lower.split(",")[0].trim();
+}
+
+function appendToSourceBuffer(sourceBuffer, chunk) {
+  return new Promise((resolve, reject) => {
+    const onError = (err) => {
+      sourceBuffer.removeEventListener("error", onError);
+      reject(err);
+    };
+    sourceBuffer.addEventListener("error", onError);
+    sourceBuffer.addEventListener(
+      "updateend",
+      () => {
+        sourceBuffer.removeEventListener("error", onError);
+        resolve();
+      },
+      { once: true }
+    );
+    const buffer =
+      chunk instanceof ArrayBuffer
+        ? chunk
+        : chunk.buffer.slice(chunk.byteOffset, chunk.byteOffset + chunk.byteLength);
+    sourceBuffer.appendBuffer(buffer);
+  });
+}
+
+function createAudioFromBlob(blob) {
+  const audioUrl = URL.createObjectURL(blob);
+  return {
+    audio: new Audio(audioUrl),
+    audioUrl,
+    ready: Promise.resolve(),
+    finalize: Promise.resolve(),
+    cleanup: () => {
+      try {
+        URL.revokeObjectURL(audioUrl);
+      } catch {}
+    },
+  };
+}
+
+function streamResponseToAudio({ response, mimeType, cacheKey }) {
+  const mediaSource = new MediaSource();
+  const audioUrl = URL.createObjectURL(mediaSource);
+  const audio = new Audio(audioUrl);
+  const reader = response.body.getReader();
+  const chunks = [];
+
+  let pumpResolve;
+  let pumpReject;
+  const pumpDone = new Promise((resolve, reject) => {
+    pumpResolve = resolve;
+    pumpReject = reject;
+  });
+
+  const ready = new Promise((resolve, reject) => {
+    mediaSource.addEventListener(
+      "sourceopen",
+      () => {
+        let sourceBuffer;
+        try {
+          sourceBuffer = mediaSource.addSourceBuffer(mimeType);
+        } catch (err) {
+          reject(err);
+          pumpReject(err);
+          return;
+        }
+
+        (async () => {
+          let started = false;
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (value && value.length) {
+                const buffer = value.buffer.slice(
+                  value.byteOffset,
+                  value.byteOffset + value.byteLength
+                );
+                chunks.push(buffer);
+                await appendToSourceBuffer(sourceBuffer, buffer);
+                if (!started) {
+                  started = true;
+                  resolve();
+                }
+              }
+              if (done) break;
+            }
+            mediaSource.endOfStream();
+            if (!started) resolve();
+            pumpResolve();
+          } catch (err) {
+            mediaSource.endOfStream();
+            reject(err);
+            pumpReject(err);
+          }
+        })();
+      },
+      { once: true }
+    );
+  });
+
+  const finalize = pumpDone
+    .then(() => {
+      if (!chunks.length) return null;
+      return new Blob(chunks, { type: mimeType });
+    })
+    .then((blob) => {
+      if (blob && cacheKey) addToCache(cacheKey, blob);
+    })
+    .catch(() => {});
+
+  return { audio, audioUrl, ready, finalize, cleanup: () => URL.revokeObjectURL(audioUrl) };
 }

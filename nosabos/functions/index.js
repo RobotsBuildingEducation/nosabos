@@ -4,6 +4,7 @@
 const functions = require("firebase-functions/v2");
 const { onRequest } = require("firebase-functions/v2/https");
 const admin = require("firebase-admin");
+const { Readable } = require("stream");
 
 // Initialize Admin SDK once
 try {
@@ -259,7 +260,7 @@ exports.proxyTTS = onRequest(
       input,
       voice = "alloy",
       model = "gpt-4o-mini-tts",
-      response_format = "mp3",
+      response_format = "opus",
     } = body;
 
     if (!input) {
@@ -290,9 +291,27 @@ exports.proxyTTS = onRequest(
         });
       }
 
-      const audioBuffer = await response.arrayBuffer();
+      const contentType =
+        response.headers.get("content-type") || `audio/${response_format}`;
 
-      res.setHeader("Content-Type", `audio/${response_format}`);
+      res.status(200);
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Cache-Control", "no-store");
+
+      if (response.body) {
+        const nodeStream = Readable.fromWeb(response.body);
+        nodeStream.on("error", (err) => {
+          functions.logger.error("TTS stream error:", err);
+          if (!res.headersSent) {
+            res.status(500);
+          }
+          res.end();
+        });
+
+        return nodeStream.pipe(res);
+      }
+
+      const audioBuffer = await response.arrayBuffer();
       res.setHeader("Content-Length", audioBuffer.byteLength);
       return res.send(Buffer.from(audioBuffer));
     } catch (error) {

@@ -52,12 +52,7 @@ import {
 } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
-import {
-  TTS_ENDPOINT,
-  TTS_LANG_TAG,
-  fetchTTSBlob,
-  getRandomVoice,
-} from "../utils/tts";
+import { TTS_LANG_TAG, getTTSPlayer } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 
@@ -840,7 +835,7 @@ export default function GrammarBook({
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
   const levelLabel = t(`onboarding_level_${level}`) || level;
-  // Voice will be randomly selected for each TTS call via getRandomVoice()
+  // Voice will be randomly selected inside getTTSPlayer()
   // voicePreference is kept for backwards compatibility but not used for selection
 
   const recentCorrectRef = useRef([]);
@@ -3146,33 +3141,22 @@ Return JSON ONLY:
         speakAudioUrlRef.current = null;
       }
 
-      const res = await fetch(TTS_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input: text,
-          voice: getRandomVoice(),
-          model: "gpt-4o-mini-tts",
-          response_format: "mp3",
-        }),
-      });
+      const player = await getTTSPlayer({ text });
+      speakAudioUrlRef.current = player.audioUrl;
 
-      if (!res.ok) throw new Error(`TTS ${res.status}`);
-
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      speakAudioUrlRef.current = audioUrl;
-
-      const audio = new Audio(audioUrl);
+      const audio = player.audio;
       speakAudioRef.current = audio;
       audio.onended = () => {
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
+        player.cleanup?.();
       };
       audio.onerror = () => {
         setIsSpeakPlaying(false);
         speakAudioRef.current = null;
+        player.cleanup?.();
       };
+      await player.ready;
       await audio.play();
       setIsSpeakSynthesizing(false);
     } catch (err) {
@@ -3223,23 +3207,25 @@ Return JSON ONLY:
           questionAudioUrlRef.current = null;
         }
 
-        const blob = await fetchTTSBlob({
+        const player = await getTTSPlayer({
           text: ttsText,
           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
         });
 
-        const audioUrl = URL.createObjectURL(blob);
-        questionAudioUrlRef.current = audioUrl;
-        const audio = new Audio(audioUrl);
+        questionAudioUrlRef.current = player.audioUrl;
+        const audio = player.audio;
         questionAudioRef.current = audio;
         audio.onended = () => {
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
+          player.cleanup?.();
         };
         audio.onerror = () => {
           setIsQuestionPlaying(false);
           questionAudioRef.current = null;
+          player.cleanup?.();
         };
+        await player.ready;
         await audio.play();
         setIsQuestionPlaying(true);
       } catch (err) {
