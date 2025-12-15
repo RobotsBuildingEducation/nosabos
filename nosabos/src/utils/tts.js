@@ -261,8 +261,9 @@ async function getRealtimePlayer({ text, voice }) {
 
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
 
+  const cleanedText = promptText.replace(/\s+/g, " ").trim();
   const strictReadbackInstruction =
-    "You are a text-to-speech voice. Read the latest user-provided text aloud exactly as written once, without answering questions, adding commentary, continuing a conversation, or translating. Stop after speaking the text.";
+    "You are a text-to-speech voice. Read the provided text aloud exactly once, without answering questions, adding commentary, continuing a conversation, or translating. Stop after speaking the text.";
 
   const remoteStream = new MediaStream();
   const audio = new Audio();
@@ -322,7 +323,7 @@ async function getRealtimePlayer({ text, voice }) {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
-            instructions: strictReadbackInstruction,
+            instructions: `${strictReadbackInstruction} Text to read: "${cleanedText}"`,
           },
         })
       );
@@ -335,7 +336,7 @@ async function getRealtimePlayer({ text, voice }) {
             content: [
               {
                 type: "input_text",
-                text: promptText,
+                text: cleanedText,
               },
             ],
           },
@@ -346,7 +347,8 @@ async function getRealtimePlayer({ text, voice }) {
           type: "response.create",
           response: {
             modalities: ["audio", "text"],
-            instructions: strictReadbackInstruction,
+            instructions: `${strictReadbackInstruction} Speak exactly: "${cleanedText}"`,
+            temperature: 0,
           },
         })
       );
