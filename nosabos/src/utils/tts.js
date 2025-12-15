@@ -265,9 +265,20 @@ async function getRealtimePlayer({ text, voice }) {
   const pc = new RTCPeerConnection();
   pc.addTransceiver("audio", { direction: "recvonly" });
 
+  // Track when we're intentionally ending to prevent spurious error events
+  let intentionalEnd = false;
+  let resolveFinalize;
+
   const ready = new Promise((resolve, reject) => {
     pc.ontrack = (event) => {
-      event.streams[0].getTracks().forEach((t) => remoteStream.addTrack(t));
+      event.streams[0].getTracks().forEach((t) => {
+        remoteStream.addTrack(t);
+        // Listen for track ending - this fires when server stops sending audio
+        t.addEventListener("ended", () => {
+          intentionalEnd = true;
+          resolveFinalize?.();
+        }, { once: true });
+      });
       resolve();
     };
     pc.oniceconnectionstatechange = () => {
@@ -279,11 +290,7 @@ async function getRealtimePlayer({ text, voice }) {
 
   const dc = pc.createDataChannel("oai-events");
 
-  // Track when we're intentionally ending to prevent spurious error events
-  let intentionalEnd = false;
-
   // Track when response is done via data channel messages
-  let resolveFinalize;
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
     pc.onconnectionstatechange = () => {
@@ -294,8 +301,8 @@ async function getRealtimePlayer({ text, voice }) {
       }
     };
     audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout as safety net (10 seconds should be plenty for any TTS)
-    setTimeout(resolve, 10000);
+    // Fallback timeout as safety net (15 seconds for longer TTS)
+    setTimeout(resolve, 15000);
   }).finally(() => {
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
@@ -321,16 +328,13 @@ async function getRealtimePlayer({ text, voice }) {
     // Stopping the tracks is sufficient cleanup
   });
 
-  // Listen for response.done to know when speech synthesis is complete
+  // Listen for response.done - server finished generating (but audio may still be playing)
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
-      // Close connection when response is done (speech finished)
       if (msg.type === "response.done") {
-        intentionalEnd = true;
-        // Server finished generating audio - clean up immediately
-        // The finalize cleanup will dispatch "ended" event for components
-        resolveFinalize?.();
+        // Don't clean up yet - wait for track to end or connection to close
+        // The track "ended" event or connection state change will trigger cleanup
       }
     } catch {}
   };
