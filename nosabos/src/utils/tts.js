@@ -267,6 +267,7 @@ async function getRealtimePlayer({ text, voice }) {
 
   // Track when audio playback has actually started (play() resolved)
   let audioStarted = false;
+  let audioEnded = false;
   audio.addEventListener(
     "playing",
     () => {
@@ -304,17 +305,21 @@ async function getRealtimePlayer({ text, voice }) {
       }
     };
     audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout reduced from 20s to 30s (only as safety net)
-    setTimeout(resolve, 30000);
+    // Fallback timeout - 10 seconds max (only as safety net)
+    setTimeout(resolve, 10000);
   }).finally(() => {
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
+    audioEnded = true;
+    // Dispatch 'ended' event as fallback to ensure cleanup handlers fire
+    try {
+      if (audio.onended) {
+        audio.dispatchEvent(new Event("ended"));
+      }
+    } catch {}
     // Clear error handler first to prevent AbortError from firing
     try {
       audio.onerror = null;
-    } catch {}
-    try {
-      dc.close();
     } catch {}
     try {
       dc.close();
@@ -337,9 +342,12 @@ async function getRealtimePlayer({ text, voice }) {
       if (msg.type === "response.done") {
         intentionalEnd = true;
         // Wait for audio to have started before cleaning up
+        let pollCount = 0;
+        const maxPolls = 40; // Max 2 seconds of polling (40 * 50ms)
         const checkAndFinalize = () => {
-          if (audioStarted) {
-            // Audio has started, safe to dispatch ended and clean up
+          pollCount++;
+          if (audioStarted || pollCount >= maxPolls) {
+            // Audio has started or we've waited long enough, safe to dispatch ended and clean up
             try {
               audio.dispatchEvent(new Event("ended"));
             } catch {}
@@ -350,7 +358,8 @@ async function getRealtimePlayer({ text, voice }) {
           }
         };
         // Give audio buffer time to play, then clean up
-        setTimeout(checkAndFinalize, 500);
+        // Use 800ms initial delay to let buffered audio play out
+        setTimeout(checkAndFinalize, 800);
       }
     } catch {}
   };
