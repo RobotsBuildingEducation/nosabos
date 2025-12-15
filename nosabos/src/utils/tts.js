@@ -256,7 +256,13 @@ export async function getTTSPlayer({
 async function getRealtimePlayer({ text, voice }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
+  const promptText = String(text || "").trim();
+  if (!promptText) throw new Error("No text provided for realtime playback");
+
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
+
+  const strictReadbackInstruction =
+    "You are a text-to-speech voice. Read the latest user-provided text aloud exactly as written once, without answering questions, adding commentary, continuing a conversation, or translating. Stop after speaking the text.";
 
   const remoteStream = new MediaStream();
   const audio = new Audio();
@@ -316,6 +322,7 @@ async function getRealtimePlayer({ text, voice }) {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
+            instructions: strictReadbackInstruction,
           },
         })
       );
@@ -328,7 +335,7 @@ async function getRealtimePlayer({ text, voice }) {
             content: [
               {
                 type: "input_text",
-                text,
+                text: promptText,
               },
             ],
           },
@@ -339,8 +346,7 @@ async function getRealtimePlayer({ text, voice }) {
           type: "response.create",
           response: {
             modalities: ["audio", "text"],
-            instructions:
-              "Speak the provided user text verbatim as quickly as possible.",
+            instructions: strictReadbackInstruction,
           },
         })
       );
