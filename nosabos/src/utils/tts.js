@@ -304,12 +304,17 @@ async function getRealtimePlayer({ text, voice }) {
       }
     };
     audio.addEventListener("ended", () => resolve(), { once: true });
-    // Fallback timeout reduced from 20s to 30s (only as safety net)
-    setTimeout(resolve, 30000);
+    // Fallback timeout as safety net (10 seconds should be plenty for any TTS)
+    setTimeout(resolve, 10000);
   }).finally(() => {
     // Mark as intentionally ended so components can ignore errors
     intentionalEnd = true;
-    // Clear error handler first to prevent AbortError from firing
+    // Always dispatch "ended" event so component loaders stop
+    // (Components rely on onended to clear their loading states)
+    try {
+      audio.dispatchEvent(new Event("ended"));
+    } catch {}
+    // Clear error handler to prevent AbortError from firing
     try {
       audio.onerror = null;
     } catch {}
