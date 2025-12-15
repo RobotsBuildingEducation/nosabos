@@ -354,19 +354,21 @@ async function getRealtimePlayer({ text, voice }) {
       // Close connection when response is done (speech finished)
       if (msg.type === "response.done") {
         const finalizeWhenBufferDrains = () => {
-          if (audio.ended || audio.paused) {
+          if (audio.ended) {
             resolveOnce();
             return;
           }
           // Wait until playback reports ended
-          setTimeout(finalizeWhenBufferDrains, 100);
+          setTimeout(finalizeWhenBufferDrains, 120);
         };
 
         if (audioStarted) {
           finalizeWhenBufferDrains();
         } else {
-          // If audio never starts (e.g., unmounted), still resolve promptly
-          resolveOnce();
+          // Wait for playback to begin before draining, avoiding premature cleanup
+          audio.addEventListener("playing", finalizeWhenBufferDrains, {
+            once: true,
+          });
         }
       }
     } catch {}
