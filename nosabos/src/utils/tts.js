@@ -316,6 +316,7 @@ async function getRealtimePlayer({ text, voice }) {
 
   // Track when response is done via data channel messages
   let resolveFinalize;
+  let endedEventFired = false;
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
     pc.onconnectionstatechange = () => {
@@ -325,25 +326,40 @@ async function getRealtimePlayer({ text, voice }) {
         resolve();
       }
     };
-    audio.addEventListener("ended", () => resolve(), { once: true });
+    audio.addEventListener(
+      "ended",
+      () => {
+        endedEventFired = true;
+        resolve();
+      },
+      { once: true }
+    );
     // Fallback timeout reduced from 20s to 30s (only as safety net)
     setTimeout(resolve, 30000);
-  }).finally(() => {
-    // Mark as intentionally ended so components can ignore errors
-    intentionalEnd = true;
-    // Clear error handler first to prevent AbortError from firing
-    try {
-      audio.onerror = null;
-    } catch {}
-    try {
-      dc.close();
-    } catch {}
-    try {
-      dc.close();
-    } catch {}
-    try {
-      pc.close();
-    } catch {}
+  })
+    .then(() => {
+      // If we finalized without the media element ending, emit an ended event
+      // so UI listeners can clear their playing state reliably.
+      if (!endedEventFired) {
+        endedEventFired = true;
+        try {
+          audio.dispatchEvent(new Event("ended"));
+        } catch {}
+      }
+    })
+    .finally(() => {
+      // Mark as intentionally ended so components can ignore errors
+      intentionalEnd = true;
+      // Clear error handler first to prevent AbortError from firing
+      try {
+        audio.onerror = null;
+      } catch {}
+      try {
+        dc.close();
+      } catch {}
+      try {
+        pc.close();
+      } catch {}
     try {
       remoteStream.getTracks().forEach((t) => t.stop());
     } catch {}
