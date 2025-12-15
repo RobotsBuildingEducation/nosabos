@@ -347,9 +347,18 @@ async function getRealtimePlayer({ text, voice }) {
         // Wait for audio to have started before cleaning up
         const checkAndFinalize = () => {
           if (audioStarted) {
-            // Audio has started, safe to dispatch ended and clean up
+            // Audio has started, safe to flush buffered audio and end the call
+            try {
+              remoteStream.getTracks().forEach((t) => t.stop());
+            } catch {}
             try {
               audio.dispatchEvent(new Event("ended"));
+            } catch {}
+            try {
+              dc.close();
+            } catch {}
+            try {
+              pc.close();
             } catch {}
             resolveFinalize?.();
           } else {
