@@ -328,13 +328,41 @@ async function getRealtimePlayer({ text, voice }) {
     // Stopping the tracks is sufficient cleanup
   });
 
-  // Listen for response.done - server finished generating (but audio may still be playing)
+  // Listen for response.done - server finished generating audio
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
       if (msg.type === "response.done") {
-        // Don't clean up yet - wait for track to end or connection to close
-        // The track "ended" event or connection state change will trigger cleanup
+        intentionalEnd = true;
+        // Server finished generating - monitor audio.currentTime to detect when playback ends
+        // When currentTime stops advancing, audio has finished playing
+        let lastTime = audio.currentTime;
+        let stableCount = 0;
+        let totalChecks = 0;
+        const maxChecks = 100; // 5 second max wait
+        const checkPlaybackDone = () => {
+          totalChecks++;
+          if (totalChecks >= maxChecks) {
+            // Safety timeout - clean up anyway
+            resolveFinalize?.();
+            return;
+          }
+          const currentTime = audio.currentTime;
+          if (currentTime === lastTime && currentTime > 0) {
+            stableCount++;
+            // If time hasn't advanced for 3 checks (150ms), playback is done
+            if (stableCount >= 3) {
+              resolveFinalize?.();
+              return;
+            }
+          } else {
+            stableCount = 0;
+            lastTime = currentTime;
+          }
+          setTimeout(checkPlaybackDone, 50);
+        };
+        // Start checking after a brief delay to let buffer fill
+        setTimeout(checkPlaybackDone, 100);
       }
     } catch {}
   };
