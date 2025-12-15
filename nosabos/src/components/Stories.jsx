@@ -1677,6 +1677,13 @@ export default function StoryMode({
                       }
                       leftIcon={<PiSpeakerHighDuotone />}
                       color="white"
+                      isDisabled={
+                        isPlayingTarget ||
+                        isPlayingSupport ||
+                        isAutoPlaying ||
+                        isSynthesizingTarget ||
+                        isSynthesizingSupport
+                      }
                     >
                       {uiText.playTarget(targetDisplayName)}
                     </Button>
@@ -1687,19 +1694,15 @@ export default function StoryMode({
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"
+                        isDisabled={
+                          isPlayingTarget ||
+                          isPlayingSupport ||
+                          isAutoPlaying ||
+                          isSynthesizingTarget ||
+                          isSynthesizingSupport
+                        }
                       >
                         {supportDisplayName}
-                      </Button>
-                    )}
-                    {(isPlayingTarget || isPlayingSupport || isAutoPlaying) && (
-                      <Button
-                        onClick={stopAllAudio}
-                        leftIcon={<FaStop />}
-                        variant="outline"
-                        borderColor="rgba(239, 68, 68, 0.5)"
-                        color="#ef4444"
-                      >
-                        {uiText.stop}
                       </Button>
                     )}
                   </HStack>

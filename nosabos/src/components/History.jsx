@@ -1534,17 +1534,14 @@ export default function History({
                   <HStack mt={{ base: 2, md: 0 }}>
                     <Button
                       onClick={readTarget}
-                      isLoading={isReadingTarget}
-                      loadingText={
-                        t("tts_synthesizing") ||
-                        (userLanguage === "es"
-                          ? "Sintetizando..."
-                          : "Synthesizing...")
-                      }
                       leftIcon={<PiSpeakerHighDuotone />}
                       size="sm"
                       isDisabled={
-                        !viewLecture?.target || draftLecture || isGenerating
+                        !viewLecture?.target ||
+                        draftLecture ||
+                        isGenerating ||
+                        isReadingTarget ||
+                        isReadingSupport
                       }
                     >
                       {t("reading_read_in", { language: targetDisplay })}
@@ -1552,30 +1549,19 @@ export default function History({
                     {showTranslations && viewLecture?.support ? (
                       <Button
                         onClick={readSupport}
-                        isLoading={isReadingSupport}
-                        loadingText={
-                          t("tts_synthesizing") ||
-                          (userLanguage === "es"
-                            ? "Sintetizando..."
-                            : "Synthesizing...")
-                        }
                         leftIcon={<PiSpeakerHighDuotone />}
                         size="sm"
                         variant="outline"
-                        isDisabled={draftLecture || isGenerating}
+                        isDisabled={
+                          draftLecture ||
+                          isGenerating ||
+                          isReadingTarget ||
+                          isReadingSupport
+                        }
                       >
                         {t("reading_read_in", { language: supportDisplay })}
                       </Button>
                     ) : null}
-                    {(isReadingTarget || isReadingSupport) && (
-                      <IconButton
-                        aria-label={t("reading_stop_aria")}
-                        onClick={stopSpeech}
-                        icon={<FaStop />}
-                        size="sm"
-                        variant="outline"
-                      />
-                    )}
                   </HStack>
                 </HStack>
 
