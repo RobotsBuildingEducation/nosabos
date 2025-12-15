@@ -300,6 +300,40 @@ async function getRealtimePlayer({ text, voice }) {
           // as completion to avoid hanging the UI.
           if (audioStarted && !intentionalEnd) scheduleFinalize();
         });
+
+        // Monitor inbound RTP stats to detect when audio stops arriving even if
+        // the track never fires ended/mute events.
+        const startSilenceMonitor = (receiver) => {
+          if (!receiver || silenceMonitor) return;
+          let lastSamples = 0;
+          let lastChangeTs = Date.now();
+
+          silenceMonitor = setInterval(async () => {
+            try {
+              const stats = await receiver.getStats();
+              const inbound = Array.from(stats.values()).find(
+                (r) => r.type === "inbound-rtp" && r.kind === "audio"
+              );
+              if (!inbound) return;
+
+              const samples =
+                inbound.totalSamplesReceived ?? inbound.packetsReceived ?? 0;
+              if (samples > lastSamples) {
+                lastSamples = samples;
+                lastChangeTs = Date.now();
+                return;
+              }
+
+              if (audioStarted && Date.now() - lastChangeTs > 1200) {
+                scheduleFinalize();
+              }
+            } catch {
+              // Ignore stats errors; other completion paths will handle cleanup.
+            }
+          }, 200);
+        };
+
+        startSilenceMonitor(event.receiver);
       }
     };
     pc.oniceconnectionstatechange = () => {
@@ -313,10 +347,13 @@ async function getRealtimePlayer({ text, voice }) {
 
   // Track when we're intentionally ending to prevent spurious error events
   let intentionalEnd = false;
+  let finalizeScheduled = false;
 
   // Track when response is done via data channel messages
   let resolveFinalize;
   let endedEventFired = false;
+  let silenceMonitor;
+
   const finalize = new Promise((resolve) => {
     resolveFinalize = resolve;
     pc.onconnectionstatechange = () => {
@@ -334,8 +371,6 @@ async function getRealtimePlayer({ text, voice }) {
       },
       { once: true }
     );
-    // Fallback timeout reduced from 20s to 30s (only as safety net)
-    setTimeout(resolve, 30000);
   })
     .then(() => {
       // If we finalized without the media element ending, emit an ended event
@@ -360,6 +395,7 @@ async function getRealtimePlayer({ text, voice }) {
       try {
         pc.close();
       } catch {}
+      if (silenceMonitor) clearInterval(silenceMonitor);
     try {
       remoteStream.getTracks().forEach((t) => t.stop());
     } catch {}
@@ -369,6 +405,9 @@ async function getRealtimePlayer({ text, voice }) {
 
   // Listen for response completion signals to know when synthesis is complete
   const scheduleFinalize = () => {
+    if (finalizeScheduled) return;
+    finalizeScheduled = true;
+
     // Wait for audio to have started before cleaning up so the UI doesn't end
     // before playback begins (occasionally the server can reply immediately).
     const checkAndFinalize = () => {
