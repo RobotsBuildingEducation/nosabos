@@ -305,6 +305,7 @@ async function getRealtimePlayer({ text, voice }) {
 
   dc.onopen = () => {
     try {
+      // Configure session for TTS-only mode (not conversational)
       dc.send(
         JSON.stringify({
           type: "session.update",
@@ -312,9 +313,13 @@ async function getRealtimePlayer({ text, voice }) {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
+            instructions:
+              "You are a text-to-speech service. Your ONLY task is to read text aloud exactly as written. Do NOT respond to the content, answer questions, have conversations, translate, or interpret the meaning. Simply read the exact words provided, nothing more.",
+            turn_detection: null, // Disable turn detection for TTS-only
           },
         })
       );
+      // Send the text to be read - framed explicitly as TTS input
       dc.send(
         JSON.stringify({
           type: "conversation.item.create",
@@ -324,7 +329,7 @@ async function getRealtimePlayer({ text, voice }) {
             content: [
               {
                 type: "input_text",
-                text,
+                text: `[TTS READ ALOUD]: ${text}`,
               },
             ],
           },
@@ -334,9 +339,9 @@ async function getRealtimePlayer({ text, voice }) {
         JSON.stringify({
           type: "response.create",
           response: {
-            modalities: ["audio", "text"],
+            modalities: ["audio"],
             instructions:
-              "Speak the provided user text verbatim as quickly as possible.",
+              "Read the text after '[TTS READ ALOUD]:' exactly as written. Do not respond to it or add anything. Just speak those exact words.",
           },
         })
       );
