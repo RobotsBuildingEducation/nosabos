@@ -42,6 +42,7 @@ import {
   getTTSPlayer,
   TTS_LANG_TAG,
 } from "../utils/tts";
+const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Minimal i18n helper
@@ -1524,18 +1525,16 @@ export default function History({
                   <HStack mt={{ base: 2, md: 0 }}>
                     <Button
                       onClick={readTarget}
-                      leftIcon={<PiSpeakerHighDuotone />}
+                      aria-label={t("reading_read_in", { language: targetDisplay })}
+                      px={3}
+                      leftIcon={renderSpeakerIcon(isReadingTarget)}
                       size="sm"
-                      isLoading={isReadingTarget}
-                      loadingText={t("tts_synthesizing") || "Playing"}
                       isDisabled={
                         !viewLecture?.target ||
                         draftLecture ||
                         isGenerating
                       }
-                    >
-                      {t("reading_read_in", { language: targetDisplay })}
-                    </Button>
+                    />
                   </HStack>
                 </HStack>
 

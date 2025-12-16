@@ -6,6 +6,7 @@ import {
   Text,
   Input,
   Button,
+  IconButton,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -551,7 +552,12 @@ export default function FlashcardPractice({
                   {/* Listen Button */}
                   <Box mt={6}>
                     {streamedAnswer && !isStreaming && (
-                      <Button
+                      <IconButton
+                        aria-label={
+                          isPlayingAudio
+                            ? getTranslation("flashcard_playing") || "Playing"
+                            : getTranslation("flashcard_listen")
+                        }
                         position="absolute"
                         bottom={3}
                         left={3}
@@ -559,23 +565,12 @@ export default function FlashcardPractice({
                         variant="solid"
                         colorScheme="purple"
                         color="white"
-                        leftIcon={
-                          isPlayingAudio ? (
-                            <Spinner size="xs" />
-                          ) : (
-                            <RiVolumeUpLine size={14} />
-                          )
-                        }
+                        icon={<RiVolumeUpLine size={14} />}
                         onClick={handleListenToAnswer}
                         isDisabled={isPlayingAudio}
                         _hover={{ bg: "whiteAlpha.300" }}
                         fontSize="xs"
-                      >
-                        {isPlayingAudio
-                          ? getTranslation("flashcard_playing") ||
-                            "Playing..."
-                          : getTranslation("flashcard_listen")}
-                      </Button>
+                      />
                     )}
                     <Text
                       position="absolute"

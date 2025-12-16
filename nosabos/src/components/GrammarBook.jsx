@@ -60,6 +60,8 @@ import {
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 
+const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
+
 /* ---------------------------
    Tiny helpers for Gemini streaming
 --------------------------- */
@@ -3116,6 +3118,7 @@ Return JSON ONLY:
   const synthLabel =
     t("tts_synthesizing") ||
     (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
+  const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
 
   const handleToggleSpeakPlayback = useCallback(async () => {
     const text = (sTarget || "").trim();
@@ -3710,17 +3713,17 @@ Return JSON ONLY:
                           h={mcHint}
                           tr={showTRMC ? mcTranslation : ""}
                         />
-                        <Tooltip label={questionListenLabel} placement="top">
-                          <IconButton
-                            aria-label={questionListenLabel}
-                            icon={<PiSpeakerHighDuotone />}
-                            size="sm"
-                            fontSize="lg"
-                            variant="ghost"
-                            onClick={() => handlePlayQuestionTTS(mcQ)}
-                            mr={1}
-                          />
-                        </Tooltip>
+                      <Tooltip label={questionListenLabel} placement="top">
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                          size="sm"
+                          fontSize="lg"
+                          variant="ghost"
+                          onClick={() => handlePlayQuestionTTS(mcQ)}
+                          mr={1}
+                        />
+                      </Tooltip>
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -3845,11 +3848,13 @@ Return JSON ONLY:
                       <Tooltip label={questionListenLabel} placement="top">
                         <IconButton
                           aria-label={questionListenLabel}
-                          icon={<PiSpeakerHighDuotone />}
+                          icon={renderSpeakerIcon(
+                            isQuestionSynthesizing || isQuestionBusy,
+                            "purple.200"
+                          )}
                           size="sm"
                           fontSize="lg"
                           variant="ghost"
-                          isLoading={isQuestionSynthesizing}
                           onClick={() => handlePlayQuestionTTS(mcQ)}
                           mr={1}
                         />
@@ -4039,7 +4044,7 @@ Return JSON ONLY:
                         <Tooltip label={questionListenLabel} placement="top">
                           <IconButton
                             aria-label={questionListenLabel}
-                            icon={<PiSpeakerHighDuotone />}
+                            icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
                             size="sm"
                             fontSize="lg"
                             variant="ghost"
@@ -4178,11 +4183,13 @@ Return JSON ONLY:
                       <Tooltip label={questionListenLabel} placement="top">
                         <IconButton
                           aria-label={questionListenLabel}
-                          icon={<PiSpeakerHighDuotone />}
+                          icon={renderSpeakerIcon(
+                            isQuestionSynthesizing || isQuestionBusy,
+                            "purple.200"
+                          )}
                           size="sm"
                           fontSize="lg"
                           variant="ghost"
-                          isLoading={isQuestionSynthesizing}
                           onClick={() => handlePlayQuestionTTS(maQ)}
                           mr={1}
                         />
@@ -4423,9 +4430,12 @@ Return JSON ONLY:
                   position="relative"
                 >
                   <Tooltip label={speakListenLabel} placement="top">
-                    <Button
+                    <IconButton
                       aria-label={speakListenLabel}
-                      leftIcon={<PiSpeakerHighDuotone />}
+                      icon={renderSpeakerIcon(
+                        isSpeakPlaying,
+                        isSpeakPlaying ? "teal.100" : "purple.200"
+                      )}
                       size="sm"
                       variant="solid"
                       colorScheme={isSpeakPlaying ? "teal" : "purple"}
@@ -4434,10 +4444,7 @@ Return JSON ONLY:
                       right="3"
                       onClick={handleToggleSpeakPlayback}
                       isDisabled={!sTarget}
-                    >
-                      {t("practice_play") ||
-                        (userLanguage === "es" ? "▶" : "Play")}
-                    </Button>
+                    />
                   </Tooltip>
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
                     {speakVariantLabel}

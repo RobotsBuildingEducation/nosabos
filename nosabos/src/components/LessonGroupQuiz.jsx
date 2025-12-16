@@ -38,7 +38,6 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { FiCopy } from "react-icons/fi";
-import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { completeLesson } from "../utils/progressTracking";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";

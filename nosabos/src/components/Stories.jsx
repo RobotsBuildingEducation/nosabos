@@ -30,7 +30,10 @@ import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
 import { FiArrowRight } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import { PiMicrophoneStageDuotone, PiSpeakerHighDuotone } from "react-icons/pi";
+import {
+  PiSpeakerHighDuotone,
+  PiMicrophoneStageDuotone,
+} from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -59,6 +62,8 @@ import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
+
+const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
 
 /* ================================
    ENV / API
@@ -1653,20 +1658,18 @@ export default function StoryMode({
                       onClick={() =>
                         playNarrationWithHighlighting(storyData.fullStory?.tgt)
                       }
-                      leftIcon={<PiSpeakerHighDuotone />}
                       color="white"
-                      isLoading={isPlayingTarget || isSynthesizingTarget}
-                      loadingText={
-                        isSynthesizingTarget
-                          ? uiText.tts_synthesizing
-                          : uiText.playing
-                      }
                       isDisabled={
                         isAutoPlaying ||
                         isSynthesizingTarget
                       }
+                      aria-label={uiText.playTarget(targetDisplayName)}
+                      px={3}
                     >
-                      {uiText.playTarget(targetDisplayName)}
+                      {renderSpeakerIcon(
+                        isPlayingTarget || isSynthesizingTarget,
+                        "white"
+                      )}
                     </Button>
                   </HStack>
 
@@ -1774,20 +1777,18 @@ export default function StoryMode({
                     <HStack spacing={3} justify="center">
                       <Button
                         onClick={() => playTargetTTS(currentSentence?.tgt)}
-                        isLoading={isPlayingTarget || isSynthesizingTarget}
-                        loadingText={
-                          isSynthesizingTarget
-                            ? uiText.tts_synthesizing
-                            : uiText.playing
-                        }
-                        leftIcon={<PiSpeakerHighDuotone />}
+                        aria-label={uiText.listen}
+                        px={3}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"
                         _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
                         size="sm"
                       >
-                        {uiText.listen}
+                        {renderSpeakerIcon(
+                          isPlayingTarget || isSynthesizingTarget,
+                          "white"
+                        )}
                       </Button>
                     </HStack>
                     {sentenceCompleted && lastSuccessInfo ? (
