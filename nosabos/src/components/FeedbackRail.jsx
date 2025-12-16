@@ -4,6 +4,7 @@ import {
   Button,
   Flex,
   HStack,
+  IconButton,
   SlideFade,
   Spinner,
   Text,
@@ -96,6 +97,25 @@ const FeedbackRail = React.memo(
                         : "Review and try again.")}
                 </Text>
               </Box>
+              {/* Create Note Button - icon only */}
+              {onCreateNote && (
+                <IconButton
+                  icon={
+                    isCreatingNote ? (
+                      <Spinner size="xs" />
+                    ) : (
+                      <RiBookmarkLine size={18} />
+                    )
+                  }
+                  aria-label={noteCreated ? noteSavedLabel : createNoteLabel}
+                  colorScheme={noteCreated ? "green" : "gray"}
+                  variant={noteCreated ? "solid" : "ghost"}
+                  onClick={onCreateNote}
+                  isDisabled={isCreatingNote || noteCreated}
+                  size="sm"
+                  flexShrink={0}
+                />
+              )}
             </HStack>
 
             {ok && lessonProgress && lessonProgress.total > 0 && (
@@ -152,30 +172,6 @@ const FeedbackRail = React.memo(
                   ? "Explicar mi respuesta"
                   : "Explain the answer"}
               </Button>
-            )}
-
-            {/* Create Note Button */}
-            {onCreateNote && (
-              <Flex justify="flex-end" w="100%">
-                <Button
-                  leftIcon={
-                    isCreatingNote ? (
-                      <Spinner size="xs" />
-                    ) : (
-                      <RiBookmarkLine size={14} />
-                    )
-                  }
-                  colorScheme={noteCreated ? "green" : "cyan"}
-                  variant={noteCreated ? "solid" : "outline"}
-                  onClick={onCreateNote}
-                  isDisabled={isCreatingNote || noteCreated}
-                  width="fit-content"
-                  size="sm"
-                  px={3}
-                >
-                  {noteCreated ? noteSavedLabel : createNoteLabel}
-                </Button>
-              </Flex>
             )}
 
             {showNext && (

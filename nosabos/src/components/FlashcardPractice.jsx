@@ -780,17 +780,38 @@ export default function FlashcardPractice({
                     border="2px solid"
                     borderColor={isCorrect ? "green.500" : "red.500"}
                   >
-                    <HStack spacing={3}>
+                    <HStack spacing={3} w="100%">
                       {isCorrect ? (
                         <RiCheckLine size={32} color="#22C55E" />
                       ) : (
                         <RiCloseLine size={32} color="#EF4444" />
                       )}
-                      <Text fontSize="2xl" fontWeight="bold" color="white">
+                      <Text fontSize="2xl" fontWeight="bold" color="white" flex="1">
                         {isCorrect
                           ? getTranslation("flashcard_correct")
                           : getTranslation("flashcard_incorrect")}
                       </Text>
+                      {/* Create Note Button - icon only */}
+                      <IconButton
+                        icon={
+                          isCreatingNote ? (
+                            <Spinner size="xs" />
+                          ) : (
+                            <RiBookmarkLine size={18} />
+                          )
+                        }
+                        aria-label={
+                          noteCreated
+                            ? getTranslation("flashcard_note_saved") || "Note saved!"
+                            : getTranslation("flashcard_create_note") || "Create note"
+                        }
+                        colorScheme={noteCreated ? "green" : "gray"}
+                        variant={noteCreated ? "solid" : "ghost"}
+                        onClick={handleCreateNote}
+                        isDisabled={isCreatingNote || noteCreated}
+                        size="sm"
+                        flexShrink={0}
+                      />
                     </HStack>
 
                     {isCorrect ? (
@@ -834,25 +855,6 @@ export default function FlashcardPractice({
                         <WaveBar value={nextLevelProgressPct} />
                       </VStack>
                     )}
-
-                    {/* Create Note Button */}
-                    <Flex justify="flex-end" w="100%" mt={2}>
-                      <Button
-                        size="sm"
-                        variant={noteCreated ? "solid" : "outline"}
-                        colorScheme={noteCreated ? "green" : "cyan"}
-                        leftIcon={<RiBookmarkLine size={16} />}
-                        onClick={handleCreateNote}
-                        isLoading={isCreatingNote}
-                        isDisabled={noteCreated}
-                        width="fit-content"
-                        px={4}
-                      >
-                        {noteCreated
-                          ? getTranslation("flashcard_note_saved") || "Note saved!"
-                          : getTranslation("flashcard_create_note") || "Create note"}
-                      </Button>
-                    </Flex>
                   </VStack>
                 </MotionBox>
               </AnimatePresence>
