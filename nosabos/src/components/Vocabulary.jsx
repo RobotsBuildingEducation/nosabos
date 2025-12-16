@@ -3872,6 +3872,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     h={hFill}
                     tr={showTRFill ? trFill : ""}
                   />
+                  <Tooltip label={questionListenLabel} placement="top">
+                    <IconButton
+                      aria-label={questionListenLabel}
+                      icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                      size="sm"
+                      fontSize="lg"
+                      variant="ghost"
+                      onClick={() => handlePlayQuestionTTS(qFill)}
+                      mr={1}
+                    />
+                  </Tooltip>
                   <Text
                     fontSize="lg"
                     fontWeight="medium"
