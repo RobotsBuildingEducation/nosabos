@@ -21,7 +21,6 @@ import {
   Stack,
   Checkbox,
   CheckboxGroup,
-  Tooltip,
   IconButton,
   useToast,
   Modal,
@@ -3352,24 +3351,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     const has = (q && q.trim()) || (h && h.trim()) || (tr && tr.trim());
     if (!has) return null;
     return (
-      <Tooltip
-        label={
-          t("copy_all") || (userLanguage === "es" ? "Copiar todo" : "Copy all")
-        }
-      >
-        <IconButton
-          aria-label="Copy all"
-          icon={<MdOutlineSupportAgent />}
-          size="sm"
-          fontSize="lg"
-          bg="white"
-          color="blue"
-          border="3px solid skyblue"
-          boxShadow={"lg"}
-          onClick={() => copyAll(q, h, tr)}
-          mr={1}
-        />
-      </Tooltip>
+      <IconButton
+        aria-label="Copy all"
+        icon={<MdOutlineSupportAgent />}
+        size="sm"
+        fontSize="lg"
+        bg="white"
+        color="blue"
+        border="3px solid skyblue"
+        boxShadow={"lg"}
+        onClick={() => copyAll(q, h, tr)}
+        mr={1}
+      />
     );
   };
 
@@ -3872,17 +3865,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     h={hFill}
                     tr={showTRFill ? trFill : ""}
                   />
-                  <Tooltip label={questionListenLabel} placement="top">
-                    <IconButton
-                      aria-label={questionListenLabel}
-                      icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
-                      size="sm"
-                      fontSize="lg"
-                      variant="ghost"
-                      onClick={() => handlePlayQuestionTTS(qFill)}
-                      mr={1}
-                    />
-                  </Tooltip>
+                  <IconButton
+                    aria-label={questionListenLabel}
+                    icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                    size="sm"
+                    fontSize="lg"
+                    variant="ghost"
+                    onClick={() => handlePlayQuestionTTS(qFill)}
+                    mr={1}
+                  />
                   <Text
                     fontSize="lg"
                     fontWeight="medium"
@@ -3995,17 +3986,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
                         <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-                      <Tooltip label={questionListenLabel} placement="top">
-                        <IconButton
-                          aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
-                          size="sm"
-                          fontSize="lg"
-                          variant="ghost"
-                          onClick={() => handlePlayQuestionTTS(qMC)}
-                          mr={1}
-                        />
-                      </Tooltip>
+                      <IconButton
+                        aria-label={questionListenLabel}
+                        icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                        size="sm"
+                        fontSize="lg"
+                        variant="ghost"
+                        onClick={() => handlePlayQuestionTTS(qMC)}
+                        mr={1}
+                      />
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -4123,20 +4112,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <VStack align="stretch" spacing={3}>
                     <HStack align="start" spacing={2}>
                       <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-                      <Tooltip label={questionListenLabel} placement="top">
-                        <IconButton
-                          aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon(
-                            isQuestionSynthesizing || isQuestionBusy,
-                            "purple.200"
-                          )}
-                          size="sm"
-                          fontSize="lg"
-                          variant="ghost"
-                          onClick={() => handlePlayQuestionTTS(qMC)}
-                          mr={1}
-                        />
-                      </Tooltip>
+                      <IconButton
+                        aria-label={questionListenLabel}
+                        icon={renderSpeakerIcon(
+                          isQuestionSynthesizing || isQuestionBusy,
+                          "purple.200"
+                        )}
+                        size="sm"
+                        fontSize="lg"
+                        variant="ghost"
+                        onClick={() => handlePlayQuestionTTS(qMC)}
+                        mr={1}
+                      />
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -4315,17 +4302,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
                         <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-                      <Tooltip label={questionListenLabel} placement="top">
-                        <IconButton
-                          aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon()}
-                          size="sm"
-                          fontSize="lg"
-                          variant="ghost"
-                          onClick={() => handlePlayQuestionTTS(qMA)}
-                          mr={1}
-                        />
-                      </Tooltip>
+                      <IconButton
+                        aria-label={questionListenLabel}
+                        icon={renderSpeakerIcon()}
+                        size="sm"
+                        fontSize="lg"
+                        variant="ghost"
+                        onClick={() => handlePlayQuestionTTS(qMA)}
+                        mr={1}
+                      />
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -4450,20 +4435,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   <VStack align="stretch" spacing={3}>
                     <HStack align="start" spacing={2}>
                       <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-                      <Tooltip label={questionListenLabel} placement="top">
-                        <IconButton
-                          aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon(
-                            isQuestionSynthesizing || isQuestionBusy,
-                            "purple.200"
-                          )}
-                          size="sm"
-                          fontSize="lg"
-                          variant="ghost"
-                          onClick={() => handlePlayQuestionTTS(qMA)}
-                          mr={1}
-                        />
-                      </Tooltip>
+                      <IconButton
+                        aria-label={questionListenLabel}
+                        icon={renderSpeakerIcon(
+                          isQuestionSynthesizing || isQuestionBusy,
+                          "purple.200"
+                        )}
+                        size="sm"
+                        fontSize="lg"
+                        variant="ghost"
+                        onClick={() => handlePlayQuestionTTS(qMA)}
+                        mr={1}
+                      />
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -4701,23 +4684,21 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   bg="rgba(255,255,255,0.04)"
                   position="relative"
                 >
-                  <Tooltip label={speakListenLabel} placement="top">
-                    <IconButton
-                      aria-label={speakListenLabel}
-                      icon={renderSpeakerIcon(
-                        isSpeakPlaying,
-                        isSpeakPlaying ? "teal.100" : "purple.200"
-                      )}
-                      size="sm"
-                      variant="solid"
-                      colorScheme={isSpeakPlaying ? "teal" : "purple"}
-                      position="absolute"
-                      top="3"
-                      right="3"
-                      onClick={handleToggleSpeakPlayback}
-                      isDisabled={!sTarget}
-                    />
-                  </Tooltip>
+                  <IconButton
+                    aria-label={speakListenLabel}
+                    icon={renderSpeakerIcon(
+                      isSpeakPlaying,
+                      isSpeakPlaying ? "teal.100" : "purple.200"
+                    )}
+                    size="sm"
+                    variant="solid"
+                    colorScheme={isSpeakPlaying ? "teal" : "purple"}
+                    position="absolute"
+                    top="3"
+                    right="3"
+                    onClick={handleToggleSpeakPlayback}
+                    isDisabled={!sTarget}
+                  />
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
                     {speakVariantLabel}
                   </Badge>

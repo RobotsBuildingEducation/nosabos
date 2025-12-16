@@ -21,7 +21,6 @@ import {
   Stack,
   Checkbox,
   CheckboxGroup,
-  Tooltip,
   IconButton,
   useToast,
   Center,
@@ -3080,24 +3079,18 @@ Return JSON ONLY:
     const has = (q && q.trim()) || (h && h.trim()) || (tr && tr.trim());
     if (!has) return null;
     return (
-      <Tooltip
-        label={
-          t("copy_all") || (userLanguage === "es" ? "Copiar todo" : "Copy all")
-        }
-      >
-        <IconButton
-          aria-label="Copy all"
-          icon={<MdOutlineSupportAgent />}
-          size="sm"
-          fontSize="lg"
-          bg="white"
-          color="blue"
-          border="3px solid skyblue"
-          boxShadow={"lg"}
-          onClick={() => copyAll(q, h, tr)}
-          mr={1}
-        />
-      </Tooltip>
+      <IconButton
+        aria-label="Copy all"
+        icon={<MdOutlineSupportAgent />}
+        size="sm"
+        fontSize="lg"
+        bg="white"
+        color="blue"
+        border="3px solid skyblue"
+        boxShadow={"lg"}
+        onClick={() => copyAll(q, h, tr)}
+        mr={1}
+      />
     );
   };
 
@@ -3713,17 +3706,15 @@ Return JSON ONLY:
                           h={mcHint}
                           tr={showTRMC ? mcTranslation : ""}
                         />
-                      <Tooltip label={questionListenLabel} placement="top">
-                        <IconButton
-                          aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
-                          size="sm"
-                          fontSize="lg"
-                          variant="ghost"
-                          onClick={() => handlePlayQuestionTTS(mcQ)}
-                          mr={1}
-                        />
-                      </Tooltip>
+                      <IconButton
+                        aria-label={questionListenLabel}
+                        icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                        size="sm"
+                        fontSize="lg"
+                        variant="ghost"
+                        onClick={() => handlePlayQuestionTTS(mcQ)}
+                        mr={1}
+                      />
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -3845,20 +3836,18 @@ Return JSON ONLY:
                         h={mcHint}
                         tr={showTRMC ? mcTranslation : ""}
                       />
-                      <Tooltip label={questionListenLabel} placement="top">
-                        <IconButton
-                          aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon(
-                            isQuestionSynthesizing || isQuestionBusy,
-                            "purple.200"
-                          )}
-                          size="sm"
-                          fontSize="lg"
-                          variant="ghost"
-                          onClick={() => handlePlayQuestionTTS(mcQ)}
-                          mr={1}
-                        />
-                      </Tooltip>
+                      <IconButton
+                        aria-label={questionListenLabel}
+                        icon={renderSpeakerIcon(
+                          isQuestionSynthesizing || isQuestionBusy,
+                          "purple.200"
+                        )}
+                        size="sm"
+                        fontSize="lg"
+                        variant="ghost"
+                        onClick={() => handlePlayQuestionTTS(mcQ)}
+                        mr={1}
+                      />
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -4041,17 +4030,15 @@ Return JSON ONLY:
                           h={maHint}
                           tr={showTRMA ? maTranslation : ""}
                         />
-                        <Tooltip label={questionListenLabel} placement="top">
-                          <IconButton
-                            aria-label={questionListenLabel}
-                            icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
-                            size="sm"
-                            fontSize="lg"
-                            variant="ghost"
-                            onClick={() => handlePlayQuestionTTS(maQ)}
-                            mr={1}
-                          />
-                        </Tooltip>
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                          size="sm"
+                          fontSize="lg"
+                          variant="ghost"
+                          onClick={() => handlePlayQuestionTTS(maQ)}
+                          mr={1}
+                        />
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -4180,20 +4167,18 @@ Return JSON ONLY:
                         h={maHint}
                         tr={showTRMA ? maTranslation : ""}
                       />
-                      <Tooltip label={questionListenLabel} placement="top">
-                        <IconButton
-                          aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon(
-                            isQuestionSynthesizing || isQuestionBusy,
-                            "purple.200"
-                          )}
-                          size="sm"
-                          fontSize="lg"
-                          variant="ghost"
-                          onClick={() => handlePlayQuestionTTS(maQ)}
-                          mr={1}
-                        />
-                      </Tooltip>
+                      <IconButton
+                        aria-label={questionListenLabel}
+                        icon={renderSpeakerIcon(
+                          isQuestionSynthesizing || isQuestionBusy,
+                          "purple.200"
+                        )}
+                        size="sm"
+                        fontSize="lg"
+                        variant="ghost"
+                        onClick={() => handlePlayQuestionTTS(maQ)}
+                        mr={1}
+                      />
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -4429,23 +4414,21 @@ Return JSON ONLY:
                   bg="rgba(255,255,255,0.04)"
                   position="relative"
                 >
-                  <Tooltip label={speakListenLabel} placement="top">
-                    <IconButton
-                      aria-label={speakListenLabel}
-                      icon={renderSpeakerIcon(
-                        isSpeakPlaying,
-                        isSpeakPlaying ? "teal.100" : "purple.200"
-                      )}
-                      size="sm"
-                      variant="solid"
-                      colorScheme={isSpeakPlaying ? "teal" : "purple"}
-                      position="absolute"
-                      top="3"
-                      right="3"
-                      onClick={handleToggleSpeakPlayback}
-                      isDisabled={!sTarget}
-                    />
-                  </Tooltip>
+                  <IconButton
+                    aria-label={speakListenLabel}
+                    icon={renderSpeakerIcon(
+                      isSpeakPlaying,
+                      isSpeakPlaying ? "teal.100" : "purple.200"
+                    )}
+                    size="sm"
+                    variant="solid"
+                    colorScheme={isSpeakPlaying ? "teal" : "purple"}
+                    position="absolute"
+                    top="3"
+                    right="3"
+                    onClick={handleToggleSpeakPlayback}
+                    isDisabled={!sTarget}
+                  />
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
                     {speakVariantLabel}
                   </Badge>
