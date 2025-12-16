@@ -31,7 +31,7 @@ import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
 import { FiArrowRight } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import {
-  PiMicrophoneDuotone,
+  PiSpeakerHighDuotone,
   PiMicrophoneStageDuotone,
 } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
@@ -63,6 +63,13 @@ import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
+
+const renderSpeakerIcon = (isActive, color = "white") => (
+  <HStack spacing={1} alignItems="center">
+    <PiSpeakerHighDuotone />
+    {isActive ? <AnimatedEllipsis color={color} /> : null}
+  </HStack>
+);
 
 /* ================================
    ENV / API
@@ -1657,21 +1664,18 @@ export default function StoryMode({
                       onClick={() =>
                         playNarrationWithHighlighting(storyData.fullStory?.tgt)
                       }
-                      leftIcon={<PiMicrophoneDuotone />}
                       color="white"
-                      isLoading={isPlayingTarget || isSynthesizingTarget}
-                      loadingText={
-                        isSynthesizingTarget
-                          ? uiText.tts_synthesizing
-                          : uiText.playing
-                      }
-                      spinner={<AnimatedEllipsis color="white" />}
                       isDisabled={
                         isAutoPlaying ||
                         isSynthesizingTarget
                       }
+                      aria-label={uiText.playTarget(targetDisplayName)}
+                      px={3}
                     >
-                      {uiText.playTarget(targetDisplayName)}
+                      {renderSpeakerIcon(
+                        isPlayingTarget || isSynthesizingTarget,
+                        "white"
+                      )}
                     </Button>
                   </HStack>
 
@@ -1779,21 +1783,18 @@ export default function StoryMode({
                     <HStack spacing={3} justify="center">
                       <Button
                         onClick={() => playTargetTTS(currentSentence?.tgt)}
-                        isLoading={isPlayingTarget || isSynthesizingTarget}
-                        loadingText={
-                          isSynthesizingTarget
-                            ? uiText.tts_synthesizing
-                            : uiText.playing
-                        }
-                        leftIcon={<PiMicrophoneDuotone />}
-                        spinner={<AnimatedEllipsis color="white" />}
+                        aria-label={uiText.listen}
+                        px={3}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"
                         _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
                         size="sm"
                       >
-                        {uiText.listen}
+                        {renderSpeakerIcon(
+                          isPlayingTarget || isSynthesizingTarget,
+                          "white"
+                        )}
                       </Button>
                     </HStack>
                     {sentenceCompleted && lastSuccessInfo ? (

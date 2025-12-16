@@ -15,7 +15,7 @@ import {
   Center,
 } from "@chakra-ui/react";
 import { FaStop } from "react-icons/fa";
-import { PiMicrophoneDuotone } from "react-icons/pi";
+import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdMenuBook } from "react-icons/md";
 import {
   doc,
@@ -43,6 +43,13 @@ import {
   TTS_LANG_TAG,
 } from "../utils/tts";
 import AnimatedEllipsis from "./AnimatedEllipsis";
+
+const renderSpeakerIcon = (isActive) => (
+  <HStack spacing={1} alignItems="center">
+    <PiSpeakerHighDuotone />
+    {isActive ? <AnimatedEllipsis /> : null}
+  </HStack>
+);
 
 /* ---------------------------
    Minimal i18n helper
@@ -1525,19 +1532,16 @@ export default function History({
                   <HStack mt={{ base: 2, md: 0 }}>
                     <Button
                       onClick={readTarget}
-                      leftIcon={<PiMicrophoneDuotone />}
-                      spinner={<AnimatedEllipsis />}
+                      aria-label={t("reading_read_in", { language: targetDisplay })}
+                      px={3}
+                      leftIcon={renderSpeakerIcon(isReadingTarget)}
                       size="sm"
-                      isLoading={isReadingTarget}
-                      loadingText={t("tts_synthesizing") || "Playing"}
                       isDisabled={
                         !viewLecture?.target ||
                         draftLecture ||
                         isGenerating
                       }
-                    >
-                      {t("reading_read_in", { language: targetDisplay })}
-                    </Button>
+                    />
                   </HStack>
                 </HStack>
 

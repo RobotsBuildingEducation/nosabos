@@ -47,7 +47,7 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { PiMicrophoneDuotone } from "react-icons/pi";
+import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -66,6 +66,13 @@ import {
 import AnimatedEllipsis from "./AnimatedEllipsis";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
+
+const renderSpeakerIcon = (isActive, color = "purple.200") => (
+  <HStack spacing={1} alignItems="center">
+    <PiSpeakerHighDuotone />
+    {isActive ? <AnimatedEllipsis color={color} fontWeight="bold" /> : null}
+  </HStack>
+);
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -3983,24 +3990,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
                         <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-                        <Tooltip label={questionListenLabel} placement="top">
-                          <IconButton
-                            aria-label={questionListenLabel}
-                            icon={<PiMicrophoneDuotone />}
-                            size="sm"
-                            fontSize="lg"
-                            variant="ghost"
-                            onClick={() => handlePlayQuestionTTS(qMC)}
-                            mr={1}
-                          />
-                        </Tooltip>
-                        {isQuestionBusy ? (
-                          <AnimatedEllipsis
-                            color="purple.200"
-                            fontWeight="bold"
-                            mt={1}
-                          />
-                        ) : null}
+                      <Tooltip label={questionListenLabel} placement="top">
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                          size="sm"
+                          fontSize="lg"
+                          variant="ghost"
+                          onClick={() => handlePlayQuestionTTS(qMC)}
+                          mr={1}
+                        />
+                      </Tooltip>
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -4121,28 +4121,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       <Tooltip label={questionListenLabel} placement="top">
                         <IconButton
                           aria-label={questionListenLabel}
-                          icon={<PiMicrophoneDuotone />}
+                          icon={renderSpeakerIcon(
+                            isQuestionSynthesizing || isQuestionBusy,
+                            "purple.200"
+                          )}
                           size="sm"
                           fontSize="lg"
                           variant="ghost"
-                          isLoading={isQuestionSynthesizing}
-                          spinner={
-                            <AnimatedEllipsis
-                              color="purple.200"
-                              fontWeight="bold"
-                            />
-                          }
                           onClick={() => handlePlayQuestionTTS(qMC)}
                           mr={1}
                         />
                       </Tooltip>
-                      {isQuestionBusy ? (
-                        <AnimatedEllipsis
-                          color="purple.200"
-                          fontWeight="bold"
-                          mt={1}
-                        />
-                      ) : null}
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -4321,24 +4310,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
                         <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-                        <Tooltip label={questionListenLabel} placement="top">
-                          <IconButton
-                            aria-label={questionListenLabel}
-                            icon={<PiMicrophoneDuotone />}
-                            size="sm"
-                            fontSize="lg"
-                            variant="ghost"
-                            isLoading={isQuestionSynthesizing}
-                            spinner={
-                              <AnimatedEllipsis
-                                color="purple.200"
-                                fontWeight="bold"
-                              />
-                            }
-                            onClick={() => handlePlayQuestionTTS(qMA)}
-                            mr={1}
-                          />
-                        </Tooltip>
+                      <Tooltip label={questionListenLabel} placement="top">
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={renderSpeakerIcon(
+                            isQuestionSynthesizing || isQuestionBusy,
+                            "purple.200"
+                          )}
+                          size="sm"
+                          fontSize="lg"
+                          variant="ghost"
+                          onClick={() => handlePlayQuestionTTS(qMA)}
+                          mr={1}
+                        />
+                      </Tooltip>
                         {isQuestionBusy ? (
                           <AnimatedEllipsis
                             color="purple.200"
@@ -4473,28 +4458,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       <Tooltip label={questionListenLabel} placement="top">
                         <IconButton
                           aria-label={questionListenLabel}
-                          icon={<PiMicrophoneDuotone />}
+                          icon={renderSpeakerIcon(
+                            isQuestionSynthesizing || isQuestionBusy,
+                            "purple.200"
+                          )}
                           size="sm"
                           fontSize="lg"
                           variant="ghost"
-                          isLoading={isQuestionSynthesizing}
-                          spinner={
-                            <AnimatedEllipsis
-                              color="purple.200"
-                              fontWeight="bold"
-                            />
-                          }
                           onClick={() => handlePlayQuestionTTS(qMA)}
                           mr={1}
                         />
                       </Tooltip>
-                      {isQuestionBusy ? (
-                        <AnimatedEllipsis
-                          color="purple.200"
-                          fontWeight="bold"
-                          mt={1}
-                        />
-                      ) : null}
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -4733,14 +4707,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   position="relative"
                 >
                   <Tooltip label={speakListenLabel} placement="top">
-                    <Button
+                    <IconButton
                       aria-label={speakListenLabel}
-                      leftIcon={<PiMicrophoneDuotone />}
-                      rightIcon={
-                        isSpeakPlaying ? (
-                          <AnimatedEllipsis color="teal.100" />
-                        ) : undefined
-                      }
+                      icon={renderSpeakerIcon(
+                        isSpeakPlaying,
+                        isSpeakPlaying ? "teal.100" : "purple.200"
+                      )}
                       size="sm"
                       variant="solid"
                       colorScheme={isSpeakPlaying ? "teal" : "purple"}
@@ -4749,10 +4721,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       right="3"
                       onClick={handleToggleSpeakPlayback}
                       isDisabled={!sTarget}
-                    >
-                      {t("practice_play") ||
-                        (userLanguage === "es" ? "Reproducir" : "Play")}
-                    </Button>
+                    />
                   </Tooltip>
                   <Badge mb={3} colorScheme="purple" fontSize="0.7rem">
                     {speakVariantLabel}

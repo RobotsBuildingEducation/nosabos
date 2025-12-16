@@ -6,6 +6,7 @@ import {
   Text,
   Input,
   Button,
+  IconButton,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -23,6 +24,7 @@ import {
   RiStopCircleLine,
   RiKeyboardLine,
   RiEyeLine,
+  RiVolumeUpLine,
 } from "react-icons/ri";
 import {
   LOW_LATENCY_TTS_FORMAT,
@@ -551,7 +553,12 @@ export default function FlashcardPractice({
                   {/* Listen Button */}
                   <Box mt={6}>
                     {streamedAnswer && !isStreaming && (
-                      <Button
+                      <IconButton
+                        aria-label={
+                          isPlayingAudio
+                            ? getTranslation("flashcard_playing") || "Playing"
+                            : getTranslation("flashcard_listen")
+                        }
                         position="absolute"
                         bottom={3}
                         left={3}
@@ -559,19 +566,17 @@ export default function FlashcardPractice({
                         variant="solid"
                         colorScheme="purple"
                         color="white"
-                        leftIcon={<RiMicLine size={14} />}
-                        rightIcon={
-                          isPlayingAudio ? <AnimatedEllipsis color="white" /> : undefined
+                        icon={
+                          <HStack spacing={1} alignItems="center">
+                            <RiVolumeUpLine size={14} />
+                            {isPlayingAudio ? <AnimatedEllipsis color="white" /> : null}
+                          </HStack>
                         }
                         onClick={handleListenToAnswer}
                         isDisabled={isPlayingAudio}
                         _hover={{ bg: "whiteAlpha.300" }}
                         fontSize="xs"
-                      >
-                        {isPlayingAudio
-                          ? getTranslation("flashcard_playing") || "Playing"
-                          : getTranslation("flashcard_listen")}
-                      </Button>
+                      />
                     )}
                     <Text
                       position="absolute"
