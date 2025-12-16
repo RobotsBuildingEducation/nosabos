@@ -305,7 +305,7 @@ const HelpChatFab = forwardRef(
 
   const handleSend = useCallback(
     async (overrideText) => {
-      const question = (overrideText ?? input).trim();
+      const question = String(overrideText ?? input ?? "").trim();
       if (!question || sending) return;
 
     if (!simplemodel) {
