@@ -381,7 +381,9 @@ TUTORIAL MODE - ABSOLUTE BEGINNER CONTENT:
     : "";
 
   return `
-Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${isTutorial ? "absolute beginner, very easy" : diff}.${tutorialDirective}
+Write ONE short educational lecture about ${topicText}. ${promptText}. Difficulty: ${
+    isTutorial ? "absolute beginner, very easy" : diff
+  }.${tutorialDirective}
 
 CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 1. Most importantly, the lecture generated is suitable for a ${cefrLevel} level reader.
@@ -1052,10 +1054,10 @@ export default function History({
       const type = obj?.type;
       if (!type || !text) return;
 
-        const cleaned =
-          type === "support" || type === "takeaway"
-            ? stripLineLabel(text, supportLang)
-            : stripLineLabel(text, targetLang);
+      const cleaned =
+        type === "support" || type === "takeaway"
+          ? stripLineLabel(text, supportLang)
+          : stripLineLabel(text, targetLang);
       const normalized = cleaned.replace(/\s+/g, " ").trim();
       if (!normalized) return;
 
@@ -1525,21 +1527,22 @@ export default function History({
                   <HStack mt={{ base: 2, md: 0 }}>
                     <Button
                       onClick={readTarget}
-                      aria-label={t("reading_read_in", { language: targetDisplay })}
-                      px={3}
                       leftIcon={renderSpeakerIcon(isReadingTarget)}
                       size="sm"
+                      fontSize="lg"
+                      variant="ghost"
                       isDisabled={
-                        !viewLecture?.target ||
-                        draftLecture ||
-                        isGenerating
+                        !viewLecture?.target || draftLecture || isGenerating
                       }
+                      paddingRight={"-1px"}
+                      paddingLeft={5}
                     />
                   </HStack>
                 </HStack>
 
                 {!draftLecture && activeLecture ? (
                   <Button
+                    mt={4}
                     colorScheme="teal"
                     onClick={finishReadingAndNext}
                     isLoading={isFinishing}
