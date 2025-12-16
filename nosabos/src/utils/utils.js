@@ -2,6 +2,8 @@
 import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 
+export const DEFAULT_DAILY_GOAL_XP = 100;
+
 export async function awardXp(npub, amount, targetLang = "es") {
   if (!npub || !amount) return;
   const ref = doc(database, "users", npub);
@@ -48,7 +50,8 @@ export async function awardXp(npub, amount, targetLang = "es") {
     };
 
     // Celebrate once per day upon reaching goal
-    const goal = data.dailyGoalXp || 0;
+    const goalRaw = data.dailyGoalXp ?? DEFAULT_DAILY_GOAL_XP;
+    const goal = Math.max(0, Number(goalRaw) || 0);
     const reached = goal > 0 && nextDaily >= goal && !data.dailyHasCelebrated;
     if (reached) shouldCelebrateGoal = true;
 
