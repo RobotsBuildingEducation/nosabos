@@ -156,24 +156,26 @@ const FeedbackRail = React.memo(
 
             {/* Create Note Button */}
             {onCreateNote && (
-              <Button
-                leftIcon={
-                  isCreatingNote ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <RiBookmarkLine size={18} />
-                  )
-                }
-                colorScheme={noteCreated ? "green" : "cyan"}
-                variant={noteCreated ? "solid" : "outline"}
-                onClick={onCreateNote}
-                isDisabled={isCreatingNote || noteCreated}
-                width="full"
-                py={5}
-                size="md"
-              >
-                {noteCreated ? noteSavedLabel : createNoteLabel}
-              </Button>
+              <Flex justify="flex-end" w="100%">
+                <Button
+                  leftIcon={
+                    isCreatingNote ? (
+                      <Spinner size="xs" />
+                    ) : (
+                      <RiBookmarkLine size={14} />
+                    )
+                  }
+                  colorScheme={noteCreated ? "green" : "cyan"}
+                  variant={noteCreated ? "solid" : "outline"}
+                  onClick={onCreateNote}
+                  isDisabled={isCreatingNote || noteCreated}
+                  width="fit-content"
+                  size="sm"
+                  px={3}
+                >
+                  {noteCreated ? noteSavedLabel : createNoteLabel}
+                </Button>
+              </Flex>
             )}
 
             {showNext && (

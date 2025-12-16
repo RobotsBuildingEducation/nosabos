@@ -22,8 +22,10 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { RiDeleteBinLine } from "react-icons/ri";
-import { translations } from "../utils/translation";
 import useNotesStore from "../hooks/useNotesStore";
+
+// CEFR levels in order
+const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 // CEFR level colors
 const CEFR_COLORS = {
@@ -46,7 +48,6 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
   const { notes, removeNote, clearNotes } = useNotesStore();
 
   const lang = appLanguage === "es" ? "es" : "en";
-  const ui = useMemo(() => translations[lang] || translations.en, [lang]);
 
   const drawerTitle = lang === "es" ? "Mis Notas" : "My Notes";
   const emptyMessage =
@@ -54,29 +55,23 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
       ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
       : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
   const clearAllLabel = lang === "es" ? "Borrar todo" : "Clear all";
-  const exampleLabel = lang === "es" ? "Ejemplo" : "Example";
   const summaryLabel = lang === "es" ? "Resumen" : "Summary";
+  const lessonLabel = lang === "es" ? "Lección" : "Lesson";
+  const noNotesLabel = lang === "es" ? "Sin notas" : "No notes";
 
-  // Group notes by date (today, yesterday, older)
-  const groupedNotes = useMemo(() => {
-    const now = Date.now();
-    const dayMs = 24 * 60 * 60 * 1000;
-    const todayStart = new Date().setHours(0, 0, 0, 0);
-    const yesterdayStart = todayStart - dayMs;
-
-    const groups = {
-      today: [],
-      yesterday: [],
-      older: [],
-    };
+  // Group notes by CEFR level
+  const notesByCefr = useMemo(() => {
+    const groups = {};
+    CEFR_LEVELS.forEach((level) => {
+      groups[level] = [];
+    });
 
     notes.forEach((note) => {
-      if (note.createdAt >= todayStart) {
-        groups.today.push(note);
-      } else if (note.createdAt >= yesterdayStart) {
-        groups.yesterday.push(note);
+      const level = note.cefrLevel || "A1";
+      if (groups[level]) {
+        groups[level].push(note);
       } else {
-        groups.older.push(note);
+        groups.A1.push(note);
       }
     });
 
@@ -88,6 +83,14 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
     return date.toLocaleTimeString(lang === "es" ? "es-ES" : "en-US", {
       hour: "2-digit",
       minute: "2-digit",
+    });
+  };
+
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleDateString(lang === "es" ? "es-ES" : "en-US", {
+      month: "short",
+      day: "numeric",
     });
   };
 
@@ -117,72 +120,54 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
           _hover={{ bg: "whiteAlpha.100" }}
           _expanded={{ bg: "whiteAlpha.100" }}
         >
-          <HStack flex="1" spacing={3} align="center">
-            <Badge
-              bg={CEFR_COLORS[note.cefrLevel] || CEFR_COLORS.A1}
+          <VStack align="start" spacing={1} flex="1">
+            {/* Example as the title */}
+            <Text
+              fontSize="sm"
+              fontWeight="medium"
               color="white"
-              fontSize="xs"
-              fontWeight="bold"
-              px={2}
-              py={0.5}
-              borderRadius="md"
+              noOfLines={2}
+              textAlign="left"
+              fontStyle="italic"
             >
-              {note.cefrLevel}
-            </Badge>
-            <VStack align="start" spacing={0} flex="1">
-              <Text
-                fontSize="sm"
-                fontWeight="semibold"
-                color="white"
-                noOfLines={1}
+              "{note.example}"
+            </Text>
+            <HStack spacing={2}>
+              <Badge
+                variant="subtle"
+                colorScheme="gray"
+                fontSize="10px"
+                textTransform="capitalize"
               >
-                {lessonTitle}
+                {moduleLabel}
+              </Badge>
+              <Text fontSize="xs" color="gray.500">
+                {formatDate(note.createdAt)} · {formatTime(note.createdAt)}
               </Text>
-              <HStack spacing={2}>
-                <Badge
-                  variant="subtle"
-                  colorScheme="gray"
-                  fontSize="10px"
-                  textTransform="capitalize"
-                >
-                  {moduleLabel}
-                </Badge>
-                <Text fontSize="xs" color="gray.400">
-                  {formatTime(note.createdAt)}
-                </Text>
-              </HStack>
-            </VStack>
-          </HStack>
-          <AccordionIcon color="gray.400" />
+            </HStack>
+          </VStack>
+          <AccordionIcon color="gray.400" ml={2} />
         </AccordionButton>
 
         <AccordionPanel pb={4} px={4}>
           <VStack align="stretch" spacing={3}>
-            {/* Example in target language */}
+            {/* Summary first */}
             <Box>
-              <Text fontSize="xs" color="gray.500" mb={1}>
-                {exampleLabel}
-              </Text>
-              <Box
-                bg="whiteAlpha.100"
-                p={3}
-                borderRadius="md"
-                borderLeft="3px solid"
-                borderLeftColor={CEFR_COLORS[note.cefrLevel] || "blue.400"}
-              >
-                <Text fontSize="sm" color="white" fontStyle="italic">
-                  {note.example}
-                </Text>
-              </Box>
-            </Box>
-
-            {/* Summary in support language */}
-            <Box>
-              <Text fontSize="xs" color="gray.500" mb={1}>
+              <Text fontSize="xs" color="gray.500" mb={1} fontWeight="semibold">
                 {summaryLabel}
               </Text>
               <Text fontSize="sm" color="gray.200">
                 {note.summary}
+              </Text>
+            </Box>
+
+            {/* Lesson details */}
+            <Box>
+              <Text fontSize="xs" color="gray.500" mb={1} fontWeight="semibold">
+                {lessonLabel}
+              </Text>
+              <Text fontSize="sm" color="gray.300">
+                {lessonTitle}
               </Text>
             </Box>
 
@@ -200,27 +185,6 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
           </VStack>
         </AccordionPanel>
       </AccordionItem>
-    );
-  };
-
-  const renderGroup = (title, notesList) => {
-    if (!notesList.length) return null;
-
-    return (
-      <Box mb={4}>
-        <Text
-          fontSize="xs"
-          color="gray.500"
-          fontWeight="semibold"
-          textTransform="uppercase"
-          letterSpacing="wide"
-          mb={2}
-          px={1}
-        >
-          {title}
-        </Text>
-        <Accordion allowMultiple>{notesList.map(renderNoteItem)}</Accordion>
-      </Box>
     );
   };
 
@@ -259,20 +223,72 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
               </Text>
             </Flex>
           ) : (
-            <VStack align="stretch" spacing={0}>
-              {renderGroup(
-                lang === "es" ? "Hoy" : "Today",
-                groupedNotes.today
-              )}
-              {renderGroup(
-                lang === "es" ? "Ayer" : "Yesterday",
-                groupedNotes.yesterday
-              )}
-              {renderGroup(
-                lang === "es" ? "Anteriores" : "Older",
-                groupedNotes.older
-              )}
-            </VStack>
+            <Accordion allowMultiple>
+              {CEFR_LEVELS.map((level) => {
+                const levelNotes = notesByCefr[level];
+                const hasNotes = levelNotes.length > 0;
+
+                return (
+                  <AccordionItem
+                    key={level}
+                    border="none"
+                    mb={3}
+                    isDisabled={!hasNotes}
+                  >
+                    <AccordionButton
+                      py={3}
+                      px={4}
+                      bg={hasNotes ? "whiteAlpha.100" : "whiteAlpha.50"}
+                      borderRadius="lg"
+                      opacity={hasNotes ? 1 : 0.5}
+                      cursor={hasNotes ? "pointer" : "not-allowed"}
+                      _hover={{
+                        bg: hasNotes ? "whiteAlpha.200" : "whiteAlpha.50",
+                      }}
+                      _expanded={{ bg: "whiteAlpha.150", borderBottomRadius: 0 }}
+                    >
+                      <HStack flex="1" spacing={3}>
+                        <Badge
+                          bg={CEFR_COLORS[level]}
+                          color="white"
+                          fontSize="sm"
+                          fontWeight="bold"
+                          px={3}
+                          py={1}
+                          borderRadius="md"
+                        >
+                          {level}
+                        </Badge>
+                        <Text
+                          fontSize="sm"
+                          color={hasNotes ? "white" : "gray.500"}
+                          fontWeight="medium"
+                        >
+                          {hasNotes
+                            ? `${levelNotes.length} ${levelNotes.length === 1 ? (lang === "es" ? "nota" : "note") : (lang === "es" ? "notas" : "notes")}`
+                            : noNotesLabel}
+                        </Text>
+                      </HStack>
+                      {hasNotes && <AccordionIcon color="gray.400" />}
+                    </AccordionButton>
+
+                    {hasNotes && (
+                      <AccordionPanel
+                        pb={4}
+                        px={2}
+                        pt={2}
+                        bg="whiteAlpha.50"
+                        borderBottomRadius="lg"
+                      >
+                        <Accordion allowMultiple>
+                          {levelNotes.map(renderNoteItem)}
+                        </Accordion>
+                      </AccordionPanel>
+                    )}
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
           )}
         </DrawerBody>
       </DrawerContent>

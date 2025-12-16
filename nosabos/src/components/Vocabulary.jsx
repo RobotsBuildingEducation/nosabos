@@ -1327,13 +1327,6 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
       addNote(note);
       setNoteCreated(true);
       triggerDoneAnimation();
-
-      toast({
-        title: userLanguage === "es" ? "¡Nota creada!" : "Note created!",
-        status: "success",
-        duration: 2000,
-        isClosable: true,
-      });
     } catch (error) {
       console.error("Error creating note:", error);
       toast({

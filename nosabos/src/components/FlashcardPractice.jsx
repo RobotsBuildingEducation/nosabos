@@ -3,6 +3,7 @@ import {
   Box,
   VStack,
   HStack,
+  Flex,
   Text,
   Input,
   Button,
@@ -310,13 +311,6 @@ export default function FlashcardPractice({
       addNote(note);
       setNoteCreated(true);
       triggerDoneAnimation();
-
-      toast({
-        title: getTranslation("flashcard_note_created") || "Note created!",
-        status: "success",
-        duration: 2000,
-        isClosable: true,
-      });
     } catch (error) {
       console.error("Error creating note:", error);
       toast({
@@ -842,20 +836,23 @@ export default function FlashcardPractice({
                     )}
 
                     {/* Create Note Button */}
-                    <Button
-                      size="md"
-                      variant={noteCreated ? "solid" : "outline"}
-                      colorScheme={noteCreated ? "green" : "cyan"}
-                      leftIcon={<RiBookmarkLine size={18} />}
-                      onClick={handleCreateNote}
-                      isLoading={isCreatingNote}
-                      isDisabled={noteCreated}
-                      mt={2}
-                    >
-                      {noteCreated
-                        ? getTranslation("flashcard_note_saved") || "Note saved!"
-                        : getTranslation("flashcard_create_note") || "Create note"}
-                    </Button>
+                    <Flex justify="flex-end" w="100%" mt={2}>
+                      <Button
+                        size="sm"
+                        variant={noteCreated ? "solid" : "outline"}
+                        colorScheme={noteCreated ? "green" : "cyan"}
+                        leftIcon={<RiBookmarkLine size={16} />}
+                        onClick={handleCreateNote}
+                        isLoading={isCreatingNote}
+                        isDisabled={noteCreated}
+                        width="fit-content"
+                        px={4}
+                      >
+                        {noteCreated
+                          ? getTranslation("flashcard_note_saved") || "Note saved!"
+                          : getTranslation("flashcard_create_note") || "Create note"}
+                      </Button>
+                    </Flex>
                   </VStack>
                 </MotionBox>
               </AnimatePresence>
