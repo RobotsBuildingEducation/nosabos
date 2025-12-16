@@ -35,7 +35,7 @@ import {
 } from "@chakra-ui/react";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
-import { SiCashapp } from "react-icons/si";
+import { SiCashapp, SiPatreon } from "react-icons/si";
 import { IoIosMore } from "react-icons/io";
 import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
@@ -496,6 +496,41 @@ export default function IdentityDrawer({
             </Box>
             */}
           </VStack>
+
+          {/* Patreon Support Link */}
+          <Box mt={4} p={4} bg="gray.800" rounded="lg">
+            <HStack spacing={3} align="center">
+              <Box
+                p={2}
+                bg="black"
+                rounded="lg"
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <SiPatreon size={20} color="white" />
+              </Box>
+              <VStack align="start" spacing={0} flex={1}>
+                <Text fontWeight="semibold" fontSize="sm">
+                  {appLanguage === "es" ? "Apóyanos en Patreon" : "Support us on Patreon"}
+                </Text>
+                <Text fontSize="xs" color="gray.400">
+                  {appLanguage === "es"
+                    ? "Accede a más apps educativas y contenido"
+                    : "Access more education apps and content"}
+                </Text>
+              </VStack>
+              <Button
+                size="sm"
+                colorScheme="orange"
+                onClick={() =>
+                  window.open("https://www.patreon.com/NotesAndOtherStuff", "_blank")
+                }
+              >
+                {appLanguage === "es" ? "Unirse" : "Join"}
+              </Button>
+            </HStack>
+          </Box>
 
           <Flex mt="auto" justify="flex-end">
             <Button

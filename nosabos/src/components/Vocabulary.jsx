@@ -2014,17 +2014,15 @@ Return EXACTLY:
       setRecentXp(delta);
     }
 
-    // Store question data for explanation feature
-    if (!ok) {
-      setCurrentQuestionData({
-        question: qFill,
-        userAnswer: ansFill,
-        correctAnswer: hFill,
-        questionType: "fill",
-      });
-    } else {
+    // Store question data for explanation and note creation
+    setCurrentQuestionData({
+      question: qFill,
+      userAnswer: ansFill,
+      correctAnswer: hFill,
+      questionType: "fill",
+    });
+    if (ok) {
       setExplanationText("");
-      setCurrentQuestionData(null);
     }
 
     // ✅ If user hasn't locked a type, keep randomizing; otherwise stick to locked type
@@ -2308,17 +2306,15 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       setRecentXp(delta);
     }
 
-    // Store question data for explanation feature
-    if (!ok) {
-      setCurrentQuestionData({
-        question: qMC,
-        userAnswer: pickMC,
-        correctAnswer: answerMC || hMC,
-        questionType: "mc",
-      });
-    } else {
+    // Store question data for explanation and note creation
+    setCurrentQuestionData({
+      question: qMC,
+      userAnswer: pickMC,
+      correctAnswer: answerMC || hMC,
+      questionType: "mc",
+    });
+    if (ok) {
       setExplanationText("");
-      setCurrentQuestionData(null);
     }
 
     // In quiz mode, always show next button (even on wrong answer)
@@ -2629,17 +2625,15 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
       setRecentXp(delta);
     }
 
-    // Store question data for explanation feature
-    if (!ok) {
-      setCurrentQuestionData({
-        question: qMA,
-        userAnswer: picksMA.join(", "),
-        correctAnswer: answersMA?.join(", ") || hMA,
-        questionType: "ma",
-      });
-    } else {
+    // Store question data for explanation and note creation
+    setCurrentQuestionData({
+      question: qMA,
+      userAnswer: picksMA.join(", "),
+      correctAnswer: answersMA?.join(", ") || hMA,
+      questionType: "ma",
+    });
+    if (ok) {
       setExplanationText("");
-      setCurrentQuestionData(null);
     }
 
     // In quiz mode, always show next button (even on wrong answer)
@@ -3117,20 +3111,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       setRecentXp(delta);
     }
 
-    // Store question data for explanation feature
-    if (!ok) {
-      const userMappings = userPairs
-        .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
-        .join(", ");
-      setCurrentQuestionData({
-        question: mStem || "Match the items:",
-        userAnswer: userMappings,
-        correctAnswer: mHint || "Check the correct pairings",
-        questionType: "match",
-      });
-    } else {
+    // Store question data for explanation and note creation
+    const userMappings = userPairs
+      .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
+      .join(", ");
+    setCurrentQuestionData({
+      question: mStem || "Match the items:",
+      userAnswer: userMappings,
+      correctAnswer: mHint || "Check the correct pairings",
+      questionType: "match",
+    });
+    if (ok) {
       setExplanationText("");
-      setCurrentQuestionData(null);
     }
 
     // In quiz mode, always show next button (even on wrong answer)
@@ -3208,17 +3200,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         setRecentXp(delta);
       }
 
-      // Store question data for explanation feature
-      if (!ok) {
-        setCurrentQuestionData({
-          question: sPrompt || sStimulus || sTarget,
-          userAnswer: recognizedText || "",
-          correctAnswer: sTarget,
-          questionType: "speak",
-        });
-      } else {
+      // Store question data for explanation and note creation
+      setCurrentQuestionData({
+        question: sPrompt || sStimulus || sTarget,
+        userAnswer: recognizedText || "",
+        correctAnswer: sTarget,
+        questionType: "speak",
+      });
+      if (ok) {
         setExplanationText("");
-        setCurrentQuestionData(null);
       }
 
       // In quiz mode, always show next button (even on wrong answer)

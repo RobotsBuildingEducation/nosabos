@@ -2631,18 +2631,18 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
 
-    // Store question data for explanation feature
+    // Store question data for explanation and note creation
+    setCurrentQuestionData({
+      question,
+      userAnswer: input,
+      correctAnswer: hint,
+      questionType: "fill",
+    });
+
     if (!ok) {
-      setCurrentQuestionData({
-        question,
-        userAnswer: input,
-        correctAnswer: hint,
-        questionType: "fill",
-      });
       setNextAction(null);
     } else {
       setExplanationText("");
-      setCurrentQuestionData(null);
       setInput("");
       recentCorrectRef.current = [
         ...recentCorrectRef.current,
@@ -2716,17 +2716,15 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
 
-    // Store question data for explanation feature
-    if (!ok) {
-      setCurrentQuestionData({
-        question: mcQ,
-        userAnswer: mcPick,
-        correctAnswer: mcAnswer || mcHint,
-        questionType: "mc",
-      });
-    } else {
+    // Store question data for explanation and note creation
+    setCurrentQuestionData({
+      question: mcQ,
+      userAnswer: mcPick,
+      correctAnswer: mcAnswer || mcHint,
+      questionType: "mc",
+    });
+    if (ok) {
       setExplanationText("");
-      setCurrentQuestionData(null);
     }
 
     const nextFn = ok
@@ -2803,17 +2801,15 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
 
-    // Store question data for explanation feature
-    if (!ok) {
-      setCurrentQuestionData({
-        question: maQ,
-        userAnswer: maPicks.join(", "),
-        correctAnswer: maAnswers?.join(", ") || maHint,
-        questionType: "ma",
-      });
-    } else {
+    // Store question data for explanation and note creation
+    setCurrentQuestionData({
+      question: maQ,
+      userAnswer: maPicks.join(", "),
+      correctAnswer: maAnswers?.join(", ") || maHint,
+      questionType: "ma",
+    });
+    if (ok) {
       setExplanationText("");
-      setCurrentQuestionData(null);
     }
 
     const nextFn = ok
@@ -2883,20 +2879,18 @@ Return JSON ONLY:
     setLastOk(ok);
     setRecentXp(delta);
 
-    // Store question data for explanation feature
-    if (!ok) {
-      const userMappings = userPairs
-        .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
-        .join(", ");
-      setCurrentQuestionData({
-        question: mStem || "Match the items:",
-        userAnswer: userMappings,
-        correctAnswer: mHint || "Check the correct pairings",
-        questionType: "match",
-      });
-    } else {
+    // Store question data for explanation and note creation
+    const userMappings = userPairs
+      .map(([li, ri]) => `${mLeft[li]} → ${mRight[ri]}`)
+      .join(", ");
+    setCurrentQuestionData({
+      question: mStem || "Match the items:",
+      userAnswer: userMappings,
+      correctAnswer: mHint || "Check the correct pairings",
+      questionType: "match",
+    });
+    if (ok) {
       setExplanationText("");
-      setCurrentQuestionData(null);
     }
 
     const nextFn = ok
@@ -2977,17 +2971,15 @@ Return JSON ONLY:
       setLastOk(ok);
       setRecentXp(delta);
 
-      // Store question data for explanation feature
-      if (!ok) {
-        setCurrentQuestionData({
-          question: sPrompt || sTarget,
-          userAnswer: recognizedText || "",
-          correctAnswer: sTarget,
-          questionType: "speak",
-        });
-      } else {
+      // Store question data for explanation and note creation
+      setCurrentQuestionData({
+        question: sPrompt || sTarget,
+        userAnswer: recognizedText || "",
+        correctAnswer: sTarget,
+        questionType: "speak",
+      });
+      if (ok) {
         setExplanationText("");
-        setCurrentQuestionData(null);
       }
 
       const nextFn = ok
