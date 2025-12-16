@@ -15,7 +15,7 @@ import {
   Center,
 } from "@chakra-ui/react";
 import { FaStop } from "react-icons/fa";
-import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { PiMicrophoneDuotone } from "react-icons/pi";
 import { MdMenuBook } from "react-icons/md";
 import {
   doc,
@@ -42,6 +42,7 @@ import {
   getTTSPlayer,
   TTS_LANG_TAG,
 } from "../utils/tts";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 
 /* ---------------------------
    Minimal i18n helper
@@ -1524,7 +1525,8 @@ export default function History({
                   <HStack mt={{ base: 2, md: 0 }}>
                     <Button
                       onClick={readTarget}
-                      leftIcon={<PiSpeakerHighDuotone />}
+                      leftIcon={<PiMicrophoneDuotone />}
+                      spinner={<AnimatedEllipsis />}
                       size="sm"
                       isLoading={isReadingTarget}
                       loadingText={t("tts_synthesizing") || "Playing"}

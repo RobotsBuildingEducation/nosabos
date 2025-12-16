@@ -42,7 +42,7 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { PiMicrophoneDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -59,6 +59,7 @@ import {
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -3116,6 +3117,7 @@ Return JSON ONLY:
   const synthLabel =
     t("tts_synthesizing") ||
     (userLanguage === "es" ? "Sintetizando..." : "Synthesizing...");
+  const isQuestionBusy = isQuestionPlaying || isQuestionSynthesizing;
 
   const handleToggleSpeakPlayback = useCallback(async () => {
     const text = (sTarget || "").trim();
@@ -3713,7 +3715,7 @@ Return JSON ONLY:
                         <Tooltip label={questionListenLabel} placement="top">
                           <IconButton
                             aria-label={questionListenLabel}
-                            icon={<PiSpeakerHighDuotone />}
+                            icon={<PiMicrophoneDuotone />}
                             size="sm"
                             fontSize="lg"
                             variant="ghost"
@@ -3721,6 +3723,13 @@ Return JSON ONLY:
                             mr={1}
                           />
                         </Tooltip>
+                        {isQuestionBusy ? (
+                          <AnimatedEllipsis
+                            color="purple.200"
+                            fontWeight="bold"
+                            mt={1}
+                          />
+                        ) : null}
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -3845,15 +3854,28 @@ Return JSON ONLY:
                       <Tooltip label={questionListenLabel} placement="top">
                         <IconButton
                           aria-label={questionListenLabel}
-                          icon={<PiSpeakerHighDuotone />}
+                          icon={<PiMicrophoneDuotone />}
                           size="sm"
                           fontSize="lg"
                           variant="ghost"
                           isLoading={isQuestionSynthesizing}
+                          spinner={
+                            <AnimatedEllipsis
+                              color="purple.200"
+                              fontWeight="bold"
+                            />
+                          }
                           onClick={() => handlePlayQuestionTTS(mcQ)}
                           mr={1}
                         />
                       </Tooltip>
+                      {isQuestionBusy ? (
+                        <AnimatedEllipsis
+                          color="purple.200"
+                          fontWeight="bold"
+                          mt={1}
+                        />
+                      ) : null}
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -4039,7 +4061,7 @@ Return JSON ONLY:
                         <Tooltip label={questionListenLabel} placement="top">
                           <IconButton
                             aria-label={questionListenLabel}
-                            icon={<PiSpeakerHighDuotone />}
+                            icon={<PiMicrophoneDuotone />}
                             size="sm"
                             fontSize="lg"
                             variant="ghost"
@@ -4047,6 +4069,13 @@ Return JSON ONLY:
                             mr={1}
                           />
                         </Tooltip>
+                        {isQuestionBusy ? (
+                          <AnimatedEllipsis
+                            color="purple.200"
+                            fontWeight="bold"
+                            mt={1}
+                          />
+                        ) : null}
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -4178,15 +4207,28 @@ Return JSON ONLY:
                       <Tooltip label={questionListenLabel} placement="top">
                         <IconButton
                           aria-label={questionListenLabel}
-                          icon={<PiSpeakerHighDuotone />}
+                          icon={<PiMicrophoneDuotone />}
                           size="sm"
                           fontSize="lg"
                           variant="ghost"
                           isLoading={isQuestionSynthesizing}
+                          spinner={
+                            <AnimatedEllipsis
+                              color="purple.200"
+                              fontWeight="bold"
+                            />
+                          }
                           onClick={() => handlePlayQuestionTTS(maQ)}
                           mr={1}
                         />
                       </Tooltip>
+                      {isQuestionBusy ? (
+                        <AnimatedEllipsis
+                          color="purple.200"
+                          fontWeight="bold"
+                          mt={1}
+                        />
+                      ) : null}
                       <Text
                         fontSize="lg"
                         fontWeight="medium"
@@ -4425,7 +4467,12 @@ Return JSON ONLY:
                   <Tooltip label={speakListenLabel} placement="top">
                     <Button
                       aria-label={speakListenLabel}
-                      leftIcon={<PiSpeakerHighDuotone />}
+                      leftIcon={<PiMicrophoneDuotone />}
+                      rightIcon={
+                        isSpeakPlaying ? (
+                          <AnimatedEllipsis color="teal.100" />
+                        ) : undefined
+                      }
                       size="sm"
                       variant="solid"
                       colorScheme={isSpeakPlaying ? "teal" : "purple"}

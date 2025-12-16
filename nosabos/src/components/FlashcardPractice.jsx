@@ -23,7 +23,6 @@ import {
   RiStopCircleLine,
   RiKeyboardLine,
   RiEyeLine,
-  RiVolumeUpLine,
 } from "react-icons/ri";
 import {
   LOW_LATENCY_TTS_FORMAT,
@@ -37,6 +36,7 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 
 const MotionBox = motion(Box);
 
@@ -559,12 +559,9 @@ export default function FlashcardPractice({
                         variant="solid"
                         colorScheme="purple"
                         color="white"
-                        leftIcon={
-                          isPlayingAudio ? (
-                            <Spinner size="xs" />
-                          ) : (
-                            <RiVolumeUpLine size={14} />
-                          )
+                        leftIcon={<RiMicLine size={14} />}
+                        rightIcon={
+                          isPlayingAudio ? <AnimatedEllipsis color="white" /> : undefined
                         }
                         onClick={handleListenToAnswer}
                         isDisabled={isPlayingAudio}
@@ -572,8 +569,7 @@ export default function FlashcardPractice({
                         fontSize="xs"
                       >
                         {isPlayingAudio
-                          ? getTranslation("flashcard_playing") ||
-                            "Playing..."
+                          ? getTranslation("flashcard_playing") || "Playing"
                           : getTranslation("flashcard_listen")}
                       </Button>
                     )}

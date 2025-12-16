@@ -30,7 +30,10 @@ import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
 import { FiArrowRight } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import { PiMicrophoneStageDuotone, PiSpeakerHighDuotone } from "react-icons/pi";
+import {
+  PiMicrophoneDuotone,
+  PiMicrophoneStageDuotone,
+} from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -58,6 +61,7 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
+import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 
 /* ================================
@@ -1653,7 +1657,7 @@ export default function StoryMode({
                       onClick={() =>
                         playNarrationWithHighlighting(storyData.fullStory?.tgt)
                       }
-                      leftIcon={<PiSpeakerHighDuotone />}
+                      leftIcon={<PiMicrophoneDuotone />}
                       color="white"
                       isLoading={isPlayingTarget || isSynthesizingTarget}
                       loadingText={
@@ -1661,6 +1665,7 @@ export default function StoryMode({
                           ? uiText.tts_synthesizing
                           : uiText.playing
                       }
+                      spinner={<AnimatedEllipsis color="white" />}
                       isDisabled={
                         isAutoPlaying ||
                         isSynthesizingTarget
@@ -1780,7 +1785,8 @@ export default function StoryMode({
                             ? uiText.tts_synthesizing
                             : uiText.playing
                         }
-                        leftIcon={<PiSpeakerHighDuotone />}
+                        leftIcon={<PiMicrophoneDuotone />}
+                        spinner={<AnimatedEllipsis color="white" />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
                         color="white"
