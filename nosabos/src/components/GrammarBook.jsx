@@ -59,14 +59,8 @@ import {
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
-import AnimatedEllipsis from "./AnimatedEllipsis";
 
-const renderSpeakerIcon = (isActive, color = "purple.200") => (
-  <HStack spacing={1} alignItems="center">
-    <PiSpeakerHighDuotone />
-    {isActive ? <AnimatedEllipsis color={color} fontWeight="bold" /> : null}
-  </HStack>
-);
+const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Tiny helpers for Gemini streaming

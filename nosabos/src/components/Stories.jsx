@@ -61,15 +61,9 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
-import AnimatedEllipsis from "./AnimatedEllipsis";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 
-const renderSpeakerIcon = (isActive, color = "white") => (
-  <HStack spacing={1} alignItems="center">
-    <PiSpeakerHighDuotone />
-    {isActive ? <AnimatedEllipsis color={color} /> : null}
-  </HStack>
-);
+const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
 
 /* ================================
    ENV / API

@@ -63,16 +63,10 @@ import {
   getTTSPlayer,
   LOW_LATENCY_TTS_FORMAT,
 } from "../utils/tts";
-import AnimatedEllipsis from "./AnimatedEllipsis";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 
-const renderSpeakerIcon = (isActive, color = "purple.200") => (
-  <HStack spacing={1} alignItems="center">
-    <PiSpeakerHighDuotone />
-    {isActive ? <AnimatedEllipsis color={color} fontWeight="bold" /> : null}
-  </HStack>
-);
+const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -4313,10 +4307,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       <Tooltip label={questionListenLabel} placement="top">
                         <IconButton
                           aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon(
-                            isQuestionSynthesizing || isQuestionBusy,
-                            "purple.200"
-                          )}
+                          icon={renderSpeakerIcon()}
                           size="sm"
                           fontSize="lg"
                           variant="ghost"
@@ -4324,13 +4315,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           mr={1}
                         />
                       </Tooltip>
-                        {isQuestionBusy ? (
-                          <AnimatedEllipsis
-                            color="purple.200"
-                            fontWeight="bold"
-                            mt={1}
-                          />
-                        ) : null}
                         <Text
                           fontSize="lg"
                           fontWeight="medium"

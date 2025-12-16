@@ -42,14 +42,7 @@ import {
   getTTSPlayer,
   TTS_LANG_TAG,
 } from "../utils/tts";
-import AnimatedEllipsis from "./AnimatedEllipsis";
-
-const renderSpeakerIcon = (isActive) => (
-  <HStack spacing={1} alignItems="center">
-    <PiSpeakerHighDuotone />
-    {isActive ? <AnimatedEllipsis /> : null}
-  </HStack>
-);
+const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Minimal i18n helper

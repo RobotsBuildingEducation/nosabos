@@ -38,7 +38,6 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
-import AnimatedEllipsis from "./AnimatedEllipsis";
 
 const MotionBox = motion(Box);
 
@@ -566,12 +565,7 @@ export default function FlashcardPractice({
                         variant="solid"
                         colorScheme="purple"
                         color="white"
-                        icon={
-                          <HStack spacing={1} alignItems="center">
-                            <RiVolumeUpLine size={14} />
-                            {isPlayingAudio ? <AnimatedEllipsis color="white" /> : null}
-                          </HStack>
-                        }
+                        icon={<RiVolumeUpLine size={14} />}
                         onClick={handleListenToAnswer}
                         isDisabled={isPlayingAudio}
                         _hover={{ bg: "whiteAlpha.300" }}
