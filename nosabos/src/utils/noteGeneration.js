@@ -94,6 +94,7 @@ export function buildNoteObject({
   targetLang,
   supportLang,
   moduleType,
+  wasCorrect,
 }) {
   return {
     lessonTitle,
@@ -103,5 +104,6 @@ export function buildNoteObject({
     targetLang,
     supportLang,
     moduleType,
+    wasCorrect,
   };
 }

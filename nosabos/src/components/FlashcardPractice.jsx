@@ -306,6 +306,7 @@ export default function FlashcardPractice({
         targetLang,
         supportLang,
         moduleType: "flashcard",
+        wasCorrect: isCorrect,
       });
 
       addNote(note);

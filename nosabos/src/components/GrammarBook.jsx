@@ -1217,6 +1217,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         targetLang,
         supportLang: supportCode,
         moduleType: "grammar",
+        wasCorrect: lastOk,
       });
 
       addNote(note);

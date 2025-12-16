@@ -141,6 +141,17 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
               >
                 {moduleLabel}
               </Badge>
+              {/* Correct/Incorrect indicator */}
+              <Badge
+                variant="solid"
+                bg={note.wasCorrect ? "green.500" : "red.500"}
+                color="white"
+                fontSize="9px"
+                px={1.5}
+                borderRadius="sm"
+              >
+                {note.wasCorrect ? "✓" : "✖"}
+              </Badge>
               <Text fontSize="xs" color="gray.500">
                 {formatDate(note.createdAt)} · {formatTime(note.createdAt)}
               </Text>

@@ -1322,6 +1322,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         targetLang,
         supportLang: supportCode,
         moduleType: "vocabulary",
+        wasCorrect: lastOk,
       });
 
       addNote(note);
