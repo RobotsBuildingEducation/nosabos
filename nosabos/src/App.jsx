@@ -4253,8 +4253,9 @@ function BottomActionBar({
       left={0}
       right={0}
       zIndex={80}
-      bg="rgba(6, 10, 24, 0.2)"
-      backdropFilter="blur(2px)"
+      bg="linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))"
+      backdropFilter="blur(18px) saturate(180%)"
+      WebkitBackdropFilter="blur(18px) saturate(180%)"
       py={3}
       px={{ base: 3, md: 6 }}
       width="100%"
@@ -4265,6 +4266,22 @@ function BottomActionBar({
       borderBottomRightRadius={"0"}
       paddingBottom={6}
       paddingTop={4}
+      border="1px solid rgba(255,255,255,0.18)"
+      boxShadow="0 20px 50px rgba(0,0,0,0.35)"
+      overflow="hidden"
+      isolation="isolate"
+      _before={{
+        content: "''",
+        position: "absolute",
+        inset: 0,
+        background:
+          "radial-gradient(circle at 18% 22%, rgba(255,255,255,0.35), transparent 32%)," +
+          "radial-gradient(circle at 80% 0%, rgba(77, 195, 255, 0.18), transparent 40%)," +
+          "radial-gradient(ellipse at 50% 120%, rgba(255,255,255,0.2), transparent 45%)",
+        opacity: 0.95,
+        pointerEvents: "none",
+        mixBlendMode: "screen",
+      }}
     >
       <Flex
         as="nav"
