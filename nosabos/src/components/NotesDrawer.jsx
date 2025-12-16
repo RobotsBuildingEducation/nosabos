@@ -1,5 +1,5 @@
 // src/components/NotesDrawer.jsx
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import {
   Accordion,
   AccordionButton,
@@ -18,11 +18,13 @@ import {
   Flex,
   HStack,
   IconButton,
+  Spinner,
   Text,
   VStack,
 } from "@chakra-ui/react";
-import { RiDeleteBinLine } from "react-icons/ri";
+import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
 import useNotesStore from "../hooks/useNotesStore";
+import { getTTSPlayer, TTS_LANG_TAG, getRandomVoice } from "../utils/tts";
 
 // CEFR levels in order
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -44,8 +46,12 @@ const MODULE_LABELS = {
   grammar: { en: "Grammar", es: "Gramática" },
 };
 
-export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
+export default function NotesDrawer({ isOpen, onClose, appLanguage = "en", targetLang = "es" }) {
   const { notes, removeNote, clearNotes } = useNotesStore();
+  const [playingNoteId, setPlayingNoteId] = useState(null);
+  const [loadingTts, setLoadingTts] = useState(null);
+  const audioRef = useRef(null);
+  const pcRef = useRef(null);
 
   const lang = appLanguage === "es" ? "es" : "en";
 
@@ -58,6 +64,54 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
   const summaryLabel = lang === "es" ? "Resumen" : "Summary";
   const lessonLabel = lang === "es" ? "Lección" : "Lesson";
   const noNotesLabel = lang === "es" ? "Sin notas" : "No notes";
+
+  const stopAudio = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.srcObject = null;
+      audioRef.current = null;
+    }
+    if (pcRef.current) {
+      pcRef.current.close();
+      pcRef.current = null;
+    }
+    setPlayingNoteId(null);
+  };
+
+  const playNoteTts = async (note) => {
+    // Stop any currently playing audio
+    stopAudio();
+
+    if (playingNoteId === note.id) {
+      return; // Was playing, now stopped
+    }
+
+    setLoadingTts(note.id);
+    try {
+      const ttsLang = note.targetLang || targetLang || "es";
+      const player = await getTTSPlayer({
+        text: note.example,
+        voice: getRandomVoice(),
+      });
+
+      audioRef.current = player.audio;
+      pcRef.current = player.pc;
+      setPlayingNoteId(note.id);
+      setLoadingTts(null);
+
+      player.audio.onended = () => {
+        setPlayingNoteId(null);
+        stopAudio();
+      };
+
+      await player.done;
+      setPlayingNoteId(null);
+    } catch (error) {
+      console.error("TTS playback error:", error);
+      setLoadingTts(null);
+      setPlayingNoteId(null);
+    }
+  };
 
   // Group notes by CEFR level
   const notesByCefr = useMemo(() => {
@@ -160,30 +214,40 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en" }) {
           <AccordionIcon color="gray.400" ml={2} />
         </AccordionButton>
 
-        <AccordionPanel pb={4} px={4}>
-          <VStack align="stretch" spacing={3}>
-            {/* Summary first */}
-            <Box>
-              <Text fontSize="xs" color="gray.500" mb={1} fontWeight="semibold">
-                {summaryLabel}
-              </Text>
-              <Text fontSize="sm" color="gray.200">
-                {note.summary}
-              </Text>
-            </Box>
+        <AccordionPanel pb={3} px={4}>
+          <VStack align="stretch" spacing={2}>
+            {/* Summary */}
+            <Text fontSize="sm" color="gray.300" lineHeight="tall">
+              {note.summary}
+            </Text>
 
-            {/* Lesson details */}
-            <Box>
-              <Text fontSize="xs" color="gray.500" mb={1} fontWeight="semibold">
-                {lessonLabel}
-              </Text>
-              <Text fontSize="sm" color="gray.300">
-                {lessonTitle}
-              </Text>
-            </Box>
+            {/* Lesson details - compact inline */}
+            <Text fontSize="xs" color="gray.500">
+              {lessonLabel}: {lessonTitle}
+            </Text>
 
-            {/* Delete button */}
-            <Flex justify="flex-end">
+            {/* Action buttons - TTS left, Delete right */}
+            <Flex justify="space-between" align="center" pt={1}>
+              <IconButton
+                icon={
+                  loadingTts === note.id ? (
+                    <Spinner size="xs" />
+                  ) : playingNoteId === note.id ? (
+                    <RiStopLine size={16} />
+                  ) : (
+                    <RiVolumeUpLine size={16} />
+                  )
+                }
+                aria-label={lang === "es" ? "Escuchar" : "Listen"}
+                size="sm"
+                variant="ghost"
+                colorScheme="blue"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  playNoteTts(note);
+                }}
+                isDisabled={loadingTts === note.id}
+              />
               <IconButton
                 icon={<RiDeleteBinLine size={16} />}
                 aria-label={lang === "es" ? "Eliminar nota" : "Delete note"}
