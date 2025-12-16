@@ -46,7 +46,12 @@ const MODULE_LABELS = {
   grammar: { en: "Grammar", es: "Gramática" },
 };
 
-export default function NotesDrawer({ isOpen, onClose, appLanguage = "en", targetLang = "es" }) {
+export default function NotesDrawer({
+  isOpen,
+  onClose,
+  appLanguage = "en",
+  targetLang = "es",
+}) {
   const { notes, removeNote, clearNotes } = useNotesStore();
   const [playingNoteId, setPlayingNoteId] = useState(null);
   const [loadingTts, setLoadingTts] = useState(null);
@@ -343,7 +348,15 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en", targe
                               fontWeight="medium"
                             >
                               {hasNotes
-                                ? `${levelNotes.length} ${levelNotes.length === 1 ? (lang === "es" ? "nota" : "note") : (lang === "es" ? "notas" : "notes")}`
+                                ? `${levelNotes.length} ${
+                                    levelNotes.length === 1
+                                      ? lang === "es"
+                                        ? "nota"
+                                        : "note"
+                                      : lang === "es"
+                                      ? "notas"
+                                      : "notes"
+                                  }`
                                 : noNotesLabel}
                             </Text>
                           </HStack>
