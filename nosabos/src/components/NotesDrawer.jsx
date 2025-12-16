@@ -298,7 +298,7 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en", targe
               </Text>
             </Flex>
           ) : (
-            <Accordion allowMultiple>
+            <Accordion allowToggle>
               {CEFR_LEVELS.map((level) => {
                 const levelNotes = notesByCefr[level];
                 const hasNotes = levelNotes.length > 0;
@@ -310,55 +310,63 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en", targe
                     mb={3}
                     isDisabled={!hasNotes}
                   >
-                    <AccordionButton
-                      py={3}
-                      px={4}
-                      bg={hasNotes ? "whiteAlpha.100" : "whiteAlpha.50"}
-                      borderRadius="lg"
-                      opacity={hasNotes ? 1 : 0.5}
-                      cursor={hasNotes ? "pointer" : "not-allowed"}
-                      _hover={{
-                        bg: hasNotes ? "whiteAlpha.200" : "whiteAlpha.50",
-                      }}
-                      _expanded={{ bg: "whiteAlpha.150", borderBottomRadius: 0 }}
-                    >
-                      <HStack flex="1" spacing={3}>
-                        <Badge
-                          bg={CEFR_COLORS[level]}
-                          color="white"
-                          fontSize="sm"
-                          fontWeight="bold"
-                          px={3}
-                          py={1}
-                          borderRadius="md"
+                    {({ isExpanded }) => (
+                      <>
+                        <AccordionButton
+                          py={3}
+                          px={4}
+                          bg={hasNotes ? "whiteAlpha.100" : "whiteAlpha.50"}
+                          borderRadius={isExpanded ? "lg" : "lg"}
+                          borderBottomRadius={isExpanded ? 0 : "lg"}
+                          opacity={hasNotes ? 1 : 0.5}
+                          cursor={hasNotes ? "pointer" : "not-allowed"}
+                          _hover={{
+                            bg: hasNotes ? "whiteAlpha.200" : "whiteAlpha.50",
+                          }}
+                          _expanded={{ bg: "whiteAlpha.150" }}
+                          position={isExpanded ? "sticky" : "relative"}
+                          top={isExpanded ? 0 : "auto"}
+                          zIndex={isExpanded ? 10 : "auto"}
                         >
-                          {level}
-                        </Badge>
-                        <Text
-                          fontSize="sm"
-                          color={hasNotes ? "white" : "gray.500"}
-                          fontWeight="medium"
-                        >
-                          {hasNotes
-                            ? `${levelNotes.length} ${levelNotes.length === 1 ? (lang === "es" ? "nota" : "note") : (lang === "es" ? "notas" : "notes")}`
-                            : noNotesLabel}
-                        </Text>
-                      </HStack>
-                      {hasNotes && <AccordionIcon color="gray.400" />}
-                    </AccordionButton>
+                          <HStack flex="1" spacing={3}>
+                            <Badge
+                              bg={CEFR_COLORS[level]}
+                              color="white"
+                              fontSize="sm"
+                              fontWeight="bold"
+                              px={3}
+                              py={1}
+                              borderRadius="md"
+                            >
+                              {level}
+                            </Badge>
+                            <Text
+                              fontSize="sm"
+                              color={hasNotes ? "white" : "gray.500"}
+                              fontWeight="medium"
+                            >
+                              {hasNotes
+                                ? `${levelNotes.length} ${levelNotes.length === 1 ? (lang === "es" ? "nota" : "note") : (lang === "es" ? "notas" : "notes")}`
+                                : noNotesLabel}
+                            </Text>
+                          </HStack>
+                          {hasNotes && <AccordionIcon color="gray.400" />}
+                        </AccordionButton>
 
-                    {hasNotes && (
-                      <AccordionPanel
-                        pb={4}
-                        px={2}
-                        pt={2}
-                        bg="whiteAlpha.50"
-                        borderBottomRadius="lg"
-                      >
-                        <Accordion allowMultiple>
-                          {levelNotes.map(renderNoteItem)}
-                        </Accordion>
-                      </AccordionPanel>
+                        {hasNotes && (
+                          <AccordionPanel
+                            pb={4}
+                            px={2}
+                            pt={2}
+                            bg="whiteAlpha.50"
+                            borderBottomRadius="lg"
+                          >
+                            <Accordion allowMultiple>
+                              {levelNotes.map(renderNoteItem)}
+                            </Accordion>
+                          </AccordionPanel>
+                        )}
+                      </>
                     )}
                   </AccordionItem>
                 );
