@@ -484,56 +484,79 @@ const HelpChatFab = forwardRef(
         focus ? `Focus area: ${focus}.` : "",
         "Keep responses brief (under 30 seconds of speech).",
         "Be encouraging and helpful. Correct mistakes gently.",
-        `Respond primarily in ${nameFor(targetLang)} with brief ${nameFor(supportLang)} clarifications when helpful.`,
+        `Respond primarily in ${nameFor(targetLang)} with brief ${nameFor(
+          supportLang
+        )} clarifications when helpful.`,
       ]
         .filter(Boolean)
         .join(" ");
     }, [progress]);
 
-    const handleRealtimeEvent = useCallback((evt) => {
-      try {
-        const data = JSON.parse(evt.data);
+    const handleRealtimeEvent = useCallback(
+      (evt) => {
+        try {
+          const data = JSON.parse(evt.data);
 
-        // Handle transcription of user speech
-        if (data.type === "conversation.item.input_audio_transcription.completed") {
-          const text = data.transcript?.trim();
-          if (text) {
-            const userId = crypto.randomUUID?.() || String(Date.now());
-            pushMessage({ id: userId, role: "user", text, done: true });
+          // Handle transcription of user speech
+          if (
+            data.type ===
+            "conversation.item.input_audio_transcription.completed"
+          ) {
+            const text = data.transcript?.trim();
+            if (text) {
+              const userId = crypto.randomUUID?.() || String(Date.now());
+              pushMessage({ id: userId, role: "user", text, done: true });
+            }
           }
-        }
 
-        // Handle assistant response transcript
-        if (data.type === "response.audio_transcript.delta") {
-          const delta = data.delta || "";
-          setMessages((prev) => {
-            const lastIdx = prev.length - 1;
-            if (lastIdx >= 0 && prev[lastIdx].role === "assistant" && !prev[lastIdx].done) {
-              const updated = [...prev];
-              updated[lastIdx] = { ...updated[lastIdx], text: updated[lastIdx].text + delta };
-              return updated;
-            }
-            // Start new assistant message
-            const assistantId = crypto.randomUUID?.() || String(Date.now());
-            return [...prev, { id: assistantId, role: "assistant", text: delta, done: false }];
-          });
-        }
+          // Handle assistant response transcript
+          if (data.type === "response.audio_transcript.delta") {
+            const delta = data.delta || "";
+            setMessages((prev) => {
+              const lastIdx = prev.length - 1;
+              if (
+                lastIdx >= 0 &&
+                prev[lastIdx].role === "assistant" &&
+                !prev[lastIdx].done
+              ) {
+                const updated = [...prev];
+                updated[lastIdx] = {
+                  ...updated[lastIdx],
+                  text: updated[lastIdx].text + delta,
+                };
+                return updated;
+              }
+              // Start new assistant message
+              const assistantId = crypto.randomUUID?.() || String(Date.now());
+              return [
+                ...prev,
+                {
+                  id: assistantId,
+                  role: "assistant",
+                  text: delta,
+                  done: false,
+                },
+              ];
+            });
+          }
 
-        if (data.type === "response.audio_transcript.done") {
-          setMessages((prev) => {
-            const lastIdx = prev.length - 1;
-            if (lastIdx >= 0 && prev[lastIdx].role === "assistant") {
-              const updated = [...prev];
-              updated[lastIdx] = { ...updated[lastIdx], done: true };
-              return updated;
-            }
-            return prev;
-          });
+          if (data.type === "response.audio_transcript.done") {
+            setMessages((prev) => {
+              const lastIdx = prev.length - 1;
+              if (lastIdx >= 0 && prev[lastIdx].role === "assistant") {
+                const updated = [...prev];
+                updated[lastIdx] = { ...updated[lastIdx], done: true };
+                return updated;
+              }
+              return prev;
+            });
+          }
+        } catch (e) {
+          console.warn("Realtime event parse error:", e);
         }
-      } catch (e) {
-        console.warn("Realtime event parse error:", e);
-      }
-    }, [pushMessage]);
+      },
+      [pushMessage]
+    );
 
     const startRealtime = useCallback(async () => {
       setRealtimeStatus("connecting");
@@ -600,7 +623,8 @@ const HelpChatFab = forwardRef(
           body: offer.sdp,
         });
         const answer = await resp.text();
-        if (!resp.ok) throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
+        if (!resp.ok)
+          throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
         await pc.setRemoteDescription({ type: "answer", sdp: answer });
 
         setRealtimeStatus("connected");
@@ -608,8 +632,14 @@ const HelpChatFab = forwardRef(
 
         toast({
           status: "success",
-          title: appLanguage === "es" ? "Chat de voz conectado" : "Voice chat connected",
-          description: appLanguage === "es" ? "Puedes empezar a hablar" : "You can start speaking",
+          title:
+            appLanguage === "es"
+              ? "Chat de voz conectado"
+              : "Voice chat connected",
+          description:
+            appLanguage === "es"
+              ? "Puedes empezar a hablar"
+              : "You can start speaking",
           duration: 3000,
         });
       } catch (e) {
@@ -617,7 +647,8 @@ const HelpChatFab = forwardRef(
         setRealtimeStatus("disconnected");
         toast({
           status: "error",
-          title: appLanguage === "es" ? "Error de conexión" : "Connection error",
+          title:
+            appLanguage === "es" ? "Error de conexión" : "Connection error",
           description: e?.message || String(e),
         });
       }
@@ -629,10 +660,14 @@ const HelpChatFab = forwardRef(
       try {
         const a = audioRef.current;
         if (a) {
-          try { a.pause(); } catch {}
+          try {
+            a.pause();
+          } catch {}
           const s = a.srcObject;
           if (s) {
-            try { s.getTracks().forEach((t) => t.stop()); } catch {}
+            try {
+              s.getTracks().forEach((t) => t.stop());
+            } catch {}
           }
           a.srcObject = null;
         }
@@ -645,19 +680,28 @@ const HelpChatFab = forwardRef(
 
       try {
         pcRef.current?.getSenders?.().forEach((s) => s.track && s.track.stop());
-        pcRef.current?.getReceivers?.().forEach((r) => r.track && r.track.stop());
+        pcRef.current
+          ?.getReceivers?.()
+          .forEach((r) => r.track && r.track.stop());
       } catch {}
 
-      try { dcRef.current?.close(); } catch {}
+      try {
+        dcRef.current?.close();
+      } catch {}
       dcRef.current = null;
-      try { pcRef.current?.close(); } catch {}
+      try {
+        pcRef.current?.close();
+      } catch {}
       pcRef.current = null;
 
       setRealtimeStatus("disconnected");
 
       toast({
         status: "info",
-        title: appLanguage === "es" ? "Chat de voz desconectado" : "Voice chat disconnected",
+        title:
+          appLanguage === "es"
+            ? "Chat de voz desconectado"
+            : "Voice chat disconnected",
         duration: 2000,
       });
     }, [appLanguage, toast]);
@@ -880,7 +924,9 @@ const HelpChatFab = forwardRef(
                   }
                   onClick={toggleRealtime}
                   isDisabled={realtimeStatus === "connecting" || sending}
-                  colorScheme={realtimeStatus === "connected" ? "red" : "purple"}
+                  colorScheme={
+                    realtimeStatus === "connected" ? "red" : "purple"
+                  }
                   variant={realtimeStatus === "connected" ? "solid" : "outline"}
                   size="md"
                   flexShrink={0}
@@ -900,11 +946,14 @@ const HelpChatFab = forwardRef(
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      if (!sending && realtimeStatus !== "connected") handleSend();
+                      if (!sending && realtimeStatus !== "connected")
+                        handleSend();
                     }
                   }}
                   bg="gray.800"
-                  borderColor={realtimeStatus === "connected" ? "purple.500" : "gray.700"}
+                  borderColor={
+                    realtimeStatus === "connected" ? "purple.500" : "gray.700"
+                  }
                   isDisabled={realtimeStatus === "connected"}
                 />
                 {sending ? (
