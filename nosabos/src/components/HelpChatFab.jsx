@@ -34,14 +34,24 @@ import {
   ListItem,
   Code as ChakraCode,
 } from "@chakra-ui/react";
-import { FaPaperPlane, FaStop } from "react-icons/fa";
+import { FaPaperPlane, FaStop, FaMicrophone } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
+import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
+
+const REALTIME_MODEL =
+  (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
+
+const REALTIME_URL = `${
+  import.meta.env.VITE_REALTIME_URL
+}?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
+  REALTIME_MODEL
+)}`;
 
 /**
  * Small Markdown renderer mapped to Chakra components
@@ -181,6 +191,14 @@ const HelpChatFab = forwardRef(
     const [messages, setMessages] = useState([]); // {id, role, text, done}
     const stopRef = useRef(false);
     const scrollRef = useRef(null);
+
+    // Realtime voice chat state
+    const [realtimeStatus, setRealtimeStatus] = useState("disconnected"); // disconnected | connecting | connected
+    const audioRef = useRef(null);
+    const pcRef = useRef(null);
+    const localRef = useRef(null);
+    const dcRef = useRef(null);
+    const realtimeAliveRef = useRef(false);
 
     // -- helpers ---------------------------------------------------------------
 
@@ -431,6 +449,287 @@ const HelpChatFab = forwardRef(
       setSending(false);
     };
 
+    // -- Realtime voice chat functions -------------------------------------------
+
+    const buildRealtimeInstructions = useCallback(() => {
+      const lvl = progress?.level || "beginner";
+      const targetLang = progress?.targetLang || "es";
+      const supportLang = progress?.supportLang || "en";
+      const persona = (progress?.voicePersona || "").slice(0, 200);
+      const focus = (progress?.helpRequest || "").slice(0, 200);
+
+      const nameFor = (code) =>
+        ({
+          es: "Spanish",
+          en: "English",
+          pt: "Portuguese",
+          fr: "French",
+          it: "Italian",
+          nah: "Nahuatl",
+        }[code] || code);
+
+      const levelHint =
+        lvl === "beginner"
+          ? "Use short, simple sentences. Speak slowly and clearly."
+          : lvl === "intermediate"
+          ? "Be concise and natural. Normal speaking pace."
+          : "Be succinct and native-like. Natural pace.";
+
+      return [
+        "You are a helpful language study buddy for quick voice conversations.",
+        `The learner is practicing ${nameFor(targetLang)}.`,
+        `Their native/support language is ${nameFor(supportLang)}.`,
+        `Level: ${lvl}. ${levelHint}`,
+        persona ? `Persona: ${persona}.` : "",
+        focus ? `Focus area: ${focus}.` : "",
+        "Keep responses brief (under 30 seconds of speech).",
+        "Be encouraging and helpful. Correct mistakes gently.",
+        `Respond primarily in ${nameFor(targetLang)} with brief ${nameFor(
+          supportLang
+        )} clarifications when helpful.`,
+      ]
+        .filter(Boolean)
+        .join(" ");
+    }, [progress]);
+
+    const handleRealtimeEvent = useCallback(
+      (evt) => {
+        try {
+          const data = JSON.parse(evt.data);
+
+          // Handle transcription of user speech
+          if (
+            data.type ===
+            "conversation.item.input_audio_transcription.completed"
+          ) {
+            const text = data.transcript?.trim();
+            if (text) {
+              const userId = crypto.randomUUID?.() || String(Date.now());
+              pushMessage({ id: userId, role: "user", text, done: true });
+            }
+          }
+
+          // Handle assistant response transcript
+          if (data.type === "response.audio_transcript.delta") {
+            const delta = data.delta || "";
+            setMessages((prev) => {
+              const lastIdx = prev.length - 1;
+              if (
+                lastIdx >= 0 &&
+                prev[lastIdx].role === "assistant" &&
+                !prev[lastIdx].done
+              ) {
+                const updated = [...prev];
+                updated[lastIdx] = {
+                  ...updated[lastIdx],
+                  text: updated[lastIdx].text + delta,
+                };
+                return updated;
+              }
+              // Start new assistant message
+              const assistantId = crypto.randomUUID?.() || String(Date.now());
+              return [
+                ...prev,
+                {
+                  id: assistantId,
+                  role: "assistant",
+                  text: delta,
+                  done: false,
+                },
+              ];
+            });
+          }
+
+          if (data.type === "response.audio_transcript.done") {
+            setMessages((prev) => {
+              const lastIdx = prev.length - 1;
+              if (lastIdx >= 0 && prev[lastIdx].role === "assistant") {
+                const updated = [...prev];
+                updated[lastIdx] = { ...updated[lastIdx], done: true };
+                return updated;
+              }
+              return prev;
+            });
+          }
+        } catch (e) {
+          console.warn("Realtime event parse error:", e);
+        }
+      },
+      [pushMessage]
+    );
+
+    const startRealtime = useCallback(async () => {
+      setRealtimeStatus("connecting");
+      try {
+        const pc = new RTCPeerConnection();
+        pcRef.current = pc;
+
+        const remote = new MediaStream();
+        if (audioRef.current) {
+          audioRef.current.srcObject = remote;
+          audioRef.current.autoplay = true;
+          audioRef.current.playsInline = true;
+        }
+
+        pc.ontrack = (e) => {
+          e.streams[0].getTracks().forEach((t) => remote.addTrack(t));
+        };
+        pc.addTransceiver("audio", { direction: "recvonly" });
+
+        const local = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+        });
+        localRef.current = local;
+        local.getTracks().forEach((track) => pc.addTrack(track, local));
+
+        const dc = pc.createDataChannel("oai-events");
+        dcRef.current = dc;
+
+        dc.onopen = () => {
+          const voiceName = getRandomVoice();
+          const instructions = buildRealtimeInstructions();
+
+          dc.send(
+            JSON.stringify({
+              type: "session.update",
+              session: {
+                instructions,
+                modalities: ["audio", "text"],
+                voice: voiceName,
+                turn_detection: {
+                  type: "server_vad",
+                  silence_duration_ms: 2000,
+                  threshold: 0.35,
+                  prefix_padding_ms: 120,
+                },
+                input_audio_transcription: { model: "whisper-1" },
+                output_audio_format: "pcm16",
+              },
+            })
+          );
+        };
+
+        dc.onmessage = handleRealtimeEvent;
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        const resp = await fetch(REALTIME_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/sdp" },
+          body: offer.sdp,
+        });
+        const answer = await resp.text();
+        if (!resp.ok)
+          throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
+        await pc.setRemoteDescription({ type: "answer", sdp: answer });
+
+        setRealtimeStatus("connected");
+        realtimeAliveRef.current = true;
+
+        toast({
+          status: "success",
+          title:
+            appLanguage === "es"
+              ? "Chat de voz conectado"
+              : "Voice chat connected",
+          description:
+            appLanguage === "es"
+              ? "Puedes empezar a hablar"
+              : "You can start speaking",
+          duration: 3000,
+        });
+      } catch (e) {
+        console.error("Realtime connection error:", e);
+        setRealtimeStatus("disconnected");
+        toast({
+          status: "error",
+          title:
+            appLanguage === "es" ? "Error de conexión" : "Connection error",
+          description: e?.message || String(e),
+        });
+      }
+    }, [appLanguage, buildRealtimeInstructions, handleRealtimeEvent, toast]);
+
+    const stopRealtime = useCallback(() => {
+      realtimeAliveRef.current = false;
+
+      try {
+        const a = audioRef.current;
+        if (a) {
+          try {
+            a.pause();
+          } catch {}
+          const s = a.srcObject;
+          if (s) {
+            try {
+              s.getTracks().forEach((t) => t.stop());
+            } catch {}
+          }
+          a.srcObject = null;
+        }
+      } catch {}
+
+      try {
+        localRef.current?.getTracks().forEach((t) => t.stop());
+      } catch {}
+      localRef.current = null;
+
+      try {
+        pcRef.current?.getSenders?.().forEach((s) => s.track && s.track.stop());
+        pcRef.current
+          ?.getReceivers?.()
+          .forEach((r) => r.track && r.track.stop());
+      } catch {}
+
+      try {
+        dcRef.current?.close();
+      } catch {}
+      dcRef.current = null;
+      try {
+        pcRef.current?.close();
+      } catch {}
+      pcRef.current = null;
+
+      setRealtimeStatus("disconnected");
+
+      toast({
+        status: "info",
+        title:
+          appLanguage === "es"
+            ? "Chat de voz desconectado"
+            : "Voice chat disconnected",
+        duration: 2000,
+      });
+    }, [appLanguage, toast]);
+
+    const toggleRealtime = useCallback(() => {
+      if (realtimeStatus === "connected") {
+        stopRealtime();
+      } else if (realtimeStatus === "disconnected") {
+        startRealtime();
+      }
+    }, [realtimeStatus, startRealtime, stopRealtime]);
+
+    // Clean up realtime on unmount or modal close
+    useEffect(() => {
+      return () => {
+        if (realtimeAliveRef.current) {
+          stopRealtime();
+        }
+      };
+    }, [stopRealtime]);
+
+    // Disconnect realtime when modal closes
+    useEffect(() => {
+      if (!isOpen && realtimeAliveRef.current) {
+        stopRealtime();
+      }
+    }, [isOpen, stopRealtime]);
+
     const openAndSend = useCallback(
       (text) => {
         const payload = normalizeQuestion(text);
@@ -598,11 +897,47 @@ const HelpChatFab = forwardRef(
               </VStack>
             </ModalBody>
 
+            {/* Hidden audio element for realtime playback */}
+            <audio ref={audioRef} style={{ display: "none" }} />
+
             <ModalFooter>
               <HStack w="100%" spacing={2}>
+                {/* Microphone button for realtime voice chat */}
+                <IconButton
+                  aria-label={
+                    realtimeStatus === "connected"
+                      ? appLanguage === "es"
+                        ? "Detener chat de voz"
+                        : "Stop voice chat"
+                      : appLanguage === "es"
+                      ? "Iniciar chat de voz"
+                      : "Start voice chat"
+                  }
+                  icon={
+                    realtimeStatus === "connected" ? (
+                      <FaStop />
+                    ) : realtimeStatus === "connecting" ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <FaMicrophone />
+                    )
+                  }
+                  onClick={toggleRealtime}
+                  isDisabled={realtimeStatus === "connecting" || sending}
+                  colorScheme={
+                    realtimeStatus === "connected" ? "red" : "purple"
+                  }
+                  variant={realtimeStatus === "connected" ? "solid" : "outline"}
+                  size="md"
+                  flexShrink={0}
+                />
                 <Input
                   placeholder={
-                    appLanguage === "es"
+                    realtimeStatus === "connected"
+                      ? appLanguage === "es"
+                        ? "Chat de voz activo…"
+                        : "Voice chat active…"
+                      : appLanguage === "es"
                       ? "Escribe tu pregunta…"
                       : "Type your question…"
                   }
@@ -611,11 +946,15 @@ const HelpChatFab = forwardRef(
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
-                      if (!sending) handleSend();
+                      if (!sending && realtimeStatus !== "connected")
+                        handleSend();
                     }
                   }}
                   bg="gray.800"
-                  borderColor="gray.700"
+                  borderColor={
+                    realtimeStatus === "connected" ? "purple.500" : "gray.700"
+                  }
+                  isDisabled={realtimeStatus === "connected"}
                 />
                 {sending ? (
                   <Button
@@ -630,7 +969,7 @@ const HelpChatFab = forwardRef(
                     onClick={handleSend}
                     colorScheme="teal"
                     leftIcon={<FaPaperPlane />}
-                    isDisabled={!input.trim()}
+                    isDisabled={!input.trim() || realtimeStatus === "connected"}
                   >
                     {appLanguage === "es" ? "Enviar" : "Send"}
                   </Button>
