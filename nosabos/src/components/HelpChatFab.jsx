@@ -303,9 +303,36 @@ const HelpChatFab = forwardRef(
 
     // -- actions ---------------------------------------------------------------
 
+    const normalizeQuestion = useCallback((raw, fallback = "") => {
+      const isEventLike =
+        raw &&
+        typeof raw === "object" &&
+        ("nativeEvent" in raw || "currentTarget" in raw || "target" in raw);
+
+      const candidate = isEventLike ? undefined : raw;
+
+      if (typeof candidate === "string") return candidate.trim();
+
+      if (
+        candidate &&
+        typeof candidate === "object" &&
+        typeof candidate.text === "string"
+      ) {
+        return candidate.text.trim();
+      }
+
+      if (candidate == null) {
+        return typeof fallback === "string"
+          ? fallback.trim()
+          : String(fallback ?? "").trim();
+      }
+
+      return String(candidate).trim();
+    }, []);
+
     const handleSend = useCallback(
       async (overrideText) => {
-        const question = (overrideText ?? input).trim();
+        const question = normalizeQuestion(overrideText, input);
         if (!question || sending) return;
 
         if (!simplemodel) {
@@ -390,6 +417,7 @@ const HelpChatFab = forwardRef(
         appLanguage,
         buildHistoryBlock,
         buildInstruction,
+        normalizeQuestion,
         patchLastAssistant,
         pushMessage,
         sending,
@@ -405,13 +433,13 @@ const HelpChatFab = forwardRef(
 
     const openAndSend = useCallback(
       (text) => {
-        const payload = (text || "").trim();
+        const payload = normalizeQuestion(text);
         if (!payload) return;
         onOpen();
         setInput(payload);
         setTimeout(() => handleSend(payload), 0);
       },
-      [handleSend, onOpen]
+      [handleSend, normalizeQuestion, onOpen]
     );
 
     useImperativeHandle(
