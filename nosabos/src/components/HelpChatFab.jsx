@@ -679,6 +679,13 @@ const HelpChatFab = forwardRef(
       };
     }, [stopRealtime]);
 
+    // Disconnect realtime when modal closes
+    useEffect(() => {
+      if (!isOpen && realtimeAliveRef.current) {
+        stopRealtime();
+      }
+    }, [isOpen, stopRealtime]);
+
     const openAndSend = useCallback(
       (text) => {
         const payload = normalizeQuestion(text);
