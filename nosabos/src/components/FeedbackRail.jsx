@@ -10,6 +10,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
+import { RiBookmarkLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { WaveBar } from "./WaveBar";
 
@@ -31,8 +32,18 @@ const FeedbackRail = React.memo(
     explanationText,
     isLoadingExplanation,
     lessonProgress,
+    // Note creation props
+    onCreateNote,
+    isCreatingNote,
+    noteCreated,
   }) => {
     if (ok === null) return null;
+
+    // Note button labels
+    const createNoteLabel =
+      userLanguage === "es" ? "Crear nota" : "Create note";
+    const noteSavedLabel =
+      userLanguage === "es" ? "¡Nota guardada!" : "Note saved!";
 
     const label = ok
       ? t?.("correct") || "Correct!"
@@ -140,6 +151,28 @@ const FeedbackRail = React.memo(
                 {userLanguage === "es"
                   ? "Explicar mi respuesta"
                   : "Explain the answer"}
+              </Button>
+            )}
+
+            {/* Create Note Button */}
+            {onCreateNote && (
+              <Button
+                leftIcon={
+                  isCreatingNote ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <RiBookmarkLine size={18} />
+                  )
+                }
+                colorScheme={noteCreated ? "green" : "cyan"}
+                variant={noteCreated ? "solid" : "outline"}
+                onClick={onCreateNote}
+                isDisabled={isCreatingNote || noteCreated}
+                width="full"
+                py={5}
+                size="md"
+              >
+                {noteCreated ? noteSavedLabel : createNoteLabel}
               </Button>
             )}
 

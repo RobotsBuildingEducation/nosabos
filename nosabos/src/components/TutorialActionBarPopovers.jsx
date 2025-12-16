@@ -15,7 +15,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@chakra-ui/icons";
-import { PiUsersBold, PiPatreonLogoFill } from "react-icons/pi";
+import { PiUsersBold } from "react-icons/pi";
+import { RiBookmarkLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaKey } from "react-icons/fa";
@@ -80,12 +81,12 @@ const BUTTON_EXPLANATIONS = [
     position: 4,
   },
   {
-    id: "support",
-    icon: PiPatreonLogoFill,
-    label: { en: "Join Us", es: "Suscríbete" },
+    id: "notes",
+    icon: RiBookmarkLine,
+    label: { en: "Notes", es: "Notas" },
     description: {
-      en: "Join us on Patreon to access more education apps and content on startups, advanced engineering, investing and business.",
-      es: "Únete a nosotros en Patreon para acceder a más apps educativas y contenido sobre startups, ingeniería avanzada, inversión y negocios.",
+      en: "View your study notes. Notes are automatically created when you complete flashcards, vocabulary, or grammar exercises.",
+      es: "Ve tus notas de estudio. Las notas se crean automáticamente cuando completas tarjetas, vocabulario o ejercicios de gramática.",
     },
     position: 5,
   },

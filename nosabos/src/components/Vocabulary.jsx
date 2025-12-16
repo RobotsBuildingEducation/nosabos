@@ -64,6 +64,8 @@ import {
 } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
+import useNotesStore from "../hooks/useNotesStore";
+import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 
 const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
 
@@ -948,6 +950,13 @@ export default function Vocabulary({
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [currentQuestionData, setCurrentQuestionData] = useState(null);
 
+  // note creation feature
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
+  const [noteCreated, setNoteCreated] = useState(false);
+  const addNote = useNotesStore((s) => s.addNote);
+  const setNotesLoading = useNotesStore((s) => s.setLoading);
+  const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
+
   function showCopyToast() {
     toast({
       title:
@@ -1263,6 +1272,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     setExplanationText("");
     setCurrentQuestionData(null);
     setNextAction(null);
+    setNoteCreated(false);
 
     // In lesson mode (non-quiz), move to next module
     if (onSkip && !isFinalQuiz) {
@@ -1279,6 +1289,61 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     if (typeof nextAction === "function") {
       const fn = nextAction;
       fn();
+    }
+  }
+
+  async function handleCreateNote() {
+    if (isCreatingNote || noteCreated || !currentQuestionData) return;
+
+    setIsCreatingNote(true);
+    setNotesLoading(true);
+
+    try {
+      const { question, userAnswer, correctAnswer } = currentQuestionData;
+      const concept = question || correctAnswer || "Vocabulary practice";
+
+      const { example, summary } = await generateNoteContent({
+        concept,
+        userAnswer,
+        wasCorrect: lastOk,
+        targetLang,
+        supportLang: supportCode,
+        cefrLevel,
+        moduleType: "vocabulary",
+      });
+
+      const lessonTitle = lesson?.title || { en: "Vocabulary", es: "Vocabulario" };
+
+      const note = buildNoteObject({
+        lessonTitle,
+        cefrLevel,
+        example,
+        summary,
+        targetLang,
+        supportLang: supportCode,
+        moduleType: "vocabulary",
+      });
+
+      addNote(note);
+      setNoteCreated(true);
+      triggerDoneAnimation();
+
+      toast({
+        title: userLanguage === "es" ? "¡Nota creada!" : "Note created!",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Error creating note:", error);
+      toast({
+        title: userLanguage === "es" ? "Error al crear nota" : "Could not create note",
+        status: "error",
+        duration: 2500,
+      });
+    } finally {
+      setIsCreatingNote(false);
+      setNotesLoading(false);
     }
   }
 
@@ -3966,6 +4031,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
               lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
             />
           </VStack>
         ) : null}
@@ -4282,6 +4350,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
               lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
             />
           </>
         ) : null}
@@ -4620,6 +4691,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
               lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
             />
           </>
         ) : null}
@@ -4850,6 +4924,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
               lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
             />
 
             {lastOk === true ? (
@@ -5136,6 +5213,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               explanationText={explanationText}
               isLoadingExplanation={isLoadingExplanation}
               lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
             />
           </>
         ) : null}
