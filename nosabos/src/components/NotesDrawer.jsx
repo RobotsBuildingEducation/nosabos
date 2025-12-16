@@ -315,18 +315,15 @@ export default function NotesDrawer({ isOpen, onClose, appLanguage = "en", targe
                         <AccordionButton
                           py={3}
                           px={4}
-                          bg={isExpanded ? "gray.800" : hasNotes ? "whiteAlpha.100" : "whiteAlpha.50"}
-                          borderRadius={isExpanded ? "lg" : "lg"}
+                          bg={hasNotes ? "whiteAlpha.100" : "whiteAlpha.50"}
+                          borderRadius="lg"
                           borderBottomRadius={isExpanded ? 0 : "lg"}
                           opacity={hasNotes ? 1 : 0.5}
                           cursor={hasNotes ? "pointer" : "not-allowed"}
                           _hover={{
-                            bg: hasNotes ? (isExpanded ? "gray.700" : "whiteAlpha.200") : "whiteAlpha.50",
+                            bg: hasNotes ? "whiteAlpha.200" : "whiteAlpha.50",
                           }}
-                          _expanded={{ bg: "gray.800" }}
-                          position={isExpanded ? "sticky" : "relative"}
-                          top={isExpanded ? 0 : "auto"}
-                          zIndex={isExpanded ? 10 : "auto"}
+                          _expanded={{ bg: "whiteAlpha.150" }}
                         >
                           <HStack flex="1" spacing={3}>
                             <Badge
