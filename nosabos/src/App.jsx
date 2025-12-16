@@ -4253,9 +4253,9 @@ function BottomActionBar({
       left={0}
       right={0}
       zIndex={80}
-      bg="linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02))"
-      backdropFilter="blur(18px) saturate(180%)"
-      WebkitBackdropFilter="blur(18px) saturate(180%)"
+      bg="linear-gradient(135deg, rgba(255,255,255,0.22), rgba(255,255,255,0.12) 40%, rgba(255,255,255,0.07))"
+      backdropFilter="blur(22px) saturate(240%) brightness(1.05)"
+      WebkitBackdropFilter="blur(22px) saturate(240%) brightness(1.05)"
       py={3}
       px={{ base: 3, md: 6 }}
       width="100%"
@@ -4266,8 +4266,8 @@ function BottomActionBar({
       borderBottomRightRadius={"0"}
       paddingBottom={6}
       paddingTop={4}
-      border="1px solid rgba(255,255,255,0.18)"
-      boxShadow="0 20px 50px rgba(0,0,0,0.35)"
+      border="1px solid rgba(255,255,255,0.35)"
+      boxShadow="0 18px 48px rgba(0,0,0,0.3)"
       overflow="hidden"
       isolation="isolate"
       _before={{
@@ -4275,10 +4275,21 @@ function BottomActionBar({
         position: "absolute",
         inset: 0,
         background:
-          "radial-gradient(circle at 18% 22%, rgba(255,255,255,0.35), transparent 32%)," +
-          "radial-gradient(circle at 80% 0%, rgba(77, 195, 255, 0.18), transparent 40%)," +
-          "radial-gradient(ellipse at 50% 120%, rgba(255,255,255,0.2), transparent 45%)",
+          "radial-gradient(circle at 18% 25%, rgba(255,255,255,0.5), transparent 32%)," +
+          "radial-gradient(circle at 82% 2%, rgba(98, 205, 255, 0.28), transparent 38%)," +
+          "radial-gradient(ellipse at 50% 118%, rgba(255,255,255,0.24), transparent 46%)",
         opacity: 0.95,
+        pointerEvents: "none",
+        mixBlendMode: "screen",
+      }}
+      _after={{
+        content: "''",
+        position: "absolute",
+        inset: "1px",
+        borderRadius: "22px 22px 0 0",
+        background:
+          "linear-gradient(160deg, rgba(255,255,255,0.35) 8%, rgba(255,255,255,0.08) 35%, rgba(255,255,255,0.18) 85%)",
+        opacity: 0.6,
         pointerEvents: "none",
         mixBlendMode: "screen",
       }}
