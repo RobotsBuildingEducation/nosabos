@@ -36,6 +36,7 @@ import {
   ViewOffIcon,
   CheckIcon,
   WarningIcon,
+  RepeatIcon,
 } from "@chakra-ui/icons";
 import { QRCodeSVG } from "qrcode.react";
 import { useCashuWallet } from "../hooks/useCashuWallet";
@@ -58,6 +59,7 @@ function WalletExperiment() {
     invoice,
     walletEventId,
     hasWallet,
+    isWalletReady,
     connect,
     createUser,
     createWallet,
@@ -65,6 +67,7 @@ function WalletExperiment() {
     deposit,
     send,
     logout,
+    refreshBalance,
     clearError,
   } = useCashuWallet();
 
@@ -200,12 +203,22 @@ function WalletExperiment() {
     if (invoiceStr) {
       toast({
         title: "Invoice created",
-        description: "Scan the QR code to deposit 10 sats",
+        description: "Scan the QR code to deposit 10 sats. Balance will update automatically.",
         status: "info",
         duration: 5000,
       });
     }
   }, [deposit, toast]);
+
+  // Handle manual refresh
+  const handleRefresh = useCallback(async () => {
+    await refreshBalance();
+    toast({
+      title: "Balance refreshed",
+      status: "success",
+      duration: 1500,
+    });
+  }, [refreshBalance, toast]);
 
   // Handle send
   const handleSend = useCallback(async () => {
@@ -261,8 +274,13 @@ function WalletExperiment() {
       setSendNpub("");
       setSendAmount("1");
       setSendComment("");
+
+      // Force refresh balance after a moment
+      setTimeout(() => {
+        refreshBalance();
+      }, 1500);
     }
-  }, [sendNpub, sendAmount, sendComment, balance, send, toast]);
+  }, [sendNpub, sendAmount, sendComment, balance, send, toast, refreshBalance]);
 
   // Handle logout
   const handleLogout = useCallback(() => {
@@ -498,13 +516,33 @@ function WalletExperiment() {
           <Card w="100%" bg="linear-gradient(135deg, #2D3748 0%, #1A202C 100%)" borderColor="teal.500" borderWidth="2px">
             <CardBody>
               <VStack spacing={2}>
-                <Text color="gray.400" fontSize="sm">Balance</Text>
-                <HStack spacing={2} align="baseline">
-                  <Text fontSize="4xl" fontWeight="bold" color="white">
-                    {balance}
-                  </Text>
-                  <Text fontSize="lg" color="teal.300">sats</Text>
+                <HStack w="100%" justify="space-between">
+                  <Text color="gray.400" fontSize="sm">Balance</Text>
+                  <Tooltip label="Refresh balance">
+                    <IconButton
+                      size="xs"
+                      variant="ghost"
+                      icon={<RepeatIcon />}
+                      onClick={handleRefresh}
+                      isLoading={isLoading}
+                      color="gray.400"
+                      aria-label="Refresh balance"
+                    />
+                  </Tooltip>
                 </HStack>
+                {!isWalletReady ? (
+                  <VStack spacing={2} py={2}>
+                    <Spinner size="lg" color="teal.300" />
+                    <Text color="gray.400" fontSize="sm">Loading wallet...</Text>
+                  </VStack>
+                ) : (
+                  <HStack spacing={2} align="baseline">
+                    <Text fontSize="4xl" fontWeight="bold" color="white">
+                      {balance}
+                    </Text>
+                    <Text fontSize="lg" color="teal.300">sats</Text>
+                  </HStack>
+                )}
                 <Badge colorScheme="teal" variant="subtle">
                   NIP-60 Cashu Wallet
                 </Badge>

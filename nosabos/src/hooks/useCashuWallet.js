@@ -16,6 +16,35 @@ const DEFAULT_RELAYS = [
 ];
 
 /**
+ * Safely extract total balance from wallet.balance() response
+ * The response can be: number, { amount }, or [{ amount, unit }]
+ */
+function extractBalance(bal) {
+  if (bal === null || bal === undefined) return 0;
+  
+  // If it's a simple number
+  if (typeof bal === "number") return bal;
+  
+  // If it's an array of balance entries
+  if (Array.isArray(bal)) {
+    return bal.reduce((sum, entry) => {
+      if (typeof entry === "number") return sum + entry;
+      if (entry && typeof entry.amount === "number") return sum + entry.amount;
+      return sum;
+    }, 0);
+  }
+  
+  // If it's an object with amount
+  if (typeof bal === "object" && typeof bal.amount === "number") {
+    return bal.amount;
+  }
+  
+  // Try to parse as number
+  const parsed = Number(bal);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
  * Custom hook for NIP-60/NIP-61 Cashu wallet operations
  * All wallet state and operations are contained in this single hook
  */
@@ -36,6 +65,7 @@ export function useCashuWallet() {
   const [invoice, setInvoice] = useState("");
   const [walletEventId, setWalletEventId] = useState(null);
   const [hasWallet, setHasWallet] = useState(false);
+  const [isWalletReady, setIsWalletReady] = useState(false);
   
   // NDK instances
   const ndkRef = useRef(null);
@@ -43,6 +73,7 @@ export function useCashuWallet() {
   const walletServiceRef = useRef(null);
   const cashuWalletRef = useRef(null);
   const isInitializedRef = useRef(false);
+  const balanceUpdateTimeoutRef = useRef(null);
 
   // Utility: Convert npub/nsec to hex
   const decodeKey = useCallback((key) => {
@@ -66,33 +97,60 @@ export function useCashuWallet() {
     }
   }, []);
 
+  // Fetch and update balance with debouncing to prevent race conditions
+  const refreshBalance = useCallback(async () => {
+    const wallet = cashuWalletRef.current;
+    if (!wallet) return 0;
+    
+    // Clear any pending balance update
+    if (balanceUpdateTimeoutRef.current) {
+      clearTimeout(balanceUpdateTimeoutRef.current);
+    }
+    
+    try {
+      // Small delay to let wallet state settle
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const bal = await wallet.balance();
+      const totalBalance = extractBalance(bal);
+      
+      console.log("[useCashuWallet] Balance refreshed:", totalBalance, "raw:", bal);
+      setBalance(totalBalance);
+      return totalBalance;
+    } catch (e) {
+      console.error("[useCashuWallet] Error refreshing balance:", e);
+      return balance;
+    }
+  }, [balance]);
+
   // Setup wallet listeners
   const setupWalletListeners = useCallback(async (wallet) => {
     if (!wallet || !(wallet instanceof NDKCashuWallet)) return;
     
     console.log("[useCashuWallet] Setting up wallet listeners");
-    
-    // Listen for balance updates
-    wallet.on("balance_updated", async () => {
-      const bal = await wallet.balance();
-      const totalBalance = Array.isArray(bal)
-        ? bal.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0)
-        : Number(bal?.amount || bal || 0);
-      console.log("[useCashuWallet] Balance updated:", totalBalance);
-      setBalance(totalBalance);
-    });
-    
-    // Get initial balance
-    const initialBal = await wallet.balance();
-    const totalBalance = Array.isArray(initialBal)
-      ? initialBal.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0)
-      : Number(initialBal?.amount || initialBal || 0);
-    
-    console.log("[useCashuWallet] Initial balance:", totalBalance);
-    setBalance(totalBalance);
     cashuWalletRef.current = wallet;
     setHasWallet(true);
-  }, []);
+    
+    // Listen for balance updates with debouncing
+    wallet.on("balance_updated", async () => {
+      console.log("[useCashuWallet] Balance update event received");
+      
+      // Debounce balance updates
+      if (balanceUpdateTimeoutRef.current) {
+        clearTimeout(balanceUpdateTimeoutRef.current);
+      }
+      
+      balanceUpdateTimeoutRef.current = setTimeout(async () => {
+        await refreshBalance();
+      }, 300);
+    });
+    
+    // Get initial balance after a short delay to let proofs load
+    setTimeout(async () => {
+      await refreshBalance();
+      setIsWalletReady(true);
+    }, 1500);
+  }, [refreshBalance]);
 
   // Initialize wallet service
   const initWalletService = useCallback(async (ndk, signer) => {
@@ -111,9 +169,17 @@ export function useCashuWallet() {
       
       // Listen for default wallet
       wService.on("wallet:default", (wallet) => {
-        console.log("[useCashuWallet] Default wallet detected");
+        console.log("[useCashuWallet] Default wallet detected:", wallet?.walletId);
         setWalletEventId(wallet?.walletId || "default");
         setupWalletListeners(wallet);
+      });
+      
+      // Also listen for any wallet ready event
+      wService.on("wallet:ready", (wallet) => {
+        console.log("[useCashuWallet] Wallet ready event");
+        if (wallet && !cashuWalletRef.current) {
+          setupWalletListeners(wallet);
+        }
       });
       
       return true;
@@ -127,6 +193,7 @@ export function useCashuWallet() {
   const connect = useCallback(async (userNpub, userNsec) => {
     setIsLoading(true);
     setError(null);
+    setIsWalletReady(false);
     
     try {
       const hexPriv = decodeKey(userNsec);
@@ -180,6 +247,7 @@ export function useCashuWallet() {
   const createUser = useCallback(async (username) => {
     setIsLoading(true);
     setError(null);
+    setIsWalletReady(false);
     
     try {
       // Generate new keypair
@@ -284,14 +352,11 @@ export function useCashuWallet() {
       
       console.log("[useCashuWallet] Wallet created and published");
       
-      // Reinitialize wallet service to detect new wallet
-      await initWalletService(ndk, signer);
-      
-      // Setup listeners
+      // Setup listeners for the new wallet
       await setupWalletListeners(newWallet);
       
       setWalletEventId(newWallet.walletId || "default");
-      setHasWallet(true);
+      setIsWalletReady(true);
       
       return true;
     } catch (e) {
@@ -301,22 +366,16 @@ export function useCashuWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, [initWalletService, setupWalletListeners]);
+  }, [setupWalletListeners]);
 
-  // Load existing wallet
+  // Load existing wallet / refresh balance
   const loadWallet = useCallback(async () => {
-    // Wallet loading happens automatically via wallet service
-    // This is just a manual trigger to check
-    if (walletServiceRef.current && cashuWalletRef.current) {
-      const bal = await cashuWalletRef.current.balance();
-      const totalBalance = Array.isArray(bal)
-        ? bal.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0)
-        : Number(bal?.amount || bal || 0);
-      setBalance(totalBalance);
+    if (cashuWalletRef.current) {
+      await refreshBalance();
       return true;
     }
     return hasWallet;
-  }, [hasWallet]);
+  }, [hasWallet, refreshBalance]);
 
   // Deposit sats (create Lightning invoice)
   const deposit = useCallback(async (amount = 10) => {
@@ -341,18 +400,22 @@ export function useCashuWallet() {
       
       // Listen for success
       depositHandler.on("success", async (token) => {
-        console.log("[useCashuWallet] Deposit successful!");
+        console.log("[useCashuWallet] Deposit successful!", token);
         
-        // Check proofs
-        await wallet.checkProofs();
+        // Wait for proofs to be stored
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // Update balance
-        const updatedBal = await wallet.balance();
-        const totalBalance = Array.isArray(updatedBal)
-          ? updatedBal.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0)
-          : Number(updatedBal?.amount || updatedBal || 0);
+        // Check and refresh proofs
+        try {
+          await wallet.checkProofs();
+        } catch (e) {
+          console.warn("[useCashuWallet] checkProofs warning:", e);
+        }
         
-        setBalance(totalBalance);
+        // Refresh balance after delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await refreshBalance();
+        
         setInvoice("");
       });
       
@@ -371,7 +434,7 @@ export function useCashuWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshBalance]);
 
   // Send sats to another npub via NIP-61 nutzap
   const send = useCallback(async (recipientNpub, amount, comment = "") => {
@@ -380,8 +443,11 @@ export function useCashuWallet() {
       return false;
     }
     
-    if (balance < amount) {
-      setError("Insufficient balance");
+    // Refresh balance first to ensure we have accurate count
+    const currentBalance = await refreshBalance();
+    
+    if (currentBalance < amount) {
+      setError(`Insufficient balance. You have ${currentBalance} sats.`);
       return false;
     }
     
@@ -422,10 +488,12 @@ export function useCashuWallet() {
       // Use wallet's mints or default
       const mints = wallet.mints?.length > 0 ? wallet.mints : [DEFAULT_MINT];
       
-      // Perform cashu payment
+      console.log("[useCashuWallet] Sending", amount, "sats to", recipientNpub);
+      
+      // Perform cashu payment - use sats directly
       const confirmation = await wallet.cashuPay({
-        amount: amount * 1000, // Convert to msats
-        unit: "msat",
+        amount: amount,
+        unit: "sat",
         mints,
         p2pk: recipientP2pk,
       });
@@ -435,17 +503,19 @@ export function useCashuWallet() {
         throw new Error("Payment failed - no proofs returned");
       }
       
+      console.log("[useCashuWallet] Payment proofs received:", proofs.length);
+      
       // Create kind:9321 nutzap event
-      const proofData = JSON.stringify({ proofs, mint });
+      const proofTags = proofs.map(proof => ["proof", JSON.stringify(proof)]);
       
       const nutzapEvent = new NDKEvent(ndk, {
         kind: 9321,
         content: comment,
         created_at: Math.floor(Date.now() / 1000),
         tags: [
-          ["amount", (amount * 1000).toString()],
-          ["unit", "msat"],
-          ["proof", proofData],
+          ...proofTags,
+          ["amount", amount.toString()],
+          ["unit", "sat"],
           ["u", mint],
           ["p", recipientHex],
         ],
@@ -454,16 +524,21 @@ export function useCashuWallet() {
       await nutzapEvent.sign(signer);
       await nutzapEvent.publish();
       
-      console.log("[useCashuWallet] Nutzap sent!");
+      console.log("[useCashuWallet] Nutzap published!");
       
-      // Update balance
-      await wallet.checkProofs();
-      const updatedBal = await wallet.balance();
-      const totalBalance = Array.isArray(updatedBal)
-        ? updatedBal.reduce((sum, entry) => sum + (Number(entry?.amount) || 0), 0)
-        : Number(updatedBal?.amount || updatedBal || 0);
+      // Wait for wallet state to update
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      setBalance(totalBalance);
+      // Check proofs and refresh balance
+      try {
+        await wallet.checkProofs();
+      } catch (e) {
+        console.warn("[useCashuWallet] checkProofs warning:", e);
+      }
+      
+      // Refresh balance
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await refreshBalance();
       
       return true;
     } catch (e) {
@@ -473,10 +548,15 @@ export function useCashuWallet() {
     } finally {
       setIsLoading(false);
     }
-  }, [balance, decodeKey]);
+  }, [decodeKey, refreshBalance]);
 
   // Logout
   const logout = useCallback(() => {
+    // Clear any pending timeouts
+    if (balanceUpdateTimeoutRef.current) {
+      clearTimeout(balanceUpdateTimeoutRef.current);
+    }
+    
     // Clear local storage
     localStorage.removeItem("cashu_npub");
     localStorage.removeItem("cashu_nsec");
@@ -498,6 +578,7 @@ export function useCashuWallet() {
     setInvoice("");
     setWalletEventId(null);
     setHasWallet(false);
+    setIsWalletReady(false);
     setError(null);
   }, []);
 
@@ -515,6 +596,15 @@ export function useCashuWallet() {
     }
   }, [connect]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (balanceUpdateTimeoutRef.current) {
+        clearTimeout(balanceUpdateTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return {
     // State
     isConnected,
@@ -526,6 +616,7 @@ export function useCashuWallet() {
     invoice,
     walletEventId,
     hasWallet,
+    isWalletReady,
     
     // Actions
     connect,
@@ -535,6 +626,7 @@ export function useCashuWallet() {
     deposit,
     send,
     logout,
+    refreshBalance,
     
     // Utils
     clearError: () => setError(null),
