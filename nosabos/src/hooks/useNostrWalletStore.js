@@ -173,7 +173,10 @@ export const useNostrWalletStore = create((set, get) => ({
       const storedBalance = loadTrackedBalance();
       if (storedBalance !== null) {
         // Use our tracked balance
-        console.log("[Wallet] Using tracked balance from localStorage:", storedBalance);
+        console.log(
+          "[Wallet] Using tracked balance from localStorage:",
+          storedBalance
+        );
         set({ walletBalance: storedBalance, isWalletReady: true });
       } else {
         // First time: sync from wallet
@@ -494,7 +497,12 @@ export const useNostrWalletStore = create((set, get) => ({
       const newBalance = Math.max(0, currentBalance - amount);
       saveTrackedBalance(newBalance);
       set({ walletBalance: newBalance });
-      console.log("[Wallet] Tracked balance updated:", currentBalance, "->", newBalance);
+      console.log(
+        "[Wallet] Tracked balance updated:",
+        currentBalance,
+        "->",
+        newBalance
+      );
 
       return true;
     } catch (e) {
@@ -534,7 +542,12 @@ export const useNostrWalletStore = create((set, get) => ({
           walletBalance: newBalance,
           invoice: "",
         });
-        console.log("[Wallet] Tracked balance updated:", currentBalance, "->", newBalance);
+        console.log(
+          "[Wallet] Tracked balance updated:",
+          currentBalance,
+          "->",
+          newBalance
+        );
       });
 
       deposit.on("error", (e) => {
