@@ -98,24 +98,33 @@ export const useNostrWalletStore = create((set, get) => ({
   // Utility: Get hex pubkey from npub
   getHexNPub: (npub) => decodeKey(npub),
 
-  // Refresh balance with debouncing
-  refreshBalance: async () => {
+  // Refresh balance with debouncing and optional proof verification
+  refreshBalance: async (forceCheckProofs = false) => {
     const { cashuWallet, _balanceUpdateTimeout } = get();
     if (!cashuWallet) return 0;
 
     // Clear any pending balance update
     if (_balanceUpdateTimeout) {
       clearTimeout(_balanceUpdateTimeout);
+      set({ _balanceUpdateTimeout: null });
     }
 
     try {
-      // Small delay to let wallet state settle
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      // Force check proofs with the mint to ensure accurate state
+      if (forceCheckProofs) {
+        try {
+          await cashuWallet.checkProofs();
+          // Wait for proof check to propagate
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        } catch (e) {
+          console.warn("[Wallet] checkProofs warning:", e);
+        }
+      }
 
       const bal = await cashuWallet.balance();
       const totalBalance = extractBalance(bal);
 
-      console.log("[Wallet] Balance refreshed:", totalBalance);
+      console.log("[Wallet] Balance refreshed:", totalBalance, "raw:", JSON.stringify(bal));
       set({ walletBalance: totalBalance });
       return totalBalance;
     } catch (e) {
@@ -130,34 +139,34 @@ export const useNostrWalletStore = create((set, get) => ({
 
     console.log("[Wallet] Setting up wallet listeners");
 
-    const { refreshBalance } = get();
-
-    // Listen for balance updates with debouncing
-    wallet.on("balance_updated", async () => {
-      console.log("[Wallet] Balance update event received");
-
-      const { _balanceUpdateTimeout } = get();
-      if (_balanceUpdateTimeout) {
-        clearTimeout(_balanceUpdateTimeout);
-      }
-
-      const timeout = setTimeout(async () => {
-        await refreshBalance();
-      }, 300);
-
-      set({ _balanceUpdateTimeout: timeout });
-    });
-
     set({
       cashuWallet: wallet,
       isWalletReady: false,
     });
 
-    // Get initial balance after a short delay to let proofs load
+    // Listen for balance updates with longer debouncing to prevent race conditions
+    wallet.on("balance_updated", async () => {
+      console.log("[Wallet] Balance update event received");
+
+      const { _balanceUpdateTimeout, refreshBalance } = get();
+      if (_balanceUpdateTimeout) {
+        clearTimeout(_balanceUpdateTimeout);
+      }
+
+      // Use longer debounce to let all updates settle
+      const timeout = setTimeout(async () => {
+        await refreshBalance(true); // Force check proofs
+      }, 800);
+
+      set({ _balanceUpdateTimeout: timeout });
+    });
+
+    // Get initial balance after a delay to let proofs load from relays
     setTimeout(async () => {
-      await refreshBalance();
+      const { refreshBalance } = get();
+      await refreshBalance(true); // Force check proofs on initial load
       set({ isWalletReady: true });
-    }, 1500);
+    }, 2000);
   },
 
   // Initialize wallet service
@@ -407,6 +416,8 @@ export const useNostrWalletStore = create((set, get) => ({
 
     // Check balance first
     const currentBalance = extractBalance(walletBalance);
+    console.log("[Wallet] Current balance before send:", currentBalance);
+
     if (currentBalance < 1) {
       console.error("[Wallet] Insufficient balance:", currentBalance);
       return false;
@@ -460,17 +471,14 @@ export const useNostrWalletStore = create((set, get) => ({
 
       console.log("[Wallet] Nutzap published!");
 
-      // Wait for wallet state to update
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      // Wait longer for wallet state to update
+      await new Promise((resolve) => setTimeout(resolve, 1200));
 
-      // Check proofs and refresh balance
-      try {
-        await cashuWallet.checkProofs();
-      } catch (e) {
-        console.warn("[Wallet] checkProofs warning:", e);
-      }
+      // Force check proofs and refresh balance
+      await refreshBalance(true);
 
-      await refreshBalance();
+      const newBalance = get().walletBalance;
+      console.log("[Wallet] Balance after send:", newBalance, "(expected:", currentBalance - 1, ")");
 
       return true;
     } catch (e) {
@@ -499,19 +507,16 @@ export const useNostrWalletStore = create((set, get) => ({
 
       // Listen for success
       deposit.on("success", async (token) => {
-        console.log("[Wallet] Deposit successful!");
+        console.log("[Wallet] Deposit successful!", token);
 
-        // Wait for proofs to be stored
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        // Wait for proofs to be stored and propagate
+        await new Promise((resolve) => setTimeout(resolve, 1500));
 
-        try {
-          await cashuWallet.checkProofs();
-        } catch (e) {
-          console.warn("[Wallet] checkProofs warning:", e);
-        }
+        // Force refresh with proof check
+        await refreshBalance(true);
 
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await refreshBalance();
+        const newBalance = get().walletBalance;
+        console.log("[Wallet] Balance after deposit:", newBalance);
 
         set({
           invoice: "",
