@@ -45,7 +45,7 @@ createRoot(document.getElementById("root")).render(
         <Route path="/" element={<AppContainer />} />
         <Route path="/onboarding/*" element={<AppContainer />} />
         <Route path="/subscribe" element={<AppContainer />} />
-        {/* <Route path="/experiments" element={<WalletExperiment />} /> */}
+        <Route path="/experiments" element={<WalletExperiment />} />
       </Routes>
     </Router>
   </ChakraProvider>
