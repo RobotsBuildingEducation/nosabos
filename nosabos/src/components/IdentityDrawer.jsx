@@ -253,7 +253,7 @@ export default function IdentityDrawer({
     <Drawer
       isOpen={isOpen}
       placement="bottom"
-      onClose={reloadScheduled ? () => {} : onClose}
+      onClose={onClose}
       closeOnEsc={!reloadScheduled}
       closeOnOverlayClick={!reloadScheduled}
     >
@@ -599,14 +599,11 @@ export function BitcoinWalletSection({
     setSelectedIdentity(identity || "");
   }, [identity]);
 
-  const totalBalance = useMemo(
-    () =>
-      (walletBalance || [])?.reduce(
-        (sum, b) => sum + (Number(b?.amount) || 0),
-        0
-      ) || 0,
-    [walletBalance]
-  );
+  // walletBalance is now a clean number from the store
+  const totalBalance = useMemo(() => {
+    const numeric = Number(walletBalance);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }, [walletBalance]);
 
   const W = (key) => {
     const es = {

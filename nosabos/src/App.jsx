@@ -1097,24 +1097,13 @@ export default function App() {
 
   console.log("walletBalance", walletBalance);
 
+  // walletBalance is now a clean number from the store
   const totalWalletBalance = useMemo(() => {
-    if (Array.isArray(walletBalance)) {
-      return walletBalance.reduce(
-        (sum, entry) => sum + (Number(entry?.amount) || 0),
-        0
-      );
-    }
-    if (walletBalance && typeof walletBalance === "object") {
-      return Number(walletBalance?.amount || 0) || 0;
-    }
     const numeric = Number(walletBalance);
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
 
-  const hasSpendableBalance = useMemo(
-    () => totalWalletBalance > 0 && Boolean(cashuWallet),
-    [totalWalletBalance, cashuWallet]
-  );
+  const hasSpendableBalance = true;
 
   // DID / auth
   const { generateNostrKeys, auth, postNostrContent } =
@@ -2692,6 +2681,7 @@ export default function App() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleLocalXpAward = () => {
+      console.log("hasSpendableBalance", hasSpendableBalance);
       if (!hasSpendableBalance) return;
       const mark = Date.now();
       lastLocalXpEventRef.current = mark;
