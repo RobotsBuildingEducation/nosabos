@@ -72,11 +72,7 @@ import {
   LuLanguages,
   LuKeyRound,
 } from "react-icons/lu";
-import {
-  PiUsers,
-  PiUsersBold,
-  PiUsersThreeBold,
-} from "react-icons/pi";
+import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
 import { FiClock, FiPause, FiPlay } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -4392,12 +4388,24 @@ function BottomActionBar({
           animation={notesAnimation}
           sx={{
             "@keyframes notesPulse": {
-              "0%": { boxShadow: "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)" },
-              "50%": { boxShadow: "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)" },
-              "100%": { boxShadow: "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)" },
+              "0%": {
+                boxShadow:
+                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+              },
+              "50%": {
+                boxShadow:
+                  "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)",
+              },
+              "100%": {
+                boxShadow:
+                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+              },
             },
             "@keyframes notesDone": {
-              "0%": { boxShadow: "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)" },
+              "0%": {
+                boxShadow:
+                  "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
+              },
               "100%": { boxShadow: "none", borderColor: "gray.600" },
             },
           }}
