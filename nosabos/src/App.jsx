@@ -3632,6 +3632,7 @@ export default function App() {
         isOpen={notesOpen}
         onClose={() => setNotesOpen(false)}
         appLanguage={appLanguage}
+        targetLang={resolvedTargetLang}
       />
 
       <BottomActionBar
