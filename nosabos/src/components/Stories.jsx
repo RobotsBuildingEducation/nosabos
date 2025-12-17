@@ -63,7 +63,8 @@ import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 
-const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
+const renderSpeakerIcon = (loading) =>
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ================================
    ENV / API
@@ -1067,8 +1068,8 @@ export default function StoryMode({
       };
 
       await player.ready;
-      await audio.play();
       setSynthesizing?.(false);
+      await audio.play();
     } catch (e) {
       setSynthesizing?.(false);
       onEnd?.();
@@ -1666,10 +1667,7 @@ export default function StoryMode({
                       aria-label={uiText.playTarget(targetDisplayName)}
                       px={3}
                     >
-                      {renderSpeakerIcon(
-                        isPlayingTarget || isSynthesizingTarget,
-                        "white"
-                      )}
+                      {renderSpeakerIcon(isSynthesizingTarget)}
                     </Button>
                   </HStack>
 

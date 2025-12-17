@@ -61,7 +61,8 @@ import { shuffle } from "./quiz/utils";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 
-const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
+const renderSpeakerIcon = (loading) =>
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Tiny helpers for Gemini streaming
@@ -3211,8 +3212,8 @@ Return JSON ONLY:
         player.cleanup?.();
       };
       await player.ready;
-      await audio.play();
       setIsSpeakSynthesizing(false);
+      await audio.play();
     } catch (err) {
       console.error("Grammar speak playback failed", err);
       setIsSpeakSynthesizing(false);
@@ -3281,10 +3282,12 @@ Return JSON ONLY:
           player.cleanup?.();
         };
         await player.ready;
-        await audio.play();
+        setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(true);
+        await audio.play();
       } catch (err) {
         console.error("Grammar question playback failed", err);
+        setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(false);
         toast({
           title:
@@ -3297,8 +3300,6 @@ Return JSON ONLY:
           duration: 3000,
           isClosable: true,
         });
-      } finally {
-        setIsQuestionSynthesizing(false);
       }
     },
     [isQuestionPlaying, targetLang, toast, userLanguage]
@@ -3762,7 +3763,7 @@ Return JSON ONLY:
                         />
                       <IconButton
                         aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
                         variant="ghost"
@@ -3892,10 +3893,7 @@ Return JSON ONLY:
                       />
                       <IconButton
                         aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(
-                          isQuestionSynthesizing || isQuestionBusy,
-                          "purple.200"
-                        )}
+                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
                         variant="ghost"
@@ -4089,7 +4087,7 @@ Return JSON ONLY:
                         />
                         <IconButton
                           aria-label={questionListenLabel}
-                          icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                          icon={renderSpeakerIcon(isQuestionSynthesizing)}
                           size="sm"
                           fontSize="lg"
                           variant="ghost"
@@ -4226,10 +4224,7 @@ Return JSON ONLY:
                       />
                       <IconButton
                         aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(
-                          isQuestionSynthesizing || isQuestionBusy,
-                          "purple.200"
-                        )}
+                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
                         variant="ghost"
@@ -4476,10 +4471,7 @@ Return JSON ONLY:
                 >
                   <IconButton
                     aria-label={speakListenLabel}
-                    icon={renderSpeakerIcon(
-                      isSpeakPlaying,
-                      isSpeakPlaying ? "teal.100" : "purple.200"
-                    )}
+                    icon={renderSpeakerIcon(isSpeakSynthesizing)}
                     size="sm"
                     variant="solid"
                     colorScheme={isSpeakPlaying ? "teal" : "purple"}

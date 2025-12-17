@@ -42,7 +42,8 @@ import {
   getTTSPlayer,
   TTS_LANG_TAG,
 } from "../utils/tts";
-const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
+const renderSpeakerIcon = (loading) =>
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Minimal i18n helper
@@ -767,6 +768,7 @@ export default function History({
 
   // Reading state
   const [isReadingTarget, setIsReadingTarget] = useState(false);
+  const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
   // Refs for audio
@@ -1217,10 +1219,11 @@ export default function History({
     setIsReadingTarget(false);
   };
 
-  async function speak({ text, langTag, setReading, onDone }) {
+  async function speak({ text, langTag, setReading, setSynthesizing, onDone }) {
     stopSpeech();
     if (!text) return;
     setReading(true);
+    setSynthesizing?.(true);
 
     try {
       const player = await getTTSPlayer({
@@ -1244,9 +1247,11 @@ export default function History({
       player.audio.onerror = cleanup;
 
       await player.ready;
+      setSynthesizing?.(false);
       await player.audio.play();
       return;
     } catch {
+      setSynthesizing?.(false);
       setReading(false);
       onDone?.();
     }
@@ -1258,6 +1263,7 @@ export default function History({
       langTag: (BCP47[targetLang] || BCP47.es).tts,
       onDone: () => {},
       setReading: setIsReadingTarget,
+      setSynthesizing: setIsSynthesizingTarget,
     });
 
   const xpReasonText =
@@ -1527,7 +1533,7 @@ export default function History({
                   <HStack mt={{ base: 2, md: 0 }}>
                     <Button
                       onClick={readTarget}
-                      leftIcon={renderSpeakerIcon(isReadingTarget)}
+                      leftIcon={renderSpeakerIcon(isSynthesizingTarget)}
                       size="sm"
                       fontSize="lg"
                       variant="ghost"

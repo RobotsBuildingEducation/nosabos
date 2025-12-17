@@ -26,6 +26,7 @@ import {
   RiKeyboardLine,
   RiEyeLine,
   RiVolumeUpLine,
+  RiStopLine,
 } from "react-icons/ri";
 import {
   LOW_LATENCY_TTS_FORMAT,
@@ -146,6 +147,7 @@ export default function FlashcardPractice({
   const [streamedAnswer, setStreamedAnswer] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [loadingTts, setLoadingTts] = useState(false);
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [noteCreated, setNoteCreated] = useState(false);
   const streamingRef = useRef(false);
@@ -265,6 +267,7 @@ export default function FlashcardPractice({
     setStreamedAnswer("");
     setIsStreaming(false);
     setIsPlayingAudio(false);
+    setLoadingTts(false);
     setIsCreatingNote(false);
     setNoteCreated(false);
     streamingRef.current = false;
@@ -413,7 +416,17 @@ export default function FlashcardPractice({
   const handleListenToAnswer = async (e) => {
     e.stopPropagation(); // Prevent card flip when clicking listen button
 
-    if (!streamedAnswer || isPlayingAudio) return;
+    // If already playing, stop it
+    if (isPlayingAudio) {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current = null;
+      }
+      setIsPlayingAudio(false);
+      return;
+    }
+
+    if (!streamedAnswer || loadingTts) return;
 
     // Stop any currently playing audio
     if (audioRef.current) {
@@ -421,7 +434,7 @@ export default function FlashcardPractice({
       audioRef.current = null;
     }
 
-    setIsPlayingAudio(true);
+    setLoadingTts(true);
 
     try {
       const player = await getTTSPlayer({
@@ -448,9 +461,12 @@ export default function FlashcardPractice({
       player.finalize?.then?.(cleanup)?.catch?.(() => {});
 
       await player.ready;
+      setLoadingTts(false);
+      setIsPlayingAudio(true);
       await player.audio.play();
     } catch (error) {
       console.error("TTS error:", error);
+      setLoadingTts(false);
       setIsPlayingAudio(false);
       toast({
         title: "Audio error",
@@ -615,8 +631,10 @@ export default function FlashcardPractice({
                     {streamedAnswer && !isStreaming && (
                       <IconButton
                         aria-label={
-                          isPlayingAudio
-                            ? getTranslation("flashcard_playing") || "Playing"
+                          loadingTts
+                            ? getTranslation("flashcard_loading") || "Loading"
+                            : isPlayingAudio
+                            ? getTranslation("flashcard_stop") || "Stop"
                             : getTranslation("flashcard_listen")
                         }
                         position="absolute"
@@ -626,9 +644,17 @@ export default function FlashcardPractice({
                         variant="solid"
                         colorScheme="purple"
                         color="white"
-                        icon={<RiVolumeUpLine size={14} />}
+                        icon={
+                          loadingTts ? (
+                            <Spinner size="xs" />
+                          ) : isPlayingAudio ? (
+                            <RiStopLine size={14} />
+                          ) : (
+                            <RiVolumeUpLine size={14} />
+                          )
+                        }
                         onClick={handleListenToAnswer}
-                        isDisabled={isPlayingAudio}
+                        isDisabled={loadingTts}
                         _hover={{ bg: "whiteAlpha.300" }}
                         fontSize="xs"
                       />

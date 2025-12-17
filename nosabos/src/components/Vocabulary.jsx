@@ -67,7 +67,8 @@ import { shuffle } from "./quiz/utils";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 
-const renderSpeakerIcon = () => <PiSpeakerHighDuotone />;
+const renderSpeakerIcon = (loading) =>
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -3692,8 +3693,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         player.cleanup?.();
       };
       await player.ready;
-      await audio.play();
       setIsSpeakSynthesizing(false);
+      await audio.play();
     } catch (err) {
       console.error("Vocabulary speak playback failed", err);
       setIsSpeakSynthesizing(false);
@@ -3762,10 +3763,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           player.cleanup?.();
         };
         await player.ready;
-        await audio.play();
+        setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(true);
+        await audio.play();
       } catch (err) {
         console.error("Vocabulary question playback failed", err);
+        setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(false);
         toast({
           title:
@@ -3778,8 +3781,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           duration: 3000,
           isClosable: true,
         });
-      } finally {
-        setIsQuestionSynthesizing(false);
       }
     },
     [isQuestionPlaying, targetLang, toast, userLanguage]
@@ -3916,7 +3917,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   />
                   <IconButton
                     aria-label={questionListenLabel}
-                    icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                    icon={renderSpeakerIcon(isQuestionSynthesizing)}
                     size="sm"
                     fontSize="lg"
                     variant="ghost"
@@ -4040,7 +4041,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
                       <IconButton
                         aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(isQuestionBusy, "purple.200")}
+                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
                         variant="ghost"
@@ -4166,10 +4167,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
                       <IconButton
                         aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(
-                          isQuestionSynthesizing || isQuestionBusy,
-                          "purple.200"
-                        )}
+                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
                         variant="ghost"
@@ -4359,7 +4357,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
                       <IconButton
                         aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon()}
+                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
                         variant="ghost"
@@ -4492,10 +4490,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
                       <IconButton
                         aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(
-                          isQuestionSynthesizing || isQuestionBusy,
-                          "purple.200"
-                        )}
+                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
                         size="sm"
                         fontSize="lg"
                         variant="ghost"
@@ -4744,10 +4739,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 >
                   <IconButton
                     aria-label={speakListenLabel}
-                    icon={renderSpeakerIcon(
-                      isSpeakPlaying,
-                      isSpeakPlaying ? "teal.100" : "purple.200"
-                    )}
+                    icon={renderSpeakerIcon(isSpeakSynthesizing)}
                     size="sm"
                     variant="solid"
                     colorScheme={isSpeakPlaying ? "teal" : "purple"}
