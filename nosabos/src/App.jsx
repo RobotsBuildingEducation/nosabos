@@ -116,7 +116,7 @@ import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
-import { FaKey } from "react-icons/fa";
+import { FaBitcoin, FaKey } from "react-icons/fa";
 
 /* ---------------------------
    Small helpers
@@ -150,7 +150,7 @@ const TARGET_LANGUAGE_LABELS = {
   pt: "Portuguese",
   fr: "French",
   it: "Italian",
-  nah: "Nahuatl",
+  nah: "Huastec Nahuatl",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -4314,12 +4314,16 @@ function BottomActionBar({
           />
         )}
         <IconButton
-          icon={<LuKeyRound size={18} />}
+          icon={<FaBitcoin size={18} />}
           onClick={onOpenIdentity}
           aria-label={identityLabel}
           isLoading={isIdentitySaving}
           rounded="xl"
           flexShrink={0}
+          bg="#f08e19"
+          boxShadow="0px 0px 6px orange"
+          height="42px"
+          mt={"4px"}
         />
 
         <IconButton

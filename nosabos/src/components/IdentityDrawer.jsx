@@ -398,9 +398,12 @@ export default function IdentityDrawer({
                 width="fit-content"
               >
                 <AccordionItem border="none">
-                  <AccordionButton px={4} py={3} _expanded={{ bg: "gray.750" }}>
+                  <AccordionButton px={4} py={3} bg="#f08e19">
                     <Flex flex="1" textAlign="left" align="center" gap={3}>
-                      <Text fontWeight="semibold">
+                      <Text
+                        fontWeight="semibold"
+                        textShadow="0px 0px 24px black"
+                      >
                         {appLanguage === "es"
                           ? "Billetera Bitcoin (experimental)"
                           : "Bitcoin wallet (experimental)"}

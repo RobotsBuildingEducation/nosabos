@@ -19,7 +19,7 @@ import { PiUsersBold } from "react-icons/pi";
 import { RiBookmarkLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
-import { FaKey } from "react-icons/fa";
+import { FaBitcoin, FaKey } from "react-icons/fa";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -42,7 +42,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "identity",
-    icon: LuKeyRound,
+    icon: FaBitcoin,
     label: { en: "Account Key", es: "Llave de cuenta" },
     description: {
       en: "Access your account info to install the app and access your password",
