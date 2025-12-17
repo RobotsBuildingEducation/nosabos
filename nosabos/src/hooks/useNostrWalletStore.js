@@ -498,22 +498,19 @@ export const useNostrWalletStore = create((set, get) => ({
       deposit.on("success", async (token) => {
         console.log("[Wallet] Deposit successful!");
 
-        // Wait for proofs to be stored
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        try {
-          await cashuWallet.checkProofs();
-        } catch (e) {
-          console.warn("[Wallet] checkProofs warning:", e);
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        await refreshBalance();
-
         set({
           invoice: "",
           rerunWallet: true,
         });
+
+        // Reload the page after 2 seconds to ensure wallet state is fresh
+        // This is necessary because the wallet's internal state can have
+        // inconsistencies after a deposit until a fresh initialization
+        setTimeout(() => {
+          if (typeof window !== "undefined") {
+            window.location.reload();
+          }
+        }, 2000);
       });
 
       deposit.on("error", (e) => {
