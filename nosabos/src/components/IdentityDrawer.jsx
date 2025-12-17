@@ -6,13 +6,8 @@ import {
   AccordionIcon,
   AccordionItem,
   AccordionPanel,
-  Alert,
-  AlertDescription,
-  AlertIcon,
-  Badge,
   Box,
   Button,
-  Center,
   Divider,
   Drawer,
   DrawerBody,
@@ -23,8 +18,6 @@ import {
   Flex,
   HStack,
   Input,
-  InputGroup,
-  InputRightElement,
   Link,
   Radio,
   RadioGroup,
@@ -70,39 +63,10 @@ export default function IdentityDrawer({
 }) {
   const toast = useToast();
 
-  const rerunWallet = useNostrWalletStore((s) => s.rerunWallet);
-  const [reloadScheduled, setReloadScheduled] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
 
   const lang = appLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
-  const reloadNote =
-    ui.bitcoin_modal_reload_note ||
-    (lang === "es"
-      ? "Cuando tu depósito se confirme, recargaremos la app para actualizar tu saldo."
-      : "Once your deposit is confirmed we'll reload the app to update your balance.");
-  const successMessage =
-    ui.bitcoin_modal_success ||
-    (lang === "es"
-      ? "¡Depósito recibido! Recargando para actualizar tu saldo…"
-      : "Deposit received! Reloading to refresh your balance…");
-
-  useEffect(() => {
-    if (!isOpen || !enableWallet) {
-      setReloadScheduled(false);
-      return;
-    }
-    if (!rerunWallet || reloadScheduled) return;
-
-    setReloadScheduled(true);
-    const timer = setTimeout(() => {
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, [rerunWallet, isOpen, enableWallet, reloadScheduled]);
 
   // Mirror identity props for display
   const [currentId, setCurrentId] = useState(activeNpub || "");
@@ -254,8 +218,6 @@ export default function IdentityDrawer({
       isOpen={isOpen}
       placement="bottom"
       onClose={onClose}
-      closeOnEsc={!reloadScheduled}
-      closeOnOverlayClick={!reloadScheduled}
     >
       <DrawerOverlay bg="blackAlpha.600" />
       <DrawerContent
@@ -419,27 +381,6 @@ export default function IdentityDrawer({
                         onSelectIdentity={onSelectIdentity}
                         isIdentitySaving={isIdentitySaving}
                       />
-
-                      <Box bg="gray.800" p={3} rounded="md" mt={3}>
-                        <Text fontSize="xs" opacity={0.8}>
-                          {reloadNote}
-                        </Text>
-                      </Box>
-
-                      {reloadScheduled && (
-                        <Alert
-                          status="success"
-                          variant="left-accent"
-                          bg="green.900"
-                          color="green.100"
-                          mt={3}
-                        >
-                          <AlertIcon />
-                          <AlertDescription fontSize="sm">
-                            {successMessage}
-                          </AlertDescription>
-                        </Alert>
-                      )}
                     </Box>
                   </AccordionPanel>
                 </AccordionItem>

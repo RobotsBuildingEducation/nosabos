@@ -1093,7 +1093,6 @@ export default function App() {
   const walletBalance = useNostrWalletStore((s) => s.walletBalance);
   const sendOneSatToNpub = useNostrWalletStore((s) => s.sendOneSatToNpub);
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
-  const rerunWallet = useNostrWalletStore((s) => s.rerunWallet);
 
   console.log("walletBalance", walletBalance);
 
@@ -1387,17 +1386,6 @@ export default function App() {
     helpRequest: "",
     practicePronunciation: false,
   };
-
-  const runWallet = async () => {
-    await init();
-    await initWalletService();
-  };
-  useEffect(() => {
-    if (rerunWallet) {
-      console.log("wallet run");
-      runWallet();
-    }
-  }, [rerunWallet]);
 
   /* ----------------------------------
      Identity bootstrap + user doc ensure

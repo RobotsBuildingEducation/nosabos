@@ -114,7 +114,6 @@ export const useNostrWalletStore = create((set, get) => ({
   cashuWallet: null,
   walletBalance: 0,
   invoice: "",
-  rerunWallet: false,
   isCreatingWallet: false,
   isWalletReady: false,
 
@@ -597,7 +596,6 @@ export const useNostrWalletStore = create((set, get) => ({
       cashuWallet: null,
       walletBalance: 0,
       invoice: "",
-      rerunWallet: false,
       isCreatingWallet: false,
       isWalletReady: false,
       _balanceUpdateTimeout: null,
