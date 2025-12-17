@@ -4282,24 +4282,28 @@ function BottomActionBar({
 
   return (
     <Box
+      className="glass-action-bar"
       position="fixed"
       bottom={0}
       left={0}
       right={0}
       zIndex={80}
-      bg="rgba(6, 10, 24, 0.2)"
-      backdropFilter="blur(2px)"
       py={3}
       px={{ base: 3, md: 6 }}
       width="100%"
       maxW="480px"
       margin="0 auto"
-      borderRadius="24"
+      borderRadius="24px"
       borderBottomLeftRadius={"0"}
       borderBottomRightRadius={"0"}
       paddingBottom={6}
       paddingTop={4}
+      overflow="hidden"
     >
+      {/* Noise texture overlay for glass grain */}
+      <Box className="glass-action-bar-noise" />
+      {/* Animated shimmer for liquid glass effect */}
+      <Box className="glass-action-bar-shimmer" />
       <Flex
         as="nav"
         maxW="560px"
@@ -4309,6 +4313,8 @@ function BottomActionBar({
         justify={{ base: "space-evenly", md: "space-evenly" }}
         flexWrap={{ base: "wrap", md: "wrap" }}
         overflow="visible"
+        position="relative"
+        zIndex={1}
       >
         {/* Back button - only show when not in skill tree */}
         {viewMode !== "skillTree" && (
