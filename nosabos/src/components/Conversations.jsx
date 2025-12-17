@@ -602,7 +602,8 @@ export default function Conversations({
     if (code === "pt") return translations[uiLang].language_pt || "Portuguese";
     if (code === "fr") return translations[uiLang].language_fr || "French";
     if (code === "it") return translations[uiLang].language_it || "Italian";
-    if (code === "nah") return translations[uiLang].language_nah || "Nahuatl";
+    if (code === "nah")
+      return translations[uiLang].language_nah || "Huastec Nahuatl";
     return code;
   };
 
@@ -963,7 +964,7 @@ export default function Conversations({
     let strict;
     if (tLang === "nah") {
       strict =
-        "Respond ONLY in Nahuatl (Náhuatl). Do not use Spanish or English.";
+        "Respond ONLY in Huastec Nahuatl (Náhuatl Huasteco). Do not use Spanish or English.";
     } else if (tLang === "es") {
       strict = "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl.";
     } else if (tLang === "pt") {
@@ -975,7 +976,7 @@ export default function Conversations({
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
     } else {
-      strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
+      strict = "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
     }
 
     // Proficiency level guidance
@@ -1065,7 +1066,7 @@ export default function Conversations({
           : tLang === "it"
           ? "Italian"
           : tLang === "nah"
-          ? "Nahuatl"
+          ? "Huastec Nahuatl"
           : "English";
       const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 

@@ -107,7 +107,7 @@ function LANG_NAME(code) {
   const map = {
     en: "English",
     es: "Spanish",
-    nah: "Nahuatl",
+    nah: "Huastec Nahuatl",
     pt: "Portuguese",
     fr: "French",
     it: "Italian",
