@@ -144,7 +144,7 @@ const FeedbackRail = React.memo(
                 <Box width="60%" mx="auto">
                   <WaveBar
                     value={lessonProgress.pct}
-                    height={14}
+                    height={20}
                     start="#4aa8ff"
                     end="#75f8ffff"
                   />
