@@ -28,7 +28,9 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
   const isFullCircle = parsedMinutes >= rotationMinutes && remainder === 0;
 
   // Calculate angle for the minute hand (full rotation = rotationMinutes)
-  const handMinutes = isFullCircle ? rotationMinutes : remainder || parsedMinutes;
+  const handMinutes = isFullCircle
+    ? rotationMinutes
+    : remainder || parsedMinutes;
   const angle = (handMinutes / rotationMinutes) * 360 - 90; // -90 to start from 12 o'clock
 
   // Generate tick marks for the clock face
@@ -75,7 +77,7 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
     const endX = cx + radius * Math.cos((endAngle * Math.PI) / 180);
     const endY = cy + radius * Math.sin((endAngle * Math.PI) / 180);
 
-    const largeArc = (endMin - startMin) > rotationMinutes / 2 ? 1 : 0;
+    const largeArc = endMin - startMin > rotationMinutes / 2 ? 1 : 0;
 
     return `M ${cx} ${cy} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY} Z`;
   };
@@ -108,12 +110,7 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
   const handY = 50 + handLength * Math.sin((angle * Math.PI) / 180);
 
   return (
-    <Box
-      display="flex"
-      justifyContent="center"
-      alignItems="center"
-      py={4}
-    >
+    <Box display="flex" justifyContent="center" alignItems="center" py={4}>
       <Box
         position="relative"
         width="160px"
@@ -134,13 +131,25 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
         >
           {/* Gradient definitions */}
           <defs>
-            <linearGradient id="arcGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <linearGradient
+              id="arcGradient"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
               <stop offset="0%" stopColor="rgba(56, 178, 172, 0.4)" />
               <stop offset="100%" stopColor="rgba(49, 151, 149, 0.6)" />
             </linearGradient>
-            <linearGradient id="arcGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(159, 122, 234, 0.5)" />
-              <stop offset="100%" stopColor="rgba(128, 90, 213, 0.7)" />
+            <linearGradient
+              id="arcGradient2"
+              x1="0%"
+              y1="0%"
+              x2="100%"
+              y2="100%"
+            >
+              <stop offset="0%" stopColor="rgba(21, 53, 255, 0.5)" />
+              <stop offset="100%" stopColor="rgba(7, 0, 198, 0.7)" />
             </linearGradient>
             <filter id="glow">
               <feGaussianBlur stdDeviation="2" result="coloredBlur" />
@@ -162,11 +171,7 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
               opacity={0.8}
             />
           ) : parsedMinutes > 0 && firstArcPath ? (
-            <path
-              d={firstArcPath}
-              fill="url(#arcGradient)"
-              opacity={0.8}
-            />
+            <path d={firstArcPath} fill="url(#arcGradient)" opacity={0.8} />
           ) : null}
 
           {/* Second layer - purple (120-240 minutes) */}
@@ -180,24 +185,14 @@ function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
               opacity={0.85}
             />
           ) : secondArcPath ? (
-            <path
-              d={secondArcPath}
-              fill="url(#arcGradient2)"
-              opacity={0.85}
-            />
+            <path d={secondArcPath} fill="url(#arcGradient2)" opacity={0.85} />
           ) : null}
 
           {/* Clock face ticks */}
           {ticks}
 
           {/* Center circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="4"
-            fill="#38B2AC"
-            filter="url(#glow)"
-          />
+          <circle cx="50" cy="50" r="4" fill="#38B2AC" filter="url(#glow)" />
 
           {/* Minute hand */}
           <line
@@ -282,8 +277,7 @@ export default function SessionTimerModal({
         <ModalBody>
           <VStack align="stretch" spacing={4}>
             <Text color="gray.400">
-              {t.timer_modal_description ||
-                "Set how long you want to focus. You can start a fresh countdown or reset the current one."}
+              {t.timer_modal_description || "Set how long you want to focus."}
             </Text>
 
             {/* Clock visual */}
@@ -309,7 +303,10 @@ export default function SessionTimerModal({
                 bg="gray.800"
                 borderColor="gray.600"
                 _hover={{ borderColor: "gray.500" }}
-                _focus={{ borderColor: "teal.400", boxShadow: "0 0 0 1px #38B2AC" }}
+                _focus={{
+                  borderColor: "teal.400",
+                  boxShadow: "0 0 0 1px #38B2AC",
+                }}
               />
               <Text fontSize="xs" color="gray.500" mt={1}>
                 {t.timer_modal_max_hint || "max 240 minutes (4 hours)"}
@@ -339,7 +336,12 @@ export default function SessionTimerModal({
             </Box>
           </VStack>
         </ModalBody>
-        <ModalFooter gap={3} flexWrap="wrap" borderTop="1px solid" borderColor="gray.800">
+        <ModalFooter
+          gap={3}
+          flexWrap="wrap"
+          borderTop="1px solid"
+          borderColor="gray.800"
+        >
           <Button colorScheme="teal" onClick={onStart}>
             {isRunning
               ? t.timer_modal_restart || "Restart timer"

@@ -514,8 +514,7 @@ export const translations = {
     path_switcher_conversations: "Chat",
     // Session timer modal
     timer_modal_title: "Session timer",
-    timer_modal_description:
-      "Set how long you want to focus. You can start a fresh countdown or reset the current one.",
+    timer_modal_description: "Set how long you want to focus.",
     timer_modal_minutes_label: "Minutes",
     timer_modal_quick_picks: "Quick picks",
     timer_modal_cancel: "Cancel",
@@ -1104,8 +1103,7 @@ export const translations = {
     path_switcher_conversations: "Chat",
     // Session timer modal
     timer_modal_title: "Temporizador de sesión",
-    timer_modal_description:
-      "Define cuánto tiempo quieres enfocarte. Puedes iniciar una nueva cuenta regresiva o reiniciar la actual.",
+    timer_modal_description: "Define cuánto tiempo quieres enfocarte.",
     timer_modal_minutes_label: "Minutos",
     timer_modal_quick_picks: "Opciones rápidas",
     timer_modal_cancel: "Cancelar",
