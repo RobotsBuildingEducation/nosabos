@@ -38,15 +38,21 @@ import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { FiCopy } from "react-icons/fi";
+import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
 import { completeLesson } from "../utils/progressTracking";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import {
   TTS_LANG_TAG,
   fetchTTSBlob,
+  getTTSPlayer,
+  LOW_LATENCY_TTS_FORMAT,
 } from "../utils/tts";
 import { doc, onSnapshot } from "firebase/firestore";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+
+const renderSpeakerIcon = (loading) =>
+  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
 /* ---------------------------
    Streaming helpers (Gemini)
@@ -254,6 +260,13 @@ export default function LessonGroupQuiz({
   const [mBank, setMBank] = useState([]);
   const [loadingMG, setLoadingMG] = useState(false);
   const [loadingMJ, setLoadingMJ] = useState(false);
+
+  // Question TTS state
+  const [isQuestionSynthesizing, setIsQuestionSynthesizing] = useState(false);
+  const [isQuestionPlaying, setIsQuestionPlaying] = useState(false);
+  const questionAudioRef = useRef(null);
+  const questionAudioUrlRef = useRef(null);
+  const questionTextRef = useRef("");
 
   // Speech hook
   const {
@@ -1089,6 +1102,82 @@ YES or NO
     }
   }
 
+  const handlePlayQuestionTTS = useCallback(
+    async (text) => {
+      const ttsText = (text || "").trim().replace(/___/g, " … ");
+      if (!ttsText) return;
+
+      if (isQuestionPlaying && questionTextRef.current === ttsText) {
+        try {
+          questionAudioRef.current?.pause?.();
+        } catch {}
+        questionAudioRef.current = null;
+        setIsQuestionPlaying(false);
+        setIsQuestionSynthesizing(false);
+        return;
+      }
+
+      try {
+        setIsQuestionSynthesizing(true);
+        questionTextRef.current = ttsText;
+
+        try {
+          questionAudioRef.current?.pause?.();
+        } catch {}
+        questionAudioRef.current = null;
+        if (questionAudioUrlRef.current) {
+          try {
+            URL.revokeObjectURL(questionAudioUrlRef.current);
+          } catch {}
+          questionAudioUrlRef.current = null;
+        }
+
+        const player = await getTTSPlayer({
+          text: ttsText,
+          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          responseFormat: LOW_LATENCY_TTS_FORMAT,
+        });
+
+        questionAudioUrlRef.current = player.audioUrl;
+        const audio = player.audio;
+        questionAudioRef.current = audio;
+        audio.onended = () => {
+          setIsQuestionPlaying(false);
+          questionAudioRef.current = null;
+          player.cleanup?.();
+        };
+        audio.onerror = () => {
+          setIsQuestionPlaying(false);
+          questionAudioRef.current = null;
+          player.cleanup?.();
+        };
+        await player.ready;
+        setIsQuestionSynthesizing(false);
+        setIsQuestionPlaying(true);
+        await audio.play();
+      } catch (err) {
+        console.error("Question TTS playback failed", err);
+        setIsQuestionSynthesizing(false);
+        setIsQuestionPlaying(false);
+        toast({
+          title:
+            userLanguage === "es"
+              ? "No se pudo reproducir la pregunta"
+              : "Question audio failed",
+          description:
+            userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
+          status: "warning",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    },
+    [isQuestionPlaying, targetLang, toast, userLanguage]
+  );
+
+  const questionListenLabel =
+    userLanguage === "es" ? "Escuchar pregunta" : "Listen to question";
+
   function handleSubmit() {
     if (mode === "fill") checkFill();
     else if (mode === "mc") checkMC();
@@ -1246,9 +1335,19 @@ YES or NO
             </VStack>
           ) : mode === "fill" ? (
             <VStack spacing={4} align="stretch">
-              <Text fontSize="lg" color="white">
-                {qFill}
-              </Text>
+              <HStack align="start" spacing={2}>
+                <IconButton
+                  aria-label={questionListenLabel}
+                  icon={renderSpeakerIcon(isQuestionSynthesizing)}
+                  size="sm"
+                  fontSize="lg"
+                  variant="ghost"
+                  onClick={() => handlePlayQuestionTTS(qFill)}
+                />
+                <Text fontSize="lg" color="white" flex="1">
+                  {qFill}
+                </Text>
+              </HStack>
               {hFill && (
                 <Text fontSize="sm" color="gray.400">
                   💡 {hFill}
@@ -1276,9 +1375,19 @@ YES or NO
             </VStack>
           ) : mode === "mc" ? (
             <VStack spacing={4} align="stretch">
-              <Text fontSize="lg" color="white">
-                {qMC}
-              </Text>
+              <HStack align="start" spacing={2}>
+                <IconButton
+                  aria-label={questionListenLabel}
+                  icon={renderSpeakerIcon(isQuestionSynthesizing)}
+                  size="sm"
+                  fontSize="lg"
+                  variant="ghost"
+                  onClick={() => handlePlayQuestionTTS(qMC)}
+                />
+                <Text fontSize="lg" color="white" flex="1">
+                  {qMC}
+                </Text>
+              </HStack>
               {hMC && (
                 <Text fontSize="sm" color="gray.400">
                   💡 {hMC}
@@ -1311,9 +1420,19 @@ YES or NO
             </VStack>
           ) : mode === "ma" ? (
             <VStack spacing={4} align="stretch">
-              <Text fontSize="lg" color="white">
-                {qMA}
-              </Text>
+              <HStack align="start" spacing={2}>
+                <IconButton
+                  aria-label={questionListenLabel}
+                  icon={renderSpeakerIcon(isQuestionSynthesizing)}
+                  size="sm"
+                  fontSize="lg"
+                  variant="ghost"
+                  onClick={() => handlePlayQuestionTTS(qMA)}
+                />
+                <Text fontSize="lg" color="white" flex="1">
+                  {qMA}
+                </Text>
+              </HStack>
               {hMA && (
                 <Text fontSize="sm" color="gray.400">
                   💡 {hMA}
@@ -1349,9 +1468,19 @@ YES or NO
               <Text fontSize="lg" color="white">
                 {sPrompt}
               </Text>
-              <Text fontSize="xl" fontWeight="bold" color="cyan.300">
-                {sStimulus}
-              </Text>
+              <HStack align="center" spacing={2}>
+                <IconButton
+                  aria-label={questionListenLabel}
+                  icon={renderSpeakerIcon(isQuestionSynthesizing)}
+                  size="sm"
+                  fontSize="lg"
+                  variant="ghost"
+                  onClick={() => handlePlayQuestionTTS(sStimulus)}
+                />
+                <Text fontSize="xl" fontWeight="bold" color="cyan.300" flex="1">
+                  {sStimulus}
+                </Text>
+              </HStack>
               {sHint && (
                 <Text fontSize="sm" color="gray.400">
                   💡 {sHint}
