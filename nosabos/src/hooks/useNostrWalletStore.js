@@ -463,13 +463,10 @@ export const useNostrWalletStore = create((set, get) => ({
       // Wait for wallet state to update
       await new Promise((resolve) => setTimeout(resolve, 800));
 
-      // Check proofs and refresh balance
-      try {
-        await cashuWallet.checkProofs();
-      } catch (e) {
-        console.warn("[Wallet] checkProofs warning:", e);
-      }
-
+      // Refresh balance from wallet's internal state
+      // Note: We intentionally do NOT call checkProofs() here because it can
+      // re-fetch old proofs from relays that haven't synced the spend yet,
+      // causing the balance to show higher than it should be.
       await refreshBalance();
 
       return true;
