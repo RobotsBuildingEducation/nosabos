@@ -253,7 +253,7 @@ export default function IdentityDrawer({
     <Drawer
       isOpen={isOpen}
       placement="bottom"
-      onClose={reloadScheduled ? () => {} : onClose}
+      onClose={onClose}
       closeOnEsc={!reloadScheduled}
       closeOnOverlayClick={!reloadScheduled}
     >

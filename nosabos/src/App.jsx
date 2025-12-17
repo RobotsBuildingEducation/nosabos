@@ -1103,10 +1103,7 @@ export default function App() {
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
 
-  const hasSpendableBalance = useMemo(
-    () => totalWalletBalance > 0 && Boolean(cashuWallet),
-    [totalWalletBalance, cashuWallet]
-  );
+  const hasSpendableBalance = true;
 
   // DID / auth
   const { generateNostrKeys, auth, postNostrContent } =
@@ -2684,6 +2681,7 @@ export default function App() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const handleLocalXpAward = () => {
+      console.log("hasSpendableBalance", hasSpendableBalance);
       if (!hasSpendableBalance) return;
       const mark = Date.now();
       lastLocalXpEventRef.current = mark;

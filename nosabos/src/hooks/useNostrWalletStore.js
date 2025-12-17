@@ -23,10 +23,10 @@ const DEFAULT_RECEIVER =
  */
 function extractBalance(bal) {
   if (bal === null || bal === undefined) return 0;
-  
+
   // If it's a simple number
   if (typeof bal === "number") return bal;
-  
+
   // If it's an array of balance entries
   if (Array.isArray(bal)) {
     return bal.reduce((sum, entry) => {
@@ -35,12 +35,12 @@ function extractBalance(bal) {
       return sum;
     }, 0);
   }
-  
+
   // If it's an object with amount
   if (typeof bal === "object" && typeof bal.amount === "number") {
     return bal.amount;
   }
-  
+
   // Try to parse as number
   const parsed = Number(bal);
   return isNaN(parsed) ? 0 : parsed;
@@ -87,7 +87,7 @@ export const useNostrWalletStore = create((set, get) => ({
   rerunWallet: false,
   isCreatingWallet: false,
   isWalletReady: false,
-  
+
   // Internal refs (not reactive)
   _balanceUpdateTimeout: null,
 
@@ -102,19 +102,19 @@ export const useNostrWalletStore = create((set, get) => ({
   refreshBalance: async () => {
     const { cashuWallet, _balanceUpdateTimeout } = get();
     if (!cashuWallet) return 0;
-    
+
     // Clear any pending balance update
     if (_balanceUpdateTimeout) {
       clearTimeout(_balanceUpdateTimeout);
     }
-    
+
     try {
       // Small delay to let wallet state settle
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
       const bal = await cashuWallet.balance();
       const totalBalance = extractBalance(bal);
-      
+
       console.log("[Wallet] Balance refreshed:", totalBalance);
       set({ walletBalance: totalBalance });
       return totalBalance;
@@ -127,32 +127,32 @@ export const useNostrWalletStore = create((set, get) => ({
   // Setup wallet listeners
   setupWalletListeners: async (wallet) => {
     if (!wallet || !(wallet instanceof NDKCashuWallet)) return;
-    
+
     console.log("[Wallet] Setting up wallet listeners");
-    
+
     const { refreshBalance } = get();
-    
+
     // Listen for balance updates with debouncing
     wallet.on("balance_updated", async () => {
       console.log("[Wallet] Balance update event received");
-      
+
       const { _balanceUpdateTimeout } = get();
       if (_balanceUpdateTimeout) {
         clearTimeout(_balanceUpdateTimeout);
       }
-      
+
       const timeout = setTimeout(async () => {
         await refreshBalance();
       }, 300);
-      
+
       set({ _balanceUpdateTimeout: timeout });
     });
-    
-    set({ 
+
+    set({
       cashuWallet: wallet,
       isWalletReady: false,
     });
-    
+
     // Get initial balance after a short delay to let proofs load
     setTimeout(async () => {
       await refreshBalance();
@@ -190,7 +190,7 @@ export const useNostrWalletStore = create((set, get) => ({
           throw new Error("NDK or signer not found and no keys to reconnect.");
         }
       }
-      
+
       ndk.signer = s;
       const user = await s.user();
       user.signer = s;
@@ -267,7 +267,7 @@ export const useNostrWalletStore = create((set, get) => ({
     if (storedNsec) set({ nostrPrivKey: storedNsec });
 
     const { connectToNostr } = get();
-    
+
     if (storedNpub && storedNsec) {
       console.log("[Wallet] Initializing with stored keys");
       const connection = await connectToNostr(storedNpub, storedNsec);
@@ -302,7 +302,7 @@ export const useNostrWalletStore = create((set, get) => ({
         await initWalletService();
         ndk = get().ndkInstance;
         s = get().signer;
-        
+
         if (!ndk || !s) {
           throw new Error("Failed to initialize NDK");
         }
@@ -327,7 +327,7 @@ export const useNostrWalletStore = create((set, get) => ({
       console.log("[Wallet] New wallet created and published");
 
       await setupWalletListeners(newWallet);
-      
+
       set({ isCreatingWallet: false });
       return newWallet;
     } catch (error) {
@@ -341,7 +341,7 @@ export const useNostrWalletStore = create((set, get) => ({
   // Fetch recipient's payment info (kind:10019)
   fetchUserPaymentInfo: async (recipientNpub) => {
     const { ndkInstance } = get();
-    
+
     if (!ndkInstance) {
       console.error("[Wallet] NDK instance not ready");
       return { mints: [DEFAULT_MINT], p2pkPubkey: null, relays: [] };
@@ -416,12 +416,11 @@ export const useNostrWalletStore = create((set, get) => ({
       const amount = 1;
       const unit = "sat";
 
-      const mints = cashuWallet.mints?.length > 0 
-        ? cashuWallet.mints 
-        : [DEFAULT_MINT];
+      const mints =
+        cashuWallet.mints?.length > 0 ? cashuWallet.mints : [DEFAULT_MINT];
 
       const { p2pkPubkey } = await fetchUserPaymentInfo(recipientNpub);
-      
+
       console.log("[Wallet] Sending 1 sat to:", recipientNpub);
 
       // Perform cashu payment
@@ -441,11 +440,11 @@ export const useNostrWalletStore = create((set, get) => ({
 
       // Create kind:9321 nutzap event
       const recipientHex = decodeKey(recipientNpub);
-      const proofTags = proofs.map(proof => ["proof", JSON.stringify(proof)]);
+      const proofTags = proofs.map((proof) => ["proof", JSON.stringify(proof)]);
 
       const nutzapEvent = new NDKEvent(ndkInstance, {
         kind: 9321,
-        content: "",
+        content: "Robots Building Education",
         created_at: Math.floor(Date.now() / 1000),
         tags: [
           ...proofTags,
@@ -462,7 +461,7 @@ export const useNostrWalletStore = create((set, get) => ({
       console.log("[Wallet] Nutzap published!");
 
       // Wait for wallet state to update
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
       // Check proofs and refresh balance
       try {
@@ -494,7 +493,7 @@ export const useNostrWalletStore = create((set, get) => ({
     try {
       const deposit = cashuWallet.deposit(amountInSats, DEFAULT_MINT, "sat");
       const pr = await deposit.start();
-      
+
       console.log("[Wallet] Invoice created:", pr?.substring(0, 50) + "...");
       setInvoice(pr);
 
@@ -503,7 +502,7 @@ export const useNostrWalletStore = create((set, get) => ({
         console.log("[Wallet] Deposit successful!");
 
         // Wait for proofs to be stored
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 1000));
 
         try {
           await cashuWallet.checkProofs();
@@ -511,10 +510,10 @@ export const useNostrWalletStore = create((set, get) => ({
           console.warn("[Wallet] checkProofs warning:", e);
         }
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
         await refreshBalance();
 
-        set({ 
+        set({
           invoice: "",
           rerunWallet: true,
         });
@@ -540,7 +539,7 @@ export const useNostrWalletStore = create((set, get) => ({
     if (_balanceUpdateTimeout) {
       clearTimeout(_balanceUpdateTimeout);
     }
-    
+
     set({
       isConnected: false,
       errorMessage: null,
