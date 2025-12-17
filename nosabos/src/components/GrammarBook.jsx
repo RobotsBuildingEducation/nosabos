@@ -3641,6 +3641,15 @@ Return JSON ONLY:
                     h={hint}
                     tr={showTRFill ? translation : ""}
                   />
+                  <IconButton
+                    aria-label={questionListenLabel}
+                    icon={renderSpeakerIcon(isQuestionSynthesizing)}
+                    size="sm"
+                    fontSize="lg"
+                    variant="ghost"
+                    onClick={() => handlePlayQuestionTTS(question)}
+                    mr={1}
+                  />
                   <Text
                     fontSize="lg"
                     fontWeight="medium"
