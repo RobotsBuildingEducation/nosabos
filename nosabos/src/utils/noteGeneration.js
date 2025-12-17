@@ -9,7 +9,7 @@ const LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
-    nah: "Nahuatl",
+    nah: "Huastec Nahuatl",
   }[code] || code);
 
 /**

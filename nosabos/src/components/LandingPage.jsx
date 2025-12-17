@@ -445,7 +445,7 @@ const landingTranslations = {
     brand_name: "No Sabos",
     hero_title:
       "Una herramienta inteligente para practicar tus habilidades lingüísticas.",
-    hero_languages: "Inglés, español, portugués, francés, italiano o náhuatl.",
+    hero_languages: "Inglés, Español, Portugués, Francés, Italiano o Huasteco.",
     display_name_placeholder: "Nombre para mostrar",
     create_button: "Crear cuenta",
     create_loading: "Creando",

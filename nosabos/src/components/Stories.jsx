@@ -97,7 +97,7 @@ const LLM_LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
-    nah: "Nahuatl",
+    nah: "Huastec Nahuatl",
   }[code] || code);
 
 const BCP47 = {
@@ -106,7 +106,7 @@ const BCP47 = {
   pt: { stt: "pt-BR", tts: "pt-BR" },
   fr: { stt: "fr-FR", tts: "fr-FR" },
   it: { stt: "it-IT", tts: "it-IT" },
-  nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Nahuatl is unsupported by engines
+  nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Huastec Nahuatl is unsupported by engines
 };
 
 const toLangKey = (value) => {
@@ -120,7 +120,8 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
-  if (["nah", "nahuatl", "náhuatl"].includes(raw)) return "nah";
+  if (["nah", "nahuatl", "náhuatl", "huastec nahuatl", "náhuatl huasteco"].includes(raw))
+    return "nah";
   return null;
 };
 

@@ -83,7 +83,8 @@ const LLM_LANG_NAME = (codeOrName) => {
   if (m === "fr" || m === "french" || m === "francés" || m === "français")
     return "French";
   if (m === "it" || m === "italian" || m === "italiano") return "Italian";
-  if (m === "nah" || m === "nahuatl") return "Nahuatl";
+  if (m === "nah" || m === "nahuatl" || m === "huastec nahuatl")
+    return "Huastec Nahuatl";
   return capName(m);
 };
 
@@ -118,7 +119,8 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
-  if (["nah", "nahuatl", "náhuatl"].includes(raw)) return "nah";
+  if (["nah", "nahuatl", "náhuatl", "huastec nahuatl", "náhuatl huasteco"].includes(raw))
+    return "nah";
   return null;
 };
 

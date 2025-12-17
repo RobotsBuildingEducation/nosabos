@@ -1812,7 +1812,7 @@ Return ONLY JSON:
     let strict;
     if (tLang === "nah") {
       strict =
-        "Respond ONLY in Nahuatl (Náhuatl). Do not use Spanish or English.";
+        "Respond ONLY in Huastec Nahuatl (Náhuatl Huasteco). Do not use Spanish or English.";
     } else if (tLang === "es") {
       strict = "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl.";
     } else if (tLang === "pt") {
@@ -1824,7 +1824,7 @@ Return ONLY JSON:
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
     } else {
-      strict = "Respond ONLY in English. Do not use Spanish or Nahuatl.";
+      strict = "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
     }
 
     const levelHint = getCEFRPromptHint(currentCefrLevel);
