@@ -85,8 +85,8 @@ const BUTTON_EXPLANATIONS = [
     icon: RiBookmarkLine,
     label: { en: "Notes", es: "Notas" },
     description: {
-      en: "View your study notes. Notes are automatically created when you complete flashcards, vocabulary, or grammar exercises.",
-      es: "Ve tus notas de estudio. Las notas se crean automáticamente cuando completas tarjetas, vocabulario o ejercicios de gramática.",
+      en: "View your study notes. Notes can be created when you attempt or complete exercises and flashcards.",
+      es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
     },
     position: 5,
   },
