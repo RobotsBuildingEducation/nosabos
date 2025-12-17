@@ -19,11 +19,17 @@ import {
 import { FiClock } from "react-icons/fi";
 
 // Analog clock component that visualizes the selected duration
-function ClockVisual({ minutes, maxMinutes = 120 }) {
+function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
   const parsedMinutes = Math.max(0, Math.min(maxMinutes, Number(minutes) || 0));
 
-  // Calculate angle for the minute hand (full rotation = maxMinutes)
-  const angle = (parsedMinutes / maxMinutes) * 360 - 90; // -90 to start from 12 o'clock
+  // Calculate how many full rotations and the remainder
+  const fullRotations = Math.floor(parsedMinutes / rotationMinutes);
+  const remainder = parsedMinutes % rotationMinutes;
+  const isFullCircle = parsedMinutes >= rotationMinutes && remainder === 0;
+
+  // Calculate angle for the minute hand (full rotation = rotationMinutes)
+  const handMinutes = isFullCircle ? rotationMinutes : remainder || parsedMinutes;
+  const angle = (handMinutes / rotationMinutes) * 360 - 90; // -90 to start from 12 o'clock
 
   // Generate tick marks for the clock face
   const ticks = useMemo(() => {
@@ -55,13 +61,12 @@ function ClockVisual({ minutes, maxMinutes = 120 }) {
     return items;
   }, []);
 
-  // Arc path for filled duration
-  const arcPath = useMemo(() => {
-    if (parsedMinutes === 0) return "";
+  // Arc path generator for a given portion of the circle
+  const createArcPath = (startMin, endMin, radius) => {
+    if (endMin <= startMin) return "";
 
-    const startAngle = -90;
-    const endAngle = angle;
-    const radius = 35;
+    const startAngle = (startMin / rotationMinutes) * 360 - 90;
+    const endAngle = (endMin / rotationMinutes) * 360 - 90;
     const cx = 50;
     const cy = 50;
 
@@ -70,10 +75,32 @@ function ClockVisual({ minutes, maxMinutes = 120 }) {
     const endX = cx + radius * Math.cos((endAngle * Math.PI) / 180);
     const endY = cy + radius * Math.sin((endAngle * Math.PI) / 180);
 
-    const largeArc = parsedMinutes > maxMinutes / 2 ? 1 : 0;
+    const largeArc = (endMin - startMin) > rotationMinutes / 2 ? 1 : 0;
 
     return `M ${cx} ${cy} L ${startX} ${startY} A ${radius} ${radius} 0 ${largeArc} 1 ${endX} ${endY} Z`;
-  }, [parsedMinutes, angle, maxMinutes]);
+  };
+
+  // First layer arc (teal) - up to first 120 minutes
+  const firstLayerMinutes = Math.min(parsedMinutes, rotationMinutes);
+  const firstArcPath = useMemo(() => {
+    if (parsedMinutes === 0) return "";
+    if (parsedMinutes >= rotationMinutes) {
+      // Full circle for first layer
+      return null; // We'll render a full circle instead
+    }
+    return createArcPath(0, firstLayerMinutes, 35);
+  }, [parsedMinutes, firstLayerMinutes, rotationMinutes]);
+
+  // Second layer arc (purple/magenta) - 120-240 minutes
+  const secondLayerMinutes = parsedMinutes > rotationMinutes ? remainder : 0;
+  const secondArcPath = useMemo(() => {
+    if (parsedMinutes <= rotationMinutes) return "";
+    if (parsedMinutes >= rotationMinutes * 2) {
+      // Full circle for second layer
+      return null;
+    }
+    return createArcPath(0, secondLayerMinutes, 35);
+  }, [parsedMinutes, secondLayerMinutes, rotationMinutes]);
 
   // Hand end point
   const handLength = 32;
@@ -111,6 +138,10 @@ function ClockVisual({ minutes, maxMinutes = 120 }) {
               <stop offset="0%" stopColor="rgba(56, 178, 172, 0.4)" />
               <stop offset="100%" stopColor="rgba(49, 151, 149, 0.6)" />
             </linearGradient>
+            <linearGradient id="arcGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="rgba(159, 122, 234, 0.5)" />
+              <stop offset="100%" stopColor="rgba(128, 90, 213, 0.7)" />
+            </linearGradient>
             <filter id="glow">
               <feGaussianBlur stdDeviation="2" result="coloredBlur" />
               <feMerge>
@@ -120,14 +151,41 @@ function ClockVisual({ minutes, maxMinutes = 120 }) {
             </filter>
           </defs>
 
-          {/* Filled arc for duration */}
-          {parsedMinutes > 0 && (
-            <path
-              d={arcPath}
+          {/* First layer - teal (0-120 minutes) */}
+          {parsedMinutes >= rotationMinutes ? (
+            // Full circle for first layer
+            <circle
+              cx="50"
+              cy="50"
+              r="35"
               fill="url(#arcGradient)"
               opacity={0.8}
             />
-          )}
+          ) : parsedMinutes > 0 && firstArcPath ? (
+            <path
+              d={firstArcPath}
+              fill="url(#arcGradient)"
+              opacity={0.8}
+            />
+          ) : null}
+
+          {/* Second layer - purple (120-240 minutes) */}
+          {parsedMinutes >= rotationMinutes * 2 ? (
+            // Full circle for second layer
+            <circle
+              cx="50"
+              cy="50"
+              r="35"
+              fill="url(#arcGradient2)"
+              opacity={0.85}
+            />
+          ) : secondArcPath ? (
+            <path
+              d={secondArcPath}
+              fill="url(#arcGradient2)"
+              opacity={0.85}
+            />
+          ) : null}
 
           {/* Clock face ticks */}
           {ticks}
@@ -201,7 +259,7 @@ export default function SessionTimerModal({
   helper,
   t = {},
 }) {
-  const presets = [10, 15, 20, 30, 45, 60, 90, 120];
+  const presets = [10, 15, 20, 30, 45, 60, 90, 120, 180, 240];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
@@ -238,6 +296,7 @@ export default function SessionTimerModal({
               <Input
                 type="number"
                 min={1}
+                max={240}
                 value={minutes}
                 onChange={(e) => onMinutesChange?.(e.target.value)}
                 bg="gray.800"
