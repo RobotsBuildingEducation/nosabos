@@ -259,7 +259,7 @@ export default function SessionTimerModal({
   helper,
   t = {},
 }) {
-  const presets = [10, 15, 20, 30, 45, 60, 90, 120, 180, 240];
+  const presets = [10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240];
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
