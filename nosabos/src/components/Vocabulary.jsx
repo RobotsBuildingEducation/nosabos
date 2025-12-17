@@ -901,7 +901,9 @@ export default function Vocabulary({
           earned: Math.min(lessonXpEarned, lessonXpGoal),
           total: lessonXpGoal,
           label:
-            userLanguage === "es" ? "Progreso de la lección" : "Lesson progress",
+            userLanguage === "es"
+              ? "Progreso de la lección"
+              : "Lesson progress",
         }
       : null;
 
@@ -1313,7 +1315,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         moduleType: "vocabulary",
       });
 
-      const lessonTitle = lesson?.title || { en: "Vocabulary", es: "Vocabulario" };
+      const lessonTitle = lesson?.title || {
+        en: "Vocabulary",
+        es: "Vocabulario",
+      };
 
       const note = buildNoteObject({
         lessonTitle,
@@ -1332,7 +1337,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     } catch (error) {
       console.error("Error creating note:", error);
       toast({
-        title: userLanguage === "es" ? "Error al crear nota" : "Could not create note",
+        title:
+          userLanguage === "es"
+            ? "Error al crear nota"
+            : "Could not create note",
         status: "error",
         duration: 2500,
       });
@@ -3770,17 +3778,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         console.error("Vocabulary question playback failed", err);
         setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(false);
-        toast({
-          title:
-            userLanguage === "es"
-              ? "No se pudo reproducir la pregunta"
-              : "Question audio failed",
-          description:
-            userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-        });
       }
     },
     [isQuestionPlaying, targetLang, toast, userLanguage]
@@ -4039,15 +4036,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
                         <CopyAllBtn q={qMC} h={hMC} tr={showTRMC ? trMC : ""} />
-                      <IconButton
-                        aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
-                        size="sm"
-                        fontSize="lg"
-                        variant="ghost"
-                        onClick={() => handlePlayQuestionTTS(qMC)}
-                        mr={1}
-                      />
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={renderSpeakerIcon(isQuestionSynthesizing)}
+                          size="sm"
+                          fontSize="lg"
+                          variant="ghost"
+                          onClick={() => handlePlayQuestionTTS(qMC)}
+                          mr={1}
+                        />
                         <Text
                           fontSize="lg"
                           fontWeight="medium"
@@ -4355,15 +4352,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     <VStack align="stretch" spacing={3}>
                       <HStack align="start" spacing={2}>
                         <CopyAllBtn q={qMA} h={hMA} tr={showTRMA ? trMA : ""} />
-                      <IconButton
-                        aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
-                        size="sm"
-                        fontSize="lg"
-                        variant="ghost"
-                        onClick={() => handlePlayQuestionTTS(qMA)}
-                        mr={1}
-                      />
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={renderSpeakerIcon(isQuestionSynthesizing)}
+                          size="sm"
+                          fontSize="lg"
+                          variant="ghost"
+                          onClick={() => handlePlayQuestionTTS(qMA)}
+                          mr={1}
+                        />
                         <Text
                           fontSize="lg"
                           fontWeight="medium"

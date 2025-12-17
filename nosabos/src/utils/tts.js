@@ -9,11 +9,11 @@ const REALTIME_URL =
 
 export const TTS_LANG_TAG = {
   en: "en-US",
-  es: "es-ES",
+  es: "es-MX",
   pt: "pt-BR",
   fr: "fr-FR",
   it: "it-IT",
-  nah: "es-ES",
+  nah: "es-MX",
 };
 
 export const DEFAULT_TTS_VOICE = "alloy";

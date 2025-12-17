@@ -1159,17 +1159,6 @@ YES or NO
         console.error("Question TTS playback failed", err);
         setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(false);
-        toast({
-          title:
-            userLanguage === "es"
-              ? "No se pudo reproducir la pregunta"
-              : "Question audio failed",
-          description:
-            userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-        });
       }
     },
     [isQuestionPlaying, targetLang, toast, userLanguage]

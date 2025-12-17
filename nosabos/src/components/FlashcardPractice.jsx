@@ -288,7 +288,10 @@ export default function FlashcardPractice({
     setNotesLoading(true);
 
     try {
-      const concept = getConceptText(card, getEffectiveCardLanguage(supportLang));
+      const concept = getConceptText(
+        card,
+        getEffectiveCardLanguage(supportLang)
+      );
       const userAnswer = textAnswer || recognizedText;
 
       const { example, summary } = await generateNoteContent({
@@ -318,7 +321,8 @@ export default function FlashcardPractice({
     } catch (error) {
       console.error("Error creating note:", error);
       toast({
-        title: getTranslation("flashcard_note_error") || "Could not create note",
+        title:
+          getTranslation("flashcard_note_error") || "Could not create note",
         status: "error",
         duration: 2500,
       });
@@ -439,7 +443,7 @@ export default function FlashcardPractice({
     try {
       const player = await getTTSPlayer({
         text: streamedAnswer,
-        langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.en,
+        langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
         voice: getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
@@ -468,12 +472,6 @@ export default function FlashcardPractice({
       console.error("TTS error:", error);
       setLoadingTts(false);
       setIsPlayingAudio(false);
-      toast({
-        title: "Audio error",
-        description: "Could not play audio. Please try again.",
-        status: "error",
-        duration: 2500,
-      });
     }
   };
 
@@ -813,7 +811,12 @@ export default function FlashcardPractice({
                       ) : (
                         <RiCloseLine size={32} color="#EF4444" />
                       )}
-                      <Text fontSize="2xl" fontWeight="bold" color="white" flex="1">
+                      <Text
+                        fontSize="2xl"
+                        fontWeight="bold"
+                        color="white"
+                        flex="1"
+                      >
                         {isCorrect
                           ? getTranslation("flashcard_correct")
                           : getTranslation("flashcard_incorrect")}
@@ -829,8 +832,10 @@ export default function FlashcardPractice({
                         }
                         aria-label={
                           noteCreated
-                            ? getTranslation("flashcard_note_saved") || "Note saved!"
-                            : getTranslation("flashcard_create_note") || "Create note"
+                            ? getTranslation("flashcard_note_saved") ||
+                              "Note saved!"
+                            : getTranslation("flashcard_create_note") ||
+                              "Create note"
                         }
                         colorScheme={noteCreated ? "green" : "gray"}
                         variant={noteCreated ? "solid" : "ghost"}

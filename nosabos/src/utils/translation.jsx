@@ -770,7 +770,7 @@ export const translations = {
     language_pt: "Portugués",
     language_fr: "Francés",
     language_it: "Italiano",
-    language_nah: "Náhuatl",
+    language_nah: "Náhuatl huasteco",
     grammar_badge_level: "Nivel {level}",
     grammar_badge_xp: "XP {xp}",
     grammar_btn_fill: "Completar el espacio",
