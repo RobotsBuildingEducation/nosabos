@@ -1097,16 +1097,8 @@ export default function App() {
 
   console.log("walletBalance", walletBalance);
 
+  // walletBalance is now a clean number from the store
   const totalWalletBalance = useMemo(() => {
-    if (Array.isArray(walletBalance)) {
-      return walletBalance.reduce(
-        (sum, entry) => sum + (Number(entry?.amount) || 0),
-        0
-      );
-    }
-    if (walletBalance && typeof walletBalance === "object") {
-      return Number(walletBalance?.amount || 0) || 0;
-    }
     const numeric = Number(walletBalance);
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
