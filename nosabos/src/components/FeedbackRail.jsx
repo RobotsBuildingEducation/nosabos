@@ -4,12 +4,14 @@ import {
   Button,
   Flex,
   HStack,
+  IconButton,
   SlideFade,
   Spinner,
   Text,
   VStack,
 } from "@chakra-ui/react";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
+import { RiBookmarkLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { WaveBar } from "./WaveBar";
 
@@ -31,8 +33,18 @@ const FeedbackRail = React.memo(
     explanationText,
     isLoadingExplanation,
     lessonProgress,
+    // Note creation props
+    onCreateNote,
+    isCreatingNote,
+    noteCreated,
   }) => {
     if (ok === null) return null;
+
+    // Note button labels
+    const createNoteLabel =
+      userLanguage === "es" ? "Crear nota" : "Create note";
+    const noteSavedLabel =
+      userLanguage === "es" ? "¡Nota guardada!" : "Note saved!";
 
     const label = ok
       ? t?.("correct") || "Correct!"
@@ -85,6 +97,25 @@ const FeedbackRail = React.memo(
                         : "Review and try again.")}
                 </Text>
               </Box>
+              {/* Create Note Button - icon only */}
+              {onCreateNote && (
+                <IconButton
+                  icon={
+                    isCreatingNote ? (
+                      <Spinner size="xs" />
+                    ) : (
+                      <RiBookmarkLine size={18} />
+                    )
+                  }
+                  aria-label={noteCreated ? noteSavedLabel : createNoteLabel}
+                  colorScheme={noteCreated ? "green" : "gray"}
+                  variant={noteCreated ? "solid" : "ghost"}
+                  onClick={onCreateNote}
+                  isDisabled={isCreatingNote || noteCreated}
+                  size="sm"
+                  flexShrink={0}
+                />
+              )}
             </HStack>
 
             {ok && lessonProgress && lessonProgress.total > 0 && (
@@ -113,7 +144,7 @@ const FeedbackRail = React.memo(
                 <Box width="60%" mx="auto">
                   <WaveBar
                     value={lessonProgress.pct}
-                    height={14}
+                    height={20}
                     start="#4aa8ff"
                     end="#75f8ffff"
                   />

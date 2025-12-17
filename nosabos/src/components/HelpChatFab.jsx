@@ -629,19 +629,6 @@ const HelpChatFab = forwardRef(
 
         setRealtimeStatus("connected");
         realtimeAliveRef.current = true;
-
-        toast({
-          status: "success",
-          title:
-            appLanguage === "es"
-              ? "Chat de voz conectado"
-              : "Voice chat connected",
-          description:
-            appLanguage === "es"
-              ? "Puedes empezar a hablar"
-              : "You can start speaking",
-          duration: 3000,
-        });
       } catch (e) {
         console.error("Realtime connection error:", e);
         setRealtimeStatus("disconnected");
@@ -695,16 +682,7 @@ const HelpChatFab = forwardRef(
       pcRef.current = null;
 
       setRealtimeStatus("disconnected");
-
-      toast({
-        status: "info",
-        title:
-          appLanguage === "es"
-            ? "Chat de voz desconectado"
-            : "Voice chat disconnected",
-        duration: 2000,
-      });
-    }, [appLanguage, toast]);
+    }, []);
 
     const toggleRealtime = useCallback(() => {
       if (realtimeStatus === "connected") {

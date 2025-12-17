@@ -3,6 +3,7 @@ import {
   Box,
   VStack,
   HStack,
+  Flex,
   Text,
   Input,
   Button,
@@ -38,6 +39,9 @@ import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
+import useNotesStore from "../hooks/useNotesStore";
+import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
+import { RiBookmarkLine } from "react-icons/ri";
 
 const MotionBox = motion(Box);
 
@@ -142,9 +146,16 @@ export default function FlashcardPractice({
   const [streamedAnswer, setStreamedAnswer] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
+  const [noteCreated, setNoteCreated] = useState(false);
   const streamingRef = useRef(false);
   const audioRef = useRef(null);
   const toast = useToast();
+
+  // Notes store
+  const addNote = useNotesStore((s) => s.addNote);
+  const setNotesLoading = useNotesStore((s) => s.setLoading);
+  const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
   const currentLanguageXp = Number(languageXp) || 0;
@@ -241,6 +252,7 @@ export default function FlashcardPractice({
     setShowResult(false);
     setIsCorrect(false);
     setXpAwarded(0);
+    setNoteCreated(false);
   };
 
   const handleClose = () => {
@@ -253,6 +265,8 @@ export default function FlashcardPractice({
     setStreamedAnswer("");
     setIsStreaming(false);
     setIsPlayingAudio(false);
+    setIsCreatingNote(false);
+    setNoteCreated(false);
     streamingRef.current = false;
     if (audioRef.current) {
       audioRef.current.pause();
@@ -262,6 +276,53 @@ export default function FlashcardPractice({
       stopRecording();
     }
     onClose();
+  };
+
+  const handleCreateNote = async () => {
+    if (isCreatingNote || noteCreated) return;
+
+    setIsCreatingNote(true);
+    setNotesLoading(true);
+
+    try {
+      const concept = getConceptText(card, getEffectiveCardLanguage(supportLang));
+      const userAnswer = textAnswer || recognizedText;
+
+      const { example, summary } = await generateNoteContent({
+        concept,
+        userAnswer,
+        wasCorrect: isCorrect,
+        targetLang,
+        supportLang,
+        cefrLevel: card.cefrLevel,
+        moduleType: "flashcard",
+      });
+
+      const note = buildNoteObject({
+        lessonTitle: { en: concept, es: concept },
+        cefrLevel: card.cefrLevel,
+        example,
+        summary,
+        targetLang,
+        supportLang,
+        moduleType: "flashcard",
+        wasCorrect: isCorrect,
+      });
+
+      addNote(note);
+      setNoteCreated(true);
+      triggerDoneAnimation();
+    } catch (error) {
+      console.error("Error creating note:", error);
+      toast({
+        title: getTranslation("flashcard_note_error") || "Could not create note",
+        status: "error",
+        duration: 2500,
+      });
+    } finally {
+      setIsCreatingNote(false);
+      setNotesLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -720,17 +781,38 @@ export default function FlashcardPractice({
                     border="2px solid"
                     borderColor={isCorrect ? "green.500" : "red.500"}
                   >
-                    <HStack spacing={3}>
+                    <HStack spacing={3} w="100%">
                       {isCorrect ? (
                         <RiCheckLine size={32} color="#22C55E" />
                       ) : (
                         <RiCloseLine size={32} color="#EF4444" />
                       )}
-                      <Text fontSize="2xl" fontWeight="bold" color="white">
+                      <Text fontSize="2xl" fontWeight="bold" color="white" flex="1">
                         {isCorrect
                           ? getTranslation("flashcard_correct")
                           : getTranslation("flashcard_incorrect")}
                       </Text>
+                      {/* Create Note Button - icon only */}
+                      <IconButton
+                        icon={
+                          isCreatingNote ? (
+                            <Spinner size="xs" />
+                          ) : (
+                            <RiBookmarkLine size={18} />
+                          )
+                        }
+                        aria-label={
+                          noteCreated
+                            ? getTranslation("flashcard_note_saved") || "Note saved!"
+                            : getTranslation("flashcard_create_note") || "Create note"
+                        }
+                        colorScheme={noteCreated ? "green" : "gray"}
+                        variant={noteCreated ? "solid" : "ghost"}
+                        onClick={handleCreateNote}
+                        isDisabled={isCreatingNote || noteCreated}
+                        size="sm"
+                        flexShrink={0}
+                      />
                     </HStack>
 
                     {isCorrect ? (

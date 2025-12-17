@@ -64,7 +64,7 @@ import {
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { RiSpeakLine, RiBook2Line } from "react-icons/ri";
+import { RiSpeakLine, RiBook2Line, RiBookmarkLine } from "react-icons/ri";
 import {
   LuBadgeCheck,
   LuBookOpen,
@@ -73,7 +73,6 @@ import {
   LuKeyRound,
 } from "react-icons/lu";
 import {
-  PiPatreonLogoFill,
   PiUsers,
   PiUsersBold,
   PiUsersThreeBold,
@@ -107,6 +106,8 @@ import SubscriptionGate from "./components/SubscriptionGate";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
+import NotesDrawer from "./components/NotesDrawer";
+import useNotesStore from "./hooks/useNotesStore";
 import { subscribeToTeamInvites } from "./utils/teams";
 import SkillTree from "./components/SkillTree";
 import {
@@ -1038,7 +1039,12 @@ export default function App() {
     [helpChatDisclosure]
   );
   const [teamsOpen, setTeamsOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
+
+  // Notes store state for action bar animations
+  const notesIsLoading = useNotesStore((s) => s.isLoading);
+  const notesIsDone = useNotesStore((s) => s.isDone);
 
   const [isLoadingApp, setIsLoadingApp] = useState(true);
 
@@ -3626,11 +3632,18 @@ export default function App() {
         onAllowPostsChange={handleAllowPostsChange}
       />
 
+      <NotesDrawer
+        isOpen={notesOpen}
+        onClose={() => setNotesOpen(false)}
+        appLanguage={appLanguage}
+      />
+
       <BottomActionBar
         t={t}
         onOpenIdentity={() => setAccountOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenTeams={() => setTeamsOpen(true)}
+        onOpenNotes={() => setNotesOpen(true)}
         isIdentitySaving={isIdentitySaving}
         showTranslations={showTranslationsEnabled}
         onToggleTranslations={handleToggleTranslations}
@@ -3640,6 +3653,8 @@ export default function App() {
         onNavigateToSkillTree={handleReturnToSkillTree}
         onOpenHelpChat={helpChatDisclosure.onOpen}
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
+        notesIsLoading={notesIsLoading}
+        notesIsDone={notesIsDone}
       />
 
       {/* Tutorial Action Bar Popovers - shows when tutorial starts */}
@@ -4225,6 +4240,7 @@ function BottomActionBar({
   onOpenIdentity,
   onOpenSettings,
   onOpenTeams,
+  onOpenNotes,
   isIdentitySaving = false,
   showTranslations = true,
   onToggleTranslations,
@@ -4235,6 +4251,8 @@ function BottomActionBar({
   onOpenHelpChat,
   helpLabel,
   hasPendingTeamInvite = false,
+  notesIsLoading = false,
+  notesIsDone = false,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -4244,7 +4262,26 @@ function BottomActionBar({
   const helpChatLabel =
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
   const teamsLabel = t?.teams_drawer_title || "Teams";
+  const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
   const backLabel = appLanguage === "es" ? "Volver" : "Go back";
+
+  // Determine notes button border styles based on loading/done state
+  const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";
+  const notesBorderColor = notesIsLoading
+    ? "cyan.400"
+    : notesIsDone
+    ? "green.400"
+    : "gray.600";
+  const notesBoxShadow = notesIsLoading
+    ? "0 0 0 2px rgba(34,211,238,0.35), 0 0 14px rgba(34,211,238,0.65)"
+    : notesIsDone
+    ? "0 0 0 2px rgba(74,222,128,0.35), 0 0 14px rgba(74,222,128,0.65)"
+    : undefined;
+  const notesAnimation = notesIsLoading
+    ? "notesPulse 1.5s ease-in-out infinite"
+    : notesIsDone
+    ? "notesDone 1.5s ease-out"
+    : undefined;
 
   return (
     <Box
@@ -4338,27 +4375,35 @@ function BottomActionBar({
         />
 
         <IconButton
-          icon={<PiPatreonLogoFill size={20} />}
-          aria-label={helpChatLabel}
-          // rounded="full"
-          isDisabled={!onOpenHelpChat}
-          bg="black"
+          icon={<RiBookmarkLine size={20} />}
+          aria-label={notesLabel}
+          onClick={onOpenNotes}
+          isLoading={notesIsLoading}
+          bg="gray.800"
           color="white"
           size="lg"
           zIndex={50}
-          boxShadow="lg"
+          boxShadow={notesBoxShadow || "lg"}
           flexShrink={0}
-          border="1px solid gray"
-          onMouseDown={() => {
-            window.open("https://www.patreon.com/NotesAndOtherStuff", "_blank");
+          borderWidth={notesBorderWidth}
+          borderColor={notesBorderColor}
+          rounded="xl"
+          transition="all 0.3s ease"
+          animation={notesAnimation}
+          sx={{
+            "@keyframes notesPulse": {
+              "0%": { boxShadow: "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)" },
+              "50%": { boxShadow: "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)" },
+              "100%": { boxShadow: "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)" },
+            },
+            "@keyframes notesDone": {
+              "0%": { boxShadow: "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)" },
+              "100%": { boxShadow: "none", borderColor: "gray.600" },
+            },
           }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              window.open(
-                "https://www.patreon.com/NotesAndOtherStuff",
-                "_blank"
-              );
-            }
+          _hover={{
+            bg: "gray.700",
+            transform: "translateY(-1px)",
           }}
         />
       </Flex>
