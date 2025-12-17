@@ -3,11 +3,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import { ChakraProvider } from "@chakra-ui/react";
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-} from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 import WalletExperiment from "./components/WalletExperiment.jsx";
@@ -49,7 +45,7 @@ createRoot(document.getElementById("root")).render(
         <Route path="/" element={<AppContainer />} />
         <Route path="/onboarding/*" element={<AppContainer />} />
         <Route path="/subscribe" element={<AppContainer />} />
-        <Route path="/experiments" element={<WalletExperiment />} />
+        {/* <Route path="/experiments" element={<WalletExperiment />} /> */}
       </Routes>
     </Router>
   </ChakraProvider>
