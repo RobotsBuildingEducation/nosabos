@@ -514,13 +514,13 @@ export const translations = {
     path_switcher_conversations: "Chat",
     // Session timer modal
     timer_modal_title: "Session timer",
-    timer_modal_description:
-      "Set how long you want to focus. You can start a fresh countdown or reset the current one.",
+    timer_modal_description: "Set how long you want to focus.",
     timer_modal_minutes_label: "Minutes",
     timer_modal_quick_picks: "Quick picks",
     timer_modal_cancel: "Cancel",
     timer_modal_start: "Start timer",
     timer_modal_restart: "Restart timer",
+    timer_modal_max_hint: "max 240 minutes (4 hours)",
     timer_times_up_title: "Time's up!",
     timer_times_up_subtitle: "Focus session complete",
     timer_times_up_duration: "You stayed on task for {minutes} minutes.",
@@ -1103,13 +1103,13 @@ export const translations = {
     path_switcher_conversations: "Chat",
     // Session timer modal
     timer_modal_title: "Temporizador de sesión",
-    timer_modal_description:
-      "Define cuánto tiempo quieres enfocarte. Puedes iniciar una nueva cuenta regresiva o reiniciar la actual.",
+    timer_modal_description: "Define cuánto tiempo quieres enfocarte.",
     timer_modal_minutes_label: "Minutos",
     timer_modal_quick_picks: "Opciones rápidas",
     timer_modal_cancel: "Cancelar",
     timer_modal_start: "Iniciar temporizador",
     timer_modal_restart: "Reiniciar temporizador",
+    timer_modal_max_hint: "máx 240 minutos (4 horas)",
     timer_times_up_title: "¡Tiempo terminado!",
     timer_times_up_subtitle: "Sesión de enfoque completa",
     timer_times_up_duration:

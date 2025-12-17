@@ -32,7 +32,7 @@ import {
 import { WaveBar } from "./WaveBar.jsx";
 
 const MS_24H = 24 * 60 * 60 * 1000;
-const PRESETS = [25, 50, 75, 100, 150];
+const PRESETS = [75, 100, 150, 200, 300];
 
 export default function DailyGoalModal({
   isOpen,
