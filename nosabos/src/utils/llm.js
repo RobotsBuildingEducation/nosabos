@@ -18,7 +18,10 @@ function textFromChunk(chunk) {
   return "";
 }
 
-export async function callResponses({ model = DEFAULT_RESPONSES_MODEL, input }) {
+export async function callResponses({
+  model = DEFAULT_RESPONSES_MODEL,
+  input,
+}) {
   if (simplemodel) {
     try {
       const resp = await simplemodel.generateContentStream({
@@ -32,8 +35,9 @@ export async function callResponses({ model = DEFAULT_RESPONSES_MODEL, input }) 
 
       const finalResp = await resp.response;
       const finalText =
-        (typeof finalResp?.text === "function" ? finalResp.text() : finalResp?.text) ||
-        aggregated;
+        (typeof finalResp?.text === "function"
+          ? finalResp.text()
+          : finalResp?.text) || aggregated;
       return String(finalText || "");
     } catch (err) {
       console.warn("callResponses gemini stream failed", err);
