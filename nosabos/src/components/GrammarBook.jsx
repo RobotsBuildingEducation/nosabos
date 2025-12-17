@@ -811,7 +811,9 @@ export default function GrammarBook({
           earned: Math.min(lessonXpEarned, lessonXpGoal),
           total: lessonXpGoal,
           label:
-            userLanguage === "es" ? "Progreso de la lección" : "Lesson progress",
+            userLanguage === "es"
+              ? "Progreso de la lección"
+              : "Lesson progress",
         }
       : null;
 
@@ -1227,7 +1229,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     } catch (error) {
       console.error("Error creating note:", error);
       toast({
-        title: userLanguage === "es" ? "Error al crear nota" : "Could not create note",
+        title:
+          userLanguage === "es"
+            ? "Error al crear nota"
+            : "Could not create note",
         status: "error",
         duration: 2500,
       });
@@ -3219,16 +3224,6 @@ Return JSON ONLY:
       setIsSpeakSynthesizing(false);
       setIsSpeakPlaying(false);
       speakAudioRef.current = null;
-      toast({
-        title:
-          userLanguage === "es"
-            ? "No se pudo reproducir el audio"
-            : "Audio playback failed",
-        description:
-          userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
-        status: "error",
-        duration: 2600,
-      });
     }
   }, [isSpeakPlaying, sTarget, toast, userLanguage]);
 
@@ -3289,17 +3284,6 @@ Return JSON ONLY:
         console.error("Grammar question playback failed", err);
         setIsQuestionSynthesizing(false);
         setIsQuestionPlaying(false);
-        toast({
-          title:
-            userLanguage === "es"
-              ? "No se pudo reproducir la pregunta"
-              : "Question audio failed",
-          description:
-            userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
-          status: "warning",
-          duration: 3000,
-          isClosable: true,
-        });
       }
     },
     [isQuestionPlaying, targetLang, toast, userLanguage]
@@ -3770,15 +3754,15 @@ Return JSON ONLY:
                           h={mcHint}
                           tr={showTRMC ? mcTranslation : ""}
                         />
-                      <IconButton
-                        aria-label={questionListenLabel}
-                        icon={renderSpeakerIcon(isQuestionSynthesizing)}
-                        size="sm"
-                        fontSize="lg"
-                        variant="ghost"
-                        onClick={() => handlePlayQuestionTTS(mcQ)}
-                        mr={1}
-                      />
+                        <IconButton
+                          aria-label={questionListenLabel}
+                          icon={renderSpeakerIcon(isQuestionSynthesizing)}
+                          size="sm"
+                          fontSize="lg"
+                          variant="ghost"
+                          onClick={() => handlePlayQuestionTTS(mcQ)}
+                          mr={1}
+                        />
                         <Text
                           fontSize="lg"
                           fontWeight="medium"

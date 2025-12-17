@@ -3708,16 +3708,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       setIsSpeakSynthesizing(false);
       setIsSpeakPlaying(false);
       speakAudioRef.current = null;
-      toast({
-        title:
-          userLanguage === "es"
-            ? "No se pudo reproducir el audio"
-            : "Audio playback failed",
-        description:
-          userLanguage === "es" ? "Inténtalo de nuevo." : "Please try again.",
-        status: "error",
-        duration: 2600,
-      });
     }
   }, [isSpeakPlaying, sTarget, toast, userLanguage]);
 

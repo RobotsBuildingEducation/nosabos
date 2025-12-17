@@ -383,8 +383,7 @@ async function getRealtimePlayer({ text, voice, langTag }) {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
-            instructions:
-              `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
+            instructions: `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
             turn_detection: null,
           },
         })
