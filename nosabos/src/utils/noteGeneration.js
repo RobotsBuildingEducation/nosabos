@@ -39,12 +39,18 @@ export async function generateNoteContent({
   const prompt = `You are a language learning assistant. Generate a study note for a ${cefrLevel} level student learning ${targetLangName}.
 
 Topic/Concept: "${concept}"
-${userAnswer ? `User's answer: "${userAnswer}" (${wasCorrect ? "correct" : "incorrect"})` : ""}
+${
+  userAnswer
+    ? `User's answer: "${userAnswer}" (${wasCorrect ? "correct" : "incorrect"})`
+    : ""
+}
 Module: ${moduleType}
 
 Generate:
 1. EXAMPLE: A short, practical example sentence in ${targetLangName} using this concept. Keep it appropriate for ${cefrLevel} level.
-2. SUMMARY: A 1-2 sentence explanation in ${supportLangName} that helps the student remember this concept.${!wasCorrect ? " Include a brief tip about common mistakes." : ""}
+2. SUMMARY: A 1-2 sentence explanation in ${supportLangName} that helps the student remember this concept.${
+    !wasCorrect ? " Include a brief tip about common mistakes." : ""
+  }
 
 Reply in this exact JSON format (no markdown, just raw JSON):
 {"example": "...", "summary": "..."}`;

@@ -1,10 +1,45 @@
 // src/utils/llm.js
 
+import { simplemodel } from "../firebaseResources/firebaseResources";
+
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const DEFAULT_RESPONSES_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
+const DEFAULT_RESPONSES_MODEL = "gemini-3-flash-preview";
+
+function textFromChunk(chunk) {
+  try {
+    if (!chunk) return "";
+    if (typeof chunk.text === "function") return chunk.text() || "";
+    if (typeof chunk.text === "string") return chunk.text;
+    const cand = chunk.candidates?.[0];
+    if (cand?.content?.parts?.length) {
+      return cand.content.parts.map((p) => p.text || "").join("");
+    }
+  } catch {}
+  return "";
+}
 
 export async function callResponses({ model = DEFAULT_RESPONSES_MODEL, input }) {
+  if (simplemodel) {
+    try {
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: input }] }],
+      });
+
+      let aggregated = "";
+      for await (const chunk of resp.stream) {
+        aggregated += textFromChunk(chunk);
+      }
+
+      const finalResp = await resp.response;
+      const finalText =
+        (typeof finalResp?.text === "function" ? finalResp.text() : finalResp?.text) ||
+        aggregated;
+      return String(finalText || "");
+    } catch (err) {
+      console.warn("callResponses gemini stream failed", err);
+    }
+  }
+
   try {
     const r = await fetch(RESPONSES_URL, {
       method: "POST",
