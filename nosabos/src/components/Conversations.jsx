@@ -6,6 +6,7 @@ import {
   Button,
   Center,
   HStack,
+  IconButton,
   Text,
   VStack,
   Wrap,
@@ -13,7 +14,8 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaPlay, FaCheckCircle } from "react-icons/fa";
+import { FaStop, FaCheckCircle } from "react-icons/fa";
+import { RiVolumeUpLine } from "react-icons/ri";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
 import { database, analytics } from "../firebaseResources/firebaseResources";
@@ -282,17 +284,15 @@ function AlignedBubble({
         <Badge variant="subtle">{primaryLabel}</Badge>
         <HStack>
           {canReplay && (
-            <Button
+            <IconButton
               size="xs"
               variant="ghost"
               colorScheme="cyan"
-              leftIcon={<FaPlay />}
+              icon={isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />}
               onClick={onReplay}
-              isLoading={isReplaying}
-              loadingText={replayLabel || "Replay"}
-            >
-              {replayLabel || "Replay"}
-            </Button>
+              isDisabled={isReplaying}
+              aria-label={replayLabel || "Replay"}
+            />
           )}
           {showSecondary && !!secondaryText && (
             <Badge variant="outline">{secondaryLabel}</Badge>
