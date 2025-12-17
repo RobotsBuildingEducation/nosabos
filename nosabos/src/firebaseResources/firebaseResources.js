@@ -19,31 +19,28 @@ export const app = initializeApp(firebaseConfig);
 
 const database = getFirestore(app);
 const analytics = getAnalytics(app);
-const vertexAI = getVertexAI(app);
-export const ai = getVertexAI(app);
+
+// ✅ IMPORTANT: Gemini 3 Flash Preview is "global", not us-central1
+const vertexAI = getVertexAI(app, { location: "global" });
+export const ai = vertexAI;
 
 let messaging = null;
 async function initMessaging() {
   if (await isSupported()) {
     messaging = getMessaging(app);
-    // Proceed with messaging-related logic
     console.log("messaging...", messaging);
   } else {
     console.warn("Firebase Messaging is not supported in this environment.");
-    // Optionally, set up a fallback or skip messaging entirely
   }
 }
 initMessaging();
 
-// 3) Pass that into your model’s generationConfig:
 const simplemodel = getGenerativeModel(vertexAI, {
-  // model: "gemini-1.5-flash",
-  // model: "gemini-2.0-flash-001",
-  // model: "gemini-2.0-flash",
-  // model: "gemini-1.5-flash",
-  model: "gemini-2.5-flash",
+  model: "gemini-3-flash-preview",
   generationConfig: {
-    thinkingConfig: { thinkingBudget: 0 }, // disables thinking
+    // Firebase AI Logic doesn't support Gemini 3 thinking_level yet.
+    // For now, keep using thinking budgets (0 ≈ "minimal" behavior you're after).
+    thinkingConfig: { thinkingBudget: 0 },
   },
 });
 
