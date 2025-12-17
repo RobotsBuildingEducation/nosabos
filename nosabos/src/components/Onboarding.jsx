@@ -83,11 +83,7 @@ export default function Onboarding({
     const esDefault = personaDefaultFor("es");
     const current = (voicePersona || "").trim();
 
-    if (
-      !current ||
-      current === enDefault ||
-      current === esDefault
-    ) {
+    if (!current || current === enDefault || current === esDefault) {
       const next = localizedDefault || current;
       if (next && next !== current) {
         setVoicePersona(next);

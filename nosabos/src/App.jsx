@@ -150,7 +150,7 @@ const TARGET_LANGUAGE_LABELS = {
   pt: "Portuguese",
   fr: "French",
   it: "Italian",
-  nah: "Huastec Nahuatl",
+  nah: "Nahuatl",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
