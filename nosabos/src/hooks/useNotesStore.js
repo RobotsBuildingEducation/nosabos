@@ -70,6 +70,18 @@ const useNotesStore = create((set, get) => ({
     set({ notes: [] });
   },
 
+  // Clear notes for a specific language only
+  clearNotesForLanguage: (targetLang) => {
+    const updated = get().notes.filter((n) => n.targetLang !== targetLang);
+    saveNotes(updated);
+    set({ notes: updated });
+  },
+
+  // Get notes filtered by language
+  getNotesForLanguage: (targetLang) => {
+    return get().notes.filter((n) => n.targetLang === targetLang);
+  },
+
   // Set loading state (for border animation)
   setLoading: (loading) => set({ isLoading: loading }),
 

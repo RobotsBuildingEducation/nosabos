@@ -52,13 +52,18 @@ export default function NotesDrawer({
   appLanguage = "en",
   targetLang = "es",
 }) {
-  const { notes, removeNote, clearNotes } = useNotesStore();
+  const { notes, removeNote, clearNotesForLanguage } = useNotesStore();
   const [playingNoteId, setPlayingNoteId] = useState(null);
   const [loadingTts, setLoadingTts] = useState(null);
   const audioRef = useRef(null);
   const pcRef = useRef(null);
 
   const lang = appLanguage === "es" ? "es" : "en";
+
+  // Filter notes by current target language
+  const filteredNotes = useMemo(() => {
+    return notes.filter((note) => note.targetLang === targetLang);
+  }, [notes, targetLang]);
 
   const drawerTitle = lang === "es" ? "Mis Notas" : "My Notes";
   const emptyMessage =
@@ -118,14 +123,14 @@ export default function NotesDrawer({
     }
   };
 
-  // Group notes by CEFR level
+  // Group notes by CEFR level (using filtered notes for current language)
   const notesByCefr = useMemo(() => {
     const groups = {};
     CEFR_LEVELS.forEach((level) => {
       groups[level] = [];
     });
 
-    notes.forEach((note) => {
+    filteredNotes.forEach((note) => {
       const level = note.cefrLevel || "A1";
       if (groups[level]) {
         groups[level].push(note);
@@ -135,7 +140,7 @@ export default function NotesDrawer({
     });
 
     return groups;
-  }, [notes]);
+  }, [filteredNotes]);
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
@@ -276,12 +281,12 @@ export default function NotesDrawer({
         <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
           <HStack justify="space-between" align="center" pr={8}>
             <Text>{drawerTitle}</Text>
-            {notes.length > 0 && (
+            {filteredNotes.length > 0 && (
               <Button
                 size="xs"
                 variant="ghost"
                 colorScheme="red"
-                onClick={clearNotes}
+                onClick={() => clearNotesForLanguage(targetLang)}
               >
                 {clearAllLabel}
               </Button>
@@ -290,7 +295,7 @@ export default function NotesDrawer({
         </DrawerHeader>
 
         <DrawerBody py={4}>
-          {notes.length === 0 ? (
+          {filteredNotes.length === 0 ? (
             <Flex
               direction="column"
               align="center"
