@@ -275,7 +275,7 @@ export default function NotesDrawer({
 
   return (
     <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="md">
-      <DrawerOverlay backdropFilter="blur(4px)" />
+      <DrawerOverlay />
       <DrawerContent bg="gray.900" color="white">
         <DrawerCloseButton />
         <DrawerHeader borderBottomWidth="1px" borderColor="whiteAlpha.200">
