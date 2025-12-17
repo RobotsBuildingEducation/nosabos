@@ -521,6 +521,7 @@ export const translations = {
     timer_modal_cancel: "Cancel",
     timer_modal_start: "Start timer",
     timer_modal_restart: "Restart timer",
+    timer_modal_max_hint: "max 240 minutes (4 hours)",
     timer_times_up_title: "Time's up!",
     timer_times_up_subtitle: "Focus session complete",
     timer_times_up_duration: "You stayed on task for {minutes} minutes.",
@@ -1110,6 +1111,7 @@ export const translations = {
     timer_modal_cancel: "Cancelar",
     timer_modal_start: "Iniciar temporizador",
     timer_modal_restart: "Reiniciar temporizador",
+    timer_modal_max_hint: "máx 240 minutos (4 horas)",
     timer_times_up_title: "¡Tiempo terminado!",
     timer_times_up_subtitle: "Sesión de enfoque completa",
     timer_times_up_duration:
