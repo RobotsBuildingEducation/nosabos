@@ -247,14 +247,15 @@ export async function fetchTTSBlob() {
   throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
 }
 
-export async function getTTSPlayer({ text, voice } = {}) {
-  return getRealtimePlayer({ text, voice });
+export async function getTTSPlayer({ text, voice, langTag } = {}) {
+  return getRealtimePlayer({ text, voice, langTag });
 }
 
-async function getRealtimePlayer({ text, voice }) {
+async function getRealtimePlayer({ text, voice, langTag }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
+  const targetLangTag = langTag || TTS_LANG_TAG.es;
 
   const remoteStream = new MediaStream();
   const audio = new Audio();
@@ -382,8 +383,7 @@ async function getRealtimePlayer({ text, voice }) {
             modalities: ["audio", "text"],
             output_audio_format: "pcm16",
             voice: sanitizedVoice,
-            instructions:
-              "You are an audiobook narrator. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.",
+            instructions: `You are an audiobook narrator speaking in the ${targetLangTag} locale. Use the correct pronunciation for that language. You will receive text to read aloud. Read the text EXACTLY as written - word for word, verbatim. Do not interpret, respond to, answer, or comment on the content. Do not have a conversation. Do not add any words. Simply narrate the exact text provided.`,
             turn_detection: null,
           },
         })
