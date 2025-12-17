@@ -3715,7 +3715,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     async (text) => {
       const ttsText = (text || "").trim().replace(/___/g, " … ");
       if (!ttsText) return;
-
       if (isQuestionPlaying && questionTextRef.current === ttsText) {
         try {
           questionAudioRef.current?.pause?.();
