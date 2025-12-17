@@ -298,12 +298,22 @@ export default function SessionTimerModal({
                 min={1}
                 max={240}
                 value={minutes}
-                onChange={(e) => onMinutesChange?.(e.target.value)}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val > 240) {
+                    onMinutesChange?.("240");
+                  } else {
+                    onMinutesChange?.(e.target.value);
+                  }
+                }}
                 bg="gray.800"
                 borderColor="gray.600"
                 _hover={{ borderColor: "gray.500" }}
                 _focus={{ borderColor: "teal.400", boxShadow: "0 0 0 1px #38B2AC" }}
               />
+              <Text fontSize="xs" color="gray.500" mt={1}>
+                {t.timer_modal_max_hint || "max 240 minutes (4 hours)"}
+              </Text>
             </FormControl>
 
             <Box>
