@@ -172,12 +172,41 @@ export const useNostrWalletStore = create((set, get) => ({
     setTimeout(async () => {
       const storedBalance = loadTrackedBalance();
       if (storedBalance !== null) {
-        // Use our tracked balance
+        // Use our tracked balance for immediate stability
         console.log(
           "[Wallet] Using tracked balance from localStorage:",
           storedBalance
         );
         set({ walletBalance: storedBalance, isWalletReady: true });
+
+        // Run background sync after initial load to catch any relay updates
+        // This handles cases where funds were received while offline
+        setTimeout(async () => {
+          try {
+            console.log("[Wallet] Starting background sync with relay...");
+            const bal = await wallet.balance();
+            const relayBalance = extractBalance(bal);
+
+            if (relayBalance !== storedBalance) {
+              console.log(
+                "[Wallet] Background sync found different balance:",
+                storedBalance,
+                "->",
+                relayBalance
+              );
+              saveTrackedBalance(relayBalance);
+              set({ walletBalance: relayBalance });
+            } else {
+              console.log(
+                "[Wallet] Background sync complete - balance unchanged:",
+                relayBalance
+              );
+            }
+          } catch (e) {
+            console.warn("[Wallet] Background sync failed (non-critical):", e);
+            // Keep using localStorage balance on sync failure
+          }
+        }, 3000); // Wait 3 seconds after initial load before syncing
       } else {
         // First time: sync from wallet
         try {
