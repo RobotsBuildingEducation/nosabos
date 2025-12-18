@@ -1458,6 +1458,21 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Initialize wallet on app load so it's ready for spending
+  useEffect(() => {
+    const initializeWallet = async () => {
+      try {
+        await init();
+        await initWalletService();
+        console.log("[App] Wallet initialized");
+      } catch (e) {
+        console.warn("[App] Wallet init failed:", e);
+      }
+    };
+    initializeWallet();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Keep appLanguage synced from store if changed elsewhere
   useEffect(() => {
     if (!user) return;
