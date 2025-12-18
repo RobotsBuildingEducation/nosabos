@@ -17,6 +17,36 @@ const DEFAULT_RELAYS = [
 const DEFAULT_RECEIVER =
   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
 
+// localStorage key for tracked balance
+const TRACKED_BALANCE_KEY = "wallet_tracked_balance";
+
+/**
+ * Load tracked balance from localStorage
+ */
+function loadTrackedBalance() {
+  try {
+    const stored = localStorage.getItem(TRACKED_BALANCE_KEY);
+    if (stored !== null) {
+      const parsed = Number(stored);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+  } catch (e) {
+    console.warn("[Wallet] Error loading tracked balance:", e);
+  }
+  return null; // null means not yet initialized
+}
+
+/**
+ * Save tracked balance to localStorage
+ */
+function saveTrackedBalance(balance) {
+  try {
+    localStorage.setItem(TRACKED_BALANCE_KEY, String(balance));
+  } catch (e) {
+    console.warn("[Wallet] Error saving tracked balance:", e);
+  }
+}
+
 /**
  * Safely extract total balance from wallet.balance() response
  * The response can be: number, { amount }, or [{ amount, unit }]
@@ -84,7 +114,6 @@ export const useNostrWalletStore = create((set, get) => ({
   cashuWallet: null,
   walletBalance: 0,
   invoice: "",
-  rerunWallet: false,
   isCreatingWallet: false,
   isWalletReady: false,
 
@@ -130,33 +159,38 @@ export const useNostrWalletStore = create((set, get) => ({
 
     console.log("[Wallet] Setting up wallet listeners");
 
-    const { refreshBalance } = get();
-
-    // Listen for balance updates with debouncing
-    wallet.on("balance_updated", async () => {
-      console.log("[Wallet] Balance update event received");
-
-      const { _balanceUpdateTimeout } = get();
-      if (_balanceUpdateTimeout) {
-        clearTimeout(_balanceUpdateTimeout);
-      }
-
-      const timeout = setTimeout(async () => {
-        await refreshBalance();
-      }, 300);
-
-      set({ _balanceUpdateTimeout: timeout });
-    });
+    // We no longer listen to balance_updated events from the wallet
+    // because they're unreliable. Instead, we track balance ourselves.
 
     set({
       cashuWallet: wallet,
       isWalletReady: false,
     });
 
-    // Get initial balance after a short delay to let proofs load
+    // Initialize tracked balance: use localStorage if available,
+    // otherwise sync from wallet.balance() on first load
     setTimeout(async () => {
-      await refreshBalance();
-      set({ isWalletReady: true });
+      const storedBalance = loadTrackedBalance();
+      if (storedBalance !== null) {
+        // Use our tracked balance
+        console.log(
+          "[Wallet] Using tracked balance from localStorage:",
+          storedBalance
+        );
+        set({ walletBalance: storedBalance, isWalletReady: true });
+      } else {
+        // First time: sync from wallet
+        try {
+          const bal = await wallet.balance();
+          const initialBalance = extractBalance(bal);
+          console.log("[Wallet] Initial balance from wallet:", initialBalance);
+          saveTrackedBalance(initialBalance);
+          set({ walletBalance: initialBalance, isWalletReady: true });
+        } catch (e) {
+          console.error("[Wallet] Error getting initial balance:", e);
+          set({ walletBalance: 0, isWalletReady: true });
+        }
+      }
     }, 1500);
   },
 
@@ -396,7 +430,6 @@ export const useNostrWalletStore = create((set, get) => ({
       signer,
       fetchUserPaymentInfo,
       setError,
-      refreshBalance,
       walletBalance,
     } = get();
 
@@ -460,14 +493,16 @@ export const useNostrWalletStore = create((set, get) => ({
 
       console.log("[Wallet] Nutzap published!");
 
-      // Wait for wallet state to update
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Refresh balance from wallet's internal state
-      // Note: We intentionally do NOT call checkProofs() here because it can
-      // re-fetch old proofs from relays that haven't synced the spend yet,
-      // causing the balance to show higher than it should be.
-      await refreshBalance();
+      // Update our tracked balance (decrement by amount spent)
+      const newBalance = Math.max(0, currentBalance - amount);
+      saveTrackedBalance(newBalance);
+      set({ walletBalance: newBalance });
+      console.log(
+        "[Wallet] Tracked balance updated:",
+        currentBalance,
+        "->",
+        newBalance
+      );
 
       return true;
     } catch (e) {
@@ -479,7 +514,7 @@ export const useNostrWalletStore = create((set, get) => ({
 
   // Initiate deposit (create Lightning invoice)
   initiateDeposit: async (amountInSats = 10) => {
-    const { cashuWallet, setError, setInvoice, refreshBalance } = get();
+    const { cashuWallet, setError, setInvoice } = get();
 
     if (!cashuWallet) {
       console.error("[Wallet] Wallet not initialized");
@@ -498,19 +533,21 @@ export const useNostrWalletStore = create((set, get) => ({
       deposit.on("success", async (token) => {
         console.log("[Wallet] Deposit successful!");
 
+        // Update our tracked balance (increment by deposit amount)
+        // Use get() to get current balance at time of success, not at time of deposit start
+        const currentBalance = extractBalance(get().walletBalance);
+        const newBalance = currentBalance + amountInSats;
+        saveTrackedBalance(newBalance);
         set({
+          walletBalance: newBalance,
           invoice: "",
-          rerunWallet: true,
         });
-
-        // Reload the page after 2 seconds to ensure wallet state is fresh
-        // This is necessary because the wallet's internal state can have
-        // inconsistencies after a deposit until a fresh initialization
-        setTimeout(() => {
-          if (typeof window !== "undefined") {
-            window.location.reload();
-          }
-        }, 2000);
+        console.log(
+          "[Wallet] Tracked balance updated:",
+          currentBalance,
+          "->",
+          newBalance
+        );
       });
 
       deposit.on("error", (e) => {
@@ -527,11 +564,38 @@ export const useNostrWalletStore = create((set, get) => ({
     }
   },
 
+  // Force sync balance from wallet (use if tracked balance drifts)
+  syncBalanceFromWallet: async () => {
+    const { cashuWallet } = get();
+    if (!cashuWallet) {
+      console.warn("[Wallet] Cannot sync - wallet not initialized");
+      return;
+    }
+
+    try {
+      const bal = await cashuWallet.balance();
+      const syncedBalance = extractBalance(bal);
+      saveTrackedBalance(syncedBalance);
+      set({ walletBalance: syncedBalance });
+      console.log("[Wallet] Balance synced from wallet:", syncedBalance);
+      return syncedBalance;
+    } catch (e) {
+      console.error("[Wallet] Error syncing balance:", e);
+    }
+  },
+
   // Reset state (logout)
   resetState: () => {
     const { _balanceUpdateTimeout } = get();
     if (_balanceUpdateTimeout) {
       clearTimeout(_balanceUpdateTimeout);
+    }
+
+    // Clear tracked balance from localStorage
+    try {
+      localStorage.removeItem(TRACKED_BALANCE_KEY);
+    } catch (e) {
+      console.warn("[Wallet] Error clearing tracked balance:", e);
     }
 
     set({
@@ -545,7 +609,6 @@ export const useNostrWalletStore = create((set, get) => ({
       cashuWallet: null,
       walletBalance: 0,
       invoice: "",
-      rerunWallet: false,
       isCreatingWallet: false,
       isWalletReady: false,
       _balanceUpdateTimeout: null,

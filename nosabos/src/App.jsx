@@ -1093,7 +1093,6 @@ export default function App() {
   const walletBalance = useNostrWalletStore((s) => s.walletBalance);
   const sendOneSatToNpub = useNostrWalletStore((s) => s.sendOneSatToNpub);
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
-  const rerunWallet = useNostrWalletStore((s) => s.rerunWallet);
 
   console.log("walletBalance", walletBalance);
 
@@ -1388,17 +1387,6 @@ export default function App() {
     practicePronunciation: false,
   };
 
-  const runWallet = async () => {
-    await init();
-    await initWalletService();
-  };
-  useEffect(() => {
-    if (rerunWallet) {
-      console.log("wallet run");
-      runWallet();
-    }
-  }, [rerunWallet]);
-
   /* ----------------------------------
      Identity bootstrap + user doc ensure
   ----------------------------------- */
@@ -1467,6 +1455,21 @@ export default function App() {
     if (initRef.current) return;
     initRef.current = true;
     connectDID();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Initialize wallet on app load so it's ready for spending
+  useEffect(() => {
+    const initializeWallet = async () => {
+      try {
+        await init();
+        await initWalletService();
+        console.log("[App] Wallet initialized");
+      } catch (e) {
+        console.warn("[App] Wallet init failed:", e);
+      }
+    };
+    initializeWallet();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
