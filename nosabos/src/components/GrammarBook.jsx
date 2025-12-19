@@ -2720,6 +2720,7 @@ Return JSON ONLY:
     // Randomly pick direction unless we're doing listening (force target language)
     const supportCode = resolveSupportLang(supportLang, userLanguage);
     let direction;
+    let activeRepeatMode = repeatMode;
     if (repeatVariant) {
       const repeatModes = [
         "target-tts-support-bank",
@@ -2727,17 +2728,24 @@ Return JSON ONLY:
         "listening-target",
       ];
       const chosenRepeatMode = repeatModes[Math.floor(Math.random() * repeatModes.length)];
+      activeRepeatMode = chosenRepeatMode;
       setRepeatMode(chosenRepeatMode);
 
-      direction =
-        chosenRepeatMode === "support-tts-target-bank" ? "support-to-target" : "target-to-support";
+      if (chosenRepeatMode === "target-tts-support-bank") {
+        direction = "target-to-support";
+        setQuestionTTsLang(targetLang);
+      } else {
+        direction = "support-to-target";
+        setQuestionTTsLang(
+          chosenRepeatMode === "support-tts-target-bank" ? supportCode : targetLang
+        );
+      }
+
       setTDirection(direction);
-      setQuestionTTsLang(
-        chosenRepeatMode === "support-tts-target-bank" ? supportCode : targetLang
-      );
     } else {
       direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
-      setRepeatMode("target-tts-support-bank");
+      activeRepeatMode = "target-tts-support-bank";
+      setRepeatMode(activeRepeatMode);
       setQuestionTTsLang(targetLang);
       setTDirection(direction);
     }
@@ -2849,7 +2857,7 @@ Return JSON ONLY:
           ? tempDistractors
           : buildFallbackDistractors(tempCorrectWords, answerLang);
 
-      if (repeatVariant && repeatMode === "listening-target" && tempCorrectWords.length) {
+      if (repeatVariant && activeRepeatMode === "listening-target" && tempCorrectWords.length) {
         setTSentence(tempCorrectWords.join(" "));
       } else if (tempSentence) {
         setTSentence(tempSentence);
@@ -2896,7 +2904,7 @@ Return JSON ONLY:
         }
       }
 
-      if (repeatVariant && repeatMode === "listening-target" && tCorrectWords.length) {
+      if (repeatVariant && activeRepeatMode === "listening-target" && tCorrectWords.length) {
         setTSentence(tCorrectWords.join(" "));
       }
     } finally {

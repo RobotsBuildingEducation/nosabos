@@ -1638,10 +1638,16 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
   const [translateVariant, setTranslateVariant] = useState("translate"); // "translate" | "repeat"
+  const [repeatMode, setRepeatMode] = useState("target-tts-support-bank"); // translate-repeat submode
+  const [questionTTsLang, setQuestionTTsLang] = useState(targetLang);
 
   /* ---------------------------
      GENERATOR DISPATCH
   --------------------------- */
+  useEffect(() => {
+    setQuestionTTsLang(targetLang);
+  }, [targetLang]);
+
   const repeatOnlyQuestions = true; // Temporary UI testing: only render RepeatWhatYouHear prompts
   const types = repeatOnlyQuestions
     ? ["translate"]
@@ -3158,12 +3164,36 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
     // Randomly pick direction unless we're doing listening (force target language)
     const supportCode = resolveSupportLang(supportLang, userLanguage);
-    const direction = repeatVariant
-      ? "target-to-support"
-      : Math.random() < 0.5
-      ? "target-to-support"
-      : "support-to-target";
-    setTDirection(direction);
+    let direction;
+    let activeRepeatMode = repeatMode;
+    if (repeatVariant) {
+      const repeatModes = [
+        "target-tts-support-bank",
+        "support-tts-target-bank",
+        "listening-target",
+      ];
+      const chosenRepeatMode = repeatModes[Math.floor(Math.random() * repeatModes.length)];
+      activeRepeatMode = chosenRepeatMode;
+      setRepeatMode(chosenRepeatMode);
+
+      if (chosenRepeatMode === "target-tts-support-bank") {
+        direction = "target-to-support";
+        setQuestionTTsLang(targetLang);
+      } else {
+        direction = "support-to-target";
+        setQuestionTTsLang(
+          chosenRepeatMode === "support-tts-target-bank" ? supportCode : targetLang
+        );
+      }
+
+      setTDirection(direction);
+    } else {
+      direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
+      activeRepeatMode = "target-tts-support-bank";
+      setRepeatMode(activeRepeatMode);
+      setQuestionTTsLang(targetLang);
+      setTDirection(direction);
+    }
 
     // Reset state
     setTSentence("");
@@ -3270,6 +3300,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? tempDistractors
           : buildFallbackDistractors(tempCorrectWords, answerLang);
 
+      if (repeatVariant && activeRepeatMode === "listening-target" && tempCorrectWords.length) {
+        setTSentence(tempCorrectWords.join(" "));
+      }
+
       setTDistractors(distractors);
       const allWords = [...tempCorrectWords, ...distractors];
       setTWordBank(shuffle(allWords));
@@ -3308,6 +3342,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
           setTHint("Vocabulario de colores y animales");
         }
+      }
+
+      if (repeatVariant && activeRepeatMode === "listening-target" && tCorrectWords.length) {
+        setTSentence(tCorrectWords.join(" "));
       }
     } finally {
       setLoadingTQ(false);
@@ -4027,7 +4065,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   }, [isSpeakPlaying, sTarget, toast, userLanguage]);
 
   const handlePlayQuestionTTS = useCallback(
-    async (text) => {
+    async (text, langOverride = null) => {
       const ttsText = (text || "").trim().replace(/___/g, " … ");
       if (!ttsText) return;
       if (isQuestionPlaying && questionTextRef.current === ttsText) {
@@ -4055,9 +4093,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           questionAudioUrlRef.current = null;
         }
 
+        const lang = langOverride || targetLang;
         const player = await getTTSPlayer({
           text: ttsText,
-          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          langTag: TTS_LANG_TAG[lang] || TTS_LANG_TAG.es,
           responseFormat: LOW_LATENCY_TTS_FORMAT,
         });
 
@@ -5511,7 +5550,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSubmit={submitTranslate}
               onSkip={handleSkip}
               onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
               lastOk={lastOk}
               recentXp={recentXp}
               isSubmitting={loadingTJ}
@@ -5537,7 +5576,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSubmit={submitTranslate}
               onSkip={handleSkip}
               onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
               lastOk={lastOk}
               recentXp={recentXp}
               isSubmitting={loadingTJ}
