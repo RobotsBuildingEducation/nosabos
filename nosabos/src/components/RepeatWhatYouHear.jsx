@@ -1,5 +1,5 @@
 // components/RepeatWhatYouHear.jsx
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -58,6 +58,7 @@ export default function RepeatWhatYouHear({
 }) {
   const [bankOrder, setBankOrder] = useState([]);
   const [selectedWords, setSelectedWords] = useState([]);
+  const hasPlayedRef = useRef(false);
 
   useEffect(() => {
     if (wordBank.length > 0) {
@@ -68,7 +69,12 @@ export default function RepeatWhatYouHear({
   }, [wordBank.join("|")]);
 
   useEffect(() => {
-    if (!loading && sourceSentence) {
+    hasPlayedRef.current = false;
+  }, [sourceSentence]);
+
+  useEffect(() => {
+    if (!loading && sourceSentence && !hasPlayedRef.current) {
+      hasPlayedRef.current = true;
       onPlayTTS(sourceSentence);
     }
   }, [loading, onPlayTTS, sourceSentence]);
