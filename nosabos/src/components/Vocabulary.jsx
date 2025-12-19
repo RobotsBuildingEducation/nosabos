@@ -1642,7 +1642,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------------------------
      GENERATOR DISPATCH
   --------------------------- */
-  const types = ["fill", "mc", "ma", "speak", "match", "translate"];
+  const repeatOnlyQuestions = true; // Temporary UI testing: only render RepeatWhatYouHear prompts
+  const types = repeatOnlyQuestions
+    ? ["translate"]
+    : ["fill", "mc", "ma", "speak", "match", "translate"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");

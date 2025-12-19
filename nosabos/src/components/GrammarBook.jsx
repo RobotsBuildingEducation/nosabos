@@ -1504,6 +1504,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [questionTTsLang, setQuestionTTsLang] = useState(targetLang);
 
   const generatorDeckRef = useRef([]);
+  const repeatOnlyQuestions = true; // Temporary UI testing: only render RepeatWhatYouHear prompts
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
   const maKeyRef = useRef("");
@@ -1515,14 +1516,16 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
     if (!generatorDeckRef.current.length) {
-      const order = [
-        generateFill,
-        generateMC,
-        generateMA,
-        generateSpeak,
-        generateMatch,
-        generateTranslate,
-      ];
+      const order = repeatOnlyQuestions
+        ? [generateTranslate]
+        : [
+            generateFill,
+            generateMC,
+            generateMA,
+            generateSpeak,
+            generateMatch,
+            generateTranslate,
+          ];
       for (let i = order.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
         [order[i], order[j]] = [order[j], order[i]];
