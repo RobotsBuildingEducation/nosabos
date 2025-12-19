@@ -118,6 +118,22 @@ function shouldUseDragVariant(question, choices = [], answers = []) {
   return stableHash(signature) % 4 < 2;
 }
 
+function buildFallbackDistractors(words = [], answerLang = "en") {
+  const normalized = new Set(words.map((w) => norm(w)));
+  const pool =
+    answerLang === "es"
+      ? ["y", "o", "pero", "muy", "también", "sin", "con"]
+      : ["and", "or", "but", "very", "also", "without", "with"];
+  const picks = [];
+  for (const option of pool) {
+    if (!normalized.has(norm(option))) {
+      picks.push(option);
+    }
+    if (picks.length >= 4) break;
+  }
+  return picks;
+}
+
 /* ---------------------------
    Minimal i18n helper
 --------------------------- */
@@ -1621,11 +1637,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [tDirection, setTDirection] = useState("target-to-support"); // "target-to-support" or "support-to-target"
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
-  const useRepeatWhatYouHear = useMemo(() => {
-    if (!tSentence || !tWordBank.length) return false;
-    const signature = `${tSentence}||${tWordBank.join("|")}`;
-    return stableHash(signature) % 2 === 0;
-  }, [tSentence, tWordBank]);
+  const [translateVariant, setTranslateVariant] = useState("translate"); // "translate" | "repeat"
 
   /* ---------------------------
      GENERATOR DISPATCH
@@ -3138,8 +3150,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setRecentXp(0);
     setNextAction(null);
 
-    // Randomly pick direction: target->support or support->target
-    const direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
+    const repeatVariant = Math.random() < 0.5;
+    setTranslateVariant(repeatVariant ? "repeat" : "translate");
+
+    // Randomly pick direction unless we're doing listening (force target language)
+    const supportCode = resolveSupportLang(supportLang, userLanguage);
+    const direction = repeatVariant
+      ? "target-to-support"
+      : Math.random() < 0.5
+      ? "target-to-support"
+      : "support-to-target";
     setTDirection(direction);
 
     // Reset state
@@ -3241,7 +3261,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       if (!gotSentence || !gotAnswer) throw new Error("incomplete-translate");
 
       // Build shuffled word bank
-      const allWords = [...tempCorrectWords, ...tempDistractors];
+      const answerLang = direction === "target-to-support" ? supportCode : targetLang;
+      const distractors =
+        tempDistractors.length > 0
+          ? tempDistractors
+          : buildFallbackDistractors(tempCorrectWords, answerLang);
+
+      setTDistractors(distractors);
+      const allWords = [...tempCorrectWords, ...distractors];
       setTWordBank(shuffle(allWords));
     } catch {
       // Fallback defaults based on direction
@@ -5469,7 +5496,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
         {/* ---- TRANSLATE UI ---- */}
         {mode === "translate" && (tSentence || loadingTQ) ? (
-          useRepeatWhatYouHear ? (
+          translateVariant === "repeat" ? (
             <RepeatWhatYouHear
               sourceSentence={tSentence}
               wordBank={tWordBank}
