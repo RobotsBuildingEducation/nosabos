@@ -25,13 +25,7 @@ import {
   useToast,
   Center,
 } from "@chakra-ui/react";
-import {
-  doc,
-  onSnapshot,
-  addDoc,
-  collection,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini (client-side)
 import useUserStore from "../hooks/useUserStore";
@@ -2617,15 +2611,6 @@ Return JSON ONLY:
       return;
     }
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "fill",
-      question,
-      hint,
-      translation,
-      user_input: input,
-      award_xp: delta,
-    }).catch(() => {});
     if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
     setLastOk(ok);
@@ -2699,17 +2684,6 @@ Return JSON ONLY:
       return;
     }
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "mc",
-      question: mcQ,
-      hint: mcHint,
-      translation: mcTranslation,
-      choices: mcChoices,
-      author_answer: mcAnswer || "",
-      user_choice: mcPick,
-      award_xp: delta,
-    }).catch(() => {});
     if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
     setMcResult(ok ? "correct" : "try_again"); // for logs only
@@ -2784,17 +2758,6 @@ Return JSON ONLY:
       return;
     }
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "ma",
-      question: maQ,
-      hint: maHint,
-      translation: maTranslation,
-      choices: maChoices,
-      author_answers: maAnswers || [],
-      user_choices: maPicks,
-      award_xp: delta,
-    }).catch(() => {});
     if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
     setMaResult(ok ? "correct" : "try_again"); // for logs only
@@ -2863,17 +2826,6 @@ Return JSON ONLY:
       return;
     }
 
-    await saveAttempt(npub, {
-      ok,
-      mode: "match",
-      question: mStem,
-      hint: mHint,
-      left: mLeft,
-      right: mRight,
-      user_pairs: userPairs,
-      answer_map: mAnswerMap,
-      award_xp: delta,
-    }).catch(() => {});
     if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
     setLastOk(ok);
@@ -2952,20 +2904,6 @@ Return JSON ONLY:
         return;
       }
 
-      await saveAttempt(npub, {
-        ok,
-        mode: "grammar_speak",
-        question: sPrompt,
-        target: sTarget,
-        hint: sHint,
-        translation: sTranslation,
-        recognized_text: recognizedText || "",
-        confidence,
-        audio_metrics: audioMetrics,
-        eval: evaluation,
-        method,
-        award_xp: delta,
-      }).catch(() => {});
       if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setLastOk(ok);
@@ -4930,18 +4868,4 @@ Return JSON ONLY:
       </VStack>
     </Box>
   );
-}
-
-/* ---------------------------
-   Firestore logging helper
---------------------------- */
-async function saveAttempt(npub, payload) {
-  if (!npub) return;
-  const col = collection(database, "users", npub, "grammarTurns");
-  await addDoc(col, {
-    ...payload,
-    createdAt: serverTimestamp(),
-    createdAtClient: Date.now(),
-    origin: "grammar",
-  });
 }
