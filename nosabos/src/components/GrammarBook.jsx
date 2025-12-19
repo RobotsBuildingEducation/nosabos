@@ -46,6 +46,7 @@ import {
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import TranslateSentence from "./TranslateSentence";
+import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
   LOW_LATENCY_TTS_FORMAT,
   TTS_LANG_TAG,
@@ -915,6 +916,7 @@ export default function GrammarBook({
     typeof progress.showTranslations === "boolean"
       ? progress.showTranslations
       : true;
+  const isTutorial = lessonContent?.topic === "tutorial";
   const supportCode = resolveSupportLang(supportLang, userLanguage);
 
   // Localized chips
@@ -1489,6 +1491,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
 
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
+    if (isTutorial) return generateTranslate;
     if (!generatorDeckRef.current.length) {
       const order = [
         generateFill,
@@ -1515,6 +1518,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function generatorFor(kind) {
+    if (isTutorial) return generateTranslate;
     switch (kind) {
       case "fill":
         return generateFill;
@@ -5216,34 +5220,65 @@ Return JSON ONLY:
 
         {/* ---- TRANSLATE UI ---- */}
         {mode === "translate" && (tSentence || loadingTQ) ? (
-          <TranslateSentence
-            sourceSentence={tSentence}
-            wordBank={tWordBank}
-            correctAnswer={tCorrectWords}
-            hint={tHint}
-            loading={loadingTQ}
-            userLanguage={userLanguage}
-            t={t}
-            onSubmit={submitTranslate}
-            onSkip={handleSkip}
-            onNext={handleNext}
-            onPlayTTS={(text) => handlePlayQuestionTTS(text)}
-            lastOk={lastOk}
-            recentXp={recentXp}
-            isSubmitting={loadingTJ}
-            showNext={
-              (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-              nextAction
-            }
-            isSynthesizing={isQuestionSynthesizing}
-            onExplainAnswer={handleExplainAnswer}
-            explanationText={explanationText}
-            isLoadingExplanation={isLoadingExplanation}
-            lessonProgress={lessonProgress}
-            onCreateNote={handleCreateNote}
-            isCreatingNote={isCreatingNote}
-            noteCreated={noteCreated}
-          />
+          isTutorial ? (
+            <RepeatWhatYouHear
+              sourceSentence={tSentence}
+              wordBank={tWordBank}
+              correctAnswer={tCorrectWords}
+              hint={tHint}
+              loading={loadingTQ}
+              userLanguage={userLanguage}
+              t={t}
+              onSubmit={submitTranslate}
+              onSkip={handleSkip}
+              onNext={handleNext}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+              lastOk={lastOk}
+              recentXp={recentXp}
+              isSubmitting={loadingTJ}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              isSynthesizing={isQuestionSynthesizing}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
+            />
+          ) : (
+            <TranslateSentence
+              sourceSentence={tSentence}
+              wordBank={tWordBank}
+              correctAnswer={tCorrectWords}
+              hint={tHint}
+              loading={loadingTQ}
+              userLanguage={userLanguage}
+              t={t}
+              onSubmit={submitTranslate}
+              onSkip={handleSkip}
+              onNext={handleNext}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+              lastOk={lastOk}
+              recentXp={recentXp}
+              isSubmitting={loadingTJ}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              isSynthesizing={isQuestionSynthesizing}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
+            />
+          )
         ) : null}
       </VStack>
     </Box>

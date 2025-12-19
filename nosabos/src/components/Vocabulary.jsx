@@ -54,6 +54,7 @@ import {
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
 import TranslateSentence from "./TranslateSentence";
+import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
   TTS_LANG_TAG,
   getRandomVoice,
@@ -997,6 +998,7 @@ export default function Vocabulary({
     typeof progress.showTranslations === "boolean"
       ? progress.showTranslations
       : true;
+  const isTutorial = lessonContent?.topic === "tutorial";
   const supportCode = resolveSupportLang(supportLang, userLanguage);
 
   // UI language labels
@@ -1623,7 +1625,9 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------------------------
      GENERATOR DISPATCH
   --------------------------- */
-  const types = ["fill", "mc", "ma", "speak", "match", "translate"];
+  const types = isTutorial
+    ? ["translate"]
+    : ["fill", "mc", "ma", "speak", "match", "translate"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -1634,6 +1638,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const prevPicksMARef = useRef([]);
   const prevMSlotsRef = useRef([]);
   function generatorFor(type) {
+    if (isTutorial) return generateTranslate;
     switch (type) {
       case "fill":
         return generateFill;
@@ -5462,31 +5467,59 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
         {/* ---- TRANSLATE UI ---- */}
         {mode === "translate" && (tSentence || loadingTQ) ? (
-          <TranslateSentence
-            sourceSentence={tSentence}
-            wordBank={tWordBank}
-            correctAnswer={tCorrectWords}
-            hint={tHint}
-            loading={loadingTQ}
-            userLanguage={userLanguage}
-            t={t}
-            onSubmit={submitTranslate}
-            onSkip={handleSkip}
-            onNext={handleNext}
-            onPlayTTS={(text) => handlePlayQuestionTTS(text)}
-            lastOk={lastOk}
-            recentXp={recentXp}
-            isSubmitting={loadingTJ}
-            showNext={showNextButton}
-            isSynthesizing={isQuestionSynthesizing}
-            onExplainAnswer={handleExplainAnswer}
-            explanationText={explanationText}
-            isLoadingExplanation={isLoadingExplanation}
-            lessonProgress={lessonProgress}
-            onCreateNote={handleCreateNote}
-            isCreatingNote={isCreatingNote}
-            noteCreated={noteCreated}
-          />
+          isTutorial ? (
+            <RepeatWhatYouHear
+              sourceSentence={tSentence}
+              wordBank={tWordBank}
+              correctAnswer={tCorrectWords}
+              hint={tHint}
+              loading={loadingTQ}
+              userLanguage={userLanguage}
+              t={t}
+              onSubmit={submitTranslate}
+              onSkip={handleSkip}
+              onNext={handleNext}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+              lastOk={lastOk}
+              recentXp={recentXp}
+              isSubmitting={loadingTJ}
+              showNext={showNextButton}
+              isSynthesizing={isQuestionSynthesizing}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
+            />
+          ) : (
+            <TranslateSentence
+              sourceSentence={tSentence}
+              wordBank={tWordBank}
+              correctAnswer={tCorrectWords}
+              hint={tHint}
+              loading={loadingTQ}
+              userLanguage={userLanguage}
+              t={t}
+              onSubmit={submitTranslate}
+              onSkip={handleSkip}
+              onNext={handleNext}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+              lastOk={lastOk}
+              recentXp={recentXp}
+              isSubmitting={loadingTJ}
+              showNext={showNextButton}
+              isSynthesizing={isQuestionSynthesizing}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
+            />
+          )
         ) : null}
       </VStack>
 
