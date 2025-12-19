@@ -1623,10 +1623,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------------------------
      GENERATOR DISPATCH
   --------------------------- */
-  // Check if we're in tutorial mode
-  const isTutorialMode = lessonContent?.topic === "tutorial" || lesson?.isTutorial;
-
-  const types = isTutorialMode ? ["translate"] : ["fill", "mc", "ma", "speak", "match", "translate"];
+  const types = ["fill", "mc", "ma", "speak", "match", "translate"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
