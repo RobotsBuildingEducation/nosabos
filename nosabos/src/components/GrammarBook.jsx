@@ -2716,6 +2716,7 @@ Return JSON ONLY:
 
     // Randomly pick direction unless we're doing listening (force target language)
     const supportCode = resolveSupportLang(supportLang, userLanguage);
+    let direction;
     if (repeatVariant) {
       const repeatModes = [
         "target-tts-support-bank",
@@ -2725,16 +2726,14 @@ Return JSON ONLY:
       const chosenRepeatMode = repeatModes[Math.floor(Math.random() * repeatModes.length)];
       setRepeatMode(chosenRepeatMode);
 
-      const direction =
-        chosenRepeatMode === "target-tts-support-bank"
-          ? "target-to-support"
-          : "support-to-target";
+      direction =
+        chosenRepeatMode === "support-tts-target-bank" ? "support-to-target" : "target-to-support";
       setTDirection(direction);
       setQuestionTTsLang(
         chosenRepeatMode === "support-tts-target-bank" ? supportCode : targetLang
       );
     } else {
-      const direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
+      direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
       setRepeatMode("target-tts-support-bank");
       setQuestionTTsLang(targetLang);
       setTDirection(direction);
