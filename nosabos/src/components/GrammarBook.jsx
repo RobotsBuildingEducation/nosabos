@@ -615,16 +615,25 @@ function buildTranslateStreamPrompt({
   appUILang,
   recentGood,
   lessonContent = null,
+  direction = "target-to-support", // "target-to-support" or "support-to-target"
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
   const diff = difficultyHint(cefrLevel);
 
+  // Determine source and answer languages based on direction
+  const isTargetToSupport = direction === "target-to-support";
+  const SOURCE_LANG = isTargetToSupport ? TARGET : SUPPORT;
+  const ANSWER_LANG = isTargetToSupport ? SUPPORT : TARGET;
+
   // Special handling for tutorial mode
   const isTutorial = lessonContent?.topic === "tutorial";
+  const exampleSentence = isTargetToSupport
+    ? `Example: "Hola amigo" -> "Hello friend"`
+    : `Example: "Hello friend" -> "Hola amigo"`;
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. Example: "Hola amigo" -> "Hello friend". Use only common greeting words. Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. ${exampleSentence}. Use only common greeting words. Keep everything at absolute beginner level.`
     : lessonContent?.topic || lessonContent?.focusPoints
     ? [
         lessonContent.topic
@@ -643,33 +652,33 @@ function buildTranslateStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} sentence translation exercise. Difficulty: ${
+    `Create ONE sentence translation exercise. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
     }`,
-    `- Source sentence in ${TARGET} (4-8 words, clear grammar).`,
-    `- Correct translation as array of ${SUPPORT} words in order.`,
-    `- Provide 3-5 distractor words in ${SUPPORT} that are plausible but incorrect.`,
+    `- Source sentence in ${SOURCE_LANG} (4-8 words, clear grammar).`,
+    `- Correct translation as array of ${ANSWER_LANG} words in order.`,
+    `- Provide 3-5 distractor words in ${ANSWER_LANG} that are plausible but incorrect.`,
     `- Hint in ${SUPPORT} (≤8 words) about the grammar point.`,
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"translate","phase":"q","sentence":"<${TARGET} sentence>"}`,
+    `{"type":"translate","phase":"q","sentence":"<${SOURCE_LANG} sentence>"}`,
     `{"type":"translate","phase":"answer","correctWords":["word1","word2",...],"distractors":["wrong1","wrong2",...]}`,
     `{"type":"translate","phase":"meta","hint":"<${SUPPORT} hint>"}`,
     `{"type":"done"}`,
   ].join("\n");
 }
 
-function buildTranslateJudgePrompt({ targetLang, supportLang, sentence, correctWords, userWords }) {
-  const TARGET = LANG_NAME(targetLang);
-  const SUPPORT = LANG_NAME(supportLang);
+function buildTranslateJudgePrompt({ sourceLang, answerLang, sentence, correctWords, userWords }) {
+  const SOURCE = LANG_NAME(sourceLang);
+  const ANSWER = LANG_NAME(answerLang);
   return `
 Judge a TRANSLATION exercise.
 
-Source sentence (${TARGET}):
+Source sentence (${SOURCE}):
 ${sentence}
 
-Expected translation (${SUPPORT}):
+Expected translation (${ANSWER}):
 ${correctWords.join(" ")}
 
 User's answer:
@@ -1465,6 +1474,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [tDistractors, setTDistractors] = useState([]); // distractor words
   const [tWordBank, setTWordBank] = useState([]); // all words shuffled
   const [tHint, setTHint] = useState("");
+  const [tDirection, setTDirection] = useState("target-to-support"); // "target-to-support" or "support-to-target"
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
 
@@ -2684,6 +2694,10 @@ Return JSON ONLY:
     setRecentXp(0);
     setNextAction(null);
 
+    // Randomly pick direction: target->support or support->target
+    const direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
+    setTDirection(direction);
+
     // Reset state
     setTSentence("");
     setTCorrectWords([]);
@@ -2699,6 +2713,7 @@ Return JSON ONLY:
       appUILang: userLanguage,
       recentGood: recentCorrectRef.current,
       lessonContent,
+      direction,
     });
 
     let gotSentence = false;
@@ -2785,19 +2800,40 @@ Return JSON ONLY:
       const allWords = [...tempCorrectWords, ...tempDistractors];
       setTWordBank(shuffle(allWords));
     } catch {
-      // Fallback defaults
+      // Fallback defaults based on direction
+      const isTargetToSupport = direction === "target-to-support";
       if (targetLang === "es") {
-        setTSentence("Vamos a la escuela.");
-        setTCorrectWords(["We", "go", "to", "school"]);
-        setTDistractors(["house", "the", "tomorrow"]);
-        setTWordBank(shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]));
-        setTHint("Present tense of 'ir' (to go)");
+        if (isTargetToSupport) {
+          // Spanish -> English
+          setTSentence("Vamos a la escuela.");
+          setTCorrectWords(["We", "go", "to", "school"]);
+          setTDistractors(["house", "the", "tomorrow"]);
+          setTWordBank(shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]));
+          setTHint("Present tense of 'ir' (to go)");
+        } else {
+          // English -> Spanish
+          setTSentence("We go to school.");
+          setTCorrectWords(["Vamos", "a", "la", "escuela"]);
+          setTDistractors(["casa", "el", "mañana"]);
+          setTWordBank(shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]));
+          setTHint("Present tense of 'ir' (to go)");
+        }
       } else {
-        setTSentence("We go to school.");
-        setTCorrectWords(["Vamos", "a", "la", "escuela"]);
-        setTDistractors(["casa", "el", "mañana"]);
-        setTWordBank(shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]));
-        setTHint("Presente del verbo 'ir'");
+        if (isTargetToSupport) {
+          // English -> Spanish (when target is English)
+          setTSentence("We go to school.");
+          setTCorrectWords(["Vamos", "a", "la", "escuela"]);
+          setTDistractors(["casa", "el", "mañana"]);
+          setTWordBank(shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]));
+          setTHint("Presente del verbo 'ir'");
+        } else {
+          // Spanish -> English (when target is English)
+          setTSentence("Vamos a la escuela.");
+          setTCorrectWords(["We", "go", "to", "school"]);
+          setTDistractors(["house", "the", "tomorrow"]);
+          setTWordBank(shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]));
+          setTHint("Presente del verbo 'ir'");
+        }
       }
     } finally {
       setLoadingTQ(false);
@@ -3103,9 +3139,15 @@ Return JSON ONLY:
 
     // If not exact match, use LLM judge for flexible matching
     if (!ok) {
+      // Determine source and answer languages based on direction
+      const supportCode = resolveSupportLang(supportLang, userLanguage);
+      const isTargetToSupport = tDirection === "target-to-support";
+      const sourceLang = isTargetToSupport ? targetLang : supportCode;
+      const answerLang = isTargetToSupport ? supportCode : targetLang;
+
       const judgePrompt = buildTranslateJudgePrompt({
-        targetLang,
-        supportLang: resolveSupportLang(supportLang, userLanguage),
+        sourceLang,
+        answerLang,
         sentence: tSentence,
         correctWords: tCorrectWords,
         userWords,

@@ -676,16 +676,25 @@ function buildVocabTranslateStreamPrompt({
   appUILang,
   recentGood,
   lessonContent = null,
+  direction = "target-to-support", // "target-to-support" or "support-to-target"
 }) {
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
   const diff = vocabDifficulty(cefrLevel);
 
+  // Determine source and answer languages based on direction
+  const isTargetToSupport = direction === "target-to-support";
+  const SOURCE_LANG = isTargetToSupport ? TARGET : SUPPORT;
+  const ANSWER_LANG = isTargetToSupport ? SUPPORT : TARGET;
+
   // Special handling for tutorial mode
   const isTutorial = lessonContent?.topic === "tutorial";
+  const exampleSentence = isTargetToSupport
+    ? `Example: "El gato es negro" -> "The cat is black"`
+    : `Example: "The cat is black" -> "El gato es negro"`;
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence using basic vocabulary only. Example: "El gato es negro" -> "The cat is black". Use only common words. Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence using basic vocabulary only. ${exampleSentence}. Use only common words. Keep everything at absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
     ? [
         lessonContent.words
@@ -704,33 +713,33 @@ function buildVocabTranslateStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} sentence translation exercise for VOCABULARY. Difficulty: ${
+    `Create ONE sentence translation exercise for VOCABULARY. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
     }`,
-    `- Source sentence in ${TARGET} (4-8 words, showcasing vocabulary).`,
-    `- Correct translation as array of ${SUPPORT} words in order.`,
-    `- Provide 3-5 distractor words in ${SUPPORT} that are plausible but incorrect.`,
+    `- Source sentence in ${SOURCE_LANG} (4-8 words, showcasing vocabulary).`,
+    `- Correct translation as array of ${ANSWER_LANG} words in order.`,
+    `- Provide 3-5 distractor words in ${ANSWER_LANG} that are plausible but incorrect.`,
     `- Hint in ${SUPPORT} (≤8 words) about key vocabulary.`,
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"translate","phase":"q","sentence":"<${TARGET} sentence>"}`,
+    `{"type":"translate","phase":"q","sentence":"<${SOURCE_LANG} sentence>"}`,
     `{"type":"translate","phase":"answer","correctWords":["word1","word2",...],"distractors":["wrong1","wrong2",...]}`,
     `{"type":"translate","phase":"meta","hint":"<${SUPPORT} hint>"}`,
     `{"type":"done"}`,
   ].join("\n");
 }
 
-function buildVocabTranslateJudgePrompt({ targetLang, supportLang, sentence, correctWords, userWords }) {
-  const TARGET = LANG_NAME(targetLang);
-  const SUPPORT = LANG_NAME(supportLang);
+function buildVocabTranslateJudgePrompt({ sourceLang, answerLang, sentence, correctWords, userWords }) {
+  const SOURCE = LANG_NAME(sourceLang);
+  const ANSWER = LANG_NAME(answerLang);
   return `
 Judge a VOCABULARY translation exercise.
 
-Source sentence (${TARGET}):
+Source sentence (${SOURCE}):
 ${sentence}
 
-Expected translation (${SUPPORT}):
+Expected translation (${ANSWER}):
 ${correctWords.join(" ")}
 
 User's answer:
@@ -1607,6 +1616,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [tDistractors, setTDistractors] = useState([]); // distractor words
   const [tWordBank, setTWordBank] = useState([]); // all words shuffled
   const [tHint, setTHint] = useState("");
+  const [tDirection, setTDirection] = useState("target-to-support"); // "target-to-support" or "support-to-target"
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
 
@@ -3124,6 +3134,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setRecentXp(0);
     setNextAction(null);
 
+    // Randomly pick direction: target->support or support->target
+    const direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
+    setTDirection(direction);
+
     // Reset state
     setTSentence("");
     setTCorrectWords([]);
@@ -3139,6 +3153,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       appUILang: userLanguage,
       recentGood: recentCorrectRef.current,
       lessonContent,
+      direction,
     });
 
     let gotSentence = false;
@@ -3225,19 +3240,40 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       const allWords = [...tempCorrectWords, ...tempDistractors];
       setTWordBank(shuffle(allWords));
     } catch {
-      // Fallback defaults
+      // Fallback defaults based on direction
+      const isTargetToSupport = direction === "target-to-support";
       if (targetLang === "es") {
-        setTSentence("El gato es negro.");
-        setTCorrectWords(["The", "cat", "is", "black"]);
-        setTDistractors(["dog", "red", "big"]);
-        setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
-        setTHint("Colors and animals vocabulary");
+        if (isTargetToSupport) {
+          // Spanish -> English
+          setTSentence("El gato es negro.");
+          setTCorrectWords(["The", "cat", "is", "black"]);
+          setTDistractors(["dog", "red", "big"]);
+          setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
+          setTHint("Colors and animals vocabulary");
+        } else {
+          // English -> Spanish
+          setTSentence("The cat is black.");
+          setTCorrectWords(["El", "gato", "es", "negro"]);
+          setTDistractors(["perro", "rojo", "grande"]);
+          setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
+          setTHint("Colors and animals vocabulary");
+        }
       } else {
-        setTSentence("The cat is black.");
-        setTCorrectWords(["El", "gato", "es", "negro"]);
-        setTDistractors(["perro", "rojo", "grande"]);
-        setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
-        setTHint("Vocabulario de colores y animales");
+        if (isTargetToSupport) {
+          // English -> Spanish (when target is English)
+          setTSentence("The cat is black.");
+          setTCorrectWords(["El", "gato", "es", "negro"]);
+          setTDistractors(["perro", "rojo", "grande"]);
+          setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
+          setTHint("Vocabulario de colores y animales");
+        } else {
+          // Spanish -> English (when target is English)
+          setTSentence("El gato es negro.");
+          setTCorrectWords(["The", "cat", "is", "black"]);
+          setTDistractors(["dog", "red", "big"]);
+          setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
+          setTHint("Vocabulario de colores y animales");
+        }
       }
     } finally {
       setLoadingTQ(false);
@@ -3329,9 +3365,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
     // If not exact match, use LLM judge for flexible matching
     if (!ok) {
+      // Determine source and answer languages based on direction
+      const supportCode = resolveSupportLang(supportLang, userLanguage);
+      const isTargetToSupport = tDirection === "target-to-support";
+      const sourceLang = isTargetToSupport ? targetLang : supportCode;
+      const answerLang = isTargetToSupport ? supportCode : targetLang;
+
       const judgePrompt = buildVocabTranslateJudgePrompt({
-        targetLang,
-        supportLang: resolveSupportLang(supportLang, userLanguage),
+        sourceLang,
+        answerLang,
         sentence: tSentence,
         correctWords: tCorrectWords,
         userWords,
