@@ -44,6 +44,7 @@ import { WaveBar } from "./WaveBar";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { RiBookmarkLine } from "react-icons/ri";
+import { FiHelpCircle } from "react-icons/fi";
 
 const MotionBox = motion(Box);
 
@@ -446,9 +447,7 @@ export default function FlashcardPractice({
 Prompt (${LANG_NAME(supportLang)}): ${concept}
 Student translation attempt (${LANG_NAME(targetLang)}): ${userAnswer}
 
-Provide a brief response in ${LANG_NAME(
-      supportLang
-    )} with two parts:
+Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
 1) Correct translation: the best translation into ${LANG_NAME(targetLang)}
 2) Explanation: 2-3 concise sentences in ${LANG_NAME(
       supportLang
@@ -575,7 +574,11 @@ Provide a brief response in ${LANG_NAME(
         border="2px solid"
         borderColor={`${cefrColor.primary}30`}
       >
-        <ModalBody p={8} position="relative">
+        <ModalBody
+          p={8}
+          position="relative"
+          bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
+        >
           <VStack spacing={6} align="stretch">
             {/* Header */}
             <HStack justify="space-between">
@@ -592,7 +595,7 @@ Provide a brief response in ${LANG_NAME(
                 {card.cefrLevel}
               </Badge>
 
-              <Text fontSize="sm" color="gray.400" fontWeight="medium">
+              <Text fontSize="sm" color="white" fontWeight="medium">
                 {LANG_NAME(supportLang)} → {LANG_NAME(targetLang)}
               </Text>
             </HStack>
@@ -617,17 +620,12 @@ Provide a brief response in ${LANG_NAME(
                   position="absolute"
                   w="100%"
                   h="100%"
-                  bgGradient="linear(135deg, #1E3A8A, #2563EB, #3B82F6, #2563EB)"
-                  borderRadius="xl"
-                  border="2px solid"
-                  borderColor="blue.400"
                   p={4}
                   display="flex"
                   flexDirection="column"
                   justifyContent="center"
                   alignItems="center"
                   sx={{ backfaceVisibility: "hidden" }}
-                  boxShadow="0 8px 32px rgba(37, 99, 235, 0.3)"
                 >
                   <Text
                     fontSize="xs"
@@ -675,10 +673,6 @@ Provide a brief response in ${LANG_NAME(
                   position="absolute"
                   w="100%"
                   h="100%"
-                  bgGradient="linear(135deg, #1E1B4B, #312E81, #3730A3, #4338CA)"
-                  borderRadius="xl"
-                  border="2px solid"
-                  borderColor="blue.500"
                   p={4}
                   display="flex"
                   flexDirection="column"
@@ -688,13 +682,13 @@ Provide a brief response in ${LANG_NAME(
                     backfaceVisibility: "hidden",
                     transform: "rotateY(180deg)",
                   }}
-                  boxShadow="0 8px 32px rgba(67, 56, 202, 0.3)"
                   cursor="pointer"
                   onClick={handleFlipBack}
                 >
                   <Text
                     fontSize="xs"
-                    color="blue.200"
+                    // color="blue.200"
+                    colorr="white"
                     fontWeight="medium"
                     mb={1}
                   >
@@ -751,7 +745,7 @@ Provide a brief response in ${LANG_NAME(
                       bottom={3}
                       right={3}
                       fontSize="xs"
-                      color="blue.300"
+                      color="white"
                     >
                       {getTranslation("flashcard_tap_to_flip")}
                     </Text>
@@ -831,10 +825,10 @@ Provide a brief response in ${LANG_NAME(
                         size="lg"
                         fontSize="16px"
                         textAlign="center"
-                        bg="whiteAlpha.100"
+                        bg="#f4f5ffff"
                         border="2px solid"
                         borderColor="whiteAlpha.200"
-                        color="white"
+                        color="black"
                         _placeholder={{ color: "gray.500" }}
                         _focus={{
                           borderColor: cefrColor.primary,
@@ -846,7 +840,6 @@ Provide a brief response in ${LANG_NAME(
                       <Button
                         w="100%"
                         size="lg"
-                        bgGradient={cefrColor.gradient}
                         color="white"
                         onClick={handleTextSubmit}
                         isDisabled={!textAnswer.trim()}
@@ -867,7 +860,7 @@ Provide a brief response in ${LANG_NAME(
                       w="100%"
                       size="md"
                       variant="ghost"
-                      color="gray.400"
+                      color="white"
                       onClick={handleClose}
                       _hover={{ bg: "whiteAlpha.100" }}
                     >
@@ -946,8 +939,9 @@ Provide a brief response in ${LANG_NAME(
                       <VStack w="100%" spacing={3} mt={2}>
                         <Button
                           size="lg"
-                          colorScheme="red"
-                          variant="outline"
+                          // colorScheme="teal"
+                          bg="teal"
+                          colorScheme="teal"
                           onClick={handleTryAgain}
                           w="100%"
                         >
@@ -960,13 +954,15 @@ Provide a brief response in ${LANG_NAME(
                           variant="solid"
                           onClick={handleExplainAnswer}
                           isDisabled={
-                            isLoadingExplanation || !!explanationText || isGrading
+                            isLoadingExplanation ||
+                            !!explanationText ||
+                            isGrading
                           }
                           leftIcon={
                             isLoadingExplanation ? (
                               <Spinner size="sm" />
                             ) : (
-                              <RiEyeLine size={20} />
+                              <FiHelpCircle />
                             )
                           }
                           w="100%"
@@ -1007,7 +1003,10 @@ Provide a brief response in ${LANG_NAME(
                           sx={{
                             "& p": { mb: 2 },
                             "& p:last-child": { mb: 0 },
-                            "& strong": { fontWeight: "bold", color: "pink.100" },
+                            "& strong": {
+                              fontWeight: "bold",
+                              color: "pink.100",
+                            },
                             "& em": { fontStyle: "italic" },
                             "& ul, & ol": { pl: 4, mb: 2 },
                             "& li": { mb: 1 },
