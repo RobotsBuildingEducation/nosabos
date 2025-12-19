@@ -28,15 +28,7 @@ import {
   ModalContent,
   ModalBody,
 } from "@chakra-ui/react";
-import {
-  doc,
-  onSnapshot,
-  setDoc,
-  increment,
-  addDoc,
-  collection,
-  serverTimestamp,
-} from "firebase/firestore";
+import { doc, onSnapshot, setDoc, increment } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
@@ -208,17 +200,6 @@ function useSharedProgress() {
   const levelNumber = Math.floor(xp / 100) + 1;
   const progressPct = Math.min(100, xp % 100);
   return { xp, levelNumber, progressPct, progress, npub, ready };
-}
-
-async function saveAttempt(npub, payload) {
-  if (!npub) return;
-  const col = collection(database, "users", npub, "vocabTurns");
-  await addDoc(col, {
-    ...payload,
-    createdAt: serverTimestamp(),
-    createdAtClient: Date.now(),
-    origin: "vocabulary",
-  });
 }
 
 /* ---------------------------
@@ -2001,15 +1982,6 @@ Return EXACTLY:
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
     } else {
-      await saveAttempt(npub, {
-        ok,
-        mode: "vocab_fill",
-        question: qFill,
-        hint: hFill,
-        translation: trFill,
-        user_input: ansFill,
-        award_xp: delta,
-      }).catch(() => {});
       if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setResFill(ok ? "correct" : "try_again"); // log only
@@ -2291,17 +2263,6 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
     } else {
-      await saveAttempt(npub, {
-        ok,
-        mode: "vocab_mc",
-        question: qMC,
-        hint: hMC,
-        translation: trMC,
-        choices: choicesMC,
-        author_answer: answerMC,
-        user_choice: pickMC,
-        award_xp: delta,
-      }).catch(() => {});
       if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setResMC(ok ? "correct" : "try_again"); // log only
@@ -2610,17 +2571,6 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
     } else {
-      await saveAttempt(npub, {
-        ok,
-        mode: "vocab_ma",
-        question: qMA,
-        hint: hMA,
-        translation: trMA,
-        choices: choicesMA,
-        author_answers: answersMA,
-        user_choices: picksMA,
-        award_xp: delta,
-      }).catch(() => {});
       if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setResMA(ok ? "correct" : "try_again"); // log only
@@ -3097,16 +3047,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       setLastOk(ok);
       setRecentXp(0); // No XP in quiz mode
     } else {
-      await saveAttempt(npub, {
-        ok,
-        mode: "vocab_match",
-        question: mStem,
-        hint: mHint,
-        left: mLeft,
-        right: mRight,
-        user_pairs: userPairs,
-        award_xp: delta,
-      }).catch(() => {});
       if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
       setMResult(ok ? "correct" : "try_again"); // log only
@@ -3181,22 +3121,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         setLastOk(ok);
         setRecentXp(0); // No XP in quiz mode
       } else {
-        await saveAttempt(npub, {
-          ok,
-          mode: "vocab_speak",
-          question: sPrompt,
-          target: sTarget,
-          stimulus: sStimulus,
-          variant: sVariant,
-          hint: sHint,
-          translation: sTranslation,
-          recognized_text: recognizedText || "",
-          confidence,
-          audio_metrics: audioMetrics,
-          eval: evaluation,
-          method,
-          award_xp: delta,
-        }).catch(() => {});
         if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
 
         setLastOk(ok);
