@@ -98,7 +98,9 @@ export default function TranslateSentence({
 
       const wordIndex = selectedWords[selectedPosition];
       // Remove from selected, add back to bank
-      setSelectedWords((prev) => prev.filter((_, pos) => pos !== selectedPosition));
+      setSelectedWords((prev) =>
+        prev.filter((_, pos) => pos !== selectedPosition)
+      );
       setBankOrder((prev) => [...prev, wordIndex]);
     },
     [selectedWords, lastOk]
@@ -190,7 +192,7 @@ export default function TranslateSentence({
 
   const translateLabel =
     userLanguage === "es" ? "Traduce esta frase" : "Translate this sentence";
-  const skipLabel = userLanguage === "es" ? "Omitir" : "Skip";
+  const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
   const submitLabel = userLanguage === "es" ? "Comprobar" : "Check";
   const nextLabel =
     userLanguage === "es" ? "Siguiente pregunta" : "Next question";
@@ -212,11 +214,7 @@ export default function TranslateSentence({
         >
           <VStack align="stretch" spacing={4}>
             {/* Title */}
-            <Text
-              fontSize="xl"
-              fontWeight="bold"
-              color="white"
-            >
+            <Text fontSize="xl" fontWeight="bold" color="white">
               {translateLabel}
             </Text>
 
@@ -256,9 +254,7 @@ export default function TranslateSentence({
               >
                 <HStack align="start" spacing={2}>
                   <IconButton
-                    aria-label={
-                      userLanguage === "es" ? "Escuchar" : "Listen"
-                    }
+                    aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
                     icon={renderSpeakerIcon(isSynthesizing)}
                     size="sm"
                     fontSize="lg"
