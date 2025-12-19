@@ -298,7 +298,13 @@ function AlignedBubble({
               size="xs"
               variant="ghost"
               colorScheme="cyan"
-              icon={isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />}
+              icon={
+                isReplaying ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <RiVolumeUpLine size={14} />
+                )
+              }
               onClick={onReplay}
               isDisabled={isReplaying}
               aria-label={replayLabel || "Replay"}
@@ -1824,7 +1830,8 @@ Return ONLY JSON:
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
     } else {
-      strict = "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
+      strict =
+        "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
     }
 
     const levelHint = getCEFRPromptHint(currentCefrLevel);
