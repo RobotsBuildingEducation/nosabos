@@ -7,6 +7,7 @@ import {
   Button,
   Progress,
   Badge,
+  keyframes,
   useColorModeValue,
   Container,
   Heading,
@@ -227,6 +228,24 @@ import { FaMicrophone } from "react-icons/fa";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
+
+const floatNorthEast = keyframes`
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(50px, -30px) scale(1.1); }
+  66% { transform: translate(-30px, 50px) scale(0.9); }
+`;
+
+const floatSouthWest = keyframes`
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, 40px) scale(1.1); }
+  66% { transform: translate(40px, -40px) scale(0.9); }
+`;
+
+const floatNorthWest = keyframes`
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.2); }
+  66% { transform: translate(-50px, 30px) scale(0.8); }
+`;
 
 const getDisplayText = (textObj, supportLang = "en") => {
   if (!textObj) return "";
@@ -1841,14 +1860,7 @@ export default function SkillTree({
         bgGradient="radial(circle, teal.500, transparent 70%)"
         filter="blur(80px)"
         opacity={0.15}
-        animation="float 20s ease-in-out infinite"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(50px, -30px) scale(1.1)" },
-            "66%": { transform: "translate(-30px, 50px) scale(0.9)" },
-          },
-        }}
+        animation={`${floatNorthEast} 20s ease-in-out infinite`}
       />
       <Box
         position="absolute"
@@ -1859,14 +1871,7 @@ export default function SkillTree({
         bgGradient="radial(circle, purple.500, transparent 70%)"
         filter="blur(80px)"
         opacity={0.12}
-        animation="float 25s ease-in-out infinite 5s"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(-40px, 40px) scale(1.1)" },
-            "66%": { transform: "translate(40px, -40px) scale(0.9)" },
-          },
-        }}
+        animation={`${floatSouthWest} 25s ease-in-out infinite 5s`}
       />
       <Box
         position="absolute"
@@ -1877,14 +1882,7 @@ export default function SkillTree({
         bgGradient="radial(circle, blue.500, transparent 70%)"
         filter="blur(80px)"
         opacity={0.1}
-        animation="float 30s ease-in-out infinite 10s"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(30px, -50px) scale(1.2)" },
-            "66%": { transform: "translate(-50px, 30px) scale(0.8)" },
-          },
-        }}
+        animation={`${floatNorthWest} 30s ease-in-out infinite 10s`}
       />
 
       <Container
