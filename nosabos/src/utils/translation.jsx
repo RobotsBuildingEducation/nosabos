@@ -483,6 +483,8 @@ export const translations = {
     flashcard_correct: "Correct!",
     flashcard_incorrect: "Not quite...",
     flashcard_try_again: "Try Again",
+    flashcard_explain_answer: "Explain my answer",
+    flashcard_explanation_heading: "Explanation",
     flashcard_error_loading: "Error loading answer",
     flashcard_eval_error_title: "Could not evaluate",
     flashcard_eval_error_desc: "Please try again with a stable connection.",
@@ -1071,6 +1073,8 @@ export const translations = {
     flashcard_correct: "¡Correcto!",
     flashcard_incorrect: "No del todo...",
     flashcard_try_again: "Intentar de Nuevo",
+    flashcard_explain_answer: "Explica mi respuesta",
+    flashcard_explanation_heading: "Explicación",
     flashcard_error_loading: "Error al cargar respuesta",
     flashcard_eval_error_title: "No se pudo evaluar",
     flashcard_eval_error_desc:
