@@ -1474,6 +1474,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     setIsQuestionSynthesizing(false);
   }, [mcQ, maQ, targetLang]);
 
+  useEffect(() => {
+    setQuestionTTsLang(targetLang);
+  }, [targetLang]);
+
   // ---- MATCH (DnD) ----
   const [mStem, setMStem] = useState("");
   const [mHint, setMHint] = useState("");
@@ -1496,6 +1500,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
   const [translateVariant, setTranslateVariant] = useState("translate"); // "translate" | "repeat"
+  const [repeatMode, setRepeatMode] = useState("target-tts-support-bank"); // translate-repeat submode
+  const [questionTTsLang, setQuestionTTsLang] = useState(targetLang);
 
   const generatorDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
@@ -2710,12 +2716,29 @@ Return JSON ONLY:
 
     // Randomly pick direction unless we're doing listening (force target language)
     const supportCode = resolveSupportLang(supportLang, userLanguage);
-    const direction = repeatVariant
-      ? "target-to-support"
-      : Math.random() < 0.5
-      ? "target-to-support"
-      : "support-to-target";
-    setTDirection(direction);
+    if (repeatVariant) {
+      const repeatModes = [
+        "target-tts-support-bank",
+        "support-tts-target-bank",
+        "listening-target",
+      ];
+      const chosenRepeatMode = repeatModes[Math.floor(Math.random() * repeatModes.length)];
+      setRepeatMode(chosenRepeatMode);
+
+      const direction =
+        chosenRepeatMode === "target-tts-support-bank"
+          ? "target-to-support"
+          : "support-to-target";
+      setTDirection(direction);
+      setQuestionTTsLang(
+        chosenRepeatMode === "support-tts-target-bank" ? supportCode : targetLang
+      );
+    } else {
+      const direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
+      setRepeatMode("target-tts-support-bank");
+      setQuestionTTsLang(targetLang);
+      setTDirection(direction);
+    }
 
     // Reset state
     setTSentence("");
@@ -2735,6 +2758,7 @@ Return JSON ONLY:
       direction,
     });
 
+    let tempSentence = "";
     let gotSentence = false;
     let gotAnswer = false;
     let tempCorrectWords = [];
@@ -2757,7 +2781,8 @@ Return JSON ONLY:
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
-              setTSentence(String(obj.sentence).trim());
+              tempSentence = String(obj.sentence).trim();
+              setTSentence(tempSentence);
               gotSentence = true;
             }
             if (obj?.type === "translate" && obj.phase === "answer") {
@@ -2792,7 +2817,8 @@ Return JSON ONLY:
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
               if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
-                setTSentence(String(obj.sentence).trim());
+                tempSentence = String(obj.sentence).trim();
+                setTSentence(tempSentence);
                 gotSentence = true;
               }
               if (obj?.type === "translate" && obj.phase === "answer") {
@@ -2820,6 +2846,12 @@ Return JSON ONLY:
         tempDistractors.length > 0
           ? tempDistractors
           : buildFallbackDistractors(tempCorrectWords, answerLang);
+
+      if (repeatVariant && repeatMode === "listening-target" && tempCorrectWords.length) {
+        setTSentence(tempCorrectWords.join(" "));
+      } else if (tempSentence) {
+        setTSentence(tempSentence);
+      }
 
       // Build shuffled word bank
       setTDistractors(distractors);
@@ -2860,6 +2892,10 @@ Return JSON ONLY:
           setTWordBank(shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]));
           setTHint("Presente del verbo 'ir'");
         }
+      }
+
+      if (repeatVariant && repeatMode === "listening-target" && tCorrectWords.length) {
+        setTSentence(tCorrectWords.join(" "));
       }
     } finally {
       setLoadingTQ(false);
@@ -3548,7 +3584,7 @@ Return JSON ONLY:
   }, [isSpeakPlaying, sTarget, toast, userLanguage]);
 
   const handlePlayQuestionTTS = useCallback(
-    async (text) => {
+    async (text, langOverride = null) => {
       const ttsText = (text || "").trim().replace(/___/g, " … ");
       if (!ttsText) return;
 
@@ -3577,9 +3613,10 @@ Return JSON ONLY:
           questionAudioUrlRef.current = null;
         }
 
+        const lang = langOverride || targetLang;
         const player = await getTTSPlayer({
           text: ttsText,
-          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          langTag: TTS_LANG_TAG[lang] || TTS_LANG_TAG.es,
           responseFormat: LOW_LATENCY_TTS_FORMAT,
         });
 
@@ -5262,7 +5299,7 @@ Return JSON ONLY:
               onSubmit={submitTranslate}
               onSkip={handleSkip}
               onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
               lastOk={lastOk}
               recentXp={recentXp}
               isSubmitting={loadingTJ}
@@ -5291,7 +5328,7 @@ Return JSON ONLY:
               onSubmit={submitTranslate}
               onSkip={handleSkip}
               onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
               lastOk={lastOk}
               recentXp={recentXp}
               isSubmitting={loadingTJ}
