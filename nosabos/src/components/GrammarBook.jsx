@@ -1488,15 +1488,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const prevMaPicksRef = useRef([]);
 
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
-  // Check if we're in tutorial mode
-  const isTutorialMode = lessonContent?.topic === "tutorial" || lesson?.isTutorial;
-
   function drawGenerator() {
-    // In tutorial mode, only use translate questions
-    if (isTutorialMode) {
-      return generateTranslate;
-    }
-
     if (!generatorDeckRef.current.length) {
       const order = [
         generateFill,

@@ -193,7 +193,7 @@ export default function TranslateSentence({
   const translateLabel =
     userLanguage === "es" ? "Traduce esta frase" : "Translate this sentence";
   const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
-  const submitLabel = userLanguage === "es" ? "Comprobar" : "Check";
+  const submitLabel = userLanguage === "es" ? "Comprobar" : "Submit";
   const nextLabel =
     userLanguage === "es" ? "Siguiente pregunta" : "Next question";
   const instructionLabel =
