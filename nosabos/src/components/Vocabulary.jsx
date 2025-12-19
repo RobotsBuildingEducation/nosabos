@@ -680,7 +680,7 @@ function buildVocabTranslateStreamPrompt({
   const TARGET = LANG_NAME(targetLang);
   const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
   const SUPPORT = LANG_NAME(SUPPORT_CODE);
-  const diff = difficultyHint(cefrLevel);
+  const diff = vocabDifficulty(cefrLevel);
 
   // Special handling for tutorial mode
   const isTutorial = lessonContent?.topic === "tutorial";
