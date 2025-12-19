@@ -1,33 +1,8 @@
 // components/History.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Box,
-  Badge,
-  Button,
-  HStack,
-  VStack,
-  Text,
-  Spinner,
-  Divider,
-  IconButton,
-  useDisclosure,
-  Collapse,
-  Center,
-} from "@chakra-ui/react";
-import { FaStop } from "react-icons/fa";
+import { Box, Badge, Button, HStack, VStack, Text, Spinner, Divider, IconButton, Center } from "@chakra-ui/react";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdMenuBook } from "react-icons/md";
-import {
-  doc,
-  onSnapshot,
-  setDoc,
-  addDoc,
-  collection,
-  serverTimestamp,
-  query,
-  orderBy,
-} from "firebase/firestore";
-import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
@@ -761,7 +736,6 @@ export default function History({
   // List
   const [lectures, setLectures] = useState([]);
   const [activeId, setActiveId] = useState(null);
-  const listDisclosure = useDisclosure({ defaultIsOpen: false }); // mobile list toggle
 
   // Generate state
   const [isGenerating, setIsGenerating] = useState(false);
@@ -778,37 +752,6 @@ export default function History({
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
 
   // refs for auto-scroll (mobile + desktop lists)
-  const mobileEndRef = useRef(null);
-  const desktopEndRef = useRef(null);
-
-  // Auto-scroll to bottom when a new lecture arrives
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      mobileEndRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-      });
-      desktopEndRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-      });
-    });
-  }, [lectures.length]);
-
-  // Live sync lectures
-  useEffect(() => {
-    if (!npub) return;
-    const col = collection(database, "users", npub, "historyLectures");
-    const q = query(col, orderBy("createdAt", "asc"));
-    const unsub = onSnapshot(q, (snap) => {
-      const items = [];
-      snap.forEach((d) => items.push({ id: d.id, ...d.data() }));
-      items.sort((a, b) => (a.createdAtClient || 0) - (b.createdAtClient || 0));
-      setLectures(items);
-      if (!activeId && items.length) setActiveId(items[items.length - 1].id);
-    });
-    return () => unsub();
-  }, [npub]); // eslint-disable-line
 
   // Auto-generate lecture when component mounts with no lectures
   useEffect(() => {
@@ -968,7 +911,6 @@ export default function History({
       supportLang,
       xpAward,
       xpReason,
-      createdAt: serverTimestamp(),
       createdAtClient: Date.now(),
       awarded: false, // ← XP not yet claimed
     };
@@ -980,9 +922,9 @@ export default function History({
       return;
     }
 
-    const col = collection(database, "users", npub, "historyLectures");
-    const ref = await addDoc(col, payload);
-    setActiveId(ref.id);
+    const newId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    setLectures((prev) => [...prev, { id: newId, ...payload }]);
+    setActiveId(newId);
   }
 
   /* ---------------------------
@@ -1164,7 +1106,7 @@ export default function History({
         hoursSinceLastLecture,
       });
 
-      // Save to Firestore (do not award yet)
+      // Save locally (do not award yet)
       const payload = {
         title: finalTitle,
         target: safeTarget,
@@ -1174,7 +1116,6 @@ export default function History({
         supportLang,
         xpAward,
         xpReason,
-        createdAt: serverTimestamp(),
         createdAtClient: Date.now(),
         awarded: false, // ← wait until user finishes reading
       };
@@ -1187,9 +1128,9 @@ export default function History({
         return; // finally{} will release the lock
       }
 
-      const colRef = collection(database, "users", npub, "historyLectures");
-      const ref = await addDoc(colRef, payload);
-      setActiveId(ref.id);
+      const newId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+      setLectures((prev) => [...prev, { id: newId, ...payload }]);
+      setActiveId(newId);
       setDraftLecture(null);
     } catch (e) {
       console.error("Gemini streaming error; using backend fallback.", e);
@@ -1276,23 +1217,16 @@ export default function History({
     if (!npub || !activeLecture || isGenerating || isFinishing) return;
     setIsFinishing(true);
     try {
-      const docRef = doc(
-        database,
-        "users",
-        npub,
-        "historyLectures",
-        activeLecture.id
-      );
       if (!activeLecture.awarded) {
-        await setDoc(
-          docRef,
-          { awarded: true, awardedAt: serverTimestamp() },
-          { merge: true }
-        );
         const amt = Number(activeLecture?.xpAward || 0);
         if (amt > 0) {
           await awardXp(npub, amt, targetLang).catch(() => {});
         }
+        setLectures((prev) =>
+          prev.map((lec) =>
+            lec.id === activeLecture.id ? { ...lec, awarded: true } : lec
+          )
+        );
       }
       // Move to the next module
       if (onSkip) {
@@ -1347,149 +1281,8 @@ export default function History({
           )}
         </HStack>
 
-        {/* Mobile: collapsible list */}
-        <Box display={{ base: "block", md: "none" }}>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={listDisclosure.onToggle}
-            mt={2}
-          >
-            {listDisclosure.isOpen
-              ? t("reading_list_hide")
-              : t("reading_list_show")}
-          </Button>
-          <Collapse in={listDisclosure.isOpen} animateOpacity>
-            <Box
-              mt={3}
-              bg="gray.800"
-              border="1px solid"
-              borderColor="gray.700"
-              rounded="xl"
-              p={4}
-              mx={1}
-            >
-              <Text fontSize="sm" opacity={0.8} mb={3}>
-                {t("reading_prev_lectures_label")}
-              </Text>
-              <VStack
-                align="stretch"
-                spacing={3}
-                height="200px"
-                overflowY="auto"
-                pr={1}
-                sx={{
-                  scrollPadding: "8px",
-                  scrollbarWidth: "none",
-                  msOverflowStyle: "none",
-                  "&::-webkit-scrollbar": { width: "0px", height: "0px" },
-                  "&::-webkit-scrollbar-thumb": { background: "transparent" },
-                }}
-              >
-                {lectures.length === 0 ? (
-                  <Text fontSize="sm" opacity={0.7}>
-                    {t("reading_none_yet")}
-                  </Text>
-                ) : (
-                  lectures.map((lec) => {
-                    const active = lec.id === activeId;
-                    return (
-                      <Button
-                        key={lec.id}
-                        onClick={() => setActiveId(lec.id)}
-                        justifyContent="flex-start"
-                        size="sm"
-                        variant={active ? "solid" : "ghost"}
-                        colorScheme={active ? "teal" : "cyan"}
-                        whiteSpace="normal"
-                        textAlign="left"
-                        py={3}
-                        px={3}
-                        rounded="lg"
-                      >
-                        <Text fontWeight="600" fontSize="sm">
-                          {lec.title}
-                        </Text>
-                      </Button>
-                    );
-                  })
-                )}
-                {/* sentinel for auto-scroll (mobile) */}
-                <Box ref={mobileEndRef} />
-              </VStack>
-            </Box>
-          </Collapse>
-        </Box>
-
-        <Divider opacity={0.25} display={{ base: "none", md: "block" }} />
-
         {/* Main content area */}
-        <HStack
-          align="start"
-          spacing={5}
-          flexDir={{ base: "column", md: "row" }}
-        >
-          {/* Left: list (desktop/tablet) */}
-          <Box
-            w={{ base: "100%", md: "300px" }}
-            flexShrink={0}
-            bg="gray.800"
-            borderColor="gray.700"
-            rounded="xl"
-            p={4}
-            display={{ base: "none", md: "block" }}
-          >
-            <Text fontSize="sm" opacity={0.8} mb={3}>
-              {t("reading_prev_lectures_label")}
-            </Text>
-            <VStack
-              align="stretch"
-              spacing={3}
-              maxH="64vh"
-              overflowY="auto"
-              pr={1}
-              height="200px"
-              sx={{
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-                "&::-webkit-scrollbar": { width: "0px", height: "0px" },
-                "&::-webkit-scrollbar-thumb": { background: "transparent" },
-              }}
-            >
-              {lectures.length === 0 ? (
-                <Text fontSize="sm" opacity={0.7}>
-                  {t("reading_none_yet")}
-                </Text>
-              ) : (
-                lectures.map((lec) => {
-                  const active = lec.id === activeId;
-                  return (
-                    <Button
-                      key={lec.id}
-                      onClick={() => setActiveId(lec.id)}
-                      justifyContent="flex-start"
-                      size="sm"
-                      variant={active ? "solid" : "ghost"}
-                      colorScheme={active ? "teal" : "cyan"}
-                      whiteSpace="normal"
-                      textAlign="left"
-                      py={6}
-                      px={6}
-                      rounded="lg"
-                    >
-                      <Text fontWeight="600" fontSize="sm">
-                        {lec.title}
-                      </Text>
-                    </Button>
-                  );
-                })
-              )}
-              {/* sentinel for auto-scroll (desktop) */}
-              <Box ref={desktopEndRef} />
-            </VStack>
-          </Box>
-
-          {/* Right: Active/draft lecture */}
+        <HStack align="start" spacing={5} flexDir={{ base: "column", md: "row" }}>
           <Box
             flex="1"
             bg="gray.800"

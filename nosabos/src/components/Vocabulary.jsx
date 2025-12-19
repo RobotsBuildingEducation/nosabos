@@ -3150,8 +3150,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setRecentXp(0);
     setNextAction(null);
 
-    const repeatVariant = Math.random() < 0.5;
-    setTranslateVariant(repeatVariant ? "repeat" : "translate");
+    const repeatVariant = true;
+    setTranslateVariant("repeat");
 
     // Randomly pick direction unless we're doing listening (force target language)
     const supportCode = resolveSupportLang(supportLang, userLanguage);
