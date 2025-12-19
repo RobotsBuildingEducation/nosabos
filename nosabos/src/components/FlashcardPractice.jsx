@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   Box,
   VStack,
@@ -150,7 +151,10 @@ export default function FlashcardPractice({
   const [loadingTts, setLoadingTts] = useState(false);
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const [noteCreated, setNoteCreated] = useState(false);
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [explanationText, setExplanationText] = useState("");
   const streamingRef = useRef(false);
+  const explanationStreamingRef = useRef(false);
   const audioRef = useRef(null);
   const toast = useToast();
 
@@ -244,6 +248,7 @@ export default function FlashcardPractice({
 
   const handleTextSubmit = () => {
     if (textAnswer.trim()) {
+      setExplanationText("");
       checkAnswerWithAI(textAnswer);
     }
   };
@@ -255,6 +260,9 @@ export default function FlashcardPractice({
     setIsCorrect(false);
     setXpAwarded(0);
     setNoteCreated(false);
+    explanationStreamingRef.current = false;
+    setExplanationText("");
+    setIsLoadingExplanation(false);
   };
 
   const handleClose = () => {
@@ -270,6 +278,9 @@ export default function FlashcardPractice({
     setLoadingTts(false);
     setIsCreatingNote(false);
     setNoteCreated(false);
+    explanationStreamingRef.current = false;
+    setExplanationText("");
+    setIsLoadingExplanation(false);
     streamingRef.current = false;
     if (audioRef.current) {
       audioRef.current.pause();
@@ -349,6 +360,8 @@ export default function FlashcardPractice({
     setRecognizedText("");
     setIsCorrect(false);
     setXpAwarded(0);
+    setExplanationText("");
+    setIsLoadingExplanation(false);
 
     try {
       await startRecording();
@@ -415,6 +428,82 @@ export default function FlashcardPractice({
     setIsFlipped(false);
     setStreamedAnswer("");
     setIsStreaming(false);
+  };
+
+  const handleExplainAnswer = async () => {
+    if (isLoadingExplanation || explanationText) return;
+
+    const userAnswer = textAnswer || recognizedText;
+    if (!userAnswer) return;
+
+    const concept = getConceptText(card, getEffectiveCardLanguage(supportLang));
+    const prompt = `You are a helpful language tutor for ${LANG_NAME(
+      targetLang
+    )}. A student tried to translate a prompt from ${LANG_NAME(
+      supportLang
+    )} to ${LANG_NAME(targetLang)}.
+
+Prompt (${LANG_NAME(supportLang)}): ${concept}
+Student translation attempt (${LANG_NAME(targetLang)}): ${userAnswer}
+
+Provide a brief response in ${LANG_NAME(
+      supportLang
+    )} with two parts:
+1) Correct translation: the best translation into ${LANG_NAME(targetLang)}
+2) Explanation: 2-3 concise sentences in ${LANG_NAME(
+      supportLang
+    )} explaining how the student's answer could be improved.`;
+
+    setIsLoadingExplanation(true);
+    setExplanationText("");
+    explanationStreamingRef.current = true;
+
+    const streamChunkText = (chunk) =>
+      typeof chunk?.text === "function" ? chunk.text() : chunk?.text || "";
+
+    try {
+      // Prefer streaming for faster UI feedback
+      if (simplemodel) {
+        const result = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        let fullText = "";
+        for await (const chunk of result.stream) {
+          if (!explanationStreamingRef.current) break;
+
+          const chunkText = streamChunkText(chunk);
+          if (!chunkText) continue;
+
+          fullText += chunkText;
+          setExplanationText(fullText.trim());
+        }
+
+        if (explanationStreamingRef.current) {
+          const finalResp = await result.response;
+          const finalText = streamChunkText(finalResp) || fullText;
+          setExplanationText(finalText.trim());
+        }
+      } else {
+        const explanation = await callResponses({
+          model: DEFAULT_RESPONSES_MODEL,
+          input: prompt,
+        });
+
+        setExplanationText(explanation.trim());
+      }
+    } catch (error) {
+      console.error("Error explaining answer:", error);
+      toast({
+        title: getTranslation("flashcard_grading_error_title"),
+        description: getTranslation("flashcard_grading_error_desc"),
+        status: "error",
+        duration: 3000,
+      });
+    } finally {
+      explanationStreamingRef.current = false;
+      setIsLoadingExplanation(false);
+    }
   };
 
   const handleListenToAnswer = async (e) => {
@@ -854,15 +943,86 @@ export default function FlashcardPractice({
                         </Text>
                       </HStack>
                     ) : (
-                      <Button
-                        size="lg"
-                        colorScheme="red"
-                        variant="outline"
-                        onClick={handleTryAgain}
-                        mt={2}
+                      <VStack w="100%" spacing={3} mt={2}>
+                        <Button
+                          size="lg"
+                          colorScheme="red"
+                          variant="outline"
+                          onClick={handleTryAgain}
+                          w="100%"
+                        >
+                          {getTranslation("flashcard_try_again")}
+                        </Button>
+
+                        <Button
+                          size="lg"
+                          colorScheme="pink"
+                          variant="solid"
+                          onClick={handleExplainAnswer}
+                          isDisabled={
+                            isLoadingExplanation || !!explanationText || isGrading
+                          }
+                          leftIcon={
+                            isLoadingExplanation ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <RiEyeLine size={20} />
+                            )
+                          }
+                          w="100%"
+                        >
+                          {getTranslation("flashcard_explain_answer") ||
+                            "Explain my answer"}
+                        </Button>
+                      </VStack>
+                    )}
+
+                    {!isCorrect && explanationText && (
+                      <Box
+                        w="100%"
+                        p={4}
+                        borderRadius="md"
+                        bg="rgba(244, 114, 182, 0.08)"
+                        border="1px solid"
+                        borderColor="pink.400"
+                        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
                       >
-                        {getTranslation("flashcard_try_again")}
-                      </Button>
+                        <Text
+                          fontSize="sm"
+                          fontWeight="semibold"
+                          color="pink.200"
+                          mb={2}
+                          display="flex"
+                          alignItems="center"
+                          gap={2}
+                        >
+                          <RiEyeLine />
+                          {getTranslation("flashcard_explanation_heading") ||
+                            "Explanation"}
+                        </Text>
+                        <Box
+                          color="white"
+                          fontSize="sm"
+                          lineHeight="1.6"
+                          sx={{
+                            "& p": { mb: 2 },
+                            "& p:last-child": { mb: 0 },
+                            "& strong": { fontWeight: "bold", color: "pink.100" },
+                            "& em": { fontStyle: "italic" },
+                            "& ul, & ol": { pl: 4, mb: 2 },
+                            "& li": { mb: 1 },
+                            "& code": {
+                              bg: "rgba(0,0,0,0.3)",
+                              px: 1,
+                              py: 0.5,
+                              borderRadius: "sm",
+                              fontFamily: "mono",
+                            },
+                          }}
+                        >
+                          <ReactMarkdown>{explanationText}</ReactMarkdown>
+                        </Box>
+                      </Box>
                     )}
 
                     {isCorrect && (
