@@ -1479,6 +1479,11 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [tDirection, setTDirection] = useState("target-to-support"); // "target-to-support" or "support-to-target"
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
+  const useRepeatWhatYouHear = useMemo(() => {
+    if (!tSentence || !tWordBank.length) return false;
+    const signature = `${tSentence}||${tWordBank.join("|")}`;
+    return stableHash(signature) % 2 === 0;
+  }, [tSentence, tWordBank]);
 
   const generatorDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
@@ -1491,7 +1496,6 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
 
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
-    if (isTutorial) return generateTranslate;
     if (!generatorDeckRef.current.length) {
       const order = [
         generateFill,
@@ -1518,7 +1522,6 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function generatorFor(kind) {
-    if (isTutorial) return generateTranslate;
     switch (kind) {
       case "fill":
         return generateFill;
@@ -5220,7 +5223,7 @@ Return JSON ONLY:
 
         {/* ---- TRANSLATE UI ---- */}
         {mode === "translate" && (tSentence || loadingTQ) ? (
-          isTutorial ? (
+          useRepeatWhatYouHear ? (
             <RepeatWhatYouHear
               sourceSentence={tSentence}
               wordBank={tWordBank}

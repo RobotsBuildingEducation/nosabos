@@ -1621,13 +1621,16 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [tDirection, setTDirection] = useState("target-to-support"); // "target-to-support" or "support-to-target"
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
+  const useRepeatWhatYouHear = useMemo(() => {
+    if (!tSentence || !tWordBank.length) return false;
+    const signature = `${tSentence}||${tWordBank.join("|")}`;
+    return stableHash(signature) % 2 === 0;
+  }, [tSentence, tWordBank]);
 
   /* ---------------------------
      GENERATOR DISPATCH
   --------------------------- */
-  const types = isTutorial
-    ? ["translate"]
-    : ["fill", "mc", "ma", "speak", "match", "translate"];
+  const types = ["fill", "mc", "ma", "speak", "match", "translate"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -1638,7 +1641,6 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const prevPicksMARef = useRef([]);
   const prevMSlotsRef = useRef([]);
   function generatorFor(type) {
-    if (isTutorial) return generateTranslate;
     switch (type) {
       case "fill":
         return generateFill;
@@ -5467,7 +5469,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
         {/* ---- TRANSLATE UI ---- */}
         {mode === "translate" && (tSentence || loadingTQ) ? (
-          isTutorial ? (
+          useRepeatWhatYouHear ? (
             <RepeatWhatYouHear
               sourceSentence={tSentence}
               wordBank={tWordBank}
