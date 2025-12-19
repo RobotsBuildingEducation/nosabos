@@ -1,0 +1,23 @@
+{
+  "accountAssociation": {
+    "header": "eyJmaWQiOjkwNzE1MSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweDIzQTU3OTZFMDYwMGI2RDc0QkUyMkMzZDY1Qzc4NTRFMTUyMDM1Q2YifQ",
+    "payload": "eyJkb21haW4iOiJub3NhYm9zLmFwcCJ9",
+    "signature": "zitR9TJOX2xIiebBudxqzZV1g2EIddA+4WHVqYywzVEAIqgOXieOrN5ghAkbLXDvvvXfaHNfexPm1uj0EQKGYRs="
+  },
+  "frame": {
+    "version": "1",
+    "name": "No Sabos",
+    "subtitle": "AI Language Learning.",
+    "description": "An AI language tutor.",
+    "iconUrl": "https://res.cloudinary.com/dtkeyccga/image/upload/v1756332943/Screenshot_2025-08-27_at_4.15.34_PM_hgwyj7.png",
+    "homeUrl": "https://nosabos.app",
+    "splashImageUrl": "https://res.cloudinary.com/dtkeyccga/image/upload/v1756332943/Screenshot_2025-08-27_at_4.15.34_PM_hgwyj7.png",
+    "splashBackgroundColor": "#000000",
+    "heroImageUrl": "https://res.cloudinary.com/dtkeyccga/image/upload/v1756332943/Screenshot_2025-08-27_at_4.15.34_PM_hgwyj7.png",
+    "tagline": "Start Learning",
+    "screenshotUrls": [],
+    "primaryCategory": "education",
+    "tags": ["education", "coding", "ai", "bitcoin"],
+    "webhookUrl": "https://nosabos.app/api/webhook"
+  }
+}

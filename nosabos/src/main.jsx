@@ -8,6 +8,9 @@ import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 import WalletExperiment from "./components/WalletExperiment.jsx";
 
+import "@coinbase/onchainkit/styles.css";
+import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
+
 const hasStoredKey = () => {
   if (typeof window === "undefined") return false;
   const secret = localStorage.getItem("local_nsec");
@@ -40,13 +43,15 @@ function AppContainer() {
 
 createRoot(document.getElementById("root")).render(
   <ChakraProvider theme={theme}>
-    <Router>
-      <Routes>
-        <Route path="/" element={<AppContainer />} />
-        <Route path="/onboarding/*" element={<AppContainer />} />
-        <Route path="/subscribe" element={<AppContainer />} />
-        <Route path="/experiments" element={<WalletExperiment />} />
-      </Routes>
-    </Router>
+    <MiniKitContextProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<AppContainer />} />
+          <Route path="/onboarding/*" element={<AppContainer />} />
+          <Route path="/subscribe" element={<AppContainer />} />
+          <Route path="/experiments" element={<WalletExperiment />} />
+        </Routes>
+      </Router>
+    </MiniKitContextProvider>
   </ChakraProvider>
 );
