@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import ReactMarkdown from "react-markdown";
 import {
   Box,
   VStack,
@@ -952,19 +953,43 @@ Provide a brief response in ${LANG_NAME(
                         bg="rgba(244, 114, 182, 0.08)"
                         border="1px solid"
                         borderColor="pink.400"
+                        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
                       >
                         <Text
                           fontSize="sm"
                           fontWeight="semibold"
                           color="pink.200"
                           mb={2}
+                          display="flex"
+                          alignItems="center"
+                          gap={2}
                         >
+                          <RiEyeLine />
                           {getTranslation("flashcard_explanation_heading") ||
                             "Explanation"}
                         </Text>
-                        <Text color="white" whiteSpace="pre-wrap">
-                          {explanationText}
-                        </Text>
+                        <Box
+                          color="white"
+                          fontSize="sm"
+                          lineHeight="1.6"
+                          sx={{
+                            "& p": { mb: 2 },
+                            "& p:last-child": { mb: 0 },
+                            "& strong": { fontWeight: "bold", color: "pink.100" },
+                            "& em": { fontStyle: "italic" },
+                            "& ul, & ol": { pl: 4, mb: 2 },
+                            "& li": { mb: 1 },
+                            "& code": {
+                              bg: "rgba(0,0,0,0.3)",
+                              px: 1,
+                              py: 0.5,
+                              borderRadius: "sm",
+                              fontFamily: "mono",
+                            },
+                          }}
+                        >
+                          <ReactMarkdown>{explanationText}</ReactMarkdown>
+                        </Box>
                       </Box>
                     )}
 
