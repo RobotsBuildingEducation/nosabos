@@ -53,6 +53,7 @@ import {
 } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
+import TranslateSentence from "./TranslateSentence";
 import {
   TTS_LANG_TAG,
   getRandomVoice,
@@ -666,6 +667,96 @@ YES or NO
 `.trim();
 }
 
+/* TRANSLATE — word-bank sentence translation (Vocabulary) */
+function buildVocabTranslateStreamPrompt({
+  cefrLevel,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang,
+  recentGood,
+  lessonContent = null,
+  direction = "target-to-support", // "target-to-support" or "support-to-target"
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
+  const SUPPORT = LANG_NAME(SUPPORT_CODE);
+  const diff = vocabDifficulty(cefrLevel);
+
+  // Determine source and answer languages based on direction
+  const isTargetToSupport = direction === "target-to-support";
+  const SOURCE_LANG = isTargetToSupport ? TARGET : SUPPORT;
+  const ANSWER_LANG = isTargetToSupport ? SUPPORT : TARGET;
+
+  // Special handling for tutorial mode
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const exampleSentence = isTargetToSupport
+    ? `Example: "El gato es negro" -> "The cat is black"`
+    : `Example: "The cat is black" -> "El gato es negro"`;
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence using basic vocabulary only. ${exampleSentence}. Use only common words. Keep everything at absolute beginner level.`
+    : lessonContent?.words || lessonContent?.topic
+    ? [
+        lessonContent.words
+          ? `- STRICT REQUIREMENT: Use words from this list: ${JSON.stringify(
+              lessonContent.words
+            )}. This is lesson-specific vocabulary.`
+          : null,
+        lessonContent.topic
+          ? `- STRICT REQUIREMENT: Focus on vocabulary topic: ${lessonContent.topic}.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
+
+  return [
+    `Create ONE sentence translation exercise for VOCABULARY. Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
+    `- Source sentence in ${SOURCE_LANG} (4-8 words, showcasing vocabulary).`,
+    `- Correct translation as array of ${ANSWER_LANG} words in order.`,
+    `- Provide 3-5 distractor words in ${ANSWER_LANG} that are plausible but incorrect.`,
+    `- Hint in ${SUPPORT} (≤8 words) about key vocabulary.`,
+    topicDirective,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"translate","phase":"q","sentence":"<${SOURCE_LANG} sentence>"}`,
+    `{"type":"translate","phase":"answer","correctWords":["word1","word2",...],"distractors":["wrong1","wrong2",...]}`,
+    `{"type":"translate","phase":"meta","hint":"<${SUPPORT} hint>"}`,
+    `{"type":"done"}`,
+  ].join("\n");
+}
+
+function buildVocabTranslateJudgePrompt({ sourceLang, answerLang, sentence, correctWords, userWords }) {
+  const SOURCE = LANG_NAME(sourceLang);
+  const ANSWER = LANG_NAME(answerLang);
+  return `
+Judge a VOCABULARY translation exercise.
+
+Source sentence (${SOURCE}):
+${sentence}
+
+Expected translation (${ANSWER}):
+${correctWords.join(" ")}
+
+User's answer:
+${userWords.join(" ")}
+
+Instructions:
+- Say YES if the user's translation is correct or an acceptable variant.
+- Allow minor word order variations if meaning is preserved.
+- Allow contractions, minor punctuation differences.
+- Allow missing or incorrect accent marks/diacritics.
+- Be lenient - good enough translations are acceptable.
+
+Reply with ONE WORD ONLY:
+YES or NO
+`.trim();
+}
+
 /* ---------------------------
    Utilities
 --------------------------- */
@@ -925,7 +1016,7 @@ export default function Vocabulary({
 
   const recentCorrectRef = useRef([]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
+  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "translate"
   // ✅ always randomize (no manual lock controls in the UI)
   const lockedType = null;
 
@@ -1519,10 +1610,23 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [loadingMG, setLoadingMG] = useState(false);
   const [loadingMJ, setLoadingMJ] = useState(false);
 
+  // ---- TRANSLATE (word bank) ----
+  const [tSentence, setTSentence] = useState(""); // source sentence
+  const [tCorrectWords, setTCorrectWords] = useState([]); // correct translation words in order
+  const [tDistractors, setTDistractors] = useState([]); // distractor words
+  const [tWordBank, setTWordBank] = useState([]); // all words shuffled
+  const [tHint, setTHint] = useState("");
+  const [tDirection, setTDirection] = useState("target-to-support"); // "target-to-support" or "support-to-target"
+  const [loadingTQ, setLoadingTQ] = useState(false); // loading question
+  const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
+
   /* ---------------------------
      GENERATOR DISPATCH
   --------------------------- */
-  const types = ["fill", "mc", "ma", "speak", "match"];
+  // Check if we're in tutorial mode
+  const isTutorialMode = lessonContent?.topic === "tutorial" || lesson?.isTutorial;
+
+  const types = isTutorialMode ? ["translate"] : ["fill", "mc", "ma", "speak", "match", "translate"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -1540,6 +1644,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         return generateMC;
       case "ma":
         return generateMA;
+      case "translate":
+        return generateTranslate;
       case "speak":
         return generateSpeak;
       case "match":
@@ -3017,6 +3123,163 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     }
   }
 
+  /* ---------------------------
+     STREAM Generate — TRANSLATE (word bank)
+  --------------------------- */
+  async function generateTranslate() {
+    setMode("translate");
+    setLoadingTQ(true);
+    setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
+    setRecentXp(0);
+    setNextAction(null);
+
+    // Randomly pick direction: target->support or support->target
+    const direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
+    setTDirection(direction);
+
+    // Reset state
+    setTSentence("");
+    setTCorrectWords([]);
+    setTDistractors([]);
+    setTWordBank([]);
+    setTHint("");
+
+    const prompt = buildVocabTranslateStreamPrompt({
+      cefrLevel,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      recentGood: recentCorrectRef.current,
+      lessonContent,
+      direction,
+    });
+
+    let gotSentence = false;
+    let gotAnswer = false;
+    let tempCorrectWords = [];
+    let tempDistractors = [];
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+              setTSentence(String(obj.sentence).trim());
+              gotSentence = true;
+            }
+            if (obj?.type === "translate" && obj.phase === "answer") {
+              if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+                tempCorrectWords = obj.correctWords.map(String);
+                setTCorrectWords(tempCorrectWords);
+              }
+              if (Array.isArray(obj.distractors)) {
+                tempDistractors = obj.distractors.map(String);
+                setTDistractors(tempDistractors);
+              }
+              gotAnswer = true;
+            }
+            if (obj?.type === "translate" && obj.phase === "meta" && obj.hint) {
+              setTHint(String(obj.hint).trim());
+            }
+          });
+        }
+      }
+
+      // Flush tail
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+                setTSentence(String(obj.sentence).trim());
+                gotSentence = true;
+              }
+              if (obj?.type === "translate" && obj.phase === "answer") {
+                if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+                  tempCorrectWords = obj.correctWords.map(String);
+                  setTCorrectWords(tempCorrectWords);
+                }
+                if (Array.isArray(obj.distractors)) {
+                  tempDistractors = obj.distractors.map(String);
+                  setTDistractors(tempDistractors);
+                }
+                gotAnswer = true;
+              }
+              if (obj?.type === "translate" && obj.phase === "meta" && obj.hint) {
+                setTHint(String(obj.hint).trim());
+              }
+            })
+          );
+      }
+
+      if (!gotSentence || !gotAnswer) throw new Error("incomplete-translate");
+
+      // Build shuffled word bank
+      const allWords = [...tempCorrectWords, ...tempDistractors];
+      setTWordBank(shuffle(allWords));
+    } catch {
+      // Fallback defaults based on direction
+      const isTargetToSupport = direction === "target-to-support";
+      if (targetLang === "es") {
+        if (isTargetToSupport) {
+          // Spanish -> English
+          setTSentence("El gato es negro.");
+          setTCorrectWords(["The", "cat", "is", "black"]);
+          setTDistractors(["dog", "red", "big"]);
+          setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
+          setTHint("Colors and animals vocabulary");
+        } else {
+          // English -> Spanish
+          setTSentence("The cat is black.");
+          setTCorrectWords(["El", "gato", "es", "negro"]);
+          setTDistractors(["perro", "rojo", "grande"]);
+          setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
+          setTHint("Colors and animals vocabulary");
+        }
+      } else {
+        if (isTargetToSupport) {
+          // English -> Spanish (when target is English)
+          setTSentence("The cat is black.");
+          setTCorrectWords(["El", "gato", "es", "negro"]);
+          setTDistractors(["perro", "rojo", "grande"]);
+          setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
+          setTHint("Vocabulario de colores y animales");
+        } else {
+          // Spanish -> English (when target is English)
+          setTSentence("El gato es negro.");
+          setTCorrectWords(["The", "cat", "is", "black"]);
+          setTDistractors(["dog", "red", "big"]);
+          setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
+          setTHint("Vocabulario de colores y animales");
+        }
+      }
+    } finally {
+      setLoadingTQ(false);
+    }
+  }
+
   function canSubmitMatch() {
     return mLeft.length > 0 && mSlots.every((ri) => ri !== null);
   }
@@ -3083,6 +3346,95 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setNextAction(() => nextFn);
 
     setLoadingMJ(false);
+  }
+
+  // Submit for Translate mode
+  async function submitTranslate(userWords) {
+    if (!tSentence || !userWords || userWords.length === 0) return;
+    setLoadingTJ(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
+
+    // First check: exact match (normalized)
+    const normalizedUser = userWords.map((w) => norm(w));
+    const normalizedCorrect = tCorrectWords.map((w) => norm(w));
+    let ok = normalizedUser.length === normalizedCorrect.length &&
+      normalizedUser.every((w, i) => w === normalizedCorrect[i]);
+
+    // If not exact match, use LLM judge for flexible matching
+    if (!ok) {
+      // Determine source and answer languages based on direction
+      const supportCode = resolveSupportLang(supportLang, userLanguage);
+      const isTargetToSupport = tDirection === "target-to-support";
+      const sourceLang = isTargetToSupport ? targetLang : supportCode;
+      const answerLang = isTargetToSupport ? supportCode : targetLang;
+
+      const judgePrompt = buildVocabTranslateJudgePrompt({
+        sourceLang,
+        answerLang,
+        sentence: tSentence,
+        correctWords: tCorrectWords,
+        userWords,
+      });
+
+      try {
+        const verdictRaw = await callResponses({
+          model: MODEL,
+          input: judgePrompt,
+        });
+        ok = /yes/i.test((verdictRaw || "").trim().split(/\s+/)[0]);
+      } catch {
+        ok = false;
+      }
+    }
+
+    const delta = ok ? 6 : 0;
+
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setLastOk(ok);
+      setRecentXp(0);
+      const nextFn =
+        ok || isFinalQuiz
+          ? lockedType
+            ? () => generatorFor(lockedType)()
+            : () => generateRandom()
+          : null;
+      setNextAction(() => nextFn);
+      setLoadingTJ(false);
+      return;
+    }
+
+    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+
+    setLastOk(ok);
+    setRecentXp(delta);
+
+    // Store question data for explanation and note creation
+    setCurrentQuestionData({
+      question: tSentence,
+      userAnswer: userWords.join(" "),
+      correctAnswer: tCorrectWords.join(" "),
+      questionType: "translate",
+    });
+    if (ok) {
+      setExplanationText("");
+      recentCorrectRef.current = [
+        ...recentCorrectRef.current,
+        { mode: "translate", question: tSentence },
+      ].slice(-5);
+    }
+
+    const nextFn = ok
+      ? lockedType
+        ? () => generatorFor(lockedType)()
+        : () => generateRandom()
+      : null;
+    setNextAction(() => nextFn);
+
+    setLoadingTJ(false);
   }
 
   const handleSpeakEvaluation = useCallback(
@@ -5109,6 +5461,35 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               noteCreated={noteCreated}
             />
           </>
+        ) : null}
+
+        {/* ---- TRANSLATE UI ---- */}
+        {mode === "translate" && (tSentence || loadingTQ) ? (
+          <TranslateSentence
+            sourceSentence={tSentence}
+            wordBank={tWordBank}
+            correctAnswer={tCorrectWords}
+            hint={tHint}
+            loading={loadingTQ}
+            userLanguage={userLanguage}
+            t={t}
+            onSubmit={submitTranslate}
+            onSkip={handleSkip}
+            onNext={handleNext}
+            onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+            lastOk={lastOk}
+            recentXp={recentXp}
+            isSubmitting={loadingTJ}
+            showNext={showNextButton}
+            isSynthesizing={isQuestionSynthesizing}
+            onExplainAnswer={handleExplainAnswer}
+            explanationText={explanationText}
+            isLoadingExplanation={isLoadingExplanation}
+            lessonProgress={lessonProgress}
+            onCreateNote={handleCreateNote}
+            isCreatingNote={isCreatingNote}
+            noteCreated={noteCreated}
+          />
         ) : null}
       </VStack>
 

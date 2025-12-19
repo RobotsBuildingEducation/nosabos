@@ -45,6 +45,7 @@ import {
 } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
+import TranslateSentence from "./TranslateSentence";
 import {
   LOW_LATENCY_TTS_FORMAT,
   TTS_LANG_TAG,
@@ -605,6 +606,96 @@ YES or NO
 `.trim();
 }
 
+/* TRANSLATE — word-bank sentence translation */
+function buildTranslateStreamPrompt({
+  cefrLevel,
+  targetLang,
+  supportLang,
+  showTranslations,
+  appUILang,
+  recentGood,
+  lessonContent = null,
+  direction = "target-to-support", // "target-to-support" or "support-to-target"
+}) {
+  const TARGET = LANG_NAME(targetLang);
+  const SUPPORT_CODE = resolveSupportLang(supportLang, appUILang);
+  const SUPPORT = LANG_NAME(SUPPORT_CODE);
+  const diff = difficultyHint(cefrLevel);
+
+  // Determine source and answer languages based on direction
+  const isTargetToSupport = direction === "target-to-support";
+  const SOURCE_LANG = isTargetToSupport ? TARGET : SUPPORT;
+  const ANSWER_LANG = isTargetToSupport ? SUPPORT : TARGET;
+
+  // Special handling for tutorial mode
+  const isTutorial = lessonContent?.topic === "tutorial";
+  const exampleSentence = isTargetToSupport
+    ? `Example: "Hola amigo" -> "Hello friend"`
+    : `Example: "Hello friend" -> "Hola amigo"`;
+  const topicDirective = isTutorial
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence about basic greetings only. ${exampleSentence}. Use only common greeting words. Keep everything at absolute beginner level.`
+    : lessonContent?.topic || lessonContent?.focusPoints
+    ? [
+        lessonContent.topic
+          ? `- STRICT REQUIREMENT: Focus EXCLUSIVELY on grammar topic: ${lessonContent.topic}. This is lesson-specific content.`
+          : null,
+        lessonContent.focusPoints
+          ? `- STRICT REQUIREMENT: Address these focus points: ${JSON.stringify(
+              lessonContent.focusPoints
+            )}.`
+          : null,
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : `- Consider learner recent corrects: ${JSON.stringify(
+        recentGood.slice(-3)
+      )}`;
+
+  return [
+    `Create ONE sentence translation exercise. Difficulty: ${
+      isTutorial ? "absolute beginner, very easy" : diff
+    }`,
+    `- Source sentence in ${SOURCE_LANG} (4-8 words, clear grammar).`,
+    `- Correct translation as array of ${ANSWER_LANG} words in order.`,
+    `- Provide 3-5 distractor words in ${ANSWER_LANG} that are plausible but incorrect.`,
+    `- Hint in ${SUPPORT} (≤8 words) about the grammar point.`,
+    topicDirective,
+    "",
+    "Stream as NDJSON:",
+    `{"type":"translate","phase":"q","sentence":"<${SOURCE_LANG} sentence>"}`,
+    `{"type":"translate","phase":"answer","correctWords":["word1","word2",...],"distractors":["wrong1","wrong2",...]}`,
+    `{"type":"translate","phase":"meta","hint":"<${SUPPORT} hint>"}`,
+    `{"type":"done"}`,
+  ].join("\n");
+}
+
+function buildTranslateJudgePrompt({ sourceLang, answerLang, sentence, correctWords, userWords }) {
+  const SOURCE = LANG_NAME(sourceLang);
+  const ANSWER = LANG_NAME(answerLang);
+  return `
+Judge a TRANSLATION exercise.
+
+Source sentence (${SOURCE}):
+${sentence}
+
+Expected translation (${ANSWER}):
+${correctWords.join(" ")}
+
+User's answer:
+${userWords.join(" ")}
+
+Instructions:
+- Say YES if the user's translation is correct or an acceptable variant.
+- Allow minor word order variations if meaning is preserved.
+- Allow contractions, minor punctuation differences.
+- Allow missing or incorrect accent marks/diacritics.
+- Be lenient - good enough translations are acceptable.
+
+Reply with ONE WORD ONLY:
+YES or NO
+`.trim();
+}
+
 /* ---------------------------
    Normalizers
 --------------------------- */
@@ -844,7 +935,7 @@ export default function GrammarBook({
 
   const recentCorrectRef = useRef([]);
 
-  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match"
+  const [mode, setMode] = useState("fill"); // "fill" | "mc" | "ma" | "speak" | "match" | "translate"
 
   // random-by-default (no manual lock controls)
   const modeLocked = false;
@@ -1377,6 +1468,16 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [loadingMJ, setLoadingMJ] = useState(false);
   const [mAnswerMap, setMAnswerMap] = useState([]); // ✅ right index for each left (deterministic)
 
+  // ---- TRANSLATE (word bank) ----
+  const [tSentence, setTSentence] = useState(""); // source sentence
+  const [tCorrectWords, setTCorrectWords] = useState([]); // correct translation words in order
+  const [tDistractors, setTDistractors] = useState([]); // distractor words
+  const [tWordBank, setTWordBank] = useState([]); // all words shuffled
+  const [tHint, setTHint] = useState("");
+  const [tDirection, setTDirection] = useState("target-to-support"); // "target-to-support" or "support-to-target"
+  const [loadingTQ, setLoadingTQ] = useState(false); // loading question
+  const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
+
   const generatorDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -1387,7 +1488,15 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const prevMaPicksRef = useRef([]);
 
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
+  // Check if we're in tutorial mode
+  const isTutorialMode = lessonContent?.topic === "tutorial" || lesson?.isTutorial;
+
   function drawGenerator() {
+    // In tutorial mode, only use translate questions
+    if (isTutorialMode) {
+      return generateTranslate;
+    }
+
     if (!generatorDeckRef.current.length) {
       const order = [
         generateFill,
@@ -1395,6 +1504,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         generateMA,
         generateSpeak,
         generateMatch,
+        generateTranslate,
       ];
       for (let i = order.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1424,6 +1534,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         return generateMatch;
       case "speak":
         return generateSpeak;
+      case "translate":
+        return generateTranslate;
       default:
         return generateRandom;
     }
@@ -2573,6 +2685,161 @@ Return JSON ONLY:
     }
   }
 
+  /* ---------- STREAM Generate: TRANSLATE (word bank) ---------- */
+  async function generateTranslate() {
+    setMode("translate");
+    setLoadingTQ(true);
+    setLastOk(null);
+    setQuizCurrentQuestionAttempted(false);
+    setRecentXp(0);
+    setNextAction(null);
+
+    // Randomly pick direction: target->support or support->target
+    const direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
+    setTDirection(direction);
+
+    // Reset state
+    setTSentence("");
+    setTCorrectWords([]);
+    setTDistractors([]);
+    setTWordBank([]);
+    setTHint("");
+
+    const prompt = buildTranslateStreamPrompt({
+      cefrLevel,
+      targetLang,
+      supportLang,
+      showTranslations,
+      appUILang: userLanguage,
+      recentGood: recentCorrectRef.current,
+      lessonContent,
+      direction,
+    });
+
+    let gotSentence = false;
+    let gotAnswer = false;
+    let tempCorrectWords = [];
+    let tempDistractors = [];
+
+    try {
+      if (!simplemodel) throw new Error("gemini-unavailable");
+      const resp = await simplemodel.generateContentStream({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+
+      let buffer = "";
+      for await (const chunk of resp.stream) {
+        const piece = textFromChunk(chunk);
+        if (!piece) continue;
+        buffer += piece;
+        let nl;
+        while ((nl = buffer.indexOf("\n")) !== -1) {
+          const line = buffer.slice(0, nl);
+          buffer = buffer.slice(nl + 1);
+          tryConsumeLine(line, (obj) => {
+            if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+              setTSentence(String(obj.sentence).trim());
+              gotSentence = true;
+            }
+            if (obj?.type === "translate" && obj.phase === "answer") {
+              if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+                tempCorrectWords = obj.correctWords.map(String);
+                setTCorrectWords(tempCorrectWords);
+              }
+              if (Array.isArray(obj.distractors)) {
+                tempDistractors = obj.distractors.map(String);
+                setTDistractors(tempDistractors);
+              }
+              gotAnswer = true;
+            }
+            if (obj?.type === "translate" && obj.phase === "meta" && obj.hint) {
+              setTHint(String(obj.hint).trim());
+            }
+          });
+        }
+      }
+
+      // Flush tail
+      const finalAgg = await resp.response;
+      const finalText =
+        (typeof finalAgg?.text === "function"
+          ? finalAgg.text()
+          : finalAgg?.text) || "";
+      if (finalText) {
+        (finalText + "\n")
+          .split("\n")
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .forEach((l) =>
+            tryConsumeLine(l, (obj) => {
+              if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+                setTSentence(String(obj.sentence).trim());
+                gotSentence = true;
+              }
+              if (obj?.type === "translate" && obj.phase === "answer") {
+                if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+                  tempCorrectWords = obj.correctWords.map(String);
+                  setTCorrectWords(tempCorrectWords);
+                }
+                if (Array.isArray(obj.distractors)) {
+                  tempDistractors = obj.distractors.map(String);
+                  setTDistractors(tempDistractors);
+                }
+                gotAnswer = true;
+              }
+              if (obj?.type === "translate" && obj.phase === "meta" && obj.hint) {
+                setTHint(String(obj.hint).trim());
+              }
+            })
+          );
+      }
+
+      if (!gotSentence || !gotAnswer) throw new Error("incomplete-translate");
+
+      // Build shuffled word bank
+      const allWords = [...tempCorrectWords, ...tempDistractors];
+      setTWordBank(shuffle(allWords));
+    } catch {
+      // Fallback defaults based on direction
+      const isTargetToSupport = direction === "target-to-support";
+      if (targetLang === "es") {
+        if (isTargetToSupport) {
+          // Spanish -> English
+          setTSentence("Vamos a la escuela.");
+          setTCorrectWords(["We", "go", "to", "school"]);
+          setTDistractors(["house", "the", "tomorrow"]);
+          setTWordBank(shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]));
+          setTHint("Present tense of 'ir' (to go)");
+        } else {
+          // English -> Spanish
+          setTSentence("We go to school.");
+          setTCorrectWords(["Vamos", "a", "la", "escuela"]);
+          setTDistractors(["casa", "el", "mañana"]);
+          setTWordBank(shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]));
+          setTHint("Present tense of 'ir' (to go)");
+        }
+      } else {
+        if (isTargetToSupport) {
+          // English -> Spanish (when target is English)
+          setTSentence("We go to school.");
+          setTCorrectWords(["Vamos", "a", "la", "escuela"]);
+          setTDistractors(["casa", "el", "mañana"]);
+          setTWordBank(shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]));
+          setTHint("Presente del verbo 'ir'");
+        } else {
+          // Spanish -> English (when target is English)
+          setTSentence("Vamos a la escuela.");
+          setTCorrectWords(["We", "go", "to", "school"]);
+          setTDistractors(["house", "the", "tomorrow"]);
+          setTWordBank(shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]));
+          setTHint("Presente del verbo 'ir'");
+        }
+      }
+    } finally {
+      setLoadingTQ(false);
+    }
+  }
+
   /* ---------------------------
      Submits (backend judging for fill/mc/ma; deterministic for match)
   --------------------------- */
@@ -2853,6 +3120,95 @@ Return JSON ONLY:
     setNextAction(() => nextFn);
 
     setLoadingMJ(false);
+  }
+
+  // Submit for Translate mode
+  async function submitTranslate(userWords) {
+    if (!tSentence || !userWords || userWords.length === 0) return;
+    setLoadingTJ(true);
+
+    // Clear previous explanation when attempting a new answer
+    setExplanationText("");
+    setCurrentQuestionData(null);
+
+    // First check: exact match (normalized)
+    const normalizedUser = userWords.map((w) => norm(w));
+    const normalizedCorrect = tCorrectWords.map((w) => norm(w));
+    let ok = normalizedUser.length === normalizedCorrect.length &&
+      normalizedUser.every((w, i) => w === normalizedCorrect[i]);
+
+    // If not exact match, use LLM judge for flexible matching
+    if (!ok) {
+      // Determine source and answer languages based on direction
+      const supportCode = resolveSupportLang(supportLang, userLanguage);
+      const isTargetToSupport = tDirection === "target-to-support";
+      const sourceLang = isTargetToSupport ? targetLang : supportCode;
+      const answerLang = isTargetToSupport ? supportCode : targetLang;
+
+      const judgePrompt = buildTranslateJudgePrompt({
+        sourceLang,
+        answerLang,
+        sentence: tSentence,
+        correctWords: tCorrectWords,
+        userWords,
+      });
+
+      try {
+        const verdictRaw = await callResponses({
+          model: MODEL,
+          input: judgePrompt,
+        });
+        ok = /yes/i.test((verdictRaw || "").trim().split(/\s+/)[0]);
+      } catch {
+        ok = false;
+      }
+    }
+
+    const delta = ok ? 6 : 0;
+
+    if (isFinalQuiz) {
+      handleQuizAnswer(ok);
+      setLastOk(ok);
+      setRecentXp(0);
+      const nextFn =
+        ok || isFinalQuiz
+          ? modeLocked
+            ? () => generateTranslate()
+            : () => generateRandomRef.current()
+          : null;
+      setNextAction(() => nextFn);
+      setLoadingTJ(false);
+      return;
+    }
+
+    if (delta > 0) await awardXp(npub, delta, targetLang).catch(() => {});
+
+    setLastOk(ok);
+    setRecentXp(delta);
+
+    // Store question data for explanation and note creation
+    setCurrentQuestionData({
+      question: tSentence,
+      userAnswer: userWords.join(" "),
+      correctAnswer: tCorrectWords.join(" "),
+      questionType: "translate",
+    });
+    if (ok) {
+      setExplanationText("");
+      recentCorrectRef.current = [
+        ...recentCorrectRef.current,
+        { mode: "translate", question: tSentence },
+      ].slice(-5);
+    }
+
+    const nextFn = ok
+      ? modeLocked
+        ? () => generateTranslate()
+        : () => generateRandomRef.current()
+      : null;
+    setNextAction(() => nextFn);
+
+    setLoadingTJ(false);
   }
 
   const handleSpeakEvaluation = useCallback(
@@ -4864,6 +5220,38 @@ Return JSON ONLY:
               noteCreated={noteCreated}
             />
           </>
+        ) : null}
+
+        {/* ---- TRANSLATE UI ---- */}
+        {mode === "translate" && (tSentence || loadingTQ) ? (
+          <TranslateSentence
+            sourceSentence={tSentence}
+            wordBank={tWordBank}
+            correctAnswer={tCorrectWords}
+            hint={tHint}
+            loading={loadingTQ}
+            userLanguage={userLanguage}
+            t={t}
+            onSubmit={submitTranslate}
+            onSkip={handleSkip}
+            onNext={handleNext}
+            onPlayTTS={(text) => handlePlayQuestionTTS(text)}
+            lastOk={lastOk}
+            recentXp={recentXp}
+            isSubmitting={loadingTJ}
+            showNext={
+              (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+              nextAction
+            }
+            isSynthesizing={isQuestionSynthesizing}
+            onExplainAnswer={handleExplainAnswer}
+            explanationText={explanationText}
+            isLoadingExplanation={isLoadingExplanation}
+            lessonProgress={lessonProgress}
+            onCreateNote={handleCreateNote}
+            isCreatingNote={isCreatingNote}
+            noteCreated={noteCreated}
+          />
         ) : null}
       </VStack>
     </Box>
