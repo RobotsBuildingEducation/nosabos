@@ -154,6 +154,7 @@ export default function FlashcardPractice({
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
   const [explanationText, setExplanationText] = useState("");
   const streamingRef = useRef(false);
+  const explanationStreamingRef = useRef(false);
   const audioRef = useRef(null);
   const toast = useToast();
 
@@ -259,6 +260,7 @@ export default function FlashcardPractice({
     setIsCorrect(false);
     setXpAwarded(0);
     setNoteCreated(false);
+    explanationStreamingRef.current = false;
     setExplanationText("");
     setIsLoadingExplanation(false);
   };
@@ -276,6 +278,7 @@ export default function FlashcardPractice({
     setLoadingTts(false);
     setIsCreatingNote(false);
     setNoteCreated(false);
+    explanationStreamingRef.current = false;
     setExplanationText("");
     setIsLoadingExplanation(false);
     streamingRef.current = false;
@@ -453,14 +456,42 @@ Provide a brief response in ${LANG_NAME(
 
     setIsLoadingExplanation(true);
     setExplanationText("");
+    explanationStreamingRef.current = true;
+
+    const streamChunkText = (chunk) =>
+      typeof chunk?.text === "function" ? chunk.text() : chunk?.text || "";
 
     try {
-      const explanation = await callResponses({
-        model: DEFAULT_RESPONSES_MODEL,
-        input: prompt,
-      });
+      // Prefer streaming for faster UI feedback
+      if (simplemodel) {
+        const result = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
 
-      setExplanationText(explanation.trim());
+        let fullText = "";
+        for await (const chunk of result.stream) {
+          if (!explanationStreamingRef.current) break;
+
+          const chunkText = streamChunkText(chunk);
+          if (!chunkText) continue;
+
+          fullText += chunkText;
+          setExplanationText(fullText.trim());
+        }
+
+        if (explanationStreamingRef.current) {
+          const finalResp = await result.response;
+          const finalText = streamChunkText(finalResp) || fullText;
+          setExplanationText(finalText.trim());
+        }
+      } else {
+        const explanation = await callResponses({
+          model: DEFAULT_RESPONSES_MODEL,
+          input: prompt,
+        });
+
+        setExplanationText(explanation.trim());
+      }
     } catch (error) {
       console.error("Error explaining answer:", error);
       toast({
@@ -470,6 +501,7 @@ Provide a brief response in ${LANG_NAME(
         duration: 3000,
       });
     } finally {
+      explanationStreamingRef.current = false;
       setIsLoadingExplanation(false);
     }
   };
