@@ -3535,15 +3535,30 @@ Return JSON ONLY:
 
   const sendMatchHelp = useCallback(() => {
     if (!onSendHelpRequest) return;
+    const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      "Match the words exercise. Respond by pairing each left item with the correct option from the word bank.",
-      mStem ? `Prompt: ${mStem}` : null,
-      mLeft.length ? `Left column: ${mLeft.join(" | ")}` : null,
-      mRight.length ? `Word bank: ${mRight.join(" | ")}` : null,
-      mHint ? `Hint: ${mHint}` : null,
+      isSpanishUI
+        ? "Ejercicio de emparejar palabras. Responde emparejando cada elemento de la columna izquierda con la opción correcta del banco de palabras."
+        : "Match the words exercise. Respond by pairing each left item with the correct option from the word bank.",
+      mStem
+        ? isSpanishUI
+          ? `Indicador o consigna: ${mStem}`
+          : `Prompt: ${mStem}`
+        : null,
+      mLeft.length
+        ? isSpanishUI
+          ? `Columna izquierda: ${mLeft.join(" | ")}`
+          : `Left column: ${mLeft.join(" | ")}`
+        : null,
+      mRight.length
+        ? isSpanishUI
+          ? `Banco de palabras: ${mRight.join(" | ")}`
+          : `Word bank: ${mRight.join(" | ")}`
+        : null,
+      mHint ? (isSpanishUI ? `Pista: ${mHint}` : `Hint: ${mHint}`) : null,
     ].filter(Boolean);
     onSendHelpRequest(promptLines.join("\n"));
-  }, [mHint, mLeft, mRight, mStem, onSendHelpRequest]);
+  }, [mHint, mLeft, mRight, mStem, onSendHelpRequest, userLanguage]);
 
   const showTRFill =
     showTranslations &&

@@ -181,14 +181,25 @@ export default function RepeatWhatYouHear({
 
   const handleSendHelp = useCallback(() => {
     if (!onSendHelpRequest) return;
+    const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
-      sourceSentence ? `Spoken sentence: ${sourceSentence}` : null,
-      wordBank?.length ? `Word bank: ${wordBank.join(" | ")}` : null,
-      hint ? `Hint: ${hint}` : null,
+      isSpanishUI
+        ? "Ejercicio de 'Repite lo que escuchas'. Responde con la frase tal como se escuchó usando el banco de palabras."
+        : "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
+      sourceSentence
+        ? isSpanishUI
+          ? `Frase pronunciada: ${sourceSentence}`
+          : `Spoken sentence: ${sourceSentence}`
+        : null,
+      wordBank?.length
+        ? isSpanishUI
+          ? `Banco de palabras: ${wordBank.join(" | ")}`
+          : `Word bank: ${wordBank.join(" | ")}`
+        : null,
+      hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
     ].filter(Boolean);
     onSendHelpRequest(promptLines.join("\n"));
-  }, [hint, onSendHelpRequest, sourceSentence, wordBank]);
+  }, [hint, onSendHelpRequest, sourceSentence, userLanguage, wordBank]);
 
   const headingLabel =
     userLanguage === "es" ? "Toca lo que escuchas" : "Tap what you hear";

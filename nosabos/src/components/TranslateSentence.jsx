@@ -196,15 +196,32 @@ export default function TranslateSentence({
 
   const handleSendHelp = useCallback(() => {
     if (!onSendHelpRequest) return;
+    const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      "Translate this sentence using the provided word bank.",
-      sourceSentence ? `Sentence to translate: ${sourceSentence}` : null,
-      wordBank?.length ? `Word bank: ${wordBank.join(" | ")}` : null,
-      hint ? `Hint: ${hint}` : null,
-      "Respond with the correct translation assembled from the word bank options.",
+      isSpanishUI
+        ? "Traduce esta oración usando el banco de palabras proporcionado."
+        : "Translate this sentence using the provided word bank.",
+      sourceSentence
+        ? isSpanishUI
+          ? `Oración para traducir: ${sourceSentence}`
+          : `Sentence to translate: ${sourceSentence}`
+        : null,
+      wordBank?.length
+        ? isSpanishUI
+          ? `Banco de palabras: ${wordBank.join(" | ")}`
+          : `Word bank: ${wordBank.join(" | ")}`
+        : null,
+      hint
+        ? isSpanishUI
+          ? `Pista: ${hint}`
+          : `Hint: ${hint}`
+        : null,
+      isSpanishUI
+        ? "Responde con la traducción correcta armada con las opciones del banco de palabras."
+        : "Respond with the correct translation assembled from the word bank options.",
     ].filter(Boolean);
     onSendHelpRequest(promptLines.join("\n"));
-  }, [hint, onSendHelpRequest, sourceSentence, wordBank]);
+  }, [hint, onSendHelpRequest, sourceSentence, userLanguage, wordBank]);
 
   const translateLabel =
     userLanguage === "es" ? "Traduce esta frase" : "Translate this sentence";

@@ -3752,33 +3752,70 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   const sendMatchHelp = useCallback(() => {
     if (!onSendHelpRequest) return;
+    const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      "Match the words exercise. Respond by matching the words with the word bank options.",
-      mStem ? `Prompt: ${mStem}` : null,
-      mLeft.length ? `Left column: ${mLeft.join(" | ")}` : null,
-      mRight.length ? `Word bank: ${mRight.join(" | ")}` : null,
-      mHint ? `Hint: ${mHint}` : null,
+      isSpanishUI
+        ? "Ejercicio de emparejar palabras. Responde haciendo coincidir las palabras con las opciones del banco de palabras."
+        : "Match the words exercise. Respond by matching the words with the word bank options.",
+      mStem
+        ? isSpanishUI
+          ? `Indicador o consigna: ${mStem}`
+          : `Prompt: ${mStem}`
+        : null,
+      mLeft.length
+        ? isSpanishUI
+          ? `Columna izquierda: ${mLeft.join(" | ")}`
+          : `Left column: ${mLeft.join(" | ")}`
+        : null,
+      mRight.length
+        ? isSpanishUI
+          ? `Banco de palabras: ${mRight.join(" | ")}`
+          : `Word bank: ${mRight.join(" | ")}`
+        : null,
+      mHint ? (isSpanishUI ? `Pista: ${mHint}` : `Hint: ${mHint}`) : null,
     ].filter(Boolean);
     onSendHelpRequest(promptLines.join("\n"));
-  }, [mHint, mLeft, mRight, mStem, onSendHelpRequest]);
+  }, [mHint, mLeft, mRight, mStem, onSendHelpRequest, userLanguage]);
 
   const sendSpeakHelp = useCallback(() => {
     if (!onSendHelpRequest) return;
+    const isSpanishUI = userLanguage === "es";
     const base =
       sVariant === "translate"
-        ? "Say it aloud (translate). Provide the target language translation for the given word."
+        ? isSpanishUI
+          ? "Dilo en voz alta (traducción). Proporciona la traducción en el idioma de práctica para la palabra dada."
+          : "Say it aloud (translate). Provide the target language translation for the given word."
+        : isSpanishUI
+        ? "Dilo en voz alta (completar). Ayuda al estudiante a decir la frase completa con la palabra que falta."
         : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
 
     const details = [
-      sPrompt ? `Prompt: ${sPrompt}` : null,
-      sStimulus ? `Shown to learner: ${sStimulus}` : null,
-      sTarget ? `Expected spoken answer: ${sTarget}` : null,
-      sHint ? `Hint: ${sHint}` : null,
-      sTranslation ? `Support translation/context: ${sTranslation}` : null,
+      sPrompt
+        ? isSpanishUI
+          ? `Consigna o indicación: ${sPrompt}`
+          : `Prompt: ${sPrompt}`
+        : null,
+      sStimulus
+        ? isSpanishUI
+          ? `Mostrado al estudiante: ${sStimulus}`
+          : `Shown to learner: ${sStimulus}`
+        : null,
+      sTarget
+        ? isSpanishUI
+          ? `Respuesta hablada esperada: ${sTarget}`
+          : `Expected spoken answer: ${sTarget}`
+        : null,
+      sHint ? (isSpanishUI ? `Pista: ${sHint}` : `Hint: ${sHint}`) : null,
+      sTranslation
+        ? isSpanishUI
+          ? `Traducción o contexto de apoyo: ${sTranslation}`
+          : `Support translation/context: ${sTranslation}`
+        : null,
     ].filter(Boolean);
 
     onSendHelpRequest([base, ...details].join("\n"));
   }, [
+    userLanguage,
     onSendHelpRequest,
     sHint,
     sPrompt,
