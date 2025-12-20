@@ -45,6 +45,7 @@ import {
 } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
+import TranslateSentence from "./TranslateSentence";
 import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
   LOW_LATENCY_TTS_FORMAT,
@@ -1499,6 +1500,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
   const [translateVariant, setTranslateVariant] = useState("translation"); // "translation" | "listening"
+  const [translateUIVariant, setTranslateUIVariant] = useState("repeat"); // "repeat" | "standard"
   const [repeatMode, setRepeatMode] = useState("target-tts-support-bank"); // translate-repeat submode
   const [questionTTsLang, setQuestionTTsLang] = useState(targetLang);
 
@@ -2713,29 +2715,40 @@ Return JSON ONLY:
     setRecentXp(0);
     setNextAction(null);
 
-    const repeatVariant = true;
+    const repeatVariant = Math.random() < 0.5;
     const supportCode = resolveSupportLang(supportLang, userLanguage);
-    const isListening = Math.random() < 0.5; // listening vs translation exercise
+    const isListening = repeatVariant && Math.random() < 0.5; // listening vs translation exercise
 
-    const chosenRepeatMode = isListening
-      ? "listening-target"
-      : Math.random() < 0.5
-        ? "target-tts-support-bank"
-        : "support-tts-target-bank";
+    const chosenRepeatMode = repeatVariant
+      ? isListening
+        ? "listening-target"
+        : Math.random() < 0.5
+          ? "target-tts-support-bank"
+          : "support-tts-target-bank"
+      : null;
 
+    setTranslateUIVariant(repeatVariant ? "repeat" : "standard");
     setTranslateVariant(isListening ? "listening" : "translation");
-    setRepeatMode(chosenRepeatMode);
+    setRepeatMode(chosenRepeatMode || "target-tts-support-bank");
 
-    const direction = isListening
-      ? "support-to-target"
-      : chosenRepeatMode === "target-tts-support-bank"
+    const direction = repeatVariant
+      ? isListening
+        ? "support-to-target"
+        : chosenRepeatMode === "target-tts-support-bank"
+          ? "target-to-support"
+          : "support-to-target"
+      : Math.random() < 0.5
         ? "target-to-support"
         : "support-to-target";
 
     setQuestionTTsLang(
-      chosenRepeatMode === "target-tts-support-bank" || isListening
-        ? targetLang
-        : supportCode
+      repeatVariant
+        ? chosenRepeatMode === "target-tts-support-bank" || isListening
+          ? targetLang
+          : supportCode
+        : direction === "target-to-support"
+          ? targetLang
+          : supportCode
     );
     setTDirection(direction);
     const activeRepeatMode = chosenRepeatMode;
@@ -5287,34 +5300,65 @@ Return JSON ONLY:
 
         {/* ---- TRANSLATE UI ---- */}
         {mode === "translate" && (tSentence || loadingTQ) ? (
-          <RepeatWhatYouHear
-            sourceSentence={tSentence}
-            wordBank={tWordBank}
-            correctAnswer={tCorrectWords}
-            hint={tHint}
-            loading={loadingTQ}
-            userLanguage={userLanguage}
-            t={t}
-            onSubmit={submitTranslate}
-            onSkip={handleSkip}
-            onNext={handleNext}
-            onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
-            lastOk={lastOk}
-            recentXp={recentXp}
-            isSubmitting={loadingTJ}
-            showNext={
-              (lastOk === true || (isFinalQuiz && lastOk === false)) &&
-              nextAction
-            }
-            isSynthesizing={isQuestionSynthesizing}
-            onExplainAnswer={handleExplainAnswer}
-            explanationText={explanationText}
-            isLoadingExplanation={isLoadingExplanation}
-            lessonProgress={lessonProgress}
-            onCreateNote={handleCreateNote}
-            isCreatingNote={isCreatingNote}
-            noteCreated={noteCreated}
-          />
+          translateUIVariant === "repeat" ? (
+            <RepeatWhatYouHear
+              sourceSentence={tSentence}
+              wordBank={tWordBank}
+              correctAnswer={tCorrectWords}
+              hint={tHint}
+              loading={loadingTQ}
+              userLanguage={userLanguage}
+              t={t}
+              onSubmit={submitTranslate}
+              onSkip={handleSkip}
+              onNext={handleNext}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              lastOk={lastOk}
+              recentXp={recentXp}
+              isSubmitting={loadingTJ}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              isSynthesizing={isQuestionSynthesizing}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
+            />
+          ) : (
+            <TranslateSentence
+              sourceSentence={tSentence}
+              wordBank={tWordBank}
+              correctAnswer={tCorrectWords}
+              hint={tHint}
+              loading={loadingTQ}
+              userLanguage={userLanguage}
+              t={t}
+              onSubmit={submitTranslate}
+              onSkip={handleSkip}
+              onNext={handleNext}
+              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              lastOk={lastOk}
+              recentXp={recentXp}
+              isSubmitting={loadingTJ}
+              showNext={
+                (lastOk === true || (isFinalQuiz && lastOk === false)) &&
+                nextAction
+              }
+              isSynthesizing={isQuestionSynthesizing}
+              onExplainAnswer={handleExplainAnswer}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={lessonProgress}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
+            />
+          )
         ) : null}
       </VStack>
     </Box>
