@@ -4920,8 +4920,10 @@ Return JSON ONLY:
                   icon={<MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"
-                  variant="ghost"
-                  colorScheme="blue"
+                  bg="white"
+                  color="blue"
+                  border="3px solid skyblue"
+                  boxShadow={"lg"}
                   onClick={sendMatchHelp}
                 />
               )}

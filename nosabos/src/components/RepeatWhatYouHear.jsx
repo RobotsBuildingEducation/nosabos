@@ -264,18 +264,20 @@ export default function RepeatWhatYouHear({
               >
                 <Flex align="center" gap={3}>
                   {onSendHelpRequest && (
-                    <IconButton
-                      aria-label={
-                        userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
-                      }
-                      icon={<MdOutlineSupportAgent />}
-                      size="sm"
-                      fontSize="lg"
-                      variant="ghost"
-                      colorScheme="blue"
-                      onClick={handleSendHelp}
-                    />
-                  )}
+                  <IconButton
+                    aria-label={
+                      userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                    }
+                    icon={<MdOutlineSupportAgent />}
+                    size="sm"
+                    fontSize="lg"
+                    bg="white"
+                    color="blue"
+                    border="3px solid skyblue"
+                    boxShadow={"lg"}
+                    onClick={handleSendHelp}
+                  />
+                )}
                   <IconButton
                     aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
                     icon={renderSpeakerIcon(isSynthesizing)}
