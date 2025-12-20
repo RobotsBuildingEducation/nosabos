@@ -2715,15 +2715,13 @@ Return JSON ONLY:
 
     const repeatVariant = true;
     const supportCode = resolveSupportLang(supportLang, userLanguage);
-    const translationModes = [
-      "target-tts-support-bank",
-      "support-tts-target-bank",
-    ];
     const isListening = Math.random() < 0.5; // listening vs translation exercise
 
     const chosenRepeatMode = isListening
       ? "listening-target"
-      : translationModes[Math.floor(Math.random() * translationModes.length)];
+      : Math.random() < 0.5
+        ? "target-tts-support-bank"
+        : "support-tts-target-bank";
 
     setTranslateVariant(isListening ? "listening" : "translation");
     setRepeatMode(chosenRepeatMode);
