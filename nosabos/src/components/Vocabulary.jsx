@@ -1647,7 +1647,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     setQuestionTTsLang(targetLang);
   }, [targetLang]);
 
-  const repeatOnlyQuestions = true; // Temporary UI testing: only render RepeatWhatYouHear prompts
+  const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
   const types = repeatOnlyQuestions
     ? ["translate"]
     : ["fill", "mc", "ma", "speak", "match", "translate"];
