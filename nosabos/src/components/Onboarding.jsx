@@ -42,35 +42,33 @@ const personaDefaultFor = (lang) =>
 export default function Onboarding({
   onComplete,
   userLanguage = "en",
-  onAppLanguageChange = () => {},
   initialDraft = {},
 }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [appLang, setAppLang] = useState(userLanguage === "es" ? "es" : "en");
-  const ui = translations[appLang] || translations.en;
-  const englishLabel = ui.language_en || translations.en.language_en;
-  const spanishLabel = ui.language_es || translations.en.language_es;
+  const normalizedUserLang = userLanguage === "es" ? "es" : "en";
+  const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
+  const [supportLang, setSupportLang] = useState(initialSupportLang);
+  const ui = translations[supportLang] || translations.en;
 
   const defaults = useMemo(() => {
     return {
       level: initialDraft.level || "beginner",
-      supportLang: initialDraft.supportLang || "en",
+      supportLang: initialSupportLang,
       targetLang: initialDraft.targetLang || "es",
       voicePersona:
         initialDraft.voicePersona ||
-        personaDefaultFor(appLang) ||
+        personaDefaultFor(initialSupportLang) ||
         translations.en.onboarding_persona_default_example,
       pauseMs:
         typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
           ? initialDraft.pauseMs
           : 1200,
     };
-  }, [initialDraft, ui.DEFAULT_PERSONA]);
+  }, [initialDraft, initialSupportLang, ui.DEFAULT_PERSONA]);
 
   const [level, setLevel] = useState(defaults.level);
-  const [supportLang, setSupportLang] = useState(defaults.supportLang);
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
@@ -78,7 +76,7 @@ export default function Onboarding({
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const localizedDefault = personaDefaultFor(appLang);
+    const localizedDefault = personaDefaultFor(supportLang);
     const enDefault = personaDefaultFor("en");
     const esDefault = personaDefaultFor("es");
     const current = (voicePersona || "").trim();
@@ -90,7 +88,7 @@ export default function Onboarding({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appLang]);
+  }, [supportLang]);
 
   useEffect(() => {
     // Redirect to onboarding base path if not already there
@@ -98,17 +96,6 @@ export default function Onboarding({
       navigate(BASE_PATH, { replace: true });
     }
   }, [location.pathname, navigate]);
-
-  const persistAppLanguage = (lang) => {
-    const norm = lang === "es" ? "es" : "en";
-    setAppLang(norm);
-    try {
-      localStorage.setItem("appLanguage", norm);
-    } catch {}
-    try {
-      onAppLanguageChange(norm);
-    } catch {}
-  };
 
   async function handleStart() {
     if (typeof onComplete !== "function") {
@@ -139,14 +126,14 @@ export default function Onboarding({
 
   const VAD_LABEL =
     ui.ra_vad_label ||
-    (appLang === "es" ? "Pausa entre turnos" : "Pause between replies");
+    (supportLang === "es" ? "Pausa entre turnos" : "Pause between replies");
   const VAD_HINT =
     ui.onboarding_vad_hint ||
-    (appLang === "es"
+    (supportLang === "es"
       ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
       : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
-  const secondsLabel = appLang === "es" ? "segundos" : "seconds";
+  const secondsLabel = supportLang === "es" ? "segundos" : "seconds";
 
   return (
     <Box
@@ -188,36 +175,6 @@ export default function Onboarding({
           <DrawerBody pb={6}>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={4}>
-                {/* Application Language - First Item */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" fontWeight="semibold" mb={1}>
-                    {ui.onboarding_app_language_title}
-                  </Text>
-                  <Text fontSize="xs" opacity={0.7} mb={3}>
-                    {ui.onboarding_app_language_desc}
-                  </Text>
-                  <HStack spacing={2}>
-                    <Button
-                      size="sm"
-                      variant={appLang === "en" ? "solid" : "outline"}
-                      colorScheme={appLang === "en" ? "teal" : "gray"}
-                      onClick={() => persistAppLanguage("en")}
-                      borderColor="gray.600"
-                    >
-                      {englishLabel}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={appLang === "es" ? "solid" : "outline"}
-                      colorScheme={appLang === "es" ? "teal" : "gray"}
-                      onClick={() => persistAppLanguage("es")}
-                      borderColor="gray.600"
-                    >
-                      {spanishLabel}
-                    </Button>
-                  </HStack>
-                </Box>
-
                 {/* Support Language */}
                 <Box bg="gray.800" p={3} rounded="md">
                   <Text fontSize="sm" fontWeight="semibold" mb={1}>
