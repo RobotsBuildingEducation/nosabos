@@ -406,7 +406,7 @@ function TopBar({
   const [voice, setVoice] = useState(p.voice || "alloy");
   const defaultPersona =
     p.voicePersona ||
-    personaDefaultFor(appLanguage) ||
+    personaDefaultFor(p.supportLang || supportLang || appLanguage) ||
     translations.en.onboarding_persona_default_example;
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
   const [targetLang, setTargetLang] = useState(p.targetLang || "es");
@@ -438,7 +438,7 @@ function TopBar({
     setVoice(q.voice || "alloy");
     setVoicePersona(
       q.voicePersona ||
-        personaDefaultFor(appLanguage) ||
+        personaDefaultFor(q.supportLang || supportLang || appLanguage) ||
         translations.en.onboarding_persona_default_example
     );
     setTargetLang(q.targetLang || "es");
@@ -452,7 +452,7 @@ function TopBar({
   }, [user?.progress, user?.helpRequest]);
 
   useEffect(() => {
-    const localizedDefault = personaDefaultFor(appLanguage);
+    const localizedDefault = personaDefaultFor(supportLang || appLanguage);
     const enDefault = personaDefaultFor("en");
     const esDefault = personaDefaultFor("es");
     const current = (voicePersona || "").trim();
@@ -466,7 +466,7 @@ function TopBar({
       setVoicePersona(localizedDefault || current);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appLanguage]);
+  }, [appLanguage, supportLang]);
 
   const [currentId, setCurrentId] = useState(activeNpub || "");
   const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
