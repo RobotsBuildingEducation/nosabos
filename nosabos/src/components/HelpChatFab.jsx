@@ -43,6 +43,7 @@ import remarkGfm from "remark-gfm";
 
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
+import { FiSend } from "react-icons/fi";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -313,7 +314,9 @@ const HelpChatFab = forwardRef(
       return [
         "You are a helpful language study buddy for quick questions.",
         strict,
-        `The learner practices ${nameFor(targetLang)}; their support/UI language is ${nameFor(primaryLang)}.`,
+        `The learner practices ${nameFor(
+          targetLang
+        )}; their support/UI language is ${nameFor(primaryLang)}.`,
         levelHint,
         persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
@@ -956,22 +959,18 @@ const HelpChatFab = forwardRef(
                   isDisabled={realtimeStatus === "connected"}
                 />
                 {sending ? (
-                  <Button
+                  <IconButton
                     onClick={handleStop}
                     colorScheme="red"
-                    leftIcon={<FaStop />}
-                  >
-                    {appLanguage === "es" ? "Detener" : "Stop"}
-                  </Button>
+                    icon={<FaStop />}
+                  />
                 ) : (
-                  <Button
+                  <IconButton
                     onClick={handleSend}
                     colorScheme="teal"
-                    leftIcon={<FaPaperPlane />}
+                    icon={<FiSend />}
                     isDisabled={!input.trim() || realtimeStatus === "connected"}
-                  >
-                    {appLanguage === "es" ? "Enviar" : "Send"}
-                  </Button>
+                  />
                 )}
               </HStack>
             </ModalFooter>
