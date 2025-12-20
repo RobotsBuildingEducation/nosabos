@@ -578,8 +578,24 @@ export default function Conversations({
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
 
   // UI strings
+  const storedUiLang = (() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return localStorage.getItem("appLanguage") || "";
+    } catch {
+      return "";
+    }
+  })();
+
+  const resolvedSupportLang =
+    supportLangRef.current || supportLang || user?.progress?.supportLang || "";
+
   const uiLang =
-    (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
+    resolvedSupportLang === "es"
+      ? "es"
+      : resolvedSupportLang === "en"
+      ? "en"
+      : storedUiLang === "es"
       ? "es"
       : "en";
   const ui = translations[uiLang];
