@@ -1009,8 +1009,18 @@ export default function App() {
   const [passcodeError, setPasscodeError] = useState("");
   const [isSavingPasscode, setIsSavingPasscode] = useState(false);
 
+  const storedUiLang = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return localStorage.getItem("appLanguage") || "";
+    } catch {
+      return "";
+    }
+  }, []);
+
   const resolvedTargetLang = user?.progress?.targetLang || "es";
-  const resolvedSupportLang = user?.progress?.supportLang || "en";
+  const resolvedSupportLang =
+    user?.progress?.supportLang || (storedUiLang === "es" ? "es" : "en");
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "A1";
 
   useEffect(() => {

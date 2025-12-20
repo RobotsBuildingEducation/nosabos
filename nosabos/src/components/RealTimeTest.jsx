@@ -633,8 +633,17 @@ export default function RealTimeTest({
   const [hydrated, setHydrated] = useState(false);
 
   // UI strings (app UI)
+  const storedUiLang = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return localStorage.getItem("appLanguage") || "";
+    } catch {
+      return "";
+    }
+  }, []);
+
   const uiLang =
-    (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
+    (supportLangRef.current || supportLang || storedUiLang) === "es"
       ? "es"
       : "en";
   const ui = translations[uiLang];
