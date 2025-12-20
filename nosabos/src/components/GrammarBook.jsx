@@ -3534,6 +3534,7 @@ Return JSON ONLY:
       : "Drop the answer here");
   const skipLabel =
     t("practice_skip_question") || (userLanguage === "es" ? "Saltar" : "Skip");
+  const canSkip = !isFinalQuiz && !quizCompleted;
   const questionListenLabel =
     userLanguage === "es" ? "Escuchar pregunta" : "Listen to question";
   const speakListenLabel =
@@ -4063,15 +4064,17 @@ Return JSON ONLY:
               align="center"
               justify="flex-end"
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingQ || loadingG}
-                px={{ base: 6, md: 10 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {skipLabel}
-              </Button>
+              {canSkip && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingQ || loadingG}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitFill}
@@ -4388,15 +4391,17 @@ Return JSON ONLY:
               align="center"
               justify="flex-end"
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingMCQ || loadingMCG}
-                px={{ base: 6, md: 10 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {skipLabel}
-              </Button>
+              {canSkip && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingMCQ || loadingMCG}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMC}
@@ -4734,15 +4739,17 @@ Return JSON ONLY:
               align="center"
               justify="flex-end"
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingMAQ || loadingMAG}
-                px={{ base: 6, md: 10 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {skipLabel}
-              </Button>
+              {canSkip && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingMAQ || loadingMAG}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMA}
@@ -4909,15 +4916,17 @@ Return JSON ONLY:
               justify="flex-end"
               mt={4}
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingSpeakQ || isSpeakRecording}
-                px={{ base: 6, md: 10 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {skipLabel}
-              </Button>
+              {canSkip && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingSpeakQ || isSpeakRecording}
+                  px={{ base: 6, md: 10 }}
+                  py={{ base: 3, md: 4 }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme={isSpeakRecording ? "red" : "teal"}
                 px={{ base: 7, md: 12 }}
@@ -5257,15 +5266,17 @@ Return JSON ONLY:
               align="center"
               justify="flex-end"
             >
-              <Button
-                variant="ghost"
-                onClick={handleSkip}
-                isDisabled={loadingMG || loadingMJ}
-                px={{ base: 7, md: 12 }}
-                py={{ base: 3, md: 4 }}
-              >
-                {skipLabel}
-              </Button>
+              {canSkip && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  isDisabled={loadingMG || loadingMJ}
+                  px={{ base: 7, md: 12 }}
+                  py={{ base: 3, md: 4 }}
+                >
+                  {skipLabel}
+                </Button>
+              )}
               <Button
                 colorScheme="purple"
                 onClick={submitMatch}
@@ -5320,6 +5331,7 @@ Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}
               isSubmitting={loadingTJ}
@@ -5349,6 +5361,7 @@ Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}
               isSubmitting={loadingTJ}

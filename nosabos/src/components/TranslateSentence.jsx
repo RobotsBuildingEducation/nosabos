@@ -43,6 +43,7 @@ export default function TranslateSentence({
   onSkip = () => {},
   onNext = () => {},
   onPlayTTS = () => {},
+  canSkip = true,
 
   // State
   lastOk = null,
@@ -466,15 +467,17 @@ export default function TranslateSentence({
 
         {/* Action buttons */}
         <Stack direction="row" spacing={3} align="center" justify="flex-end">
-          <Button
-            variant="ghost"
-            onClick={onSkip}
-            isDisabled={loading || isSubmitting}
-            px={{ base: 6, md: 10 }}
-            py={{ base: 3, md: 4 }}
-          >
-            {skipLabel}
-          </Button>
+          {canSkip && (
+            <Button
+              variant="ghost"
+              onClick={onSkip}
+              isDisabled={loading || isSubmitting}
+              px={{ base: 6, md: 10 }}
+              py={{ base: 3, md: 4 }}
+            >
+              {skipLabel}
+            </Button>
+          )}
           <Button
             colorScheme="purple"
             onClick={handleSubmit}
