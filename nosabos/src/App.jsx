@@ -463,7 +463,9 @@ function TopBar({
         current !== localizedDefault &&
         (current === enDefault || current === esDefault))
     ) {
-      setVoicePersona(localizedDefault || current);
+      const nextPersona = localizedDefault || current;
+      setVoicePersona(nextPersona);
+      persistSettings({ voicePersona: nextPersona });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appLanguage, supportLang]);
@@ -472,6 +474,21 @@ function TopBar({
   const [currentSecret, setCurrentSecret] = useState(activeNsec || "");
   const [switchNsec, setSwitchNsec] = useState("");
   const [isSwitching, setIsSwitching] = useState(false);
+
+  const persistSettings = useCallback(
+    async (partial = {}) => {
+      try {
+        await Promise.resolve(onPatchSettings?.(partial));
+      } catch (e) {
+        toast({
+          status: "error",
+          title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+          description: String(e?.message || e),
+        });
+      }
+    },
+    [onPatchSettings, toast, appLanguage]
+  );
 
   useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
   useEffect(() => setCurrentSecret(activeNsec || ""), [activeNsec]);
@@ -552,6 +569,30 @@ function TopBar({
   // Keep a local draft for settings input
   const [goalDraft, setGoalDraft] = useState(0);
 
+  const handleDailyGoalChange = useCallback(
+    async (rawValue) => {
+      const parsed = Math.max(0, Math.floor(Number(rawValue) || 0));
+      setGoalDraft(rawValue);
+      setDailyGoalXp(parsed);
+
+      if (!activeNpub) return;
+      try {
+        await setDoc(
+          doc(database, "users", activeNpub),
+          { dailyGoalXp: parsed },
+          { merge: true }
+        );
+      } catch (e) {
+        toast({
+          status: "error",
+          title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+          description: String(e?.message || e),
+        });
+      }
+    },
+    [activeNpub, appLanguage, toast]
+  );
+
   useEffect(() => {
     if (!activeNpub) return;
     const ref = doc(database, "users", activeNpub);
@@ -587,35 +628,6 @@ function TopBar({
       ? Math.min(100, Math.round((dailyXp / dailyGoalXp) * 100))
       : 0;
   const dailyDone = dailyGoalXp > 0 && dailyXp >= dailyGoalXp;
-
-  // Save all settings at once (including dailyGoalXp) — no resets
-  const handleSaveSettings = async () => {
-    try {
-      const nextDraft = {
-        level,
-        supportLang,
-        voicePersona,
-        targetLang,
-        pauseMs,
-      };
-      await Promise.resolve(onPatchSettings?.(nextDraft));
-      if (activeNpub != null) {
-        const val = Math.max(0, Math.floor(Number(goalDraft) || 0));
-        await setDoc(
-          doc(database, "users", activeNpub),
-          { dailyGoalXp: val }, // only the goal changes
-          { merge: true }
-        );
-      }
-      closeSettings?.();
-    } catch (e) {
-      toast({
-        status: "error",
-        title: appLanguage === "es" ? "Error al guardar" : "Save failed",
-        description: String(e?.message || e),
-      });
-    }
-  };
 
   const cefrTimestamp =
     cefrResult?.updatedAt &&
@@ -776,7 +788,10 @@ function TopBar({
                       <MenuOptionGroup
                         type="radio"
                         value={supportLang}
-                        onChange={(value) => setSupportLang(value)}
+                        onChange={(value) => {
+                          setSupportLang(value);
+                          persistSettings({ supportLang: value });
+                        }}
                       >
                         <MenuItemOption value="en">
                           {translations[appLanguage].onboarding_support_en}
@@ -821,7 +836,10 @@ function TopBar({
                       <MenuOptionGroup
                         type="radio"
                         value={targetLang}
-                        onChange={(value) => setTargetLang(value)}
+                        onChange={(value) => {
+                          setTargetLang(value);
+                          persistSettings({ targetLang: value });
+                        }}
                       >
                         <MenuItemOption value="nah">
                           {translations[appLanguage].onboarding_practice_nah}
@@ -854,7 +872,11 @@ function TopBar({
                   <Input
                     value={voicePersona}
                     onChange={(e) =>
-                      setVoicePersona(e.target.value.slice(0, 240))
+                      {
+                        const next = e.target.value.slice(0, 240);
+                        setVoicePersona(next);
+                        persistSettings({ voicePersona: next });
+                      }
                     }
                     bg="gray.700"
                     placeholder={
@@ -890,6 +912,7 @@ function TopBar({
                     step={100}
                     value={pauseMs}
                     onChange={setPauseMs}
+                    onChangeEnd={(value) => persistSettings({ pauseMs: value })}
                   >
                     <SliderTrack>
                       <SliderFilledTrack />
@@ -912,7 +935,7 @@ function TopBar({
                     type="number"
                     min={0}
                     value={goalDraft}
-                    onChange={(e) => setGoalDraft(e.target.value)}
+                    onChange={(e) => handleDailyGoalChange(e.target.value)}
                     bg="gray.700"
                     w="160px"
                     placeholder={
@@ -933,9 +956,6 @@ function TopBar({
               <HStack w="100%" justify="flex-end" spacing={3}>
                 <Button variant="ghost" onClick={closeSettings}>
                   {t.app_close || "Close"}
-                </Button>
-                <Button colorScheme="teal" onClick={handleSaveSettings}>
-                  {appLanguage === "es" ? "Guardar" : "Save"}
                 </Button>
               </HStack>
             </Box>
