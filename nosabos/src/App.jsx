@@ -372,7 +372,6 @@ function TopBar({
   cefrLoading,
   cefrError,
   onPatchSettings,
-  onSelectLanguage,
   onSwitchedAccount,
   settingsOpen,
   openSettings,
@@ -755,56 +754,6 @@ function TopBar({
           <DrawerBody pb={2}>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={3}>
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={2}>
-                    {appLanguage === "es" ? "Idioma de la app" : "App language"}
-                  </Text>
-                  <ButtonGroup
-                    size="sm"
-                    isAttached
-                    variant="outline"
-                    borderRadius="md"
-                    bg="rgba(255, 255, 255, 0.04)"
-                    border="1px solid"
-                    borderColor="gray.700"
-                    width="fit-content"
-                  >
-                    {(() => {
-                      const labels =
-                        appLanguage === "es"
-                          ? { en: "Inglés", es: "Español" }
-                          : { en: "English", es: "Spanish" };
-
-                      return (
-                        <>
-                          <Button
-                            onClick={() => onSelectLanguage?.("en")}
-                            variant={appLanguage === "en" ? "solid" : "ghost"}
-                            colorScheme="teal"
-                            fontSize="sm"
-                            fontWeight="bold"
-                            aria-label={labels.en}
-                            padding={5}
-                          >
-                            {labels.en}
-                          </Button>
-                          <Button
-                            onClick={() => onSelectLanguage?.("es")}
-                            variant={appLanguage === "es" ? "solid" : "ghost"}
-                            colorScheme="teal"
-                            fontSize="sm"
-                            fontWeight="bold"
-                            aria-label={labels.es}
-                            padding={5}
-                          >
-                            {labels.es}
-                          </Button>
-                        </>
-                      );
-                    })()}
-                  </ButtonGroup>
-                </Box>
-
                 <Wrap spacing={2}>
                   <Menu autoSelect={false} isLazy>
                     <MenuButton
@@ -1060,9 +1009,36 @@ export default function App() {
   const [passcodeError, setPasscodeError] = useState("");
   const [isSavingPasscode, setIsSavingPasscode] = useState(false);
 
+  const storedUiLang = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return localStorage.getItem("appLanguage") || "";
+    } catch {
+      return "";
+    }
+  }, []);
+
+  const normalizeSupportLang = useCallback(
+    (raw) => (raw === "es" ? "es" : raw === "en" ? "en" : undefined),
+    []
+  );
+
   const resolvedTargetLang = user?.progress?.targetLang || "es";
-  const resolvedSupportLang = user?.progress?.supportLang || "en";
+  const resolvedSupportLang =
+    normalizeSupportLang(user?.progress?.supportLang) ||
+    (storedUiLang === "es" ? "es" : "en");
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "A1";
+
+  useEffect(() => {
+    const nextLang = resolvedSupportLang === "es" ? "es" : "en";
+    setAppLanguage((prev) => {
+      if (prev === nextLang) return prev;
+      return nextLang;
+    });
+    try {
+      localStorage.setItem("appLanguage", nextLang);
+    } catch {}
+  }, [resolvedSupportLang]);
 
   const dailyGoalTarget = useMemo(() => {
     const rawGoal =
@@ -1138,13 +1114,11 @@ export default function App() {
   }, [activeNpub]);
 
   // UI language for the *app UI*
-  const [appLanguage, setAppLanguage] = useState(
-    typeof window !== "undefined"
-      ? localStorage.getItem("appLanguage") === "es"
-        ? "es"
-        : "en"
-      : "en"
-  );
+  const [appLanguage, setAppLanguage] = useState(() => {
+    if (typeof window === "undefined") return "en";
+    const stored = localStorage.getItem("appLanguage");
+    return stored === "es" ? "es" : "en";
+  });
   const t = translations[appLanguage] || translations.en;
   const subscriptionVerified = useMemo(() => {
     const matchesLocal =
@@ -1434,9 +1408,9 @@ export default function App() {
 
       if (userDoc) {
         const uiLang =
-          userDoc.appLanguage === "es"
+          userDoc?.progress?.supportLang === "es"
             ? "es"
-            : localStorage.getItem("appLanguage") === "es"
+            : userDoc.appLanguage === "es"
             ? "es"
             : "en";
         setAppLanguage(uiLang);
@@ -1472,20 +1446,6 @@ export default function App() {
     initializeWallet();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Keep appLanguage synced from store if changed elsewhere
-  useEffect(() => {
-    if (!user) return;
-    const fromStore =
-      user.appLanguage === "es"
-        ? "es"
-        : localStorage.getItem("appLanguage") === "es"
-        ? "es"
-        : "en";
-    setAppLanguage(fromStore);
-    localStorage.setItem("appLanguage", fromStore);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.appLanguage]);
 
   const onboardingDone = useMemo(() => {
     const nested = user?.onboarding?.completed;
@@ -1736,43 +1696,6 @@ export default function App() {
     );
     return (pick || "").trim();
   }, [activeNpub, user]);
-
-  const saveAppLanguage = async (lang = "en") => {
-    const id = resolveNpub();
-    const norm = lang === "es" ? "es" : "en";
-    setAppLanguage(norm);
-    try {
-      localStorage.setItem("appLanguage", norm);
-    } catch {}
-    if (!id) return;
-    try {
-      const now = new Date().toISOString();
-      await setDoc(
-        doc(database, "users", id),
-        { appLanguage: norm, updatedAt: now },
-        { merge: true }
-      );
-      if (user) setUser?.({ ...user, appLanguage: norm, updatedAt: now });
-    } catch (e) {
-      console.error("Failed to save language:", e);
-      toast({
-        status: "error",
-        title: "Could not save language",
-        description: String(e?.message || e),
-      });
-    }
-    window.dispatchEvent(
-      new CustomEvent("app:uiLanguageChanged", { detail: norm })
-    );
-  };
-
-  // Persist settings (used by TopBar Save button)
-  const handleSelectAppLanguage = (lang) => {
-    const next = lang === "es" ? "es" : "en";
-    if (next !== appLanguage) {
-      saveAppLanguage(next);
-    }
-  };
 
   const handleAllowPostsChange = useCallback(
     async (nextValue) => {
@@ -3535,9 +3458,6 @@ export default function App() {
         <Onboarding
           userLanguage={appLanguage}
           onComplete={handleOnboardingComplete}
-          onAppLanguageChange={async (lang) => {
-            await saveAppLanguage(lang);
-          }}
           initialDraft={onboardingInitialDraft}
         />
       </Box>
@@ -3587,7 +3507,6 @@ export default function App() {
           /* ... */
         }}
         onPatchSettings={saveGlobalSettings}
-        onSelectLanguage={handleSelectAppLanguage}
         settingsOpen={settingsOpen}
         openSettings={() => setSettingsOpen(true)}
         closeSettings={() => setSettingsOpen(false)}
@@ -3736,7 +3655,7 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           level={user?.progress?.level}
-                          supportLang={user?.progress?.supportLang}
+                          supportLang={resolvedSupportLang}
                           voice={user?.progress?.voice}
                           voicePersona={user?.progress?.voicePersona}
                           targetLang={user?.progress?.targetLang}

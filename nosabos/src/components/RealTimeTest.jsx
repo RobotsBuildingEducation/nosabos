@@ -633,10 +633,26 @@ export default function RealTimeTest({
   const [hydrated, setHydrated] = useState(false);
 
   // UI strings (app UI)
+  const storedUiLang = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      return localStorage.getItem("appLanguage") || "";
+    } catch {
+      return "";
+    }
+  }, []);
+
+  const normalizeSupportLang = (raw) => {
+    const code = String(raw || "").toLowerCase();
+    if (code === "es" || code.startsWith("es-") || code === "spanish") return "es";
+    if (code === "en" || code.startsWith("en-") || code === "english") return "en";
+    return undefined;
+  };
+
   const uiLang =
-    (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
-      ? "es"
-      : "en";
+    normalizeSupportLang(supportLangRef.current || supportLang) ||
+    normalizeSupportLang(storedUiLang) ||
+    "en";
   const ui = translations[uiLang];
 
   // ✅ Which language to show in secondary lane
