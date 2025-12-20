@@ -1518,7 +1518,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   function drawGenerator() {
     if (!generatorDeckRef.current.length) {
       const order = repeatOnlyQuestions
-        ? [generateTranslate]
+        ? [generateRepeatTranslate]
         : [
             generateFill,
             generateMC,
@@ -1526,6 +1526,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
             generateSpeak,
             generateMatch,
             generateTranslate,
+            generateRepeatTranslate,
           ];
       for (let i = order.length - 1; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -1557,6 +1558,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         return generateSpeak;
       case "translate":
         return generateTranslate;
+      case "repeat":
+        return generateRepeatTranslate;
       default:
         return generateRandom;
     }
@@ -2707,7 +2710,7 @@ Return JSON ONLY:
   }
 
   /* ---------- STREAM Generate: TRANSLATE (word bank) ---------- */
-  async function generateTranslate() {
+  async function generateTranslate({ useRepeatUI = false } = {}) {
     setMode("translate");
     setLoadingTQ(true);
     setLastOk(null);
@@ -2715,7 +2718,7 @@ Return JSON ONLY:
     setRecentXp(0);
     setNextAction(null);
 
-    const repeatVariant = Math.random() < 0.5;
+    const repeatVariant = useRepeatUI;
     const supportCode = resolveSupportLang(supportLang, userLanguage);
     const isListening = repeatVariant && Math.random() < 0.5; // listening vs translation exercise
 
@@ -2913,6 +2916,10 @@ Return JSON ONLY:
     } finally {
       setLoadingTQ(false);
     }
+  }
+
+  async function generateRepeatTranslate() {
+    return generateTranslate({ useRepeatUI: true });
   }
 
   /* ---------------------------

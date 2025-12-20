@@ -1651,8 +1651,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
 
   const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
   const types = repeatOnlyQuestions
-    ? ["translate"]
-    : ["fill", "mc", "ma", "speak", "match", "translate"];
+    ? ["repeat"]
+    : ["fill", "mc", "ma", "speak", "match", "translate", "repeat"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -1670,12 +1670,14 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
         return generateMC;
       case "ma":
         return generateMA;
-      case "translate":
-        return generateTranslate;
       case "speak":
         return generateSpeak;
       case "match":
         return generateMatch;
+      case "translate":
+        return generateTranslate;
+      case "repeat":
+        return generateRepeatTranslate;
       default:
         return generateFill;
     }
@@ -3152,7 +3154,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   /* ---------------------------
      STREAM Generate — TRANSLATE (word bank)
   --------------------------- */
-  async function generateTranslate() {
+  async function generateTranslate({ useRepeatUI = false } = {}) {
     setMode("translate");
     setLoadingTQ(true);
     setLastOk(null);
@@ -3160,7 +3162,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setRecentXp(0);
     setNextAction(null);
 
-    const repeatVariant = Math.random() < 0.5;
+    const repeatVariant = useRepeatUI;
     const supportCode = resolveSupportLang(supportLang, userLanguage);
     const isListening = repeatVariant && Math.random() < 0.5; // listening vs translation exercise
 
@@ -3353,6 +3355,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     } finally {
       setLoadingTQ(false);
     }
+  }
+
+  async function generateRepeatTranslate() {
+    return generateTranslate({ useRepeatUI: true });
   }
 
   function canSubmitMatch() {
