@@ -3750,6 +3750,44 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     }
   }
 
+  const sendMatchHelp = useCallback(() => {
+    if (!onSendHelpRequest) return;
+    const promptLines = [
+      "Match the words exercise. Respond by matching the words with the word bank options.",
+      mStem ? `Prompt: ${mStem}` : null,
+      mLeft.length ? `Left column: ${mLeft.join(" | ")}` : null,
+      mRight.length ? `Word bank: ${mRight.join(" | ")}` : null,
+      mHint ? `Hint: ${mHint}` : null,
+    ].filter(Boolean);
+    onSendHelpRequest(promptLines.join("\n"));
+  }, [mHint, mLeft, mRight, mStem, onSendHelpRequest]);
+
+  const sendSpeakHelp = useCallback(() => {
+    if (!onSendHelpRequest) return;
+    const base =
+      sVariant === "translate"
+        ? "Say it aloud (translate). Provide the target language translation for the given word."
+        : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
+
+    const details = [
+      sPrompt ? `Prompt: ${sPrompt}` : null,
+      sStimulus ? `Shown to learner: ${sStimulus}` : null,
+      sTarget ? `Expected spoken answer: ${sTarget}` : null,
+      sHint ? `Hint: ${sHint}` : null,
+      sTranslation ? `Support translation/context: ${sTranslation}` : null,
+    ].filter(Boolean);
+
+    onSendHelpRequest([base, ...details].join("\n"));
+  }, [
+    onSendHelpRequest,
+    sHint,
+    sPrompt,
+    sStimulus,
+    sTarget,
+    sTranslation,
+    sVariant,
+  ]);
+
   const showTRFill =
     showTranslations &&
     trFill &&
@@ -4930,9 +4968,27 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- SPEAK UI ---- */}
         {mode === "speak" && (sTarget || loadingQSpeak) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
-              {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
-            </Text>
+            <HStack justify="space-between" align="center" mb={2}>
+              <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
+                {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
+              </Text>
+              {onSendHelpRequest &&
+              (sVariant === "translate" || sVariant === "complete") ? (
+                <IconButton
+                  aria-label={
+                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                  }
+                  icon={<MdOutlineSupportAgent />}
+                  size="sm"
+                  fontSize="lg"
+                  bg="white"
+                  color="blue"
+                  border="3px solid skyblue"
+                  boxShadow={"lg"}
+                  onClick={sendSpeakHelp}
+                />
+              ) : null}
+            </HStack>
             {loadingQSpeak ? (
               <Box textAlign="center" py={12}>
                 <RobotBuddyPro palette="ocean" variant="abstract" />
@@ -5119,11 +5175,28 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MATCH UI (Drag & Drop) ---- */}
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={4}>
-              {userLanguage === "es"
-                ? "Empareja las palabras"
-                : "Match the words"}
-            </Text>
+            <HStack justify="space-between" align="center" mb={4}>
+              <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
+                {userLanguage === "es"
+                  ? "Empareja las palabras"
+                  : "Match the words"}
+              </Text>
+              {onSendHelpRequest && (
+                <IconButton
+                  aria-label={
+                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                  }
+                  icon={<MdOutlineSupportAgent />}
+                  size="sm"
+                  fontSize="lg"
+                  bg="white"
+                  color="blue"
+                  border="3px solid skyblue"
+                  boxShadow={"lg"}
+                  onClick={sendMatchHelp}
+                />
+              )}
+            </HStack>
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
@@ -5366,6 +5439,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              onSendHelpRequest={onSendHelpRequest}
               canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}
@@ -5393,6 +5467,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              onSendHelpRequest={onSendHelpRequest}
               canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}

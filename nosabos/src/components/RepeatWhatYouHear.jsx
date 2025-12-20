@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import FeedbackRail from "./FeedbackRail";
 
 const renderSpeakerIcon = (loading) =>
@@ -39,6 +40,8 @@ export default function RepeatWhatYouHear({
   onNext = () => {},
   onPlayTTS = () => {},
   canSkip = true,
+
+  onSendHelpRequest = null,
 
   lastOk = null,
   recentXp = 0,
@@ -176,6 +179,17 @@ export default function RepeatWhatYouHear({
     onSubmit(userAnswer);
   }, [getUserAnswer, onSubmit]);
 
+  const handleSendHelp = useCallback(() => {
+    if (!onSendHelpRequest) return;
+    const promptLines = [
+      "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
+      sourceSentence ? `Spoken sentence: ${sourceSentence}` : null,
+      wordBank?.length ? `Word bank: ${wordBank.join(" | ")}` : null,
+      hint ? `Hint: ${hint}` : null,
+    ].filter(Boolean);
+    onSendHelpRequest(promptLines.join("\n"));
+  }, [hint, onSendHelpRequest, sourceSentence, wordBank]);
+
   const headingLabel =
     userLanguage === "es" ? "Toca lo que escuchas" : "Tap what you hear";
   const instructionLabel =
@@ -190,6 +204,9 @@ export default function RepeatWhatYouHear({
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
+        <Text fontSize="xl" fontWeight="bold" color="white">
+          {headingLabel}
+        </Text>
         <Box
           bg="rgba(255, 255, 255, 0.02)"
           borderRadius="lg"
@@ -198,130 +215,135 @@ export default function RepeatWhatYouHear({
           p={5}
         >
           <VStack align="stretch" spacing={4}>
-            <Text fontSize="xl" fontWeight="bold" color="white">
-              {headingLabel}
-            </Text>
-
-            <HStack align="start" spacing={4}>
-              {characterImage && (
-                <Box flexShrink={0} w="100px">
-                  <img
-                    src={characterImage}
-                    alt="Character"
-                    style={{ width: "100%", height: "auto" }}
-                  />
-                </Box>
-              )}
-            </HStack>
-          </VStack>
-        </Box>
-
-        <Box
-          bg="rgba(255, 255, 255, 0.02)"
-          borderRadius="lg"
-          borderWidth="2px"
-          borderColor={
-            lastOk === true
-              ? "green.400"
-              : lastOk === false
-              ? "red.400"
-              : "whiteAlpha.200"
-          }
-          p={4}
-          minH="80px"
-        >
-          <Droppable droppableId="selected-words" direction="horizontal">
-            {(provided, snapshot) => (
-              <Flex
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                wrap="wrap"
-                gap={2}
-                minH="48px"
-                align="center"
-                bg={
-                  snapshot.isDraggingOver
-                    ? "rgba(128, 90, 213, 0.08)"
-                    : "transparent"
-                }
-                borderRadius="md"
-                p={2}
-                transition="background 0.2s ease"
-              >
-                <Flex align="center" gap={3}>
-                  <IconButton
-                    aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
-                    icon={renderSpeakerIcon(isSynthesizing)}
-                    size="md"
-                    fontSize="xl"
-                    variant="ghost"
-                    onClick={() => onPlayTTS(sourceSentence)}
-                    isRound
-                  />
-                  {selectedWords.length === 0 && !snapshot.isDraggingOver && (
-                    <Text
-                      color="gray.500"
-                      fontSize="sm"
-                      fontStyle="italic"
-                      w="100%"
-                      textAlign="center"
-                    >
-                      {instructionLabel}
-                    </Text>
-                  )}
-                </Flex>
-
-                {selectedWords.map((wordIndex, position) => (
-                  <Draggable
-                    key={`selected-${wordIndex}-${position}`}
-                    draggableId={`selected-${wordIndex}-${position}`}
-                    index={position}
-                    isDragDisabled={lastOk !== null}
+            <Box
+              bg="rgba(255, 255, 255, 0.02)"
+              borderRadius="lg"
+              borderWidth="2px"
+              borderColor={
+                lastOk === true
+                  ? "green.400"
+                  : lastOk === false
+                  ? "red.400"
+                  : "whiteAlpha.200"
+              }
+              p={4}
+              minH="80px"
+            >
+              <Droppable droppableId="selected-words" direction="horizontal">
+                {(provided, snapshot) => (
+                  <Flex
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    wrap="wrap"
+                    gap={2}
+                    minH="48px"
+                    align="center"
+                    bg={
+                      snapshot.isDraggingOver
+                        ? "rgba(128, 90, 213, 0.08)"
+                        : "transparent"
+                    }
+                    borderRadius="md"
+                    p={2}
+                    transition="background 0.2s ease"
                   >
-                    {(dragProvided, dragSnapshot) => (
-                      <Box
-                        ref={dragProvided.innerRef}
-                        {...dragProvided.draggableProps}
-                        {...dragProvided.dragHandleProps}
-                        px={3}
-                        py={2}
-                        rounded="md"
-                        borderWidth="1px"
-                        borderColor={
-                          dragSnapshot.isDragging
-                            ? "purple.300"
-                            : "rgba(255, 255, 255, 0.22)"
+                    <Flex align="center" gap={3}>
+                      {onSendHelpRequest && (
+                        <IconButton
+                          aria-label={
+                            userLanguage === "es"
+                              ? "Pedir ayuda"
+                              : "Ask the assistant"
+                          }
+                          icon={<MdOutlineSupportAgent />}
+                          size="sm"
+                          fontSize="lg"
+                          bg="white"
+                          color="blue"
+                          border="3px solid skyblue"
+                          boxShadow={"lg"}
+                          onClick={handleSendHelp}
+                        />
+                      )}
+                      <IconButton
+                        aria-label={
+                          userLanguage === "es" ? "Escuchar" : "Listen"
                         }
-                        bg={
-                          dragSnapshot.isDragging
-                            ? "rgba(128, 90, 213, 0.25)"
-                            : "rgba(255, 255, 255, 0.06)"
-                        }
-                        cursor={lastOk !== null ? "default" : "grab"}
-                        onClick={() =>
-                          lastOk === null && handleSelectedWordClick(position)
-                        }
-                        _hover={
-                          lastOk === null
-                            ? {
-                                bg: "rgba(128, 90, 213, 0.12)",
-                                borderColor: "purple.200",
-                              }
-                            : {}
-                        }
-                        transition="all 0.15s ease"
-                        boxShadow="0 2px 4px rgba(0, 0, 0, 0.2)"
-                        style={dragProvided.draggableProps.style}
+                        icon={renderSpeakerIcon(isSynthesizing)}
+                        size="md"
+                        fontSize="xl"
+                        variant="ghost"
+                        onClick={() => onPlayTTS(sourceSentence)}
+                        isRound
+                      />
+                      {selectedWords.length === 0 &&
+                        !snapshot.isDraggingOver && (
+                          <Text
+                            color="gray.500"
+                            fontSize="sm"
+                            fontStyle="italic"
+                            w="100%"
+                            textAlign="center"
+                          >
+                            {instructionLabel}
+                          </Text>
+                        )}
+                    </Flex>
+
+                    {selectedWords.map((wordIndex, position) => (
+                      <Draggable
+                        key={`selected-${wordIndex}-${position}`}
+                        draggableId={`selected-${wordIndex}-${position}`}
+                        index={position}
+                        isDragDisabled={lastOk !== null}
                       >
-                        {wordBank[wordIndex]}
-                      </Box>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </Flex>
-            )}
-          </Droppable>
+                        {(dragProvided, dragSnapshot) => (
+                          <Box
+                            ref={dragProvided.innerRef}
+                            {...dragProvided.draggableProps}
+                            {...dragProvided.dragHandleProps}
+                            px={3}
+                            py={2}
+                            rounded="md"
+                            borderWidth="1px"
+                            borderColor={
+                              dragSnapshot.isDragging
+                                ? "purple.300"
+                                : "rgba(255, 255, 255, 0.22)"
+                            }
+                            bg={
+                              dragSnapshot.isDragging
+                                ? "rgba(128, 90, 213, 0.25)"
+                                : "rgba(255, 255, 255, 0.06)"
+                            }
+                            cursor={lastOk !== null ? "default" : "grab"}
+                            onClick={() =>
+                              lastOk === null &&
+                              handleSelectedWordClick(position)
+                            }
+                            _hover={
+                              lastOk === null
+                                ? {
+                                    bg: "rgba(128, 90, 213, 0.12)",
+                                    borderColor: "purple.200",
+                                  }
+                                : {}
+                            }
+                            transition="all 0.15s ease"
+                            boxShadow="0 2px 4px rgba(0, 0, 0, 0.2)"
+                            style={dragProvided.draggableProps.style}
+                          >
+                            {wordBank[wordIndex]}
+                          </Box>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </Flex>
+                )}
+              </Droppable>
+            </Box>
+          </VStack>
         </Box>
 
         <Box borderBottomWidth="1px" borderColor="whiteAlpha.200" />
