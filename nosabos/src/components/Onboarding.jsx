@@ -56,7 +56,8 @@ export default function Onboarding({
     return {
       level: initialDraft.level || "beginner",
       supportLang: initialSupportLang,
-      targetLang: initialDraft.targetLang || "es",
+      targetLang:
+        initialDraft.targetLang || (initialSupportLang === "es" ? "en" : "es"),
       voicePersona:
         initialDraft.voicePersona ||
         personaDefaultFor(initialSupportLang) ||
