@@ -515,6 +515,7 @@ function buildMAStreamPrompt({
     }`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
+    `- Question/stem MUST be in ${SUPPORT} so the learner can understand what is being asked.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
       ? `- ${SUPPORT} translation of stem.`
@@ -522,7 +523,7 @@ function buildMAStreamPrompt({
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"ma","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
+    `{"type":"ma","phase":"q","question":"<stem in ${SUPPORT}>"}  // first`,
     `{"type":"ma","phase":"choices","choices":["..."]}           // second`,
     `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
