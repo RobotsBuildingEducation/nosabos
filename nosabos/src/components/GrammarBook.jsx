@@ -4409,19 +4409,6 @@ Return JSON ONLY:
                           {renderMaPrompt() || (loadingMAQ ? "…" : "")}
                         </Text>
                       </HStack>
-                      <Text
-                        fontSize="xs"
-                        color="gray.500"
-                        fontWeight="semibold"
-                      >
-                        {t("grammar_select_all_apply")}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                        {t("practice_drag_drop_multi_instruction") ||
-                          (userLanguage === "es"
-                            ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
-                            : "Drag or select each correct answer into its place in the sentence.")}
-                      </Text>
                     </VStack>
                   </Box>
                   <Droppable droppableId="ma-bank" direction="horizontal">
@@ -4520,9 +4507,6 @@ Return JSON ONLY:
                         {maQ || (loadingMAQ ? "…" : "")}
                       </Text>
                     </HStack>
-                    <Text fontSize="xs" color="gray.500" fontWeight="semibold">
-                      {t("grammar_select_all_apply")}
-                    </Text>
                   </VStack>
                 </Box>
                 <Stack spacing={3} align="stretch">
@@ -4684,42 +4668,6 @@ Return JSON ONLY:
               </Box>
             ) : (
               <>
-                <Box
-                  bg="rgba(255, 255, 255, 0.02)"
-                  borderRadius="lg"
-                  borderWidth="1px"
-                  borderColor="whiteAlpha.100"
-                  p={5}
-                  mb={4}
-                >
-                  <VStack align="stretch" spacing={3}>
-                    <HStack align="start" spacing={2}>
-                      <CopyAllBtn
-                        q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
-                        h={sHint}
-                        tr={sTranslation}
-                      />
-                      <VStack align="flex-start" spacing={2} flex="1">
-                        <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                          {t("grammar_speak_instruction_label") ||
-                            (userLanguage === "es"
-                              ? "Pronuncia la oración para practicar la gramática."
-                              : "Say the sentence aloud to practice the grammar point.")}
-                        </Text>
-                        {sPrompt && (
-                          <Text
-                            fontSize="lg"
-                            fontWeight="medium"
-                            lineHeight="tall"
-                          >
-                            {sPrompt}
-                          </Text>
-                        )}
-                      </VStack>
-                    </HStack>
-                  </VStack>
-                </Box>
-
                 <Box
                   border="1px solid rgba(255,255,255,0.18)"
                   rounded="xl"
