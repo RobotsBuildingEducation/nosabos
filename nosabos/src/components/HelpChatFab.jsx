@@ -245,7 +245,7 @@ const HelpChatFab = forwardRef(
           : supportRaw;
 
       const targetLang = progress?.targetLang || "es"; // practice language
-      const primaryLang = targetLang;
+      const primaryLang = supportLang; // replies must follow the learner's support language
       const persona = (progress?.voicePersona || "").slice(0, 200);
       const focus = (progress?.helpRequest || "").slice(0, 200);
       const showTranslations =
@@ -265,38 +265,55 @@ const HelpChatFab = forwardRef(
 
       const strict =
         primaryLang === "es"
-          ? "Da la respuesta principal en español (idioma de práctica). Puedes iniciar con una breve nota en el idioma de apoyo si ayuda."
+          ? "Responde totalmente en español (idioma de apoyo/soporte), aunque el usuario escriba en otro idioma."
           : primaryLang === "en"
-          ? "Give the main answer in English (practice language). You may start with a brief note in the support language if helpful."
-          : `Provide the main answer in ${nameFor(
+          ? "Respond entirely in English (the support language), even if the user writes in another language."
+          : `Respond entirely in ${nameFor(
               primaryLang
-            )} (${primaryLang}). You may start with a brief note in the support language if helpful.`;
+            )} (support language), even if the user writes in another language.`;
 
-      const levelHint =
-        lvl === "beginner"
+      const levelHint = (() => {
+        if (primaryLang === "es") {
+          return lvl === "beginner"
+            ? "Usa oraciones cortas y simples."
+            : lvl === "intermediate"
+            ? "Sé conciso y natural."
+            : "Sé muy breve y con tono nativo.";
+        }
+        if (primaryLang === "en") {
+          return lvl === "beginner"
+            ? "Use short, simple sentences."
+            : lvl === "intermediate"
+            ? "Be concise and natural."
+            : "Be very succinct and native-like.";
+        }
+        return lvl === "beginner"
           ? "Use short, simple sentences."
           : lvl === "intermediate"
           ? "Be concise and natural."
-          : "Be very succinct and native-like.";
+          : "Be succinct and native-like.";
+      })();
 
-      // Gloss (secondary) language: translate to the learner's support language when different
+      // Gloss (secondary) language: translate to the practice language when different
       const glossLang =
-        showTranslations && supportLang !== primaryLang ? supportLang : null;
+        showTranslations && targetLang !== primaryLang ? targetLang : null;
 
       const glossHuman = glossLang ? nameFor(glossLang) : "";
-      const supportNote =
-        supportLang !== primaryLang
-          ? `Start with 1-2 helpful sentences in ${
-              glossHuman || nameFor(supportLang)
-            } to explain the idea or clear up confusion. Keep it concise.`
-          : "Start with 1-2 helpful sentences in the learner's language to explain the idea or clear up confusion. Keep it concise.";
+      const supportNote = `Explica y guía en ${nameFor(
+        primaryLang
+      )}. Incluye ejemplos o frases en ${nameFor(
+        targetLang
+      )} solo cuando ayuden, pero mantén la explicación en ${nameFor(
+        primaryLang
+      )}.`;
 
       const glossLine = glossLang
-        ? `After your main answer, add one short translation in ${glossHuman}. Put it on a new line starting with "// ".`
-        : "Do not add any translation/gloss.";
+        ? `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
+        : "No añadas traducciones adicionales.";
       return [
         "You are a helpful language study buddy for quick questions.",
         strict,
+        `The learner practices ${nameFor(targetLang)}; their support/UI language is ${nameFor(primaryLang)}.`,
         levelHint,
         persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
@@ -470,10 +487,10 @@ const HelpChatFab = forwardRef(
 
       const levelHint =
         lvl === "beginner"
-          ? "Use short, simple sentences. Speak slowly and clearly."
+          ? "Speak slowly, clearly, and keep sentences simple."
           : lvl === "intermediate"
-          ? "Be concise and natural. Normal speaking pace."
-          : "Be succinct and native-like. Natural pace.";
+          ? "Be concise and natural in the support language."
+          : "Be succinct, natural, and keep it mostly in the support language.";
 
       return [
         "You are a helpful language study buddy for quick voice conversations.",
@@ -484,9 +501,13 @@ const HelpChatFab = forwardRef(
         focus ? `Focus area: ${focus}.` : "",
         "Keep responses brief (under 30 seconds of speech).",
         "Be encouraging and helpful. Correct mistakes gently.",
-        `Respond primarily in ${nameFor(targetLang)} with brief ${nameFor(
+        `Speak and explain mainly in ${nameFor(
           supportLang
-        )} clarifications when helpful.`,
+        )} (support language). Include ${nameFor(
+          targetLang
+        )} examples or phrases when they help, but keep guidance in ${nameFor(
+          supportLang
+        )}.`,
       ]
         .filter(Boolean)
         .join(" ");
