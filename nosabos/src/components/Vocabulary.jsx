@@ -53,7 +53,6 @@ import {
 } from "../utils/llm";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import FeedbackRail from "./FeedbackRail";
-import TranslateSentence from "./TranslateSentence";
 import RepeatWhatYouHear from "./RepeatWhatYouHear";
 import {
   TTS_LANG_TAG,
@@ -1637,7 +1636,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [tDirection, setTDirection] = useState("target-to-support"); // "target-to-support" or "support-to-target"
   const [loadingTQ, setLoadingTQ] = useState(false); // loading question
   const [loadingTJ, setLoadingTJ] = useState(false); // loading judge
-  const [translateVariant, setTranslateVariant] = useState("translate"); // "translate" | "repeat"
+  const [translateVariant, setTranslateVariant] = useState("translation"); // "translation" | "listening"
   const [repeatMode, setRepeatMode] = useState("target-tts-support-bank"); // translate-repeat submode
   const [questionTTsLang, setQuestionTTsLang] = useState(targetLang);
 
@@ -3160,40 +3159,33 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     setNextAction(null);
 
     const repeatVariant = true;
-    setTranslateVariant("repeat");
-
-    // Randomly pick direction unless we're doing listening (force target language)
     const supportCode = resolveSupportLang(supportLang, userLanguage);
-    let direction;
-    let activeRepeatMode = repeatMode;
-    if (repeatVariant) {
-      const repeatModes = [
-        "target-tts-support-bank",
-        "support-tts-target-bank",
-        "listening-target",
-      ];
-      const chosenRepeatMode = repeatModes[Math.floor(Math.random() * repeatModes.length)];
-      activeRepeatMode = chosenRepeatMode;
-      setRepeatMode(chosenRepeatMode);
+    const translationModes = [
+      "target-tts-support-bank",
+      "support-tts-target-bank",
+    ];
+    const isListening = Math.random() < 0.5; // listening vs translation exercise
 
-      if (chosenRepeatMode === "target-tts-support-bank") {
-        direction = "target-to-support";
-        setQuestionTTsLang(targetLang);
-      } else {
-        direction = "support-to-target";
-        setQuestionTTsLang(
-          chosenRepeatMode === "support-tts-target-bank" ? supportCode : targetLang
-        );
-      }
+    const chosenRepeatMode = isListening
+      ? "listening-target"
+      : translationModes[Math.floor(Math.random() * translationModes.length)];
 
-      setTDirection(direction);
-    } else {
-      direction = Math.random() < 0.5 ? "target-to-support" : "support-to-target";
-      activeRepeatMode = "target-tts-support-bank";
-      setRepeatMode(activeRepeatMode);
-      setQuestionTTsLang(targetLang);
-      setTDirection(direction);
-    }
+    setTranslateVariant(isListening ? "listening" : "translation");
+    setRepeatMode(chosenRepeatMode);
+
+    const direction = isListening
+      ? "support-to-target"
+      : chosenRepeatMode === "target-tts-support-bank"
+        ? "target-to-support"
+        : "support-to-target";
+
+    setQuestionTTsLang(
+      chosenRepeatMode === "target-tts-support-bank" || isListening
+        ? targetLang
+        : supportCode
+    );
+    setTDirection(direction);
+    const activeRepeatMode = chosenRepeatMode;
 
     // Reset state
     setTSentence("");
@@ -5538,59 +5530,31 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
         {/* ---- TRANSLATE UI ---- */}
         {mode === "translate" && (tSentence || loadingTQ) ? (
-          translateVariant === "repeat" ? (
-            <RepeatWhatYouHear
-              sourceSentence={tSentence}
-              wordBank={tWordBank}
-              correctAnswer={tCorrectWords}
-              hint={tHint}
-              loading={loadingTQ}
-              userLanguage={userLanguage}
-              t={t}
-              onSubmit={submitTranslate}
-              onSkip={handleSkip}
-              onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
-              lastOk={lastOk}
-              recentXp={recentXp}
-              isSubmitting={loadingTJ}
-              showNext={showNextButton}
-              isSynthesizing={isQuestionSynthesizing}
-              onExplainAnswer={handleExplainAnswer}
-              explanationText={explanationText}
-              isLoadingExplanation={isLoadingExplanation}
-              lessonProgress={lessonProgress}
-              onCreateNote={handleCreateNote}
-              isCreatingNote={isCreatingNote}
-              noteCreated={noteCreated}
-            />
-          ) : (
-            <TranslateSentence
-              sourceSentence={tSentence}
-              wordBank={tWordBank}
-              correctAnswer={tCorrectWords}
-              hint={tHint}
-              loading={loadingTQ}
-              userLanguage={userLanguage}
-              t={t}
-              onSubmit={submitTranslate}
-              onSkip={handleSkip}
-              onNext={handleNext}
-              onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
-              lastOk={lastOk}
-              recentXp={recentXp}
-              isSubmitting={loadingTJ}
-              showNext={showNextButton}
-              isSynthesizing={isQuestionSynthesizing}
-              onExplainAnswer={handleExplainAnswer}
-              explanationText={explanationText}
-              isLoadingExplanation={isLoadingExplanation}
-              lessonProgress={lessonProgress}
-              onCreateNote={handleCreateNote}
-              isCreatingNote={isCreatingNote}
-              noteCreated={noteCreated}
-            />
-          )
+          <RepeatWhatYouHear
+            sourceSentence={tSentence}
+            wordBank={tWordBank}
+            correctAnswer={tCorrectWords}
+            hint={tHint}
+            loading={loadingTQ}
+            userLanguage={userLanguage}
+            t={t}
+            onSubmit={submitTranslate}
+            onSkip={handleSkip}
+            onNext={handleNext}
+            onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+            lastOk={lastOk}
+            recentXp={recentXp}
+            isSubmitting={loadingTJ}
+            showNext={showNextButton}
+            isSynthesizing={isQuestionSynthesizing}
+            onExplainAnswer={handleExplainAnswer}
+            explanationText={explanationText}
+            isLoadingExplanation={isLoadingExplanation}
+            lessonProgress={lessonProgress}
+            onCreateNote={handleCreateNote}
+            isCreatingNote={isCreatingNote}
+            noteCreated={noteCreated}
+          />
         ) : null}
       </VStack>
 

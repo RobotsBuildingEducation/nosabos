@@ -8,7 +8,8 @@ import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
+import { doc, onSnapshot } from "firebase/firestore";
+import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import {
