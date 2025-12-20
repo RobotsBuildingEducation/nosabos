@@ -3533,6 +3533,18 @@ Return JSON ONLY:
     }
   }
 
+  const sendMatchHelp = useCallback(() => {
+    if (!onSendHelpRequest) return;
+    const promptLines = [
+      "Match the words exercise. Respond by pairing each left item with the correct option from the word bank.",
+      mStem ? `Prompt: ${mStem}` : null,
+      mLeft.length ? `Left column: ${mLeft.join(" | ")}` : null,
+      mRight.length ? `Word bank: ${mRight.join(" | ")}` : null,
+      mHint ? `Hint: ${mHint}` : null,
+    ].filter(Boolean);
+    onSendHelpRequest(promptLines.join("\n"));
+  }, [mHint, mLeft, mRight, mStem, onSendHelpRequest]);
+
   const showTRFill =
     showTranslations &&
     translation &&
@@ -4894,11 +4906,26 @@ Return JSON ONLY:
         {/* ---- MATCH UI (Drag & Drop) ---- */}
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={4}>
-              {userLanguage === "es"
-                ? "Empareja las palabras"
-                : "Match the words"}
-            </Text>
+            <HStack justify="space-between" align="center" mb={4}>
+              <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
+                {userLanguage === "es"
+                  ? "Empareja las palabras"
+                  : "Match the words"}
+              </Text>
+              {onSendHelpRequest && (
+                <IconButton
+                  aria-label={
+                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                  }
+                  icon={<MdOutlineSupportAgent />}
+                  size="sm"
+                  fontSize="lg"
+                  variant="ghost"
+                  colorScheme="blue"
+                  onClick={sendMatchHelp}
+                />
+              )}
+            </HStack>
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
@@ -5144,6 +5171,7 @@ Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              onSendHelpRequest={onSendHelpRequest}
               canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}
@@ -5174,6 +5202,7 @@ Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              onSendHelpRequest={onSendHelpRequest}
               canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}

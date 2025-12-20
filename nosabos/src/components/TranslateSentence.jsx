@@ -14,6 +14,7 @@ import {
 } from "@chakra-ui/react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import FeedbackRail from "./FeedbackRail";
 
 const renderSpeakerIcon = (loading) =>
@@ -44,6 +45,8 @@ export default function TranslateSentence({
   onNext = () => {},
   onPlayTTS = () => {},
   canSkip = true,
+
+  onSendHelpRequest = null,
 
   // State
   lastOk = null,
@@ -191,6 +194,18 @@ export default function TranslateSentence({
     onSubmit(userAnswer);
   }, [getUserAnswer, onSubmit]);
 
+  const handleSendHelp = useCallback(() => {
+    if (!onSendHelpRequest) return;
+    const promptLines = [
+      "Translate this sentence using the provided word bank.",
+      sourceSentence ? `Sentence to translate: ${sourceSentence}` : null,
+      wordBank?.length ? `Word bank: ${wordBank.join(" | ")}` : null,
+      hint ? `Hint: ${hint}` : null,
+      "Respond with the correct translation assembled from the word bank options.",
+    ].filter(Boolean);
+    onSendHelpRequest(promptLines.join("\n"));
+  }, [hint, onSendHelpRequest, sourceSentence, wordBank]);
+
   const translateLabel =
     userLanguage === "es" ? "Traduce esta frase" : "Translate this sentence";
   const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
@@ -254,6 +269,19 @@ export default function TranslateSentence({
                 }
               >
                 <HStack align="start" spacing={2}>
+                  {onSendHelpRequest && (
+                    <IconButton
+                      aria-label={
+                        userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                      }
+                      icon={<MdOutlineSupportAgent />}
+                      size="sm"
+                      fontSize="lg"
+                      variant="ghost"
+                      colorScheme="blue"
+                      onClick={handleSendHelp}
+                    />
+                  )}
                   <IconButton
                     aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
                     icon={renderSpeakerIcon(isSynthesizing)}

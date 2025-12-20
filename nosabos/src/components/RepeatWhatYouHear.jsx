@@ -13,6 +13,7 @@ import {
 } from "@chakra-ui/react";
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { MdOutlineSupportAgent } from "react-icons/md";
 import FeedbackRail from "./FeedbackRail";
 
 const renderSpeakerIcon = (loading) =>
@@ -39,6 +40,8 @@ export default function RepeatWhatYouHear({
   onNext = () => {},
   onPlayTTS = () => {},
   canSkip = true,
+
+  onSendHelpRequest = null,
 
   lastOk = null,
   recentXp = 0,
@@ -176,6 +179,17 @@ export default function RepeatWhatYouHear({
     onSubmit(userAnswer);
   }, [getUserAnswer, onSubmit]);
 
+  const handleSendHelp = useCallback(() => {
+    if (!onSendHelpRequest) return;
+    const promptLines = [
+      "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
+      sourceSentence ? `Spoken sentence: ${sourceSentence}` : null,
+      wordBank?.length ? `Word bank: ${wordBank.join(" | ")}` : null,
+      hint ? `Hint: ${hint}` : null,
+    ].filter(Boolean);
+    onSendHelpRequest(promptLines.join("\n"));
+  }, [hint, onSendHelpRequest, sourceSentence, wordBank]);
+
   const headingLabel =
     userLanguage === "es" ? "Toca lo que escuchas" : "Tap what you hear";
   const instructionLabel =
@@ -249,6 +263,19 @@ export default function RepeatWhatYouHear({
                 transition="background 0.2s ease"
               >
                 <Flex align="center" gap={3}>
+                  {onSendHelpRequest && (
+                    <IconButton
+                      aria-label={
+                        userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                      }
+                      icon={<MdOutlineSupportAgent />}
+                      size="sm"
+                      fontSize="lg"
+                      variant="ghost"
+                      colorScheme="blue"
+                      onClick={handleSendHelp}
+                    />
+                  )}
                   <IconButton
                     aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
                     icon={renderSpeakerIcon(isSynthesizing)}
