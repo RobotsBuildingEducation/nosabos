@@ -3778,7 +3778,15 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     ].filter(Boolean);
 
     onSendHelpRequest([base, ...details].join("\n"));
-  }, [onSendHelpRequest, sHint, sPrompt, sStimulus, sTarget, sTranslation, sVariant]);
+  }, [
+    onSendHelpRequest,
+    sHint,
+    sPrompt,
+    sStimulus,
+    sTarget,
+    sTranslation,
+    sVariant,
+  ]);
 
   const showTRFill =
     showTranslations &&
@@ -4964,9 +4972,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
                 {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
               </Text>
-              {onSendHelpRequest && (sVariant === "translate" || sVariant === "complete") ? (
+              {onSendHelpRequest &&
+              (sVariant === "translate" || sVariant === "complete") ? (
                 <IconButton
-                  aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
+                  aria-label={
+                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                  }
                   icon={<MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"

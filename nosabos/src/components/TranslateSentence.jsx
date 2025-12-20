@@ -221,6 +221,9 @@ export default function TranslateSentence({
     <DragDropContext onDragEnd={handleDragEnd}>
       <VStack align="stretch" spacing={4}>
         {/* Header with character and sentence */}
+        <Text fontSize="xl" fontWeight="bold" color="white">
+          {translateLabel}
+        </Text>
         <Box
           bg="rgba(255, 255, 255, 0.02)"
           borderRadius="lg"
@@ -230,9 +233,6 @@ export default function TranslateSentence({
         >
           <VStack align="stretch" spacing={4}>
             {/* Title */}
-            <Text fontSize="xl" fontWeight="bold" color="white">
-              {translateLabel}
-            </Text>
 
             {/* Character + Speech bubble */}
             <HStack align="start" spacing={4}>
@@ -272,7 +272,9 @@ export default function TranslateSentence({
                   {onSendHelpRequest && (
                     <IconButton
                       aria-label={
-                        userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                        userLanguage === "es"
+                          ? "Pedir ayuda"
+                          : "Ask the assistant"
                       }
                       icon={<MdOutlineSupportAgent />}
                       size="sm"
@@ -303,7 +305,6 @@ export default function TranslateSentence({
                 </HStack>
               </Box>
             </HStack>
-
           </VStack>
         </Box>
 
