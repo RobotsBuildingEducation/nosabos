@@ -28,12 +28,7 @@ import {
   ModalContent,
   ModalBody,
 } from "@chakra-ui/react";
-import {
-  doc,
-  onSnapshot,
-  setDoc,
-  increment,
-} from "firebase/firestore";
+import { doc, onSnapshot, setDoc, increment } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
@@ -748,7 +743,13 @@ function buildVocabTranslateStreamPrompt({
   ].join("\n");
 }
 
-function buildVocabTranslateJudgePrompt({ sourceLang, answerLang, sentence, correctWords, userWords }) {
+function buildVocabTranslateJudgePrompt({
+  sourceLang,
+  answerLang,
+  sentence,
+  correctWords,
+  userWords,
+}) {
   const SOURCE = LANG_NAME(sourceLang);
   const ANSWER = LANG_NAME(answerLang);
   return `
@@ -3171,8 +3172,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? isListening
         ? "listening-target"
         : Math.random() < 0.5
-          ? "target-tts-support-bank"
-          : "support-tts-target-bank"
+        ? "target-tts-support-bank"
+        : "support-tts-target-bank"
       : null;
 
     setTranslateUIVariant(repeatVariant ? "repeat" : "standard");
@@ -3183,11 +3184,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? isListening
         ? "support-to-target"
         : chosenRepeatMode === "target-tts-support-bank"
-          ? "target-to-support"
-          : "support-to-target"
-      : Math.random() < 0.5
         ? "target-to-support"
-        : "support-to-target";
+        : "support-to-target"
+      : Math.random() < 0.5
+      ? "target-to-support"
+      : "support-to-target";
 
     setQuestionTTsLang(
       repeatVariant
@@ -3195,8 +3196,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? targetLang
           : supportCode
         : direction === "target-to-support"
-          ? targetLang
-          : supportCode
+        ? targetLang
+        : supportCode
     );
     setTDirection(direction);
     const activeRepeatMode = chosenRepeatMode;
@@ -3240,12 +3241,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           const line = buffer.slice(0, nl);
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
-            if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+            if (
+              obj?.type === "translate" &&
+              obj.phase === "q" &&
+              obj.sentence
+            ) {
               setTSentence(String(obj.sentence).trim());
               gotSentence = true;
             }
             if (obj?.type === "translate" && obj.phase === "answer") {
-              if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+              if (
+                Array.isArray(obj.correctWords) &&
+                obj.correctWords.length > 0
+              ) {
                 tempCorrectWords = obj.correctWords.map(String);
                 setTCorrectWords(tempCorrectWords);
               }
@@ -3275,12 +3283,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           .filter(Boolean)
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
-              if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+              if (
+                obj?.type === "translate" &&
+                obj.phase === "q" &&
+                obj.sentence
+              ) {
                 setTSentence(String(obj.sentence).trim());
                 gotSentence = true;
               }
               if (obj?.type === "translate" && obj.phase === "answer") {
-                if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+                if (
+                  Array.isArray(obj.correctWords) &&
+                  obj.correctWords.length > 0
+                ) {
                   tempCorrectWords = obj.correctWords.map(String);
                   setTCorrectWords(tempCorrectWords);
                 }
@@ -3290,7 +3305,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 }
                 gotAnswer = true;
               }
-              if (obj?.type === "translate" && obj.phase === "meta" && obj.hint) {
+              if (
+                obj?.type === "translate" &&
+                obj.phase === "meta" &&
+                obj.hint
+              ) {
                 setTHint(String(obj.hint).trim());
               }
             })
@@ -3300,13 +3319,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       if (!gotSentence || !gotAnswer) throw new Error("incomplete-translate");
 
       // Build shuffled word bank
-      const answerLang = direction === "target-to-support" ? supportCode : targetLang;
+      const answerLang =
+        direction === "target-to-support" ? supportCode : targetLang;
       const distractors =
         tempDistractors.length > 0
           ? tempDistractors
           : buildFallbackDistractors(tempCorrectWords, answerLang);
 
-      if (repeatVariant && activeRepeatMode === "listening-target" && tempCorrectWords.length) {
+      if (
+        repeatVariant &&
+        activeRepeatMode === "listening-target" &&
+        tempCorrectWords.length
+      ) {
         setTSentence(tempCorrectWords.join(" "));
       }
 
@@ -3322,14 +3346,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTSentence("El gato es negro.");
           setTCorrectWords(["The", "cat", "is", "black"]);
           setTDistractors(["dog", "red", "big"]);
-          setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
+          setTWordBank(
+            shuffle(["The", "cat", "is", "black", "dog", "red", "big"])
+          );
           setTHint("Colors and animals vocabulary");
         } else {
           // English -> Spanish
           setTSentence("The cat is black.");
           setTCorrectWords(["El", "gato", "es", "negro"]);
           setTDistractors(["perro", "rojo", "grande"]);
-          setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
+          setTWordBank(
+            shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"])
+          );
           setTHint("Colors and animals vocabulary");
         }
       } else {
@@ -3338,19 +3366,27 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTSentence("The cat is black.");
           setTCorrectWords(["El", "gato", "es", "negro"]);
           setTDistractors(["perro", "rojo", "grande"]);
-          setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
+          setTWordBank(
+            shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"])
+          );
           setTHint("Vocabulario de colores y animales");
         } else {
           // Spanish -> English (when target is English)
           setTSentence("El gato es negro.");
           setTCorrectWords(["The", "cat", "is", "black"]);
           setTDistractors(["dog", "red", "big"]);
-          setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
+          setTWordBank(
+            shuffle(["The", "cat", "is", "black", "dog", "red", "big"])
+          );
           setTHint("Vocabulario de colores y animales");
         }
       }
 
-      if (repeatVariant && activeRepeatMode === "listening-target" && tCorrectWords.length) {
+      if (
+        repeatVariant &&
+        activeRepeatMode === "listening-target" &&
+        tCorrectWords.length
+      ) {
         setTSentence(tCorrectWords.join(" "));
       }
     } finally {
@@ -3442,7 +3478,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     // First check: exact match (normalized)
     const normalizedUser = userWords.map((w) => norm(w));
     const normalizedCorrect = tCorrectWords.map((w) => norm(w));
-    let ok = normalizedUser.length === normalizedCorrect.length &&
+    let ok =
+      normalizedUser.length === normalizedCorrect.length &&
       normalizedUser.every((w, i) => w === normalizedCorrect[i]);
 
     // If not exact match, use LLM judge for flexible matching
@@ -4252,7 +4289,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "fill" && (qFill || loadingQFill) ? (
           <VStack align="stretch" spacing={4}>
             <Text fontSize="xl" fontWeight="bold" color="white">
-              {userLanguage === "es" ? "Completa el espacio" : "Fill in the blank"}
+              {userLanguage === "es"
+                ? "Completa el espacio"
+                : "Fill in the blank"}
             </Text>
             <Box
               bg="rgba(255, 255, 255, 0.02)"
@@ -4354,7 +4393,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "mc" && (qMC || loadingQMC) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
-              {userLanguage === "es" ? "Elige la respuesta correcta" : "Choose the correct answer"}
+              {userLanguage === "es"
+                ? "Elige la respuesta correcta"
+                : "Choose the correct answer"}
             </Text>
             {mcLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMcDragEnd}>
@@ -4387,12 +4428,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           {renderMcPrompt() || (loadingQMC ? "…" : "")}
                         </Text>
                       </HStack>
-                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                        {t("practice_drag_drop_instruction") ||
-                          (userLanguage === "es"
-                            ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
-                            : "Drag or select the correct answer into the blank in the sentence.")}
-                      </Text>
                     </VStack>
                   </Box>
                   <Droppable droppableId="mc-bank" direction="horizontal">
@@ -4621,7 +4656,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "ma" && (qMA || loadingQMA) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
-              {userLanguage === "es" ? "Selecciona todas las respuestas correctas" : "Select all correct answers"}
+              {userLanguage === "es"
+                ? "Selecciona todas las respuestas correctas"
+                : "Select all correct answers"}
             </Text>
             {maLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMaDragEnd}>
@@ -4934,7 +4971,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {sStimulus || sTarget || "…"}
                   </Text>
                 </Box>
-
               </>
             )}
 
@@ -5084,7 +5120,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color="white" mb={4}>
-              {userLanguage === "es" ? "Empareja las palabras" : "Match the words"}
+              {userLanguage === "es"
+                ? "Empareja las palabras"
+                : "Match the words"}
             </Text>
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
