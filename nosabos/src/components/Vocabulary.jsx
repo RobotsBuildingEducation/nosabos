@@ -3762,6 +3762,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     onSendHelpRequest(promptLines.join("\n"));
   }, [mHint, mLeft, mRight, mStem, onSendHelpRequest]);
 
+  const sendSpeakHelp = useCallback(() => {
+    if (!onSendHelpRequest) return;
+    const base =
+      sVariant === "translate"
+        ? "Say it aloud (translate). Provide the target language translation for the given word."
+        : "Say it aloud (complete). Help the learner say the full sentence with the missing word.";
+
+    const details = [
+      sPrompt ? `Prompt: ${sPrompt}` : null,
+      sStimulus ? `Shown to learner: ${sStimulus}` : null,
+      sTarget ? `Expected spoken answer: ${sTarget}` : null,
+      sHint ? `Hint: ${sHint}` : null,
+      sTranslation ? `Support translation/context: ${sTranslation}` : null,
+    ].filter(Boolean);
+
+    onSendHelpRequest([base, ...details].join("\n"));
+  }, [onSendHelpRequest, sHint, sPrompt, sStimulus, sTarget, sTranslation, sVariant]);
+
   const showTRFill =
     showTranslations &&
     trFill &&
@@ -4942,9 +4960,24 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- SPEAK UI ---- */}
         {mode === "speak" && (sTarget || loadingQSpeak) ? (
           <>
-            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
-              {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
-            </Text>
+            <HStack justify="space-between" align="center" mb={2}>
+              <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
+                {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
+              </Text>
+              {onSendHelpRequest && (sVariant === "translate" || sVariant === "complete") ? (
+                <IconButton
+                  aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
+                  icon={<MdOutlineSupportAgent />}
+                  size="sm"
+                  fontSize="lg"
+                  bg="white"
+                  color="blue"
+                  border="3px solid skyblue"
+                  boxShadow={"lg"}
+                  onClick={sendSpeakHelp}
+                />
+              ) : null}
+            </HStack>
             {loadingQSpeak ? (
               <Box textAlign="center" py={12}>
                 <RobotBuddyPro palette="ocean" variant="abstract" />
