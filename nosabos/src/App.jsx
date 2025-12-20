@@ -1018,9 +1018,15 @@ export default function App() {
     }
   }, []);
 
+  const normalizeSupportLang = useCallback(
+    (raw) => (raw === "es" ? "es" : raw === "en" ? "en" : undefined),
+    []
+  );
+
   const resolvedTargetLang = user?.progress?.targetLang || "es";
   const resolvedSupportLang =
-    user?.progress?.supportLang || (storedUiLang === "es" ? "es" : "en");
+    normalizeSupportLang(user?.progress?.supportLang) ||
+    (storedUiLang === "es" ? "es" : "en");
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "A1";
 
   useEffect(() => {
@@ -3649,7 +3655,7 @@ export default function App() {
                           activeNpub={activeNpub}
                           activeNsec={activeNsec}
                           level={user?.progress?.level}
-                          supportLang={user?.progress?.supportLang}
+                          supportLang={resolvedSupportLang}
                           voice={user?.progress?.voice}
                           voicePersona={user?.progress?.voicePersona}
                           targetLang={user?.progress?.targetLang}

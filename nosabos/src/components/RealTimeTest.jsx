@@ -642,10 +642,17 @@ export default function RealTimeTest({
     }
   }, []);
 
+  const normalizeSupportLang = (raw) => {
+    const code = String(raw || "").toLowerCase();
+    if (code === "es" || code.startsWith("es-") || code === "spanish") return "es";
+    if (code === "en" || code.startsWith("en-") || code === "english") return "en";
+    return undefined;
+  };
+
   const uiLang =
-    (supportLangRef.current || supportLang || storedUiLang) === "es"
-      ? "es"
-      : "en";
+    normalizeSupportLang(supportLangRef.current || supportLang) ||
+    normalizeSupportLang(storedUiLang) ||
+    "en";
   const ui = translations[uiLang];
 
   // ✅ Which language to show in secondary lane

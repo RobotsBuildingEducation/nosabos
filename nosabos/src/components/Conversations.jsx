@@ -587,17 +587,20 @@ export default function Conversations({
     }
   })();
 
-  const resolvedSupportLang =
-    supportLangRef.current || supportLang || user?.progress?.supportLang || "";
+  const normalizeSupportLang = (raw) => {
+    const code = String(raw || "").toLowerCase();
+    if (code === "es" || code.startsWith("es-") || code === "spanish") return "es";
+    if (code === "en" || code.startsWith("en-") || code === "english") return "en";
+    return undefined;
+  };
 
-  const uiLang =
-    resolvedSupportLang === "es"
-      ? "es"
-      : resolvedSupportLang === "en"
-      ? "en"
-      : storedUiLang === "es"
-      ? "es"
-      : "en";
+  const resolvedSupportLang =
+    normalizeSupportLang(supportLangRef.current || supportLang) ||
+    normalizeSupportLang(user?.progress?.supportLang) ||
+    normalizeSupportLang(storedUiLang) ||
+    "en";
+
+  const uiLang = resolvedSupportLang;
   const ui = translations[uiLang];
 
   // Which language to show in secondary lane
