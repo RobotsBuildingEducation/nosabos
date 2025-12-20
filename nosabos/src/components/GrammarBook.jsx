@@ -515,6 +515,7 @@ function buildMAStreamPrompt({
     }`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
+    `- Question/stem MUST be in ${SUPPORT} so the learner can understand what is being asked.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
       ? `- ${SUPPORT} translation of stem.`
@@ -522,7 +523,7 @@ function buildMAStreamPrompt({
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"ma","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
+    `{"type":"ma","phase":"q","question":"<stem in ${SUPPORT}>"}  // first`,
     `{"type":"ma","phase":"choices","choices":["..."]}           // second`,
     `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
@@ -686,7 +687,13 @@ function buildTranslateStreamPrompt({
   ].join("\n");
 }
 
-function buildTranslateJudgePrompt({ sourceLang, answerLang, sentence, correctWords, userWords }) {
+function buildTranslateJudgePrompt({
+  sourceLang,
+  answerLang,
+  sentence,
+  correctWords,
+  userWords,
+}) {
   const SOURCE = LANG_NAME(sourceLang);
   const ANSWER = LANG_NAME(answerLang);
   return `
@@ -2726,8 +2733,8 @@ Return JSON ONLY:
       ? isListening
         ? "listening-target"
         : Math.random() < 0.5
-          ? "target-tts-support-bank"
-          : "support-tts-target-bank"
+        ? "target-tts-support-bank"
+        : "support-tts-target-bank"
       : null;
 
     setTranslateUIVariant(repeatVariant ? "repeat" : "standard");
@@ -2738,11 +2745,11 @@ Return JSON ONLY:
       ? isListening
         ? "support-to-target"
         : chosenRepeatMode === "target-tts-support-bank"
-          ? "target-to-support"
-          : "support-to-target"
-      : Math.random() < 0.5
         ? "target-to-support"
-        : "support-to-target";
+        : "support-to-target"
+      : Math.random() < 0.5
+      ? "target-to-support"
+      : "support-to-target";
 
     setQuestionTTsLang(
       repeatVariant
@@ -2750,8 +2757,8 @@ Return JSON ONLY:
           ? targetLang
           : supportCode
         : direction === "target-to-support"
-          ? targetLang
-          : supportCode
+        ? targetLang
+        : supportCode
     );
     setTDirection(direction);
     const activeRepeatMode = chosenRepeatMode;
@@ -2796,13 +2803,20 @@ Return JSON ONLY:
           const line = buffer.slice(0, nl);
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
-            if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+            if (
+              obj?.type === "translate" &&
+              obj.phase === "q" &&
+              obj.sentence
+            ) {
               tempSentence = String(obj.sentence).trim();
               setTSentence(tempSentence);
               gotSentence = true;
             }
             if (obj?.type === "translate" && obj.phase === "answer") {
-              if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+              if (
+                Array.isArray(obj.correctWords) &&
+                obj.correctWords.length > 0
+              ) {
                 tempCorrectWords = obj.correctWords.map(String);
                 setTCorrectWords(tempCorrectWords);
               }
@@ -2832,13 +2846,20 @@ Return JSON ONLY:
           .filter(Boolean)
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
-              if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+              if (
+                obj?.type === "translate" &&
+                obj.phase === "q" &&
+                obj.sentence
+              ) {
                 tempSentence = String(obj.sentence).trim();
                 setTSentence(tempSentence);
                 gotSentence = true;
               }
               if (obj?.type === "translate" && obj.phase === "answer") {
-                if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+                if (
+                  Array.isArray(obj.correctWords) &&
+                  obj.correctWords.length > 0
+                ) {
                   tempCorrectWords = obj.correctWords.map(String);
                   setTCorrectWords(tempCorrectWords);
                 }
@@ -2848,7 +2869,11 @@ Return JSON ONLY:
                 }
                 gotAnswer = true;
               }
-              if (obj?.type === "translate" && obj.phase === "meta" && obj.hint) {
+              if (
+                obj?.type === "translate" &&
+                obj.phase === "meta" &&
+                obj.hint
+              ) {
                 setTHint(String(obj.hint).trim());
               }
             })
@@ -2857,13 +2882,18 @@ Return JSON ONLY:
 
       if (!gotSentence || !gotAnswer) throw new Error("incomplete-translate");
 
-      const answerLang = direction === "target-to-support" ? supportCode : targetLang;
+      const answerLang =
+        direction === "target-to-support" ? supportCode : targetLang;
       const distractors =
         tempDistractors.length > 0
           ? tempDistractors
           : buildFallbackDistractors(tempCorrectWords, answerLang);
 
-      if (repeatVariant && activeRepeatMode === "listening-target" && tempCorrectWords.length) {
+      if (
+        repeatVariant &&
+        activeRepeatMode === "listening-target" &&
+        tempCorrectWords.length
+      ) {
         setTSentence(tempCorrectWords.join(" "));
       } else if (tempSentence) {
         setTSentence(tempSentence);
@@ -2882,14 +2912,18 @@ Return JSON ONLY:
           setTSentence("Vamos a la escuela.");
           setTCorrectWords(["We", "go", "to", "school"]);
           setTDistractors(["house", "the", "tomorrow"]);
-          setTWordBank(shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]));
+          setTWordBank(
+            shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"])
+          );
           setTHint("Present tense of 'ir' (to go)");
         } else {
           // English -> Spanish
           setTSentence("We go to school.");
           setTCorrectWords(["Vamos", "a", "la", "escuela"]);
           setTDistractors(["casa", "el", "mañana"]);
-          setTWordBank(shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]));
+          setTWordBank(
+            shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"])
+          );
           setTHint("Present tense of 'ir' (to go)");
         }
       } else {
@@ -2898,19 +2932,27 @@ Return JSON ONLY:
           setTSentence("We go to school.");
           setTCorrectWords(["Vamos", "a", "la", "escuela"]);
           setTDistractors(["casa", "el", "mañana"]);
-          setTWordBank(shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"]));
+          setTWordBank(
+            shuffle(["Vamos", "a", "la", "escuela", "casa", "el", "mañana"])
+          );
           setTHint("Presente del verbo 'ir'");
         } else {
           // Spanish -> English (when target is English)
           setTSentence("Vamos a la escuela.");
           setTCorrectWords(["We", "go", "to", "school"]);
           setTDistractors(["house", "the", "tomorrow"]);
-          setTWordBank(shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"]));
+          setTWordBank(
+            shuffle(["We", "go", "to", "school", "house", "the", "tomorrow"])
+          );
           setTHint("Presente del verbo 'ir'");
         }
       }
 
-      if (repeatVariant && activeRepeatMode === "listening-target" && tCorrectWords.length) {
+      if (
+        repeatVariant &&
+        activeRepeatMode === "listening-target" &&
+        tCorrectWords.length
+      ) {
         setTSentence(tCorrectWords.join(" "));
       }
     } finally {
@@ -3216,7 +3258,8 @@ Return JSON ONLY:
     // First check: exact match (normalized)
     const normalizedUser = userWords.map((w) => norm(w));
     const normalizedCorrect = tCorrectWords.map((w) => norm(w));
-    let ok = normalizedUser.length === normalizedCorrect.length &&
+    let ok =
+      normalizedUser.length === normalizedCorrect.length &&
       normalizedUser.every((w, i) => w === normalizedCorrect[i]);
 
     // If not exact match, use LLM judge for flexible matching
@@ -3989,6 +4032,11 @@ Return JSON ONLY:
         {/* ---- Fill UI ---- */}
         {mode === "fill" && (question || loadingQ) ? (
           <VStack align="stretch" spacing={4}>
+            <Text fontSize="xl" fontWeight="bold" color="white">
+              {userLanguage === "es"
+                ? "Completa el espacio"
+                : "Fill in the blank"}
+            </Text>
             <Box
               bg="rgba(255, 255, 255, 0.02)"
               borderRadius="lg"
@@ -4021,32 +4069,6 @@ Return JSON ONLY:
                     {question || (loadingQ ? "…" : "")}
                   </Text>
                 </HStack>
-                {showTRFill && translation ? (
-                  <Box
-                    pl={7}
-                    py={2}
-                    borderLeftWidth="3px"
-                    borderLeftColor="purple.500"
-                    bg="rgba(159, 122, 234, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      {translation}
-                    </Text>
-                  </Box>
-                ) : null}
-                {hint ? (
-                  <Box
-                    pl={7}
-                    py={2}
-                    borderLeftWidth="3px"
-                    borderLeftColor="cyan.500"
-                    bg="rgba(0, 206, 209, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      💡 {hint}
-                    </Text>
-                  </Box>
-                ) : null}
               </VStack>
             </Box>
 
@@ -4117,6 +4139,11 @@ Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (mcQ || loadingMCQ) ? (
           <>
+            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+              {userLanguage === "es"
+                ? "Elige la respuesta correcta"
+                : "Choose the correct answer"}
+            </Text>
             {mcLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMcDragEnd}>
                 <VStack align="stretch" spacing={3}>
@@ -4152,38 +4179,6 @@ Return JSON ONLY:
                           {renderMcPrompt() || (loadingMCQ ? "…" : "")}
                         </Text>
                       </HStack>
-                      {showTRMC && mcTranslation ? (
-                        <Box
-                          pl={7}
-                          py={2}
-                          borderLeftWidth="3px"
-                          borderLeftColor="purple.500"
-                          bg="rgba(159, 122, 234, 0.05)"
-                        >
-                          <Text fontSize="sm" color="gray.400">
-                            {mcTranslation}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      {mcHint ? (
-                        <Box
-                          pl={7}
-                          py={2}
-                          borderLeftWidth="3px"
-                          borderLeftColor="cyan.500"
-                          bg="rgba(0, 206, 209, 0.05)"
-                        >
-                          <Text fontSize="sm" color="gray.400">
-                            💡 {mcHint}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                        {t("practice_drag_drop_instruction") ||
-                          (userLanguage === "es"
-                            ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
-                            : "Drag or select the correct answer into the blank in the sentence.")}
-                      </Text>
                     </VStack>
                   </Box>
                   <Droppable droppableId="mc-bank" direction="horizontal">
@@ -4282,32 +4277,6 @@ Return JSON ONLY:
                         {mcQ || (loadingMCQ ? "…" : "")}
                       </Text>
                     </HStack>
-                    {showTRMC && mcTranslation ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="purple.500"
-                        bg="rgba(159, 122, 234, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          {mcTranslation}
-                        </Text>
-                      </Box>
-                    ) : null}
-                    {mcHint ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="cyan.500"
-                        bg="rgba(0, 206, 209, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          💡 {mcHint}
-                        </Text>
-                      </Box>
-                    ) : null}
                   </VStack>
                 </Box>
                 <Stack spacing={3} align="stretch">
@@ -4443,6 +4412,11 @@ Return JSON ONLY:
         {/* ---- MA UI ---- */}
         {mode === "ma" && (maQ || loadingMAQ) ? (
           <>
+            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+              {userLanguage === "es"
+                ? "Selecciona todas las respuestas correctas"
+                : "Select all correct answers"}
+            </Text>
             {maLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMaDragEnd}>
                 <VStack align="stretch" spacing={3}>
@@ -4478,45 +4452,6 @@ Return JSON ONLY:
                           {renderMaPrompt() || (loadingMAQ ? "…" : "")}
                         </Text>
                       </HStack>
-                      {showTRMA && maTranslation ? (
-                        <Box
-                          pl={7}
-                          py={2}
-                          borderLeftWidth="3px"
-                          borderLeftColor="purple.500"
-                          bg="rgba(159, 122, 234, 0.05)"
-                        >
-                          <Text fontSize="sm" color="gray.400">
-                            {maTranslation}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      {maHint ? (
-                        <Box
-                          pl={7}
-                          py={2}
-                          borderLeftWidth="3px"
-                          borderLeftColor="cyan.500"
-                          bg="rgba(0, 206, 209, 0.05)"
-                        >
-                          <Text fontSize="sm" color="gray.400">
-                            💡 {maHint}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      <Text
-                        fontSize="xs"
-                        color="gray.500"
-                        fontWeight="semibold"
-                      >
-                        {t("grammar_select_all_apply")}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                        {t("practice_drag_drop_multi_instruction") ||
-                          (userLanguage === "es"
-                            ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
-                            : "Drag or select each correct answer into its place in the sentence.")}
-                      </Text>
                     </VStack>
                   </Box>
                   <Droppable droppableId="ma-bank" direction="horizontal">
@@ -4615,35 +4550,6 @@ Return JSON ONLY:
                         {maQ || (loadingMAQ ? "…" : "")}
                       </Text>
                     </HStack>
-                    {showTRMA && maTranslation ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="purple.500"
-                        bg="rgba(159, 122, 234, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          {maTranslation}
-                        </Text>
-                      </Box>
-                    ) : null}
-                    {maHint ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="cyan.500"
-                        bg="rgba(0, 206, 209, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          💡 {maHint}
-                        </Text>
-                      </Box>
-                    ) : null}
-                    <Text fontSize="xs" color="gray.500" fontWeight="semibold">
-                      {t("grammar_select_all_apply")}
-                    </Text>
                   </VStack>
                 </Box>
                 <Stack spacing={3} align="stretch">
@@ -4791,6 +4697,9 @@ Return JSON ONLY:
         {/* ---- SPEAK UI ---- */}
         {mode === "speak" && (sTarget || loadingSpeakQ) ? (
           <>
+            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+              {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
+            </Text>
             {loadingSpeakQ ? (
               <Box textAlign="center" py={12}>
                 <RobotBuddyPro palette="ocean" variant="abstract" />
@@ -4802,42 +4711,6 @@ Return JSON ONLY:
               </Box>
             ) : (
               <>
-                <Box
-                  bg="rgba(255, 255, 255, 0.02)"
-                  borderRadius="lg"
-                  borderWidth="1px"
-                  borderColor="whiteAlpha.100"
-                  p={5}
-                  mb={4}
-                >
-                  <VStack align="stretch" spacing={3}>
-                    <HStack align="start" spacing={2}>
-                      <CopyAllBtn
-                        q={`${sPrompt ? `${sPrompt}\n` : ""}${sTarget}`}
-                        h={sHint}
-                        tr={sTranslation}
-                      />
-                      <VStack align="flex-start" spacing={2} flex="1">
-                        <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                          {t("grammar_speak_instruction_label") ||
-                            (userLanguage === "es"
-                              ? "Pronuncia la oración para practicar la gramática."
-                              : "Say the sentence aloud to practice the grammar point.")}
-                        </Text>
-                        {sPrompt && (
-                          <Text
-                            fontSize="lg"
-                            fontWeight="medium"
-                            lineHeight="tall"
-                          >
-                            {sPrompt}
-                          </Text>
-                        )}
-                      </VStack>
-                    </HStack>
-                  </VStack>
-                </Box>
-
                 <Box
                   border="1px solid rgba(255,255,255,0.18)"
                   rounded="xl"
@@ -4865,36 +4738,6 @@ Return JSON ONLY:
                     {sTarget || "…"}
                   </Text>
                 </Box>
-
-                {sHint ? (
-                  <Box
-                    pl={7}
-                    py={2}
-                    mt={3}
-                    borderLeftWidth="3px"
-                    borderLeftColor="cyan.500"
-                    bg="rgba(0, 206, 209, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      💡 {sHint}
-                    </Text>
-                  </Box>
-                ) : null}
-
-                {showTRSpeak ? (
-                  <Box
-                    pl={7}
-                    py={2}
-                    mt={2}
-                    borderLeftWidth="3px"
-                    borderLeftColor="purple.500"
-                    bg="rgba(159, 122, 234, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      {sTranslation}
-                    </Text>
-                  </Box>
-                ) : null}
               </>
             )}
 
@@ -5051,41 +4894,11 @@ Return JSON ONLY:
         {/* ---- MATCH UI (Drag & Drop) ---- */}
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <Box
-              bg="rgba(255, 255, 255, 0.02)"
-              borderRadius="lg"
-              borderWidth="1px"
-              borderColor="whiteAlpha.100"
-              p={5}
-              mb={4}
-            >
-              <VStack align="stretch" spacing={3}>
-                <HStack align="start" spacing={2}>
-                  <CopyAllBtn q={mStem} h={mHint} tr="" />
-                  <Text
-                    fontSize="lg"
-                    fontWeight="medium"
-                    flex="1"
-                    lineHeight="tall"
-                  >
-                    {mStem || (loadingMG ? "…" : "")}
-                  </Text>
-                </HStack>
-                {!!mHint && (
-                  <Box
-                    pl={7}
-                    py={2}
-                    borderLeftWidth="3px"
-                    borderLeftColor="cyan.500"
-                    bg="rgba(0, 206, 209, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      💡 {mHint}
-                    </Text>
-                  </Box>
-                )}
-              </VStack>
-            </Box>
+            <Text fontSize="xl" fontWeight="bold" color="white" mb={4}>
+              {userLanguage === "es"
+                ? "Empareja las palabras"
+                : "Match the words"}
+            </Text>
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(

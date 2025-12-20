@@ -93,7 +93,9 @@ export default function RepeatWhatYouHear({
     (selectedPosition) => {
       if (lastOk !== null) return;
       const wordIndex = selectedWords[selectedPosition];
-      setSelectedWords((prev) => prev.filter((_, pos) => pos !== selectedPosition));
+      setSelectedWords((prev) =>
+        prev.filter((_, pos) => pos !== selectedPosition)
+      );
       setBankOrder((prev) => [...prev, wordIndex]);
     },
     [selectedWords, lastOk]
@@ -210,66 +212,7 @@ export default function RepeatWhatYouHear({
                   />
                 </Box>
               )}
-              <Box
-                flex="1"
-                bg="rgba(255, 255, 255, 0.08)"
-                borderRadius="xl"
-                borderWidth="1px"
-                borderColor="whiteAlpha.200"
-                p={4}
-                position="relative"
-                _before={
-                  characterImage
-                    ? {
-                        content: '""',
-                        position: "absolute",
-                        left: "-12px",
-                        top: "20px",
-                        borderWidth: "8px",
-                        borderStyle: "solid",
-                        borderColor:
-                          "transparent rgba(255, 255, 255, 0.08) transparent transparent",
-                      }
-                    : {}
-                }
-              >
-                <Flex align="center" gap={3}>
-                  <IconButton
-                    aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
-                    icon={renderSpeakerIcon(isSynthesizing)}
-                    size="md"
-                    fontSize="xl"
-                    variant="ghost"
-                    onClick={() => onPlayTTS(sourceSentence)}
-                    isRound
-                  />
-                  <VStack align="start" spacing={0} flex="1">
-                    <Text fontWeight="semibold" color="white">
-                      {userLanguage === "es" ? "Reproducir" : "Play"}
-                    </Text>
-                    <Text color="gray.400" fontSize="sm">
-                      {instructionLabel}
-                    </Text>
-                  </VStack>
-                </Flex>
-              </Box>
             </HStack>
-
-            {hint && (
-              <Box
-                pl={characterImage ? "116px" : 0}
-                py={2}
-                borderLeftWidth="3px"
-                borderLeftColor="cyan.500"
-                bg="rgba(0, 206, 209, 0.05)"
-                ml={characterImage ? 0 : 7}
-                px={3}
-              >
-                <Text fontSize="sm" color="gray.400">
-                  {hint}
-                </Text>
-              </Box>
-            )}
           </VStack>
         </Box>
 
@@ -305,17 +248,29 @@ export default function RepeatWhatYouHear({
                 p={2}
                 transition="background 0.2s ease"
               >
-                {selectedWords.length === 0 && !snapshot.isDraggingOver && (
-                  <Text
-                    color="gray.500"
-                    fontSize="sm"
-                    fontStyle="italic"
-                    w="100%"
-                    textAlign="center"
-                  >
-                    {instructionLabel}
-                  </Text>
-                )}
+                <Flex align="center" gap={3}>
+                  <IconButton
+                    aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
+                    icon={renderSpeakerIcon(isSynthesizing)}
+                    size="md"
+                    fontSize="xl"
+                    variant="ghost"
+                    onClick={() => onPlayTTS(sourceSentence)}
+                    isRound
+                  />
+                  {selectedWords.length === 0 && !snapshot.isDraggingOver && (
+                    <Text
+                      color="gray.500"
+                      fontSize="sm"
+                      fontStyle="italic"
+                      w="100%"
+                      textAlign="center"
+                    >
+                      {instructionLabel}
+                    </Text>
+                  )}
+                </Flex>
+
                 {selectedWords.map((wordIndex, position) => (
                   <Draggable
                     key={`selected-${wordIndex}-${position}`}

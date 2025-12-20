@@ -274,22 +274,6 @@ export default function TranslateSentence({
               </Box>
             </HStack>
 
-            {/* Hint */}
-            {hint && (
-              <Box
-                pl={characterImage ? "116px" : 0}
-                py={2}
-                borderLeftWidth="3px"
-                borderLeftColor="cyan.500"
-                bg="rgba(0, 206, 209, 0.05)"
-                ml={characterImage ? 0 : 7}
-                px={3}
-              >
-                <Text fontSize="sm" color="gray.400">
-                  {hint}
-                </Text>
-              </Box>
-            )}
           </VStack>
         </Box>
 

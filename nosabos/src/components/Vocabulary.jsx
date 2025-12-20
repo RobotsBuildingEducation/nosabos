@@ -28,12 +28,7 @@ import {
   ModalContent,
   ModalBody,
 } from "@chakra-ui/react";
-import {
-  doc,
-  onSnapshot,
-  setDoc,
-  increment,
-} from "firebase/firestore";
+import { doc, onSnapshot, setDoc, increment } from "firebase/firestore";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ streaming model
 import useUserStore from "../hooks/useUserStore";
@@ -410,12 +405,13 @@ function buildMAVocabStreamPrompt({
     }`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
+    `- Question/stem MUST be in ${SUPPORT} so the learner can understand what is being asked.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"vocab_ma","phase":"q","question":"<stem in ${TARGET}>"}  // first`,
+    `{"type":"vocab_ma","phase":"q","question":"<stem in ${SUPPORT}>"}  // first`,
     `{"type":"vocab_ma","phase":"choices","choices":["..."]}           // second`,
     `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
@@ -747,7 +743,13 @@ function buildVocabTranslateStreamPrompt({
   ].join("\n");
 }
 
-function buildVocabTranslateJudgePrompt({ sourceLang, answerLang, sentence, correctWords, userWords }) {
+function buildVocabTranslateJudgePrompt({
+  sourceLang,
+  answerLang,
+  sentence,
+  correctWords,
+  userWords,
+}) {
   const SOURCE = LANG_NAME(sourceLang);
   const ANSWER = LANG_NAME(answerLang);
   return `
@@ -3170,8 +3172,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? isListening
         ? "listening-target"
         : Math.random() < 0.5
-          ? "target-tts-support-bank"
-          : "support-tts-target-bank"
+        ? "target-tts-support-bank"
+        : "support-tts-target-bank"
       : null;
 
     setTranslateUIVariant(repeatVariant ? "repeat" : "standard");
@@ -3182,11 +3184,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       ? isListening
         ? "support-to-target"
         : chosenRepeatMode === "target-tts-support-bank"
-          ? "target-to-support"
-          : "support-to-target"
-      : Math.random() < 0.5
         ? "target-to-support"
-        : "support-to-target";
+        : "support-to-target"
+      : Math.random() < 0.5
+      ? "target-to-support"
+      : "support-to-target";
 
     setQuestionTTsLang(
       repeatVariant
@@ -3194,8 +3196,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           ? targetLang
           : supportCode
         : direction === "target-to-support"
-          ? targetLang
-          : supportCode
+        ? targetLang
+        : supportCode
     );
     setTDirection(direction);
     const activeRepeatMode = chosenRepeatMode;
@@ -3239,12 +3241,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           const line = buffer.slice(0, nl);
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
-            if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+            if (
+              obj?.type === "translate" &&
+              obj.phase === "q" &&
+              obj.sentence
+            ) {
               setTSentence(String(obj.sentence).trim());
               gotSentence = true;
             }
             if (obj?.type === "translate" && obj.phase === "answer") {
-              if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+              if (
+                Array.isArray(obj.correctWords) &&
+                obj.correctWords.length > 0
+              ) {
                 tempCorrectWords = obj.correctWords.map(String);
                 setTCorrectWords(tempCorrectWords);
               }
@@ -3274,12 +3283,19 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           .filter(Boolean)
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
-              if (obj?.type === "translate" && obj.phase === "q" && obj.sentence) {
+              if (
+                obj?.type === "translate" &&
+                obj.phase === "q" &&
+                obj.sentence
+              ) {
                 setTSentence(String(obj.sentence).trim());
                 gotSentence = true;
               }
               if (obj?.type === "translate" && obj.phase === "answer") {
-                if (Array.isArray(obj.correctWords) && obj.correctWords.length > 0) {
+                if (
+                  Array.isArray(obj.correctWords) &&
+                  obj.correctWords.length > 0
+                ) {
                   tempCorrectWords = obj.correctWords.map(String);
                   setTCorrectWords(tempCorrectWords);
                 }
@@ -3289,7 +3305,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 }
                 gotAnswer = true;
               }
-              if (obj?.type === "translate" && obj.phase === "meta" && obj.hint) {
+              if (
+                obj?.type === "translate" &&
+                obj.phase === "meta" &&
+                obj.hint
+              ) {
                 setTHint(String(obj.hint).trim());
               }
             })
@@ -3299,13 +3319,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
       if (!gotSentence || !gotAnswer) throw new Error("incomplete-translate");
 
       // Build shuffled word bank
-      const answerLang = direction === "target-to-support" ? supportCode : targetLang;
+      const answerLang =
+        direction === "target-to-support" ? supportCode : targetLang;
       const distractors =
         tempDistractors.length > 0
           ? tempDistractors
           : buildFallbackDistractors(tempCorrectWords, answerLang);
 
-      if (repeatVariant && activeRepeatMode === "listening-target" && tempCorrectWords.length) {
+      if (
+        repeatVariant &&
+        activeRepeatMode === "listening-target" &&
+        tempCorrectWords.length
+      ) {
         setTSentence(tempCorrectWords.join(" "));
       }
 
@@ -3321,14 +3346,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTSentence("El gato es negro.");
           setTCorrectWords(["The", "cat", "is", "black"]);
           setTDistractors(["dog", "red", "big"]);
-          setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
+          setTWordBank(
+            shuffle(["The", "cat", "is", "black", "dog", "red", "big"])
+          );
           setTHint("Colors and animals vocabulary");
         } else {
           // English -> Spanish
           setTSentence("The cat is black.");
           setTCorrectWords(["El", "gato", "es", "negro"]);
           setTDistractors(["perro", "rojo", "grande"]);
-          setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
+          setTWordBank(
+            shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"])
+          );
           setTHint("Colors and animals vocabulary");
         }
       } else {
@@ -3337,19 +3366,27 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
           setTSentence("The cat is black.");
           setTCorrectWords(["El", "gato", "es", "negro"]);
           setTDistractors(["perro", "rojo", "grande"]);
-          setTWordBank(shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"]));
+          setTWordBank(
+            shuffle(["El", "gato", "es", "negro", "perro", "rojo", "grande"])
+          );
           setTHint("Vocabulario de colores y animales");
         } else {
           // Spanish -> English (when target is English)
           setTSentence("El gato es negro.");
           setTCorrectWords(["The", "cat", "is", "black"]);
           setTDistractors(["dog", "red", "big"]);
-          setTWordBank(shuffle(["The", "cat", "is", "black", "dog", "red", "big"]));
+          setTWordBank(
+            shuffle(["The", "cat", "is", "black", "dog", "red", "big"])
+          );
           setTHint("Vocabulario de colores y animales");
         }
       }
 
-      if (repeatVariant && activeRepeatMode === "listening-target" && tCorrectWords.length) {
+      if (
+        repeatVariant &&
+        activeRepeatMode === "listening-target" &&
+        tCorrectWords.length
+      ) {
         setTSentence(tCorrectWords.join(" "));
       }
     } finally {
@@ -3441,7 +3478,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     // First check: exact match (normalized)
     const normalizedUser = userWords.map((w) => norm(w));
     const normalizedCorrect = tCorrectWords.map((w) => norm(w));
-    let ok = normalizedUser.length === normalizedCorrect.length &&
+    let ok =
+      normalizedUser.length === normalizedCorrect.length &&
       normalizedUser.every((w, i) => w === normalizedCorrect[i]);
 
     // If not exact match, use LLM judge for flexible matching
@@ -4250,6 +4288,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- FILL UI ---- */}
         {mode === "fill" && (qFill || loadingQFill) ? (
           <VStack align="stretch" spacing={4}>
+            <Text fontSize="xl" fontWeight="bold" color="white">
+              {userLanguage === "es"
+                ? "Completa el espacio"
+                : "Fill in the blank"}
+            </Text>
             <Box
               bg="rgba(255, 255, 255, 0.02)"
               borderRadius="lg"
@@ -4282,32 +4325,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {qFill || (loadingQFill ? "…" : "")}
                   </Text>
                 </HStack>
-                {showTRFill && trFill ? (
-                  <Box
-                    pl={7}
-                    py={2}
-                    borderLeftWidth="3px"
-                    borderLeftColor="purple.500"
-                    bg="rgba(159, 122, 234, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      {trFill}
-                    </Text>
-                  </Box>
-                ) : null}
-                {hFill ? (
-                  <Box
-                    pl={7}
-                    py={2}
-                    borderLeftWidth="3px"
-                    borderLeftColor="cyan.500"
-                    bg="rgba(0, 206, 209, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      💡 {hFill}
-                    </Text>
-                  </Box>
-                ) : null}
               </VStack>
             </Box>
 
@@ -4375,6 +4392,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MC UI ---- */}
         {mode === "mc" && (qMC || loadingQMC) ? (
           <>
+            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+              {userLanguage === "es"
+                ? "Elige la respuesta correcta"
+                : "Choose the correct answer"}
+            </Text>
             {mcLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMcDragEnd}>
                 <VStack align="stretch" spacing={3}>
@@ -4406,38 +4428,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           {renderMcPrompt() || (loadingQMC ? "…" : "")}
                         </Text>
                       </HStack>
-                      {showTRMC && trMC ? (
-                        <Box
-                          pl={7}
-                          py={2}
-                          borderLeftWidth="3px"
-                          borderLeftColor="purple.500"
-                          bg="rgba(159, 122, 234, 0.05)"
-                        >
-                          <Text fontSize="sm" color="gray.400">
-                            {trMC}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      {hMC ? (
-                        <Box
-                          pl={7}
-                          py={2}
-                          borderLeftWidth="3px"
-                          borderLeftColor="cyan.500"
-                          bg="rgba(0, 206, 209, 0.05)"
-                        >
-                          <Text fontSize="sm" color="gray.400">
-                            💡 {hMC}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                        {t("practice_drag_drop_instruction") ||
-                          (userLanguage === "es"
-                            ? "Arrastra o selecciona la respuesta correcta al espacio en la frase."
-                            : "Drag or select the correct answer into the blank in the sentence.")}
-                      </Text>
                     </VStack>
                   </Box>
                   <Droppable droppableId="mc-bank" direction="horizontal">
@@ -4532,32 +4522,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         {qMC || (loadingQMC ? "…" : "")}
                       </Text>
                     </HStack>
-                    {showTRMC && trMC ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="purple.500"
-                        bg="rgba(159, 122, 234, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          {trMC}
-                        </Text>
-                      </Box>
-                    ) : null}
-                    {hMC ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="cyan.500"
-                        bg="rgba(0, 206, 209, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          💡 {hMC}
-                        </Text>
-                      </Box>
-                    ) : null}
                   </VStack>
                 </Box>
                 <Stack spacing={3} align="stretch">
@@ -4691,6 +4655,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MA UI ---- */}
         {mode === "ma" && (qMA || loadingQMA) ? (
           <>
+            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+              {userLanguage === "es"
+                ? "Selecciona todas las respuestas correctas"
+                : "Select all correct answers"}
+            </Text>
             {maLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMaDragEnd}>
                 <VStack align="stretch" spacing={3}>
@@ -4722,45 +4691,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                           {renderMaPrompt() || (loadingQMA ? "…" : "")}
                         </Text>
                       </HStack>
-                      {showTRMA && trMA ? (
-                        <Box
-                          pl={7}
-                          py={2}
-                          borderLeftWidth="3px"
-                          borderLeftColor="purple.500"
-                          bg="rgba(159, 122, 234, 0.05)"
-                        >
-                          <Text fontSize="sm" color="gray.400">
-                            {trMA}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      {hMA ? (
-                        <Box
-                          pl={7}
-                          py={2}
-                          borderLeftWidth="3px"
-                          borderLeftColor="cyan.500"
-                          bg="rgba(0, 206, 209, 0.05)"
-                        >
-                          <Text fontSize="sm" color="gray.400">
-                            💡 {hMA}
-                          </Text>
-                        </Box>
-                      ) : null}
-                      <Text
-                        fontSize="xs"
-                        color="gray.500"
-                        fontWeight="semibold"
-                      >
-                        {t("vocab_select_all_apply")}
-                      </Text>
-                      <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                        {t("practice_drag_drop_multi_instruction") ||
-                          (userLanguage === "es"
-                            ? "Arrastra o selecciona cada respuesta correcta a su espacio en la frase."
-                            : "Drag or select each correct answer into its place in the sentence.")}
-                      </Text>
                     </VStack>
                   </Box>
                   <Droppable droppableId="ma-bank" direction="horizontal">
@@ -4855,35 +4785,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         {qMA || (loadingQMA ? "…" : "")}
                       </Text>
                     </HStack>
-                    {showTRMA && trMA ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="purple.500"
-                        bg="rgba(159, 122, 234, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          {trMA}
-                        </Text>
-                      </Box>
-                    ) : null}
-                    {hMA ? (
-                      <Box
-                        pl={7}
-                        py={2}
-                        borderLeftWidth="3px"
-                        borderLeftColor="cyan.500"
-                        bg="rgba(0, 206, 209, 0.05)"
-                      >
-                        <Text fontSize="sm" color="gray.400">
-                          💡 {hMA}
-                        </Text>
-                      </Box>
-                    ) : null}
-                    <Text fontSize="xs" color="gray.500" fontWeight="semibold">
-                      {t("vocab_select_all_apply")}
-                    </Text>
                   </VStack>
                 </Box>
                 <Stack spacing={3} align="stretch">
@@ -5029,6 +4930,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- SPEAK UI ---- */}
         {mode === "speak" && (sTarget || loadingQSpeak) ? (
           <>
+            <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
+              {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
+            </Text>
             {loadingQSpeak ? (
               <Box textAlign="center" py={12}>
                 <RobotBuddyPro palette="ocean" variant="abstract" />
@@ -5040,44 +4944,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Box>
             ) : (
               <>
-                <Box
-                  bg="rgba(255, 255, 255, 0.02)"
-                  borderRadius="lg"
-                  borderWidth="1px"
-                  borderColor="whiteAlpha.100"
-                  p={5}
-                  mb={4}
-                >
-                  <VStack align="stretch" spacing={3}>
-                    <HStack align="start" spacing={2}>
-                      <CopyAllBtn
-                        q={`${sPrompt ? `${sPrompt}\n` : ""}${
-                          sStimulus || sTarget || ""
-                        }`}
-                        h={sHint}
-                        tr={sTranslation}
-                      />
-                      <VStack align="flex-start" spacing={2} flex="1">
-                        <Text fontSize="xs" color="gray.500" fontStyle="italic">
-                          {t("vocab_speak_instruction_label") ||
-                            (userLanguage === "es"
-                              ? "Sigue la indicación y di la frase en voz alta."
-                              : "Follow the prompt and say it aloud.")}
-                        </Text>
-                        {sPrompt && (
-                          <Text
-                            fontSize="lg"
-                            fontWeight="medium"
-                            lineHeight="tall"
-                          >
-                            {sPrompt}
-                          </Text>
-                        )}
-                      </VStack>
-                    </HStack>
-                  </VStack>
-                </Box>
-
                 <Box
                   border="1px solid rgba(255,255,255,0.18)"
                   rounded="xl"
@@ -5105,36 +4971,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     {sStimulus || sTarget || "…"}
                   </Text>
                 </Box>
-
-                {sHint ? (
-                  <Box
-                    pl={7}
-                    py={2}
-                    mt={3}
-                    borderLeftWidth="3px"
-                    borderLeftColor="cyan.500"
-                    bg="rgba(0, 206, 209, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      💡 {sHint}
-                    </Text>
-                  </Box>
-                ) : null}
-
-                {showTRSpeak ? (
-                  <Box
-                    pl={7}
-                    py={2}
-                    mt={2}
-                    borderLeftWidth="3px"
-                    borderLeftColor="purple.500"
-                    bg="rgba(159, 122, 234, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      {sTranslation}
-                    </Text>
-                  </Box>
-                ) : null}
               </>
             )}
 
@@ -5283,41 +5119,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MATCH UI (Drag & Drop) ---- */}
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <Box
-              bg="rgba(255, 255, 255, 0.02)"
-              borderRadius="lg"
-              borderWidth="1px"
-              borderColor="whiteAlpha.100"
-              p={5}
-              mb={4}
-            >
-              <VStack align="stretch" spacing={3}>
-                <HStack align="start" spacing={2}>
-                  <CopyAllBtn q={mStem} h={mHint} tr="" />
-                  <Text
-                    fontSize="lg"
-                    fontWeight="medium"
-                    flex="1"
-                    lineHeight="tall"
-                  >
-                    {mStem || (loadingMG ? "…" : "")}
-                  </Text>
-                </HStack>
-                {!!mHint && (
-                  <Box
-                    pl={7}
-                    py={2}
-                    borderLeftWidth="3px"
-                    borderLeftColor="cyan.500"
-                    bg="rgba(0, 206, 209, 0.05)"
-                  >
-                    <Text fontSize="sm" color="gray.400">
-                      💡 {mHint}
-                    </Text>
-                  </Box>
-                )}
-              </VStack>
-            </Box>
+            <Text fontSize="xl" fontWeight="bold" color="white" mb={4}>
+              {userLanguage === "es"
+                ? "Empareja las palabras"
+                : "Match the words"}
+            </Text>
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
