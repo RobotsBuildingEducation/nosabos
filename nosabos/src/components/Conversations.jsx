@@ -288,7 +288,13 @@ function AlignedBubble({
               size="xs"
               variant="ghost"
               colorScheme="cyan"
-              icon={isReplaying ? <Spinner size="xs" /> : <RiVolumeUpLine size={14} />}
+              icon={
+                isReplaying ? (
+                  <Spinner size="xs" />
+                ) : (
+                  <RiVolumeUpLine size={14} />
+                )
+              }
               onClick={onReplay}
               isDisabled={isReplaying}
               aria-label={replayLabel || "Replay"}
@@ -589,8 +595,10 @@ export default function Conversations({
 
   const normalizeSupportLang = (raw) => {
     const code = String(raw || "").toLowerCase();
-    if (code === "es" || code.startsWith("es-") || code === "spanish") return "es";
-    if (code === "en" || code.startsWith("en-") || code === "english") return "en";
+    if (code === "es" || code.startsWith("es-") || code === "spanish")
+      return "es";
+    if (code === "en" || code.startsWith("en-") || code === "english")
+      return "en";
     return undefined;
   };
 
@@ -995,7 +1003,8 @@ export default function Conversations({
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
     } else {
-      strict = "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
+      strict =
+        "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
     }
 
     // Proficiency level guidance
