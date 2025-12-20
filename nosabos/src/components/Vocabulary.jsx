@@ -5560,6 +5560,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}
               isSubmitting={loadingTJ}
@@ -5586,6 +5587,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
+              canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}
               isSubmitting={loadingTJ}
