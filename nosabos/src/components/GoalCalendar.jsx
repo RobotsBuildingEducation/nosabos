@@ -14,6 +14,10 @@ const MONTHS_ES = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
 ];
 
+// Gradient for completed days
+const COMPLETED_GRADIENT = "linear-gradient(135deg, #14b8a6 0%, #06b6d4 50%, #0ea5e9 100%)";
+const COMPLETED_GRADIENT_LEGEND = "linear-gradient(135deg, #14b8a6, #0ea5e9)";
+
 /**
  * Formats a date as YYYY-MM-DD in local timezone
  */
@@ -38,6 +42,7 @@ function formatDateKey(date) {
  * @param {string} [props.size="md"] - Size variant: "sm", "md", "lg"
  * @param {string} [props.completedLabel] - Custom label for "Completed" legend
  * @param {string} [props.incompleteLabel] - Custom label for "Incomplete" legend
+ * @param {string} [props.variant="dark"] - Color variant: "dark" or "light"
  */
 export default function GoalCalendar({
   completedDates = [],
@@ -50,6 +55,7 @@ export default function GoalCalendar({
   size = "md",
   completedLabel,
   incompleteLabel,
+  variant = "dark",
 }) {
   const today = useMemo(() => new Date(), []);
   const displayYear = year ?? today.getFullYear();
@@ -125,6 +131,20 @@ export default function GoalCalendar({
   };
   const config = sizeConfig[size] || sizeConfig.md;
 
+  // Color configurations based on variant
+  const isLight = variant === "light";
+  const colors = {
+    headerText: isLight ? "white" : "gray.100",
+    weekdayText: isLight ? "whiteAlpha.700" : "gray.400",
+    incompleteBg: isLight ? "whiteAlpha.300" : "gray.700",
+    incompleteText: isLight ? "whiteAlpha.800" : "gray.300",
+    futureText: isLight ? "whiteAlpha.400" : "gray.600",
+    legendText: isLight ? "whiteAlpha.800" : "gray.400",
+    legendIncompleteBg: isLight ? "whiteAlpha.300" : "gray.700",
+    todayBorder: isLight ? "yellow.300" : "teal.300",
+    navButtonScheme: isLight ? "whiteAlpha" : "teal",
+  };
+
   return (
     <VStack spacing={3} w="100%">
       {/* Month/Year Header with Navigation */}
@@ -134,7 +154,8 @@ export default function GoalCalendar({
             icon={<ChevronLeftIcon />}
             size="sm"
             variant="ghost"
-            colorScheme="teal"
+            colorScheme={colors.navButtonScheme}
+            color={colors.headerText}
             onClick={handlePrevMonth}
             aria-label={lang === "es" ? "Mes anterior" : "Previous month"}
           />
@@ -145,7 +166,7 @@ export default function GoalCalendar({
         <Text
           fontWeight="semibold"
           fontSize={config.headerFontSize}
-          color="gray.100"
+          color={colors.headerText}
         >
           {months[displayMonth]} {displayYear}
         </Text>
@@ -155,7 +176,8 @@ export default function GoalCalendar({
             icon={<ChevronRightIcon />}
             size="sm"
             variant="ghost"
-            colorScheme="teal"
+            colorScheme={colors.navButtonScheme}
+            color={colors.headerText}
             onClick={handleNextMonth}
             aria-label={lang === "es" ? "Mes siguiente" : "Next month"}
           />
@@ -172,7 +194,7 @@ export default function GoalCalendar({
             textAlign="center"
             fontSize="xs"
             fontWeight="medium"
-            color="gray.400"
+            color={colors.weekdayText}
             py={1}
           >
             {day}
@@ -198,10 +220,10 @@ export default function GoalCalendar({
               day === null
                 ? "transparent"
                 : isCompleted
-                ? "teal.500"
+                ? COMPLETED_GRADIENT
                 : isFuture
                 ? "transparent"
-                : "gray.700"
+                : colors.incompleteBg
             }
             color={
               day === null
@@ -209,11 +231,12 @@ export default function GoalCalendar({
                 : isCompleted
                 ? "white"
                 : isFuture
-                ? "gray.600"
-                : "gray.300"
+                ? colors.futureText
+                : colors.incompleteText
             }
             border={isToday ? "2px solid" : "none"}
-            borderColor={isToday ? "teal.300" : "transparent"}
+            borderColor={isToday ? colors.todayBorder : "transparent"}
+            boxShadow={isCompleted ? "0 2px 8px rgba(20, 184, 166, 0.4)" : "none"}
             transition="all 0.2s"
             _hover={
               day !== null && !isFuture
@@ -229,14 +252,14 @@ export default function GoalCalendar({
       {/* Legend */}
       <HStack spacing={4} pt={2} justify="center">
         <HStack spacing={1}>
-          <Box w="12px" h="12px" borderRadius="sm" bg="teal.500" />
-          <Text fontSize="xs" color="gray.400">
+          <Box w="12px" h="12px" borderRadius="sm" bg={COMPLETED_GRADIENT_LEGEND} />
+          <Text fontSize="xs" color={colors.legendText}>
             {completedLabel || (lang === "es" ? "Completado" : "Completed")}
           </Text>
         </HStack>
         <HStack spacing={1}>
-          <Box w="12px" h="12px" borderRadius="sm" bg="gray.700" />
-          <Text fontSize="xs" color="gray.400">
+          <Box w="12px" h="12px" borderRadius="sm" bg={colors.legendIncompleteBg} />
+          <Text fontSize="xs" color={colors.legendText}>
             {incompleteLabel || (lang === "es" ? "Pendiente" : "Incomplete")}
           </Text>
         </HStack>

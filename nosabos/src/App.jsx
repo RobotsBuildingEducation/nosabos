@@ -73,7 +73,7 @@ import {
   LuKeyRound,
 } from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
-import { FiClock, FiPause, FiPlay } from "react-icons/fi";
+import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -662,23 +662,28 @@ function TopBar({
         spacing={{ base: 2, md: 3 }}
         backdropFilter="blur(4px)"
       >
-        {/* LEFT: Daily WaveBar + % */}
+        {/* LEFT: Daily Goal Button + WaveBar */}
         <HStack
           spacing={{ base: 2, md: 3 }}
           minW={0}
           flex="1 1 auto"
           align="center"
         >
-          <Text
-            fontSize="sm"
-            cursor="pointer"
-            _hover={{ color: "teal.300", textDecoration: "underline" }}
+          <Button
+            size="sm"
+            variant="outline"
+            colorScheme="teal"
+            leftIcon={<FiTarget />}
             onClick={onOpenDailyGoalModal}
-            transition="color 0.2s"
+            borderColor="teal.600"
+            _hover={{ bg: "teal.900", borderColor: "teal.400" }}
+            px={{ base: 2, md: 3 }}
           >
-            {translations[appLanguage]["dailyGoalProgress"]}
-          </Text>
-          <Box w={{ base: "120px", sm: "150px", md: "180px" }}>
+            <Text display={{ base: "none", sm: "inline" }}>
+              {translations[appLanguage]["dailyGoalProgress"]}
+            </Text>
+          </Button>
+          <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
             <WaveBar value={dailyPct} />
           </Box>
           <Box
@@ -935,31 +940,6 @@ function TopBar({
                   </Slider>
                   <Text fontSize="xs" opacity={0.6} mt={2}>
                     {vadHint}
-                  </Text>
-                </Box>
-
-                {/* Daily XP Goal (part of single Save) */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={1}>
-                    {appLanguage === "es"
-                      ? "Meta diaria de XP"
-                      : "Daily XP goal"}
-                  </Text>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={goalDraft}
-                    onChange={(e) => handleDailyGoalChange(e.target.value)}
-                    bg="gray.700"
-                    w="160px"
-                    placeholder={
-                      appLanguage === "es" ? "XP por día" : "XP per day"
-                    }
-                  />
-                  <Text fontSize="xs" opacity={0.7} mt={1}>
-                    {appLanguage === "es"
-                      ? "Cada nivel equivale a 100 XP. Cambiar este valor no reinicia tu progreso de hoy."
-                      : "Each level is 100 XP. Changing this won’t reset today’s progress or timer."}
                   </Text>
                 </Box>
               </VStack>
@@ -3975,13 +3955,13 @@ export default function App() {
 
               {/* Calendar showing completed days including today */}
               <Box
-                bg="whiteAlpha.200"
+                bg="whiteAlpha.150"
                 borderRadius="xl"
                 py={4}
                 px={4}
                 width="100%"
-                border="2px solid"
-                borderColor="whiteAlpha.400"
+                border="1px solid"
+                borderColor="whiteAlpha.300"
               >
                 <GoalCalendar
                   completedDates={(() => {
@@ -3997,6 +3977,7 @@ export default function App() {
                   showNavigation={false}
                   highlightToday={true}
                   size="sm"
+                  variant="light"
                 />
               </Box>
 
