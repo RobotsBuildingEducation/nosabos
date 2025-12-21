@@ -96,6 +96,7 @@ import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
+import GoalCalendar from "./components/GoalCalendar";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
@@ -395,6 +396,8 @@ function TopBar({
   formatTimer,
   onOpenTimerModal,
   onTogglePauseTimer,
+  // 🆕 daily goal modal props
+  onOpenDailyGoalModal,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -565,6 +568,7 @@ function TopBar({
   const [dailyGoalXp, setDailyGoalXp] = useState(0);
   const [dailyXp, setDailyXp] = useState(0);
   const [dailyResetAt, setDailyResetAt] = useState(null);
+  const [completedGoalDates, setCompletedGoalDates] = useState([]);
 
   // Keep a local draft for settings input
   const [goalDraft, setGoalDraft] = useState(0);
@@ -601,6 +605,9 @@ function TopBar({
       const goal = Number(data?.dailyGoalXp || 0);
       let dxp = Number(data?.dailyXp || 0);
       let resetISO = data?.dailyResetAt || null;
+      const completedDates = Array.isArray(data?.completedGoalDates)
+        ? data.completedGoalDates
+        : [];
 
       const now = Date.now();
       const expired = !resetISO || now >= new Date(resetISO).getTime();
@@ -619,6 +626,7 @@ function TopBar({
       setGoalDraft(goal);
       setDailyXp(dxp);
       setDailyResetAt(resetISO);
+      setCompletedGoalDates(completedDates);
     });
     return () => unsub();
   }, [activeNpub]);
@@ -661,7 +669,13 @@ function TopBar({
           flex="1 1 auto"
           align="center"
         >
-          <Text fontSize="sm">
+          <Text
+            fontSize="sm"
+            cursor="pointer"
+            _hover={{ color: "teal.300", textDecoration: "underline" }}
+            onClick={onOpenDailyGoalModal}
+            transition="color 0.2s"
+          >
             {translations[appLanguage]["dailyGoalProgress"]}
           </Text>
           <Box w={{ base: "120px", sm: "150px", md: "180px" }}>
@@ -3548,6 +3562,7 @@ export default function App() {
         formatTimer={formatTimer}
         onOpenTimerModal={() => setTimerModalOpen(true)}
         onTogglePauseTimer={handleTogglePauseTimer}
+        onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
       />
 
       <TeamsDrawer
@@ -3807,6 +3822,7 @@ export default function App() {
         npub={activeNpub}
         lang={appLanguage}
         t={t}
+        completedGoalDates={user?.completedGoalDates || []}
       />
 
       <SessionTimerModal
@@ -3955,6 +3971,33 @@ export default function App() {
                       : "Keep the streak going and come back tomorrow for a new goal!"}
                   </Text>
                 </VStack>
+              </Box>
+
+              {/* Calendar showing completed days including today */}
+              <Box
+                bg="whiteAlpha.200"
+                borderRadius="xl"
+                py={4}
+                px={4}
+                width="100%"
+                border="2px solid"
+                borderColor="whiteAlpha.400"
+              >
+                <GoalCalendar
+                  completedDates={(() => {
+                    // Include today's date in the completed dates for the celebration
+                    const today = new Date();
+                    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                    const existingDates = user?.completedGoalDates || [];
+                    return existingDates.includes(todayKey)
+                      ? existingDates
+                      : [...existingDates, todayKey];
+                  })()}
+                  lang={appLanguage}
+                  showNavigation={false}
+                  highlightToday={true}
+                  size="sm"
+                />
               </Box>
 
               <Button

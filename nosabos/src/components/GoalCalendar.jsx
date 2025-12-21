@@ -1,0 +1,246 @@
+import React, { useMemo } from "react";
+import { Box, Grid, Text, VStack, HStack, IconButton } from "@chakra-ui/react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+
+const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+const MONTHS_EN = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+const MONTHS_ES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+
+/**
+ * Formats a date as YYYY-MM-DD in local timezone
+ */
+function formatDateKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * GoalCalendar - A visual calendar showing completed goal days
+ *
+ * @param {Object} props
+ * @param {string[]} props.completedDates - Array of completed date strings (YYYY-MM-DD)
+ * @param {string} [props.lang="en"] - Language for weekday/month names
+ * @param {number} [props.year] - Year to display (defaults to current)
+ * @param {number} [props.month] - Month to display 0-11 (defaults to current)
+ * @param {function} [props.onMonthChange] - Callback when month changes (year, month)
+ * @param {boolean} [props.showNavigation=true] - Show month navigation arrows
+ * @param {boolean} [props.highlightToday=true] - Highlight current day
+ * @param {string} [props.size="md"] - Size variant: "sm", "md", "lg"
+ * @param {string} [props.completedLabel] - Custom label for "Completed" legend
+ * @param {string} [props.incompleteLabel] - Custom label for "Incomplete" legend
+ */
+export default function GoalCalendar({
+  completedDates = [],
+  lang = "en",
+  year,
+  month,
+  onMonthChange,
+  showNavigation = true,
+  highlightToday = true,
+  size = "md",
+  completedLabel,
+  incompleteLabel,
+}) {
+  const today = useMemo(() => new Date(), []);
+  const displayYear = year ?? today.getFullYear();
+  const displayMonth = month ?? today.getMonth();
+
+  const weekdays = lang === "es" ? WEEKDAYS_ES : WEEKDAYS_EN;
+  const months = lang === "es" ? MONTHS_ES : MONTHS_EN;
+
+  // Set of completed dates for O(1) lookup
+  const completedSet = useMemo(
+    () => new Set(completedDates || []),
+    [completedDates]
+  );
+
+  // Calculate calendar grid
+  const calendarDays = useMemo(() => {
+    const firstDay = new Date(displayYear, displayMonth, 1);
+    const lastDay = new Date(displayYear, displayMonth + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startDayOfWeek = firstDay.getDay();
+
+    const days = [];
+
+    // Add empty cells for days before the first of the month
+    for (let i = 0; i < startDayOfWeek; i++) {
+      days.push({ day: null, key: `empty-${i}` });
+    }
+
+    // Add actual days
+    for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(displayYear, displayMonth, day);
+      const dateKey = formatDateKey(date);
+      const isCompleted = completedSet.has(dateKey);
+      const isToday =
+        highlightToday &&
+        date.getDate() === today.getDate() &&
+        date.getMonth() === today.getMonth() &&
+        date.getFullYear() === today.getFullYear();
+      const isFuture = date > today;
+
+      days.push({
+        day,
+        dateKey,
+        isCompleted,
+        isToday,
+        isFuture,
+        key: dateKey,
+      });
+    }
+
+    return days;
+  }, [displayYear, displayMonth, completedSet, today, highlightToday]);
+
+  const handlePrevMonth = () => {
+    if (!onMonthChange) return;
+    const newMonth = displayMonth === 0 ? 11 : displayMonth - 1;
+    const newYear = displayMonth === 0 ? displayYear - 1 : displayYear;
+    onMonthChange(newYear, newMonth);
+  };
+
+  const handleNextMonth = () => {
+    if (!onMonthChange) return;
+    const newMonth = displayMonth === 11 ? 0 : displayMonth + 1;
+    const newYear = displayMonth === 11 ? displayYear + 1 : displayYear;
+    onMonthChange(newYear, newMonth);
+  };
+
+  // Size configurations
+  const sizeConfig = {
+    sm: { cellSize: "28px", fontSize: "xs", headerFontSize: "sm", gap: 1 },
+    md: { cellSize: "36px", fontSize: "sm", headerFontSize: "md", gap: 1 },
+    lg: { cellSize: "44px", fontSize: "md", headerFontSize: "lg", gap: 2 },
+  };
+  const config = sizeConfig[size] || sizeConfig.md;
+
+  return (
+    <VStack spacing={3} w="100%">
+      {/* Month/Year Header with Navigation */}
+      <HStack justify="space-between" w="100%" px={1}>
+        {showNavigation && onMonthChange ? (
+          <IconButton
+            icon={<ChevronLeftIcon />}
+            size="sm"
+            variant="ghost"
+            colorScheme="teal"
+            onClick={handlePrevMonth}
+            aria-label={lang === "es" ? "Mes anterior" : "Previous month"}
+          />
+        ) : (
+          <Box w="32px" />
+        )}
+
+        <Text
+          fontWeight="semibold"
+          fontSize={config.headerFontSize}
+          color="gray.100"
+        >
+          {months[displayMonth]} {displayYear}
+        </Text>
+
+        {showNavigation && onMonthChange ? (
+          <IconButton
+            icon={<ChevronRightIcon />}
+            size="sm"
+            variant="ghost"
+            colorScheme="teal"
+            onClick={handleNextMonth}
+            aria-label={lang === "es" ? "Mes siguiente" : "Next month"}
+          />
+        ) : (
+          <Box w="32px" />
+        )}
+      </HStack>
+
+      {/* Weekday Headers */}
+      <Grid templateColumns="repeat(7, 1fr)" gap={config.gap} w="100%">
+        {weekdays.map((day) => (
+          <Box
+            key={day}
+            textAlign="center"
+            fontSize="xs"
+            fontWeight="medium"
+            color="gray.400"
+            py={1}
+          >
+            {day}
+          </Box>
+        ))}
+      </Grid>
+
+      {/* Calendar Grid */}
+      <Grid templateColumns="repeat(7, 1fr)" gap={config.gap} w="100%">
+        {calendarDays.map(({ day, isCompleted, isToday, isFuture, key }) => (
+          <Box
+            key={key}
+            w={config.cellSize}
+            h={config.cellSize}
+            mx="auto"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="md"
+            fontSize={config.fontSize}
+            fontWeight={isToday ? "bold" : "normal"}
+            bg={
+              day === null
+                ? "transparent"
+                : isCompleted
+                ? "teal.500"
+                : isFuture
+                ? "transparent"
+                : "gray.700"
+            }
+            color={
+              day === null
+                ? "transparent"
+                : isCompleted
+                ? "white"
+                : isFuture
+                ? "gray.600"
+                : "gray.300"
+            }
+            border={isToday ? "2px solid" : "none"}
+            borderColor={isToday ? "teal.300" : "transparent"}
+            transition="all 0.2s"
+            _hover={
+              day !== null && !isFuture
+                ? { transform: "scale(1.1)" }
+                : undefined
+            }
+          >
+            {day}
+          </Box>
+        ))}
+      </Grid>
+
+      {/* Legend */}
+      <HStack spacing={4} pt={2} justify="center">
+        <HStack spacing={1}>
+          <Box w="12px" h="12px" borderRadius="sm" bg="teal.500" />
+          <Text fontSize="xs" color="gray.400">
+            {completedLabel || (lang === "es" ? "Completado" : "Completed")}
+          </Text>
+        </HStack>
+        <HStack spacing={1}>
+          <Box w="12px" h="12px" borderRadius="sm" bg="gray.700" />
+          <Text fontSize="xs" color="gray.400">
+            {incompleteLabel || (lang === "es" ? "Pendiente" : "Incomplete")}
+          </Text>
+        </HStack>
+      </HStack>
+    </VStack>
+  );
+}
