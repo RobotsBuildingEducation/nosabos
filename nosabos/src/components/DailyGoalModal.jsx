@@ -44,6 +44,7 @@ export default function DailyGoalModal({
   t,
   ui = {},
   completedGoalDates = [],
+  startDate,
 }) {
   const resolvedLang = lang === "es" ? "es" : "en";
   const resolvedTranslations = useMemo(
@@ -313,6 +314,7 @@ export default function DailyGoalModal({
                   showNavigation={true}
                   highlightToday={true}
                   size="md"
+                  startDate={startDate}
                 />
               </Box>
             </Box>

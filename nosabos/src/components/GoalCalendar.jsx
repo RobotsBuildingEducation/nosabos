@@ -43,6 +43,7 @@ function formatDateKey(date) {
  * @param {string} [props.completedLabel] - Custom label for "Completed" legend
  * @param {string} [props.incompleteLabel] - Custom label for "Incomplete" legend
  * @param {string} [props.variant="dark"] - Color variant: "dark" or "light"
+ * @param {string|Date} [props.startDate] - First date when goals could be tracked (account creation)
  */
 export default function GoalCalendar({
   completedDates = [],
@@ -56,13 +57,26 @@ export default function GoalCalendar({
   completedLabel,
   incompleteLabel,
   variant = "dark",
+  startDate,
 }) {
-  const today = useMemo(() => new Date(), []);
+  const today = useMemo(() => {
+    const now = new Date();
+    // Normalize to start of day for comparison
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }, []);
   const displayYear = year ?? today.getFullYear();
   const displayMonth = month ?? today.getMonth();
 
   const weekdays = lang === "es" ? WEEKDAYS_ES : WEEKDAYS_EN;
   const months = lang === "es" ? MONTHS_ES : MONTHS_EN;
+
+  // Parse startDate if provided
+  const goalStartDate = useMemo(() => {
+    if (!startDate) return null;
+    const parsed = typeof startDate === "string" ? new Date(startDate) : startDate;
+    // Normalize to start of day
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  }, [startDate]);
 
   // Set of completed dates for O(1) lookup
   const completedSet = useMemo(
@@ -95,6 +109,8 @@ export default function GoalCalendar({
         date.getMonth() === today.getMonth() &&
         date.getFullYear() === today.getFullYear();
       const isFuture = date > today;
+      // Days before goal tracking started are "unavailable"
+      const isBeforeStart = goalStartDate && date < goalStartDate;
 
       days.push({
         day,
@@ -102,12 +118,13 @@ export default function GoalCalendar({
         isCompleted,
         isToday,
         isFuture,
+        isBeforeStart,
         key: dateKey,
       });
     }
 
     return days;
-  }, [displayYear, displayMonth, completedSet, today, highlightToday]);
+  }, [displayYear, displayMonth, completedSet, today, highlightToday, goalStartDate]);
 
   const handlePrevMonth = () => {
     if (!onMonthChange) return;
@@ -204,49 +221,57 @@ export default function GoalCalendar({
 
       {/* Calendar Grid */}
       <Grid templateColumns="repeat(7, 1fr)" gap={config.gap} w="100%">
-        {calendarDays.map(({ day, isCompleted, isToday, isFuture, key }) => (
-          <Box
-            key={key}
-            w={config.cellSize}
-            h={config.cellSize}
-            mx="auto"
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            borderRadius="md"
-            fontSize={config.fontSize}
-            fontWeight={isToday ? "bold" : "normal"}
-            bg={
-              day === null
-                ? "transparent"
-                : isCompleted
-                ? COMPLETED_GRADIENT
-                : isFuture
-                ? "transparent"
-                : colors.incompleteBg
-            }
-            color={
-              day === null
-                ? "transparent"
-                : isCompleted
-                ? "white"
-                : isFuture
-                ? colors.futureText
-                : colors.incompleteText
-            }
-            border={isToday ? "2px solid" : "none"}
-            borderColor={isToday ? colors.todayBorder : "transparent"}
-            boxShadow={isCompleted ? "0 2px 8px rgba(20, 184, 166, 0.4)" : "none"}
-            transition="all 0.2s"
-            _hover={
-              day !== null && !isFuture
-                ? { transform: "scale(1.1)" }
-                : undefined
-            }
-          >
-            {day}
-          </Box>
-        ))}
+        {calendarDays.map(({ day, isCompleted, isToday, isFuture, isBeforeStart, key }) => {
+          // Determine background:
+          // - null days (padding) = transparent
+          // - completed = gradient
+          // - before start date = transparent (unavailable)
+          // - future or today/past after start = incomplete (gray)
+          const getBg = () => {
+            if (day === null) return "transparent";
+            if (isCompleted) return COMPLETED_GRADIENT;
+            if (isBeforeStart) return "transparent";
+            return colors.incompleteBg; // future days and incomplete past days
+          };
+
+          // Determine text color:
+          // - null days = transparent
+          // - completed = white
+          // - before start = faded (unavailable)
+          // - future or incomplete = normal incomplete color
+          const getColor = () => {
+            if (day === null) return "transparent";
+            if (isCompleted) return "white";
+            if (isBeforeStart) return colors.futureText; // faded for unavailable
+            return colors.incompleteText;
+          };
+
+          const isClickable = day !== null && !isBeforeStart;
+
+          return (
+            <Box
+              key={key}
+              w={config.cellSize}
+              h={config.cellSize}
+              mx="auto"
+              display="flex"
+              alignItems="center"
+              justifyContent="center"
+              borderRadius="md"
+              fontSize={config.fontSize}
+              fontWeight={isToday ? "bold" : "normal"}
+              bg={getBg()}
+              color={getColor()}
+              border={isToday ? "2px solid" : "none"}
+              borderColor={isToday ? colors.todayBorder : "transparent"}
+              boxShadow={isCompleted ? "0 2px 8px rgba(20, 184, 166, 0.4)" : "none"}
+              transition="all 0.2s"
+              _hover={isClickable ? { transform: "scale(1.1)" } : undefined}
+            >
+              {day}
+            </Box>
+          );
+        })}
       </Grid>
 
       {/* Legend */}

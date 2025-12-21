@@ -3803,6 +3803,7 @@ export default function App() {
         lang={appLanguage}
         t={t}
         completedGoalDates={user?.completedGoalDates || []}
+        startDate={user?.createdAt}
       />
 
       <SessionTimerModal
@@ -3978,6 +3979,7 @@ export default function App() {
                   highlightToday={true}
                   size="sm"
                   variant="light"
+                  startDate={user?.createdAt}
                 />
               </Box>
 
