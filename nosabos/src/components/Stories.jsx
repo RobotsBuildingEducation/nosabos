@@ -1732,8 +1732,7 @@ export default function StoryMode({
                                   size="xs"
                                   aria-label={`Play ${sentence.character || "line"}`}
                                   icon={renderSpeakerIcon(
-                                    isThisLinePlaying &&
-                                      (isPlayingTarget || isSynthesizingTarget)
+                                    isThisLinePlaying && isSynthesizingTarget
                                   )}
                                   flexShrink={0}
                                   mt={1}
