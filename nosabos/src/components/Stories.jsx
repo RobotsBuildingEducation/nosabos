@@ -442,6 +442,60 @@ export default function StoryMode({
     };
   }, []);
 
+  /* ------------------------- Character Voice Mapping ------------------------- */
+  // Voices categorized by typical sound
+  const MASCULINE_VOICES = ["echo", "verse", "ash", "cedar"];
+  const FEMININE_VOICES = ["shimmer", "coral", "ballad", "sage", "marin"];
+
+  // Common name patterns (covers Spanish, English, Portuguese, French, Italian)
+  const FEMININE_NAME_PATTERNS = [
+    /a$/i, // Maria, Elena, Sofia, Ana, Laura
+    /^mar[iy]/i, // Maria, Marie, Mary
+    /^ana/i,
+    /^sofia/i,
+    /^elena/i,
+    /^carmen/i,
+    /^rosa/i,
+    /^lucia/i,
+    /^isabel/i,
+  ];
+
+  // Build a stable voice mapping for characters in the current story
+  const characterVoiceMap = useMemo(() => {
+    const map = new Map();
+    if (!storyData?.sentences) return map;
+
+    const characters = [
+      ...new Set(
+        storyData.sentences
+          .map((s) => s.character)
+          .filter(Boolean)
+      ),
+    ];
+
+    // Shuffle voice arrays for variety between stories
+    const shuffledMasc = [...MASCULINE_VOICES].sort(() => Math.random() - 0.5);
+    const shuffledFem = [...FEMININE_VOICES].sort(() => Math.random() - 0.5);
+    let mascIdx = 0;
+    let femIdx = 0;
+
+    characters.forEach((name) => {
+      const isFeminine = FEMININE_NAME_PATTERNS.some((pattern) =>
+        pattern.test(name)
+      );
+
+      if (isFeminine) {
+        map.set(name, shuffledFem[femIdx % shuffledFem.length]);
+        femIdx++;
+      } else {
+        map.set(name, shuffledMasc[mascIdx % shuffledMasc.length]);
+        mascIdx++;
+      }
+    });
+
+    return map;
+  }, [storyData?.sentences]);
+
   // pseudo alignment based on duration
   function buildWordTimeline(tokens, totalDurationSec) {
     const wordTokens = tokens.filter((t) => t.isWord);
@@ -1065,6 +1119,7 @@ export default function StoryMode({
       onStart = () => {},
       onEnd = () => {},
       setSynthesizing,
+      voice = null,
     } = {}
   ) => {
     try {
@@ -1086,7 +1141,7 @@ export default function StoryMode({
       const player = await getTTSPlayer({
         text,
         langTag,
-        voice: getRandomVoice(),
+        voice: voice || getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       currentAudioUrlRef.current = player.audioUrl;
@@ -1159,7 +1214,7 @@ export default function StoryMode({
     }
   };
 
-  const playTargetTTS = async (text) => {
+  const playTargetTTS = async (text, voice = null) => {
     if (!text) return;
     stopAllAudio();
     setIsPlayingTarget(true);
@@ -1168,6 +1223,7 @@ export default function StoryMode({
         alignToText: false,
         onEnd: () => setIsPlayingTarget(false),
         setSynthesizing: setIsSynthesizingTarget,
+        voice,
       });
     } catch {
       stopAllAudio();
@@ -1707,6 +1763,9 @@ export default function StoryMode({
                         {storyData.sentences.map((sentence, idx) => {
                           const isLeft = idx % 2 === 0;
                           const isThisLinePlaying = playingLineIndex === idx;
+                          const characterVoice = sentence.character
+                            ? characterVoiceMap.get(sentence.character)
+                            : null;
                           return (
                             <Flex
                               key={idx}
@@ -1721,9 +1780,10 @@ export default function StoryMode({
                                 <IconButton
                                   onClick={() => {
                                     setPlayingLineIndex(idx);
-                                    playTargetTTS(sentence.tgt).finally(() =>
-                                      setPlayingLineIndex(null)
-                                    );
+                                    playTargetTTS(
+                                      sentence.tgt,
+                                      characterVoice
+                                    ).finally(() => setPlayingLineIndex(null));
                                   }}
                                   variant="outline"
                                   borderColor="rgba(255, 255, 255, 0.3)"
