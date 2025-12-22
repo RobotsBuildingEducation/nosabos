@@ -669,20 +669,15 @@ function TopBar({
           flex="1 1 auto"
           align="center"
         >
-          <Button
+          <IconButton
             size="sm"
             variant="outline"
             colorScheme="teal"
-            leftIcon={<FiTarget />}
+            icon={<FiTarget />}
             onClick={onOpenDailyGoalModal}
             borderColor="teal.600"
-            _hover={{ bg: "teal.900", borderColor: "teal.400" }}
             px={{ base: 2, md: 3 }}
-          >
-            <Text display={{ base: "none", sm: "inline" }}>
-              {translations[appLanguage]["dailyGoalProgress"]}
-            </Text>
-          </Button>
+          />
           <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
             <WaveBar value={dailyPct} />
           </Box>
@@ -890,13 +885,11 @@ function TopBar({
                   </Text>
                   <Input
                     value={voicePersona}
-                    onChange={(e) =>
-                      {
-                        const next = e.target.value.slice(0, 240);
-                        setVoicePersona(next);
-                        persistSettings({ voicePersona: next });
-                      }
-                    }
+                    onChange={(e) => {
+                      const next = e.target.value.slice(0, 240);
+                      setVoicePersona(next);
+                      persistSettings({ voicePersona: next });
+                    }}
                     bg="gray.700"
                     placeholder={
                       (t.ra_persona_placeholder &&
@@ -3968,7 +3961,12 @@ export default function App() {
                   completedDates={(() => {
                     // Include today's date in the completed dates for the celebration
                     const today = new Date();
-                    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                    const todayKey = `${today.getFullYear()}-${String(
+                      today.getMonth() + 1
+                    ).padStart(2, "0")}-${String(today.getDate()).padStart(
+                      2,
+                      "0"
+                    )}`;
                     const existingDates = user?.completedGoalDates || [];
                     return existingDates.includes(todayKey)
                       ? existingDates

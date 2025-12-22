@@ -30,7 +30,10 @@ export default function TeamsDrawer({
 }) {
   const [selectedTab, setSelectedTab] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const t = useMemo(() => overrideTranslations || translations[userLanguage] || translations.en, [overrideTranslations, userLanguage]);
+  const t = useMemo(
+    () => overrideTranslations || translations[userLanguage] || translations.en,
+    [overrideTranslations, userLanguage]
+  );
 
   useEffect(() => {
     if (!isOpen) {
@@ -76,19 +79,31 @@ export default function TeamsDrawer({
             <TabList mb={4} borderColor="whiteAlpha.200">
               <Tab
                 color="gray.300"
-                _selected={{ color: "white", borderColor: "purple.400", bg: "whiteAlpha.200" }}
+                _selected={{
+                  color: "white",
+                  borderColor: "purple.400",
+                  bg: "whiteAlpha.200",
+                }}
               >
                 {t?.teams_tab_feed || "Global feed"}
               </Tab>
               <Tab
                 color="gray.300"
-                _selected={{ color: "white", borderColor: "purple.400", bg: "whiteAlpha.200" }}
+                _selected={{
+                  color: "white",
+                  borderColor: "purple.400",
+                  bg: "whiteAlpha.200",
+                }}
               >
                 {t?.teams_tab_create || "Create team"}
               </Tab>
               <Tab
                 color="gray.300"
-                _selected={{ color: "white", borderColor: "purple.400", bg: "whiteAlpha.200" }}
+                _selected={{
+                  color: "white",
+                  borderColor: "purple.400",
+                  bg: "whiteAlpha.200",
+                }}
               >
                 {t?.teams_tab_view || "View teams"}
                 {pendingInviteCount > 0 ? ` (${pendingInviteCount})` : ""}
@@ -96,19 +111,31 @@ export default function TeamsDrawer({
             </TabList>
             <TabPanels>
               <TabPanel px={0}>
-                <TeamFeed t={t} allowPosts={allowPosts} onAllowPostsChange={onAllowPostsChange} />
+                <TeamFeed
+                  t={t}
+                  allowPosts={allowPosts}
+                  onAllowPostsChange={onAllowPostsChange}
+                />
               </TabPanel>
               <TabPanel>
-                <TeamCreation userLanguage={userLanguage} onTeamCreated={handleTeamCreated} t={t} />
+                <TeamCreation
+                  userLanguage={userLanguage}
+                  onTeamCreated={handleTeamCreated}
+                  t={t}
+                />
               </TabPanel>
               <TabPanel px={0}>
-                <TeamView userLanguage={userLanguage} refreshTrigger={refreshTrigger} t={t} />
+                <TeamView
+                  userLanguage={userLanguage}
+                  refreshTrigger={refreshTrigger}
+                  t={t}
+                />
               </TabPanel>
             </TabPanels>
           </Tabs>
         </DrawerBody>
         <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
-          <Button colorScheme="purple" onClick={onClose}>
+          <Button variant={"ghost"} onClick={onClose}>
             {t?.teams_drawer_close || "Close"}
           </Button>
         </DrawerFooter>

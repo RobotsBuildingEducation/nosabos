@@ -95,8 +95,12 @@ export default function DailyGoalModal({
   const [goal, setGoal] = useState(String(defaultGoal));
 
   // Calendar month navigation state
-  const [calendarYear, setCalendarYear] = useState(() => new Date().getFullYear());
-  const [calendarMonth, setCalendarMonth] = useState(() => new Date().getMonth());
+  const [calendarYear, setCalendarYear] = useState(() =>
+    new Date().getFullYear()
+  );
+  const [calendarMonth, setCalendarMonth] = useState(() =>
+    new Date().getMonth()
+  );
 
   // Reset field when modal re-opens or default changes
   useEffect(() => {
@@ -168,10 +172,11 @@ export default function DailyGoalModal({
       isCentered
       size="lg"
       closeOnOverlayClick={false}
-      closeOnEsc={false}
+      closeOnEsc={true}
       motionPreset="slideInBottom"
     >
       <ModalOverlay bg="blackAlpha.700" />
+
       <ModalContent
         bg="gray.900"
         color="gray.100"
@@ -187,6 +192,7 @@ export default function DailyGoalModal({
           },
         }}
       >
+        <ModalCloseButton />
         {/* Header */}
         <Box
           bgGradient="linear(to-r, teal.700, teal.500)"
@@ -295,7 +301,12 @@ export default function DailyGoalModal({
             {/* Goal Calendar */}
             <Box>
               <HStack spacing={2} mb={3}>
-                <Box as={FiCalendar} aria-hidden fontSize="18px" color="teal.300" />
+                <Box
+                  as={FiCalendar}
+                  aria-hidden
+                  fontSize="18px"
+                  color="teal.300"
+                />
                 <Text fontWeight="semibold">{L.calendarTitle}</Text>
               </HStack>
               <Box
@@ -328,6 +339,9 @@ export default function DailyGoalModal({
           borderColor="gray.800"
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
+            <Button variant={"ghost"} onClick={onClose}>
+              {t?.teams_drawer_close || "Close"}
+            </Button>
             <Button colorScheme="teal" onClick={save} isDisabled={!npub}>
               {ui.save || L.save}
             </Button>
