@@ -1,5 +1,5 @@
 // src/utils/xp.js
-import { doc, runTransaction, serverTimestamp } from "firebase/firestore";
+import { doc, runTransaction, serverTimestamp, arrayUnion } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 
 export async function awardXp(npub, amount, targetLang = "es") {
@@ -52,6 +52,9 @@ export async function awardXp(npub, amount, targetLang = "es") {
     const reached = goal > 0 && nextDaily >= goal && !data.dailyHasCelebrated;
     if (reached) shouldCelebrateGoal = true;
 
+    // Format today's date as YYYY-MM-DD for calendar tracking
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
     tx.set(
       ref,
       {
@@ -61,7 +64,11 @@ export async function awardXp(npub, amount, targetLang = "es") {
         updatedAt: now.toISOString(),
         progress: nextProgress,
         ...(reached
-          ? { dailyHasCelebrated: true, lastDailyGoalHitAt: serverTimestamp() }
+          ? {
+              dailyHasCelebrated: true,
+              lastDailyGoalHitAt: serverTimestamp(),
+              completedGoalDates: arrayUnion(todayKey),
+            }
           : {}),
       },
       { merge: true }

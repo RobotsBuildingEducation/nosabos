@@ -1,14 +1,26 @@
 // components/History.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Badge, Button, HStack, VStack, Text, Spinner, Divider, IconButton, Center } from "@chakra-ui/react";
+import {
+  Box,
+  Badge,
+  Button,
+  HStack,
+  VStack,
+  Text,
+  Spinner,
+  Divider,
+  IconButton,
+  Center,
+  Stack,
+} from "@chakra-ui/react";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { doc, onSnapshot } from "firebase/firestore";
 import { MdMenuBook } from "react-icons/md";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
-import { doc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { getUserProficiencyLevel } from "../utils/cefrProgress";
@@ -923,7 +935,9 @@ export default function History({
       return;
     }
 
-    const newId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+    const newId = crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random()}`;
     setLectures((prev) => [...prev, { id: newId, ...payload }]);
     setActiveId(newId);
   }
@@ -1129,7 +1143,9 @@ export default function History({
         return; // finally{} will release the lock
       }
 
-      const newId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
+      const newId = crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()}`;
       setLectures((prev) => [...prev, { id: newId, ...payload }]);
       setActiveId(newId);
       setDraftLecture(null);
@@ -1283,7 +1299,11 @@ export default function History({
         </HStack>
 
         {/* Main content area */}
-        <HStack align="start" spacing={5} flexDir={{ base: "column", md: "row" }}>
+        <HStack
+          align="start"
+          spacing={5}
+          flexDir={{ base: "column", md: "row" }}
+        >
           <Box
             flex="1"
             bg="gray.800"
@@ -1310,21 +1330,8 @@ export default function History({
               </VStack>
             ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
-                <HStack
-                  justify="space-between"
-                  align="center"
-                  flexWrap="wrap"
-                  gap={2}
-                >
+                <HStack align="center" gap={2}>
                   <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="700">
-                    {viewLecture.title}
-                    {draftLecture ? (
-                      <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
-                        ({t("reading_generating") || "generating…"})
-                      </Text>
-                    ) : null}
-                  </Text>
-                  <HStack mt={{ base: 2, md: 0 }}>
                     <Button
                       onClick={readTarget}
                       leftIcon={renderSpeakerIcon(isSynthesizingTarget)}
@@ -1334,26 +1341,38 @@ export default function History({
                       isDisabled={
                         !viewLecture?.target || draftLecture || isGenerating
                       }
-                      paddingRight={"-1px"}
-                      paddingLeft={5}
                     />
-                  </HStack>
+                    {viewLecture.title}
+                    {draftLecture ? (
+                      <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
+                        ({t("reading_generating") || "generating…"})
+                      </Text>
+                    ) : null}
+                  </Text>
                 </HStack>
 
-                {!draftLecture && activeLecture ? (
-                  <Button
-                    mt={4}
-                    colorScheme="teal"
-                    onClick={finishReadingAndNext}
-                    isLoading={isFinishing}
-                    isDisabled={isGenerating}
-                    p={4}
-                  >
-                    {activeLecture.awarded
-                      ? t("reading_btn_next") || "Next lecture"
-                      : t("reading_btn_finish") || "Finished reading"}
-                  </Button>
-                ) : null}
+                <Box
+                  display="flex"
+                  justifyContent={"center"}
+                  spacing={4}
+                  mt={"-24px"}
+                >
+                  {!draftLecture && activeLecture ? (
+                    <Button
+                      mt={4}
+                      colorScheme="teal"
+                      onClick={finishReadingAndNext}
+                      isLoading={isFinishing}
+                      isDisabled={isGenerating}
+                      p={4}
+                      w="fit-content"
+                    >
+                      {activeLecture.awarded
+                        ? t("reading_btn_next") || "Next lecture"
+                        : t("reading_btn_finish") || "Finished reading"}
+                    </Button>
+                  ) : null}
+                </Box>
 
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
                   {viewLecture.target || ""}

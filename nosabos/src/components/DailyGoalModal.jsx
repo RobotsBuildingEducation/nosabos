@@ -23,13 +23,14 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { doc, setDoc } from "firebase/firestore";
-import { FiTarget, FiZap, FiClock } from "react-icons/fi";
+import { FiTarget, FiZap, FiClock, FiCalendar } from "react-icons/fi";
 import { database } from "../firebaseResources/firebaseResources";
 import {
   translations as allTranslations,
   t as translate,
 } from "../utils/translation.jsx";
 import { WaveBar } from "./WaveBar.jsx";
+import GoalCalendar from "./GoalCalendar.jsx";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [75, 100, 150, 200, 300];
@@ -42,6 +43,8 @@ export default function DailyGoalModal({
   defaultGoal = 100,
   t,
   ui = {},
+  completedGoalDates = [],
+  startDate,
 }) {
   const resolvedLang = lang === "es" ? "es" : "en";
   const resolvedTranslations = useMemo(
@@ -85,15 +88,35 @@ export default function DailyGoalModal({
         "Please sign in again."
       ),
       errSaveTitle: getLabel("daily_goal_error_save", "Could not save goal"),
+      calendarTitle: getLabel("daily_goal_calendar_title", "Your progress"),
     }),
     [getLabel]
   );
   const [goal, setGoal] = useState(String(defaultGoal));
 
+  // Calendar month navigation state
+  const [calendarYear, setCalendarYear] = useState(() =>
+    new Date().getFullYear()
+  );
+  const [calendarMonth, setCalendarMonth] = useState(() =>
+    new Date().getMonth()
+  );
+
   // Reset field when modal re-opens or default changes
   useEffect(() => {
-    if (isOpen) setGoal(String(defaultGoal));
+    if (isOpen) {
+      setGoal(String(defaultGoal));
+      // Reset calendar to current month when modal opens
+      const now = new Date();
+      setCalendarYear(now.getFullYear());
+      setCalendarMonth(now.getMonth());
+    }
   }, [isOpen, defaultGoal]);
+
+  const handleMonthChange = useCallback((year, month) => {
+    setCalendarYear(year);
+    setCalendarMonth(month);
+  }, []);
 
   // Clamp + parse
   const parsed = useMemo(
@@ -149,10 +172,11 @@ export default function DailyGoalModal({
       isCentered
       size="lg"
       closeOnOverlayClick={false}
-      closeOnEsc={false}
+      closeOnEsc={true}
       motionPreset="slideInBottom"
     >
       <ModalOverlay bg="blackAlpha.700" />
+
       <ModalContent
         bg="gray.900"
         color="gray.100"
@@ -168,6 +192,7 @@ export default function DailyGoalModal({
           },
         }}
       >
+        <ModalCloseButton />
         {/* Header */}
         <Box
           bgGradient="linear(to-r, teal.700, teal.500)"
@@ -189,7 +214,7 @@ export default function DailyGoalModal({
           </HStack>
         </Box>
         {/* Body */}
-        <ModalBody px={{ base: 4, md: 6 }} py={5}>
+        <ModalBody px={{ base: 4, md: 6 }} py={5} overflowY="auto" maxH="60vh">
           <VStack align="stretch" spacing={5}>
             {/* Quick presets */}
             <Box>
@@ -270,6 +295,40 @@ export default function DailyGoalModal({
                 </HStack>
               </HStack>
             </Box>
+
+            <Divider borderColor="gray.700" />
+
+            {/* Goal Calendar */}
+            <Box>
+              <HStack spacing={2} mb={3}>
+                <Box
+                  as={FiCalendar}
+                  aria-hidden
+                  fontSize="18px"
+                  color="teal.300"
+                />
+                <Text fontWeight="semibold">{L.calendarTitle}</Text>
+              </HStack>
+              <Box
+                bg="gray.800"
+                borderRadius="lg"
+                p={4}
+                border="1px solid"
+                borderColor="gray.700"
+              >
+                <GoalCalendar
+                  completedDates={completedGoalDates}
+                  lang={resolvedLang}
+                  year={calendarYear}
+                  month={calendarMonth}
+                  onMonthChange={handleMonthChange}
+                  showNavigation={true}
+                  highlightToday={true}
+                  size="md"
+                  startDate={startDate}
+                />
+              </Box>
+            </Box>
           </VStack>
         </ModalBody>
         {/* Footer */}
@@ -280,6 +339,9 @@ export default function DailyGoalModal({
           borderColor="gray.800"
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
+            <Button variant={"ghost"} onClick={onClose}>
+              {t?.teams_drawer_close || "Close"}
+            </Button>
             <Button colorScheme="teal" onClick={save} isDisabled={!npub}>
               {ui.save || L.save}
             </Button>

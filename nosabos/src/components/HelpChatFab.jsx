@@ -200,6 +200,8 @@ const HelpChatFab = forwardRef(
     const localRef = useRef(null);
     const dcRef = useRef(null);
     const realtimeAliveRef = useRef(false);
+    // Track current assistant message being built (to prevent splitting)
+    const currentAssistantIdRef = useRef(null);
 
     // -- helpers ---------------------------------------------------------------
 
@@ -529,7 +531,24 @@ const HelpChatFab = forwardRef(
             const text = data.transcript?.trim();
             if (text) {
               const userId = crypto.randomUUID?.() || String(Date.now());
-              pushMessage({ id: userId, role: "user", text, done: true });
+              const newUserMsg = { id: userId, role: "user", text, done: true };
+
+              setMessages((prev) => {
+                // If there's an assistant message being built, insert user message BEFORE it
+                // This ensures proper chat order: user message -> AI response
+                if (currentAssistantIdRef.current) {
+                  const assistantIdx = prev.findIndex(
+                    (m) => m.id === currentAssistantIdRef.current
+                  );
+                  if (assistantIdx >= 0) {
+                    const updated = [...prev];
+                    updated.splice(assistantIdx, 0, newUserMsg);
+                    return updated;
+                  }
+                }
+                // Otherwise just append
+                return [...prev, newUserMsg];
+              });
             }
           }
 
@@ -537,21 +556,25 @@ const HelpChatFab = forwardRef(
           if (data.type === "response.audio_transcript.delta") {
             const delta = data.delta || "";
             setMessages((prev) => {
-              const lastIdx = prev.length - 1;
-              if (
-                lastIdx >= 0 &&
-                prev[lastIdx].role === "assistant" &&
-                !prev[lastIdx].done
-              ) {
-                const updated = [...prev];
-                updated[lastIdx] = {
-                  ...updated[lastIdx],
-                  text: updated[lastIdx].text + delta,
-                };
-                return updated;
+              // If we have a current assistant message being built, always append to it
+              // (even if user messages were inserted after it)
+              if (currentAssistantIdRef.current) {
+                const idx = prev.findIndex(
+                  (m) => m.id === currentAssistantIdRef.current
+                );
+                if (idx >= 0 && !prev[idx].done) {
+                  const updated = [...prev];
+                  updated[idx] = {
+                    ...updated[idx],
+                    text: updated[idx].text + delta,
+                  };
+                  return updated;
+                }
               }
+
               // Start new assistant message
               const assistantId = crypto.randomUUID?.() || String(Date.now());
+              currentAssistantIdRef.current = assistantId;
               return [
                 ...prev,
                 {
@@ -566,12 +589,19 @@ const HelpChatFab = forwardRef(
 
           if (data.type === "response.audio_transcript.done") {
             setMessages((prev) => {
-              const lastIdx = prev.length - 1;
-              if (lastIdx >= 0 && prev[lastIdx].role === "assistant") {
-                const updated = [...prev];
-                updated[lastIdx] = { ...updated[lastIdx], done: true };
-                return updated;
+              // Mark the current assistant message as done
+              if (currentAssistantIdRef.current) {
+                const idx = prev.findIndex(
+                  (m) => m.id === currentAssistantIdRef.current
+                );
+                if (idx >= 0) {
+                  const updated = [...prev];
+                  updated[idx] = { ...updated[idx], done: true };
+                  currentAssistantIdRef.current = null;
+                  return updated;
+                }
               }
+              currentAssistantIdRef.current = null;
               return prev;
             });
           }
@@ -579,7 +609,7 @@ const HelpChatFab = forwardRef(
           console.warn("Realtime event parse error:", e);
         }
       },
-      [pushMessage]
+      []
     );
 
     const startRealtime = useCallback(async () => {
@@ -667,6 +697,7 @@ const HelpChatFab = forwardRef(
 
     const stopRealtime = useCallback(() => {
       realtimeAliveRef.current = false;
+      currentAssistantIdRef.current = null;
 
       try {
         const a = audioRef.current;

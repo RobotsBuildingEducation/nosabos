@@ -73,7 +73,7 @@ import {
   LuKeyRound,
 } from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
-import { FiClock, FiPause, FiPlay } from "react-icons/fi";
+import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
@@ -96,6 +96,7 @@ import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
 import { WaveBar } from "./components/WaveBar";
 import DailyGoalModal from "./components/DailyGoalModal";
+import GoalCalendar from "./components/GoalCalendar";
 import JobScript from "./components/JobScript"; // ⬅️ NEW TAB COMPONENT
 import IdentityDrawer from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
@@ -395,6 +396,8 @@ function TopBar({
   formatTimer,
   onOpenTimerModal,
   onTogglePauseTimer,
+  // 🆕 daily goal modal props
+  onOpenDailyGoalModal,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -565,6 +568,7 @@ function TopBar({
   const [dailyGoalXp, setDailyGoalXp] = useState(0);
   const [dailyXp, setDailyXp] = useState(0);
   const [dailyResetAt, setDailyResetAt] = useState(null);
+  const [completedGoalDates, setCompletedGoalDates] = useState([]);
 
   // Keep a local draft for settings input
   const [goalDraft, setGoalDraft] = useState(0);
@@ -601,6 +605,9 @@ function TopBar({
       const goal = Number(data?.dailyGoalXp || 0);
       let dxp = Number(data?.dailyXp || 0);
       let resetISO = data?.dailyResetAt || null;
+      const completedDates = Array.isArray(data?.completedGoalDates)
+        ? data.completedGoalDates
+        : [];
 
       const now = Date.now();
       const expired = !resetISO || now >= new Date(resetISO).getTime();
@@ -619,6 +626,7 @@ function TopBar({
       setGoalDraft(goal);
       setDailyXp(dxp);
       setDailyResetAt(resetISO);
+      setCompletedGoalDates(completedDates);
     });
     return () => unsub();
   }, [activeNpub]);
@@ -654,17 +662,23 @@ function TopBar({
         spacing={{ base: 2, md: 3 }}
         backdropFilter="blur(4px)"
       >
-        {/* LEFT: Daily WaveBar + % */}
+        {/* LEFT: Daily Goal Button + WaveBar */}
         <HStack
           spacing={{ base: 2, md: 3 }}
           minW={0}
           flex="1 1 auto"
           align="center"
         >
-          <Text fontSize="sm">
-            {translations[appLanguage]["dailyGoalProgress"]}
-          </Text>
-          <Box w={{ base: "120px", sm: "150px", md: "180px" }}>
+          <IconButton
+            size="sm"
+            variant="outline"
+            colorScheme="teal"
+            icon={<FiTarget />}
+            onClick={onOpenDailyGoalModal}
+            borderColor="teal.600"
+            px={{ base: 2, md: 3 }}
+          />
+          <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
             <WaveBar value={dailyPct} />
           </Box>
           <Box
@@ -871,13 +885,11 @@ function TopBar({
                   </Text>
                   <Input
                     value={voicePersona}
-                    onChange={(e) =>
-                      {
-                        const next = e.target.value.slice(0, 240);
-                        setVoicePersona(next);
-                        persistSettings({ voicePersona: next });
-                      }
-                    }
+                    onChange={(e) => {
+                      const next = e.target.value.slice(0, 240);
+                      setVoicePersona(next);
+                      persistSettings({ voicePersona: next });
+                    }}
                     bg="gray.700"
                     placeholder={
                       (t.ra_persona_placeholder &&
@@ -921,31 +933,6 @@ function TopBar({
                   </Slider>
                   <Text fontSize="xs" opacity={0.6} mt={2}>
                     {vadHint}
-                  </Text>
-                </Box>
-
-                {/* Daily XP Goal (part of single Save) */}
-                <Box bg="gray.800" p={3} rounded="md">
-                  <Text fontSize="sm" mb={1}>
-                    {appLanguage === "es"
-                      ? "Meta diaria de XP"
-                      : "Daily XP goal"}
-                  </Text>
-                  <Input
-                    type="number"
-                    min={0}
-                    value={goalDraft}
-                    onChange={(e) => handleDailyGoalChange(e.target.value)}
-                    bg="gray.700"
-                    w="160px"
-                    placeholder={
-                      appLanguage === "es" ? "XP por día" : "XP per day"
-                    }
-                  />
-                  <Text fontSize="xs" opacity={0.7} mt={1}>
-                    {appLanguage === "es"
-                      ? "Cada nivel equivale a 100 XP. Cambiar este valor no reinicia tu progreso de hoy."
-                      : "Each level is 100 XP. Changing this won’t reset today’s progress or timer."}
                   </Text>
                 </Box>
               </VStack>
@@ -3548,6 +3535,7 @@ export default function App() {
         formatTimer={formatTimer}
         onOpenTimerModal={() => setTimerModalOpen(true)}
         onTogglePauseTimer={handleTogglePauseTimer}
+        onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
       />
 
       <TeamsDrawer
@@ -3807,6 +3795,8 @@ export default function App() {
         npub={activeNpub}
         lang={appLanguage}
         t={t}
+        completedGoalDates={user?.completedGoalDates || []}
+        startDate={user?.createdAt}
       />
 
       <SessionTimerModal
@@ -3955,6 +3945,40 @@ export default function App() {
                       : "Keep the streak going and come back tomorrow for a new goal!"}
                   </Text>
                 </VStack>
+              </Box>
+
+              {/* Calendar showing completed days including today */}
+              <Box
+                bg="whiteAlpha.150"
+                borderRadius="xl"
+                py={4}
+                px={4}
+                width="100%"
+                border="1px solid"
+                borderColor="whiteAlpha.300"
+              >
+                <GoalCalendar
+                  completedDates={(() => {
+                    // Include today's date in the completed dates for the celebration
+                    const today = new Date();
+                    const todayKey = `${today.getFullYear()}-${String(
+                      today.getMonth() + 1
+                    ).padStart(2, "0")}-${String(today.getDate()).padStart(
+                      2,
+                      "0"
+                    )}`;
+                    const existingDates = user?.completedGoalDates || [];
+                    return existingDates.includes(todayKey)
+                      ? existingDates
+                      : [...existingDates, todayKey];
+                  })()}
+                  lang={appLanguage}
+                  showNavigation={false}
+                  highlightToday={true}
+                  size="sm"
+                  variant="light"
+                  startDate={user?.createdAt}
+                />
               </Box>
 
               <Button

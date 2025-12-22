@@ -13,6 +13,7 @@ import {
   DrawerBody,
   DrawerCloseButton,
   DrawerContent,
+  DrawerFooter,
   DrawerHeader,
   DrawerOverlay,
   Flex,
@@ -25,6 +26,7 @@ import {
 import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
 import useNotesStore from "../hooks/useNotesStore";
 import { getTTSPlayer, TTS_LANG_TAG, getRandomVoice } from "../utils/tts";
+import translations from "../utils/translation";
 
 // CEFR levels in order
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -389,6 +391,11 @@ export default function NotesDrawer({
             </Accordion>
           )}
         </DrawerBody>
+        <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
+          <Button variant={"ghost"} onClick={onClose}>
+            {translations[appLanguage]["teams_drawer_close"] || "Close"}
+          </Button>
+        </DrawerFooter>
       </DrawerContent>
     </Drawer>
   );
