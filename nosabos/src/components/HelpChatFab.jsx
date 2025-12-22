@@ -526,6 +526,13 @@ const HelpChatFab = forwardRef(
           ttsAudioRef.current = player.audio;
           ttsPcRef.current = player.pc;
 
+          await player.ready;
+          try {
+            await player.audio.play();
+          } catch (err) {
+            console.warn("TTS play blocked", err);
+          }
+
           const cleanup = () => stopTtsPlayback();
           player.audio.onended = cleanup;
           player.audio.onerror = cleanup;
@@ -1022,53 +1029,53 @@ const HelpChatFab = forwardRef(
                       </Box>
                     </HStack>
                   ) : (
-                    <HStack
-                      key={m.id}
-                      justify="flex-start"
-                      align="flex-start"
-                      spacing={2}
+                  <HStack key={m.id} justify="flex-start" align="flex-start">
+                    <Box
+                      bg="gray.800"
+                      border="1px solid"
+                      borderColor="gray.700"
+                      p={3}
+                      rounded="xl"
+                      maxW="85%"
+                      w="fit-content"
                     >
-                      <IconButton
-                        aria-label={
-                          appLanguage === "es"
-                            ? "Reproducir respuesta"
-                            : "Replay response"
-                        }
-                        icon={
-                          replayingId === m.id ? (
-                            <Spinner size="sm" />
-                          ) : (
-                            <RiVolumeUpLine />
-                          )
-                        }
-                        size="sm"
-                        variant="ghost"
-                        colorScheme="purple"
-                        onClick={() => playAssistantTts(m)}
-                        isDisabled={!m.text}
-                        mt={1}
-                      />
-                      <Box
-                        bg="gray.800"
-                        border="1px solid"
-                        borderColor="gray.700"
-                        p={3}
-                        rounded="xl"
-                        maxW="85%"
-                      >
-                        <HStack mb={1} justify="space-between">
-                          {!m.done && <Spinner size="xs" speed="0.6s" />}
-                        </HStack>
+                      <HStack align="flex-start" spacing={3}>
+                        <IconButton
+                          aria-label={
+                            appLanguage === "es"
+                              ? "Reproducir respuesta"
+                              : "Replay response"
+                          }
+                          icon={
+                            replayingId === m.id ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <RiVolumeUpLine />
+                            )
+                          }
+                          size="sm"
+                          variant="ghost"
+                          colorScheme="purple"
+                          onClick={() => playAssistantTts(m)}
+                          isDisabled={!m.text}
+                          mt={1}
+                        />
+                        <Box flex="1">
+                          <HStack mb={1} justify="space-between">
+                            {!m.done && <Spinner size="xs" speed="0.6s" />}
+                          </HStack>
 
-                        <Markdown>{main}</Markdown>
+                          <Markdown>{main}</Markdown>
 
-                        {!!gloss && (
-                          <Box opacity={0.8} fontSize="sm" mt={1}>
-                            <Markdown>{gloss}</Markdown>
-                          </Box>
-                        )}
-                      </Box>
-                    </HStack>
+                          {!!gloss && (
+                            <Box opacity={0.8} fontSize="sm" mt={1}>
+                              <Markdown>{gloss}</Markdown>
+                            </Box>
+                          )}
+                        </Box>
+                      </HStack>
+                    </Box>
+                  </HStack>
                   );
                 })}
               </VStack>
