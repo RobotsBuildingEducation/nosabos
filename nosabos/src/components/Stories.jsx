@@ -466,11 +466,7 @@ export default function StoryMode({
     if (!storyData?.sentences) return map;
 
     const characters = [
-      ...new Set(
-        storyData.sentences
-          .map((s) => s.character)
-          .filter(Boolean)
-      ),
+      ...new Set(storyData.sentences.map((s) => s.character).filter(Boolean)),
     ];
 
     // Shuffle voice arrays for variety between stories
@@ -1790,13 +1786,14 @@ export default function StoryMode({
                                   color="white"
                                   _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
                                   size="xs"
-                                  aria-label={`Play ${sentence.character || "line"}`}
+                                  aria-label={`Play ${
+                                    sentence.character || "line"
+                                  }`}
                                   icon={renderSpeakerIcon(
                                     isThisLinePlaying && isSynthesizingTarget
                                   )}
                                   flexShrink={0}
                                   mt={1}
-                                  isDisabled={isPlayingTarget || isSynthesizingTarget}
                                 />
                                 <Box
                                   px={3}
@@ -1908,7 +1905,11 @@ export default function StoryMode({
                                   ))}
                           </Text>
                           {!!storyData.fullStory?.sup && (
-                            <Text fontSize="md" color="#94a3b8" lineHeight="1.6">
+                            <Text
+                              fontSize="md"
+                              color="#94a3b8"
+                              lineHeight="1.6"
+                            >
                               {storyData.fullStory.sup}
                             </Text>
                           )}
