@@ -158,7 +158,7 @@ export default function GoalCalendar({
     futureText: isLight ? "whiteAlpha.400" : "gray.600",
     legendText: isLight ? "whiteAlpha.800" : "gray.400",
     legendIncompleteBg: isLight ? "whiteAlpha.300" : "gray.700",
-    todayBorder: isLight ? "yellow.300" : "teal.300",
+    todayBorder: isLight ? "yellow.300" : "yellow.400",
     navButtonScheme: isLight ? "whiteAlpha" : "teal",
   };
 
@@ -275,7 +275,7 @@ export default function GoalCalendar({
       </Grid>
 
       {/* Legend */}
-      <HStack spacing={4} pt={2} justify="center">
+      <HStack spacing={4} pt={2} justify="center" flexWrap="wrap">
         <HStack spacing={1}>
           <Box w="12px" h="12px" borderRadius="sm" bg={COMPLETED_GRADIENT_LEGEND} />
           <Text fontSize="xs" color={colors.legendText}>
@@ -286,6 +286,19 @@ export default function GoalCalendar({
           <Box w="12px" h="12px" borderRadius="sm" bg={colors.legendIncompleteBg} />
           <Text fontSize="xs" color={colors.legendText}>
             {incompleteLabel || (lang === "es" ? "Pendiente" : "Incomplete")}
+          </Text>
+        </HStack>
+        <HStack spacing={1}>
+          <Box
+            w="12px"
+            h="12px"
+            borderRadius="sm"
+            bg={colors.legendIncompleteBg}
+            border="2px solid"
+            borderColor={colors.todayBorder}
+          />
+          <Text fontSize="xs" color={colors.legendText}>
+            {lang === "es" ? "Hoy" : "Today"}
           </Text>
         </HStack>
       </HStack>
