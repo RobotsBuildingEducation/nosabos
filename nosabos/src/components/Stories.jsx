@@ -375,6 +375,7 @@ export default function StoryMode({
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
+  const [playingLineIndex, setPlayingLineIndex] = useState(null);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
   const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
 
@@ -440,6 +441,56 @@ export default function StoryMode({
       totalWords: wordIndex,
     };
   }, []);
+
+  /* ------------------------- Character Voice Mapping ------------------------- */
+  // Voices categorized by typical sound
+  const MASCULINE_VOICES = ["echo", "verse", "ash", "cedar"];
+  const FEMININE_VOICES = ["shimmer", "coral", "ballad", "sage", "marin"];
+
+  // Common name patterns (covers Spanish, English, Portuguese, French, Italian)
+  const FEMININE_NAME_PATTERNS = [
+    /a$/i, // Maria, Elena, Sofia, Ana, Laura
+    /^mar[iy]/i, // Maria, Marie, Mary
+    /^ana/i,
+    /^sofia/i,
+    /^elena/i,
+    /^carmen/i,
+    /^rosa/i,
+    /^lucia/i,
+    /^isabel/i,
+  ];
+
+  // Build a stable voice mapping for characters in the current story
+  const characterVoiceMap = useMemo(() => {
+    const map = new Map();
+    if (!storyData?.sentences) return map;
+
+    const characters = [
+      ...new Set(storyData.sentences.map((s) => s.character).filter(Boolean)),
+    ];
+
+    // Shuffle voice arrays for variety between stories
+    const shuffledMasc = [...MASCULINE_VOICES].sort(() => Math.random() - 0.5);
+    const shuffledFem = [...FEMININE_VOICES].sort(() => Math.random() - 0.5);
+    let mascIdx = 0;
+    let femIdx = 0;
+
+    characters.forEach((name) => {
+      const isFeminine = FEMININE_NAME_PATTERNS.some((pattern) =>
+        pattern.test(name)
+      );
+
+      if (isFeminine) {
+        map.set(name, shuffledFem[femIdx % shuffledFem.length]);
+        femIdx++;
+      } else {
+        map.set(name, shuffledMasc[mascIdx % shuffledMasc.length]);
+        mascIdx++;
+      }
+    });
+
+    return map;
+  }, [storyData?.sentences]);
 
   // pseudo alignment based on duration
   function buildWordTimeline(tokens, totalDurationSec) {
@@ -1064,6 +1115,7 @@ export default function StoryMode({
       onStart = () => {},
       onEnd = () => {},
       setSynthesizing,
+      voice = null,
     } = {}
   ) => {
     try {
@@ -1085,7 +1137,7 @@ export default function StoryMode({
       const player = await getTTSPlayer({
         text,
         langTag,
-        voice: getRandomVoice(),
+        voice: voice || getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       currentAudioUrlRef.current = player.audioUrl;
@@ -1158,7 +1210,7 @@ export default function StoryMode({
     }
   };
 
-  const playTargetTTS = async (text) => {
+  const playTargetTTS = async (text, voice = null) => {
     if (!text) return;
     stopAllAudio();
     setIsPlayingTarget(true);
@@ -1167,6 +1219,7 @@ export default function StoryMode({
         alignToText: false,
         onEnd: () => setIsPlayingTarget(false),
         setSynthesizing: setIsSynthesizingTarget,
+        voice,
       });
     } catch {
       stopAllAudio();
@@ -1667,22 +1720,6 @@ export default function StoryMode({
             >
               {showFullStory ? (
                 <VStack spacing={4} align="stretch">
-                  {/* Audio controls */}
-
-                  <HStack spacing={3} justify="center">
-                    <Button
-                      onClick={() =>
-                        playNarrationWithHighlighting(storyData.fullStory?.tgt)
-                      }
-                      color="white"
-                      isDisabled={isAutoPlaying || isSynthesizingTarget}
-                      aria-label={uiText.playTarget(targetDisplayName)}
-                      px={3}
-                    >
-                      {renderSpeakerIcon(isSynthesizingTarget)}
-                    </Button>
-                  </HStack>
-
                   <Center>
                     <Button
                       onClick={() => {
@@ -1714,97 +1751,170 @@ export default function StoryMode({
                   </Center>
                   {/* Full story with highlighting (target language) */}
                   <Box>
-                    {/* Conversation script view - dialogue format */}
+                    {/* Conversation script view - dialogue format with alternating positions */}
                     {(storyData.storyType === "conversation" ||
                       storyType === "conversation") &&
                     storyData.sentences?.some((s) => s.character) ? (
-                      <VStack spacing={3} align="stretch">
-                        {storyData.sentences.map((sentence, idx) => (
-                          <Box
-                            key={idx}
-                            pl={2}
-                            borderLeft="3px solid"
-                            borderColor="teal.400"
-                          >
-                            {sentence.character && (
-                              <Text
-                                fontSize="sm"
-                                fontWeight="700"
-                                color="teal.300"
-                                mb={1}
-                              >
-                                {sentence.character}
-                              </Text>
-                            )}
-                            <Text
-                              fontSize="lg"
-                              fontWeight="500"
-                              color="#f8fafc"
-                              lineHeight="1.6"
+                      <VStack spacing={4} align="stretch">
+                        {storyData.sentences.map((sentence, idx) => {
+                          const isLeft = idx % 2 === 0;
+                          const isThisLinePlaying = playingLineIndex === idx;
+                          const characterVoice = sentence.character
+                            ? characterVoiceMap.get(sentence.character)
+                            : null;
+                          return (
+                            <Flex
+                              key={idx}
+                              justify={isLeft ? "flex-start" : "flex-end"}
                             >
-                              {sentence.tgt}
-                            </Text>
-                            {!!sentence.sup && (
-                              <Text
-                                fontSize="sm"
-                                color="#94a3b8"
-                                lineHeight="1.4"
-                                mt={1}
+                              <HStack
+                                spacing={2}
+                                align="flex-start"
+                                maxW="85%"
+                                flexDirection={isLeft ? "row" : "row-reverse"}
                               >
-                                {sentence.sup}
-                              </Text>
-                            )}
-                          </Box>
-                        ))}
+                                <IconButton
+                                  onClick={() => {
+                                    setPlayingLineIndex(idx);
+                                    playTargetTTS(
+                                      sentence.tgt,
+                                      characterVoice
+                                    ).finally(() => setPlayingLineIndex(null));
+                                  }}
+                                  variant="outline"
+                                  borderColor="rgba(255, 255, 255, 0.3)"
+                                  color="white"
+                                  _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
+                                  size="xs"
+                                  aria-label={`Play ${
+                                    sentence.character || "line"
+                                  }`}
+                                  icon={renderSpeakerIcon(
+                                    isThisLinePlaying && isSynthesizingTarget
+                                  )}
+                                  flexShrink={0}
+                                  mt={1}
+                                />
+                                <Box
+                                  px={3}
+                                  py={2}
+                                  bg={
+                                    isLeft
+                                      ? "rgba(56, 178, 172, 0.15)"
+                                      : "rgba(99, 102, 241, 0.15)"
+                                  }
+                                  borderRadius="lg"
+                                  borderLeft={isLeft ? "3px solid" : "none"}
+                                  borderRight={isLeft ? "none" : "3px solid"}
+                                  borderColor={
+                                    isLeft ? "teal.400" : "purple.400"
+                                  }
+                                >
+                                  {sentence.character && (
+                                    <Text
+                                      fontSize="sm"
+                                      fontWeight="700"
+                                      color={isLeft ? "teal.300" : "purple.300"}
+                                      mb={1}
+                                    >
+                                      {sentence.character}
+                                    </Text>
+                                  )}
+                                  <Text
+                                    fontSize="lg"
+                                    fontWeight="500"
+                                    color="#f8fafc"
+                                    lineHeight="1.6"
+                                  >
+                                    {sentence.tgt}
+                                  </Text>
+                                  {!!sentence.sup && (
+                                    <Text
+                                      fontSize="sm"
+                                      color="#94a3b8"
+                                      lineHeight="1.4"
+                                      mt={1}
+                                    >
+                                      {sentence.sup}
+                                    </Text>
+                                  )}
+                                </Box>
+                              </HStack>
+                            </Flex>
+                          );
+                        })}
                       </VStack>
                     ) : (
-                      /* Paragraph story view - original format */
-                      <>
-                        <Text
-                          fontSize="lg"
-                          fontWeight="500"
-                          color="#f8fafc"
-                          mb={3}
-                          lineHeight="1.8"
-                        >
-                          {tokenizedText
-                            ? tokenizedText.map((token, idx) =>
-                                token.isWord ? (
-                                  <Text
-                                    key={idx}
-                                    as="span"
-                                    px={1}
-                                    borderRadius="4px"
-                                    transition="background-color 0.1s ease"
-                                  >
-                                    {token.text}
-                                  </Text>
-                                ) : (
-                                  <Text key={idx} as="span">
-                                    {token.text}
-                                  </Text>
+                      /* Paragraph story view - TTS button inline to the left */
+                      <HStack align="flex-start" spacing={3} w="100%">
+                        <IconButton
+                          onClick={() =>
+                            playNarrationWithHighlighting(
+                              storyData.fullStory?.tgt
+                            )
+                          }
+                          variant="outline"
+                          borderColor="rgba(255, 255, 255, 0.3)"
+                          color="white"
+                          _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
+                          size="sm"
+                          isDisabled={isAutoPlaying || isSynthesizingTarget}
+                          aria-label={uiText.playTarget(targetDisplayName)}
+                          icon={renderSpeakerIcon(isSynthesizingTarget)}
+                          flexShrink={0}
+                          mt={1}
+                        />
+                        <Box flex="1" minW={0}>
+                          <Text
+                            fontSize="lg"
+                            fontWeight="500"
+                            color="#f8fafc"
+                            mb={3}
+                            lineHeight="1.8"
+                          >
+                            {tokenizedText
+                              ? tokenizedText.map((token, idx) =>
+                                  token.isWord ? (
+                                    <Text
+                                      key={idx}
+                                      as="span"
+                                      px={1}
+                                      borderRadius="4px"
+                                      transition="background-color 0.1s ease"
+                                    >
+                                      {token.text}
+                                    </Text>
+                                  ) : (
+                                    <Text key={idx} as="span">
+                                      {token.text}
+                                    </Text>
+                                  )
                                 )
-                              )
-                            : (storyData.fullStory?.tgt || "")
-                                .split(" ")
-                                .map((w, i) => (
-                                  <Text
-                                    key={i}
-                                    as="span"
-                                    px={1}
-                                    borderRadius="4px"
-                                    transition="background-color 0.3s ease"
-                                  >
-                                    {w}
-                                  </Text>
-                                ))}
-                        </Text>
-                        {!!storyData.fullStory?.sup && (
-                          <Text fontSize="md" color="#94a3b8" lineHeight="1.6">
-                            {storyData.fullStory.sup}
+                              : (storyData.fullStory?.tgt || "")
+                                  .split(" ")
+                                  .map((w, i) => (
+                                    <Text
+                                      key={i}
+                                      as="span"
+                                      px={1}
+                                      borderRadius="4px"
+                                      transition="background-color 0.3s ease"
+                                    >
+                                      {w}
+                                    </Text>
+                                  ))}
                           </Text>
-                        )}
-                      </>
+                          {!!storyData.fullStory?.sup && (
+                            <Text
+                              fontSize="md"
+                              color="#94a3b8"
+                              lineHeight="1.6"
+                            >
+                              {storyData.fullStory.sup}
+                            </Text>
+                          )}
+                        </Box>
+                      </HStack>
                     )}
                   </Box>
                 </VStack>
