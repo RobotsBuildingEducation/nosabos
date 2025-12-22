@@ -202,6 +202,10 @@ const HelpChatFab = forwardRef(
     const realtimeAliveRef = useRef(false);
     // Track current assistant message being built (to prevent splitting)
     const currentAssistantIdRef = useRef(null);
+    // Track the most recent assistant message (even after it's marked done)
+    const latestAssistantRef = useRef({ id: null, createdAt: 0 });
+    // Track when we last inserted a realtime user message to avoid reordering old turns
+    const lastUserInsertAtRef = useRef(0);
 
     // -- helpers ---------------------------------------------------------------
 
@@ -532,13 +536,21 @@ const HelpChatFab = forwardRef(
             if (text) {
               const userId = crypto.randomUUID?.() || String(Date.now());
               const newUserMsg = { id: userId, role: "user", text, done: true };
+              const now = Date.now();
 
               setMessages((prev) => {
                 // If there's an assistant message being built, insert user message BEFORE it
                 // This ensures proper chat order: user message -> AI response
-                if (currentAssistantIdRef.current) {
+                const candidateAssistantId =
+                  currentAssistantIdRef.current ||
+                  (latestAssistantRef.current.createdAt >
+                  lastUserInsertAtRef.current
+                    ? latestAssistantRef.current.id
+                    : null);
+
+                if (candidateAssistantId) {
                   const assistantIdx = prev.findIndex(
-                    (m) => m.id === currentAssistantIdRef.current
+                    (m) => m.id === candidateAssistantId
                   );
                   if (assistantIdx >= 0) {
                     const updated = [...prev];
@@ -549,6 +561,8 @@ const HelpChatFab = forwardRef(
                 // Otherwise just append
                 return [...prev, newUserMsg];
               });
+
+              lastUserInsertAtRef.current = now;
             }
           }
 
@@ -575,6 +589,7 @@ const HelpChatFab = forwardRef(
               // Start new assistant message
               const assistantId = crypto.randomUUID?.() || String(Date.now());
               currentAssistantIdRef.current = assistantId;
+              latestAssistantRef.current = { id: assistantId, createdAt: Date.now() };
               return [
                 ...prev,
                 {
