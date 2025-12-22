@@ -36,7 +36,7 @@ import {
 } from "@chakra-ui/react";
 import { FaPaperPlane, FaStop, FaMicrophone } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
+import { TTS_LANG_TAG, getRandomVoice, getTTSPlayer } from "../utils/tts";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -44,6 +44,7 @@ import remarkGfm from "remark-gfm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { FiSend } from "react-icons/fi";
+import { RiVolumeUpLine } from "react-icons/ri";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -192,6 +193,9 @@ const HelpChatFab = forwardRef(
     const [messages, setMessages] = useState([]); // {id, role, text, done}
     const stopRef = useRef(false);
     const scrollRef = useRef(null);
+    const ttsAudioRef = useRef(null);
+    const ttsPcRef = useRef(null);
+    const [replayingId, setReplayingId] = useState(null);
 
     // Realtime voice chat state
     const [realtimeStatus, setRealtimeStatus] = useState("disconnected"); // disconnected | connecting | connected
@@ -481,6 +485,60 @@ const HelpChatFab = forwardRef(
       stopRef.current = true;
       setSending(false);
     };
+
+    const stopTtsPlayback = useCallback(() => {
+      try {
+        ttsAudioRef.current?.pause();
+      } catch {}
+      if (ttsAudioRef.current) {
+        try {
+          ttsAudioRef.current.srcObject = null;
+        } catch {}
+      }
+      try {
+        ttsPcRef.current?.close();
+      } catch {}
+      ttsAudioRef.current = null;
+      ttsPcRef.current = null;
+      setReplayingId(null);
+    }, []);
+
+    const playAssistantTts = useCallback(
+      async (message) => {
+        if (!message?.id || !message?.text) return;
+        if (replayingId === message.id) {
+          stopTtsPlayback();
+          return;
+        }
+
+        stopTtsPlayback();
+        setReplayingId(message.id);
+
+        try {
+          const langTag =
+            TTS_LANG_TAG[progress?.targetLang] || TTS_LANG_TAG.es || "en-US";
+          const player = await getTTSPlayer({
+            text: message.text,
+            voice: getRandomVoice(),
+            langTag,
+          });
+
+          ttsAudioRef.current = player.audio;
+          ttsPcRef.current = player.pc;
+
+          const cleanup = () => stopTtsPlayback();
+          player.audio.onended = cleanup;
+          player.audio.onerror = cleanup;
+
+          await player.done;
+          stopTtsPlayback();
+        } catch (error) {
+          console.error("TTS playback error:", error);
+          stopTtsPlayback();
+        }
+      },
+      [progress?.targetLang, replayingId, stopTtsPlayback]
+    );
 
     // -- Realtime voice chat functions -------------------------------------------
 
@@ -812,6 +870,18 @@ const HelpChatFab = forwardRef(
       }
     }, [isOpen, stopRealtime]);
 
+    useEffect(() => {
+      if (!isOpen && replayingId) {
+        stopTtsPlayback();
+      }
+    }, [isOpen, replayingId, stopTtsPlayback]);
+
+    useEffect(() => {
+      return () => {
+        stopTtsPlayback();
+      };
+    }, [stopTtsPlayback]);
+
     const openAndSend = useCallback(
       (text) => {
         const payload = normalizeQuestion(text);
@@ -952,7 +1022,32 @@ const HelpChatFab = forwardRef(
                       </Box>
                     </HStack>
                   ) : (
-                    <HStack key={m.id} justify="flex-start">
+                    <HStack
+                      key={m.id}
+                      justify="flex-start"
+                      align="flex-start"
+                      spacing={2}
+                    >
+                      <IconButton
+                        aria-label={
+                          appLanguage === "es"
+                            ? "Reproducir respuesta"
+                            : "Replay response"
+                        }
+                        icon={
+                          replayingId === m.id ? (
+                            <Spinner size="sm" />
+                          ) : (
+                            <RiVolumeUpLine />
+                          )
+                        }
+                        size="sm"
+                        variant="ghost"
+                        colorScheme="purple"
+                        onClick={() => playAssistantTts(m)}
+                        isDisabled={!m.text}
+                        mt={1}
+                      />
                       <Box
                         bg="gray.800"
                         border="1px solid"
