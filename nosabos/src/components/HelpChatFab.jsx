@@ -209,7 +209,14 @@ const HelpChatFab = forwardRef(
 
     // -- helpers ---------------------------------------------------------------
 
-    const pushMessage = (m) => setMessages((prev) => [...prev, m]);
+    const pushMessage = (m) =>
+      setMessages((prev) => [
+        ...prev,
+        {
+          createdAt: Date.now(),
+          ...m,
+        },
+      ]);
 
     const patchLastAssistant = (updater) =>
       setMessages((prev) => {
@@ -535,8 +542,14 @@ const HelpChatFab = forwardRef(
             const text = data.transcript?.trim();
             if (text) {
               const userId = crypto.randomUUID?.() || String(Date.now());
-              const newUserMsg = { id: userId, role: "user", text, done: true };
               const now = Date.now();
+              const newUserMsg = {
+                id: userId,
+                role: "user",
+                text,
+                done: true,
+                createdAt: now,
+              };
 
               setMessages((prev) => {
                 // If there's an assistant message being built, insert user message BEFORE it
@@ -558,6 +571,25 @@ const HelpChatFab = forwardRef(
                     return updated;
                   }
                 }
+
+                // Fallback: if the last message is a recent assistant reply, still place
+                // the user message ahead of it to preserve natural order.
+                const lastAssistantIdx = (() => {
+                  for (let i = prev.length - 1; i >= 0; i--) {
+                    if (prev[i].role === "assistant") return i;
+                  }
+                  return -1;
+                })();
+
+                if (
+                  lastAssistantIdx >= 0 &&
+                  (prev[lastAssistantIdx].createdAt || 0) > lastUserInsertAtRef.current
+                ) {
+                  const updated = [...prev];
+                  updated.splice(lastAssistantIdx, 0, newUserMsg);
+                  return updated;
+                }
+
                 // Otherwise just append
                 return [...prev, newUserMsg];
               });
@@ -588,8 +620,9 @@ const HelpChatFab = forwardRef(
 
               // Start new assistant message
               const assistantId = crypto.randomUUID?.() || String(Date.now());
+              const createdAt = Date.now();
               currentAssistantIdRef.current = assistantId;
-              latestAssistantRef.current = { id: assistantId, createdAt: Date.now() };
+              latestAssistantRef.current = { id: assistantId, createdAt };
               return [
                 ...prev,
                 {
@@ -597,6 +630,7 @@ const HelpChatFab = forwardRef(
                   role: "assistant",
                   text: delta,
                   done: false,
+                  createdAt,
                 },
               ];
             });
