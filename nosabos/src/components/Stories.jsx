@@ -68,6 +68,13 @@ const renderSpeakerIcon = (loading) =>
 =================================== */
 const RESPONSES_URL = import.meta.env.VITE_RESPONSES_URL;
 
+const STORY_TEXT_SX = {
+  whiteSpace: "pre-wrap",
+  wordBreak: "normal",
+  overflowWrap: "normal",
+  hyphens: "none",
+};
+
 /* ================================
    Helpers / Language utils
 =================================== */
@@ -1825,6 +1832,7 @@ export default function StoryMode({
                                     fontWeight="500"
                                     color="#f8fafc"
                                     lineHeight="1.6"
+                                    sx={STORY_TEXT_SX}
                                   >
                                     {sentence.tgt}
                                   </Text>
@@ -1834,6 +1842,7 @@ export default function StoryMode({
                                       color="#94a3b8"
                                       lineHeight="1.4"
                                       mt={1}
+                                      sx={STORY_TEXT_SX}
                                     >
                                       {sentence.sup}
                                     </Text>
@@ -1871,6 +1880,7 @@ export default function StoryMode({
                             color="#f8fafc"
                             mb={3}
                             lineHeight="1.8"
+                            sx={STORY_TEXT_SX}
                           >
                             {tokenizedText
                               ? tokenizedText.map((token, idx) =>
@@ -1909,6 +1919,7 @@ export default function StoryMode({
                               fontSize="md"
                               color="#94a3b8"
                               lineHeight="1.6"
+                              sx={STORY_TEXT_SX}
                             >
                               {storyData.fullStory.sup}
                             </Text>
@@ -1948,6 +1959,7 @@ export default function StoryMode({
                       lineHeight="1.6"
                       mb={2}
                       textAlign="center"
+                      sx={STORY_TEXT_SX}
                     >
                       {currentSentence?.tgt}
                     </Text>
@@ -1957,6 +1969,7 @@ export default function StoryMode({
                         color="#94a3b8"
                         lineHeight="1.5"
                         textAlign="center"
+                        sx={STORY_TEXT_SX}
                       >
                         {currentSentence?.sup}
                       </Text>
