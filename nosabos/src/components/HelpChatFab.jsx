@@ -196,6 +196,7 @@ const HelpChatFab = forwardRef(
     const ttsAudioRef = useRef(null);
     const ttsPcRef = useRef(null);
     const [replayingId, setReplayingId] = useState(null);
+    const [replayLoadingId, setReplayLoadingId] = useState(null);
 
     // Realtime voice chat state
     const [realtimeStatus, setRealtimeStatus] = useState("disconnected"); // disconnected | connecting | connected
@@ -501,6 +502,7 @@ const HelpChatFab = forwardRef(
       ttsAudioRef.current = null;
       ttsPcRef.current = null;
       setReplayingId(null);
+      setReplayLoadingId(null);
     }, []);
 
     const playAssistantTts = useCallback(
@@ -513,6 +515,18 @@ const HelpChatFab = forwardRef(
 
         stopTtsPlayback();
         setReplayingId(message.id);
+        setReplayLoadingId(message.id);
+
+        let loadingTimer = null;
+        const clearLoading = () => {
+          if (loadingTimer) {
+            clearTimeout(loadingTimer);
+            loadingTimer = null;
+          }
+          setReplayLoadingId((cur) => (cur === message.id ? null : cur));
+        };
+
+        loadingTimer = setTimeout(clearLoading, 1800);
 
         try {
           const langTag =
@@ -527,6 +541,7 @@ const HelpChatFab = forwardRef(
           ttsPcRef.current = player.pc;
 
           await player.ready;
+          clearLoading();
           try {
             await player.audio.play();
           } catch (err) {
@@ -542,6 +557,8 @@ const HelpChatFab = forwardRef(
         } catch (error) {
           console.error("TTS playback error:", error);
           stopTtsPlayback();
+        } finally {
+          clearLoading();
         }
       },
       [progress?.targetLang, replayingId, stopTtsPlayback]
@@ -1047,7 +1064,7 @@ const HelpChatFab = forwardRef(
                               : "Replay response"
                           }
                           icon={
-                            replayingId === m.id ? (
+                            replayLoadingId === m.id ? (
                               <Spinner size="sm" />
                             ) : (
                               <RiVolumeUpLine />
