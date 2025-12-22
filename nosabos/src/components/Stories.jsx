@@ -30,10 +30,7 @@ import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
 import { FiArrowRight } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import {
-  PiSpeakerHighDuotone,
-  PiMicrophoneStageDuotone,
-} from "react-icons/pi";
+import { PiSpeakerHighDuotone, PiMicrophoneStageDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -120,7 +117,15 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
-  if (["nah", "nahuatl", "náhuatl", "huastec nahuatl", "náhuatl huasteco"].includes(raw))
+  if (
+    [
+      "nah",
+      "nahuatl",
+      "náhuatl",
+      "huastec nahuatl",
+      "náhuatl huasteco",
+    ].includes(raw)
+  )
     return "nah";
   return null;
 };
@@ -364,6 +369,7 @@ export default function StoryMode({
 
   // State
   const [storyData, setStoryData] = useState(null);
+  const [storyType, setStoryType] = useState(null); // 'paragraph' | 'conversation'
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -616,7 +622,9 @@ export default function StoryMode({
       setLastSuccessInfo(null);
     } catch (error) {
       // Bilingual fallback (ES/EN) that respects target/support languages
+      setStoryType("paragraph"); // Fallback is always a paragraph story
       const fallback = {
+        storyType: "paragraph",
         fullStory: {
           tgt:
             targetLang === "en"
@@ -736,6 +744,11 @@ export default function StoryMode({
       const sName = LLM_LANG_NAME(sLang);
       const diff = getCEFRPromptHint(cefrLevel);
 
+      // Randomly select story type: 'paragraph' or 'conversation'
+      const selectedStoryType =
+        Math.random() < 0.5 ? "paragraph" : "conversation";
+      setStoryType(selectedStoryType);
+
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
       // Special handling for tutorial mode - use very simple "hello" content only
       const isTutorial = lessonContent?.topic === "tutorial";
@@ -747,26 +760,55 @@ export default function StoryMode({
           : `STRICT REQUIREMENT: The story MUST focus on the topic: ${lessonContent.topic}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
         : "Create a simple conversational story appropriate for language practice.";
 
-      const prompt = [
-        "You are a language tutor. Generate a short, engaging conversational story",
-        `for a learner practicing ${tName} (${tLang}). Difficulty: ${
-          isTutorial ? "absolute beginner, very easy" : diff
-        }.`,
-        `Also provide a brief support translation in ${sName} (${sLang}).`,
-        scenarioDirective,
-        "",
-        "Constraints:",
-        "- 8 to 10 sentences total.",
-        "- Simple, culturally-relevant, 8–15 words per sentence.",
-        "- Create an engaging narrative that helps the learner practice the language.",
-        "- NO headings, NO commentary, NO code fences.",
-        "",
-        "Output protocol (NDJSON, one compact JSON object per line):",
-        `1) For each sentence, output: {"type":"sentence","tgt":"<${tName} sentence>","sup":"<${sName} translation>"}`,
-        '2) After the final sentence, output: {"type":"done"}',
-        "",
-        "Begin now and follow the protocol exactly.",
-      ].join(" ");
+      // Different prompts based on story type
+      let prompt;
+      if (selectedStoryType === "conversation") {
+        prompt = [
+          "You are a language tutor. Generate a short dialogue/conversation script",
+          `for a learner practicing ${tName} (${tLang}). Difficulty: ${
+            isTutorial ? "absolute beginner, very easy" : diff
+          }.`,
+          `Also provide a brief support translation in ${sName} (${sLang}).`,
+          scenarioDirective,
+          "",
+          "Constraints:",
+          "- Create a dialogue between 2-3 characters with distinct names.",
+          "- 8 to 10 lines of dialogue total.",
+          "- Each line should be 8–15 words, natural conversational speech.",
+          "- Use simple, culturally-relevant names for the characters.",
+          "- The dialogue should be engaging and natural, like a real conversation.",
+          "- NO headings, NO commentary, NO code fences.",
+          "",
+          "Output protocol (NDJSON, one compact JSON object per line):",
+          `1) For each line of dialogue, output: {"type":"sentence","character":"<character name>","tgt":"<${tName} dialogue line>","sup":"<${sName} translation>"}`,
+          '2) After the final line, output: {"type":"done"}',
+          "",
+          "IMPORTANT: The 'character' field must contain ONLY the character's name. Do NOT include the name in the 'tgt' field.",
+          "",
+          "Begin now and follow the protocol exactly.",
+        ].join(" ");
+      } else {
+        prompt = [
+          "You are a language tutor. Generate a short, engaging conversational story",
+          `for a learner practicing ${tName} (${tLang}). Difficulty: ${
+            isTutorial ? "absolute beginner, very easy" : diff
+          }.`,
+          `Also provide a brief support translation in ${sName} (${sLang}).`,
+          scenarioDirective,
+          "",
+          "Constraints:",
+          "- 8 to 10 sentences total.",
+          "- Simple, culturally-relevant, 8–15 words per sentence.",
+          "- Create an engaging narrative that helps the learner practice the language.",
+          "- NO headings, NO commentary, NO code fences.",
+          "",
+          "Output protocol (NDJSON, one compact JSON object per line):",
+          `1) For each sentence, output: {"type":"sentence","tgt":"<${tName} sentence>","sup":"<${sName} translation>"}`,
+          '2) After the final sentence, output: {"type":"done"}',
+          "",
+          "Begin now and follow the protocol exactly.",
+        ].join(" ");
+      }
 
       // Stream from Gemini
       const resp = await simplemodel.generateContentStream({
@@ -793,6 +835,8 @@ export default function StoryMode({
           const item = {
             tgt: String(obj.tgt || "").trim(),
             sup: String(obj.sup || "").trim(),
+            // Include character name for conversation scripts
+            ...(obj.character && { character: String(obj.character).trim() }),
           };
           const key = `${item.tgt}|||${item.sup}`;
           if (seenLineKeys.has(key)) return;
@@ -804,6 +848,7 @@ export default function StoryMode({
             setStoryData({
               fullStory: { tgt: item.tgt, sup: item.sup || "" },
               sentences: [item],
+              storyType: selectedStoryType,
             });
             setIsLoading(false);
             revealed = true;
@@ -826,6 +871,7 @@ export default function StoryMode({
                     (item.sup || ""),
                 },
                 sentences: nextSentences,
+                storyType: selectedStoryType,
               };
             });
           }
@@ -912,6 +958,8 @@ export default function StoryMode({
             sentences: prev.sentences.map((s) => ({
               [tLang]: s.tgt,
               [sLang]: s.sup,
+              // Preserve character for conversation scripts
+              ...(s.character && { character: s.character }),
             })),
           },
           tLang,
@@ -922,18 +970,29 @@ export default function StoryMode({
           "tgt",
           "sup"
         );
-        storyCacheRef.current = validated;
+        // Preserve character data and storyType from original sentences
+        const finalData = {
+          ...validated,
+          storyType: selectedStoryType,
+          sentences: validated.sentences.map((s, idx) => ({
+            ...s,
+            ...(prev.sentences[idx]?.character && {
+              character: prev.sentences[idx].character,
+            }),
+          })),
+        };
+        storyCacheRef.current = finalData;
         setCurrentSentenceIndex(0);
         setSessionXp(0);
         setSessionComplete(false);
         setSessionSummary({
           passed: 0,
-          total: validated?.sentences?.length || 0,
+          total: finalData?.sentences?.length || 0,
         });
         setPassedCount(0);
         setShowFullStory(true);
         setHighlightedWordIndex(-1);
-        return validated;
+        return finalData;
       });
     } catch (error) {
       console.error(
@@ -1545,7 +1604,7 @@ export default function StoryMode({
                 ? uiLang === "es"
                   ? ""
                   : ""
-                : `${currentSentenceIndex} / ${
+                : `${currentSentenceIndex + 1} / ${
                     storyData?.sentences?.length || 0
                   }`}
             </Text>
@@ -1584,6 +1643,21 @@ export default function StoryMode({
           style={{ width: "100%", maxWidth: "1280px" }}
         >
           <VStack spacing={6} align="stretch" w="100%">
+            {onSkip && (
+              <Box w="100%" display="flex" justifyContent={"flex-end"}>
+                <Button
+                  onClick={handleSkipModule}
+                  // size="md"
+                  variant="outline"
+                  border="1px solid cyan"
+                  color="white"
+                  // padding={6}
+                  width="fit-content"
+                >
+                  {uiLang === "es" ? "Saltar" : "Skip"}
+                </Button>
+              </Box>
+            )}
             <Box
               bg="rgba(255, 255, 255, 0.05)"
               p={6}
@@ -1593,78 +1667,15 @@ export default function StoryMode({
             >
               {showFullStory ? (
                 <VStack spacing={4} align="stretch">
-                  {/* Full story with highlighting (target language) */}
-                  <Box>
-                    <Text
-                      fontSize="lg"
-                      fontWeight="500"
-                      color="#f8fafc"
-                      mb={3}
-                      lineHeight="1.8"
-                    >
-                      {tokenizedText
-                        ? tokenizedText.map((token, idx) =>
-                            token.isWord ? (
-                              <Text
-                                key={idx}
-                                as="span"
-                                // bg={
-                                //   highlightedWordIndex ===
-                                //   tokenizedText
-                                //     .slice(0, idx)
-                                //     .filter((t) => t.isWord).length
-                                //     ? "rgba(139, 92, 246, 0.3)"
-                                //     : "transparent"
-                                // }
-                                px={1}
-                                borderRadius="4px"
-                                transition="background-color 0.1s ease"
-                              >
-                                {token.text}
-                              </Text>
-                            ) : (
-                              <Text key={idx} as="span">
-                                {token.text}
-                              </Text>
-                            )
-                          )
-                        : (storyData.fullStory?.tgt || "")
-                            .split(" ")
-                            .map((w, i) => (
-                              <Text
-                                key={i}
-                                as="span"
-                                // bg={
-                                //   highlightedWordIndex === i
-                                //     ? "rgba(139, 92, 246, 0.3)"
-                                //     : "transparent"
-                                // }
-                                px={1}
-                                borderRadius="4px"
-                                transition="background-color 0.3s ease"
-                              >
-                                {w}
-                              </Text>
-                            ))}
-                    </Text>
-                    {!!storyData.fullStory?.sup && (
-                      <Text fontSize="md" color="#94a3b8" lineHeight="1.6">
-                        {storyData.fullStory.sup}
-                      </Text>
-                    )}
-                  </Box>
-
                   {/* Audio controls */}
+
                   <HStack spacing={3} justify="center">
                     <Button
                       onClick={() =>
                         playNarrationWithHighlighting(storyData.fullStory?.tgt)
                       }
                       color="white"
-                      isDisabled={
-                        isAutoPlaying ||
-                        isSynthesizingTarget
-                      }
+                      isDisabled={isAutoPlaying || isSynthesizingTarget}
                       aria-label={uiText.playTarget(targetDisplayName)}
                       px={3}
                     >
@@ -1701,6 +1712,101 @@ export default function StoryMode({
                       {uiText.startPractice}
                     </Button>
                   </Center>
+                  {/* Full story with highlighting (target language) */}
+                  <Box>
+                    {/* Conversation script view - dialogue format */}
+                    {(storyData.storyType === "conversation" ||
+                      storyType === "conversation") &&
+                    storyData.sentences?.some((s) => s.character) ? (
+                      <VStack spacing={3} align="stretch">
+                        {storyData.sentences.map((sentence, idx) => (
+                          <Box
+                            key={idx}
+                            pl={2}
+                            borderLeft="3px solid"
+                            borderColor="teal.400"
+                          >
+                            {sentence.character && (
+                              <Text
+                                fontSize="sm"
+                                fontWeight="700"
+                                color="teal.300"
+                                mb={1}
+                              >
+                                {sentence.character}
+                              </Text>
+                            )}
+                            <Text
+                              fontSize="lg"
+                              fontWeight="500"
+                              color="#f8fafc"
+                              lineHeight="1.6"
+                            >
+                              {sentence.tgt}
+                            </Text>
+                            {!!sentence.sup && (
+                              <Text
+                                fontSize="sm"
+                                color="#94a3b8"
+                                lineHeight="1.4"
+                                mt={1}
+                              >
+                                {sentence.sup}
+                              </Text>
+                            )}
+                          </Box>
+                        ))}
+                      </VStack>
+                    ) : (
+                      /* Paragraph story view - original format */
+                      <>
+                        <Text
+                          fontSize="lg"
+                          fontWeight="500"
+                          color="#f8fafc"
+                          mb={3}
+                          lineHeight="1.8"
+                        >
+                          {tokenizedText
+                            ? tokenizedText.map((token, idx) =>
+                                token.isWord ? (
+                                  <Text
+                                    key={idx}
+                                    as="span"
+                                    px={1}
+                                    borderRadius="4px"
+                                    transition="background-color 0.1s ease"
+                                  >
+                                    {token.text}
+                                  </Text>
+                                ) : (
+                                  <Text key={idx} as="span">
+                                    {token.text}
+                                  </Text>
+                                )
+                              )
+                            : (storyData.fullStory?.tgt || "")
+                                .split(" ")
+                                .map((w, i) => (
+                                  <Text
+                                    key={i}
+                                    as="span"
+                                    px={1}
+                                    borderRadius="4px"
+                                    transition="background-color 0.3s ease"
+                                  >
+                                    {w}
+                                  </Text>
+                                ))}
+                        </Text>
+                        {!!storyData.fullStory?.sup && (
+                          <Text fontSize="md" color="#94a3b8" lineHeight="1.6">
+                            {storyData.fullStory.sup}
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  </Box>
                 </VStack>
               ) : (
                 /* Sentence practice */
@@ -1709,6 +1815,22 @@ export default function StoryMode({
                     <Text fontSize="lg" fontWeight="500" color="#f8fafc" mb={3}>
                       {uiText.practiceThis}
                     </Text>
+                    {/* Show character label for conversation scripts */}
+                    {currentSentence?.character && (
+                      <Box textAlign="center" mb={2}>
+                        <Tag
+                          size="md"
+                          colorScheme="teal"
+                          borderRadius="full"
+                          px={3}
+                          py={1}
+                        >
+                          <TagLabel fontWeight="600">
+                            {currentSentence.character}
+                          </TagLabel>
+                        </Tag>
+                      </Box>
+                    )}
                     <Text
                       fontSize="xl"
                       fontWeight="600"
@@ -1736,7 +1858,7 @@ export default function StoryMode({
                       mt={2}
                     >
                       {uiLang === "es" ? "Oración" : "Sentence"}{" "}
-                      {currentSentenceIndex} {uiLang === "es" ? "de" : "of"}{" "}
+                      {currentSentenceIndex + 1} {uiLang === "es" ? "de" : "of"}{" "}
                       {storyData.sentences.length}
                     </Text>
                   </Box>
@@ -1878,20 +2000,6 @@ export default function StoryMode({
         </motion.div>
 
         {/* Skip button - only show in lesson mode */}
-        {onSkip && (
-          <Center mt={4}>
-            <Button
-              onClick={handleSkipModule}
-              // size="md"
-              variant="outline"
-              colorScheme="orange"
-              color="white"
-              padding={6}
-            >
-              {uiLang === "es" ? "Saltar" : "Skip"}
-            </Button>
-          </Center>
-        )}
       </Box>
     </Box>
   );
