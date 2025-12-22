@@ -375,6 +375,7 @@ export default function StoryMode({
 
   const [isPlayingTarget, setIsPlayingTarget] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
+  const [playingLineIndex, setPlayingLineIndex] = useState(null);
   const [sentenceCompleted, setSentenceCompleted] = useState(false); // Track when sentence is completed but not advanced
   const [lastSuccessInfo, setLastSuccessInfo] = useState(null);
 
@@ -1705,6 +1706,7 @@ export default function StoryMode({
                       <VStack spacing={4} align="stretch">
                         {storyData.sentences.map((sentence, idx) => {
                           const isLeft = idx % 2 === 0;
+                          const isThisLinePlaying = playingLineIndex === idx;
                           return (
                             <Flex
                               key={idx}
@@ -1717,16 +1719,25 @@ export default function StoryMode({
                                 flexDirection={isLeft ? "row" : "row-reverse"}
                               >
                                 <IconButton
-                                  onClick={() => playTargetTTS(sentence.tgt)}
+                                  onClick={() => {
+                                    setPlayingLineIndex(idx);
+                                    playTargetTTS(sentence.tgt).finally(() =>
+                                      setPlayingLineIndex(null)
+                                    );
+                                  }}
                                   variant="outline"
                                   borderColor="rgba(255, 255, 255, 0.3)"
                                   color="white"
                                   _hover={{ bg: "rgba(255, 255, 255, 0.1)" }}
                                   size="xs"
                                   aria-label={`Play ${sentence.character || "line"}`}
-                                  icon={renderSpeakerIcon(false)}
+                                  icon={renderSpeakerIcon(
+                                    isThisLinePlaying &&
+                                      (isPlayingTarget || isSynthesizingTarget)
+                                  )}
                                   flexShrink={0}
                                   mt={1}
+                                  isDisabled={isPlayingTarget || isSynthesizingTarget}
                                 />
                                 <Box
                                   px={3}
@@ -1779,7 +1790,7 @@ export default function StoryMode({
                       </VStack>
                     ) : (
                       /* Paragraph story view - TTS button inline to the left */
-                      <HStack align="flex-start" spacing={3}>
+                      <HStack align="flex-start" spacing={3} w="100%">
                         <IconButton
                           onClick={() =>
                             playNarrationWithHighlighting(
@@ -1797,7 +1808,7 @@ export default function StoryMode({
                           flexShrink={0}
                           mt={1}
                         />
-                        <Box flex="1">
+                        <Box flex="1" minW={0}>
                           <Text
                             fontSize="lg"
                             fontWeight="500"
