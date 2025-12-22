@@ -36,7 +36,7 @@ import {
 } from "@chakra-ui/react";
 import { FaPaperPlane, FaStop, FaMicrophone } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
+import { TTS_LANG_TAG, getRandomVoice, getTTSPlayer } from "../utils/tts";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -44,6 +44,7 @@ import remarkGfm from "remark-gfm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { FiSend } from "react-icons/fi";
+import { RiVolumeUpLine } from "react-icons/ri";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -192,6 +193,10 @@ const HelpChatFab = forwardRef(
     const [messages, setMessages] = useState([]); // {id, role, text, done}
     const stopRef = useRef(false);
     const scrollRef = useRef(null);
+    const ttsAudioRef = useRef(null);
+    const ttsPcRef = useRef(null);
+    const [replayingId, setReplayingId] = useState(null);
+    const [replayLoadingId, setReplayLoadingId] = useState(null);
 
     // Realtime voice chat state
     const [realtimeStatus, setRealtimeStatus] = useState("disconnected"); // disconnected | connecting | connected
@@ -202,10 +207,21 @@ const HelpChatFab = forwardRef(
     const realtimeAliveRef = useRef(false);
     // Track current assistant message being built (to prevent splitting)
     const currentAssistantIdRef = useRef(null);
+    // Track the most recent assistant message (even after it's marked done)
+    const latestAssistantRef = useRef({ id: null, createdAt: 0 });
+    // Track when we last inserted a realtime user message to avoid reordering old turns
+    const lastUserInsertAtRef = useRef(0);
 
     // -- helpers ---------------------------------------------------------------
 
-    const pushMessage = (m) => setMessages((prev) => [...prev, m]);
+    const pushMessage = (m) =>
+      setMessages((prev) => [
+        ...prev,
+        {
+          createdAt: Date.now(),
+          ...m,
+        },
+      ]);
 
     const patchLastAssistant = (updater) =>
       setMessages((prev) => {
@@ -471,6 +487,83 @@ const HelpChatFab = forwardRef(
       setSending(false);
     };
 
+    const stopTtsPlayback = useCallback(() => {
+      try {
+        ttsAudioRef.current?.pause();
+      } catch {}
+      if (ttsAudioRef.current) {
+        try {
+          ttsAudioRef.current.srcObject = null;
+        } catch {}
+      }
+      try {
+        ttsPcRef.current?.close();
+      } catch {}
+      ttsAudioRef.current = null;
+      ttsPcRef.current = null;
+      setReplayingId(null);
+      setReplayLoadingId(null);
+    }, []);
+
+    const playAssistantTts = useCallback(
+      async (message) => {
+        if (!message?.id || !message?.text) return;
+        if (replayingId === message.id) {
+          stopTtsPlayback();
+          return;
+        }
+
+        stopTtsPlayback();
+        setReplayingId(message.id);
+        setReplayLoadingId(message.id);
+
+        let loadingTimer = null;
+        const clearLoading = () => {
+          if (loadingTimer) {
+            clearTimeout(loadingTimer);
+            loadingTimer = null;
+          }
+          setReplayLoadingId((cur) => (cur === message.id ? null : cur));
+        };
+
+        loadingTimer = setTimeout(clearLoading, 1800);
+
+        try {
+          const langTag =
+            TTS_LANG_TAG[progress?.targetLang] || TTS_LANG_TAG.es || "en-US";
+          const player = await getTTSPlayer({
+            text: message.text,
+            voice: getRandomVoice(),
+            langTag,
+          });
+
+          ttsAudioRef.current = player.audio;
+          ttsPcRef.current = player.pc;
+
+          await player.ready;
+          clearLoading();
+          try {
+            await player.audio.play();
+          } catch (err) {
+            console.warn("TTS play blocked", err);
+          }
+
+          const cleanup = () => stopTtsPlayback();
+          player.audio.onended = cleanup;
+          player.audio.onerror = cleanup;
+
+          await player.done;
+          stopTtsPlayback();
+        } catch (error) {
+          console.error("TTS playback error:", error);
+          stopTtsPlayback();
+        } finally {
+          clearLoading();
+        }
+      },
+      [progress?.targetLang, replayingId, stopTtsPlayback]
+    );
+
     // -- Realtime voice chat functions -------------------------------------------
 
     const buildRealtimeInstructions = useCallback(() => {
@@ -531,14 +624,28 @@ const HelpChatFab = forwardRef(
             const text = data.transcript?.trim();
             if (text) {
               const userId = crypto.randomUUID?.() || String(Date.now());
-              const newUserMsg = { id: userId, role: "user", text, done: true };
+              const now = Date.now();
+              const newUserMsg = {
+                id: userId,
+                role: "user",
+                text,
+                done: true,
+                createdAt: now,
+              };
 
               setMessages((prev) => {
                 // If there's an assistant message being built, insert user message BEFORE it
                 // This ensures proper chat order: user message -> AI response
-                if (currentAssistantIdRef.current) {
+                const candidateAssistantId =
+                  currentAssistantIdRef.current ||
+                  (latestAssistantRef.current.createdAt >
+                  lastUserInsertAtRef.current
+                    ? latestAssistantRef.current.id
+                    : null);
+
+                if (candidateAssistantId) {
                   const assistantIdx = prev.findIndex(
-                    (m) => m.id === currentAssistantIdRef.current
+                    (m) => m.id === candidateAssistantId
                   );
                   if (assistantIdx >= 0) {
                     const updated = [...prev];
@@ -546,9 +653,30 @@ const HelpChatFab = forwardRef(
                     return updated;
                   }
                 }
+
+                // Fallback: if the last message is a recent assistant reply, still place
+                // the user message ahead of it to preserve natural order.
+                const lastAssistantIdx = (() => {
+                  for (let i = prev.length - 1; i >= 0; i--) {
+                    if (prev[i].role === "assistant") return i;
+                  }
+                  return -1;
+                })();
+
+                if (
+                  lastAssistantIdx >= 0 &&
+                  (prev[lastAssistantIdx].createdAt || 0) > lastUserInsertAtRef.current
+                ) {
+                  const updated = [...prev];
+                  updated.splice(lastAssistantIdx, 0, newUserMsg);
+                  return updated;
+                }
+
                 // Otherwise just append
                 return [...prev, newUserMsg];
               });
+
+              lastUserInsertAtRef.current = now;
             }
           }
 
@@ -574,7 +702,9 @@ const HelpChatFab = forwardRef(
 
               // Start new assistant message
               const assistantId = crypto.randomUUID?.() || String(Date.now());
+              const createdAt = Date.now();
               currentAssistantIdRef.current = assistantId;
+              latestAssistantRef.current = { id: assistantId, createdAt };
               return [
                 ...prev,
                 {
@@ -582,6 +712,7 @@ const HelpChatFab = forwardRef(
                   role: "assistant",
                   text: delta,
                   done: false,
+                  createdAt,
                 },
               ];
             });
@@ -763,6 +894,18 @@ const HelpChatFab = forwardRef(
       }
     }, [isOpen, stopRealtime]);
 
+    useEffect(() => {
+      if (!isOpen && replayingId) {
+        stopTtsPlayback();
+      }
+    }, [isOpen, replayingId, stopTtsPlayback]);
+
+    useEffect(() => {
+      return () => {
+        stopTtsPlayback();
+      };
+    }, [stopTtsPlayback]);
+
     const openAndSend = useCallback(
       (text) => {
         const payload = normalizeQuestion(text);
@@ -903,28 +1046,53 @@ const HelpChatFab = forwardRef(
                       </Box>
                     </HStack>
                   ) : (
-                    <HStack key={m.id} justify="flex-start">
-                      <Box
-                        bg="gray.800"
-                        border="1px solid"
-                        borderColor="gray.700"
-                        p={3}
-                        rounded="xl"
-                        maxW="85%"
-                      >
-                        <HStack mb={1} justify="space-between">
-                          {!m.done && <Spinner size="xs" speed="0.6s" />}
-                        </HStack>
+                  <HStack key={m.id} justify="flex-start" align="flex-start">
+                    <Box
+                      bg="gray.800"
+                      border="1px solid"
+                      borderColor="gray.700"
+                      p={3}
+                      rounded="xl"
+                      maxW="85%"
+                      w="fit-content"
+                    >
+                      <HStack align="flex-start" spacing={3}>
+                        <IconButton
+                          aria-label={
+                            appLanguage === "es"
+                              ? "Reproducir respuesta"
+                              : "Replay response"
+                          }
+                          icon={
+                            replayLoadingId === m.id ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <RiVolumeUpLine />
+                            )
+                          }
+                          size="sm"
+                          variant="ghost"
+                          colorScheme="purple"
+                          onClick={() => playAssistantTts(m)}
+                          isDisabled={!m.text}
+                          mt={1}
+                        />
+                        <Box flex="1">
+                          <HStack mb={1} justify="space-between">
+                            {!m.done && <Spinner size="xs" speed="0.6s" />}
+                          </HStack>
 
-                        <Markdown>{main}</Markdown>
+                          <Markdown>{main}</Markdown>
 
-                        {!!gloss && (
-                          <Box opacity={0.8} fontSize="sm" mt={1}>
-                            <Markdown>{gloss}</Markdown>
-                          </Box>
-                        )}
-                      </Box>
-                    </HStack>
+                          {!!gloss && (
+                            <Box opacity={0.8} fontSize="sm" mt={1}>
+                              <Markdown>{gloss}</Markdown>
+                            </Box>
+                          )}
+                        </Box>
+                      </HStack>
+                    </Box>
+                  </HStack>
                   );
                 })}
               </VStack>
