@@ -60,9 +60,9 @@ const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 const MOBILE_TEXT_SX = {
   whiteSpace: "pre-wrap",
-  wordBreak: "break-word",
-  overflowWrap: "break-word",
-  hyphens: "auto",
+  wordBreak: "normal",
+  overflowWrap: "normal",
+  hyphens: "none",
 };
 const isoNow = () => {
   try {
