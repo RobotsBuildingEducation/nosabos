@@ -2007,7 +2007,14 @@ export default function StoryMode({
                     </Center>
                     <HStack spacing={3} justify="center">
                       <Button
-                        onClick={() => playTargetTTS(currentSentence?.tgt)}
+                        onClick={() =>
+                          playTargetTTS(
+                            currentSentence?.tgt,
+                            currentSentence?.character
+                              ? characterVoiceMap.get(currentSentence.character)
+                              : null
+                          )
+                        }
                         aria-label={uiText.listen}
                         px={3}
                         variant="outline"
