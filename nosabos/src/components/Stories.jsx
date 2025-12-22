@@ -30,10 +30,7 @@ import { motion } from "framer-motion";
 import { FaArrowLeft, FaStop, FaPen } from "react-icons/fa";
 import { FiArrowRight } from "react-icons/fi";
 import { FaWandMagicSparkles } from "react-icons/fa6";
-import {
-  PiSpeakerHighDuotone,
-  PiMicrophoneStageDuotone,
-} from "react-icons/pi";
+import { PiSpeakerHighDuotone, PiMicrophoneStageDuotone } from "react-icons/pi";
 import { useNavigate } from "react-router-dom";
 import {
   doc,
@@ -120,7 +117,15 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
-  if (["nah", "nahuatl", "náhuatl", "huastec nahuatl", "náhuatl huasteco"].includes(raw))
+  if (
+    [
+      "nah",
+      "nahuatl",
+      "náhuatl",
+      "huastec nahuatl",
+      "náhuatl huasteco",
+    ].includes(raw)
+  )
     return "nah";
   return null;
 };
@@ -740,7 +745,8 @@ export default function StoryMode({
       const diff = getCEFRPromptHint(cefrLevel);
 
       // Randomly select story type: 'paragraph' or 'conversation'
-      const selectedStoryType = Math.random() < 0.5 ? "paragraph" : "conversation";
+      const selectedStoryType =
+        Math.random() < 0.5 ? "paragraph" : "conversation";
       setStoryType(selectedStoryType);
 
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
@@ -777,7 +783,7 @@ export default function StoryMode({
           `1) For each line of dialogue, output: {"type":"sentence","character":"<character name>","tgt":"<${tName} dialogue line>","sup":"<${sName} translation>"}`,
           '2) After the final line, output: {"type":"done"}',
           "",
-          "IMPORTANT: The 'character' field must contain ONLY the character's name (e.g., 'María', 'Carlos'). Do NOT include the name in the 'tgt' field.",
+          "IMPORTANT: The 'character' field must contain ONLY the character's name. Do NOT include the name in the 'tgt' field.",
           "",
           "Begin now and follow the protocol exactly.",
         ].join(" ");
@@ -970,7 +976,9 @@ export default function StoryMode({
           storyType: selectedStoryType,
           sentences: validated.sentences.map((s, idx) => ({
             ...s,
-            ...(prev.sentences[idx]?.character && { character: prev.sentences[idx].character }),
+            ...(prev.sentences[idx]?.character && {
+              character: prev.sentences[idx].character,
+            }),
           })),
         };
         storyCacheRef.current = finalData;
@@ -1635,6 +1643,21 @@ export default function StoryMode({
           style={{ width: "100%", maxWidth: "1280px" }}
         >
           <VStack spacing={6} align="stretch" w="100%">
+            {onSkip && (
+              <Box w="100%" display="flex" justifyContent={"flex-end"}>
+                <Button
+                  onClick={handleSkipModule}
+                  // size="md"
+                  variant="outline"
+                  border="1px solid cyan"
+                  color="white"
+                  // padding={6}
+                  width="fit-content"
+                >
+                  {uiLang === "es" ? "Saltar" : "Skip"}
+                </Button>
+              </Box>
+            )}
             <Box
               bg="rgba(255, 255, 255, 0.05)"
               p={6}
@@ -1644,14 +1667,65 @@ export default function StoryMode({
             >
               {showFullStory ? (
                 <VStack spacing={4} align="stretch">
+                  {/* Audio controls */}
+
+                  <HStack spacing={3} justify="center">
+                    <Button
+                      onClick={() =>
+                        playNarrationWithHighlighting(storyData.fullStory?.tgt)
+                      }
+                      color="white"
+                      isDisabled={isAutoPlaying || isSynthesizingTarget}
+                      aria-label={uiText.playTarget(targetDisplayName)}
+                      px={3}
+                    >
+                      {renderSpeakerIcon(isSynthesizingTarget)}
+                    </Button>
+                  </HStack>
+
+                  <Center>
+                    <Button
+                      onClick={() => {
+                        stopAllAudio();
+                        setShowFullStory(false);
+                        setCurrentSentenceIndex(0);
+                        setSessionXp(0);
+                        setSessionComplete(false);
+                        setSessionSummary({
+                          passed: 0,
+                          total: storyData?.sentences?.length || 0,
+                        });
+                        sessionAwardedRef.current = false;
+                        setPassedCount(0);
+                        setHighlightedWordIndex(-1);
+                        stopSpeakRecording();
+                      }}
+                      size="lg"
+                      px={8}
+                      rounded="full"
+                      bg="linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
+                      color="white"
+                      fontWeight="600"
+                      _active={{ transform: "translateY(0)" }}
+                      transition="all 0.2s ease"
+                    >
+                      {uiText.startPractice}
+                    </Button>
+                  </Center>
                   {/* Full story with highlighting (target language) */}
                   <Box>
                     {/* Conversation script view - dialogue format */}
-                    {(storyData.storyType === "conversation" || storyType === "conversation") &&
-                     storyData.sentences?.some(s => s.character) ? (
+                    {(storyData.storyType === "conversation" ||
+                      storyType === "conversation") &&
+                    storyData.sentences?.some((s) => s.character) ? (
                       <VStack spacing={3} align="stretch">
                         {storyData.sentences.map((sentence, idx) => (
-                          <Box key={idx} pl={2} borderLeft="3px solid" borderColor="teal.400">
+                          <Box
+                            key={idx}
+                            pl={2}
+                            borderLeft="3px solid"
+                            borderColor="teal.400"
+                          >
                             {sentence.character && (
                               <Text
                                 fontSize="sm"
@@ -1671,7 +1745,12 @@ export default function StoryMode({
                               {sentence.tgt}
                             </Text>
                             {!!sentence.sup && (
-                              <Text fontSize="sm" color="#94a3b8" lineHeight="1.4" mt={1}>
+                              <Text
+                                fontSize="sm"
+                                color="#94a3b8"
+                                lineHeight="1.4"
+                                mt={1}
+                              >
                                 {sentence.sup}
                               </Text>
                             )}
@@ -1728,54 +1807,6 @@ export default function StoryMode({
                       </>
                     )}
                   </Box>
-
-                  {/* Audio controls */}
-                  <HStack spacing={3} justify="center">
-                    <Button
-                      onClick={() =>
-                        playNarrationWithHighlighting(storyData.fullStory?.tgt)
-                      }
-                      color="white"
-                      isDisabled={
-                        isAutoPlaying ||
-                        isSynthesizingTarget
-                      }
-                      aria-label={uiText.playTarget(targetDisplayName)}
-                      px={3}
-                    >
-                      {renderSpeakerIcon(isSynthesizingTarget)}
-                    </Button>
-                  </HStack>
-
-                  <Center>
-                    <Button
-                      onClick={() => {
-                        stopAllAudio();
-                        setShowFullStory(false);
-                        setCurrentSentenceIndex(0);
-                        setSessionXp(0);
-                        setSessionComplete(false);
-                        setSessionSummary({
-                          passed: 0,
-                          total: storyData?.sentences?.length || 0,
-                        });
-                        sessionAwardedRef.current = false;
-                        setPassedCount(0);
-                        setHighlightedWordIndex(-1);
-                        stopSpeakRecording();
-                      }}
-                      size="lg"
-                      px={8}
-                      rounded="full"
-                      bg="linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
-                      color="white"
-                      fontWeight="600"
-                      _active={{ transform: "translateY(0)" }}
-                      transition="all 0.2s ease"
-                    >
-                      {uiText.startPractice}
-                    </Button>
-                  </Center>
                 </VStack>
               ) : (
                 /* Sentence practice */
@@ -1794,7 +1825,9 @@ export default function StoryMode({
                           px={3}
                           py={1}
                         >
-                          <TagLabel fontWeight="600">{currentSentence.character}</TagLabel>
+                          <TagLabel fontWeight="600">
+                            {currentSentence.character}
+                          </TagLabel>
                         </Tag>
                       </Box>
                     )}
@@ -1967,20 +2000,6 @@ export default function StoryMode({
         </motion.div>
 
         {/* Skip button - only show in lesson mode */}
-        {onSkip && (
-          <Center mt={4}>
-            <Button
-              onClick={handleSkipModule}
-              // size="md"
-              variant="outline"
-              colorScheme="orange"
-              color="white"
-              padding={6}
-            >
-              {uiLang === "es" ? "Saltar" : "Skip"}
-            </Button>
-          </Center>
-        )}
       </Box>
     </Box>
   );
