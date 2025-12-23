@@ -1514,7 +1514,7 @@ export default function App() {
   }, [user?.xp, user?.progress, resolvedTargetLang]);
 
   const needsSubscriptionPasscode = useMemo(
-    () => subscriptionXp >= 700 && !subscriptionVerified,
+    () => subscriptionXp >= 400 && !subscriptionVerified,
     [subscriptionXp, subscriptionVerified]
   );
 

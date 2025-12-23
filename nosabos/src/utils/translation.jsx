@@ -291,14 +291,14 @@ export const translations = {
           <Button
             onMouseDown={() => {
               window.open(
-                "https://www.patreon.com/posts/syllabus-getting-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                "https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share",
                 "_blank"
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
-                  "https://www.patreon.com/posts/syllabus-getting-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link",
+                  "https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share",
                   "_blank"
                 );
               }
@@ -912,7 +912,7 @@ export const translations = {
               color: "#63b3ed",
               fontWeight: "bold",
             }}
-            href="https://www.patreon.com/posts/syllabus-getting-86153437?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_creator&utm_content=join_link"
+            href="https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share"
             target="_blank"
           >
             Suscribirse o pagar una sola vez
