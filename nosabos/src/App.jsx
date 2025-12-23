@@ -134,6 +134,8 @@ const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
 const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
+const TEST_UNLOCK_NSEC =
+  "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
 
 const personaDefaultFor = (lang) =>
   translations?.[lang]?.DEFAULT_PERSONA ||
@@ -1090,6 +1092,16 @@ export default function App() {
       ? (localStorage.getItem("local_nsec") || "").trim()
       : ""
   );
+
+  const isTestUnlockActive = useMemo(() => {
+    if (activeNsec === TEST_UNLOCK_NSEC) return true;
+
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("local_nsec") === TEST_UNLOCK_NSEC;
+    }
+
+    return false;
+  }, [activeNsec]);
 
   useEffect(() => {
     if (!activeNpub) {
@@ -2975,6 +2987,23 @@ export default function App() {
 
   // Calculate lesson mode completion status (independent from flashcards)
   const lessonLevelCompletionStatus = useMemo(() => {
+    if (isTestUnlockActive) {
+      const unlockedStatus = {};
+
+      CEFR_LEVELS.forEach((level) => {
+        const totalLessons = CEFR_LEVEL_COUNTS[level]?.lessons || 0;
+
+        unlockedStatus[level] = {
+          completedLessons: totalLessons,
+          totalLessons,
+          isComplete: true,
+          lessonsProgress: 100,
+        };
+      });
+
+      return unlockedStatus;
+    }
+
     const status = {};
     const lessons = userProgress.lessons || {};
 
@@ -3000,10 +3029,27 @@ export default function App() {
     });
 
     return status;
-  }, [userProgress.lessons]);
+  }, [isTestUnlockActive, userProgress.lessons]);
 
   // Calculate flashcard mode completion status (independent from lessons)
   const flashcardLevelCompletionStatus = useMemo(() => {
+    if (isTestUnlockActive) {
+      const unlockedStatus = {};
+
+      CEFR_LEVELS.forEach((level) => {
+        const totalFlashcards = CEFR_LEVEL_COUNTS[level]?.flashcards || 0;
+
+        unlockedStatus[level] = {
+          completedFlashcards: totalFlashcards,
+          totalFlashcards,
+          isComplete: true,
+          flashcardsProgress: 100,
+        };
+      });
+
+      return unlockedStatus;
+    }
+
     const status = {};
     const flashcards = userProgress.flashcards || {};
 
@@ -3033,7 +3079,7 @@ export default function App() {
     });
 
     return status;
-  }, [userProgress.flashcards]);
+  }, [isTestUnlockActive, userProgress.flashcards]);
 
   // Legacy: Combined completion status (for backwards compatibility)
   const levelCompletionStatus = useMemo(() => {
