@@ -10229,114 +10229,241 @@ function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
 
 /**
  * Generates integrated practice goals that combine multiple unit topics.
- * Includes goal variations for multiple chat sessions within the same lesson.
- * Creates specific, actionable goals based on actual lesson content.
+ * Creates specific, actionable roleplay scenarios based on actual lesson content.
  */
 function generateIntegratedPracticeGoal(topic, unit, lessons = []) {
-  // Collect all focus points and lesson titles from unit lessons
-  const allFocusPoints = [];
-  const allTopics = [];
+  // Collect lesson titles and topics from unit lessons
   const lessonTitles = [];
+  const lessonDescriptions = [];
 
   lessons.forEach((lesson) => {
     // Skip quiz and supplemental lessons
     if (lesson.isFinalQuiz || lesson.id?.includes("integrated-practice")) {
       return;
     }
-
-    if (lesson.content?.vocabulary?.focusPoints) {
-      allFocusPoints.push(...lesson.content.vocabulary.focusPoints);
-    }
-    if (lesson.content?.grammar?.focusPoints) {
-      allFocusPoints.push(...lesson.content.grammar.focusPoints);
-    }
-    if (lesson.content?.vocabulary?.topic) {
-      allTopics.push(lesson.content.vocabulary.topic);
-    }
     if (lesson.title?.en) {
       lessonTitles.push(lesson.title.en);
     }
+    if (lesson.description?.en) {
+      lessonDescriptions.push(lesson.description.en);
+    }
   });
 
-  const uniqueFocus = [...new Set(allFocusPoints)].slice(0, 4);
-  const uniqueTopics = [...new Set(allTopics)].slice(0, 3);
   const topicKey = topic.toLowerCase();
   const unitTitle = unit?.title?.en || topic;
 
-  // Build specific lesson context for better goal prompts
-  const lessonContext =
-    lessonTitles.length > 0
-      ? `Previous lessons covered: ${lessonTitles.slice(0, 4).join(", ")}.`
-      : "";
-
-  const skillsList =
-    uniqueFocus.length > 0
-      ? uniqueFocus.slice(0, 3).join(", ")
-      : uniqueTopics.length > 0
-      ? uniqueTopics.join(", ")
-      : topic;
-
-  // Create varied goals that specifically reference what was learned
+  // Create varied goals - prioritize topic-specific templates
   const goalVariations = [];
 
-  // First, check for topic-specific templates
+  // First, check for topic-specific templates - these are handcrafted and best
   const topicSpecificGoals = INTEGRATED_PRACTICE_TEMPLATES[topicKey];
-  if (topicSpecificGoals) {
+  if (topicSpecificGoals && topicSpecificGoals.length > 0) {
     goalVariations.push(...topicSpecificGoals);
   }
 
-  // Add dynamically generated goals based on actual lesson content
-  if (uniqueFocus.length >= 2) {
-    goalVariations.push({
-      scenario: `Use ${uniqueFocus[0]} and ${uniqueFocus[1]} together`,
-      prompt: `Create a scenario where the learner must combine ${uniqueFocus[0]} with ${uniqueFocus[1]}. ${lessonContext} Guide them to use both skills naturally in conversation.`,
-      successCriteria: `User successfully uses both ${uniqueFocus[0]} and ${uniqueFocus[1]} in their responses`,
-    });
-  }
-
-  if (lessonTitles.length > 0) {
-    const firstLesson = lessonTitles[0];
-    const lastLesson = lessonTitles[lessonTitles.length - 1] || firstLesson;
-    goalVariations.push({
-      scenario: `Apply skills from ${firstLesson} to ${lastLesson}`,
-      prompt: `The learner has studied: ${lessonTitles.join(", ")}. Create a realistic situation where they must draw on multiple lessons. Ask follow-up questions to test different skills.`,
-      successCriteria: `User demonstrates vocabulary and structures from at least 2 different lessons in the unit`,
-    });
-  }
-
-  // Add roleplay goal with specific context
-  goalVariations.push({
-    scenario: `Real conversation: ${unitTitle}`,
-    prompt: `Roleplay a realistic situation related to ${unitTitle}. ${lessonContext} The learner should use ${skillsList}. Build the conversation naturally with follow-ups.`,
-    successCriteria: `User navigates a full conversation using ${topic} vocabulary and demonstrates multiple skills from the unit`,
-  });
-
-  // Add a "teach back" goal
-  if (uniqueFocus.length > 0) {
-    goalVariations.push({
-      scenario: `Explain how to ${uniqueFocus[0]}`,
-      prompt: `Ask the learner to explain or demonstrate ${uniqueFocus[0]} as if helping someone who doesn't know it. This tests productive mastery.`,
-      successCriteria: `User clearly explains or demonstrates ${uniqueFocus[0]} with examples`,
-    });
-  }
+  // Generate creative roleplay scenarios based on the unit topic
+  // These should be specific actions, not abstract concepts
+  const creativeGoals = generateCreativeGoalsForTopic(
+    topicKey,
+    unitTitle,
+    lessonTitles
+  );
+  goalVariations.push(...creativeGoals);
 
   // Ensure we have at least one goal
   if (goalVariations.length === 0) {
     goalVariations.push({
-      scenario: `Practice everything from ${unitTitle}`,
-      prompt: `Have a natural conversation about ${topic}. The learner should demonstrate vocabulary and grammar from the full unit.`,
-      successCriteria: `User produces varied ${topic} language showing unit mastery`,
+      scenario: `Have a conversation about ${unitTitle}`,
+      prompt: `Start a natural conversation about ${unitTitle}. Ask the learner questions and respond to their answers. Build on what they say.`,
+      successCriteria: `User participates actively in a conversation about ${unitTitle}`,
     });
   }
 
   // Return first goal as default, with variations array for progression
   return {
     ...goalVariations[0],
-    focusPoints: uniqueFocus,
-    lessonTitles: lessonTitles.slice(0, 5), // Include for reference
+    lessonTitles: lessonTitles.slice(0, 5),
     goalVariations: goalVariations,
     goalIndex: 0,
   };
+}
+
+/**
+ * Generate creative, actionable roleplay goals based on topic
+ * These are specific scenarios, not abstract "use X and Y together"
+ */
+function generateCreativeGoalsForTopic(topicKey, unitTitle, lessonTitles) {
+  const goals = [];
+
+  // Map topics to creative roleplay scenarios
+  const topicScenarios = {
+    transportation: [
+      {
+        scenario: "Buy a bus ticket to the city center",
+        prompt:
+          "You work at a bus station. The learner needs to buy a ticket. Ask where they want to go, tell them the price, and give them departure information.",
+        successCriteria:
+          "User asks for a ticket, understands the price, and confirms their trip details",
+      },
+      {
+        scenario: "Ask a stranger for directions to the train station",
+        prompt:
+          "The learner is lost and needs to find the train station. Give them directions using landmarks and transportation vocabulary.",
+        successCriteria:
+          "User asks for directions and confirms they understand how to get there",
+      },
+      {
+        scenario: "Explain your daily commute to a new coworker",
+        prompt:
+          "You are a new coworker asking about how to get to work. Ask the learner what transportation they use, how long it takes, and any tips.",
+        successCriteria:
+          "User describes their commute with transportation type, duration, and route details",
+      },
+    ],
+    greetings: [
+      {
+        scenario: "Meet a friend's parent for the first time",
+        prompt:
+          "You are your friend's parent meeting the learner. Have a polite greeting exchange - introductions, pleasantries, and small talk.",
+        successCriteria:
+          "User greets politely, introduces themselves, and responds appropriately to questions",
+      },
+    ],
+    food: [
+      {
+        scenario: "Order breakfast at a café",
+        prompt:
+          "You are a waiter at a café. Take the learner's breakfast order - ask what they want to eat and drink, suggest items, and confirm the order.",
+        successCriteria:
+          "User orders food and drink items and responds to your suggestions",
+      },
+      {
+        scenario: "Recommend a restaurant to a tourist",
+        prompt:
+          "You are a tourist asking for restaurant recommendations. Ask the learner about good places to eat, what kind of food they serve, and how to get there.",
+        successCriteria:
+          "User recommends a place and describes the food and location",
+      },
+    ],
+    numbers: [
+      {
+        scenario: "Exchange phone numbers with a new friend",
+        prompt:
+          "You just met the learner and want to stay in touch. Exchange phone numbers - ask for theirs, give yours, and confirm you got it right.",
+        successCriteria:
+          "User gives their phone number clearly and confirms they wrote down yours correctly",
+      },
+    ],
+    family: [
+      {
+        scenario: "Show photos of your family to a friend",
+        prompt:
+          "Ask the learner to describe their family as if showing you photos. Ask about names, ages, relationships, and what each person is like.",
+        successCriteria:
+          "User describes multiple family members with names and at least one detail about each",
+      },
+    ],
+    places: [
+      {
+        scenario: "Recommend your favorite spot in the city",
+        prompt:
+          "You are new to the city and looking for good places to visit. Ask the learner for recommendations - what's there, why they like it, how to get there.",
+        successCriteria:
+          "User recommends a specific place with description and directions",
+      },
+    ],
+    shopping: [
+      {
+        scenario: "Return an item that doesn't fit",
+        prompt:
+          "You work at a clothing store. The learner wants to return or exchange something. Ask what's wrong with it and help them find a solution.",
+        successCriteria:
+          "User explains the problem and successfully completes the return/exchange",
+      },
+    ],
+    time: [
+      {
+        scenario: "Make plans to meet a friend this weekend",
+        prompt:
+          "You want to meet up with the learner this weekend. Discuss when you're both free, what time works, and what you'll do together.",
+        successCriteria:
+          "User discusses availability using time expressions and agrees on a specific time to meet",
+      },
+    ],
+    weather: [
+      {
+        scenario: "Decide what to do today based on the weather",
+        prompt:
+          "Discuss today's weather with the learner and make plans together. Talk about what the weather is like and what activities would be good or bad for it.",
+        successCriteria:
+          "User describes the weather and suggests appropriate activities",
+      },
+    ],
+    work: [
+      {
+        scenario: "Tell a new acquaintance about your job",
+        prompt:
+          "You just met the learner at a party. Ask about their work - what they do, where they work, if they like it, and what a typical day is like.",
+        successCriteria:
+          "User describes their job with at least 3 details (role, place, activities, or opinions)",
+      },
+    ],
+    health: [
+      {
+        scenario: "Describe your symptoms to a pharmacist",
+        prompt:
+          "You work at a pharmacy. The learner doesn't feel well. Ask about their symptoms, how long they've had them, and recommend something to help.",
+        successCriteria:
+          "User describes symptoms clearly and responds to your recommendations",
+      },
+    ],
+    hobbies: [
+      {
+        scenario: "Invite someone to join your hobby",
+        prompt:
+          "Ask the learner about their hobbies, then have them try to convince you to try their favorite hobby. Ask questions about what it involves and why they enjoy it.",
+        successCriteria:
+          "User describes their hobby in detail and explains why you should try it",
+      },
+    ],
+  };
+
+  // Find matching scenarios for this topic
+  for (const [key, scenarios] of Object.entries(topicScenarios)) {
+    if (topicKey.includes(key) || key.includes(topicKey)) {
+      goals.push(...scenarios);
+      break;
+    }
+  }
+
+  // If we found topic-specific goals, add a synthesis goal using lesson titles
+  if (goals.length > 0 && lessonTitles.length >= 2) {
+    goals.push({
+      scenario: `Combine: ${lessonTitles[0]} and ${lessonTitles[1]}`,
+      prompt: `Create a realistic conversation that naturally combines elements from "${lessonTitles[0]}" and "${lessonTitles[1]}". The learner should demonstrate they can use vocabulary and structures from both lessons.`,
+      successCriteria: `User demonstrates language from both ${lessonTitles[0]} and ${lessonTitles[1]} in their responses`,
+    });
+  }
+
+  // If no specific match, create goals from lesson titles
+  if (goals.length === 0 && lessonTitles.length > 0) {
+    if (lessonTitles.length >= 2) {
+      goals.push({
+        scenario: `Use what you learned: ${lessonTitles[0]} + ${lessonTitles[1]}`,
+        prompt: `Have a conversation that lets the learner practice "${lessonTitles[0]}" and "${lessonTitles[1]}". Create a realistic situation where both topics come up naturally.`,
+        successCriteria: `User demonstrates skills from both lessons in a natural conversation`,
+      });
+    }
+
+    // Add a roleplay based on unit title
+    goals.push({
+      scenario: `Real-world practice: ${unitTitle}`,
+      prompt: `Create a realistic everyday situation involving ${unitTitle}. Guide the learner through the interaction with follow-up questions.`,
+      successCriteria: `User successfully navigates a realistic ${unitTitle} scenario`,
+    });
+  }
+
+  return goals;
 }
 
 /**
