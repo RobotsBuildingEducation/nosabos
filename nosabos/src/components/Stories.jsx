@@ -1914,19 +1914,7 @@ export default function StoryMode({
                                     </Text>
                                   )
                                 )
-                              : (storyData.fullStory?.tgt || "")
-                                  .split(" ")
-                                  .map((w, i) => (
-                                    <Text
-                                      key={i}
-                                      as="span"
-                                      px={1}
-                                      borderRadius="4px"
-                                      transition="background-color 0.3s ease"
-                                    >
-                                      {w}
-                                    </Text>
-                                  ))}
+                              : storyData.fullStory?.tgt || ""}
                           </Text>
                           {!!storyData.fullStory?.sup && (
                             <Text
