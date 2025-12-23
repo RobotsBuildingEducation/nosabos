@@ -58,6 +58,7 @@ import { getUserProficiencyLevel } from "../utils/cefrProgress";
 import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
+import RobotBuddyPro from "./RobotBuddyPro";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -287,9 +288,7 @@ function useUIText(uiLang, level) {
           ? "Define un rol para comenzar a jugar."
           : "Set a role to kick off your role play.",
       generatingTitle:
-        uiLang === "es"
-          ? "Generando tu juego de roles"
-          : "Preparing your role play…",
+        uiLang === "es" ? "Generando tu narrativo" : "Preparing your story…",
       generatingSub:
         uiLang === "es"
           ? "Preparando una escena basada en tu rol."
@@ -1557,7 +1556,7 @@ export default function StoryMode({
             <Text color="#94a3b8" fontSize="sm">
               {uiText.generatingSub}
             </Text>
-            <Spinner color="teal.300" />
+            <RobotBuddyPro />
           </VStack>
         </Center>
       </Box>
@@ -1646,7 +1645,6 @@ export default function StoryMode({
           </Box>
         </Box>
       </Box>
-
 
       {/* Content */}
       <Box
@@ -2002,8 +2000,10 @@ export default function StoryMode({
                               </Flex>
                               <Box>
                                 <Text fontWeight="semibold">
-                                  {t(uiLang, "stories_sentence_success_title") ||
-                                    uiText.wellDone}
+                                  {t(
+                                    uiLang,
+                                    "stories_sentence_success_title"
+                                  ) || uiText.wellDone}
                                 </Text>
                                 <Text fontSize="sm" color="whiteAlpha.800">
                                   {typeof lastSuccessInfo.score === "number"

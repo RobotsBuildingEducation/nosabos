@@ -1255,6 +1255,7 @@ export default function RealTimeTest({
     const focusPoints =
       lessonContentData?.focusPoints ||
       lessonData?.content?.vocabulary?.focusPoints ||
+      lessonData?.content?.grammar?.focusPoints ||
       [];
     const lessonTitle = lessonData?.title?.en || "";
     const lessonDesc = lessonData?.description?.en || "";
@@ -1263,22 +1264,50 @@ export default function RealTimeTest({
     const goalLangCode = supportLangRef.current || supportLang || "en";
     const goalLangName = goalLangCode === "es" ? "Spanish" : "English";
 
+    // Check if this is an integrated practice lesson
+    const isIntegratedPractice =
+      lessonData?.id?.includes("integrated-practice") || false;
+
+    // Gather vocabulary items if available
+    const vocabItems =
+      lessonData?.content?.vocabulary?.items?.slice(0, 5) || [];
+    const vocabExamples = vocabItems
+      .map((item) => item?.target || item?.word || item)
+      .filter(Boolean)
+      .join(", ");
+
+    // Build context string for integrated practice
+    let integratedContext = "";
+    if (isIntegratedPractice && lessonContentData?.focusPoints?.length > 0) {
+      integratedContext = `\nThis is an INTEGRATED PRACTICE lesson. The learner has studied: ${lessonContentData.focusPoints.join(
+        ", "
+      )}. Create a goal that combines multiple skills from the unit.`;
+    }
+
     const prompt = `You are creating a conversational practice goal for a language learner.
 
 Lesson: ${lessonTitle}
 Description: ${lessonDesc}
 Topic: ${topic}
-Focus areas: ${focusPoints.join(", ") || "general practice"}
+Focus areas: ${focusPoints.join(", ") || "general vocabulary and grammar"}${
+      vocabExamples ? `\nSample vocabulary: ${vocabExamples}` : ""
+    }
 Level: ${cefrHint}
-Goal language: ${goalLangName} (write every field in ${goalLangName}, avoid mixing languages)
+Goal language: ${goalLangName} (write every field in ${goalLangName}, avoid mixing languages)${integratedContext}
 
-Generate a short, clear, actionable conversation goal that makes sense for this lesson.
-The goal should be something the learner can demonstrate in a brief voice conversation.
+IMPORTANT: Create a SPECIFIC, ACTIONABLE goal - NOT a generic one.
+BAD examples (too generic): "Practice places", "Have a conversation about food", "places conversation"
+GOOD examples: "Ask for directions to the library", "Order a coffee and pastry at a café", "Describe your favorite room in your house"
+
+The goal must be:
+1. A concrete task the learner can complete in 1-3 minutes of conversation
+2. Written as a clear action (not "practice X" or "X conversation")
+3. Something that demonstrates understanding of ${topic}
 
 The goal must be written entirely in ${goalLangName}. Do NOT output English if the goal language is Spanish.
 
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{"scenario":"[2-6 word task title]","prompt":"[1-2 sentence roleplay instruction for AI tutor]","successCriteria":"[what the learner must do to succeed]"}`;
+{"scenario":"[2-6 word specific task]","prompt":"[1-2 sentence roleplay setup for AI tutor - what role to play, what situation to create]","successCriteria":"[specific observable behavior that shows success]"}`;
 
     try {
       const r = await fetch(RESPONSES_URL, {
@@ -1318,15 +1347,88 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       console.warn("AI goal generation failed:", err?.message || err);
     }
 
-    // Fallback if AI fails
+    // Fallback if AI fails - use topic-specific defaults
+    const topicFallbacks = {
+      greetings: {
+        scenario: "Say hello and ask how someone is",
+        prompt:
+          "Greet the learner and have them respond with a proper greeting exchange.",
+        successCriteria:
+          "User says hello and responds appropriately to 'how are you'",
+      },
+      numbers: {
+        scenario: "Give your phone number or age",
+        prompt:
+          "Ask the learner for their phone number, age, or another number in context.",
+        successCriteria: "User correctly produces numbers in a meaningful context",
+      },
+      food: {
+        scenario: "Order something to eat or drink",
+        prompt:
+          "You are a waiter/barista. Take the learner's order for food or drinks.",
+        successCriteria:
+          "User successfully orders at least one item using appropriate phrases",
+      },
+      places: {
+        scenario: "Describe where you live or want to visit",
+        prompt:
+          "Ask the learner about a place - where they live, want to visit, or their favorite place.",
+        successCriteria:
+          "User describes a location with at least 2-3 details",
+      },
+      shopping: {
+        scenario: "Buy something at a store",
+        prompt:
+          "You are a shopkeeper. Help the learner buy an item, discussing price and options.",
+        successCriteria:
+          "User asks about an item and completes a simple transaction",
+      },
+      travel: {
+        scenario: "Ask for or give directions",
+        prompt:
+          "Either give directions to a place or ask the learner how to get somewhere.",
+        successCriteria:
+          "User understands or produces directions with location vocabulary",
+      },
+      family: {
+        scenario: "Describe your family members",
+        prompt:
+          "Ask the learner about their family - who is in it, ages, names, etc.",
+        successCriteria:
+          "User describes at least 2 family members with some details",
+      },
+      time: {
+        scenario: "Discuss your daily schedule",
+        prompt:
+          "Ask the learner what they do at different times of day - morning routine, meals, etc.",
+        successCriteria:
+          "User describes activities connected to specific times",
+      },
+    };
+
+    const topicLower = topic.toLowerCase();
+    const matchedFallback = Object.entries(topicFallbacks).find(
+      ([key]) => topicLower.includes(key) || key.includes(topicLower)
+    );
+
+    if (matchedFallback) {
+      return matchedFallback[1];
+    }
+
+    // Generic fallback with focus points if available
+    const focusAction =
+      focusPoints.length > 0
+        ? `Use ${focusPoints[0]} in a real situation`
+        : `Share something about ${topic}`;
+
     return {
-      scenario: `Practice ${topic}`,
-      prompt: `Have a conversation about ${topic}. ${
+      scenario: focusAction,
+      prompt: `Create a realistic scenario where the learner must use ${topic} vocabulary. ${
         focusPoints.length
-          ? `Focus on: ${focusPoints.slice(0, 2).join(", ")}.`
-          : ""
+          ? `Specifically practice: ${focusPoints.slice(0, 2).join(", ")}.`
+          : "Ask follow-up questions to encourage them to say more."
       }`,
-      successCriteria: `User demonstrates understanding of ${topic}`,
+      successCriteria: `User produces multiple relevant ${topic} words or phrases in context`,
     };
   }
 
@@ -1388,14 +1490,28 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       lessonPropRef.current?.isTutorial || lesson?.isTutorial
     );
     const hasExplicitGoal = Boolean(
-      (lessonScenario && (activeGoal.prompt || activeGoal.successCriteria)) ||
+      (lessonScenario && activeGoal.prompt && activeGoal.successCriteria) ||
         lessonIsTutorial
     );
+
+    // Detect generic scenarios that need AI-generated goals
+    // These patterns indicate placeholder text rather than actionable goals
+    const genericPatterns = [
+      /^(practice|conversation|talk|speak)/i,  // Starts with generic verb
+      /(conversation|practice|mastery|basics?)$/i,  // Ends with generic word
+      /^[\w\s]{1,20}\s+(conversation|practice|mastery)$/i,  // "topic conversation" pattern
+      /^use\s+\w+\s+in\s+(real\s+)?conversation$/i,  // "use X in conversation"
+      /^practice\s+using\s+/i,  // "practice using..."
+      /^demonstrate\s+(mastery|understanding)\s+of/i,  // "demonstrate mastery of..."
+    ];
+
+    const matchesGenericPattern = (text) =>
+      genericPatterns.some((pattern) => pattern.test(text?.trim() || ""));
+
     const isGenericScenario =
       !scenario ||
       (!hasExplicitGoal &&
-        (scenario.length < 10 ||
-          /^(practice|conversation|talk|speak)/i.test(scenario.trim())));
+        (scenario.length < 10 || matchesGenericPattern(scenario)));
 
     if (isGenericScenario) {
       // Use AI to generate a contextual goal based on full lesson data (passed as prop)
@@ -1414,9 +1530,42 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       rubricEn = `${successCriteria}`;
       rubricEs = `${successCriteria}`;
     } else if (scenario) {
-      // Create actionable rubric from scenario
-      rubricEn = `Complete this task: ${scenario}`;
-      rubricEs = `Completa esta tarea: ${scenario}`;
+      // Create descriptive rubric from scenario - describe what success looks like
+      // Convert the scenario into an observable success criterion
+      const scenarioLower = scenario.toLowerCase();
+      if (
+        scenarioLower.includes("ask") ||
+        scenarioLower.includes("order") ||
+        scenarioLower.includes("request")
+      ) {
+        rubricEn = `User asks for or requests something related to the goal`;
+        rubricEs = `El usuario pide o solicita algo relacionado con el objetivo`;
+      } else if (
+        scenarioLower.includes("describe") ||
+        scenarioLower.includes("explain") ||
+        scenarioLower.includes("tell")
+      ) {
+        rubricEn = `User provides a clear description with multiple details`;
+        rubricEs = `El usuario proporciona una descripción clara con múltiples detalles`;
+      } else if (
+        scenarioLower.includes("introduce") ||
+        scenarioLower.includes("greet") ||
+        scenarioLower.includes("hello")
+      ) {
+        rubricEn = `User completes the social exchange appropriately`;
+        rubricEs = `El usuario completa el intercambio social apropiadamente`;
+      } else if (
+        scenarioLower.includes("buy") ||
+        scenarioLower.includes("shop") ||
+        scenarioLower.includes("purchase")
+      ) {
+        rubricEn = `User completes a transaction or makes a purchase`;
+        rubricEs = `El usuario completa una transacción o hace una compra`;
+      } else {
+        // Default: describe what the user should demonstrate
+        rubricEn = `User demonstrates the ability to ${scenario.toLowerCase()}`;
+        rubricEs = `El usuario demuestra la capacidad de ${scenario.toLowerCase()}`;
+      }
     } else {
       rubricEn = "Say a greeting in the target language";
       rubricEs = "Di un saludo en el idioma meta";
