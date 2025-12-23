@@ -828,12 +828,12 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 top="50%"
                 left="50%"
                 transform="translate(-50%, -50%)"
-                w="100px"
-                h="100px"
+                w="90px"
+                h="90px"
                 borderRadius="full"
                 bg={status === SKILL_STATUS.COMPLETED ? "#FFD700" : unit.color}
-                filter="blur(20px)"
-                opacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
+                filter="blur(16px)"
+                opacity={status === SKILL_STATUS.COMPLETED ? 0.6 : 0.4}
                 pointerEvents="none"
               />
             )}
@@ -860,7 +860,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 status === SKILL_STATUS.LOCKED
                   ? "0 8px 0px rgba(0,0,0,0.4)"
                   : status === SKILL_STATUS.COMPLETED
-                  ? "0 8px 0px #DAA520, 0 0 20px rgba(255,215,0,0.4)"
+                  ? "0 8px 0px #DAA520, 0 0 15px rgba(255,215,0,0.3)"
                   : `0 8px 0px ${unit.color}AA`
               }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
@@ -907,11 +907,11 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     position="absolute"
                     top="10%"
                     right="15%"
-                    w="10px"
-                    h="10px"
+                    w="9px"
+                    h="9px"
                     borderRadius="full"
                     bg="white"
-                    boxShadow="0 0 12px 4px rgba(255,255,255,0.8), 0 0 24px rgba(255,255,255,0.6)"
+                    boxShadow="0 0 10px 3px rgba(255,255,255,0.7), 0 0 18px rgba(255,255,255,0.5)"
                     animation="sparkle 2.4s ease-in-out infinite"
                     sx={{
                       "@keyframes sparkle": {
@@ -920,10 +920,10 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                           transform: "scale(0.5) rotate(0deg)",
                         },
                         "50%": {
-                          opacity: 0.6,
+                          opacity: 0.55,
                           transform: "scale(0.6) rotate(15deg)",
                           filter:
-                            "drop-shadow(0 0 10px rgba(255, 255, 255, 0.9))",
+                            "drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))",
                         },
                       },
                     }}
@@ -933,11 +933,11 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     position="absolute"
                     bottom="15%"
                     left="10%"
-                    w="8px"
-                    h="8px"
+                    w="7px"
+                    h="7px"
                     borderRadius="full"
                     bg="white"
-                    boxShadow="0 0 10px 3px rgba(255,255,255,0.7), 0 0 18px rgba(255,255,255,0.5)"
+                    boxShadow="0 0 8px 2px rgba(255,255,255,0.6), 0 0 14px rgba(255,255,255,0.4)"
                     animation="sparkle 2.7s ease-in-out infinite 1.2s"
                     sx={{
                       "@keyframes sparkle": {
@@ -946,9 +946,9 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                           transform: "scale(0.4) rotate(0deg)",
                         },
                         "50%": {
-                          opacity: 1,
-                          transform: "scale(1.4) rotate(-10deg)",
-                          filter: "drop-shadow(0 0 8px rgba(255,255,255,0.9))",
+                          opacity: 0.9,
+                          transform: "scale(1.3) rotate(-10deg)",
+                          filter: "drop-shadow(0 0 6px rgba(255,255,255,0.8))",
                         },
                       },
                     }}
@@ -958,11 +958,11 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     position="absolute"
                     top="45%"
                     left="60%"
-                    w="6px"
-                    h="6px"
+                    w="5px"
+                    h="5px"
                     borderRadius="full"
                     bg="white"
-                    boxShadow="0 0 10px 3px rgba(255,255,255,0.8), 0 0 20px rgba(255,255,255,0.6)"
+                    boxShadow="0 0 8px 2px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)"
                     animation="sparkle 2.2s ease-in-out infinite 0.6s"
                     sx={{
                       "@keyframes sparkle": {
@@ -971,9 +971,9 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                           transform: "scale(0.3) rotate(0deg)",
                         },
                         "50%": {
-                          opacity: 1,
-                          transform: "scale(1.2) rotate(8deg)",
-                          filter: "drop-shadow(0 0 9px rgba(255,255,255,0.9))",
+                          opacity: 0.9,
+                          transform: "scale(1.1) rotate(8deg)",
+                          filter: "drop-shadow(0 0 7px rgba(255,255,255,0.8))",
                         },
                       },
                     }}
