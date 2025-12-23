@@ -1871,37 +1871,8 @@ export default function StoryMode({
                             color="#f8fafc"
                             mb={3}
                             lineHeight="1.8"
-                            wordBreak="keep-all" // don't break inside words
-                            sx={{ overflowWrap: "normal", hyphens: "none" }} // no auto hyphenation
                           >
-                            {tokenizedText
-                              ? tokenizedText.map((token, idx) => (
-                                  <Text
-                                    key={idx}
-                                    as="span"
-                                    display="inline-block" // keep each token atomic
-                                    mr={token.isWord ? 1 : 1} // add spacing after words
-                                    borderRadius="4px"
-                                    transition="background-color 0.1s ease"
-                                  >
-                                    {token.text}
-                                  </Text>
-                                ))
-                              : (storyData.fullStory?.tgt || "")
-                                  .split(/\s+/)
-                                  .map((w, i) => (
-                                    <Text
-                                      key={i}
-                                      as="span"
-                                      display="inline-block"
-                                      px={1}
-                                      mr={1}
-                                      borderRadius="4px"
-                                      transition="background-color 0.3s ease"
-                                    >
-                                      {w}
-                                    </Text>
-                                  ))}
+                            {storyData.fullStory?.tgt || ""}
                           </Text>
 
                           {!!storyData.fullStory?.sup && (
