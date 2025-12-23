@@ -828,12 +828,12 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 top="50%"
                 left="50%"
                 transform="translate(-50%, -50%)"
-                w="90px"
-                h="90px"
+                w="80px"
+                h="80px"
                 borderRadius="full"
                 bg={status === SKILL_STATUS.COMPLETED ? "#FFD700" : unit.color}
-                filter="blur(16px)"
-                opacity={status === SKILL_STATUS.COMPLETED ? 0.6 : 0.4}
+                filter="blur(12px)"
+                opacity={status === SKILL_STATUS.COMPLETED ? 0.35 : 0.2}
                 pointerEvents="none"
               />
             )}
@@ -860,7 +860,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 status === SKILL_STATUS.LOCKED
                   ? "0 8px 0px rgba(0,0,0,0.4)"
                   : status === SKILL_STATUS.COMPLETED
-                  ? "0 8px 0px #DAA520, 0 0 15px rgba(255,215,0,0.3)"
+                  ? "0 8px 0px #DAA520, 0 0 8px rgba(255,215,0,0.15)"
                   : `0 8px 0px ${unit.color}AA`
               }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
