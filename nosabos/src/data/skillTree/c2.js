@@ -1029,6 +1029,19 @@ function addSupplementalLessons(level, unit) {
   const xpStep = 15;
   const topic = unit.title?.en || unit.description?.en || "unit theme";
 
+  // Collect focus points from unit lessons for skill builder goals
+  const allFocusPoints = [];
+  const lessonTitles = [];
+  lessons.forEach((lesson) => {
+    if (lesson.isFinalQuiz) return;
+    if (lesson.content?.vocabulary?.focusPoints) allFocusPoints.push(...lesson.content.vocabulary.focusPoints);
+    if (lesson.content?.grammar?.focusPoints) allFocusPoints.push(...lesson.content.grammar.focusPoints);
+    if (lesson.title?.en) lessonTitles.push(lesson.title.en);
+  });
+  const uniqueFocus = [...new Set(allFocusPoints)].slice(0, 4);
+  const lessonContext = lessonTitles.slice(0, 3).join(", ") || topic;
+  const focusContext = uniqueFocus.slice(0, 2).join(" and ") || topic;
+
   const supplementalLessons = [
     {
       id: `${unit.id}-skill-builder`,
@@ -1042,7 +1055,7 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep,
       xpReward: 35,
-      modes: ["grammar", "vocabulary"],
+      modes: ["grammar", "vocabulary", "realtime"],
       content: {
         grammar: {
           topic,
@@ -1051,6 +1064,30 @@ function addSupplementalLessons(level, unit) {
         vocabulary: {
           topic,
           prompt: `Cycle through quick recall of ${topic} phrases before applying them.`,
+        },
+        realtime: {
+          scenario: `Quick recall: ${focusContext}`,
+          prompt: `Run rapid-fire practice on ${topic} vocabulary and patterns from ${lessonContext}. Ask short questions and give immediate feedback. Focus on speed and accuracy.`,
+          successCriteria: `User correctly produces ${topic} vocabulary and patterns with quick responses`,
+          focusPoints: uniqueFocus,
+          goalVariations: [
+            {
+              scenario: `Quick recall: ${focusContext}`,
+              prompt: `Run rapid-fire practice on ${topic} vocabulary and patterns from ${lessonContext}. Ask short questions and give immediate feedback.`,
+              successCriteria: `User correctly produces ${topic} vocabulary and patterns with quick responses`,
+            },
+            {
+              scenario: `Pattern drill: ${uniqueFocus[0] || topic}`,
+              prompt: `Drill the learner on ${uniqueFocus[0] || topic} patterns. Present sentence starters they must complete, or ask them to transform sentences.`,
+              successCriteria: `User correctly applies ${uniqueFocus[0] || topic} patterns in multiple examples`,
+            },
+            {
+              scenario: `Mix and match: ${topic} vocabulary`,
+              prompt: `Test the learner's ${topic} vocabulary by asking them to describe, compare, or use words from ${lessonContext} in short sentences.`,
+              successCriteria: `User demonstrates recall of vocabulary from the unit lessons`,
+            },
+          ],
+          goalIndex: 0,
         },
       },
       cefrStage: level,
@@ -1218,7 +1255,7 @@ function normalizeLessonModes(unit, lesson) {
   if (isQuiz) {
     modes = ["grammar", "vocabulary"];
   } else if (isSkillBuilder) {
-    modes = ["grammar", "vocabulary"];
+    modes = ["grammar", "vocabulary", "realtime"];
   } else if (isIntegratedPractice) {
     modes = ["realtime", "reading", "stories"];
   } else {

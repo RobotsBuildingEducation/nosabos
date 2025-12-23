@@ -9673,7 +9673,7 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep,
       xpReward: 35,
-      modes: ["grammar", "vocabulary"],
+      modes: ["grammar", "vocabulary", "realtime"],
       content: {
         grammar: {
           topic,
@@ -9683,6 +9683,7 @@ function addSupplementalLessons(level, unit) {
           topic,
           prompt: `Cycle through quick recall of ${topic} phrases before applying them.`,
         },
+        realtime: generateSkillBuilderGoal(topic, unit, lessons),
       },
       cefrStage: level,
       pathway: "granularity",
@@ -10228,6 +10229,135 @@ function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
 }
 
 /**
+ * Generates skill builder goals that synthesize previous lessons in the unit.
+ * Focuses on targeted drills and pattern reinforcement before the quiz.
+ */
+function generateSkillBuilderGoal(topic, unit, lessons = []) {
+  // Collect focus points and lesson titles from unit lessons
+  const allFocusPoints = [];
+  const lessonTitles = [];
+
+  lessons.forEach((lesson) => {
+    // Skip quiz and supplemental lessons
+    if (lesson.isFinalQuiz || lesson.id?.includes("skill-builder") || lesson.id?.includes("integrated-practice")) {
+      return;
+    }
+
+    if (lesson.content?.vocabulary?.focusPoints) {
+      allFocusPoints.push(...lesson.content.vocabulary.focusPoints);
+    }
+    if (lesson.content?.grammar?.focusPoints) {
+      allFocusPoints.push(...lesson.content.grammar.focusPoints);
+    }
+    if (lesson.content?.realtime?.focusPoints) {
+      allFocusPoints.push(...lesson.content.realtime.focusPoints);
+    }
+    if (lesson.title?.en) {
+      lessonTitles.push(lesson.title.en);
+    }
+  });
+
+  const uniqueFocus = [...new Set(allFocusPoints)].slice(0, 4);
+  const topicKey = topic.toLowerCase();
+
+  // Create lesson-specific context for the skill builder
+  const lessonContext = lessonTitles.slice(0, 3).join(", ") || topic;
+  const focusContext = uniqueFocus.slice(0, 2).join(" and ") || topic;
+
+  // Create varied, actionable goals for skill building
+  const goalVariations = [
+    {
+      scenario: `Quick recall: ${focusContext}`,
+      prompt: `Run rapid-fire practice on ${topic} vocabulary and patterns from ${lessonContext}. Ask short questions and give immediate feedback. Focus on speed and accuracy.`,
+      successCriteria: `User correctly produces ${topic} vocabulary and patterns with quick responses`,
+    },
+    {
+      scenario: `Pattern drill: ${uniqueFocus[0] || topic}`,
+      prompt: `Drill the learner on ${uniqueFocus[0] || topic} patterns. Present sentence starters they must complete, or ask them to transform sentences using the target pattern.`,
+      successCriteria: `User correctly applies ${uniqueFocus[0] || topic} patterns in multiple examples`,
+    },
+    {
+      scenario: `Mix and match: ${topic} vocabulary`,
+      prompt: `Test the learner's ${topic} vocabulary by asking them to describe, compare, or use words from ${lessonContext} in short sentences.`,
+      successCriteria: `User demonstrates recall of vocabulary from the unit lessons`,
+    },
+    {
+      scenario: `Spot check: ${focusContext}`,
+      prompt: `Quiz the learner on key concepts from ${lessonContext}. Ask quick questions about ${topic} that require them to produce target language.`,
+      successCriteria: `User answers questions demonstrating understanding of ${topic} concepts`,
+    },
+  ];
+
+  // Add topic-specific variations if available
+  const topicSpecificGoals = SKILL_BUILDER_TEMPLATES[topicKey];
+  if (topicSpecificGoals) {
+    goalVariations.unshift(...topicSpecificGoals);
+  }
+
+  return {
+    ...goalVariations[0],
+    focusPoints: uniqueFocus,
+    goalVariations: goalVariations,
+    goalIndex: 0,
+  };
+}
+
+/**
+ * Topic-specific skill builder goals for targeted practice
+ */
+const SKILL_BUILDER_TEMPLATES = {
+  "pre-a1 foundations": [
+    {
+      scenario: "Quick introductions drill",
+      prompt: "Rapid-fire practice: Ask the learner to introduce themselves, then switch roles. Practice name, origin, and basic greetings quickly.",
+      successCriteria: "User produces introductions smoothly without long pauses",
+    },
+  ],
+  greetings: [
+    {
+      scenario: "Greeting response drill",
+      prompt: "Say greetings and have the learner respond appropriately. Vary formal/informal. Speed up as they improve.",
+      successCriteria: "User responds to greetings naturally and appropriately",
+    },
+  ],
+  numbers: [
+    {
+      scenario: "Number recognition drill",
+      prompt: "Call out numbers and have the learner repeat or write them. Include phone numbers, ages, prices. Test listening and production.",
+      successCriteria: "User correctly produces numbers in various contexts",
+    },
+  ],
+  food: [
+    {
+      scenario: "Menu vocabulary drill",
+      prompt: "Quick-fire food vocabulary: name dishes, ingredients, drinks. Have learner categorize or describe items rapidly.",
+      successCriteria: "User demonstrates food vocabulary with quick, accurate responses",
+    },
+  ],
+  shopping: [
+    {
+      scenario: "Price and transaction drill",
+      prompt: "Practice asking prices, stating amounts, and completing transactions. Use realistic numbers and common shopping phrases.",
+      successCriteria: "User handles prices and basic transaction language",
+    },
+  ],
+  transportation: [
+    {
+      scenario: "Directions and transport drill",
+      prompt: "Drill transportation vocabulary and simple directions. Ask how to get places, what transport to use, basic route descriptions.",
+      successCriteria: "User produces transportation vocabulary and basic directions",
+    },
+  ],
+  travel: [
+    {
+      scenario: "Travel vocabulary speed round",
+      prompt: "Quick practice on travel essentials: destinations, accommodations, activities. Have learner describe plans in short sentences.",
+      successCriteria: "User uses travel vocabulary fluently in short responses",
+    },
+  ],
+};
+
+/**
  * Generates integrated practice goals that combine multiple unit topics.
  * Includes goal variations for multiple chat sessions within the same lesson.
  */
@@ -10420,7 +10550,7 @@ function normalizeLessonModes(unit, lesson) {
   if (isQuiz) {
     modes = ["grammar", "vocabulary"];
   } else if (isSkillBuilder) {
-    modes = ["grammar", "vocabulary"];
+    modes = ["grammar", "vocabulary", "realtime"];
   } else if (isIntegratedPractice) {
     modes = ["realtime", "reading", "stories"];
   } else {
