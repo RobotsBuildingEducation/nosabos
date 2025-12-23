@@ -71,6 +71,8 @@ import {
   LuShuffle,
   LuLanguages,
   LuKeyRound,
+  LuCalendarDays,
+  LuCalendarCheck2,
 } from "react-icons/lu";
 import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
 import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
@@ -117,7 +119,13 @@ import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
-import { FaBitcoin, FaKey } from "react-icons/fa";
+import {
+  FaBitcoin,
+  FaCalendarAlt,
+  FaCalendarCheck,
+  FaKey,
+} from "react-icons/fa";
+import { BsCalendar2DateFill } from "react-icons/bs";
 
 /* ---------------------------
    Small helpers
@@ -673,36 +681,13 @@ function TopBar({
             size="sm"
             variant="outline"
             colorScheme="teal"
-            icon={<FiTarget />}
+            icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
             onClick={onOpenDailyGoalModal}
             borderColor="teal.600"
             px={{ base: 2, md: 3 }}
           />
           <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
             <WaveBar value={dailyPct} />
-          </Box>
-          <Box
-            flexShrink={0}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-          >
-            {dailyDone && (
-              <Box
-                display="flex"
-                alignItems="center"
-                justifyContent="center"
-                bg="green.200"
-                borderRadius="full"
-                w={{ base: "24px", md: "28px" }}
-                h={{ base: "24px", md: "28px" }}
-              >
-                <CheckCircleIcon
-                  boxSize={{ base: "20px", md: "24px" }}
-                  color="gray.900"
-                />
-              </Box>
-            )}
           </Box>
         </HStack>
 
