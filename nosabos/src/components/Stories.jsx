@@ -15,7 +15,6 @@ import {
   Center,
   useToast,
   Badge,
-  Progress,
   IconButton,
   Spacer,
   Divider,
@@ -795,14 +794,20 @@ export default function StoryMode({
       const sName = LLM_LANG_NAME(sLang);
       const diff = getCEFRPromptHint(cefrLevel);
 
+      // Check for tutorial mode first
+      const isTutorial = lessonContent?.topic === "tutorial";
+
       // Randomly select story type: 'paragraph' or 'conversation'
-      const selectedStoryType =
-        Math.random() < 0.5 ? "paragraph" : "conversation";
+      // Tutorial mode always uses conversation (character script)
+      const selectedStoryType = isTutorial
+        ? "conversation"
+        : Math.random() < 0.5
+        ? "paragraph"
+        : "conversation";
       setStoryType(selectedStoryType);
 
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
       // Special handling for tutorial mode - use very simple "hello" content only
-      const isTutorial = lessonContent?.topic === "tutorial";
       const scenarioDirective = isTutorial
         ? `TUTORIAL MODE - ABSOLUTE BEGINNER: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. Each sentence should be 3-5 words maximum. This is for absolute beginners learning their first greeting.`
         : lessonContent?.scenario || lessonContent?.topic
@@ -1533,9 +1538,6 @@ export default function StoryMode({
   }, []);
 
   /* ----------------------------- Derived ----------------------------- */
-  const progressPercentage = storyData
-    ? (currentSentenceIndex / storyData.sentences.length) * 100
-    : 0;
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1645,38 +1647,6 @@ export default function StoryMode({
         </Box>
       </Box>
 
-      {/* Progress */}
-      <Box px={4} py={3} display="flex" justifyContent={"center"}>
-        <VStack spacing={2} width="50%" maxWidth={"600px"}>
-          <HStack w="100%" justify="space-between">
-            <Text fontSize="sm" color="#94a3b8">
-              {uiText.progress}
-            </Text>
-            <Text fontSize="sm" color="#94a3b8">
-              {showFullStory
-                ? uiLang === "es"
-                  ? ""
-                  : ""
-                : `${currentSentenceIndex + 1} / ${
-                    storyData?.sentences?.length || 0
-                  }`}
-            </Text>
-          </HStack>
-          <Progress
-            value={progressPercentage}
-            w="100%"
-            h="20px"
-            borderRadius="full"
-
-            // bg="rgba(255, 255, 255, 0.1)"
-            // sx={{
-            //   "& > div": {
-            //     bg: "linear-gradient(90deg, #8b5cf6 0%, #7c3aed 100%)",
-            //   },
-            // }}
-          />
-        </VStack>
-      </Box>
 
       {/* Content */}
       <Box
@@ -2002,65 +1972,95 @@ export default function StoryMode({
                     </HStack>
                     {sentenceCompleted && lastSuccessInfo ? (
                       <SlideFade in={true} offsetY="10px">
-                        <Flex
-                          direction={{ base: "column", md: "row" }}
-                          gap={3}
+                        <Box
                           p={4}
                           borderRadius="xl"
                           bg="linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
                           borderWidth="1px"
                           borderColor="green.400"
                           boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
-                          align={{ base: "stretch", md: "center" }}
                         >
-                          <HStack spacing={3} flex="1" align="center">
-                            <Flex
-                              w="44px"
-                              h="44px"
-                              rounded="full"
-                              align="center"
-                              justify="center"
-                              bg="green.500"
-                              color="white"
-                              fontWeight="bold"
-                              fontSize="lg"
-                              boxShadow="0 10px 24px rgba(0,0,0,0.22)"
-                            >
-                              ✓
-                            </Flex>
-                            <Box>
-                              <Text fontWeight="semibold">
-                                {t(uiLang, "stories_sentence_success_title") ||
-                                  uiText.wellDone}
-                              </Text>
-                              <Text fontSize="sm" color="whiteAlpha.800">
-                                {typeof lastSuccessInfo.score === "number"
-                                  ? t(
-                                      uiLang,
-                                      "stories_sentence_success_score",
-                                      {
-                                        score: lastSuccessInfo.score,
-                                      }
-                                    ) ||
-                                    `${uiText.score}: ${lastSuccessInfo.score}%`
-                                  : t(uiLang, "practice_next_ready") ||
-                                    (uiLang === "es"
-                                      ? "¡Listo para continuar!"
-                                      : "Ready to continue!")}
-                              </Text>
-                            </Box>
-                          </HStack>
-                          <Button
-                            rightIcon={<FiArrowRight />}
-                            colorScheme="teal"
-                            variant="solid"
-                            onClick={handleNextSentence}
-                            shadow="md"
-                            w={{ base: "100%", md: "auto" }}
+                          <Flex
+                            direction={{ base: "column", md: "row" }}
+                            gap={3}
+                            align={{ base: "stretch", md: "center" }}
                           >
-                            {isLastSentence ? finishLabel : nextSentenceLabel}
-                          </Button>
-                        </Flex>
+                            <HStack spacing={3} flex="1" align="center">
+                              <Flex
+                                w="44px"
+                                h="44px"
+                                rounded="full"
+                                align="center"
+                                justify="center"
+                                bg="green.500"
+                                color="white"
+                                fontWeight="bold"
+                                fontSize="lg"
+                                boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                              >
+                                ✓
+                              </Flex>
+                              <Box>
+                                <Text fontWeight="semibold">
+                                  {t(uiLang, "stories_sentence_success_title") ||
+                                    uiText.wellDone}
+                                </Text>
+                                <Text fontSize="sm" color="whiteAlpha.800">
+                                  {typeof lastSuccessInfo.score === "number"
+                                    ? t(
+                                        uiLang,
+                                        "stories_sentence_success_score",
+                                        {
+                                          score: lastSuccessInfo.score,
+                                        }
+                                      ) ||
+                                      `${uiText.score}: ${lastSuccessInfo.score}%`
+                                    : t(uiLang, "practice_next_ready") ||
+                                      (uiLang === "es"
+                                        ? "¡Listo para continuar!"
+                                        : "Ready to continue!")}
+                                </Text>
+                              </Box>
+                            </HStack>
+                            <Button
+                              rightIcon={<FiArrowRight />}
+                              colorScheme="teal"
+                              variant="solid"
+                              onClick={handleNextSentence}
+                              shadow="md"
+                              w={{ base: "100%", md: "auto" }}
+                            >
+                              {isLastSentence ? finishLabel : nextSentenceLabel}
+                            </Button>
+                          </Flex>
+                          {/* Progress WaveBar */}
+                          <Box mt={4}>
+                            <HStack justify="space-between" mb={2}>
+                              <Text fontSize="xs" color="whiteAlpha.700">
+                                {uiText.progress}
+                              </Text>
+                              <Text fontSize="xs" color="whiteAlpha.700">
+                                {`${currentSentenceIndex + 1} / ${
+                                  storyData?.sentences?.length || 0
+                                }`}
+                              </Text>
+                            </HStack>
+                            <WaveBar
+                              value={
+                                storyData
+                                  ? ((currentSentenceIndex + 1) /
+                                      storyData.sentences.length) *
+                                    100
+                                  : 0
+                              }
+                              height={12}
+                              start="#48bb78"
+                              end="#38b2ac"
+                              bg="rgba(255,255,255,0.15)"
+                              border="rgba(255,255,255,0.2)"
+                            />
+                          </Box>
+                        </Box>
                       </SlideFade>
                     ) : null}
                     {sessionComplete &&

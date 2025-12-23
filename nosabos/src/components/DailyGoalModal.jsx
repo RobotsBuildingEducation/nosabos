@@ -31,6 +31,7 @@ import {
 } from "../utils/translation.jsx";
 import { WaveBar } from "./WaveBar.jsx";
 import GoalCalendar from "./GoalCalendar.jsx";
+import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [75, 100, 150, 200, 300];
@@ -202,7 +203,12 @@ export default function DailyGoalModal({
           py={5}
         >
           <HStack spacing={3} align="center">
-            <Box as={FiTarget} aria-hidden fontSize="22px" opacity={0.95} />
+            <Box
+              as={FaCalendarAlt}
+              aria-hidden
+              fontSize="22px"
+              opacity={0.95}
+            />
             <VStack align="start" spacing={0}>
               <Text fontWeight="bold" fontSize="lg" lineHeight="1.2">
                 {ui.title || L.title}
