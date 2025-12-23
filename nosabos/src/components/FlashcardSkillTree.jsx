@@ -541,8 +541,24 @@ export default function FlashcardSkillTree({
 
         {/* Bottom: Completed Cards Stack */}
         {completedCards.length > 0 && (
-          <Box w="100%">
+          <Box w="100%" mt={"-6"}>
             {/* Stacked cards - centered */}
+            {/* Practice Random Card Button */}
+            <Box textAlign="center" mb={4}>
+              <Button
+                onClick={handleRandomPracticeClick}
+                leftIcon={<RiShuffleLine />}
+                size="lg"
+                borderColor="blue.300"
+                bg="transparent"
+                color="white"
+                _hover={{
+                  borderColor: "blue.400",
+                }}
+              >
+                {getTranslation("flashcard_practice_random")}
+              </Button>
+            </Box>
             <Box
               position="relative"
               w="100%"
@@ -564,23 +580,6 @@ export default function FlashcardSkillTree({
                   ))}
                 </AnimatePresence>
               </Box>
-            </Box>
-
-            {/* Practice Random Card Button */}
-            <Box textAlign="center" mt={4}>
-              <Button
-                onClick={handleRandomPracticeClick}
-                leftIcon={<RiShuffleLine />}
-                size="lg"
-                borderColor="blue.300"
-                bg="transparent"
-                color="white"
-                _hover={{
-                  borderColor: "blue.400",
-                }}
-              >
-                {getTranslation("flashcard_practice_random")}
-              </Button>
             </Box>
           </Box>
         )}
