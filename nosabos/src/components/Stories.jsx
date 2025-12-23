@@ -794,14 +794,20 @@ export default function StoryMode({
       const sName = LLM_LANG_NAME(sLang);
       const diff = getCEFRPromptHint(cefrLevel);
 
+      // Check for tutorial mode first
+      const isTutorial = lessonContent?.topic === "tutorial";
+
       // Randomly select story type: 'paragraph' or 'conversation'
-      const selectedStoryType =
-        Math.random() < 0.5 ? "paragraph" : "conversation";
+      // Tutorial mode always uses conversation (character script)
+      const selectedStoryType = isTutorial
+        ? "conversation"
+        : Math.random() < 0.5
+        ? "paragraph"
+        : "conversation";
       setStoryType(selectedStoryType);
 
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
       // Special handling for tutorial mode - use very simple "hello" content only
-      const isTutorial = lessonContent?.topic === "tutorial";
       const scenarioDirective = isTutorial
         ? `TUTORIAL MODE - ABSOLUTE BEGINNER: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. Each sentence should be 3-5 words maximum. This is for absolute beginners learning their first greeting.`
         : lessonContent?.scenario || lessonContent?.topic
