@@ -1825,6 +1825,7 @@ export default function StoryMode({
                                     fontWeight="500"
                                     color="#f8fafc"
                                     lineHeight="1.6"
+                                    sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
                                   >
                                     {sentence.tgt}
                                   </Text>
@@ -1834,6 +1835,7 @@ export default function StoryMode({
                                       color="#94a3b8"
                                       lineHeight="1.4"
                                       mt={1}
+                                      sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
                                     >
                                       {sentence.sup}
                                     </Text>
@@ -1871,6 +1873,7 @@ export default function StoryMode({
                             color="#f8fafc"
                             mb={3}
                             lineHeight="1.8"
+                            sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
                           >
                             {tokenizedText
                               ? tokenizedText.map((token, idx) =>
@@ -1909,6 +1912,7 @@ export default function StoryMode({
                               fontSize="md"
                               color="#94a3b8"
                               lineHeight="1.6"
+                              sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
                             >
                               {storyData.fullStory.sup}
                             </Text>
@@ -1948,6 +1952,7 @@ export default function StoryMode({
                       lineHeight="1.6"
                       mb={2}
                       textAlign="center"
+                      sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
                     >
                       {currentSentence?.tgt}
                     </Text>
@@ -1957,6 +1962,7 @@ export default function StoryMode({
                         color="#94a3b8"
                         lineHeight="1.5"
                         textAlign="center"
+                        sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
                       >
                         {currentSentence?.sup}
                       </Text>
