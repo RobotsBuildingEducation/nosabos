@@ -831,6 +831,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 w="100px"
                 h="100px"
                 borderRadius="full"
+                bg={status === SKILL_STATUS.COMPLETED ? "#FFD700" : unit.color}
                 filter="blur(20px)"
                 opacity={status === SKILL_STATUS.COMPLETED ? 0.8 : 0.5}
                 pointerEvents="none"
@@ -846,7 +847,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                 status === SKILL_STATUS.LOCKED
                   ? "linear(to-br, gray.700, gray.800)"
                   : status === SKILL_STATUS.COMPLETED
-                  ? `linear(135deg, ${unit.color}, ${unit.color}dd)`
+                  ? "linear(135deg, #FFD700, #FFA500, #FFD700)"
                   : `linear(135deg, ${unit.color}dd, ${unit.color})`
               }
               border="4px solid"
@@ -856,9 +857,11 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
               justifyContent="center"
               position="relative"
               boxShadow={
-                status !== SKILL_STATUS.LOCKED
-                  ? `0 8px 0px ${unit.color}AA`
-                  : `0 8px 0px rgba(0,0,0,0.4)`
+                status === SKILL_STATUS.LOCKED
+                  ? "0 8px 0px rgba(0,0,0,0.4)"
+                  : status === SKILL_STATUS.COMPLETED
+                  ? "0 8px 0px #DAA520, 0 0 20px rgba(255,215,0,0.4)"
+                  : `0 8px 0px ${unit.color}AA`
               }
               opacity={status === SKILL_STATUS.LOCKED ? 0.4 : 1}
               transition="transform 0.15s ease, box-shadow 0.15s ease"
