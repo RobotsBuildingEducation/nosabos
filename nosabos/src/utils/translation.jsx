@@ -48,7 +48,7 @@ export const translations = {
     copy_all: "Copy question",
     grammar_next: "Next",
     practice_next_question: "Next question",
-    practice_skip_question: "Skip question",
+    practice_skip_question: "Skip",
     practice_speak_banner_you_said: "You said",
     practice_speak_banner_translation: "Meaning",
     practice_speak_banner_xp: "+{xp} XP",
