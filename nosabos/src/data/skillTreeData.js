@@ -95,12 +95,12 @@ const baseLearningPath = {
             realtime: {
               scenario: "Say hello",
               prompt: "Practice saying hello in a live chat",
-              successCriteria: "The learner says hello to you.",
-              successCriteria_es: "El estudiante te dice \"hola\".",
-              successCriteria_pt: "O aluno diz \"olá\" para você.",
-              successCriteria_fr: "L'apprenant te dit \"bonjour\".",
-              successCriteria_it: "L'apprendente ti dice \"ciao\".",
-              successCriteria_nah: "The learner says \"niltze\" to you.",
+              successCriteria: "The learner says hello.",
+              successCriteria_es: 'El estudiante dice "hola".',
+              successCriteria_pt: 'O aluno diz "olá" para você.',
+              successCriteria_fr: 'L\'apprenant te dit "bonjour".',
+              successCriteria_it: 'L\'apprendente ti dice "ciao".',
+              successCriteria_nah: 'The learner says "niltze" to you.',
               tutorialDescription: {
                 en: "Practice speaking with realtime conversations and goal oriented chats.",
                 es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
