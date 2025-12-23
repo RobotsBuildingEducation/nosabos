@@ -10230,13 +10230,20 @@ function generateGoalVariations(baseTemplate, topicLabel, focusPoints = []) {
 /**
  * Generates integrated practice goals that combine multiple unit topics.
  * Includes goal variations for multiple chat sessions within the same lesson.
+ * Creates specific, actionable goals based on actual lesson content.
  */
 function generateIntegratedPracticeGoal(topic, unit, lessons = []) {
-  // Collect all focus points from unit lessons
+  // Collect all focus points and lesson titles from unit lessons
   const allFocusPoints = [];
   const allTopics = [];
+  const lessonTitles = [];
 
   lessons.forEach((lesson) => {
+    // Skip quiz and supplemental lessons
+    if (lesson.isFinalQuiz || lesson.id?.includes("integrated-practice")) {
+      return;
+    }
+
     if (lesson.content?.vocabulary?.focusPoints) {
       allFocusPoints.push(...lesson.content.vocabulary.focusPoints);
     }
@@ -10246,42 +10253,87 @@ function generateIntegratedPracticeGoal(topic, unit, lessons = []) {
     if (lesson.content?.vocabulary?.topic) {
       allTopics.push(lesson.content.vocabulary.topic);
     }
+    if (lesson.title?.en) {
+      lessonTitles.push(lesson.title.en);
+    }
   });
 
   const uniqueFocus = [...new Set(allFocusPoints)].slice(0, 4);
+  const uniqueTopics = [...new Set(allTopics)].slice(0, 3);
   const topicKey = topic.toLowerCase();
+  const unitTitle = unit?.title?.en || topic;
 
-  // Create varied goals for progression through multiple sessions
-  const goalVariations = [
-    {
-      scenario: `Combine what you learned: ${
-        uniqueFocus.slice(0, 2).join(" and ") || topic
-      }`,
-      prompt: `Have the learner demonstrate they can combine ${topic} concepts. Ask them to use vocabulary and grammar together in longer responses.`,
-      successCriteria: `User combines multiple ${topic} concepts in a coherent response`,
-    },
-    {
-      scenario: `Role-play a real situation using ${topic}`,
-      prompt: `Create a realistic scenario where the learner must use ${topic} language. Guide them through the situation with follow-up questions.`,
-      successCriteria: `User navigates a realistic scenario using ${topic} vocabulary and structures`,
-    },
-    {
-      scenario: `Teach someone about ${uniqueFocus[0] || topic}`,
-      prompt: `Ask the learner to explain a ${topic} concept as if teaching someone else. This tests their understanding and production.`,
-      successCriteria: `User explains a concept clearly using appropriate ${topic} language`,
-    },
-  ];
+  // Build specific lesson context for better goal prompts
+  const lessonContext =
+    lessonTitles.length > 0
+      ? `Previous lessons covered: ${lessonTitles.slice(0, 4).join(", ")}.`
+      : "";
 
-  // Add topic-specific variations if we know the topic
+  const skillsList =
+    uniqueFocus.length > 0
+      ? uniqueFocus.slice(0, 3).join(", ")
+      : uniqueTopics.length > 0
+      ? uniqueTopics.join(", ")
+      : topic;
+
+  // Create varied goals that specifically reference what was learned
+  const goalVariations = [];
+
+  // First, check for topic-specific templates
   const topicSpecificGoals = INTEGRATED_PRACTICE_TEMPLATES[topicKey];
   if (topicSpecificGoals) {
-    goalVariations.unshift(...topicSpecificGoals);
+    goalVariations.push(...topicSpecificGoals);
+  }
+
+  // Add dynamically generated goals based on actual lesson content
+  if (uniqueFocus.length >= 2) {
+    goalVariations.push({
+      scenario: `Use ${uniqueFocus[0]} and ${uniqueFocus[1]} together`,
+      prompt: `Create a scenario where the learner must combine ${uniqueFocus[0]} with ${uniqueFocus[1]}. ${lessonContext} Guide them to use both skills naturally in conversation.`,
+      successCriteria: `User successfully uses both ${uniqueFocus[0]} and ${uniqueFocus[1]} in their responses`,
+    });
+  }
+
+  if (lessonTitles.length > 0) {
+    const firstLesson = lessonTitles[0];
+    const lastLesson = lessonTitles[lessonTitles.length - 1] || firstLesson;
+    goalVariations.push({
+      scenario: `Apply skills from ${firstLesson} to ${lastLesson}`,
+      prompt: `The learner has studied: ${lessonTitles.join(", ")}. Create a realistic situation where they must draw on multiple lessons. Ask follow-up questions to test different skills.`,
+      successCriteria: `User demonstrates vocabulary and structures from at least 2 different lessons in the unit`,
+    });
+  }
+
+  // Add roleplay goal with specific context
+  goalVariations.push({
+    scenario: `Real conversation: ${unitTitle}`,
+    prompt: `Roleplay a realistic situation related to ${unitTitle}. ${lessonContext} The learner should use ${skillsList}. Build the conversation naturally with follow-ups.`,
+    successCriteria: `User navigates a full conversation using ${topic} vocabulary and demonstrates multiple skills from the unit`,
+  });
+
+  // Add a "teach back" goal
+  if (uniqueFocus.length > 0) {
+    goalVariations.push({
+      scenario: `Explain how to ${uniqueFocus[0]}`,
+      prompt: `Ask the learner to explain or demonstrate ${uniqueFocus[0]} as if helping someone who doesn't know it. This tests productive mastery.`,
+      successCriteria: `User clearly explains or demonstrates ${uniqueFocus[0]} with examples`,
+    });
+  }
+
+  // Ensure we have at least one goal
+  if (goalVariations.length === 0) {
+    goalVariations.push({
+      scenario: `Practice everything from ${unitTitle}`,
+      prompt: `Have a natural conversation about ${topic}. The learner should demonstrate vocabulary and grammar from the full unit.`,
+      successCriteria: `User produces varied ${topic} language showing unit mastery`,
+    });
   }
 
   // Return first goal as default, with variations array for progression
   return {
     ...goalVariations[0],
     focusPoints: uniqueFocus,
+    lessonTitles: lessonTitles.slice(0, 5), // Include for reference
     goalVariations: goalVariations,
     goalIndex: 0,
   };
@@ -10357,6 +10409,94 @@ const INTEGRATED_PRACTICE_TEMPLATES = {
         "Discuss travel plans - where they want to go, when, how, and what they'll do there.",
       successCriteria:
         "User describes travel plans with multiple details (destination, timing, activities)",
+    },
+  ],
+  places: [
+    {
+      scenario: "Describe your favorite place in your city",
+      prompt:
+        "Ask the learner about places in their city - a favorite restaurant, park, or neighborhood. Have them describe what it looks like and why they like it.",
+      successCriteria:
+        "User describes a specific place with at least 3 details (location, appearance, why they like it)",
+    },
+    {
+      scenario: "Give directions to a landmark",
+      prompt:
+        "You are lost and need directions to a famous place. Ask the learner how to get there.",
+      successCriteria:
+        "User gives directions using location vocabulary (near, far, turn, straight, etc.)",
+    },
+  ],
+  "describing places": [
+    {
+      scenario: "Compare two different places",
+      prompt:
+        "Ask the learner to compare two places they know - their home vs a friend's, their city vs another city, etc.",
+      successCriteria:
+        "User uses comparison language to describe differences and similarities between places",
+    },
+  ],
+  family: [
+    {
+      scenario: "Introduce your family members",
+      prompt:
+        "Ask about the learner's family - names, ages, relationships, what they do. Encourage them to describe each person briefly.",
+      successCriteria:
+        "User names and describes at least 2-3 family members with basic details",
+    },
+  ],
+  time: [
+    {
+      scenario: "Describe your typical day",
+      prompt:
+        "Ask the learner what they do at different times - morning routine, afternoon activities, evening plans.",
+      successCriteria:
+        "User describes activities at specific times (morning, afternoon, evening) with time expressions",
+    },
+  ],
+  weather: [
+    {
+      scenario: "Discuss today's weather and make plans",
+      prompt:
+        "Talk about the weather today and ask what the learner plans to do because of it. Discuss appropriate clothing or activities.",
+      successCriteria:
+        "User describes weather AND connects it to plans or clothing choices",
+    },
+  ],
+  transportation: [
+    {
+      scenario: "Explain how you get to work or school",
+      prompt:
+        "Ask about the learner's commute - what transportation they use, how long it takes, their preferences.",
+      successCriteria:
+        "User describes their transportation method with details (type, time, frequency)",
+    },
+  ],
+  health: [
+    {
+      scenario: "Describe how you're feeling today",
+      prompt:
+        "Ask about the learner's health and wellbeing. If they feel unwell, ask about symptoms. If well, ask what they do to stay healthy.",
+      successCriteria:
+        "User describes their physical or emotional state with relevant vocabulary",
+    },
+  ],
+  work: [
+    {
+      scenario: "Talk about your job or studies",
+      prompt:
+        "Ask about what the learner does for work or studies - their role, responsibilities, what they like about it.",
+      successCriteria:
+        "User describes their work/studies with at least 2-3 specific details",
+    },
+  ],
+  hobbies: [
+    {
+      scenario: "Share your favorite hobby and why you enjoy it",
+      prompt:
+        "Ask about hobbies and free time activities. Have them explain what they do, how often, and why they enjoy it.",
+      successCriteria:
+        "User describes a hobby with details about frequency and reasons for enjoyment",
     },
   ],
 };
