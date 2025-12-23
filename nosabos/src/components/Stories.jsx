@@ -1825,7 +1825,14 @@ export default function StoryMode({
                                     fontWeight="500"
                                     color="#f8fafc"
                                     lineHeight="1.6"
-                                    sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
+                                    textAlign="left"
+                                    sx={{
+                                      wordBreak: "normal",
+                                      overflowWrap: "normal",
+                                      hyphens: "none",
+                                      WebkitHyphens: "none",
+                                      msHyphens: "none",
+                                    }}
                                   >
                                     {sentence.tgt}
                                   </Text>
@@ -1835,7 +1842,14 @@ export default function StoryMode({
                                       color="#94a3b8"
                                       lineHeight="1.4"
                                       mt={1}
-                                      sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
+                                      textAlign="left"
+                                      sx={{
+                                        wordBreak: "normal",
+                                        overflowWrap: "normal",
+                                        hyphens: "none",
+                                        WebkitHyphens: "none",
+                                        msHyphens: "none",
+                                      }}
                                     >
                                       {sentence.sup}
                                     </Text>
@@ -1873,7 +1887,14 @@ export default function StoryMode({
                             color="#f8fafc"
                             mb={3}
                             lineHeight="1.8"
-                            sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
+                            textAlign="left"
+                            sx={{
+                              wordBreak: "normal",
+                              overflowWrap: "normal",
+                              hyphens: "none",
+                              WebkitHyphens: "none",
+                              msHyphens: "none",
+                            }}
                           >
                             {tokenizedText
                               ? tokenizedText.map((token, idx) =>
@@ -1912,7 +1933,14 @@ export default function StoryMode({
                               fontSize="md"
                               color="#94a3b8"
                               lineHeight="1.6"
-                              sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
+                              textAlign="left"
+                              sx={{
+                                wordBreak: "normal",
+                                overflowWrap: "normal",
+                                hyphens: "none",
+                                WebkitHyphens: "none",
+                                msHyphens: "none",
+                              }}
                             >
                               {storyData.fullStory.sup}
                             </Text>
@@ -1952,7 +1980,13 @@ export default function StoryMode({
                       lineHeight="1.6"
                       mb={2}
                       textAlign="center"
-                      sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
+                      sx={{
+                        wordBreak: "normal",
+                        overflowWrap: "normal",
+                        hyphens: "none",
+                        WebkitHyphens: "none",
+                        msHyphens: "none",
+                      }}
                     >
                       {currentSentence?.tgt}
                     </Text>
@@ -1962,7 +1996,13 @@ export default function StoryMode({
                         color="#94a3b8"
                         lineHeight="1.5"
                         textAlign="center"
-                        sx={{ wordBreak: "keep-all", overflowWrap: "normal" }}
+                        sx={{
+                          wordBreak: "normal",
+                          overflowWrap: "normal",
+                          hyphens: "none",
+                          WebkitHyphens: "none",
+                          msHyphens: "none",
+                        }}
                       >
                         {currentSentence?.sup}
                       </Text>
