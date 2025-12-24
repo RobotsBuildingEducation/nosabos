@@ -28,7 +28,11 @@ import {
   serverTimestamp,
   increment,
 } from "firebase/firestore";
-import { database, analytics, simplemodel } from "../firebaseResources/firebaseResources";
+import {
+  database,
+  analytics,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -647,8 +651,10 @@ export default function RealTimeTest({
 
   const normalizeSupportLang = (raw) => {
     const code = String(raw || "").toLowerCase();
-    if (code === "es" || code.startsWith("es-") || code === "spanish") return "es";
-    if (code === "en" || code.startsWith("en-") || code === "english") return "en";
+    if (code === "es" || code.startsWith("es-") || code === "spanish")
+      return "es";
+    if (code === "en" || code.startsWith("en-") || code === "english")
+      return "en";
     return undefined;
   };
 
@@ -1368,7 +1374,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
         scenario: "Give your phone number or age",
         prompt:
           "Ask the learner for their phone number, age, or another number in context.",
-        successCriteria: "User correctly produces numbers in a meaningful context",
+        successCriteria:
+          "User correctly produces numbers in a meaningful context",
       },
       food: {
         scenario: "Order something to eat or drink",
@@ -1381,8 +1388,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
         scenario: "Describe where you live or want to visit",
         prompt:
           "Ask the learner about a place - where they live, want to visit, or their favorite place.",
-        successCriteria:
-          "User describes a location with at least 2-3 details",
+        successCriteria: "User describes a location with at least 2-3 details",
       },
       shopping: {
         scenario: "Buy something at a store",
@@ -1468,7 +1474,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     const goalLangName = goalLangCode === "es" ? "Spanish" : "English";
 
     // Get current goal for context
-    const currentScenario = currentGoal?.lessonScenario || currentGoal?.scenario || "";
+    const currentScenario =
+      currentGoal?.lessonScenario || currentGoal?.scenario || "";
 
     const prompt = `You are creating a NEW conversational practice goal for a language learner.
 
@@ -1478,7 +1485,11 @@ Topic: ${topic}
 Focus areas: ${focusPoints.join(", ") || "general vocabulary and grammar"}
 Level: ${cefrHint}
 
-${currentScenario ? `IMPORTANT: The previous goal was "${currentScenario}". Create something DIFFERENT but still related to ${topic}.` : ""}
+${
+  currentScenario
+    ? `IMPORTANT: The previous goal was "${currentScenario}". Create something DIFFERENT but still related to ${topic}.`
+    : ""
+}
 
 Create a SPECIFIC, ACTIONABLE goal that:
 1. Is a concrete task completable in 1-3 minutes of conversation
@@ -1549,192 +1560,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     };
   }
   async function ensureCurrentGoalSeed(npub, userData) {
-    const ref = doc(database, "users", npub);
-    const data = userData || (await getDoc(ref)).data() || {};
-
-    // Check if lesson content provides a specific goal/scenario
-    const lesson = lessonContentRef.current;
-    const lessonScenario = lesson?.scenario || lesson?.prompt;
-    const goalVariations = lesson?.goalVariations || [];
-    const hasVariations = goalVariations.length > 0;
-
-    // Check for existing goal that matches current lesson
-    if (
-      data.currentGoal &&
-      data.currentGoal.title_en &&
-      data.currentGoal.title_es &&
-      (!lessonScenario || data.currentGoal.lessonScenario === lessonScenario)
-    ) {
-      goalXpAwardedRef.current = false;
-      return { ...data.currentGoal, attempts: data.currentGoal.attempts || 0 };
-    }
-
-    // Get goal index for variation progression
-    // Check how many times this lesson's goals have been completed
-    const lessonGoalCount = data.lessonGoalCounts?.[lessonScenario] || 0;
-    const goalIndex = hasVariations
-      ? lessonGoalCount % goalVariations.length
-      : 0;
-
-    // Select the appropriate goal variation or use base content
-    let activeGoal;
-    if (hasVariations && goalVariations[goalIndex]) {
-      activeGoal = goalVariations[goalIndex];
-    } else {
-      activeGoal = {
-        scenario: lessonScenario,
-        successCriteria: lesson?.successCriteria,
-      };
-    }
-
-    let scenario = activeGoal.scenario || lessonScenario;
-    let successCriteria = activeGoal.successCriteria || lesson?.successCriteria;
-    let roleplayPrompt = activeGoal.prompt || lesson?.prompt || "";
-
-    // Check if scenario is too generic or missing - use AI to generate a better one
-    const lessonIsTutorial = Boolean(
-      lessonPropRef.current?.isTutorial || lesson?.isTutorial
-    );
-    const hasExplicitGoal = Boolean(
-      (lessonScenario && activeGoal.prompt && activeGoal.successCriteria) ||
-        lessonIsTutorial
-    );
-
-    // Detect generic scenarios that need AI-generated goals
-    // These patterns indicate placeholder text rather than actionable goals
-    const genericPatterns = [
-      /^(practice|conversation|talk|speak)/i,  // Starts with generic verb
-      /(conversation|practice|mastery|basics?)$/i,  // Ends with generic word
-      /^[\w\s]{1,20}\s+(conversation|practice|mastery)$/i,  // "topic conversation" pattern
-      /^use\s+\w+\s+in\s+(real\s+)?conversation$/i,  // "use X in conversation"
-      /^practice\s+using\s+/i,  // "practice using..."
-      /^demonstrate\s+(mastery|understanding)\s+of/i,  // "demonstrate mastery of..."
-    ];
-
-    const matchesGenericPattern = (text) =>
-      genericPatterns.some((pattern) => pattern.test(text?.trim() || ""));
-
-    const isGenericScenario =
-      !scenario ||
-      (!hasExplicitGoal &&
-        (scenario.length < 10 || matchesGenericPattern(scenario)));
-
-    if (isGenericScenario) {
-      // Use AI to generate a contextual goal based on full lesson data (passed as prop)
-      const aiGoal = await generateGoalFromAI(lessonPropRef.current, lesson);
-      scenario = aiGoal.scenario;
-      successCriteria = aiGoal.successCriteria;
-      roleplayPrompt = aiGoal.prompt;
-    }
-
-    // Generate goal based on lesson content or use default
-    const seedTitles = goalTitlesSeed();
-
-    // Build clear rubric from success criteria or generate one
-    let rubricEn, rubricEs;
-    if (successCriteria) {
-      rubricEn = `${successCriteria}`;
-      rubricEs = `${successCriteria}`;
-    } else if (scenario) {
-      // Create descriptive rubric from scenario - describe what success looks like
-      // Convert the scenario into an observable success criterion
-      const scenarioLower = scenario.toLowerCase();
-      if (
-        scenarioLower.includes("ask") ||
-        scenarioLower.includes("order") ||
-        scenarioLower.includes("request")
-      ) {
-        rubricEn = `User asks for or requests something related to the goal`;
-        rubricEs = `El usuario pide o solicita algo relacionado con el objetivo`;
-      } else if (
-        scenarioLower.includes("describe") ||
-        scenarioLower.includes("explain") ||
-        scenarioLower.includes("tell")
-      ) {
-        rubricEn = `User provides a clear description with multiple details`;
-        rubricEs = `El usuario proporciona una descripción clara con múltiples detalles`;
-      } else if (
-        scenarioLower.includes("introduce") ||
-        scenarioLower.includes("greet") ||
-        scenarioLower.includes("hello")
-      ) {
-        rubricEn = `User completes the social exchange appropriately`;
-        rubricEs = `El usuario completa el intercambio social apropiadamente`;
-      } else if (
-        scenarioLower.includes("buy") ||
-        scenarioLower.includes("shop") ||
-        scenarioLower.includes("purchase")
-      ) {
-        rubricEn = `User completes a transaction or makes a purchase`;
-        rubricEs = `El usuario completa una transacción o hace una compra`;
-      } else {
-        // Default: describe what the user should demonstrate
-        rubricEn = `User demonstrates the ability to ${scenario.toLowerCase()}`;
-        rubricEs = `El usuario demuestra la capacidad de ${scenario.toLowerCase()}`;
-      }
-    } else {
-      rubricEn = "Say a greeting in the target language";
-      rubricEs = "Di un saludo en el idioma meta";
-    }
-
-    // Localize goal strings when Spanish support is requested
-    const prefersSpanishSupport =
-      (supportLangRef.current || supportLang) === "es";
-    const goalLangCode = supportLangRef.current || supportLang || "en";
-
-    let localizedScenarioEn = scenario || seedTitles.en;
-    let localizedRubricEn = rubricEn;
-    let localizedScenarioEs =
-      activeGoal.scenario_es || scenario || seedTitles.es;
-    let localizedRubricEs = activeGoal.successCriteria_es || rubricEs;
-
-    if (prefersSpanishSupport) {
-      try {
-        localizedScenarioEs = await translateGoalText(
-          localizedScenarioEn,
-          "es"
-        );
-        localizedRubricEs = await translateGoalText(localizedRubricEn, "es");
-
-        // Ensure we still maintain an English fallback when the goal language is Spanish
-        if (goalLangCode === "es") {
-          localizedScenarioEn = await translateGoalText(
-            localizedScenarioEs,
-            "en"
-          );
-          localizedRubricEn = await translateGoalText(localizedRubricEs, "en");
-        }
-      } catch (err) {
-        console.warn(
-          "Falling back to default goal Spanish",
-          err?.message || err
-        );
-      }
-    }
-
-    const seed = {
-      id: `goal_${Date.now()}`,
-      title_en: localizedScenarioEn,
-      title_es: localizedScenarioEs,
-      rubric_en: localizedRubricEn,
-      rubric_es: localizedRubricEs,
-      lessonScenario: lessonScenario || null,
-      successCriteria: successCriteria || null,
-      roleplayPrompt: roleplayPrompt || null,
-      goalIndex: goalIndex,
-      hasVariations: hasVariations,
-      attempts: 0,
-      status: "active",
-      createdAt: isoNow(),
-      updatedAt: isoNow(),
-    };
-    await setDoc(
-      ref,
-      { currentGoal: seed, lastGoal: seed.title_en },
-      { merge: true }
-    );
-    goalXpAwardedRef.current = false;
-    return seed;
+    generateGoalVariation();
   }
 
   function goalUiLangCode() {
@@ -2292,7 +2118,8 @@ Return ONLY JSON:
     ];
 
     // Pick a random opener style
-    const randomOpener = openerStyles[Math.floor(Math.random() * openerStyles.length)];
+    const randomOpener =
+      openerStyles[Math.floor(Math.random() * openerStyles.length)];
 
     // Build context-aware instruction
     let contextHint = "";
@@ -2954,7 +2781,13 @@ Do not return the whole sentence as a single chunk.`;
                 <HStack justify="space-between" align="center" mb={1}>
                   <HStack spacing={2} align="center" flex="1">
                     <IconButton
-                      icon={isGeneratingGoal ? <Spinner size="xs" color="white" /> : <FaDice />}
+                      icon={
+                        isGeneratingGoal ? (
+                          <Spinner size="xs" color="white" />
+                        ) : (
+                          <FaDice />
+                        )
+                      }
                       size="xs"
                       variant="ghost"
                       color="white"
@@ -2975,8 +2808,9 @@ Do not return the whole sentence as a single chunk.`;
                     </Badge>
                     <Text fontSize="xs" opacity={0.9} color="white" flex="1">
                       {isGeneratingGoal
-                        ? (streamingGoalText || (uiLang === "es" ? "Generando..." : "Generating..."))
-                        : (goalTitleForUI(currentGoal) || "—")}
+                        ? streamingGoalText ||
+                          (uiLang === "es" ? "Generando..." : "Generating...")
+                        : goalTitleForUI(currentGoal) || "—"}
                     </Text>
                   </HStack>
                 </HStack>
