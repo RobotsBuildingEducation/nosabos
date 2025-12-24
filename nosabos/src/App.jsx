@@ -994,7 +994,7 @@ export default function App() {
 
   const SUBSCRIPTION_PASSCODE_KEY = "subscriptionPasscode";
   const subscriptionPasscode =
-    (import.meta.env?.VITE_SUBSCRIPTION_PASSCODE).trim();
+    (import.meta.env?.VITE_SUBSCRIPTION_PASSCODE || "").trim();
   const [storedPasscode, setStoredPasscode] = useState(() =>
     typeof window !== "undefined"
       ? localStorage.getItem(SUBSCRIPTION_PASSCODE_KEY) || ""
