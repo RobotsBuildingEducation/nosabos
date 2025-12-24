@@ -1,5 +1,5 @@
 // components/Conversations.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -29,7 +29,10 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
-import { getRandomConversationTopic } from "../data/conversationTopics";
+import {
+  getRandomSkillTreeTopics,
+  getRandomFallbackTopic,
+} from "../data/conversationTopics";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -550,13 +553,9 @@ export default function Conversations({
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
 
-  // Goal system - initialize with random topic based on proficiency level
-  const initialTopic = useMemo(
-    () => getRandomConversationTopic(maxProficiencyLevel),
-    [] // Only run once on mount
-  );
+  // Goal system - initialize with fallback, then generate AI topic
   const [currentGoal, setCurrentGoal] = useState(() => ({
-    text: initialTopic,
+    text: getRandomFallbackTopic(maxProficiencyLevel),
     completed: false,
   }));
   const [goalsCompleted, setGoalsCompleted] = useState(0);
@@ -564,15 +563,116 @@ export default function Conversations({
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
   const lastUserMessageRef = useRef("");
+  const hasGeneratedInitialTopic = useRef(false);
 
-  // Handler to get a new random topic
-  const handleShuffleTopic = () => {
-    const newTopic = getRandomConversationTopic(maxProficiencyLevel);
-    setCurrentGoal({
-      text: newTopic,
-      completed: false,
-    });
+  // Generate a conversation topic using AI
+  async function generateConversationTopic() {
+    setIsGeneratingGoal(true);
     setGoalFeedback("");
+
+    try {
+      // Get skill tree topics for context
+      const skillTreeTopics = getRandomSkillTreeTopics(
+        maxProficiencyLevel,
+        targetLang,
+        15
+      );
+
+      const levelDescription =
+        maxProficiencyLevel === "A1"
+          ? "absolute beginner - use very simple vocabulary and short sentences"
+          : maxProficiencyLevel === "A2"
+          ? "elementary - use simple everyday topics and basic sentences"
+          : maxProficiencyLevel === "B1"
+          ? "intermediate - discuss experiences, opinions, and plans"
+          : maxProficiencyLevel === "B2"
+          ? "upper intermediate - handle complex and abstract topics"
+          : maxProficiencyLevel === "C1"
+          ? "advanced - use sophisticated and nuanced expressions"
+          : "mastery - near-native proficiency with subtle distinctions";
+
+      const prompt = `You are creating a conversation practice topic for a ${maxProficiencyLevel} level language learner (${levelDescription}).
+
+Here are some topics from their learning curriculum that you can reference or be inspired by:
+${skillTreeTopics.join("\n")}
+
+Generate ONE clear, specific conversation topic that:
+1. Is appropriate for ${maxProficiencyLevel} level complexity
+2. Encourages the learner to speak and practice
+3. Can be either based on the curriculum topics above OR a creative topic you think would be engaging
+4. Is specific enough to guide the conversation (not generic like "practice speaking")
+
+Respond with ONLY a JSON object: {"en": "topic in English", "es": "topic in Spanish"}`;
+
+      const body = {
+        model: TRANSLATE_MODEL,
+        text: { format: { type: "text" } },
+        input: prompt,
+      };
+
+      const r = await fetch(RESPONSES_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!r.ok) {
+        // Use fallback topic
+        setCurrentGoal({
+          text: getRandomFallbackTopic(maxProficiencyLevel),
+          completed: false,
+        });
+        setIsGeneratingGoal(false);
+        return;
+      }
+
+      const payload = await r.json();
+      const responseText =
+        payload?.output_text ||
+        (Array.isArray(payload?.output) &&
+          payload.output
+            .map((it) =>
+              (it?.content || []).map((seg) => seg?.text || "").join("")
+            )
+            .join(" ")
+            .trim()) ||
+        "";
+
+      const parsed = safeParseJson(responseText);
+      if (parsed?.en && parsed?.es) {
+        setCurrentGoal({
+          text: { en: parsed.en, es: parsed.es },
+          completed: false,
+        });
+      } else {
+        // Use fallback if parsing fails
+        setCurrentGoal({
+          text: getRandomFallbackTopic(maxProficiencyLevel),
+          completed: false,
+        });
+      }
+    } catch (e) {
+      // Use fallback on error
+      setCurrentGoal({
+        text: getRandomFallbackTopic(maxProficiencyLevel),
+        completed: false,
+      });
+    } finally {
+      setIsGeneratingGoal(false);
+    }
+  }
+
+  // Generate initial topic on mount
+  useEffect(() => {
+    if (!hasGeneratedInitialTopic.current) {
+      hasGeneratedInitialTopic.current = true;
+      generateConversationTopic();
+    }
+  }, []);
+
+  // Handler to get a new AI-generated topic
+  const handleShuffleTopic = () => {
+    generateConversationTopic();
   };
 
   // Turn counter for XP awarding
