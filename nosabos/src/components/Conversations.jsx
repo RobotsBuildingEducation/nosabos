@@ -598,8 +598,8 @@ export default function Conversations({
           : maxProficiencyLevel === "B2"
           ? "upper intermediate - handle complex and abstract topics"
           : maxProficiencyLevel === "C1"
-          ? "advanced - use sophisticated and nuanced expressions"
-          : "mastery - near-native proficiency with subtle distinctions";
+          ? "advanced - use sophisticated vocabulary concisely"
+          : "mastery - use nuanced vocabulary concisely";
 
       const prompt = `You are creating a conversation practice topic for a ${maxProficiencyLevel} level language learner (${levelDescription}).
 
@@ -611,8 +611,17 @@ Generate ONE clear, specific conversation topic that:
 2. Encourages the learner to speak and practice
 3. Can be either based on the curriculum topics above OR a creative topic you think would be engaging
 4. Is specific enough to guide the conversation (not generic like "practice speaking")
+5. Is CONCISE: Maximum 10-15 words. For advanced levels (C1/C2), use sophisticated vocabulary, NOT longer sentences.
 
-Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no explanation - just the topic itself.`;
+Examples of good topics:
+- "Describe your morning routine" (A1)
+- "Explain your favorite hobby and why" (B1)
+- "Debate the ethics of AI in healthcare" (C2)
+- "Discuss cultural nuances in business etiquette" (C2)
+
+BAD examples (too verbose): "Analyze the socio-economic implications of modern consumer culture..."
+
+Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no explanation - just the topic itself (max 15 words).`;
 
       // Use Gemini streaming for real-time feedback
       const result = await simplemodel.generateContentStream(prompt);
@@ -1325,11 +1334,13 @@ The goal should be appropriate for ${maxProficiencyLevel} level (${
           : maxProficiencyLevel === "B2"
           ? "upper intermediate - complex discussions"
           : maxProficiencyLevel === "C1"
-          ? "advanced - nuanced expression"
-          : "mastery - sophisticated language"
+          ? "advanced - nuanced but concise"
+          : "mastery - sophisticated but concise"
       }).
 
-Respond with ONLY a JSON object: {"en": "goal in English", "es": "goal in Spanish"}`;
+IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sophisticated vocabulary, NOT longer sentences.
+
+Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)"}`;
 
       const body = {
         model: TRANSLATE_MODEL,

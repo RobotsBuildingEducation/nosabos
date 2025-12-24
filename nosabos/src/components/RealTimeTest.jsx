@@ -1300,17 +1300,20 @@ Goal language: ${goalLangName} (write every field in ${goalLangName}, avoid mixi
 
 IMPORTANT: Create a SPECIFIC, ACTIONABLE goal - NOT a generic one.
 BAD examples (too generic): "Practice places", "Have a conversation about food", "places conversation"
+BAD examples (too verbose): "Analyze the socio-economic implications of modern consumer culture by discussing..."
 GOOD examples: "Ask for directions to the library", "Order a coffee and pastry at a café", "Describe your favorite room in your house"
+GOOD C2 examples: "Debate a controversial ethical dilemma", "Explain an idiom's cultural origin", "Describe a complex emotion precisely"
 
 The goal must be:
 1. A concrete task the learner can complete in 1-3 minutes of conversation
 2. Written as a clear action (not "practice X" or "X conversation")
 3. Something that demonstrates understanding of ${topic}
+4. CONCISE: Maximum 10-15 words regardless of level. Higher levels use sophisticated vocabulary, NOT longer sentences.
 
 The goal must be written entirely in ${goalLangName}. Do NOT output English if the goal language is Spanish.
 
 Return ONLY valid JSON in this exact format (no markdown, no explanation):
-{"scenario":"[2-6 word specific task]","prompt":"[1-2 sentence roleplay setup for AI tutor - what role to play, what situation to create]","successCriteria":"[specific observable behavior that shows success]"}`;
+{"scenario":"[5-15 word specific task - be concise even for advanced levels]","prompt":"[1-2 sentence roleplay setup for AI tutor - what role to play, what situation to create]","successCriteria":"[specific observable behavior that shows success]"}`;
 
     try {
       const r = await fetch(RESPONSES_URL, {
@@ -1480,8 +1483,15 @@ Create a SPECIFIC, ACTIONABLE goal that:
 2. Written as a clear action (not "practice X")
 3. Demonstrates understanding of ${topic}
 4. Is DIFFERENT from any previous goals
+5. Is CONCISE: Maximum 10-15 words. For advanced levels, use sophisticated vocabulary instead of longer sentences.
 
-Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no explanation - just the goal itself.`;
+Examples of good goals:
+- "Ask for directions to the nearest pharmacy"
+- "Describe your ideal vacation destination"
+- "Debate the ethics of artificial intelligence" (C2)
+- "Explain a cultural idiom's deeper meaning" (C2)
+
+Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no explanation - just the goal itself (max 15 words).`;
 
     try {
       const result = await simplemodel.generateContentStream(prompt);

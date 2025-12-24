@@ -86,7 +86,8 @@ export const CEFR_DESCRIPTIONS = {
     production: "Produce clear, well-structured, detailed text on complex subjects",
     vocabulary: "Broad lexical repertoire with precise expressions (5000-8000 words)",
     grammar: "Full mastery of complex structures, stylistic variations, subtle nuances",
-    sentenceComplexity: "Sophisticated sentences with 20-30+ words, advanced discourse markers",
+    sentenceComplexity: "Sophisticated but concise sentences, advanced discourse markers",
+    goalComplexity: "Complex topics expressed clearly and concisely (max 15 words)",
     readingLevel: "Long, complex texts, literary works, technical content",
     listeningLevel: "Extended speech even when poorly structured or implicit",
     culturalContext: "Deep cultural knowledge, subtle references, literary allusions",
@@ -97,7 +98,8 @@ export const CEFR_DESCRIPTIONS = {
     production: "Produce nuanced, precise communication appropriate to any context",
     vocabulary: "Near-native mastery with specialized and rare terms (8000+ words)",
     grammar: "Native-like command of all structures, registers, and styles",
-    sentenceComplexity: "Native-like complexity and sophistication, any length appropriate to context",
+    sentenceComplexity: "Native-like sophistication while remaining clear and direct",
+    goalComplexity: "Nuanced topics expressed concisely (max 15 words)",
     readingLevel: "All types of texts including abstract, complex, or highly colloquial",
     listeningLevel: "Any spoken language at native speed, including accents and dialects",
     culturalContext: "Native-level cultural competence, subtle humor, wordplay",
@@ -123,5 +125,9 @@ export function getCEFRPromptHint(cefrLevel) {
   const level = cefrLevel?.toUpperCase() || "A1";
   const desc = getCEFRDescription(level);
 
-  return `CEFR ${level} (${desc.name}): ${desc.sentenceComplexity}. Vocabulary: ${desc.vocabulary}. Grammar: ${desc.grammar}`;
+  const goalHint = desc.goalComplexity
+    ? ` Goals: ${desc.goalComplexity}.`
+    : "";
+
+  return `CEFR ${level} (${desc.name}): ${desc.sentenceComplexity}. Vocabulary: ${desc.vocabulary}. Grammar: ${desc.grammar}.${goalHint}`;
 }
