@@ -1504,7 +1504,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
           rubric_en: "",
           rubric_es: "",
           lessonScenario: goalText,
-          successCriteria: `User successfully completes: ${goalText}`,
+          successCriteria: "",
           roleplayPrompt: `Help the learner to: ${goalText}. Create a realistic scenario and guide them.`,
           goalIndex: (currentGoal?.goalIndex || 0) + 1,
           attempts: 0,
