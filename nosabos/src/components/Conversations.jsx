@@ -574,6 +574,9 @@ export default function Conversations({
     setStreamingText("");
     streamingRef.current = true;
 
+    // Determine the language for the response
+    const responseLang = supportLang === "es" ? "Spanish" : "English";
+
     try {
       // Get skill tree topics for context
       const skillTreeTopics = getRandomSkillTreeTopics(
@@ -606,7 +609,7 @@ Generate ONE clear, specific conversation topic that:
 3. Can be either based on the curriculum topics above OR a creative topic you think would be engaging
 4. Is specific enough to guide the conversation (not generic like "practice speaking")
 
-Respond with ONLY a JSON object: {"en": "topic in English", "es": "topic in Spanish"}`;
+Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no explanation - just the topic itself.`;
 
       // Use Gemini streaming for real-time feedback
       const result = await simplemodel.generateContentStream(prompt);
@@ -625,15 +628,15 @@ Respond with ONLY a JSON object: {"en": "topic in English", "es": "topic in Span
         setStreamingText(fullText);
       }
 
-      // Parse the final result
-      const parsed = safeParseJson(fullText);
-      if (parsed?.en && parsed?.es) {
+      // Use the streamed text directly as the topic
+      const topicText = fullText.trim();
+      if (topicText) {
         setCurrentGoal({
-          text: { en: parsed.en, es: parsed.es },
+          text: { en: topicText, es: topicText },
           completed: false,
         });
       } else {
-        // Use fallback if parsing fails
+        // Use fallback if empty
         setCurrentGoal({
           text: getRandomFallbackTopic(maxProficiencyLevel),
           completed: false,
@@ -1781,7 +1784,7 @@ Do not return the whole sentence as a single chunk.`;
                     <>
                       <Spinner
                         size="sm"
-                        color="purple.400"
+                        color="white"
                         thickness="2px"
                         speed="0.8s"
                       />
@@ -1789,12 +1792,12 @@ Do not return the whole sentence as a single chunk.`;
                         fontSize="sm"
                         fontWeight="medium"
                         textAlign="center"
-                        color="purple.300"
+                        color="white"
                         flex="1"
                       >
                         {streamingText || (uiLang === "es"
-                          ? "Generando nueva meta..."
-                          : "Generating new goal...")}
+                          ? "Generando nuevo tema..."
+                          : "Generating new topic...")}
                       </Text>
                     </>
                   ) : (
