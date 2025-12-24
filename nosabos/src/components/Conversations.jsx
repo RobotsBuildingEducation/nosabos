@@ -1,5 +1,5 @@
 // components/Conversations.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -14,7 +14,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaCheckCircle } from "react-icons/fa";
+import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
@@ -29,6 +29,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
+import { getRandomConversationTopic } from "../data/conversationTopics";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -549,19 +550,30 @@ export default function Conversations({
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
 
-  // Goal system
-  const [currentGoal, setCurrentGoal] = useState({
-    text: {
-      en: "Practice speaking about any topic",
-      es: "Practica hablando sobre cualquier tema",
-    },
+  // Goal system - initialize with random topic based on proficiency level
+  const initialTopic = useMemo(
+    () => getRandomConversationTopic(maxProficiencyLevel),
+    [] // Only run once on mount
+  );
+  const [currentGoal, setCurrentGoal] = useState(() => ({
+    text: initialTopic,
     completed: false,
-  });
+  }));
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
   const lastUserMessageRef = useRef("");
+
+  // Handler to get a new random topic
+  const handleShuffleTopic = () => {
+    const newTopic = getRandomConversationTopic(maxProficiencyLevel);
+    setCurrentGoal({
+      text: newTopic,
+      completed: false,
+    });
+    setGoalFeedback("");
+  };
 
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
@@ -1695,6 +1707,19 @@ Do not return the whole sentence as a single chunk.`;
                     </>
                   ) : (
                     <>
+                      <IconButton
+                        icon={<FaDice />}
+                        size="xs"
+                        variant="ghost"
+                        colorScheme="purple"
+                        aria-label={
+                          uiLang === "es" ? "Nuevo tema" : "New topic"
+                        }
+                        onClick={handleShuffleTopic}
+                        opacity={0.7}
+                        _hover={{ opacity: 1 }}
+                        isDisabled={status === "connected"}
+                      />
                       <Text
                         fontSize="sm"
                         fontWeight="medium"
