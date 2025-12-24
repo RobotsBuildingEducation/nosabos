@@ -569,6 +569,9 @@ export default function Conversations({
 
   // Generate a conversation topic using AI with streaming
   async function generateConversationTopic() {
+    // Prevent multiple simultaneous calls
+    if (streamingRef.current || isGeneratingGoal) return;
+
     setIsGeneratingGoal(true);
     setGoalFeedback("");
     setStreamingText("");

@@ -1437,7 +1437,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 
   // Generate a new goal variation with streaming
   async function generateGoalVariation() {
-    if (goalStreamingRef.current) return;
+    // Prevent multiple simultaneous calls
+    if (goalStreamingRef.current || isGeneratingGoal) return;
 
     setIsGeneratingGoal(true);
     setStreamingGoalText("");
@@ -2912,9 +2913,9 @@ Do not return the whole sentence as a single chunk.`;
                       {tGoalLabel}
                     </Badge>
                     <Text fontSize="xs" opacity={0.9} color="white" flex="1">
-                      {isGeneratingGoal && streamingGoalText
-                        ? streamingGoalText
-                        : goalTitleForUI(currentGoal) || "—"}
+                      {isGeneratingGoal
+                        ? (streamingGoalText || (uiLang === "es" ? "Generando..." : "Generating..."))
+                        : (goalTitleForUI(currentGoal) || "—")}
                     </Text>
                   </HStack>
                 </HStack>
