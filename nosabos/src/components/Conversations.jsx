@@ -18,7 +18,7 @@ import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
-import { database, analytics } from "../firebaseResources/firebaseResources";
+import { database, analytics, simplemodel } from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -560,15 +560,19 @@ export default function Conversations({
   }));
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
   const lastUserMessageRef = useRef("");
   const hasGeneratedInitialTopic = useRef(false);
+  const streamingRef = useRef(false);
 
-  // Generate a conversation topic using AI
+  // Generate a conversation topic using AI with streaming
   async function generateConversationTopic() {
     setIsGeneratingGoal(true);
     setGoalFeedback("");
+    setStreamingText("");
+    streamingRef.current = true;
 
     try {
       // Get skill tree topics for context
@@ -604,41 +608,25 @@ Generate ONE clear, specific conversation topic that:
 
 Respond with ONLY a JSON object: {"en": "topic in English", "es": "topic in Spanish"}`;
 
-      const body = {
-        model: TRANSLATE_MODEL,
-        text: { format: { type: "text" } },
-        input: prompt,
-      };
+      // Use Gemini streaming for real-time feedback
+      const result = await simplemodel.generateContentStream(prompt);
 
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      let fullText = "";
 
-      if (!r.ok) {
-        // Use fallback topic
-        setCurrentGoal({
-          text: getRandomFallbackTopic(maxProficiencyLevel),
-          completed: false,
-        });
-        setIsGeneratingGoal(false);
-        return;
+      for await (const chunk of result.stream) {
+        if (!streamingRef.current) break;
+
+        const chunkText =
+          typeof chunk.text === "function" ? chunk.text() : "";
+
+        if (!chunkText) continue;
+
+        fullText += chunkText;
+        setStreamingText(fullText);
       }
 
-      const payload = await r.json();
-      const responseText =
-        payload?.output_text ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        "";
-
-      const parsed = safeParseJson(responseText);
+      // Parse the final result
+      const parsed = safeParseJson(fullText);
       if (parsed?.en && parsed?.es) {
         setCurrentGoal({
           text: { en: parsed.en, es: parsed.es },
@@ -652,12 +640,15 @@ Respond with ONLY a JSON object: {"en": "topic in English", "es": "topic in Span
         });
       }
     } catch (e) {
+      console.error("Topic generation error:", e);
       // Use fallback on error
       setCurrentGoal({
         text: getRandomFallbackTopic(maxProficiencyLevel),
         completed: false,
       });
     } finally {
+      streamingRef.current = false;
+      setStreamingText("");
       setIsGeneratingGoal(false);
     }
   }
@@ -1799,10 +1790,11 @@ Do not return the whole sentence as a single chunk.`;
                         fontWeight="medium"
                         textAlign="center"
                         color="purple.300"
+                        flex="1"
                       >
-                        {uiLang === "es"
+                        {streamingText || (uiLang === "es"
                           ? "Generando nueva meta..."
-                          : "Generating new goal..."}
+                          : "Generating new goal...")}
                       </Text>
                     </>
                   ) : (
