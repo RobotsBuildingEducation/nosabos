@@ -256,18 +256,14 @@ const StreamingText = ({
   );
 };
 
-const HeroBackground = ({ prefersReducedMotion }) => (
+const HeroBackground = () => (
   <Box position="absolute" inset={0} overflow="hidden" zIndex={-2}>
     <Box
       position="absolute"
       inset={0}
       bgGradient="linear(to-br, #040b14, #0c1e31 45%, #0a2f40)"
       backgroundSize="200% 200%"
-      animation={
-        prefersReducedMotion
-          ? undefined
-          : `${gradientShift} 20s ease-in-out infinite`
-      }
+      animation={undefined}
     />
 
     <Box
@@ -278,11 +274,7 @@ const HeroBackground = ({ prefersReducedMotion }) => (
       h="60%"
       bgGradient="radial(closest-side, rgba(32, 197, 190, 0.35), transparent 60%)"
       filter="blur(40px)"
-      animation={
-        prefersReducedMotion
-          ? undefined
-          : `${glowPulse} 14s ease-in-out infinite alternate`
-      }
+      animation={undefined}
     />
     <Box
       position="absolute"
@@ -292,11 +284,7 @@ const HeroBackground = ({ prefersReducedMotion }) => (
       h="55%"
       bgGradient="radial(closest-side, rgba(79, 70, 229, 0.28), transparent 60%)"
       filter="blur(40px)"
-      animation={
-        prefersReducedMotion
-          ? undefined
-          : `${glowPulse} 16s ease-in-out infinite alternate`
-      }
+      animation={undefined}
     />
 
     <Box
@@ -307,9 +295,7 @@ const HeroBackground = ({ prefersReducedMotion }) => (
       bgGradient="linear(to-b, rgba(255,255,255,0.12), transparent 60%)"
       filter="blur(18px)"
       opacity={0.35}
-      animation={
-        prefersReducedMotion ? undefined : `${shimmerSweep} 18s linear infinite`
-      }
+      animation={undefined}
     />
   </Box>
 );
@@ -768,7 +754,7 @@ const LandingPage = ({
       pb={24}
       overflow="hidden"
     >
-      <HeroBackground prefersReducedMotion={prefersReducedMotion} />
+      <HeroBackground />
       <Flex
         align="center"
         justify="center"
