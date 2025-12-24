@@ -3278,6 +3278,15 @@ export default function App() {
 
   // Detect lesson level completion and show celebration modal
   useEffect(() => {
+    // Skip celebration modal for test unlock account - levels are artificially unlocked
+    if (isTestUnlockActive) {
+      prevLessonCompletionRef.current = CEFR_LEVELS.reduce((acc, level) => {
+        acc[level] = true;
+        return acc;
+      }, {});
+      return;
+    }
+
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevLessonCompletionRef.current[level];
       const isNowComplete = lessonLevelCompletionStatus[level]?.isComplete;
@@ -3312,10 +3321,19 @@ export default function App() {
       acc[level] = lessonLevelCompletionStatus[level]?.isComplete || false;
       return acc;
     }, {});
-  }, [lessonLevelCompletionStatus, activeLessonLevel, wasCelebrationShown]);
+  }, [lessonLevelCompletionStatus, activeLessonLevel, wasCelebrationShown, isTestUnlockActive]);
 
   // Detect flashcard level completion and show celebration modal
   useEffect(() => {
+    // Skip celebration modal for test unlock account - levels are artificially unlocked
+    if (isTestUnlockActive) {
+      prevFlashcardCompletionRef.current = CEFR_LEVELS.reduce((acc, level) => {
+        acc[level] = true;
+        return acc;
+      }, {});
+      return;
+    }
+
     CEFR_LEVELS.forEach((level) => {
       const wasComplete = prevFlashcardCompletionRef.current[level];
       const isNowComplete = flashcardLevelCompletionStatus[level]?.isComplete;
@@ -3354,6 +3372,7 @@ export default function App() {
     flashcardLevelCompletionStatus,
     activeFlashcardLevel,
     wasCelebrationShown,
+    isTestUnlockActive,
   ]);
 
   // Note: We deliberately do NOT auto-update active levels when new levels unlock
