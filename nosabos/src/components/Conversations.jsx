@@ -14,11 +14,11 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaCheckCircle } from "react-icons/fa";
+import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
-import { database, analytics } from "../firebaseResources/firebaseResources";
+import { database, analytics, simplemodel } from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -29,6 +29,10 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
+import {
+  getRandomSkillTreeTopics,
+  getRandomFallbackTopic,
+} from "../data/conversationTopics";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -549,19 +553,124 @@ export default function Conversations({
   const [xp, setXp] = useState(0);
   const [streak, setStreak] = useState(0);
 
-  // Goal system
-  const [currentGoal, setCurrentGoal] = useState({
-    text: {
-      en: "Practice speaking about any topic",
-      es: "Practica hablando sobre cualquier tema",
-    },
+  // Goal system - initialize with fallback, then generate AI topic
+  const [currentGoal, setCurrentGoal] = useState(() => ({
+    text: getRandomFallbackTopic(maxProficiencyLevel),
     completed: false,
-  });
+  }));
   const [goalsCompleted, setGoalsCompleted] = useState(0);
   const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
   const [goalFeedback, setGoalFeedback] = useState("");
   const goalCheckPendingRef = useRef(false);
   const lastUserMessageRef = useRef("");
+  const hasGeneratedInitialTopic = useRef(false);
+  const streamingRef = useRef(false);
+
+  // Generate a conversation topic using AI with streaming
+  async function generateConversationTopic() {
+    // Prevent multiple simultaneous calls
+    if (streamingRef.current || isGeneratingGoal) return;
+
+    setIsGeneratingGoal(true);
+    setGoalFeedback("");
+    setStreamingText("");
+    streamingRef.current = true;
+
+    // Determine the language for the response
+    const responseLang = supportLang === "es" ? "Spanish" : "English";
+
+    try {
+      // Get skill tree topics for context
+      const skillTreeTopics = getRandomSkillTreeTopics(
+        maxProficiencyLevel,
+        targetLang,
+        15
+      );
+
+      const levelDescription =
+        maxProficiencyLevel === "A1"
+          ? "absolute beginner - use very simple vocabulary and short sentences"
+          : maxProficiencyLevel === "A2"
+          ? "elementary - use simple everyday topics and basic sentences"
+          : maxProficiencyLevel === "B1"
+          ? "intermediate - discuss experiences, opinions, and plans"
+          : maxProficiencyLevel === "B2"
+          ? "upper intermediate - handle complex and abstract topics"
+          : maxProficiencyLevel === "C1"
+          ? "advanced - use sophisticated and nuanced expressions"
+          : "mastery - near-native proficiency with subtle distinctions";
+
+      const prompt = `You are creating a conversation practice topic for a ${maxProficiencyLevel} level language learner (${levelDescription}).
+
+Here are some topics from their learning curriculum that you can reference or be inspired by:
+${skillTreeTopics.join("\n")}
+
+Generate ONE clear, specific conversation topic that:
+1. Is appropriate for ${maxProficiencyLevel} level complexity
+2. Encourages the learner to speak and practice
+3. Can be either based on the curriculum topics above OR a creative topic you think would be engaging
+4. Is specific enough to guide the conversation (not generic like "practice speaking")
+
+Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no explanation - just the topic itself.`;
+
+      // Use Gemini streaming for real-time feedback
+      const result = await simplemodel.generateContentStream(prompt);
+
+      let fullText = "";
+
+      for await (const chunk of result.stream) {
+        if (!streamingRef.current) break;
+
+        const chunkText =
+          typeof chunk.text === "function" ? chunk.text() : "";
+
+        if (!chunkText) continue;
+
+        fullText += chunkText;
+        setStreamingText(fullText);
+      }
+
+      // Use the streamed text directly as the topic
+      const topicText = fullText.trim();
+      if (topicText) {
+        setCurrentGoal({
+          text: { en: topicText, es: topicText },
+          completed: false,
+        });
+      } else {
+        // Use fallback if empty
+        setCurrentGoal({
+          text: getRandomFallbackTopic(maxProficiencyLevel),
+          completed: false,
+        });
+      }
+    } catch (e) {
+      console.error("Topic generation error:", e);
+      // Use fallback on error
+      setCurrentGoal({
+        text: getRandomFallbackTopic(maxProficiencyLevel),
+        completed: false,
+      });
+    } finally {
+      streamingRef.current = false;
+      setStreamingText("");
+      setIsGeneratingGoal(false);
+    }
+  }
+
+  // Generate initial topic on mount
+  useEffect(() => {
+    if (!hasGeneratedInitialTopic.current) {
+      hasGeneratedInitialTopic.current = true;
+      generateConversationTopic();
+    }
+  }, []);
+
+  // Handler to get a new AI-generated topic
+  const handleShuffleTopic = () => {
+    generateConversationTopic();
+  };
 
   // Turn counter for XP awarding
   const turnCountRef = useRef(0);
@@ -1678,7 +1787,7 @@ Do not return the whole sentence as a single chunk.`;
                     <>
                       <Spinner
                         size="sm"
-                        color="purple.400"
+                        color="white"
                         thickness="2px"
                         speed="0.8s"
                       />
@@ -1686,15 +1795,29 @@ Do not return the whole sentence as a single chunk.`;
                         fontSize="sm"
                         fontWeight="medium"
                         textAlign="center"
-                        color="purple.300"
+                        color="white"
+                        flex="1"
                       >
-                        {uiLang === "es"
-                          ? "Generando nueva meta..."
-                          : "Generating new goal..."}
+                        {streamingText || (uiLang === "es"
+                          ? "Generando nuevo tema..."
+                          : "Generating new topic...")}
                       </Text>
                     </>
                   ) : (
                     <>
+                      <IconButton
+                        icon={<FaDice />}
+                        size="xs"
+                        variant="ghost"
+                        colorScheme="purple"
+                        aria-label={
+                          uiLang === "es" ? "Nuevo tema" : "New topic"
+                        }
+                        onClick={handleShuffleTopic}
+                        opacity={0.7}
+                        _hover={{ opacity: 1 }}
+                        isDisabled={status === "connected"}
+                      />
                       <Text
                         fontSize="sm"
                         fontWeight="medium"

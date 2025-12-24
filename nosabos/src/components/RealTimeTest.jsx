@@ -16,7 +16,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop } from "react-icons/fa";
+import { FaStop, FaDice } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 
 import {
@@ -28,7 +28,7 @@ import {
   serverTimestamp,
   increment,
 } from "firebase/firestore";
-import { database, analytics } from "../firebaseResources/firebaseResources";
+import { database, analytics, simplemodel } from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -610,6 +610,9 @@ export default function RealTimeTest({
   const goalBusyRef = useRef(false);
   const [goalCompleted, setGoalCompleted] = useState(false); // Track when goal is completed but not advanced
   const goalXpAwardedRef = useRef(false);
+  const [isGeneratingGoal, setIsGeneratingGoal] = useState(false);
+  const [streamingGoalText, setStreamingGoalText] = useState("");
+  const goalStreamingRef = useRef(false);
 
   // Track when XP has been granted for the active goal to avoid duplicates
   const lastGoalIdRef = useRef(null);
@@ -1430,6 +1433,97 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       }`,
       successCriteria: `User produces multiple relevant ${topic} words or phrases in context`,
     };
+  }
+
+  // Generate a new goal variation with streaming
+  async function generateGoalVariation() {
+    // Prevent multiple simultaneous calls
+    if (goalStreamingRef.current || isGeneratingGoal) return;
+
+    setIsGeneratingGoal(true);
+    setStreamingGoalText("");
+    setGoalFeedback("");
+    goalStreamingRef.current = true;
+
+    const topic =
+      lessonContent?.topic ||
+      lesson?.content?.vocabulary?.topic ||
+      lesson?.title?.en ||
+      "conversation practice";
+    const focusPoints =
+      lessonContent?.focusPoints ||
+      lesson?.content?.vocabulary?.focusPoints ||
+      lesson?.content?.grammar?.focusPoints ||
+      [];
+    const lessonTitle = lesson?.title?.en || "";
+    const lessonDesc = lesson?.description?.en || "";
+    const cefrLvl = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
+    const cefrHint = getCEFRPromptHint(cefrLvl);
+    const goalLangCode = supportLangRef.current || supportLang || "en";
+    const goalLangName = goalLangCode === "es" ? "Spanish" : "English";
+
+    // Get current goal for context
+    const currentScenario = currentGoal?.lessonScenario || currentGoal?.scenario || "";
+
+    const prompt = `You are creating a NEW conversational practice goal for a language learner.
+
+Lesson: ${lessonTitle}
+Description: ${lessonDesc}
+Topic: ${topic}
+Focus areas: ${focusPoints.join(", ") || "general vocabulary and grammar"}
+Level: ${cefrHint}
+
+${currentScenario ? `IMPORTANT: The previous goal was "${currentScenario}". Create something DIFFERENT but still related to ${topic}.` : ""}
+
+Create a SPECIFIC, ACTIONABLE goal that:
+1. Is a concrete task completable in 1-3 minutes of conversation
+2. Written as a clear action (not "practice X")
+3. Demonstrates understanding of ${topic}
+4. Is DIFFERENT from any previous goals
+
+Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no explanation - just the goal itself.`;
+
+    try {
+      const result = await simplemodel.generateContentStream(prompt);
+      let fullText = "";
+
+      for await (const chunk of result.stream) {
+        if (!goalStreamingRef.current) break;
+        const chunkText = typeof chunk.text === "function" ? chunk.text() : "";
+        if (!chunkText) continue;
+        fullText += chunkText;
+        setStreamingGoalText(fullText);
+      }
+
+      const goalText = fullText.trim();
+      if (goalText) {
+        const newGoal = {
+          id: `goal_${Date.now()}`,
+          title_en: goalText,
+          title_es: goalText,
+          rubric_en: "",
+          rubric_es: "",
+          lessonScenario: goalText,
+          successCriteria: `User successfully completes: ${goalText}`,
+          roleplayPrompt: `Help the learner to: ${goalText}. Create a realistic scenario and guide them.`,
+          goalIndex: (currentGoal?.goalIndex || 0) + 1,
+          attempts: 0,
+          status: "active",
+          createdAt: isoNow(),
+          updatedAt: isoNow(),
+        };
+        setCurrentGoal(newGoal);
+        goalRef.current = newGoal;
+        setGoalCompleted(false);
+        goalXpAwardedRef.current = false;
+      }
+    } catch (e) {
+      console.error("Goal variation generation error:", e);
+    } finally {
+      goalStreamingRef.current = false;
+      setStreamingGoalText("");
+      setIsGeneratingGoal(false);
+    }
   }
 
   function goalTitlesSeed() {
@@ -2797,7 +2891,20 @@ Do not return the whole sentence as a single chunk.`;
             >
               <Box w="100%">
                 <HStack justify="space-between" align="center" mb={1}>
-                  <HStack spacing={2} align="center">
+                  <HStack spacing={2} align="center" flex="1">
+                    <IconButton
+                      icon={isGeneratingGoal ? <Spinner size="xs" color="white" /> : <FaDice />}
+                      size="xs"
+                      variant="ghost"
+                      color="white"
+                      aria-label={uiLang === "es" ? "Nueva meta" : "New goal"}
+                      onClick={generateGoalVariation}
+                      opacity={0.7}
+                      _hover={{ opacity: 1 }}
+                      isDisabled={status === "connected" || isGeneratingGoal}
+                      minW="24px"
+                      h="24px"
+                    />
                     <Badge
                       colorScheme="yellow"
                       variant="subtle"
@@ -2805,19 +2912,20 @@ Do not return the whole sentence as a single chunk.`;
                     >
                       {tGoalLabel}
                     </Badge>
-                    <Text fontSize="xs" opacity={0.9}>
-                      {goalTitleForUI(currentGoal) || "—"}
+                    <Text fontSize="xs" opacity={0.9} color="white" flex="1">
+                      {isGeneratingGoal
+                        ? (streamingGoalText || (uiLang === "es" ? "Generando..." : "Generating..."))
+                        : (goalTitleForUI(currentGoal) || "—")}
                     </Text>
                   </HStack>
-                  <HStack></HStack>
                 </HStack>
-                {!!currentGoal && (
+                {!!currentGoal && !isGeneratingGoal && (
                   <Text fontSize="xs" opacity={0.8}>
                     <strong style={{ opacity: 0.85 }}>{tGoalCriteria}</strong>{" "}
                     {goalRubricForUI(currentGoal)}
                   </Text>
                 )}
-                {goalFeedback ? (
+                {goalFeedback && !isGeneratingGoal ? (
                   <Text fontSize="xs" mt={2} opacity={0.9}>
                     💡 {goalFeedback}
                   </Text>
