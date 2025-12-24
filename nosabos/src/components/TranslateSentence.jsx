@@ -86,7 +86,7 @@ export default function TranslateSentence({
   // Handle clicking a word in the bank to add it to selection
   const handleWordClick = useCallback(
     (wordIndex, bankPosition) => {
-      if (lastOk !== null) return; // Don't allow changes after submission
+      if (lastOk === true) return; // Don't allow changes after correct answer (allow retry on wrong)
 
       // Remove from bank, add to selected
       setBankOrder((prev) => prev.filter((_, pos) => pos !== bankPosition));
@@ -98,7 +98,7 @@ export default function TranslateSentence({
   // Handle clicking a selected word to return it to the bank
   const handleSelectedWordClick = useCallback(
     (selectedPosition) => {
-      if (lastOk !== null) return;
+      if (lastOk === true) return; // Allow correction on wrong answer
 
       const wordIndex = selectedWords[selectedPosition];
       // Remove from selected, add back to bank
@@ -113,7 +113,7 @@ export default function TranslateSentence({
   // Handle drag and drop
   const handleDragEnd = useCallback(
     (result) => {
-      if (!result?.destination || lastOk !== null) return;
+      if (!result?.destination || lastOk === true) return; // Allow correction on wrong answer
 
       const { source, destination } = result;
 
@@ -374,7 +374,7 @@ export default function TranslateSentence({
                     key={`selected-${wordIndex}-${position}`}
                     draggableId={`selected-${wordIndex}-${position}`}
                     index={position}
-                    isDragDisabled={lastOk !== null}
+                    isDragDisabled={lastOk === true}
                   >
                     {(dragProvided, dragSnapshot) => (
                       <Box
@@ -396,12 +396,12 @@ export default function TranslateSentence({
                             : "rgba(128, 90, 213, 0.12)"
                         }
                         fontSize="sm"
-                        cursor={lastOk !== null ? "default" : "pointer"}
+                        cursor={lastOk === true ? "default" : "pointer"}
                         onClick={() =>
-                          lastOk === null && handleSelectedWordClick(position)
+                          lastOk !== true && handleSelectedWordClick(position)
                         }
                         _hover={
-                          lastOk === null
+                          lastOk !== true
                             ? {
                                 bg: "rgba(128, 90, 213, 0.2)",
                                 borderColor: "purple.300",
@@ -449,7 +449,7 @@ export default function TranslateSentence({
                   key={`bank-${wordIndex}`}
                   draggableId={`bank-${wordIndex}`}
                   index={position}
-                  isDragDisabled={lastOk !== null}
+                  isDragDisabled={lastOk === true}
                 >
                   {(dragProvided, dragSnapshot) => (
                     <Box
@@ -471,12 +471,12 @@ export default function TranslateSentence({
                           : "rgba(255, 255, 255, 0.04)"
                       }
                       fontSize="sm"
-                      cursor={lastOk !== null ? "default" : "pointer"}
+                      cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() =>
-                        lastOk === null && handleWordClick(wordIndex, position)
+                        lastOk !== true && handleWordClick(wordIndex, position)
                       }
                       _hover={
-                        lastOk === null
+                        lastOk !== true
                           ? {
                               bg: "rgba(128, 90, 213, 0.12)",
                               borderColor: "purple.200",

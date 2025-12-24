@@ -25,24 +25,39 @@ export function initializeProgress() {
 }
 
 /**
- * Start a lesson - mark it as in progress
+ * Start a lesson - mark it as in progress (but preserve COMPLETED status)
  */
-export async function startLesson(npub, lessonId, targetLang = 'es') {
+export async function startLesson(npub, lessonId, targetLang = 'es', userProgress = null) {
   if (!npub || !lessonId) return;
 
   const languageKey = (targetLang || 'es').toLowerCase();
   const languageLessonBase = `progress.languageLessons.${languageKey}.${lessonId}`;
   const userRef = doc(database, 'users', npub);
 
+  // Check if lesson is already completed - if so, don't change its status
+  // This prevents restarting a completed lesson from re-locking subsequent lessons
+  const existingStatus =
+    userProgress?.languageLessons?.[languageKey]?.[lessonId]?.status ||
+    userProgress?.lessons?.[lessonId]?.status;
+
+  const isAlreadyCompleted = existingStatus === SKILL_STATUS.COMPLETED;
+
   try {
-    await updateDoc(userRef, {
+    // Only update status if NOT already completed
+    const updateData = {
       [`progress.currentLesson`]: lessonId,
-      [`progress.lessons.${lessonId}.status`]: SKILL_STATUS.IN_PROGRESS,
-      [`progress.lessons.${lessonId}.startedAt`]: serverTimestamp(),
-      [`${languageLessonBase}.status`]: SKILL_STATUS.IN_PROGRESS,
-      [`${languageLessonBase}.startedAt`]: serverTimestamp(),
       'progress.lastActiveAt': serverTimestamp(),
-    });
+    };
+
+    // Only set to IN_PROGRESS if not already completed
+    if (!isAlreadyCompleted) {
+      updateData[`progress.lessons.${lessonId}.status`] = SKILL_STATUS.IN_PROGRESS;
+      updateData[`progress.lessons.${lessonId}.startedAt`] = serverTimestamp();
+      updateData[`${languageLessonBase}.status`] = SKILL_STATUS.IN_PROGRESS;
+      updateData[`${languageLessonBase}.startedAt`] = serverTimestamp();
+    }
+
+    await updateDoc(userRef, updateData);
   } catch (error) {
     console.error('Error starting lesson:', error);
     throw error;

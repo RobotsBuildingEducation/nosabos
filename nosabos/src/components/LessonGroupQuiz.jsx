@@ -387,8 +387,9 @@ export default function LessonGroupQuiz({
 
     return [
       `Create ONE ${TARGET} multiple-answer question for a unit quiz (EXACTLY 2 or 3 correct). Difficulty: ${diff}`,
-      `- Stem ≤120 chars with at least one blank "___" within context.`,
+      `- Stem ≤120 chars with at least one blank "___" within context. The stem MUST be in ${TARGET}.`,
       `- 5–6 distinct choices in ${TARGET}.`,
+      `- CRITICAL: Each choice MUST be a single word or short phrase. NEVER combine multiple answers with "/" or "or". For example, use separate choices like "es", "tiene" instead of "es/tiene".`,
       `- Hint in ${SUPPORT} (≤8 words).`,
       wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
       topicDirective,
