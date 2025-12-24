@@ -85,7 +85,7 @@ export default function RepeatWhatYouHear({
 
   const handleWordClick = useCallback(
     (wordIndex, bankPosition) => {
-      if (lastOk !== null) return;
+      if (lastOk === true) return; // Allow correction on wrong answer
       setBankOrder((prev) => prev.filter((_, pos) => pos !== bankPosition));
       setSelectedWords((prev) => [...prev, wordIndex]);
     },
@@ -94,7 +94,7 @@ export default function RepeatWhatYouHear({
 
   const handleSelectedWordClick = useCallback(
     (selectedPosition) => {
-      if (lastOk !== null) return;
+      if (lastOk === true) return; // Allow correction on wrong answer
       const wordIndex = selectedWords[selectedPosition];
       setSelectedWords((prev) =>
         prev.filter((_, pos) => pos !== selectedPosition)
@@ -106,7 +106,7 @@ export default function RepeatWhatYouHear({
 
   const handleDragEnd = useCallback(
     (result) => {
-      if (!result?.destination || lastOk !== null) return;
+      if (!result?.destination || lastOk === true) return; // Allow correction on wrong answer
       const { source, destination } = result;
 
       if (
@@ -306,7 +306,7 @@ export default function RepeatWhatYouHear({
                         key={`selected-${wordIndex}-${position}`}
                         draggableId={`selected-${wordIndex}-${position}`}
                         index={position}
-                        isDragDisabled={lastOk !== null}
+                        isDragDisabled={lastOk === true}
                       >
                         {(dragProvided, dragSnapshot) => (
                           <Box
@@ -327,13 +327,13 @@ export default function RepeatWhatYouHear({
                                 ? "rgba(128, 90, 213, 0.25)"
                                 : "rgba(255, 255, 255, 0.06)"
                             }
-                            cursor={lastOk !== null ? "default" : "grab"}
+                            cursor={lastOk === true ? "default" : "grab"}
                             onClick={() =>
-                              lastOk === null &&
+                              lastOk !== true &&
                               handleSelectedWordClick(position)
                             }
                             _hover={
-                              lastOk === null
+                              lastOk !== true
                                 ? {
                                     bg: "rgba(128, 90, 213, 0.12)",
                                     borderColor: "purple.200",
@@ -382,7 +382,7 @@ export default function RepeatWhatYouHear({
                   key={`bank-${wordIndex}`}
                   draggableId={`bank-${wordIndex}`}
                   index={position}
-                  isDragDisabled={lastOk !== null}
+                  isDragDisabled={lastOk === true}
                 >
                   {(dragProvided, dragSnapshot) => (
                     <Box
@@ -404,12 +404,12 @@ export default function RepeatWhatYouHear({
                           : "rgba(255, 255, 255, 0.04)"
                       }
                       fontSize="sm"
-                      cursor={lastOk !== null ? "default" : "pointer"}
+                      cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() =>
-                        lastOk === null && handleWordClick(wordIndex, position)
+                        lastOk !== true && handleWordClick(wordIndex, position)
                       }
                       _hover={
-                        lastOk === null
+                        lastOk !== true
                           ? {
                               bg: "rgba(128, 90, 213, 0.12)",
                               borderColor: "purple.200",

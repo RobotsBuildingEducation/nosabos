@@ -515,7 +515,9 @@ function buildMAStreamPrompt({
     }`,
     stemDirective,
     `- 5–6 distinct choices in ${TARGET}.`,
-    `- Question/stem MUST be in ${SUPPORT} so the learner can understand what is being asked.`,
+    `- CRITICAL: Each choice MUST be a single word or short phrase. NEVER combine multiple answers with "/" or "or". For example, use separate choices like "es", "tiene" instead of "es/tiene".`,
+    `- CRITICAL: If the stem contains a blank "___", the sentence MUST be in ${TARGET} (the language being learned), NOT in ${SUPPORT}. The user fills in ${TARGET} words into ${TARGET} sentences.`,
+    `- If the stem is a question WITHOUT blanks (asking to select correct translations or examples), then the question can be in ${SUPPORT}.`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
       ? `- ${SUPPORT} translation of stem.`
@@ -523,7 +525,7 @@ function buildMAStreamPrompt({
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"ma","phase":"q","question":"<stem in ${SUPPORT}>"}  // first`,
+    `{"type":"ma","phase":"q","question":"<stem - if blank, MUST be in ${TARGET}>"}  // first`,
     `{"type":"ma","phase":"choices","choices":["..."]}           // second`,
     `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
@@ -2236,7 +2238,12 @@ Create ONE multiple-choice ${LANG_NAME(
     });
 
     let got = false;
-    let pendingAnswers = [];
+    // Use local variables to accumulate streaming data to prevent de-rendering issues
+    let tempQuestion = "";
+    let tempChoices = [];
+    let tempAnswers = [];
+    let tempHint = "";
+    let tempTranslation = "";
 
     try {
       if (!simplemodel) throw new Error("gemini-unavailable");
@@ -2256,40 +2263,28 @@ Create ONE multiple-choice ${LANG_NAME(
           buffer = buffer.slice(nl + 1);
           tryConsumeLine(line, (obj) => {
             if (obj?.type === "ma" && obj.phase === "q" && obj.question) {
-              setMaQ(String(obj.question));
+              tempQuestion = String(obj.question);
+              setMaQ(tempQuestion);
               got = true;
             } else if (
               obj?.type === "ma" &&
               obj.phase === "choices" &&
               Array.isArray(obj.choices)
             ) {
-              const rawChoices = obj.choices.slice(0, 6).map(String);
-              // If we already have pending answers, ensure they're in choices
-              if (pendingAnswers?.length) {
-                const { choices, answers } = ensureAnswersInChoices(
-                  rawChoices,
-                  pendingAnswers
-                );
-                setMaChoices(choices);
-                if (answers.length >= 2) setMaAnswers(answers);
-              } else {
-                setMaChoices(rawChoices);
-              }
+              tempChoices = obj.choices.slice(0, 6).map(String);
+              // Don't set state yet - wait for answers to arrive
               got = true;
             } else if (obj?.type === "ma" && obj.phase === "meta") {
-              if (typeof obj.hint === "string") setMaHint(obj.hint);
-              if (typeof obj.translation === "string")
-                setMaTranslation(obj.translation);
+              if (typeof obj.hint === "string") {
+                tempHint = obj.hint;
+                setMaHint(tempHint);
+              }
+              if (typeof obj.translation === "string") {
+                tempTranslation = obj.translation;
+                setMaTranslation(tempTranslation);
+              }
               if (Array.isArray(obj.answers)) {
-                pendingAnswers = obj.answers.map(String);
-                if (Array.isArray(maChoices) && maChoices.length) {
-                  const { choices, answers } = ensureAnswersInChoices(
-                    maChoices,
-                    pendingAnswers
-                  );
-                  setMaChoices(choices);
-                  if (answers.length >= 2) setMaAnswers(answers);
-                }
+                tempAnswers = obj.answers.map(String);
               }
               got = true;
             }
@@ -2311,44 +2306,45 @@ Create ONE multiple-choice ${LANG_NAME(
           .forEach((l) =>
             tryConsumeLine(l, (obj) => {
               if (obj?.type === "ma" && obj.phase === "q" && obj.question) {
-                setMaQ(String(obj.question));
+                tempQuestion = String(obj.question);
+                setMaQ(tempQuestion);
                 got = true;
               } else if (
                 obj?.type === "ma" &&
                 obj.phase === "choices" &&
                 Array.isArray(obj.choices)
               ) {
-                const rawChoices = obj.choices.slice(0, 6).map(String);
-                if (pendingAnswers?.length) {
-                  const { choices, answers } = ensureAnswersInChoices(
-                    rawChoices,
-                    pendingAnswers
-                  );
-                  setMaChoices(choices);
-                  if (answers.length >= 2) setMaAnswers(answers);
-                } else {
-                  setMaChoices(rawChoices);
-                }
+                tempChoices = obj.choices.slice(0, 6).map(String);
                 got = true;
               } else if (obj?.type === "ma" && obj.phase === "meta") {
-                if (typeof obj.hint === "string") setMaHint(obj.hint);
-                if (typeof obj.translation === "string")
-                  setMaTranslation(obj.translation);
+                if (typeof obj.hint === "string") {
+                  tempHint = obj.hint;
+                  setMaHint(tempHint);
+                }
+                if (typeof obj.translation === "string") {
+                  tempTranslation = obj.translation;
+                  setMaTranslation(tempTranslation);
+                }
                 if (Array.isArray(obj.answers)) {
-                  pendingAnswers = obj.answers.map(String);
-                  if (Array.isArray(maChoices) && maChoices.length) {
-                    const { choices, answers } = ensureAnswersInChoices(
-                      maChoices,
-                      pendingAnswers
-                    );
-                    setMaChoices(choices);
-                    if (answers.length >= 2) setMaAnswers(answers);
-                  }
+                  tempAnswers = obj.answers.map(String);
                 }
                 got = true;
               }
             })
           );
+      }
+
+      // Now set choices and answers together to prevent de-rendering
+      if (tempChoices.length > 0 && tempAnswers.length >= 2) {
+        const { choices, answers } = ensureAnswersInChoices(
+          tempChoices,
+          tempAnswers
+        );
+        setMaChoices(choices);
+        setMaAnswers(answers);
+      } else if (tempChoices.length > 0) {
+        setMaChoices(tempChoices);
+        if (tempAnswers.length >= 2) setMaAnswers(tempAnswers);
       }
 
       if (!got) throw new Error("no-ma");

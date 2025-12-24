@@ -1934,7 +1934,8 @@ export default function App() {
       const npub = resolveNpub();
       let fresh = null;
       if (npub) {
-        await startLesson(npub, lesson.id, resolvedTargetLang);
+        // Pass current user progress so startLesson can preserve COMPLETED status
+        await startLesson(npub, lesson.id, resolvedTargetLang, user?.progress);
 
         // Refresh user data to get updated progress
         fresh = await loadUserObjectFromDB(database, npub);
