@@ -43,6 +43,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import { callResponses } from "../utils/llm";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -52,10 +53,6 @@ const REALTIME_URL = `${
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
   REALTIME_MODEL
 )}`;
-
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
 
 /* ---------------------------
    Utils & helpers
@@ -1322,29 +1319,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
 {"scenario":"[5-15 word specific task - be concise even for advanced levels]","prompt":"[1-2 sentence roleplay setup for AI tutor - what role to play, what situation to create]","successCriteria":"[specific observable behavior that shows success]"}`;
 
     try {
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: TRANSLATE_MODEL,
-          text: { format: { type: "text" } },
-          input: prompt,
-        }),
-      });
-      const ct = r.headers.get("content-type") || "";
-      const payload = ct.includes("application/json")
-        ? await r.json()
-        : await r.text();
-      const text =
-        (typeof payload?.output_text === "string" && payload.output_text) ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        (typeof payload === "string" ? payload : "");
+      const text = await callResponses({ input: prompt });
 
       const parsed = safeParseJson(text);
       if (parsed?.scenario && parsed?.prompt) {
@@ -1659,45 +1634,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
         : `Translate to natural US English. Return only JSON {"translation":"..."}.\n${trimmed}`;
 
     try {
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          model: TRANSLATE_MODEL,
-          text: { format: { type: "text" } },
-          input: prompt,
-        }),
-      });
-
-      const ct = r.headers.get("content-type") || "";
-      const payload = ct.includes("application/json")
-        ? await r.json()
-        : await r.text();
-
-      if (!r.ok) {
-        const msg =
-          payload?.error?.message ||
-          (typeof payload === "string" ? payload : JSON.stringify(payload));
-        throw new Error(msg || `Translate HTTP ${r.status}`);
-      }
-
-      const merged =
-        (typeof payload?.output_text === "string" && payload.output_text) ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-        (Array.isArray(payload?.choices) &&
-          (payload.choices[0]?.message?.content || "")) ||
-        "";
-
+      const merged = await callResponses({ input: prompt });
       const parsed = safeParseJson(merged);
       return (parsed?.translation || merged || trimmed).trim();
     } catch (err) {
@@ -1829,39 +1766,10 @@ Devuelve SOLO JSON:
 Return ONLY JSON:
 {"met":true|false,"confidence":0..1,"feedback_tl":"short, kind message in the target language (≤12 words)","feedback_ui":"short, kind message in ${uiLangName} (≤12 words)"}`;
 
-    const body = {
-      model: TRANSLATE_MODEL,
-      text: { format: { type: "text" } },
-      input: `${judgePrompt}\n\nUtterance:\n${userUtterance}`,
-    };
-
     try {
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(body),
+      const mergedText = await callResponses({
+        input: `${judgePrompt}\n\nUtterance:\n${userUtterance}`,
       });
-      const ct = r.headers.get("content-type") || "";
-      const payload = ct.includes("application/json")
-        ? await r.json()
-        : await r.text();
-
-      const mergedText =
-        (typeof payload?.output_text === "string" && payload.output_text) ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-        (Array.isArray(payload?.choices) &&
-          (payload.choices[0]?.message?.content || "")) ||
-        "";
       const parsed = safeParseJson(mergedText) || {};
       const met = !!parsed.met;
       const conf = Math.max(0, Math.min(1, Number(parsed.confidence) || 0));
@@ -2479,45 +2387,12 @@ Return ONLY JSON in the format {"translation":"...","pairs":[{"lhs":"...","rhs":
 Split the sentence into short, aligned chunks (2-6 words) inside "pairs" for phrase-by-phrase study.
 Do not return the whole sentence as a single chunk.`;
 
-    const body = {
-      model: TRANSLATE_MODEL,
-      text: { format: { type: "text" } },
+    const mergedText = await callResponses({
       input: `${prompt}\n\n${src}`,
-    };
-
-    const r = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
     });
-
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    if (!r.ok) {
-      const msg =
-        payload?.error?.message ||
-        (typeof payload === "string" ? payload : JSON.stringify(payload));
-      throw new Error(msg || `Translate HTTP ${r.status}`);
+    if (!mergedText) {
+      throw new Error("Translate failed");
     }
-
-    const mergedText =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      "";
 
     const parsed = safeParseJson(mergedText);
     const translation = (parsed?.translation || mergedText || "").trim();

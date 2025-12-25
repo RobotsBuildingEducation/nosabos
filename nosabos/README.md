@@ -41,8 +41,9 @@ Node version 20+ is required.
 
 1. `VITE_FIREBASE_PUBLIC_API_KEY=your_public_project_key`
 2. `VITE_PATREON_PASSCODE=your_patreon_subscriber_passcode`
-3. `VITE_RESPONSES_URL=your_firebase_function_exchangeRealtimeSDP_url`
-4. `VITE_REALTIME_URL=your_firebase_function_proxyResponses_url`
+3. `VITE_REALTIME_URL=your_firebase_function_exchangeRealtimeSDP_url`
+
+Client-side AI responses now use Gemini 3 Flash through Firebase Vertex AI, so no additional proxyResponses configuration is required.
 
 ##### /functions/.env
 

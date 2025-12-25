@@ -66,8 +66,6 @@ const renderSpeakerIcon = (loading) =>
 /* ================================
    ENV / API
 =================================== */
-const RESPONSES_URL = import.meta.env.VITE_RESPONSES_URL;
-
 /* ================================
    Helpers / Language utils
 =================================== */
