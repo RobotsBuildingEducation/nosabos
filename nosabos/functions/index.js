@@ -202,7 +202,7 @@ exports.proxyResponses = onRequest(
 
     // Inject minimal reasoning effort and low verbosity
     body.reasoning = { effort: "minimal" };
-    body.verbosity = "low";
+    body.text = { ...(body.text || {}), verbosity: "low" };
 
     let upstream;
     try {
