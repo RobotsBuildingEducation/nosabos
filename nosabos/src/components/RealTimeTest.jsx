@@ -1130,8 +1130,6 @@ export default function RealTimeTest({
         );
 
         setTimeout(() => applyLanguagePolicyNow(), 60);
-        // Trigger diverse initial response after session setup
-        setTimeout(() => triggerDiverseInitialResponse(), 150);
       };
 
       dc.onmessage = handleRealtimeEvent;
@@ -2096,56 +2094,6 @@ Return ONLY JSON:
     }
   }
 
-  // Diverse opening prompts for varied conversation starts
-  function triggerDiverseInitialResponse() {
-    if (!dcRef.current || dcRef.current.readyState !== "open") return;
-
-    const goal = goalRef.current;
-    const tLang = targetLangRef.current || "es";
-    const scenario = goal?.scenario || goal?.lessonScenario || "";
-    const roleplayPrompt = goal?.roleplayPrompt || "";
-
-    // Diverse conversation openers - AI will pick a varied approach
-    const openerStyles = [
-      "Start with a warm, casual greeting and ask an open-ended question about the learner's day or interests.",
-      "Begin with an enthusiastic greeting and immediately dive into the scenario with a relevant question.",
-      "Open with a friendly greeting, then set the scene for the roleplay naturally.",
-      "Start by introducing yourself briefly in character, then invite the learner to participate.",
-      "Begin with a simple greeting and a compliment or encouraging comment, then transition to the topic.",
-      "Open with a question that gets the learner talking right away - be curious about them.",
-      "Start by sharing a brief, relevant thought or observation, then ask for the learner's perspective.",
-      "Begin playfully - maybe with a light joke or fun comment related to the topic.",
-    ];
-
-    // Pick a random opener style
-    const randomOpener =
-      openerStyles[Math.floor(Math.random() * openerStyles.length)];
-
-    // Build context-aware instruction
-    let contextHint = "";
-    if (scenario) {
-      contextHint = `The conversation goal is: "${scenario}". `;
-    }
-    if (roleplayPrompt) {
-      contextHint += `Your role: ${roleplayPrompt}. `;
-    }
-
-    const openingInstruction = `${randomOpener} ${contextHint}Keep it brief (under 20 words), natural, and in the target language. Do NOT say the same thing every time - be creative and varied.`;
-
-    try {
-      dcRef.current.send(
-        JSON.stringify({
-          type: "response.create",
-          response: {
-            modalities: ["audio", "text"],
-            instructions: openingInstruction,
-            metadata: { kind: "initial_greeting" },
-          },
-        })
-      );
-    } catch {}
-  }
-
   function sendSessionUpdate() {
     if (!dcRef.current || dcRef.current.readyState !== "open") return;
     const voiceName = voiceRef.current || "alloy";
@@ -2705,7 +2653,16 @@ Do not return the whole sentence as a single chunk.`;
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    return Array.from(map.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const byTsThenRole = (a, b) => {
+      const tsA = a?.ts || 0;
+      const tsB = b?.ts || 0;
+      if (tsA !== tsB) return tsA - tsB; // chronological order
+      if (a?.role === b?.role) return 0;
+      if (a?.role === "user") return -1; // put user first when simultaneous
+      if (b?.role === "user") return 1;
+      return 0;
+    };
+    return Array.from(map.values()).sort(byTsThenRole);
   }, [messages, history]);
 
   return (
