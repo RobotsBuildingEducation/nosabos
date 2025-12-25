@@ -35,7 +35,7 @@ const CORS_ORIGINS = [
 ];
 
 // Only permit the models you actually use with /proxyResponses
-const ALLOWED_RESPONSE_MODELS = new Set(["gpt-4o-mini"]);
+const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5-nano"]);
 
 // Optionally require Firebase App Check (set true after client wiring)
 const REQUIRE_APPCHECK = false;
@@ -118,7 +118,7 @@ exports.exchangeRealtimeSDP = onRequest(
     const contentType = (req.headers["content-type"] || "").toLowerCase();
 
     let offerSDP = "";
-    let model = "gpt-4o-mini-realtime-preview"; // set your default realtime model
+    let model = "gpt-5-nano-realtime-preview"; // set your default realtime model
     if (contentType.includes("application/sdp")) {
       offerSDP = req.rawBody?.toString("utf8") || "";
     } else {
@@ -339,7 +339,7 @@ Generate an engaging Spanish story now:`;
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "gpt-4o-mini",
+            model: "gpt-5-nano",
             messages: [
               {
                 role: "system",
@@ -549,7 +549,7 @@ When the story is complete, send:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-5-nano",
         messages: [
           {
             role: "system",

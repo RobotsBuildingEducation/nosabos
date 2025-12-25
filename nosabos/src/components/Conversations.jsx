@@ -45,7 +45,7 @@ const REALTIME_URL = `${
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
+  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
 
 /* ---------------------------
    Utils & helpers
@@ -947,8 +947,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   async function start() {
     setErr("");
     setStatus("connecting");
-    setUiState("thinking");
-    setMood("thoughtful");
+    setUiState("listening");
+    setMood("happy");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       localRef.current = stream;
