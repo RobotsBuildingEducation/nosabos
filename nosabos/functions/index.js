@@ -200,8 +200,8 @@ exports.proxyResponses = onRequest(
       );
     }
 
-    // (Optional) Inject guardrails/metadata here:
-    // body.metadata = { origin: "rbe", ...(body.metadata || {}) };
+    // Inject minimal reasoning effort to disable extended thinking
+    body.reasoning = { effort: "minimal" };
 
     let upstream;
     try {
