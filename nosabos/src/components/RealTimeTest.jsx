@@ -2653,7 +2653,16 @@ Do not return the whole sentence as a single chunk.`;
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    return Array.from(map.values()).sort((a, b) => (b.ts || 0) - (a.ts || 0));
+    const byTsThenRole = (a, b) => {
+      const tsA = a?.ts || 0;
+      const tsB = b?.ts || 0;
+      if (tsA !== tsB) return tsA - tsB; // chronological order
+      if (a?.role === b?.role) return 0;
+      if (a?.role === "user") return -1; // put user first when simultaneous
+      if (b?.role === "user") return 1;
+      return 0;
+    };
+    return Array.from(map.values()).sort(byTsThenRole);
   }, [messages, history]);
 
   return (
