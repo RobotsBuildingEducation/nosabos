@@ -35,7 +35,7 @@ const CORS_ORIGINS = [
 ];
 
 // Only permit the models you actually use with /proxyResponses
-const ALLOWED_RESPONSE_MODELS = new Set(["gpt-4o-mini"]);
+const ALLOWED_RESPONSE_MODELS = new Set(["gpt-5-nano"]);
 
 // Optionally require Firebase App Check (set true after client wiring)
 const REQUIRE_APPCHECK = false;
