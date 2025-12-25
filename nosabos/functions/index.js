@@ -200,8 +200,9 @@ exports.proxyResponses = onRequest(
       );
     }
 
-    // Inject minimal reasoning effort to disable extended thinking
+    // Inject minimal reasoning effort and low verbosity
     body.reasoning = { effort: "minimal" };
+    body.verbosity = "low";
 
     let upstream;
     try {
