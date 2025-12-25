@@ -3,7 +3,7 @@
 import { simplemodel } from "../firebaseResources/firebaseResources";
 
 const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const DEFAULT_RESPONSES_MODEL = "gemini-3-flash-preview";
+const DEFAULT_RESPONSES_MODEL = "gpt-5-nano";
 
 function textFromChunk(chunk) {
   try {
