@@ -29,6 +29,7 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
 import { getCEFRPromptHint } from "../utils/cefrUtils";
+import { callResponses } from "../utils/llm";
 import {
   getRandomSkillTreeTopics,
   getRandomFallbackTopic,
@@ -42,10 +43,6 @@ const REALTIME_URL = `${
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
   REALTIME_MODEL
 )}`;
-
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-4o-mini";
 
 /* ---------------------------
    Utils & helpers
@@ -1248,34 +1245,11 @@ FEEDBACK GUIDELINES:
 
 Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, actionable feedback in ${feedbackLanguage}"}`;
 
-      const body = {
-        model: TRANSLATE_MODEL,
-        text: { format: { type: "text" } },
-        input: prompt,
-      };
-
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!r.ok) {
+      const responseText = await callResponses({ input: prompt });
+      if (!responseText) {
         goalCheckPendingRef.current = false;
         return;
       }
-
-      const payload = await r.json();
-      const responseText =
-        payload?.output_text ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        "";
 
       const parsed = safeParseJson(responseText);
       if (parsed?.completed) {
@@ -1342,19 +1316,8 @@ IMPORTANT: Keep the goal CONCISE (max 10-15 words). For advanced levels, use sop
 
 Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": "goal in Spanish (max 15 words)"}`;
 
-      const body = {
-        model: TRANSLATE_MODEL,
-        text: { format: { type: "text" } },
-        input: prompt,
-      };
-
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (!r.ok) {
+      const responseText = await callResponses({ input: prompt });
+      if (!responseText) {
         // Fallback to default goal
         setCurrentGoal({
           text: {
@@ -1367,18 +1330,6 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         setIsGeneratingGoal(false);
         return;
       }
-
-      const payload = await r.json();
-      const responseText =
-        payload?.output_text ||
-        (Array.isArray(payload?.output) &&
-          payload.output
-            .map((it) =>
-              (it?.content || []).map((seg) => seg?.text || "").join("")
-            )
-            .join(" ")
-            .trim()) ||
-        "";
 
       const parsed = safeParseJson(responseText);
       if (parsed?.en && parsed?.es) {
@@ -1704,45 +1655,12 @@ Return ONLY JSON in the format {"translation":"...","pairs":[{"lhs":"...","rhs":
 Split the sentence into short, aligned chunks (2-6 words) inside "pairs" for phrase-by-phrase study.
 Do not return the whole sentence as a single chunk.`;
 
-    const body = {
-      model: TRANSLATE_MODEL,
-      text: { format: { type: "text" } },
+    const mergedText = await callResponses({
       input: `${prompt}\n\n${src}`,
-    };
-
-    const r = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
     });
-
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    if (!r.ok) {
-      const msg =
-        payload?.error?.message ||
-        (typeof payload === "string" ? payload : JSON.stringify(payload));
-      throw new Error(msg || `Translate HTTP ${r.status}`);
+    if (!mergedText) {
+      throw new Error("Translate failed");
     }
-
-    const mergedText =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      "";
 
     const parsed = safeParseJson(mergedText);
     const translation = (parsed?.translation || mergedText || "").trim();

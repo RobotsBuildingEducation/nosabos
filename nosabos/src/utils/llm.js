@@ -2,7 +2,6 @@
 
 import { simplemodel } from "../firebaseResources/firebaseResources";
 
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const DEFAULT_RESPONSES_MODEL = "gemini-3-flash-preview";
 
 function textFromChunk(chunk) {
@@ -14,68 +13,36 @@ function textFromChunk(chunk) {
     if (cand?.content?.parts?.length) {
       return cand.content.parts.map((p) => p.text || "").join("");
     }
-  } catch {}
+  } catch {
+    return "";
+  }
   return "";
 }
 
-export async function callResponses({
-  model = DEFAULT_RESPONSES_MODEL,
-  input,
-}) {
-  if (simplemodel) {
-    try {
-      const resp = await simplemodel.generateContentStream({
-        contents: [{ role: "user", parts: [{ text: input }] }],
-      });
-
-      let aggregated = "";
-      for await (const chunk of resp.stream) {
-        aggregated += textFromChunk(chunk);
-      }
-
-      const finalResp = await resp.response;
-      const finalText =
-        (typeof finalResp?.text === "function"
-          ? finalResp.text()
-          : finalResp?.text) || aggregated;
-      return String(finalText || "");
-    } catch (err) {
-      console.warn("callResponses gemini stream failed", err);
-    }
+export async function callResponses({ input }) {
+  if (!simplemodel) {
+    console.warn("callResponses skipped: simplemodel unavailable");
+    return "";
   }
 
   try {
-    const r = await fetch(RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        text: { format: { type: "text" } },
-        input,
-      }),
+    const resp = await simplemodel.generateContentStream({
+      contents: [{ role: "user", parts: [{ text: input }] }],
     });
-    const ct = r.headers.get("content-type") || "";
-    const payload = ct.includes("application/json")
-      ? await r.json()
-      : await r.text();
-    const text =
-      (typeof payload?.output_text === "string" && payload.output_text) ||
-      (Array.isArray(payload?.output) &&
-        payload.output
-          .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
-          )
-          .join(" ")
-          .trim()) ||
-      (Array.isArray(payload?.content) && payload.content[0]?.text) ||
-      (Array.isArray(payload?.choices) &&
-        (payload.choices[0]?.message?.content || "")) ||
-      (typeof payload === "string" ? payload : "");
-    return String(text || "");
-  } catch {
+
+    let aggregated = "";
+    for await (const chunk of resp.stream) {
+      aggregated += textFromChunk(chunk);
+    }
+
+    const finalResp = await resp.response;
+    const finalText =
+      (typeof finalResp?.text === "function"
+        ? finalResp.text()
+        : finalResp?.text) || aggregated;
+    return String(finalText || "");
+  } catch (err) {
+    console.warn("callResponses gemini stream failed", err);
     return "";
   }
 }
