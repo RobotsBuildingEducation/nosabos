@@ -408,6 +408,9 @@ function TopBar({
   onTogglePauseTimer,
   // 🆕 daily goal modal props
   onOpenDailyGoalModal,
+  // 🆕 allow posts props
+  allowPosts,
+  onAllowPostsChange,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -922,6 +925,27 @@ function TopBar({
                     {vadHint}
                   </Text>
                 </Box>
+
+                {/* Allow Posts toggle */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <HStack justifyContent="space-between">
+                    <Text fontSize="sm">
+                      {t.teams_feed_allow_label || "Allow posts"}
+                    </Text>
+                    <Switch
+                      id="settings-allow-posts-switch"
+                      isChecked={allowPosts}
+                      onChange={(e) => onAllowPostsChange(e.target.checked)}
+                    />
+                  </HStack>
+                  <Text fontSize="xs" opacity={0.6} mt={2}>
+                    {allowPosts
+                      ? t.teams_feed_allow_enabled ||
+                        "Automatic community posts enabled."
+                      : t.teams_feed_allow_disabled ||
+                        "Automatic community posts disabled."}
+                  </Text>
+                </Box>
               </VStack>
             </Box>
           </DrawerBody>
@@ -1136,7 +1160,7 @@ export default function App() {
     subscriptionPasscode,
     user?.subscriptionPasscodeVerified,
   ]);
-  const [allowPosts, setAllowPosts] = useState(false);
+  const [allowPosts, setAllowPosts] = useState(true);
 
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);
@@ -1144,7 +1168,8 @@ export default function App() {
   const [isIdentitySaving, setIsIdentitySaving] = useState(false);
 
   useEffect(() => {
-    setAllowPosts(Boolean(user?.allowPosts));
+    // Default to true if user.allowPosts is not explicitly set
+    setAllowPosts(user?.allowPosts !== false);
   }, [user?.allowPosts]);
 
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
@@ -2543,9 +2568,7 @@ export default function App() {
 
   const maybePostNostrProgress = useCallback(
     async ({ totalXp }) => {
-      console.log("RUNNING", totalXp);
-      // if (!allowPosts) return;
-      console.log("RUNNINGXX", totalXp);
+      if (!allowPosts) return;
       const privateKey =
         activeNsec ||
         (typeof window !== "undefined"
@@ -3569,6 +3592,8 @@ export default function App() {
         onOpenTimerModal={() => setTimerModalOpen(true)}
         onTogglePauseTimer={handleTogglePauseTimer}
         onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
+        allowPosts={allowPosts}
+        onAllowPostsChange={handleAllowPostsChange}
       />
 
       <TeamsDrawer

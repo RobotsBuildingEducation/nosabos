@@ -493,7 +493,7 @@ const landingTranslations = {
     signin_placeholder: "Pega tu llave secreta",
     signin_button: "Iniciar sesión",
     signin_or: "o",
-    signin_extension_button: "Iniciar sesión con NIP-07 extensión",
+    signin_extension_button: "Iniciar con NIP-07 extensión",
     error_extension_signin: "No se pudo iniciar sesión con la extensión.",
     error_extension_generic:
       "Error al iniciar sesión con extensión. Inténtalo de nuevo.",
