@@ -7,8 +7,9 @@ import NDK, {
   NDKNip07Signer,
   NDKUser,
   NDKZapper,
+  NDKKind,
 } from "@nostr-dev-kit/ndk";
-import { NDKWalletService, NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
+import { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 
@@ -71,7 +72,7 @@ function saveTrackedBalance(balance) {
 }
 
 /**
- * Safely extract total balance from wallet.balance() response
+ * Safely extract total balance from wallet.balance response
  * The response can be: number, { amount }, or [{ amount, unit }]
  */
 function extractBalance(bal) {
@@ -133,7 +134,6 @@ export const useNostrWalletStore = create((set, get) => ({
   nostrPrivKey: "",
   ndkInstance: null,
   signer: null,
-  walletService: null,
   cashuWallet: null,
   walletBalance: 0,
   invoice: "",
@@ -164,7 +164,8 @@ export const useNostrWalletStore = create((set, get) => ({
       // Small delay to let wallet state settle
       await new Promise((resolve) => setTimeout(resolve, 300));
 
-      const bal = await cashuWallet.balance();
+      // In 0.7.x, balance is a getter property, not a method
+      const bal = cashuWallet.balance;
       const totalBalance = extractBalance(bal);
 
       console.log("[Wallet] Balance refreshed:", totalBalance);
@@ -182,71 +183,40 @@ export const useNostrWalletStore = create((set, get) => ({
 
     console.log("[Wallet] Setting up wallet listeners");
 
-    // We no longer listen to balance_updated events from the wallet
-    // because they're unreliable. Instead, we track balance ourselves.
+    // Listen for balance updates
+    wallet.on("balance_updated", (newBalance) => {
+      const balance = extractBalance(newBalance);
+      console.log("[Wallet] Balance updated event:", balance);
+      saveTrackedBalance(balance);
+      set({ walletBalance: balance });
+    });
+
+    // Listen for ready event
+    wallet.on("ready", () => {
+      console.log("[Wallet] Wallet ready event");
+      const bal = wallet.balance;
+      const balance = extractBalance(bal);
+      saveTrackedBalance(balance);
+      set({ walletBalance: balance, isWalletReady: true });
+    });
 
     set({
       cashuWallet: wallet,
       isWalletReady: false,
     });
 
-    // Initialize tracked balance: use localStorage if available,
-    // otherwise sync from wallet.balance() on first load
-    setTimeout(async () => {
-      const storedBalance = loadTrackedBalance();
-      if (storedBalance !== null) {
-        // Use our tracked balance for immediate stability
-        console.log(
-          "[Wallet] Using tracked balance from localStorage:",
-          storedBalance
-        );
-        set({ walletBalance: storedBalance, isWalletReady: true });
-
-        // Run background sync after initial load to catch any relay updates
-        // This handles cases where funds were received while offline
-        setTimeout(async () => {
-          try {
-            console.log("[Wallet] Starting background sync with relay...");
-            const bal = await wallet.balance();
-            const relayBalance = extractBalance(bal);
-
-            if (relayBalance !== storedBalance) {
-              console.log(
-                "[Wallet] Background sync found different balance:",
-                storedBalance,
-                "->",
-                relayBalance
-              );
-              saveTrackedBalance(relayBalance);
-              set({ walletBalance: relayBalance });
-            } else {
-              console.log(
-                "[Wallet] Background sync complete - balance unchanged:",
-                relayBalance
-              );
-            }
-          } catch (e) {
-            console.warn("[Wallet] Background sync failed (non-critical):", e);
-            // Keep using localStorage balance on sync failure
-          }
-        }, 3000); // Wait 3 seconds after initial load before syncing
-      } else {
-        // First time: sync from wallet
-        try {
-          const bal = await wallet.balance();
-          const initialBalance = extractBalance(bal);
-          console.log("[Wallet] Initial balance from wallet:", initialBalance);
-          saveTrackedBalance(initialBalance);
-          set({ walletBalance: initialBalance, isWalletReady: true });
-        } catch (e) {
-          console.error("[Wallet] Error getting initial balance:", e);
-          set({ walletBalance: 0, isWalletReady: true });
-        }
-      }
-    }, 1500);
+    // Initialize tracked balance from localStorage for immediate display
+    const storedBalance = loadTrackedBalance();
+    if (storedBalance !== null) {
+      console.log(
+        "[Wallet] Using tracked balance from localStorage:",
+        storedBalance
+      );
+      set({ walletBalance: storedBalance });
+    }
   },
 
-  // Initialize wallet service
+  // Initialize wallet service - now uses NDKCashuWallet.start() directly
   initWalletService: async (providedNdk, providedSigner) => {
     const {
       setError,
@@ -284,27 +254,27 @@ export const useNostrWalletStore = create((set, get) => ({
 
       ndk.signer = s;
       const user = await s.user();
-      user.signer = s;
 
-      const wService = new NDKWalletService(ndk);
-      wService.start();
-
-      // Listen for default wallet
-      wService.on("wallet:default", (wallet) => {
-        console.log("[Wallet] Default wallet detected:", wallet?.walletId);
-        setupWalletListeners(wallet);
+      // Try to fetch existing wallet event
+      const walletEvent = await ndk.fetchEvent({
+        kinds: [NDKKind.CashuWallet],
+        authors: [user.pubkey],
       });
 
-      // Also listen for wallet ready
-      wService.on("wallet:ready", (wallet) => {
-        console.log("[Wallet] Wallet ready event");
-        const { cashuWallet } = get();
-        if (wallet && !cashuWallet) {
-          setupWalletListeners(wallet);
+      if (walletEvent) {
+        console.log("[Wallet] Found existing wallet event");
+        const wallet = await NDKCashuWallet.from(walletEvent);
+        if (wallet) {
+          await setupWalletListeners(wallet);
+          // Start the wallet to begin monitoring tokens
+          await wallet.start({ pubkey: user.pubkey });
+          console.log("[Wallet] Existing wallet started");
+          set({ isWalletReady: true });
         }
-      });
+      } else {
+        console.log("[Wallet] No existing wallet found");
+      }
 
-      set({ walletService: wService });
       return true;
     } catch (error) {
       console.error("[Wallet] Error initializing wallet service:", error);
@@ -400,14 +370,7 @@ export const useNostrWalletStore = create((set, get) => ({
 
   // Create new wallet
   createNewWallet: async () => {
-    const {
-      ndkInstance,
-      signer,
-      setError,
-      initWalletService,
-      setupWalletListeners,
-      init,
-    } = get();
+    const { ndkInstance, signer, setError, setupWalletListeners, init } = get();
 
     set({ isCreatingWallet: true });
 
@@ -417,7 +380,6 @@ export const useNostrWalletStore = create((set, get) => ({
 
       if (!ndk || !s) {
         await init();
-        await initWalletService();
         ndk = get().ndkInstance;
         s = get().signer;
 
@@ -428,21 +390,16 @@ export const useNostrWalletStore = create((set, get) => ({
 
       // Ensure ndk has the signer set
       ndk.signer = s;
+      const user = await s.user();
 
       const newWallet = new NDKCashuWallet(ndk);
-      newWallet.relays = DEFAULT_RELAYS;
-      newWallet.setPublicTag("relay", "wss://relay.damus.io");
-      newWallet.setPublicTag("relay", "wss://relay.primal.net");
       newWallet.walletId = "Robots Building Education Wallet";
       newWallet.mints = [DEFAULT_MINT];
-      newWallet.unit = "sat";
-      newWallet.setPublicTag("unit", "sat");
-      newWallet.setPublicTag("d", "Robots Building Education Wallet");
 
-      // Only set privkey if available (not available with NIP-07)
+      // Add privkey for p2pk
       const pk = s.privateKey;
       if (pk) {
-        newWallet.privkey = pk;
+        await newWallet.addPrivkey(pk);
       }
 
       await newWallet.publish();
@@ -450,7 +407,10 @@ export const useNostrWalletStore = create((set, get) => ({
 
       await setupWalletListeners(newWallet);
 
-      set({ isCreatingWallet: false });
+      // Start the wallet
+      await newWallet.start({ pubkey: user.pubkey });
+
+      set({ isCreatingWallet: false, isWalletReady: true });
       return newWallet;
     } catch (error) {
       console.error("[Wallet] Error creating new wallet:", error);
@@ -536,7 +496,8 @@ export const useNostrWalletStore = create((set, get) => ({
     }
 
     try {
-      const deposit = cashuWallet.deposit(amountInSats, DEFAULT_MINT, "sat");
+      // In 0.7.x, deposit takes (amount, mint?) - no unit parameter
+      const deposit = cashuWallet.deposit(amountInSats, DEFAULT_MINT);
       const pr = await deposit.start();
 
       console.log("[Wallet] Invoice created:", pr?.substring(0, 50) + "...");
@@ -547,7 +508,6 @@ export const useNostrWalletStore = create((set, get) => ({
         console.log("[Wallet] Deposit successful!");
 
         // Update our tracked balance (increment by deposit amount)
-        // Use get() to get current balance at time of success, not at time of deposit start
         const currentBalance = extractBalance(get().walletBalance);
         const newBalance = currentBalance + amountInSats;
         saveTrackedBalance(newBalance);
@@ -586,7 +546,8 @@ export const useNostrWalletStore = create((set, get) => ({
     }
 
     try {
-      const bal = await cashuWallet.balance();
+      // In 0.7.x, balance is a getter property
+      const bal = cashuWallet.balance;
       const syncedBalance = extractBalance(bal);
       saveTrackedBalance(syncedBalance);
       set({ walletBalance: syncedBalance });
@@ -599,9 +560,14 @@ export const useNostrWalletStore = create((set, get) => ({
 
   // Reset state (logout)
   resetState: () => {
-    const { _balanceUpdateTimeout } = get();
+    const { _balanceUpdateTimeout, cashuWallet } = get();
     if (_balanceUpdateTimeout) {
       clearTimeout(_balanceUpdateTimeout);
+    }
+
+    // Stop the wallet if it's running
+    if (cashuWallet && typeof cashuWallet.stop === "function") {
+      cashuWallet.stop();
     }
 
     // Clear tracked balance from localStorage
@@ -618,7 +584,6 @@ export const useNostrWalletStore = create((set, get) => ({
       nostrPrivKey: "",
       ndkInstance: null,
       signer: null,
-      walletService: null,
       cashuWallet: null,
       walletBalance: 0,
       invoice: "",
