@@ -2,10 +2,24 @@
 // NIP-60 (Cashu Wallets) and NIP-61 (Nutzaps) implementation
 // Zustand store for global wallet state
 import { create } from "zustand";
-import NDK, { NDKPrivateKeySigner, NDKEvent } from "@nostr-dev-kit/ndk";
+import NDK, { NDKPrivateKeySigner, NDKNip07Signer, NDKEvent } from "@nostr-dev-kit/ndk";
 import NDKWalletService, { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
+
+/**
+ * Check if we're in NIP-07 mode (using browser extension)
+ */
+function isNip07Mode() {
+  return typeof window !== "undefined" && localStorage.getItem("nip07_signer") === "true";
+}
+
+/**
+ * Check if NIP-07 extension is available
+ */
+function isNip07Available() {
+  return typeof window !== "undefined" && window.nostr;
+}
 
 // Default configuration
 const DEFAULT_MINT = "https://mint.minibits.cash/Bitcoin";
@@ -240,7 +254,11 @@ export const useNostrWalletStore = create((set, get) => ({
       let s = providedSigner || signer;
 
       if (!ndk || !s) {
-        if (nostrPubKey && nostrPrivKey) {
+        // Handle both NIP-07 mode (only pubKey) and private key mode (both keys)
+        const canConnectNip07 = isNip07Mode() && isNip07Available() && nostrPubKey;
+        const canConnectPrivKey = nostrPubKey && nostrPrivKey;
+
+        if (canConnectNip07 || canConnectPrivKey) {
           const connection = await connectToNostr(nostrPubKey, nostrPrivKey);
           if (connection) {
             ndk = connection.ndkInstance;
@@ -289,23 +307,37 @@ export const useNostrWalletStore = create((set, get) => ({
   connectToNostr: async (npubRef = null, nsecRef = null) => {
     const { setError, nostrPrivKey, nostrPubKey } = get();
 
-    const nsec = nsecRef || nostrPrivKey;
+    const storedNsec = localStorage.getItem("local_nsec");
+    const nsec = nsecRef || (storedNsec !== "nip07" ? nostrPrivKey : null);
     const npub = npubRef || nostrPubKey;
 
-    if (!nsec) {
-      console.error("[Wallet] No nsec provided");
-      return null;
-    }
-
     try {
-      const hexNsec = decodeKey(nsec);
-      if (!hexNsec) throw new Error("Invalid nsec key");
-
       const ndkInstance = new NDK({
         explicitRelayUrls: DEFAULT_RELAYS,
       });
 
       await ndkInstance.connect();
+
+      // Handle NIP-07 mode - use extension signer
+      if (isNip07Mode() && isNip07Available()) {
+        console.log("[Wallet] Using NIP-07 signer");
+        const signer = new NDKNip07Signer();
+        await signer.blockUntilReady();
+        const user = await signer.user();
+        const hexNpub = user.pubkey;
+
+        set({ isConnected: true });
+        return { ndkInstance, hexNpub, signer };
+      }
+
+      // Handle private key mode
+      if (!nsec || !nsec.startsWith("nsec")) {
+        console.error("[Wallet] No valid nsec provided and not in NIP-07 mode");
+        return null;
+      }
+
+      const hexNsec = decodeKey(nsec);
+      if (!hexNsec) throw new Error("Invalid nsec key");
 
       const signer = new NDKPrivateKeySigner(hexNsec);
       const user = await signer.user();
@@ -325,13 +357,26 @@ export const useNostrWalletStore = create((set, get) => ({
   init: async () => {
     const storedNpub = localStorage.getItem("local_npub");
     const storedNsec = localStorage.getItem("local_nsec");
+    const isNip07 = isNip07Mode();
 
     if (storedNpub) set({ nostrPubKey: storedNpub });
-    if (storedNsec) set({ nostrPrivKey: storedNsec });
+    if (storedNsec && storedNsec !== "nip07") set({ nostrPrivKey: storedNsec });
 
     const { connectToNostr } = get();
 
-    if (storedNpub && storedNsec) {
+    // Handle NIP-07 mode
+    if (isNip07 && storedNpub && isNip07Available()) {
+      console.log("[Wallet] Initializing with NIP-07 signer");
+      const connection = await connectToNostr(storedNpub, null);
+      if (connection) {
+        const { ndkInstance: ndk, signer: s } = connection;
+        set({ ndkInstance: ndk, signer: s });
+        return true;
+      }
+    }
+
+    // Handle private key mode
+    if (storedNpub && storedNsec && storedNsec !== "nip07") {
       console.log("[Wallet] Initializing with stored keys");
       const connection = await connectToNostr(storedNpub, storedNsec);
       if (connection) {
@@ -371,6 +416,9 @@ export const useNostrWalletStore = create((set, get) => ({
         }
       }
 
+      // Ensure ndk has the signer set
+      ndk.signer = s;
+
       const newWallet = new NDKCashuWallet(ndk);
       newWallet.relays = DEFAULT_RELAYS;
       newWallet.setPublicTag("relay", "wss://relay.damus.io");
@@ -381,6 +429,7 @@ export const useNostrWalletStore = create((set, get) => ({
       newWallet.setPublicTag("unit", "sat");
       newWallet.setPublicTag("d", "Robots Building Education Wallet");
 
+      // Only set privkey if available (not available with NIP-07)
       const pk = s.privateKey;
       if (pk) {
         newWallet.privkey = pk;
