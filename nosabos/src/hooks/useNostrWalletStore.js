@@ -488,7 +488,7 @@ export const useNostrWalletStore = create((set, get) => ({
       return false;
     }
 
-    // Check balance first
+    // Check our tracked balance first
     const currentBalance = extractBalance(walletBalance);
     if (currentBalance < 1) {
       console.error("[Wallet] Insufficient balance:", currentBalance);
@@ -505,6 +505,13 @@ export const useNostrWalletStore = create((set, get) => ({
       const { p2pkPubkey } = await fetchUserPaymentInfo(recipientNpub);
 
       console.log("[Wallet] Sending 1 sat to:", recipientNpub);
+
+      // Sync wallet proofs before payment to ensure we have current state
+      try {
+        await cashuWallet.balance();
+      } catch (syncErr) {
+        console.warn("[Wallet] Pre-payment sync failed (continuing):", syncErr);
+      }
 
       // Perform cashu payment
       const confirmation = await cashuWallet.cashuPay({
