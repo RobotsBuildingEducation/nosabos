@@ -182,47 +182,19 @@ export const useNostrWalletStore = create((set, get) => ({
     });
 
     // Initialize tracked balance: use localStorage if available,
-    // otherwise sync from wallet.balance() on first load
+    // otherwise sync from wallet.balance() ONCE on first load only
     setTimeout(async () => {
       const storedBalance = loadTrackedBalance();
       if (storedBalance !== null) {
-        // Use our tracked balance for immediate stability
+        // Use our tracked balance - NO background sync, trust local storage
         console.log(
           "[Wallet] Using tracked balance from localStorage:",
           storedBalance
         );
         set({ walletBalance: storedBalance, isWalletReady: true });
-
-        // Run background sync after initial load to catch any relay updates
-        // This handles cases where funds were received while offline
-        setTimeout(async () => {
-          try {
-            console.log("[Wallet] Starting background sync with relay...");
-            const bal = await wallet.balance();
-            const relayBalance = extractBalance(bal);
-
-            if (relayBalance !== storedBalance) {
-              console.log(
-                "[Wallet] Background sync found different balance:",
-                storedBalance,
-                "->",
-                relayBalance
-              );
-              saveTrackedBalance(relayBalance);
-              set({ walletBalance: relayBalance });
-            } else {
-              console.log(
-                "[Wallet] Background sync complete - balance unchanged:",
-                relayBalance
-              );
-            }
-          } catch (e) {
-            console.warn("[Wallet] Background sync failed (non-critical):", e);
-            // Keep using localStorage balance on sync failure
-          }
-        }, 3000); // Wait 3 seconds after initial load before syncing
+        // No background sync - local tracking is source of truth
       } else {
-        // First time: sync from wallet
+        // First time only: sync from wallet
         try {
           const bal = await wallet.balance();
           const initialBalance = extractBalance(bal);
@@ -516,7 +488,7 @@ export const useNostrWalletStore = create((set, get) => ({
       return false;
     }
 
-    // Check balance first
+    // Check our tracked balance first
     const currentBalance = extractBalance(walletBalance);
     if (currentBalance < 1) {
       console.error("[Wallet] Insufficient balance:", currentBalance);
@@ -533,6 +505,13 @@ export const useNostrWalletStore = create((set, get) => ({
       const { p2pkPubkey } = await fetchUserPaymentInfo(recipientNpub);
 
       console.log("[Wallet] Sending 1 sat to:", recipientNpub);
+
+      // Sync wallet proofs before payment to ensure we have current state
+      try {
+        await cashuWallet.balance();
+      } catch (syncErr) {
+        console.warn("[Wallet] Pre-payment sync failed (continuing):", syncErr);
+      }
 
       // Perform cashu payment
       const confirmation = await cashuWallet.cashuPay({
@@ -642,7 +621,7 @@ export const useNostrWalletStore = create((set, get) => ({
     }
   },
 
-  // Force sync balance from wallet (use if tracked balance drifts)
+  // Force sync balance from wallet (manual refresh button)
   syncBalanceFromWallet: async () => {
     const { cashuWallet } = get();
     if (!cashuWallet) {
