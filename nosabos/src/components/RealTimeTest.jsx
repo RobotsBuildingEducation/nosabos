@@ -2219,6 +2219,7 @@ Return ONLY JSON:
   --------------------------- */
   const messagesRef = useRef([]);
   const [messages, setMessages] = useState([]);
+  const messageSeqRef = useRef(0);
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -2426,7 +2427,10 @@ Return ONLY JSON:
   }
 
   function pushMessage(m) {
-    setMessages((p) => [...p, m]);
+    setMessages((p) => {
+      const nextOrder = ++messageSeqRef.current;
+      return [...p, { ...m, order: m?.order ?? nextOrder }];
+    });
   }
   function updateMessage(id, updater) {
     setMessages((p) => p.map((m) => (m.id === id ? updater(m) : m)));
@@ -2645,18 +2649,27 @@ Do not return the whole sentence as a single chunk.`;
 
   const timeline = useMemo(() => {
     const map = new Map();
-    for (const h of history) map.set(h.id, { ...h, source: "hist" });
+    for (const h of history)
+      map.set(h.id, {
+        ...h,
+        source: "hist",
+        order: Number.isFinite(h?.order) ? h.order : h.ts || 0,
+      });
     for (const m of messages) {
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    // Sort oldest first so the user's turn renders before the assistant reply
+    // Sort newest first for correct conversational flow (latest AI/user turns first)
     return Array.from(map.values()).sort((a, b) => {
       const at = a?.ts || 0;
       const bt = b?.ts || 0;
-      if (at !== bt) return at - bt;
+      if (at !== bt) return bt - at;
+      const ao = a?.order || 0;
+      const bo = b?.order || 0;
+      if (ao !== bo) return bo - ao;
       if (a?.role === b?.role) return 0;
-      return a?.role === "user" ? -1 : 1;
+      // If all else is equal, show assistant after user
+      return a?.role === "assistant" ? 1 : -1;
     });
   }, [messages, history]);
 
