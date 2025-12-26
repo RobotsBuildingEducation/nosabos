@@ -2292,6 +2292,13 @@ Return ONLY JSON:
           return;
         }
         lastTranscriptRef.current = { text, ts: now };
+        // Find the most recent AI message and set user timestamp BEFORE it
+        // This ensures proper display order (AI response appears after user message when sorted newest-first)
+        const msgs = messagesRef.current;
+        const recentAi = msgs
+          .filter((m) => m.role === "assistant")
+          .sort((a, b) => (b.ts || 0) - (a.ts || 0))[0];
+        const userTs = recentAi?.ts ? recentAi.ts - 1 : now;
         pushMessage({
           id: uid(),
           role: "user",
@@ -2301,7 +2308,7 @@ Return ONLY JSON:
           translation: "",
           pairs: [],
           done: true,
-          ts: now,
+          ts: userTs,
         });
         await persistUserTurn(text, "en").catch(() => {});
         evaluateAndMaybeAdvanceGoal(text).catch(() => {});
