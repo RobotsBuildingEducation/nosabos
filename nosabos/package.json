@@ -20,7 +20,7 @@
     "@google/genai": "^1.15.0",
     "@hello-pangea/dnd": "^18.0.1",
     "@nostr-dev-kit/ndk": "^2.14.9",
-    "@nostr-dev-kit/ndk-wallet": "^0.6.2",
+    "@nostr-dev-kit/ndk-wallet": "^0.7.1",
     "@openai/agents-realtime": "^0.1.0",
     "@wagmi/chains": "^1.8.0",
     "bech32": "^2.0.0",
