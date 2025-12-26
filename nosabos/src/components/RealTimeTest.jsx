@@ -2653,10 +2653,10 @@ Do not return the whole sentence as a single chunk.`;
     const byTsThenRole = (a, b) => {
       const tsA = a?.ts || 0;
       const tsB = b?.ts || 0;
-      if (tsA !== tsB) return tsB - tsA; // newest first (reverse chronological)
+      if (tsA !== tsB) return tsA - tsB; // chronological order - user message appears before AI response
       if (a?.role === b?.role) return 0;
-      if (a?.role === "assistant") return -1; // put assistant (response) first when simultaneous (appears at top)
-      if (b?.role === "assistant") return 1;
+      if (a?.role === "user") return -1; // put user first when simultaneous
+      if (b?.role === "user") return 1;
       return 0;
     };
     return Array.from(map.values()).sort(byTsThenRole);
