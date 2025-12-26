@@ -2659,14 +2659,15 @@ Do not return the whole sentence as a single chunk.`;
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    // Sort oldest first so user turns appear before the AI response in the stack
+    // Sort newest first so the latest call/response appears at the top.
+    // Within the same timestamp/order, keep assistant above the user.
     return Array.from(map.values()).sort((a, b) => {
       const at = a?.ts || 0;
       const bt = b?.ts || 0;
-      if (at !== bt) return at - bt;
+      if (at !== bt) return bt - at;
       const ao = a?.order || 0;
       const bo = b?.order || 0;
-      if (ao !== bo) return ao - bo;
+      if (ao !== bo) return bo - ao;
       if (a?.role === b?.role) return 0;
       // If all else is equal, show assistant before user
       return a?.role === "assistant" ? -1 : 1;
