@@ -2650,8 +2650,14 @@ Do not return the whole sentence as a single chunk.`;
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    // Simple sort: newest first (most recent at top, oldest at bottom)
-    return Array.from(map.values()).sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
+    // Sort oldest first so the user's turn renders before the assistant reply
+    return Array.from(map.values()).sort((a, b) => {
+      const at = a?.ts || 0;
+      const bt = b?.ts || 0;
+      if (at !== bt) return at - bt;
+      if (a?.role === b?.role) return 0;
+      return a?.role === "user" ? -1 : 1;
+    });
   }, [messages, history]);
 
   return (
