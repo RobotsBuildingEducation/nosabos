@@ -889,13 +889,6 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                   borderRadius="full"
                   border="3px dashed"
                   borderColor={unit.color}
-                  animation="spin 4s linear infinite"
-                  sx={{
-                    "@keyframes spin": {
-                      "0%": { transform: "rotate(0deg)" },
-                      "100%": { transform: "rotate(360deg)" },
-                    },
-                  }}
                 />
               )}
 
@@ -912,21 +905,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     borderRadius="full"
                     bg="white"
                     boxShadow="0 0 10px 3px rgba(255,255,255,0.7), 0 0 18px rgba(255,255,255,0.5)"
-                    animation="sparkle 2.4s ease-in-out infinite"
-                    sx={{
-                      "@keyframes sparkle": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.5) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.55,
-                          transform: "scale(0.6) rotate(15deg)",
-                          filter:
-                            "drop-shadow(0 0 8px rgba(255, 255, 255, 0.8))",
-                        },
-                      },
-                    }}
+                    opacity={0.8}
                   />
                   <Box
                     pointerEvents="none"
@@ -938,20 +917,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     borderRadius="full"
                     bg="white"
                     boxShadow="0 0 8px 2px rgba(255,255,255,0.6), 0 0 14px rgba(255,255,255,0.4)"
-                    animation="sparkle 2.7s ease-in-out infinite 1.2s"
-                    sx={{
-                      "@keyframes sparkle": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.4) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.9,
-                          transform: "scale(1.3) rotate(-10deg)",
-                          filter: "drop-shadow(0 0 6px rgba(255,255,255,0.8))",
-                        },
-                      },
-                    }}
+                    opacity={0.8}
                   />
                   <Box
                     pointerEvents="none"
@@ -963,20 +929,7 @@ function LessonNode({ lesson, unit, status, onClick, supportLang }) {
                     borderRadius="full"
                     bg="white"
                     boxShadow="0 0 8px 2px rgba(255,255,255,0.7), 0 0 16px rgba(255,255,255,0.5)"
-                    animation="sparkle 2.2s ease-in-out infinite 0.6s"
-                    sx={{
-                      "@keyframes sparkle": {
-                        "0%, 100%": {
-                          opacity: 0,
-                          transform: "scale(0.3) rotate(0deg)",
-                        },
-                        "50%": {
-                          opacity: 0.9,
-                          transform: "scale(1.1) rotate(8deg)",
-                          filter: "drop-shadow(0 0 7px rgba(255,255,255,0.8))",
-                        },
-                      },
-                    }}
+                    opacity={0.85}
                   />
                 </>
               )}
@@ -1110,7 +1063,6 @@ const UnitSection = React.memo(function UnitSection({
                   borderRadius="full"
                   bg={unit.color}
                   boxShadow={`0 0 20px ${unit.color}80`}
-                  animation="pulse 3s ease-in-out infinite"
                 />
                 <Heading
                   size="md"
@@ -1844,14 +1796,7 @@ export default function SkillTree({
         bgGradient="radial(circle, teal.500, transparent 70%)"
         filter="blur(80px)"
         opacity={0.15}
-        animation="float 20s ease-in-out infinite"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(50px, -30px) scale(1.1)" },
-            "66%": { transform: "translate(-30px, 50px) scale(0.9)" },
-          },
-        }}
+        pointerEvents="none"
       />
       <Box
         position="absolute"
@@ -1862,14 +1807,7 @@ export default function SkillTree({
         bgGradient="radial(circle, purple.500, transparent 70%)"
         filter="blur(80px)"
         opacity={0.12}
-        animation="float 25s ease-in-out infinite 5s"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(-40px, 40px) scale(1.1)" },
-            "66%": { transform: "translate(40px, -40px) scale(0.9)" },
-          },
-        }}
+        pointerEvents="none"
       />
       <Box
         position="absolute"
@@ -1880,14 +1818,7 @@ export default function SkillTree({
         bgGradient="radial(circle, blue.500, transparent 70%)"
         filter="blur(80px)"
         opacity={0.1}
-        animation="float 30s ease-in-out infinite 10s"
-        sx={{
-          "@keyframes float": {
-            "0%, 100%": { transform: "translate(0, 0) scale(1)" },
-            "33%": { transform: "translate(30px, -50px) scale(1.2)" },
-            "66%": { transform: "translate(-50px, 30px) scale(0.8)" },
-          },
-        }}
+        pointerEvents="none"
       />
 
       <Container
