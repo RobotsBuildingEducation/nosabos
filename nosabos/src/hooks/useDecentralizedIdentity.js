@@ -5,6 +5,7 @@ import { bech32 } from "bech32";
 
 import NDK, {
   NDKPrivateKeySigner,
+  NDKNip07Signer,
   NDKKind,
   NDKEvent,
 } from "@nostr-dev-kit/ndk";
@@ -174,11 +175,45 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       localStorage.setItem("local_npub", user.npub);
       console.log("local_nsec", nsec);
       localStorage.setItem("local_nsec", nsec);
+      localStorage.removeItem("nip07_signer"); // Clear NIP-07 flag if using nsec
       setErrorMessage(null);
 
       return { user, signer };
     } catch (error) {
       console.error("Error logging in with keys:", error);
+      setErrorMessage(error.message);
+      return null;
+    }
+  };
+
+  const isNip07Available = () => {
+    return typeof window !== "undefined" && window.nostr;
+  };
+
+  const authWithExtension = async () => {
+    try {
+      if (!isNip07Available()) {
+        throw new Error("No Nostr extension found. Please install a NIP-07 compatible extension like nos2x or Alby.");
+      }
+
+      const signer = new NDKNip07Signer();
+      await signer.blockUntilReady();
+      ndk.signer = signer;
+
+      const user = await signer.user();
+      const npub = user.npub;
+
+      setNostrPubKey(npub);
+      setNostrPrivKey(""); // No private key with NIP-07
+      localStorage.setItem("local_npub", npub);
+      localStorage.setItem("local_nsec", "nip07"); // Marker to indicate NIP-07 mode
+      localStorage.setItem("nip07_signer", "true");
+      localStorage.setItem("uniqueId", npub);
+      setErrorMessage(null);
+
+      return { user, signer };
+    } catch (error) {
+      console.error("Error logging in with NIP-07 extension:", error);
       setErrorMessage(error.message);
       return null;
     }
@@ -564,6 +599,8 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     generateNostrKeys,
     postNostrContent,
     auth,
+    authWithExtension,
+    isNip07Available,
     assignExistingBadgeToNpub,
     getUserBadges,
     getLastNotesByNpub,
