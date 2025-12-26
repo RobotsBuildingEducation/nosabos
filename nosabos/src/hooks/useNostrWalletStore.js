@@ -33,6 +33,8 @@ const DEFAULT_RECEIVER =
 
 // localStorage key for tracked balance
 const TRACKED_BALANCE_KEY = "wallet_tracked_balance";
+// localStorage key for tracking when balance was last locally modified
+const BALANCE_MODIFIED_KEY = "wallet_balance_modified_at";
 
 /**
  * Load tracked balance from localStorage
@@ -51,13 +53,31 @@ function loadTrackedBalance() {
 }
 
 /**
- * Save tracked balance to localStorage
+ * Save tracked balance to localStorage and mark as locally modified
  */
-function saveTrackedBalance(balance) {
+function saveTrackedBalance(balance, markModified = true) {
   try {
     localStorage.setItem(TRACKED_BALANCE_KEY, String(balance));
+    if (markModified) {
+      localStorage.setItem(BALANCE_MODIFIED_KEY, String(Date.now()));
+    }
   } catch (e) {
     console.warn("[Wallet] Error saving tracked balance:", e);
+  }
+}
+
+/**
+ * Check if balance was recently modified locally (within timeoutMs)
+ * This prevents background sync from overwriting recent local transactions
+ */
+function wasRecentlyModified(timeoutMs = 30000) {
+  try {
+    const modifiedAt = localStorage.getItem(BALANCE_MODIFIED_KEY);
+    if (!modifiedAt) return false;
+    const elapsed = Date.now() - Number(modifiedAt);
+    return elapsed < timeoutMs;
+  } catch (e) {
+    return false;
   }
 }
 
@@ -195,25 +215,43 @@ export const useNostrWalletStore = create((set, get) => ({
 
         // Run background sync after initial load to catch any relay updates
         // This handles cases where funds were received while offline
+        // BUT: only sync if the balance wasn't recently modified locally
+        // (to prevent relay's stale data from overwriting recent transactions)
         setTimeout(async () => {
           try {
+            // Skip sync if balance was recently modified by a local transaction
+            if (wasRecentlyModified(30000)) {
+              console.log(
+                "[Wallet] Skipping background sync - balance was recently modified locally"
+              );
+              return;
+            }
+
             console.log("[Wallet] Starting background sync with relay...");
             const bal = await wallet.balance();
             const relayBalance = extractBalance(bal);
+            const currentTracked = loadTrackedBalance();
 
-            if (relayBalance !== storedBalance) {
+            // Only sync if relay balance is HIGHER than local
+            // (indicates received funds while offline)
+            // Never let relay overwrite if it's lower (that could be stale data)
+            if (relayBalance > currentTracked) {
               console.log(
-                "[Wallet] Background sync found different balance:",
-                storedBalance,
+                "[Wallet] Background sync found higher balance:",
+                currentTracked,
                 "->",
                 relayBalance
               );
-              saveTrackedBalance(relayBalance);
+              // Don't mark as modified since this is a sync, not a local transaction
+              saveTrackedBalance(relayBalance, false);
               set({ walletBalance: relayBalance });
             } else {
               console.log(
-                "[Wallet] Background sync complete - balance unchanged:",
-                relayBalance
+                "[Wallet] Background sync complete - keeping local balance:",
+                currentTracked,
+                "(relay:",
+                relayBalance,
+                ")"
               );
             }
           } catch (e) {
@@ -227,7 +265,8 @@ export const useNostrWalletStore = create((set, get) => ({
           const bal = await wallet.balance();
           const initialBalance = extractBalance(bal);
           console.log("[Wallet] Initial balance from wallet:", initialBalance);
-          saveTrackedBalance(initialBalance);
+          // Don't mark as modified - this is initial sync, not a local transaction
+          saveTrackedBalance(initialBalance, false);
           set({ walletBalance: initialBalance, isWalletReady: true });
         } catch (e) {
           console.error("[Wallet] Error getting initial balance:", e);
@@ -643,6 +682,7 @@ export const useNostrWalletStore = create((set, get) => ({
   },
 
   // Force sync balance from wallet (use if tracked balance drifts)
+  // This is an explicit user action, so we allow it to override local tracking
   syncBalanceFromWallet: async () => {
     const { cashuWallet } = get();
     if (!cashuWallet) {
@@ -653,7 +693,8 @@ export const useNostrWalletStore = create((set, get) => ({
     try {
       const bal = await cashuWallet.balance();
       const syncedBalance = extractBalance(bal);
-      saveTrackedBalance(syncedBalance);
+      // Don't mark as modified - this is a sync, not a local transaction
+      saveTrackedBalance(syncedBalance, false);
       set({ walletBalance: syncedBalance });
       console.log("[Wallet] Balance synced from wallet:", syncedBalance);
       return syncedBalance;
@@ -669,9 +710,10 @@ export const useNostrWalletStore = create((set, get) => ({
       clearTimeout(_balanceUpdateTimeout);
     }
 
-    // Clear tracked balance from localStorage
+    // Clear tracked balance and modification timestamp from localStorage
     try {
       localStorage.removeItem(TRACKED_BALANCE_KEY);
+      localStorage.removeItem(BALANCE_MODIFIED_KEY);
     } catch (e) {
       console.warn("[Wallet] Error clearing tracked balance:", e);
     }
