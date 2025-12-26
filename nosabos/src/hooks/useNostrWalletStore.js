@@ -130,6 +130,7 @@ export const useNostrWalletStore = create((set, get) => ({
   invoice: "",
   isCreatingWallet: false,
   isWalletReady: false,
+  isSending: false,
 
   // Internal refs (not reactive)
   _balanceUpdateTimeout: null,
@@ -481,7 +482,14 @@ export const useNostrWalletStore = create((set, get) => ({
       fetchUserPaymentInfo,
       setError,
       walletBalance,
+      isSending,
     } = get();
+
+    // Prevent concurrent sends
+    if (isSending) {
+      console.warn("[Wallet] Payment already in progress, skipping");
+      return false;
+    }
 
     if (!cashuWallet) {
       console.error("[Wallet] Wallet not initialized");
@@ -495,6 +503,8 @@ export const useNostrWalletStore = create((set, get) => ({
       return false;
     }
 
+    set({ isSending: true });
+
     try {
       const amount = 1;
       const unit = "sat";
@@ -505,13 +515,6 @@ export const useNostrWalletStore = create((set, get) => ({
       const { p2pkPubkey } = await fetchUserPaymentInfo(recipientNpub);
 
       console.log("[Wallet] Sending 1 sat to:", recipientNpub);
-
-      // Sync wallet proofs before payment to ensure we have current state
-      try {
-        await cashuWallet.balance();
-      } catch (syncErr) {
-        console.warn("[Wallet] Pre-payment sync failed (continuing):", syncErr);
-      }
 
       // Perform cashu payment
       const confirmation = await cashuWallet.cashuPay({
@@ -561,10 +564,15 @@ export const useNostrWalletStore = create((set, get) => ({
         newBalance
       );
 
+      // Small delay to let wallet state settle before next payment
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      set({ isSending: false });
       return true;
     } catch (e) {
       console.error("[Wallet] Error sending nutzap:", e);
       setError(e.message);
+      set({ isSending: false });
       return false;
     }
   },
@@ -668,6 +676,7 @@ export const useNostrWalletStore = create((set, get) => ({
       invoice: "",
       isCreatingWallet: false,
       isWalletReady: false,
+      isSending: false,
       _balanceUpdateTimeout: null,
     });
   },
