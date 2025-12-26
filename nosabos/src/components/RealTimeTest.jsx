@@ -2659,17 +2659,17 @@ Do not return the whole sentence as a single chunk.`;
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    // Sort newest first for correct conversational flow (latest AI/user turns first)
+    // Sort oldest first so user turns appear before the AI response in the stack
     return Array.from(map.values()).sort((a, b) => {
       const at = a?.ts || 0;
       const bt = b?.ts || 0;
-      if (at !== bt) return bt - at;
+      if (at !== bt) return at - bt;
       const ao = a?.order || 0;
       const bo = b?.order || 0;
-      if (ao !== bo) return bo - ao;
+      if (ao !== bo) return ao - bo;
       if (a?.role === b?.role) return 0;
-      // If all else is equal, show assistant after user
-      return a?.role === "assistant" ? 1 : -1;
+      // If all else is equal, show assistant before user
+      return a?.role === "assistant" ? -1 : 1;
     });
   }, [messages, history]);
 
