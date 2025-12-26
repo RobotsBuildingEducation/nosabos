@@ -2650,33 +2650,8 @@ Do not return the whole sentence as a single chunk.`;
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-
-    // Sort: newest exchanges at top, but user message before AI response within each exchange
-    const arr = Array.from(map.values());
-
-    // First, sort chronologically to pair user messages with their AI responses
-    arr.sort((a, b) => (a?.ts || 0) - (b?.ts || 0));
-
-    // Assign exchange groups: user message and following AI response share a group
-    let exchangeId = 0;
-    for (let i = 0; i < arr.length; i++) {
-      if (arr[i].role === "user") {
-        exchangeId++;
-      }
-      arr[i]._exchange = exchangeId;
-    }
-
-    // Now sort: by exchange descending (newest first), then user before AI within exchange
-    arr.sort((a, b) => {
-      // Different exchanges: newest exchange first
-      if (a._exchange !== b._exchange) return b._exchange - a._exchange;
-      // Same exchange: user first, then AI
-      if (a.role === "user" && b.role === "assistant") return -1;
-      if (a.role === "assistant" && b.role === "user") return 1;
-      return 0;
-    });
-
-    return arr;
+    // Simple sort: newest first (most recent at top, oldest at bottom)
+    return Array.from(map.values()).sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
   }, [messages, history]);
 
   return (
