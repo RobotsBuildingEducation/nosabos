@@ -408,6 +408,9 @@ function TopBar({
   onTogglePauseTimer,
   // 🆕 daily goal modal props
   onOpenDailyGoalModal,
+  // 🆕 allow posts props
+  allowPosts,
+  onAllowPostsChange,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -932,7 +935,7 @@ function TopBar({
                     <Switch
                       id="settings-allow-posts-switch"
                       isChecked={allowPosts}
-                      onChange={(e) => handleAllowPostsChange(e.target.checked)}
+                      onChange={(e) => onAllowPostsChange(e.target.checked)}
                     />
                   </HStack>
                   <Text fontSize="xs" opacity={0.6} mt={2}>
@@ -3589,6 +3592,8 @@ export default function App() {
         onOpenTimerModal={() => setTimerModalOpen(true)}
         onTogglePauseTimer={handleTogglePauseTimer}
         onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
+        allowPosts={allowPosts}
+        onAllowPostsChange={handleAllowPostsChange}
       />
 
       <TeamsDrawer
