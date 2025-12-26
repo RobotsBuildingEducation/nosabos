@@ -19,8 +19,6 @@ import {
   HStack,
   Input,
   Link,
-  Radio,
-  RadioGroup,
   Spinner,
   Text,
   VStack,
@@ -39,7 +37,6 @@ import { doc, updateDoc } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
-import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
 import { FaKey } from "react-icons/fa";
 
@@ -57,9 +54,6 @@ export default function IdentityDrawer({
   cefrError,
   onRunCefrAnalysis,
   enableWallet = true,
-  user,
-  onSelectIdentity,
-  isIdentitySaving = false,
 }) {
   const toast = useToast();
 
@@ -375,12 +369,7 @@ export default function IdentityDrawer({
                   </AccordionButton>
                   <AccordionPanel px={0} pb={4} pt={0}>
                     <Box bg="gray.900" p={3} rounded="md" mx={3} mt={3}>
-                      <BitcoinWalletSection
-                        userLanguage={appLanguage}
-                        identity={user?.identity || ""}
-                        onSelectIdentity={onSelectIdentity}
-                        isIdentitySaving={isIdentitySaving}
-                      />
+                      <BitcoinWalletSection userLanguage={appLanguage} />
                     </Box>
                   </AccordionPanel>
                 </AccordionItem>
@@ -500,12 +489,7 @@ export default function IdentityDrawer({
 }
 
 /* ======================= Wallet sub-section (hydrates on mount) ======================= */
-export function BitcoinWalletSection({
-  userLanguage = "en",
-  identity = "",
-  onSelectIdentity,
-  isIdentitySaving = false,
-}) {
+export function BitcoinWalletSection({ userLanguage = "en" }) {
   const toast = useToast();
 
   // Select each field independently (avoid new-object snapshots)
@@ -516,12 +500,11 @@ export function BitcoinWalletSection({
   const invoice = useNostrWalletStore((s) => s.invoice);
   const isCreatingWallet = useNostrWalletStore((s) => s.isCreatingWallet);
 
-  // → New: hydrate on mount so refresh picks up your existing wallet
+  // Hydrate on mount so refresh picks up your existing wallet
   const init = useNostrWalletStore((s) => s.init);
   const initWalletService = useNostrWalletStore((s) => s.initWalletService);
 
   const [hydrating, setHydrating] = useState(true);
-  const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -538,10 +521,6 @@ export function BitcoinWalletSection({
       alive = false;
     };
   }, [init, initWalletService]);
-
-  useEffect(() => {
-    setSelectedIdentity(identity || "");
-  }, [identity]);
 
   // walletBalance is now a clean number from the store
   const totalBalance = useMemo(() => {
@@ -606,29 +585,7 @@ export function BitcoinWalletSection({
     }
   };
 
-  const ensureIdentitySelected = () => {
-    if (!selectedIdentity) {
-      const title =
-        userLanguage === "es"
-          ? "Selecciona una identidad"
-          : "Select an identity";
-      const description =
-        userLanguage === "es"
-          ? "Elige un destinatario para tus depósitos."
-          : "Choose who receives your deposits before continuing.";
-      toast({
-        title,
-        description,
-        status: "info",
-        duration: 2200,
-      });
-      return false;
-    }
-    return true;
-  };
-
   const handleInitiateDeposit = async () => {
-    if (!ensureIdentitySelected()) return;
     try {
       await initiateDeposit(100); // example amount
     } catch (err) {
@@ -644,7 +601,6 @@ export function BitcoinWalletSection({
   };
 
   const generateNewQR = async () => {
-    if (!ensureIdentitySelected()) return;
     try {
       await initiateDeposit(100);
     } catch (err) {
@@ -676,37 +632,6 @@ export function BitcoinWalletSection({
     } catch {}
   };
 
-  const handleIdentitySelect = async (nextIdentity) => {
-    const previousIdentity = selectedIdentity;
-    if (!nextIdentity || nextIdentity === previousIdentity) {
-      setSelectedIdentity(nextIdentity || "");
-      return;
-    }
-
-    try {
-      await Promise.resolve(onSelectIdentity?.(nextIdentity));
-      setSelectedIdentity(nextIdentity);
-      toast({
-        title:
-          userLanguage === "es" ? "Identidad actualizada" : "Identity updated",
-        status: "success",
-        duration: 1600,
-      });
-    } catch (error) {
-      console.error("Failed to set identity", error);
-      setSelectedIdentity(previousIdentity || "");
-      toast({
-        title:
-          userLanguage === "es"
-            ? "No se pudo actualizar"
-            : "Could not update identity",
-        description: error?.message || String(error),
-        status: "error",
-        duration: 2600,
-      });
-    }
-  };
-
   // ---------- Renders ----------
   return (
     <Box bg="gray.800" rounded="md" p={3} mx={1}>
@@ -726,56 +651,6 @@ export function BitcoinWalletSection({
           RobotsBuildingEducation.com
         </Link>
       </Text>
-
-      <Box bg="gray.900" p={3} rounded="md" mb={3}>
-        <Text fontSize="sm" mb={2}>
-          {userLanguage === "es"
-            ? "Elige a quién apoyar con tus depósitos:"
-            : "Choose who you’d like to support with your deposits:"}
-        </Text>
-        <RadioGroup
-          value={selectedIdentity}
-          onChange={handleIdentitySelect}
-          isDisabled={isIdentitySaving}
-        >
-          <VStack align="start" spacing={2} width="100%">
-            {BITCOIN_RECIPIENTS.map((recipient) => {
-              const isSelected = selectedIdentity === recipient.npub;
-              return (
-                <Box key={recipient.npub}>
-                  <Radio
-                    colorScheme="purple"
-                    value={recipient.npub}
-                    isDisabled={isIdentitySaving}
-                  >
-                    {recipient.label}
-                  </Radio>
-                  {isSelected && recipient.identityUrl ? (
-                    <Link
-                      href={recipient.identityUrl}
-                      isExternal
-                      fontSize="xs"
-                      color="teal.200"
-                      ml={6}
-                      display="inline-block"
-                      mt={1}
-                    >
-                      {userLanguage === "es" ? "Ver sitio" : "View site"}
-                    </Link>
-                  ) : null}
-                </Box>
-              );
-            })}
-          </VStack>
-        </RadioGroup>
-        {!selectedIdentity && (
-          <Text fontSize="xs" mt={2} color="orange.200">
-            {userLanguage === "es"
-              ? "Selecciona una opción para habilitar los depósitos."
-              : "Select an option to enable deposits."}
-          </Text>
-        )}
-      </Box>
 
       {/* Loading/hydration spinner (only after refresh / first mount) */}
       {hydrating && !cashuWallet && (
@@ -853,7 +728,6 @@ export function BitcoinWalletSection({
               <Button
                 mt={3}
                 onClick={handleInitiateDeposit}
-                isDisabled={!selectedIdentity || isIdentitySaving}
                 width="100%"
                 maxWidth="400px"
                 p={6}
@@ -899,7 +773,6 @@ export function BitcoinWalletSection({
               <Button
                 mt={2}
                 onClick={generateNewQR}
-                isDisabled={!selectedIdentity || isIdentitySaving}
                 leftIcon={<BsQrCode />}
                 boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
               >
