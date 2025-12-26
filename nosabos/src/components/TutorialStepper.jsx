@@ -201,13 +201,6 @@ export default function TutorialStepper({
           </Flex>
         </Box>
       )}
-
-      {/* Progress indicator */}
-      <Text fontSize="xs" color="whiteAlpha.600">
-        {lang === "es"
-          ? `Paso ${currentIndex + 1} de ${modules.length}`
-          : `Step ${currentIndex + 1} of ${modules.length}`}
-      </Text>
     </VStack>
   );
 }
