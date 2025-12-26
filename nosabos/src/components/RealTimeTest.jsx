@@ -294,8 +294,7 @@ function AlignedBubble({
       maxW="100%"
       borderBottomLeftRadius="0px"
     >
-      <HStack justify="space-between" mb={1}>
-        <Badge variant="subtle">{primaryLabel}</Badge>
+      <HStack justify="flex-end" mb={1}>
         <HStack>
           {canReplay && (
             <IconButton
@@ -313,9 +312,6 @@ function AlignedBubble({
               isDisabled={isReplaying}
               aria-label={replayLabel || "Replay"}
             />
-          )}
-          {showSecondary && !!secondaryText && (
-            <Badge variant="outline">{secondaryLabel}</Badge>
           )}
           {showSecondary && isTranslating && (
             <Spinner size="xs" thickness="2px" speed="0.5s" />
@@ -1954,6 +1950,7 @@ Return ONLY JSON:
       "Act as a language practice partner.",
       strict,
       "Keep replies very brief (≤25 words) and natural.",
+      "IMPORTANT: Do NOT start the conversation. Wait for the user to speak first. Never greet or initiate - only respond to what the user says.",
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
       levelHint,
       focusLine,
@@ -2653,16 +2650,8 @@ Do not return the whole sentence as a single chunk.`;
       if (m.role === "user" && isDuplicateOfPersistedUser(m)) continue;
       map.set(m.id, { ...(map.get(m.id) || {}), ...m, source: "ephem" });
     }
-    const byTsThenRole = (a, b) => {
-      const tsA = a?.ts || 0;
-      const tsB = b?.ts || 0;
-      if (tsA !== tsB) return tsA - tsB; // chronological order
-      if (a?.role === b?.role) return 0;
-      if (a?.role === "user") return -1; // put user first when simultaneous
-      if (b?.role === "user") return 1;
-      return 0;
-    };
-    return Array.from(map.values()).sort(byTsThenRole);
+    // Simple sort: newest first (most recent at top, oldest at bottom)
+    return Array.from(map.values()).sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
   }, [messages, history]);
 
   return (
