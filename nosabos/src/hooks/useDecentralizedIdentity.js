@@ -5,6 +5,7 @@ import { bech32 } from "bech32";
 
 import NDK, {
   NDKPrivateKeySigner,
+  NDKNip07Signer,
   NDKKind,
   NDKEvent,
 } from "@nostr-dev-kit/ndk";
@@ -23,24 +24,44 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     // Load keys from local storage if they exist
     const storedNpub = localStorage.getItem("local_npub");
     const storedNsec = localStorage.getItem("local_nsec");
+    const isNip07 = localStorage.getItem("nip07_signer") === "true";
 
     if (storedNpub) {
       setNostrPubKey(storedNpub);
     }
 
-    if (storedNsec) {
+    if (storedNsec && storedNsec !== "nip07") {
       setNostrPrivKey(storedNsec);
     }
 
-    ndk
-      .connect()
-      .then(() => {
+    const initializeConnection = async () => {
+      try {
+        await ndk.connect();
         setIsConnected(true);
-      })
-      .catch((err) => {
+
+        // Initialize signer based on auth method
+        if (isNip07 && typeof window !== "undefined" && window.nostr) {
+          // NIP-07 mode - use extension signer
+          const signer = new NDKNip07Signer();
+          await signer.blockUntilReady();
+          ndk.signer = signer;
+          console.log("NIP-07 signer initialized");
+        } else if (storedNsec && storedNsec !== "nip07" && storedNsec.startsWith("nsec")) {
+          // Private key mode - use stored nsec
+          const { words: nsecWords } = bech32.decode(storedNsec);
+          const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
+          const signer = new NDKPrivateKeySigner(hexNsec);
+          await signer.blockUntilReady();
+          ndk.signer = signer;
+          console.log("Private key signer initialized");
+        }
+      } catch (err) {
         console.error("Error connecting to Nostr:", err);
         setErrorMessage(err.message);
-      });
+      }
+    };
+
+    initializeConnection();
   }, []);
 
   const generateNostrKeys = async (userDisplayName = null) => {
@@ -118,9 +139,12 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       const defaultNpub =
         "npub1mgt5c7qh6dm9rg57mrp89rqtzn64958nj5w9g2d2h9dng27hmp0sww7u2v";
 
+      const storedNsec = localStorage.getItem("local_nsec");
+      const isNip07 = localStorage.getItem("nip07_signer") === "true";
+
       const nsec =
         nsecRef ||
-        localStorage.getItem("local_nsec") ||
+        (storedNsec !== "nip07" ? storedNsec : null) ||
         nostrPrivKey ||
         defaultNsec;
       const npub =
@@ -130,10 +154,6 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         defaultNpub;
 
       try {
-        // Decode the nsec from Bech32
-        const { words: nsecWords } = bech32.decode(nsec);
-        const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
-
         // Decode the npub from Bech32
         const { words: npubWords } = bech32.decode(npub);
         const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
@@ -147,8 +167,22 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
         setIsConnected(true);
 
-        // Return the connected NDK instance and signer
-        return { ndkInstance, hexNpub, signer: new NDKPrivateKeySigner(hexNsec) };
+        // Handle NIP-07 mode - use extension signer
+        if (isNip07 && typeof window !== "undefined" && window.nostr) {
+          const signer = new NDKNip07Signer();
+          await signer.blockUntilReady();
+          return { ndkInstance, hexNpub, signer };
+        }
+
+        // Handle private key mode
+        if (nsec && nsec.startsWith("nsec")) {
+          const { words: nsecWords } = bech32.decode(nsec);
+          const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
+          return { ndkInstance, hexNpub, signer: new NDKPrivateKeySigner(hexNsec) };
+        }
+
+        // No signer available, return without one (read-only mode)
+        return { ndkInstance, hexNpub, signer: null };
       } catch (err) {
         console.error("Error connecting to Nostr:", err);
         setErrorMessage(err.message);
@@ -174,11 +208,78 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       localStorage.setItem("local_npub", user.npub);
       console.log("local_nsec", nsec);
       localStorage.setItem("local_nsec", nsec);
+      localStorage.removeItem("nip07_signer"); // Clear NIP-07 flag if using nsec
       setErrorMessage(null);
 
       return { user, signer };
     } catch (error) {
       console.error("Error logging in with keys:", error);
+      setErrorMessage(error.message);
+      return null;
+    }
+  };
+
+  const isNip07Available = () => {
+    return typeof window !== "undefined" && window.nostr;
+  };
+
+  const isNip07Mode = () => {
+    return typeof window !== "undefined" && localStorage.getItem("nip07_signer") === "true";
+  };
+
+  // Helper to ensure the signer is ready (initializes NIP-07 signer if needed)
+  const ensureSigner = async () => {
+    if (ndk.signer) return ndk.signer;
+
+    if (isNip07Mode() && isNip07Available()) {
+      const signer = new NDKNip07Signer();
+      await signer.blockUntilReady();
+      ndk.signer = signer;
+      return signer;
+    }
+
+    // Try to use stored nsec if available
+    const storedNsec = localStorage.getItem("local_nsec");
+    if (storedNsec && storedNsec !== "nip07" && storedNsec.startsWith("nsec")) {
+      try {
+        const { words: nsecWords } = bech32.decode(storedNsec);
+        const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
+        const signer = new NDKPrivateKeySigner(hexNsec);
+        await signer.blockUntilReady();
+        ndk.signer = signer;
+        return signer;
+      } catch (err) {
+        console.error("Failed to initialize signer from stored nsec:", err);
+      }
+    }
+
+    return null;
+  };
+
+  const authWithExtension = async () => {
+    try {
+      if (!isNip07Available()) {
+        throw new Error("No Nostr extension found. Please install a NIP-07 compatible extension like nos2x or Alby.");
+      }
+
+      const signer = new NDKNip07Signer();
+      await signer.blockUntilReady();
+      ndk.signer = signer;
+
+      const user = await signer.user();
+      const npub = user.npub;
+
+      setNostrPubKey(npub);
+      setNostrPrivKey(""); // No private key with NIP-07
+      localStorage.setItem("local_npub", npub);
+      localStorage.setItem("local_nsec", "nip07"); // Marker to indicate NIP-07 mode
+      localStorage.setItem("nip07_signer", "true");
+      localStorage.setItem("uniqueId", npub);
+      setErrorMessage(null);
+
+      return { user, signer };
+    } catch (error) {
+      console.error("Error logging in with NIP-07 extension:", error);
       setErrorMessage(error.message);
       return null;
     }
@@ -192,14 +293,15 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     tags = []
   ) => {
     try {
-      // If a nsecRef is provided, login with it
-      if (nsecRef) {
+      // If a nsecRef is provided and it's a valid nsec, login with it
+      if (nsecRef && nsecRef.startsWith("nsec")) {
         const loginResult = await auth(nsecRef);
         if (!loginResult) return;
       }
 
-      // Ensure we have a signer after login
-      if (!ndk.signer) {
+      // Ensure we have a signer (will initialize NIP-07 or nsec signer if needed)
+      const signer = await ensureSigner();
+      if (!signer) {
         setErrorMessage("No signer available. Please login first.");
         return;
       }
@@ -564,6 +666,10 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     generateNostrKeys,
     postNostrContent,
     auth,
+    authWithExtension,
+    isNip07Available,
+    isNip07Mode,
+    ensureSigner,
     assignExistingBadgeToNpub,
     getUserBadges,
     getLastNotesByNpub,

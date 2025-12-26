@@ -414,6 +414,10 @@ const landingTranslations = {
       "Paste the secret key you saved when you first created an account.",
     signin_placeholder: "Paste your secret key",
     signin_button: "Sign in",
+    signin_or: "or",
+    signin_extension_button: "Sign in with NIP-07 extension",
+    error_extension_signin: "Could not sign in with extension.",
+    error_extension_generic: "Extension sign-in failed. Please try again.",
     back_button: "Back",
     created_title: "Save your secret key",
     created_description:
@@ -488,6 +492,11 @@ const landingTranslations = {
       "Pega la llave secreta que guardaste cuando creaste tu cuenta.",
     signin_placeholder: "Pega tu llave secreta",
     signin_button: "Iniciar sesión",
+    signin_or: "o",
+    signin_extension_button: "Iniciar sesión con NIP-07 extensión",
+    error_extension_signin: "No se pudo iniciar sesión con la extensión.",
+    error_extension_generic:
+      "Error al iniciar sesión con extensión. Inténtalo de nuevo.",
     back_button: "Regresar",
     created_title: "Guarda tu llave secreta",
     created_description:
@@ -541,10 +550,11 @@ const LandingPage = ({
 }) => {
   const toast = useToast();
   const prefersReducedMotion = usePrefersReducedMotion();
-  const { generateNostrKeys, auth } = useDecentralizedIdentity(
-    typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
-    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
-  );
+  const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
+    useDecentralizedIdentity(
+      typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
+      typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
+    );
   const [landingLanguage, setLandingLanguage] = useState(
     getInitialLandingLanguage
   );
@@ -558,8 +568,11 @@ const LandingPage = ({
   const [secretKey, setSecretKey] = useState("");
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningInWithExtension, setIsSigningInWithExtension] =
+    useState(false);
   const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
   const [errorMessage, setErrorMessage] = useState("");
+  const [hasExtension, setHasExtension] = useState(false);
   const revealVariant = useMemo(
     () => ({
       hidden: { opacity: 0, y: 42 },
@@ -597,6 +610,17 @@ const LandingPage = ({
   useEffect(() => {
     setLoadingMessage(copy.default_loading);
   }, [copy.default_loading, landingLanguage]);
+
+  useEffect(() => {
+    // Check for NIP-07 extension availability
+    const checkExtension = () => {
+      setHasExtension(isNip07Available());
+    };
+    checkExtension();
+    // Check again after a short delay in case extension loads slowly
+    const timer = setTimeout(checkExtension, 500);
+    return () => clearTimeout(timer);
+  }, [isNip07Available]);
 
   const hasDisplayName = displayName.trim().length >= 2;
 
@@ -669,6 +693,41 @@ const LandingPage = ({
     toast,
   ]);
 
+  const handleSignInWithExtension = useCallback(async () => {
+    setIsSigningInWithExtension(true);
+    setErrorMessage("");
+    try {
+      const result = await authWithExtension();
+      if (!result) {
+        throw new Error(
+          copy.error_extension_signin || "Could not sign in with extension."
+        );
+      }
+      toast({
+        title: copy.toast_signin_success_title,
+        status: "success",
+        duration: 2000,
+      });
+      onAuthenticated?.();
+    } catch (error) {
+      console.error("Failed to sign in with extension", error);
+      setErrorMessage(
+        error?.message ||
+          copy.error_extension_generic ||
+          "Extension sign-in failed."
+      );
+    } finally {
+      setIsSigningInWithExtension(false);
+    }
+  }, [
+    authWithExtension,
+    copy.error_extension_signin,
+    copy.error_extension_generic,
+    copy.toast_signin_success_title,
+    onAuthenticated,
+    toast,
+  ]);
+
   const ActionButton = ({ variant = "primary", ...props }) => (
     <Button
       {...BASE_BUTTON_PROPS}
@@ -718,7 +777,7 @@ const LandingPage = ({
             bg="rgba(6, 18, 30, 0.9)"
             borderColor="rgba(45, 212, 191, 0.4)"
             color="white"
-            _placeholder={{ color: "cyan.500" }}
+            _placeholder={{ color: "gray.600" }}
             fontSize="16px"
           />
           {errorMessage && (
@@ -743,6 +802,31 @@ const LandingPage = ({
               prefersReducedMotion={prefersReducedMotion}
             />
           </ActionButton>
+          {hasExtension && (
+            <>
+              <HStack spacing={4} align="center">
+                <Divider borderColor="rgba(45, 212, 191, 0.3)" />
+                <Text fontSize="sm" color="cyan.300" whiteSpace="nowrap">
+                  {copy.signin_or || "or"}
+                </Text>
+                <Divider borderColor="rgba(45, 212, 191, 0.3)" />
+              </HStack>
+              <ActionButton
+                variant="secondary"
+                onClick={handleSignInWithExtension}
+                isLoading={isSigningInWithExtension}
+                colorScheme="teal"
+              >
+                <StreamingText
+                  as="span"
+                  text={
+                    copy.signin_extension_button || "Sign in with extension"
+                  }
+                  prefersReducedMotion={prefersReducedMotion}
+                />
+              </ActionButton>
+            </>
+          )}
           <ActionButton
             variant="ghost"
             onClick={() => {
