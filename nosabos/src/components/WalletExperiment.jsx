@@ -1,709 +1,320 @@
-// src/components/WalletExperiment.jsx
-// NIP-60/NIP-61 Cashu Wallet Experiment
-import React, { useState, useCallback } from "react";
-import {
-  Box,
-  Button,
-  Container,
-  Divider,
-  Flex,
-  FormControl,
-  FormLabel,
-  Heading,
-  HStack,
-  IconButton,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Text,
-  VStack,
-  useToast,
-  Badge,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Spinner,
-  Card,
-  CardBody,
-  CardHeader,
-  Tooltip,
-  Code,
-} from "@chakra-ui/react";
-import {
-  CopyIcon,
-  ViewIcon,
-  ViewOffIcon,
-  CheckIcon,
-  WarningIcon,
-  RepeatIcon,
-} from "@chakra-ui/icons";
+import { useState } from "react";
+import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
+import { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
 import { QRCodeSVG } from "qrcode.react";
-import { useCashuWallet } from "../hooks/useCashuWallet";
+import { Button } from "@chakra-ui/react";
+import { NDKEvent, NDKUser } from "@nostr-dev-kit/ndk";
 
-// View states
-const VIEW_LOGIN = "login";
-const VIEW_WALLET = "wallet";
+import { Buffer } from "buffer";
+window.Buffer = Buffer;
 
-function WalletExperiment() {
-  const toast = useToast();
-
-  // Get all wallet functionality from the hook
+export default function WalletExperiment() {
   const {
     isConnected,
-    isLoading,
-    error,
-    npub,
-    nsec,
-    balance,
-    invoice,
-    walletEventId,
-    hasWallet,
-    isWalletReady,
-    connect,
-    createUser,
-    createWallet,
-    loadWallet,
-    deposit,
-    send,
-    logout,
-    refreshBalance,
-    clearError,
-  } = useCashuWallet();
+    errorMessage,
+    nostrPubKey,
+    generateNostrKeys,
+    auth,
+    authWithExtension,
+    isNip07Available,
+    ndk,
+  } = useDecentralizedIdentity();
 
-  // Local UI state
-  const [view, setView] = useState(isConnected ? VIEW_WALLET : VIEW_LOGIN);
-  const [showNsec, setShowNsec] = useState(false);
-  const [loginNsec, setLoginNsec] = useState("");
-  const [newUsername, setNewUsername] = useState("");
-  const [sendNpub, setSendNpub] = useState("");
-  const [sendAmount, setSendAmount] = useState("1");
-  const [sendComment, setSendComment] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [username, setUsername] = useState("");
+  const [nsecInput, setNsecInput] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // Update view when connection state changes
-  React.useEffect(() => {
-    if (isConnected && view === VIEW_LOGIN) {
-      setView(VIEW_WALLET);
-    } else if (!isConnected && view === VIEW_WALLET) {
-      setView(VIEW_LOGIN);
+  const [wallet, setWallet] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(false);
+
+  const [invoice, setInvoice] = useState(null);
+
+  const [balance, setBalance] = useState(0);
+
+  const [zapping, setZapping] = useState(false);
+
+  const [proofs, setProofs] = useState([]);
+  const mintUrl = "https://mint.minibits.cash/Bitcoin";
+
+  const handleCreateWallet = async () => {
+    if (!ndk || !isConnected || !ndk.signer) {
+      console.error("NDK not ready or user not authenticated");
+      return;
     }
-  }, [isConnected, view]);
 
-  // Copy to clipboard helper
-  const copyToClipboard = useCallback(async (text, label = "Copied") => {
+    setWalletLoading(true);
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      toast({
-        title: label,
-        status: "success",
-        duration: 1500,
-      });
-      setTimeout(() => setCopied(false), 1500);
-    } catch (e) {
-      toast({
-        title: "Failed to copy",
-        status: "error",
-        duration: 2000,
-      });
-    }
-  }, [toast]);
+      const cashuWallet = new NDKCashuWallet(ndk);
 
-  // Handle login with nsec
-  const handleLogin = useCallback(async () => {
-    if (!loginNsec.trim()) {
-      toast({
-        title: "Please enter your nsec",
-        status: "warning",
-        duration: 2000,
-      });
-      return;
-    }
+      const user = await ndk.signer.user();
+      await cashuWallet.start({ pubkey: user.pubkey });
 
-    if (!loginNsec.startsWith("nsec")) {
-      toast({
-        title: "Invalid key",
-        description: "Key must start with 'nsec'",
-        status: "error",
-        duration: 3000,
-      });
-      return;
-    }
+      // Get loaded proofs
+      const loadedProofs =
+        cashuWallet.state?.getProofs({ mint: mintUrl }) || [];
+      console.log("Loaded proofs from relay:", loadedProofs);
+      console.log(
+        "Loaded balance:",
+        loadedProofs.reduce((sum, p) => sum + p.amount, 0)
+      );
 
-    // Derive npub from nsec (we'll let the hook handle this)
-    const success = await connect(
-      "", // npub will be derived
-      loginNsec.trim()
-    );
+      if (loadedProofs.length > 0) {
+        // Verify proofs are still valid with the mint
+        const cashuWalletInstance = await cashuWallet.getCashuWallet(mintUrl);
+        const proofStates = await cashuWalletInstance.checkProofsStates(
+          loadedProofs
+        );
+        console.log("Proof states from mint:", proofStates);
 
-    if (success) {
-      toast({
-        title: "Logged in successfully",
-        status: "success",
-        duration: 2000,
-      });
-      setLoginNsec("");
-
-      // Try to load existing wallet
-      const hasWallet = await loadWallet();
-      if (!hasWallet) {
-        toast({
-          title: "No wallet found",
-          description: "Create a new wallet to get started",
-          status: "info",
-          duration: 3000,
+        // Filter to only unspent proofs
+        const unspentProofs = loadedProofs.filter((proof, i) => {
+          const state = proofStates[i];
+          console.log(`Proof ${i} (${proof.amount} sats):`, state);
+          return state?.state === "UNSPENT";
         });
+
+        console.log("Unspent proofs:", unspentProofs);
+        console.log(
+          "Actual balance:",
+          unspentProofs.reduce((sum, p) => sum + p.amount, 0)
+        );
+
+        setProofs(unspentProofs);
+        setBalance(unspentProofs.reduce((sum, p) => sum + p.amount, 0));
       }
-    }
-  }, [loginNsec, connect, loadWallet, toast]);
 
-  // Handle create new user
-  const handleCreateUser = useCallback(async () => {
-    if (!newUsername.trim()) {
-      toast({
-        title: "Please enter a username",
-        status: "warning",
-        duration: 2000,
+      ndk.wallet = cashuWallet;
+      setWallet(cashuWallet);
+    } catch (err) {
+      console.error("Failed to create wallet:", err);
+    } finally {
+      setWalletLoading(false);
+    }
+  };
+
+  const handleDeposit = async () => {
+    if (!wallet) return;
+
+    try {
+      const depositObj = wallet.deposit(10, mintUrl);
+
+      depositObj.on("success", async (token) => {
+        console.log("Deposit successful:", token.proofs);
+        setProofs(token.proofs);
+        setBalance(token.proofs.reduce((sum, p) => sum + p.amount, 0));
+
+        // Persist using wallet.state.update
+        await wallet.state.update({
+          store: token.proofs,
+          mint: mintUrl,
+        });
+        console.log("Proofs saved to relay");
+
+        setInvoice(null);
       });
-      return;
-    }
 
-    const result = await createUser(newUsername.trim());
-
-    if (result) {
-      toast({
-        title: "Account created!",
-        description: "Save your nsec key - you'll need it to log back in",
-        status: "success",
-        duration: 5000,
+      depositObj.on("error", (error) => {
+        console.error("Deposit error:", error);
       });
-      setNewUsername("");
+
+      const invoiceData = await depositObj.start();
+      console.log("Invoice:", invoiceData);
+      setInvoice(invoiceData);
+    } catch (err) {
+      console.error("Deposit error:", err);
     }
-  }, [newUsername, createUser, toast]);
+  };
 
-  // Handle create wallet
-  const handleCreateWallet = useCallback(async () => {
-    const success = await createWallet();
+  const handleZap = async () => {
+    setZapping(true);
 
-    if (success) {
-      toast({
-        title: "Wallet created!",
-        description: "Your NIP-60 wallet is ready",
-        status: "success",
-        duration: 3000,
+    try {
+      if (proofs.length === 0) {
+        console.error("No proofs available");
+        setZapping(false);
+        return;
+      }
+
+      const user = await NDKUser.fromNip05("sheilfer@cash.app", ndk);
+      await user.fetchProfile();
+
+      const lnurlResponse = await fetch(
+        "https://primal.net/.well-known/lnurlp/sheilfer"
+      );
+      const lnurlData = await lnurlResponse.json();
+
+      const zapRequest = new NDKEvent(ndk, {
+        kind: 9734,
+        content: "I'm sending you a cent of Bitcoin!",
+        tags: [
+          ["p", user.pubkey],
+          ["amount", "1000"],
+          ["relays", "wss://relay.damus.io", "wss://relay.primal.net"],
+        ],
+        created_at: Math.floor(Date.now() / 1000),
       });
+
+      await zapRequest.sign(ndk.signer);
+
+      const callbackUrl = new URL(lnurlData.callback);
+      callbackUrl.searchParams.set("amount", "1000");
+      callbackUrl.searchParams.set(
+        "nostr",
+        JSON.stringify(zapRequest.rawEvent())
+      );
+
+      const invoiceResponse = await fetch(callbackUrl.toString());
+      const invoiceData = await invoiceResponse.json();
+
+      if (invoiceData.pr) {
+        const cashuWallet = await wallet.getCashuWallet(mintUrl);
+
+        const meltQuote = await cashuWallet.createMeltQuote(invoiceData.pr);
+        console.log("Melt quote:", meltQuote);
+
+        const meltResult = await cashuWallet.meltProofs(meltQuote, proofs);
+        console.log("Melt result:", meltResult);
+
+        if (meltResult.change && meltResult.change.length > 0) {
+          setProofs(meltResult.change);
+          setBalance(meltResult.change.reduce((sum, p) => sum + p.amount, 0));
+
+          // Save change and mark spent proofs as destroyed
+          await wallet.state.update({
+            store: meltResult.change,
+            destroy: proofs,
+            mint: mintUrl,
+          });
+          console.log("Change saved, spent proofs destroyed");
+        } else {
+          setProofs([]);
+          setBalance(0);
+
+          // Mark all proofs as destroyed
+          await wallet.state.update({
+            destroy: proofs,
+            mint: mintUrl,
+          });
+        }
+
+        console.log("Zap successful!");
+      }
+    } catch (err) {
+      console.error("Zap failed:", err.message);
+    } finally {
+      setZapping(false);
     }
-  }, [createWallet, toast]);
+  };
 
-  // Handle deposit
-  const handleDeposit = useCallback(async () => {
-    const invoiceStr = await deposit(10);
+  const handleGenerateKeys = async () => {
+    if (!username.trim()) return;
+    setLoading(true);
+    await generateNostrKeys(username);
+    setLoading(false);
+  };
 
-    if (invoiceStr) {
-      toast({
-        title: "Invoice created",
-        description: "Scan the QR code to deposit 10 sats. Balance will update automatically.",
-        status: "info",
-        duration: 5000,
-      });
-    }
-  }, [deposit, toast]);
+  const handleNsecLogin = async () => {
+    if (!nsecInput.trim() || !nsecInput.startsWith("nsec")) return;
+    setLoading(true);
+    await auth(nsecInput);
+    setLoading(false);
+  };
 
-  // Handle manual refresh
-  const handleRefresh = useCallback(async () => {
-    await refreshBalance();
-    toast({
-      title: "Balance refreshed",
-      status: "success",
-      duration: 1500,
-    });
-  }, [refreshBalance, toast]);
-
-  // Handle send
-  const handleSend = useCallback(async () => {
-    if (!sendNpub.trim()) {
-      toast({
-        title: "Please enter recipient npub",
-        status: "warning",
-        duration: 2000,
-      });
-      return;
-    }
-
-    if (!sendNpub.startsWith("npub")) {
-      toast({
-        title: "Invalid recipient",
-        description: "Must be a valid npub",
-        status: "error",
-        duration: 3000,
-      });
-      return;
-    }
-
-    const amount = parseInt(sendAmount, 10);
-    if (isNaN(amount) || amount <= 0) {
-      toast({
-        title: "Invalid amount",
-        description: "Amount must be a positive number",
-        status: "error",
-        duration: 3000,
-      });
-      return;
-    }
-
-    if (amount > balance) {
-      toast({
-        title: "Insufficient balance",
-        description: `You only have ${balance} sats`,
-        status: "error",
-        duration: 3000,
-      });
-      return;
-    }
-
-    const success = await send(sendNpub.trim(), amount, sendComment);
-
-    if (success) {
-      toast({
-        title: "Sats sent!",
-        description: `Sent ${amount} sats via NIP-61 nutzap`,
-        status: "success",
-        duration: 3000,
-      });
-      setSendNpub("");
-      setSendAmount("1");
-      setSendComment("");
-
-      // Force refresh balance after a moment
-      setTimeout(() => {
-        refreshBalance();
-      }, 1500);
-    }
-  }, [sendNpub, sendAmount, sendComment, balance, send, toast, refreshBalance]);
-
-  // Handle logout
-  const handleLogout = useCallback(() => {
-    logout();
-    setView(VIEW_LOGIN);
-    toast({
-      title: "Logged out",
-      status: "info",
-      duration: 2000,
-    });
-  }, [logout, toast]);
-
-  // Render login view
-  const renderLoginView = () => (
-    <VStack spacing={6} w="100%" maxW="400px" mx="auto">
-      <Heading size="lg" textAlign="center" color="white">
-        🥜 Nutsack Wallet
-      </Heading>
-      <Text color="gray.400" textAlign="center">
-        NIP-60 & NIP-61 Cashu Wallet Experiment
-      </Text>
-
-      <Divider borderColor="gray.700" />
-
-      {/* Login with nsec */}
-      <Card w="100%" bg="gray.800" borderColor="gray.700" borderWidth="1px">
-        <CardHeader pb={2}>
-          <Heading size="sm" color="white">Login with nsec</Heading>
-        </CardHeader>
-        <CardBody pt={2}>
-          <VStack spacing={4}>
-            <FormControl>
-              <FormLabel color="gray.300" fontSize="sm">Your nsec key</FormLabel>
-              <InputGroup>
-                <Input
-                  type={showNsec ? "text" : "password"}
-                  placeholder="nsec1..."
-                  value={loginNsec}
-                  onChange={(e) => setLoginNsec(e.target.value)}
-                  bg="gray.900"
-                  borderColor="gray.600"
-                  color="white"
-                  _placeholder={{ color: "gray.500" }}
-                />
-                <InputRightElement>
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    icon={showNsec ? <ViewOffIcon /> : <ViewIcon />}
-                    onClick={() => setShowNsec(!showNsec)}
-                    aria-label={showNsec ? "Hide" : "Show"}
-                    color="gray.400"
-                  />
-                </InputRightElement>
-              </InputGroup>
-            </FormControl>
-            <Button
-              w="100%"
-              colorScheme="teal"
-              onClick={handleLogin}
-              isLoading={isLoading}
-            >
-              Login
-            </Button>
-          </VStack>
-        </CardBody>
-      </Card>
-
-      <Text color="gray.500">or</Text>
-
-      {/* Create new account */}
-      <Card w="100%" bg="gray.800" borderColor="gray.700" borderWidth="1px">
-        <CardHeader pb={2}>
-          <Heading size="sm" color="white">Create new account</Heading>
-        </CardHeader>
-        <CardBody pt={2}>
-          <VStack spacing={4}>
-            <FormControl>
-              <FormLabel color="gray.300" fontSize="sm">Username</FormLabel>
-              <Input
-                placeholder="Enter a username"
-                value={newUsername}
-                onChange={(e) => setNewUsername(e.target.value)}
-                bg="gray.900"
-                borderColor="gray.600"
-                color="white"
-                _placeholder={{ color: "gray.500" }}
-              />
-            </FormControl>
-            <Button
-              w="100%"
-              colorScheme="purple"
-              onClick={handleCreateUser}
-              isLoading={isLoading}
-            >
-              Create Account
-            </Button>
-          </VStack>
-        </CardBody>
-      </Card>
-
-      {error && (
-        <Alert status="error" borderRadius="md" bg="red.900">
-          <AlertIcon />
-          <Box>
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Box>
-        </Alert>
-      )}
-
-      <Text fontSize="xs" color="gray.600" textAlign="center" mt={4}>
-        Vibed with{" "}
-        <a
-          href="https://shakespeare.diy"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "#81E6D9" }}
-        >
-          Shakespeare
-        </a>
-      </Text>
-    </VStack>
-  );
-
-  // Render wallet view
-  const renderWalletView = () => (
-    <VStack spacing={6} w="100%" maxW="500px" mx="auto">
-      {/* Header */}
-      <Flex w="100%" justify="space-between" align="center">
-        <Heading size="lg" color="white">🥜 Nutsack</Heading>
-        <Button
-          size="sm"
-          variant="outline"
-          colorScheme="red"
-          onClick={handleLogout}
-        >
-          Logout
-        </Button>
-      </Flex>
-
-      {/* Identity Card */}
-      <Card w="100%" bg="gray.800" borderColor="gray.700" borderWidth="1px">
-        <CardBody>
-          <VStack spacing={3} align="stretch">
-            <HStack justify="space-between">
-              <Text color="gray.400" fontSize="sm">Your npub</Text>
-              <Tooltip label="Copy npub">
-                <IconButton
-                  size="xs"
-                  variant="ghost"
-                  icon={copied ? <CheckIcon /> : <CopyIcon />}
-                  onClick={() => copyToClipboard(npub, "npub copied")}
-                  color="gray.400"
-                  aria-label="Copy npub"
-                />
-              </Tooltip>
-            </HStack>
-            <Code
-              p={2}
-              borderRadius="md"
-              bg="gray.900"
-              color="teal.300"
-              fontSize="xs"
-              wordBreak="break-all"
-            >
-              {npub}
-            </Code>
-
-            <HStack justify="space-between" mt={2}>
-              <Text color="gray.400" fontSize="sm">Your nsec (keep secret!)</Text>
-              <HStack>
-                <IconButton
-                  size="xs"
-                  variant="ghost"
-                  icon={showNsec ? <ViewOffIcon /> : <ViewIcon />}
-                  onClick={() => setShowNsec(!showNsec)}
-                  color="gray.400"
-                  aria-label={showNsec ? "Hide" : "Show"}
-                />
-                <Tooltip label="Copy nsec">
-                  <IconButton
-                    size="xs"
-                    variant="ghost"
-                    icon={<CopyIcon />}
-                    onClick={() => copyToClipboard(nsec, "nsec copied - keep it safe!")}
-                    color="gray.400"
-                    aria-label="Copy nsec"
-                  />
-                </Tooltip>
-              </HStack>
-            </HStack>
-            <Code
-              p={2}
-              borderRadius="md"
-              bg="gray.900"
-              color="orange.300"
-              fontSize="xs"
-              wordBreak="break-all"
-            >
-              {showNsec ? nsec : "••••••••••••••••••••••••••••••••"}
-            </Code>
-          </VStack>
-        </CardBody>
-      </Card>
-
-      {/* Wallet Status */}
-      {!hasWallet ? (
-        <Card w="100%" bg="gray.800" borderColor="yellow.600" borderWidth="1px">
-          <CardBody>
-            <VStack spacing={4}>
-              <HStack>
-                <WarningIcon color="yellow.400" />
-                <Text color="yellow.400">No wallet found</Text>
-              </HStack>
-              <Text color="gray.400" fontSize="sm" textAlign="center">
-                Create a NIP-60 wallet to start using Cashu ecash
-              </Text>
-              <Button
-                w="100%"
-                colorScheme="yellow"
-                onClick={handleCreateWallet}
-                isLoading={isLoading}
-              >
-                Create Wallet
-              </Button>
-            </VStack>
-          </CardBody>
-        </Card>
-      ) : (
-        <>
-          {/* Balance Card */}
-          <Card w="100%" bg="linear-gradient(135deg, #2D3748 0%, #1A202C 100%)" borderColor="teal.500" borderWidth="2px">
-            <CardBody>
-              <VStack spacing={2}>
-                <HStack w="100%" justify="space-between">
-                  <Text color="gray.400" fontSize="sm">Balance</Text>
-                  <Tooltip label="Refresh balance">
-                    <IconButton
-                      size="xs"
-                      variant="ghost"
-                      icon={<RepeatIcon />}
-                      onClick={handleRefresh}
-                      isLoading={isLoading}
-                      color="gray.400"
-                      aria-label="Refresh balance"
-                    />
-                  </Tooltip>
-                </HStack>
-                {!isWalletReady ? (
-                  <VStack spacing={2} py={2}>
-                    <Spinner size="lg" color="teal.300" />
-                    <Text color="gray.400" fontSize="sm">Loading wallet...</Text>
-                  </VStack>
-                ) : (
-                  <HStack spacing={2} align="baseline">
-                    <Text fontSize="4xl" fontWeight="bold" color="white">
-                      {balance}
-                    </Text>
-                    <Text fontSize="lg" color="teal.300">sats</Text>
-                  </HStack>
-                )}
-                <Badge colorScheme="teal" variant="subtle">
-                  NIP-60 Cashu Wallet
-                </Badge>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          {/* Deposit Section */}
-          <Card w="100%" bg="gray.800" borderColor="gray.700" borderWidth="1px">
-            <CardHeader pb={2}>
-              <Heading size="sm" color="white">⚡ Deposit</Heading>
-            </CardHeader>
-            <CardBody pt={2}>
-              <VStack spacing={4}>
-                {invoice ? (
-                  <>
-                    <Box
-                      p={4}
-                      bg="white"
-                      borderRadius="lg"
-                    >
-                      <QRCodeSVG
-                        value={invoice}
-                        size={200}
-                        level="M"
-                      />
-                    </Box>
-                    <Text color="gray.400" fontSize="xs" textAlign="center">
-                      Scan with a Lightning wallet to deposit 10 sats
-                    </Text>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      colorScheme="teal"
-                      leftIcon={<CopyIcon />}
-                      onClick={() => copyToClipboard(invoice, "Invoice copied")}
-                    >
-                      Copy Invoice
-                    </Button>
-                    <Spinner size="sm" color="teal.400" />
-                    <Text color="gray.500" fontSize="xs">
-                      Waiting for payment...
-                    </Text>
-                  </>
-                ) : (
-                  <>
-                    <Text color="gray.400" fontSize="sm" textAlign="center">
-                      Generate a Lightning invoice to add sats to your wallet
-                    </Text>
-                    <Button
-                      w="100%"
-                      colorScheme="teal"
-                      onClick={handleDeposit}
-                      isLoading={isLoading}
-                    >
-                      Deposit 10 sats
-                    </Button>
-                  </>
-                )}
-              </VStack>
-            </CardBody>
-          </Card>
-
-          {/* Send Section */}
-          <Card w="100%" bg="gray.800" borderColor="gray.700" borderWidth="1px">
-            <CardHeader pb={2}>
-              <Heading size="sm" color="white">📤 Send (NIP-61 Nutzap)</Heading>
-            </CardHeader>
-            <CardBody pt={2}>
-              <VStack spacing={4}>
-                <FormControl>
-                  <FormLabel color="gray.300" fontSize="sm">Recipient npub</FormLabel>
-                  <Input
-                    placeholder="npub1..."
-                    value={sendNpub}
-                    onChange={(e) => setSendNpub(e.target.value)}
-                    bg="gray.900"
-                    borderColor="gray.600"
-                    color="white"
-                    _placeholder={{ color: "gray.500" }}
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel color="gray.300" fontSize="sm">Amount (sats)</FormLabel>
-                  <Input
-                    type="number"
-                    placeholder="1"
-                    value={sendAmount}
-                    onChange={(e) => setSendAmount(e.target.value)}
-                    bg="gray.900"
-                    borderColor="gray.600"
-                    color="white"
-                    _placeholder={{ color: "gray.500" }}
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormLabel color="gray.300" fontSize="sm">Comment (optional)</FormLabel>
-                  <Input
-                    placeholder="Thanks!"
-                    value={sendComment}
-                    onChange={(e) => setSendComment(e.target.value)}
-                    bg="gray.900"
-                    borderColor="gray.600"
-                    color="white"
-                    _placeholder={{ color: "gray.500" }}
-                  />
-                </FormControl>
-                <Button
-                  w="100%"
-                  colorScheme="purple"
-                  onClick={handleSend}
-                  isLoading={isLoading}
-                  isDisabled={balance === 0}
-                >
-                  Send Nutzap
-                </Button>
-              </VStack>
-            </CardBody>
-          </Card>
-        </>
-      )}
-
-      {error && (
-        <Alert status="error" borderRadius="md" bg="red.900">
-          <AlertIcon />
-          <Box flex="1">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Box>
-          <Button size="sm" variant="ghost" onClick={clearError}>
-            Dismiss
-          </Button>
-        </Alert>
-      )}
-
-      <Text fontSize="xs" color="gray.600" textAlign="center" mt={4}>
-        Vibed with{" "}
-        <a
-          href="https://shakespeare.diy"
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: "#81E6D9" }}
-        >
-          Shakespeare
-        </a>
-      </Text>
-    </VStack>
-  );
+  const handleExtensionLogin = async () => {
+    setLoading(true);
+    await authWithExtension();
+    setLoading(false);
+  };
 
   return (
-    <Box
-      minH="100vh"
-      bg="gray.950"
-      py={8}
-      px={4}
-    >
-      <Container maxW="container.sm">
-        {view === VIEW_LOGIN ? renderLoginView() : renderWalletView()}
-      </Container>
-    </Box>
+    <div style={{ padding: "20px", maxWidth: "400px" }}>
+      <h2>Wallet Experiment</h2>
+
+      <p>Relay Status: {isConnected ? "✅ Connected" : "⏳ Connecting..."}</p>
+
+      {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
+
+      {nostrPubKey ? (
+        <div>
+          <h3>Logged In</h3>
+          <p style={{ wordBreak: "break-all", fontSize: "12px" }}>
+            {nostrPubKey}
+          </p>
+          {!wallet ? (
+            <Button onClick={handleCreateWallet} disabled={walletLoading}>
+              {walletLoading ? "Creating..." : "Create Wallet"}
+            </Button>
+          ) : (
+            <div>
+              <p>✅ Wallet created</p>
+            </div>
+          )}
+
+          {wallet && !invoice && (
+            <Button onClick={handleDeposit}>Deposit 10 sats</Button>
+          )}
+
+          {invoice && (
+            <div style={{ textAlign: "center" }}>
+              <p>Pay 10 sats:</p>
+              <QRCodeSVG value={invoice} size={200} />
+              <Button
+                onClick={() => setInvoice(null)}
+                style={{ marginTop: "10px" }}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+
+          {wallet && (
+            <Button onClick={handleZap} disabled={zapping || balance < 1}>
+              {zapping ? "Zapping..." : "Zap 1 sat to sheilfer@primal.net"}
+            </Button>
+          )}
+
+          <p>Balance: {balance} sats</p>
+        </div>
+      ) : (
+        <div>
+          <div style={{ marginBottom: "20px" }}>
+            <h4>Create New Account</h4>
+            <input
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              style={{ width: "100%", padding: "8px", marginBottom: "8px" }}
+            />
+            <button onClick={handleGenerateKeys} disabled={loading}>
+              {loading ? "Creating..." : "Generate Keys"}
+            </button>
+          </div>
+
+          <div style={{ marginBottom: "20px" }}>
+            <h4>Login with nsec</h4>
+            <input
+              type="password"
+              placeholder="nsec1..."
+              value={nsecInput}
+              onChange={(e) => setNsecInput(e.target.value)}
+              style={{ width: "100%", padding: "8px", marginBottom: "8px" }}
+            />
+            <button onClick={handleNsecLogin} disabled={loading}>
+              {loading ? "Logging in..." : "Login"}
+            </button>
+          </div>
+
+          {isNip07Available() && (
+            <div>
+              <h4>Login with Extension</h4>
+              <button onClick={handleExtensionLogin} disabled={loading}>
+                {loading ? "Connecting..." : "Use Browser Extension"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
-
-export default WalletExperiment;

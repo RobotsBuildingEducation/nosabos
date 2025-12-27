@@ -214,11 +214,7 @@ export default function IdentityDrawer({
   );
 
   return (
-    <Drawer
-      isOpen={isOpen}
-      placement="bottom"
-      onClose={onClose}
-    >
+    <Drawer isOpen={isOpen} placement="bottom" onClose={onClose}>
       <DrawerOverlay bg="blackAlpha.600" />
       <DrawerContent
         bg="gray.900"
@@ -518,7 +514,8 @@ export function BitcoinWalletSection({
 
   // → New: hydrate on mount so refresh picks up your existing wallet
   const init = useNostrWalletStore((s) => s.init);
-  const initWalletService = useNostrWalletStore((s) => s.initWalletService);
+  const initWallet = useNostrWalletStore((s) => s.initWallet);
+  // const initWalletService = useNostrWalletStore((s) => s.initWalletService);
 
   const [hydrating, setHydrating] = useState(true);
   const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
@@ -526,8 +523,10 @@ export function BitcoinWalletSection({
     let alive = true;
     (async () => {
       try {
-        await init(); // reconnect to Nostr using stored keys
-        await initWalletService(); // scan relays, attach listeners, emit wallet:default
+        const connected = await init();
+        if (connected) {
+          await initWallet();
+        }
       } catch (e) {
         console.warn("Wallet hydrate failed:", e);
       } finally {
@@ -537,7 +536,7 @@ export function BitcoinWalletSection({
     return () => {
       alive = false;
     };
-  }, [init, initWalletService]);
+  }, [init, initWallet]);
 
   useEffect(() => {
     setSelectedIdentity(identity || "");

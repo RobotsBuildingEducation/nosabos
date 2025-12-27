@@ -1084,7 +1084,7 @@ export default function App() {
   //     walletBalance: state.walletBalance,
   //   }));
   const init = useNostrWalletStore((s) => s.init);
-  const initWalletService = useNostrWalletStore((s) => s.initWalletService);
+  const initWallet = useNostrWalletStore((s) => s.initWallet);
   const walletBalance = useNostrWalletStore((s) => s.walletBalance);
   const sendOneSatToNpub = useNostrWalletStore((s) => s.sendOneSatToNpub);
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
@@ -1463,18 +1463,15 @@ export default function App() {
   }, []);
 
   // Initialize wallet on app load so it's ready for spending
+  // In your component or app initialization:
   useEffect(() => {
-    const initializeWallet = async () => {
-      try {
-        await init();
-        await initWalletService();
-        console.log("[App] Wallet initialized");
-      } catch (e) {
-        console.warn("[App] Wallet init failed:", e);
+    const initialize = async () => {
+      const connected = await init();
+      if (connected) {
+        await initWallet();
       }
     };
-    initializeWallet();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    initialize();
   }, []);
 
   const onboardingDone = useMemo(() => {

@@ -14,6 +14,8 @@ const ndk = new NDK({
   explicitRelayUrls: ["wss://relay.damus.io", "wss://relay.primal.net"],
 });
 
+console.log("ndk created:", ndk);
+
 export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   const [isConnected, setIsConnected] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -39,20 +41,27 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         await ndk.connect();
         setIsConnected(true);
 
-        // Initialize signer based on auth method
         if (isNip07 && typeof window !== "undefined" && window.nostr) {
-          // NIP-07 mode - use extension signer
           const signer = new NDKNip07Signer();
           await signer.blockUntilReady();
           ndk.signer = signer;
+          const user = await signer.user();
+          ndk.activeUser = user; // Add this
           console.log("NIP-07 signer initialized");
-        } else if (storedNsec && storedNsec !== "nip07" && storedNsec.startsWith("nsec")) {
-          // Private key mode - use stored nsec
+        } else if (
+          storedNsec &&
+          storedNsec !== "nip07" &&
+          storedNsec.startsWith("nsec")
+        ) {
           const { words: nsecWords } = bech32.decode(storedNsec);
-          const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
+          const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString(
+            "hex"
+          );
           const signer = new NDKPrivateKeySigner(hexNsec);
           await signer.blockUntilReady();
           ndk.signer = signer;
+          const user = await signer.user();
+          ndk.activeUser = user; // Add this
           console.log("Private key signer initialized");
         }
       } catch (err) {
@@ -156,7 +165,9 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       try {
         // Decode the npub from Bech32
         const { words: npubWords } = bech32.decode(npub);
-        const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
+        const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString(
+          "hex"
+        );
 
         // Create a new NDK instance
         const ndkInstance = new NDK({
@@ -177,8 +188,14 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
         // Handle private key mode
         if (nsec && nsec.startsWith("nsec")) {
           const { words: nsecWords } = bech32.decode(nsec);
-          const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
-          return { ndkInstance, hexNpub, signer: new NDKPrivateKeySigner(hexNsec) };
+          const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString(
+            "hex"
+          );
+          return {
+            ndkInstance,
+            hexNpub,
+            signer: new NDKPrivateKeySigner(hexNsec),
+          };
         }
 
         // No signer available, return without one (read-only mode)
@@ -199,16 +216,18 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
 
       const signer = new NDKPrivateKeySigner(hexNsec);
-      await signer.blockUntilReady(); // Wait for signer user resolution
+      await signer.blockUntilReady();
       ndk.signer = signer;
 
       const user = await signer.user();
+      ndk.activeUser = user; // Add this line
+
       setNostrPubKey(user.npub);
       setNostrPrivKey(nsec);
       localStorage.setItem("local_npub", user.npub);
       console.log("local_nsec", nsec);
       localStorage.setItem("local_nsec", nsec);
-      localStorage.removeItem("nip07_signer"); // Clear NIP-07 flag if using nsec
+      localStorage.removeItem("nip07_signer");
       setErrorMessage(null);
 
       return { user, signer };
@@ -224,7 +243,10 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   };
 
   const isNip07Mode = () => {
-    return typeof window !== "undefined" && localStorage.getItem("nip07_signer") === "true";
+    return (
+      typeof window !== "undefined" &&
+      localStorage.getItem("nip07_signer") === "true"
+    );
   };
 
   // Helper to ensure the signer is ready (initializes NIP-07 signer if needed)
@@ -243,7 +265,9 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     if (storedNsec && storedNsec !== "nip07" && storedNsec.startsWith("nsec")) {
       try {
         const { words: nsecWords } = bech32.decode(storedNsec);
-        const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
+        const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString(
+          "hex"
+        );
         const signer = new NDKPrivateKeySigner(hexNsec);
         await signer.blockUntilReady();
         ndk.signer = signer;
@@ -259,7 +283,9 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   const authWithExtension = async () => {
     try {
       if (!isNip07Available()) {
-        throw new Error("No Nostr extension found. Please install a NIP-07 compatible extension like nos2x or Alby.");
+        throw new Error(
+          "No Nostr extension found. Please install a NIP-07 compatible extension like nos2x or Alby."
+        );
       }
 
       const signer = new NDKNip07Signer();
@@ -267,6 +293,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
       ndk.signer = signer;
 
       const user = await signer.user();
+      ndk.activeUser = user; // Add this
       const npub = user.npub;
 
       setNostrPubKey(npub);
@@ -637,7 +664,9 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
           });
         });
 
-        await new Promise((resolve) => profilesSubscription.on("eose", resolve));
+        await new Promise((resolve) =>
+          profilesSubscription.on("eose", resolve)
+        );
 
         // Step 3: Merge notes with profiles
         const notesWithProfiles = notes.map((note) => {
@@ -674,5 +703,6 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     getUserBadges,
     getLastNotesByNpub,
     getGlobalNotesWithProfilesByHashtag,
+    ndk,
   };
 };

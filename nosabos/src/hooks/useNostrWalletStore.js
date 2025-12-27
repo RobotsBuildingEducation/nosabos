@@ -2,23 +2,18 @@
 // NIP-60 (Cashu Wallets) and NIP-61 (Nutzaps) implementation
 // Zustand store for global wallet state
 import { create } from "zustand";
-import NDK, { NDKPrivateKeySigner, NDKNip07Signer, NDKEvent } from "@nostr-dev-kit/ndk";
-import NDKWalletService, { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
+import NDK, {
+  NDKPrivateKeySigner,
+  NDKNip07Signer,
+  NDKEvent,
+} from "@nostr-dev-kit/ndk";
+import { NDKCashuWallet } from "@nostr-dev-kit/ndk-wallet";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 
-/**
- * Check if we're in NIP-07 mode (using browser extension)
- */
-function isNip07Mode() {
-  return typeof window !== "undefined" && localStorage.getItem("nip07_signer") === "true";
-}
-
-/**
- * Check if NIP-07 extension is available
- */
-function isNip07Available() {
-  return typeof window !== "undefined" && window.nostr;
+// Polyfill Buffer for browser
+if (typeof window !== "undefined") {
+  window.Buffer = Buffer;
 }
 
 // Default configuration
@@ -31,61 +26,15 @@ const DEFAULT_RELAYS = [
 const DEFAULT_RECEIVER =
   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
 
-// localStorage key for tracked balance
-const TRACKED_BALANCE_KEY = "wallet_tracked_balance";
-
 /**
- * Load tracked balance from localStorage
- */
-function loadTrackedBalance() {
-  try {
-    const stored = localStorage.getItem(TRACKED_BALANCE_KEY);
-    if (stored !== null) {
-      const parsed = Number(stored);
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  } catch (e) {
-    console.warn("[Wallet] Error loading tracked balance:", e);
-  }
-  return null; // null means not yet initialized
-}
-
-/**
- * Save tracked balance to localStorage
- */
-function saveTrackedBalance(balance) {
-  try {
-    localStorage.setItem(TRACKED_BALANCE_KEY, String(balance));
-  } catch (e) {
-    console.warn("[Wallet] Error saving tracked balance:", e);
-  }
-}
-
-/**
- * Safely extract total balance from wallet.balance() response
- * The response can be: number, { amount }, or [{ amount, unit }]
+ * Safely extract total balance from wallet.balance response
  */
 function extractBalance(bal) {
   if (bal === null || bal === undefined) return 0;
-
-  // If it's a simple number
   if (typeof bal === "number") return bal;
-
-  // If it's an array of balance entries
-  if (Array.isArray(bal)) {
-    return bal.reduce((sum, entry) => {
-      if (typeof entry === "number") return sum + entry;
-      if (entry && typeof entry.amount === "number") return sum + entry.amount;
-      return sum;
-    }, 0);
-  }
-
-  // If it's an object with amount
   if (typeof bal === "object" && typeof bal.amount === "number") {
     return bal.amount;
   }
-
-  // Try to parse as number
   const parsed = Number(bal);
   return isNaN(parsed) ? 0 : parsed;
 }
@@ -104,15 +53,31 @@ function decodeKey(key) {
 }
 
 /**
- * Encode hex to bech32 (npub/nsec)
+ * Verify proofs with mint and return only unspent balance
  */
-function encodeKey(hex, prefix) {
+async function verifyBalanceWithMint(wallet, mintUrl) {
   try {
-    const words = bech32.toWords(Buffer.from(hex, "hex"));
-    return bech32.encode(prefix, words);
+    const proofs = wallet.state?.getProofs({ mint: mintUrl }) || [];
+    console.log("[Wallet] Proofs from state:", proofs.length);
+
+    if (proofs.length === 0) {
+      return 0;
+    }
+
+    const cashuWallet = await wallet.getCashuWallet(mintUrl);
+    const proofStates = await cashuWallet.checkProofsStates(proofs);
+
+    const unspentProofs = proofs.filter((proof, i) => {
+      const state = proofStates[i];
+      return state?.state === "UNSPENT";
+    });
+
+    const balance = unspentProofs.reduce((sum, p) => sum + p.amount, 0);
+    console.log("[Wallet] Verified balance from mint:", balance);
+    return balance;
   } catch (e) {
-    console.error("Error encoding key:", e);
-    return null;
+    console.error("[Wallet] Error verifying with mint:", e);
+    return extractBalance(wallet.balance);
   }
 }
 
@@ -124,15 +89,12 @@ export const useNostrWalletStore = create((set, get) => ({
   nostrPrivKey: "",
   ndkInstance: null,
   signer: null,
-  walletService: null,
   cashuWallet: null,
   walletBalance: 0,
+  proofs: [],
   invoice: "",
   isCreatingWallet: false,
   isWalletReady: false,
-
-  // Internal refs (not reactive)
-  _balanceUpdateTimeout: null,
 
   // Setters
   setError: (msg) => set({ errorMessage: msg }),
@@ -141,166 +103,14 @@ export const useNostrWalletStore = create((set, get) => ({
   // Utility: Get hex pubkey from npub
   getHexNPub: (npub) => decodeKey(npub),
 
-  // Refresh balance with debouncing
-  refreshBalance: async () => {
-    const { cashuWallet, _balanceUpdateTimeout } = get();
+  // Verify and update balance from mint
+  verifyAndUpdateBalance: async () => {
+    const { cashuWallet } = get();
     if (!cashuWallet) return 0;
 
-    // Clear any pending balance update
-    if (_balanceUpdateTimeout) {
-      clearTimeout(_balanceUpdateTimeout);
-    }
-
-    try {
-      // Small delay to let wallet state settle
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const bal = await cashuWallet.balance();
-      const totalBalance = extractBalance(bal);
-
-      console.log("[Wallet] Balance refreshed:", totalBalance);
-      set({ walletBalance: totalBalance });
-      return totalBalance;
-    } catch (e) {
-      console.error("[Wallet] Error refreshing balance:", e);
-      return get().walletBalance;
-    }
-  },
-
-  // Setup wallet listeners
-  setupWalletListeners: async (wallet) => {
-    if (!wallet || !(wallet instanceof NDKCashuWallet)) return;
-
-    console.log("[Wallet] Setting up wallet listeners");
-
-    // We no longer listen to balance_updated events from the wallet
-    // because they're unreliable. Instead, we track balance ourselves.
-
-    set({
-      cashuWallet: wallet,
-      isWalletReady: false,
-    });
-
-    // Initialize tracked balance: use localStorage if available,
-    // otherwise sync from wallet.balance() on first load
-    setTimeout(async () => {
-      const storedBalance = loadTrackedBalance();
-      if (storedBalance !== null) {
-        // Use our tracked balance for immediate stability
-        console.log(
-          "[Wallet] Using tracked balance from localStorage:",
-          storedBalance
-        );
-        set({ walletBalance: storedBalance, isWalletReady: true });
-
-        // Run background sync after initial load to catch any relay updates
-        // This handles cases where funds were received while offline
-        setTimeout(async () => {
-          try {
-            console.log("[Wallet] Starting background sync with relay...");
-            const bal = await wallet.balance();
-            const relayBalance = extractBalance(bal);
-
-            if (relayBalance !== storedBalance) {
-              console.log(
-                "[Wallet] Background sync found different balance:",
-                storedBalance,
-                "->",
-                relayBalance
-              );
-              saveTrackedBalance(relayBalance);
-              set({ walletBalance: relayBalance });
-            } else {
-              console.log(
-                "[Wallet] Background sync complete - balance unchanged:",
-                relayBalance
-              );
-            }
-          } catch (e) {
-            console.warn("[Wallet] Background sync failed (non-critical):", e);
-            // Keep using localStorage balance on sync failure
-          }
-        }, 3000); // Wait 3 seconds after initial load before syncing
-      } else {
-        // First time: sync from wallet
-        try {
-          const bal = await wallet.balance();
-          const initialBalance = extractBalance(bal);
-          console.log("[Wallet] Initial balance from wallet:", initialBalance);
-          saveTrackedBalance(initialBalance);
-          set({ walletBalance: initialBalance, isWalletReady: true });
-        } catch (e) {
-          console.error("[Wallet] Error getting initial balance:", e);
-          set({ walletBalance: 0, isWalletReady: true });
-        }
-      }
-    }, 1500);
-  },
-
-  // Initialize wallet service
-  initWalletService: async (providedNdk, providedSigner) => {
-    const {
-      setError,
-      ndkInstance,
-      signer,
-      nostrPubKey,
-      nostrPrivKey,
-      connectToNostr,
-      setupWalletListeners,
-    } = get();
-
-    try {
-      let ndk = providedNdk || ndkInstance;
-      let s = providedSigner || signer;
-
-      if (!ndk || !s) {
-        // Handle both NIP-07 mode (only pubKey) and private key mode (both keys)
-        const canConnectNip07 = isNip07Mode() && isNip07Available() && nostrPubKey;
-        const canConnectPrivKey = nostrPubKey && nostrPrivKey;
-
-        if (canConnectNip07 || canConnectPrivKey) {
-          const connection = await connectToNostr(nostrPubKey, nostrPrivKey);
-          if (connection) {
-            ndk = connection.ndkInstance;
-            s = connection.signer;
-            set({ ndkInstance: ndk, signer: s });
-          } else {
-            throw new Error("Unable to connect to Nostr.");
-          }
-        } else {
-          throw new Error("NDK or signer not found and no keys to reconnect.");
-        }
-      }
-
-      ndk.signer = s;
-      const user = await s.user();
-      user.signer = s;
-
-      const wService = new NDKWalletService(ndk);
-      wService.start();
-
-      // Listen for default wallet
-      wService.on("wallet:default", (wallet) => {
-        console.log("[Wallet] Default wallet detected:", wallet?.walletId);
-        setupWalletListeners(wallet);
-      });
-
-      // Also listen for wallet ready
-      wService.on("wallet:ready", (wallet) => {
-        console.log("[Wallet] Wallet ready event");
-        const { cashuWallet } = get();
-        if (wallet && !cashuWallet) {
-          setupWalletListeners(wallet);
-        }
-      });
-
-      set({ walletService: wService });
-      return true;
-    } catch (error) {
-      console.error("[Wallet] Error initializing wallet service:", error);
-      setError(error.message);
-      return false;
-    }
+    const balance = await verifyBalanceWithMint(cashuWallet, DEFAULT_MINT);
+    set({ walletBalance: balance });
+    return balance;
   },
 
   // Connect to Nostr relays
@@ -308,8 +118,8 @@ export const useNostrWalletStore = create((set, get) => ({
     const { setError, nostrPrivKey, nostrPubKey } = get();
 
     const storedNsec = localStorage.getItem("local_nsec");
+    const isNip07 = localStorage.getItem("nip07_signer") === "true";
     const nsec = nsecRef || (storedNsec !== "nip07" ? nostrPrivKey : null);
-    const npub = npubRef || nostrPubKey;
 
     try {
       const ndkInstance = new NDK({
@@ -318,21 +128,22 @@ export const useNostrWalletStore = create((set, get) => ({
 
       await ndkInstance.connect();
 
-      // Handle NIP-07 mode - use extension signer
-      if (isNip07Mode() && isNip07Available()) {
+      // Handle NIP-07 mode
+      if (isNip07 && typeof window !== "undefined" && window.nostr) {
         console.log("[Wallet] Using NIP-07 signer");
         const signer = new NDKNip07Signer();
         await signer.blockUntilReady();
+        ndkInstance.signer = signer;
         const user = await signer.user();
-        const hexNpub = user.pubkey;
+        ndkInstance.activeUser = user;
 
-        set({ isConnected: true });
-        return { ndkInstance, hexNpub, signer };
+        set({ isConnected: true, ndkInstance, signer });
+        return { ndkInstance, signer };
       }
 
       // Handle private key mode
       if (!nsec || !nsec.startsWith("nsec")) {
-        console.error("[Wallet] No valid nsec provided and not in NIP-07 mode");
+        console.error("[Wallet] No valid nsec provided");
         return null;
       }
 
@@ -340,12 +151,13 @@ export const useNostrWalletStore = create((set, get) => ({
       if (!hexNsec) throw new Error("Invalid nsec key");
 
       const signer = new NDKPrivateKeySigner(hexNsec);
+      await signer.blockUntilReady();
+      ndkInstance.signer = signer;
       const user = await signer.user();
-      const hexNpub = user.pubkey;
+      ndkInstance.activeUser = user;
 
-      set({ isConnected: true });
-
-      return { ndkInstance, hexNpub, signer };
+      set({ isConnected: true, ndkInstance, signer });
+      return { ndkInstance, signer };
     } catch (err) {
       console.error("[Wallet] Error connecting to Nostr:", err);
       setError(err.message);
@@ -353,98 +165,130 @@ export const useNostrWalletStore = create((set, get) => ({
     }
   },
 
-  // Initialize wallet (called on app load)
+  // Initialize (called on app load)
   init: async () => {
     const storedNpub = localStorage.getItem("local_npub");
     const storedNsec = localStorage.getItem("local_nsec");
-    const isNip07 = isNip07Mode();
+    const isNip07 = localStorage.getItem("nip07_signer") === "true";
 
     if (storedNpub) set({ nostrPubKey: storedNpub });
     if (storedNsec && storedNsec !== "nip07") set({ nostrPrivKey: storedNsec });
 
     const { connectToNostr } = get();
 
-    // Handle NIP-07 mode
-    if (isNip07 && storedNpub && isNip07Available()) {
-      console.log("[Wallet] Initializing with NIP-07 signer");
-      const connection = await connectToNostr(storedNpub, null);
-      if (connection) {
-        const { ndkInstance: ndk, signer: s } = connection;
-        set({ ndkInstance: ndk, signer: s });
-        return true;
-      }
+    if ((isNip07 && storedNpub) || (storedNpub && storedNsec)) {
+      const connection = await connectToNostr(storedNpub, storedNsec);
+      return !!connection;
     }
 
-    // Handle private key mode
-    if (storedNpub && storedNsec && storedNsec !== "nip07") {
-      console.log("[Wallet] Initializing with stored keys");
-      const connection = await connectToNostr(storedNpub, storedNsec);
-      if (connection) {
-        const { ndkInstance: ndk, signer: s } = connection;
-        set({ ndkInstance: ndk, signer: s });
-        return true;
-      }
-    }
     return false;
   },
 
-  // Create new wallet
+  // Initialize wallet
+  // Initialize wallet (load existing only - does NOT create new)
+  // Initialize wallet (load existing only - does NOT create new)
+  initWallet: async () => {
+    const { ndkInstance, signer, setError, verifyAndUpdateBalance } = get();
+
+    if (!ndkInstance || !signer) {
+      console.error("[Wallet] NDK not ready");
+      return null;
+    }
+
+    try {
+      const user = await signer.user();
+      console.log("[Wallet] Looking for wallet for pubkey:", user.pubkey);
+
+      // Check for wallet events - try multiple possible kinds
+      const walletEvents = await ndkInstance.fetchEvents({
+        kinds: [37513, 7374, 7375], // wallet, token, and proof kinds
+        authors: [user.pubkey],
+        limit: 5,
+      });
+
+      console.log("[Wallet] Found events:", walletEvents.size);
+      walletEvents.forEach((e) => console.log("[Wallet] Event kind:", e.kind));
+
+      if (walletEvents.size === 0) {
+        console.log("[Wallet] No existing wallet found");
+        return null;
+      }
+
+      console.log("[Wallet] Found existing wallet, loading...");
+
+      const pk = signer.privateKey;
+      const wallet = new NDKCashuWallet(ndkInstance);
+      wallet.mints = [DEFAULT_MINT];
+      wallet.walletId = "Robots Building Education Wallet"; // Add this line
+
+      if (pk) {
+        wallet.privkey = pk;
+        wallet.signer = new NDKPrivateKeySigner(pk);
+      }
+
+      ndkInstance.wallet = wallet;
+
+      await wallet.start({ pubkey: user.pubkey });
+      console.log("[Wallet] Wallet loaded, status:", wallet.status);
+
+      set({ cashuWallet: wallet, isWalletReady: true });
+
+      await verifyAndUpdateBalance();
+
+      return wallet;
+    } catch (err) {
+      console.error("[Wallet] Error loading wallet:", err);
+      setError(err.message);
+      return null;
+    }
+  },
+
+  // Create and publish new wallet
+  // Create and publish new wallet
   createNewWallet: async () => {
-    const {
-      ndkInstance,
-      signer,
-      setError,
-      initWalletService,
-      setupWalletListeners,
-      init,
-    } = get();
+    const { ndkInstance, signer, setError, verifyAndUpdateBalance } = get();
+
+    if (!ndkInstance || !signer) {
+      console.error("[Wallet] NDK not ready");
+      return null;
+    }
 
     set({ isCreatingWallet: true });
 
     try {
-      let ndk = ndkInstance;
-      let s = signer;
+      const pk = signer.privateKey;
 
-      if (!ndk || !s) {
-        await init();
-        await initWalletService();
-        ndk = get().ndkInstance;
-        s = get().signer;
+      const wallet = new NDKCashuWallet(ndkInstance);
+      wallet.mints = [DEFAULT_MINT];
+      wallet.privkey = pk;
+      wallet.signer = new NDKPrivateKeySigner(pk);
+      wallet.walletId = "Robots Building Education Wallet";
 
-        if (!ndk || !s) {
-          throw new Error("Failed to initialize NDK");
-        }
+      ndkInstance.wallet = wallet;
+
+      const user = await signer.user();
+      await wallet.start({ pubkey: user.pubkey });
+      console.log("[Wallet] Wallet started");
+
+      try {
+        await wallet.publish();
+        console.log("[Wallet] Wallet published to relays");
+      } catch (pubErr) {
+        console.warn("[Wallet] Could not publish (non-critical):", pubErr);
       }
 
-      // Ensure ndk has the signer set
-      ndk.signer = s;
+      set({
+        cashuWallet: wallet,
+        isWalletReady: true,
+        isCreatingWallet: false,
+      });
 
-      const newWallet = new NDKCashuWallet(ndk);
-      newWallet.relays = DEFAULT_RELAYS;
-      newWallet.setPublicTag("relay", "wss://relay.damus.io");
-      newWallet.setPublicTag("relay", "wss://relay.primal.net");
-      newWallet.walletId = "Robots Building Education Wallet";
-      newWallet.mints = [DEFAULT_MINT];
-      newWallet.unit = "sat";
-      newWallet.setPublicTag("unit", "sat");
-      newWallet.setPublicTag("d", "Robots Building Education Wallet");
+      await verifyAndUpdateBalance();
 
-      // Only set privkey if available (not available with NIP-07)
-      const pk = s.privateKey;
-      if (pk) {
-        newWallet.privkey = pk;
-      }
-
-      await newWallet.publish();
-      console.log("[Wallet] New wallet created and published");
-
-      await setupWalletListeners(newWallet);
-
-      set({ isCreatingWallet: false });
-      return newWallet;
-    } catch (error) {
-      console.error("[Wallet] Error creating new wallet:", error);
-      setError(error.message);
+      return wallet;
+    } catch (err) {
+      console.error("[Wallet] Error creating wallet:", err);
+      setError(err.message);
       set({ isCreatingWallet: false });
       return null;
     }
@@ -455,7 +299,6 @@ export const useNostrWalletStore = create((set, get) => ({
     const { ndkInstance } = get();
 
     if (!ndkInstance) {
-      console.error("[Wallet] NDK instance not ready");
       return { mints: [DEFAULT_MINT], p2pkPubkey: null, relays: [] };
     }
 
@@ -500,7 +343,58 @@ export const useNostrWalletStore = create((set, get) => ({
     }
   },
 
-  // Send 1 sat to recipient via NIP-61 nutzap
+  // Deposit sats
+  initiateDeposit: async (amountInSats = 10, options = {}) => {
+    const { cashuWallet, setError, setInvoice, verifyAndUpdateBalance } = get();
+    const { onSuccess, onError } = options;
+
+    if (!cashuWallet) {
+      setError("Wallet not initialized");
+      return null;
+    }
+
+    try {
+      const deposit = cashuWallet.deposit(amountInSats, DEFAULT_MINT);
+
+      deposit.on("success", async (token) => {
+        console.log("[Wallet] Deposit successful!", token.proofs);
+
+        // Save proofs to relay
+        await cashuWallet.state.update({
+          store: token.proofs,
+          mint: DEFAULT_MINT,
+        });
+
+        // Verify balance with mint
+        const newBalance = await verifyAndUpdateBalance();
+        set({ invoice: "" });
+
+        if (typeof onSuccess === "function") {
+          onSuccess(newBalance);
+        }
+      });
+
+      deposit.on("error", (e) => {
+        console.error("[Wallet] Deposit error:", e);
+        setError(e.message || "Deposit failed");
+        setInvoice("");
+        if (typeof onError === "function") {
+          onError(e);
+        }
+      });
+
+      const pr = await deposit.start();
+      console.log("[Wallet] Invoice created");
+      setInvoice(pr);
+      return pr;
+    } catch (e) {
+      console.error("[Wallet] Error initiating deposit:", e);
+      setError(e.message);
+      return null;
+    }
+  },
+
+  // Send 1 sat via nutzap
   sendOneSatToNpub: async (recipientNpub = DEFAULT_RECEIVER) => {
     const {
       cashuWallet,
@@ -509,6 +403,8 @@ export const useNostrWalletStore = create((set, get) => ({
       fetchUserPaymentInfo,
       setError,
       walletBalance,
+      verifyAndUpdateBalance,
+      initWallet, // Add this!
     } = get();
 
     if (!cashuWallet) {
@@ -516,10 +412,19 @@ export const useNostrWalletStore = create((set, get) => ({
       return false;
     }
 
-    // Check balance first
-    const currentBalance = extractBalance(walletBalance);
-    if (currentBalance < 1) {
-      console.error("[Wallet] Insufficient balance:", currentBalance);
+    if (walletBalance < 1) {
+      console.error("[Wallet] Insufficient balance:", walletBalance);
+      return false;
+    }
+
+    // Refresh wallet state before spending to sync with other apps
+    await initWallet();
+
+    // Get fresh wallet reference after refresh
+    const freshWallet = get().cashuWallet;
+
+    if (!freshWallet) {
+      console.error("[Wallet] Wallet not available after refresh");
       return false;
     }
 
@@ -527,31 +432,38 @@ export const useNostrWalletStore = create((set, get) => ({
       const amount = 1;
       const unit = "sat";
 
-      const mints =
-        cashuWallet.mints?.length > 0 ? cashuWallet.mints : [DEFAULT_MINT];
-
       const { p2pkPubkey } = await fetchUserPaymentInfo(recipientNpub);
-
       console.log("[Wallet] Sending 1 sat to:", recipientNpub);
 
-      // Perform cashu payment
-      const confirmation = await cashuWallet.cashuPay({
-        amount,
-        unit,
-        mints,
-        p2pk: p2pkPubkey,
-      });
-
-      const { proofs, mint } = confirmation;
-      if (!proofs || !mint) {
-        throw new Error("No proofs returned from cashuPay");
+      // Get proofs from FRESH wallet state
+      const proofs = freshWallet.state?.getProofs({ mint: DEFAULT_MINT }) || [];
+      if (proofs.length === 0) {
+        throw new Error("No proofs available");
       }
 
-      console.log("[Wallet] Payment proofs received:", proofs.length);
+      // Use fresh wallet for cashu instance
+      const cashuWalletInstance = await freshWallet.getCashuWallet(
+        DEFAULT_MINT
+      );
 
-      // Create kind:9321 nutzap event
       const recipientHex = decodeKey(recipientNpub);
-      const proofTags = proofs.map((proof) => ["proof", JSON.stringify(proof)]);
+
+      const { keep, send } = await cashuWalletInstance.send(amount, proofs, {
+        pubkey: p2pkPubkey,
+      });
+
+      console.log("[Wallet] Keep proofs:", keep);
+      console.log("[Wallet] Send proofs:", send);
+
+      // Update FRESH wallet state
+      await freshWallet.state.update({
+        store: keep,
+        destroy: proofs,
+        mint: DEFAULT_MINT,
+      });
+
+      // Create nutzap event...
+      const proofTags = send.map((proof) => ["proof", JSON.stringify(proof)]);
 
       const nutzapEvent = new NDKEvent(ndkInstance, {
         kind: 9321,
@@ -561,121 +473,32 @@ export const useNostrWalletStore = create((set, get) => ({
           ...proofTags,
           ["amount", amount.toString()],
           ["unit", unit],
-          ["u", mint],
+          ["u", DEFAULT_MINT],
           ["p", recipientHex],
         ],
       });
 
       await nutzapEvent.sign(signer);
       await nutzapEvent.publish();
-
       console.log("[Wallet] Nutzap published!");
 
-      // Update our tracked balance (decrement by amount spent)
-      const newBalance = Math.max(0, currentBalance - amount);
-      saveTrackedBalance(newBalance);
-      set({ walletBalance: newBalance });
-      console.log(
-        "[Wallet] Tracked balance updated:",
-        currentBalance,
-        "->",
-        newBalance
-      );
+      await verifyAndUpdateBalance();
 
       return true;
     } catch (e) {
       console.error("[Wallet] Error sending nutzap:", e);
       setError(e.message);
+
+      // On error, refresh to get correct state
+      await initWallet();
+      await verifyAndUpdateBalance();
+
       return false;
-    }
-  },
-
-  // Initiate deposit (create Lightning invoice)
-  initiateDeposit: async (amountInSats = 10) => {
-    const { cashuWallet, setError, setInvoice } = get();
-
-    if (!cashuWallet) {
-      console.error("[Wallet] Wallet not initialized");
-      setError("Wallet not initialized");
-      return null;
-    }
-
-    try {
-      const deposit = cashuWallet.deposit(amountInSats, DEFAULT_MINT, "sat");
-      const pr = await deposit.start();
-
-      console.log("[Wallet] Invoice created:", pr?.substring(0, 50) + "...");
-      setInvoice(pr);
-
-      // Listen for success
-      deposit.on("success", async (token) => {
-        console.log("[Wallet] Deposit successful!");
-
-        // Update our tracked balance (increment by deposit amount)
-        // Use get() to get current balance at time of success, not at time of deposit start
-        const currentBalance = extractBalance(get().walletBalance);
-        const newBalance = currentBalance + amountInSats;
-        saveTrackedBalance(newBalance);
-        set({
-          walletBalance: newBalance,
-          invoice: "",
-        });
-        console.log(
-          "[Wallet] Tracked balance updated:",
-          currentBalance,
-          "->",
-          newBalance
-        );
-      });
-
-      deposit.on("error", (e) => {
-        console.error("[Wallet] Deposit error:", e);
-        setError(e.message || "Deposit failed");
-        setInvoice("");
-      });
-
-      return pr;
-    } catch (e) {
-      console.error("[Wallet] Error initiating deposit:", e);
-      setError(e.message);
-      return null;
-    }
-  },
-
-  // Force sync balance from wallet (use if tracked balance drifts)
-  syncBalanceFromWallet: async () => {
-    const { cashuWallet } = get();
-    if (!cashuWallet) {
-      console.warn("[Wallet] Cannot sync - wallet not initialized");
-      return;
-    }
-
-    try {
-      const bal = await cashuWallet.balance();
-      const syncedBalance = extractBalance(bal);
-      saveTrackedBalance(syncedBalance);
-      set({ walletBalance: syncedBalance });
-      console.log("[Wallet] Balance synced from wallet:", syncedBalance);
-      return syncedBalance;
-    } catch (e) {
-      console.error("[Wallet] Error syncing balance:", e);
     }
   },
 
   // Reset state (logout)
   resetState: () => {
-    const { _balanceUpdateTimeout } = get();
-    if (_balanceUpdateTimeout) {
-      clearTimeout(_balanceUpdateTimeout);
-    }
-
-    // Clear tracked balance from localStorage
-    try {
-      localStorage.removeItem(TRACKED_BALANCE_KEY);
-    } catch (e) {
-      console.warn("[Wallet] Error clearing tracked balance:", e);
-    }
-
     set({
       isConnected: false,
       errorMessage: null,
@@ -683,13 +506,12 @@ export const useNostrWalletStore = create((set, get) => ({
       nostrPrivKey: "",
       ndkInstance: null,
       signer: null,
-      walletService: null,
       cashuWallet: null,
       walletBalance: 0,
+      proofs: [],
       invoice: "",
       isCreatingWallet: false,
       isWalletReady: false,
-      _balanceUpdateTimeout: null,
     });
   },
 }));
