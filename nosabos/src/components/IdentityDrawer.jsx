@@ -34,6 +34,7 @@ import { MdOutlineFileUpload } from "react-icons/md";
 import { CiSquarePlus } from "react-icons/ci";
 import { LuBadgeCheck, LuDoorOpen, LuKeyRound } from "react-icons/lu";
 import { LuKey } from "react-icons/lu";
+import { FaKey } from "react-icons/fa";
 import { doc, updateDoc } from "firebase/firestore";
 
 import { database } from "../firebaseResources/firebaseResources";
@@ -41,7 +42,6 @@ import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
-import { FaKey } from "react-icons/fa";
 
 export default function IdentityDrawer({
   isOpen,
@@ -519,13 +519,25 @@ export function BitcoinWalletSection({
 
   const [hydrating, setHydrating] = useState(true);
   const [selectedIdentity, setSelectedIdentity] = useState(identity || "");
+  const [noWalletFound, setNoWalletFound] = useState(false);
+  const [nsecForWallet, setNsecForWallet] = useState("");
+
+  // Detect if user is logged in via NIP-07 extension
+  const isNip07Mode =
+    typeof window !== "undefined" &&
+    localStorage.getItem("nip07_signer") === "true";
+
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         const connected = await init();
         if (connected) {
-          await initWallet();
+          const wallet = await initWallet();
+          // Track if no wallet was found (initWallet returns null when no wallet events exist)
+          if (alive && !wallet) {
+            setNoWalletFound(true);
+          }
         }
       } catch (e) {
         console.warn("Wallet hydrate failed:", e);
@@ -566,6 +578,12 @@ export function BitcoinWalletSection({
       cardNameLabel: "Billetera",
       scholarshipNote:
         "Tus depósitos ayudan a crear becas con aprendizaje con ",
+      nip07NsecTitle: "Se requiere clave secreta",
+      nip07NsecDescription:
+        "Iniciaste sesión con una extensión de navegador, así que no tenemos acceso a tu clave privada. Para crear una billetera, ingresa tu nsec abajo.",
+      nip07NsecPlaceholder: "Ingresa tu nsec1...",
+      nip07NsecWarning:
+        "Tu clave solo se usa para crear la billetera y no se almacena.",
     };
     const en = {
       createWallet: "Create wallet",
@@ -583,16 +601,55 @@ export function BitcoinWalletSection({
       cardNameLabel: "Wallet",
       scholarshipNote:
         "Your deposits help us create scholarships with learning with ",
+      nip07NsecTitle: "Secret key required",
+      nip07NsecDescription:
+        "You signed in with a browser extension, so we don't have access to your private key. To create a wallet, enter your nsec below.",
+      nip07NsecPlaceholder: "Enter your nsec1...",
+      nip07NsecWarning:
+        "Your key is only used to create the wallet and is not stored.",
     };
     return (userLanguage === "es" ? es : en)[key] ?? key;
   };
 
   const handleCreateWallet = async () => {
+    // If NIP-07 mode and no nsec provided, show error
+    if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
+      toast({
+        title: userLanguage === "es" ? "Se requiere clave secreta" : "Secret key required",
+        description: userLanguage === "es"
+          ? "Ingresa tu nsec para crear la billetera."
+          : "Enter your nsec to create the wallet.",
+        status: "warning",
+        duration: 2500,
+      });
+      return;
+    }
+
+    // Validate nsec format if provided
+    if (nsecForWallet.trim() && !nsecForWallet.trim().startsWith("nsec")) {
+      toast({
+        title: userLanguage === "es" ? "Clave inválida" : "Invalid key",
+        description: userLanguage === "es"
+          ? "La clave debe empezar con 'nsec'."
+          : "Key must start with 'nsec'.",
+        status: "error",
+        duration: 2500,
+      });
+      return;
+    }
+
     try {
       const id = localStorage.getItem("local_npub");
       if (id)
         await updateDoc(doc(database, "users", id), { createdWallet: true });
-      await createNewWallet();
+
+      // Pass the nsec to createNewWallet if we're in NIP-07 mode
+      const nsecToUse = isNip07Mode && nsecForWallet.trim() ? nsecForWallet.trim() : null;
+      await createNewWallet(nsecToUse);
+
+      // Clear the nsec input after successful wallet creation
+      setNsecForWallet("");
+      setNoWalletFound(false);
     } catch (err) {
       console.error("Error creating wallet:", err);
       toast({
@@ -786,16 +843,46 @@ export function BitcoinWalletSection({
         </HStack>
       )}
 
-      {/* 1) No wallet yet → single "Create wallet" button */}
+      {/* 1) No wallet yet → show create wallet UI */}
       {!cashuWallet && !hydrating && (
-        <Button
-          onClick={handleCreateWallet}
-          isLoading={isCreatingWallet}
-          loadingText={W("loadingWallet")}
-          boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
-        >
-          {W("createWallet")}
-        </Button>
+        <Box>
+          {/* NIP-07 users need to provide their nsec for wallet creation */}
+          {isNip07Mode && noWalletFound && (
+            <Box bg="gray.700" p={3} rounded="md" mb={3}>
+              <HStack mb={2}>
+                <FaKey color="#f08e19" />
+                <Text fontSize="sm" fontWeight="semibold">
+                  {W("nip07NsecTitle")}
+                </Text>
+              </HStack>
+              <Text fontSize="xs" color="gray.300" mb={3}>
+                {W("nip07NsecDescription")}
+              </Text>
+              <Input
+                type="password"
+                value={nsecForWallet}
+                onChange={(e) => setNsecForWallet(e.target.value)}
+                placeholder={W("nip07NsecPlaceholder")}
+                bg="gray.800"
+                borderColor="gray.600"
+                _focus={{ borderColor: "orange.400" }}
+                mb={2}
+              />
+              <Text fontSize="xs" color="orange.200">
+                {W("nip07NsecWarning")}
+              </Text>
+            </Box>
+          )}
+          <Button
+            onClick={handleCreateWallet}
+            isLoading={isCreatingWallet}
+            loadingText={W("loadingWallet")}
+            boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
+            isDisabled={isNip07Mode && noWalletFound && !nsecForWallet.trim()}
+          >
+            {W("createWallet")}
+          </Button>
+        </Box>
       )}
 
       {/* 2) Wallet exists, balance > 0 → show card */}

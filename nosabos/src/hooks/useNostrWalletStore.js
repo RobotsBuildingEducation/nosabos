@@ -276,8 +276,8 @@ export const useNostrWalletStore = create((set, get) => ({
   },
 
   // Create and publish new wallet
-  // Create and publish new wallet
-  createNewWallet: async () => {
+  // Accepts optional nsec for NIP-07 users who need to provide their key manually
+  createNewWallet: async (overrideNsec = null) => {
     const { ndkInstance, signer, setError, verifyAndUpdateBalance } = get();
 
     if (!ndkInstance || !signer) {
@@ -288,7 +288,21 @@ export const useNostrWalletStore = create((set, get) => ({
     set({ isCreatingWallet: true });
 
     try {
-      const pk = signer.privateKey;
+      // Use override nsec if provided (for NIP-07 users), otherwise use signer's private key
+      let pk = signer.privateKey;
+
+      if (overrideNsec) {
+        // Decode the nsec to hex
+        pk = decodeKey(overrideNsec);
+        if (!pk) {
+          throw new Error("Invalid nsec key provided");
+        }
+        console.log("[Wallet] Using provided nsec for wallet creation");
+      }
+
+      if (!pk) {
+        throw new Error("No private key available for wallet creation");
+      }
 
       const wallet = new NDKCashuWallet(ndkInstance);
       wallet.mints = [DEFAULT_MINT];
