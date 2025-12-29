@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   Box,
   VStack,
@@ -23,7 +23,6 @@ import {
 } from "@chakra-ui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LuBlocks, LuSparkles } from "react-icons/lu";
-import PathSwitcher from "./PathSwitcher";
 import FlashcardSkillTree from "./FlashcardSkillTree";
 import Conversations from "./Conversations";
 import CEFRLevelNavigator from "./CEFRLevelNavigator";
@@ -1016,6 +1015,8 @@ const UnitSection = React.memo(function UnitSection({
   supportLang,
   hasNextUnit,
   previousUnit,
+  latestUnlockedLessonId,
+  latestUnlockedRef,
 }) {
   const bgColor = "gray.800";
   const borderColor = "gray.700";
@@ -1337,6 +1338,7 @@ const UnitSection = React.memo(function UnitSection({
 
                 {/* Lesson Node */}
                 <Box
+                  ref={lesson.id === latestUnlockedLessonId ? latestUnlockedRef : null}
                   position="absolute"
                   top={`${yPosition}px`}
                   left="50%"
@@ -1702,26 +1704,35 @@ export default function SkillTree({
   levelCompletionStatus = {}, // Status of all levels (unlocked/locked, progress, etc.)
   // Conversations props
   activeNpub = "", // User's npub for conversations
+  // Path mode props (controlled by parent)
+  pathMode = "path",
+  onPathModeChange,
+  scrollToLatestUnlockedRef,
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
 
-  // Load pathMode from localStorage on mount
-  const [pathMode, setPathMode] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("pathMode") || "path";
-    }
-    return "path";
-  });
+  // Ref for the latest unlocked lesson element
+  const latestUnlockedRef = useRef(null);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Save pathMode to localStorage when it changes
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("pathMode", pathMode);
+  // Scroll to latest unlocked lesson function
+  const scrollToLatestUnlocked = useCallback(() => {
+    if (latestUnlockedRef.current) {
+      latestUnlockedRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
     }
-  }, [pathMode]);
+  }, []);
+
+  // Expose scroll function to parent via ref
+  useEffect(() => {
+    if (scrollToLatestUnlockedRef) {
+      scrollToLatestUnlockedRef.current = scrollToLatestUnlocked;
+    }
+  }, [scrollToLatestUnlocked, scrollToLatestUnlockedRef]);
 
   // Select appropriate level props based on current mode
   const effectiveActiveLevel =
@@ -1808,6 +1819,51 @@ export default function SkillTree({
   );
   const overallProgress =
     totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+
+  // Find the latest unlocked lesson (first AVAILABLE or IN_PROGRESS lesson)
+  const latestUnlockedLessonId = useMemo(() => {
+    for (let unitIndex = 0; unitIndex < visibleUnits.length; unitIndex++) {
+      const unit = visibleUnits[unitIndex];
+      const previousUnit = unitIndex > 0 ? visibleUnits[unitIndex - 1] : null;
+
+      for (let lessonIndex = 0; lessonIndex < unit.lessons.length; lessonIndex++) {
+        const lesson = unit.lessons[lessonIndex];
+        const lessonProgress = userProgress.lessons?.[lesson.id];
+
+        // Check if this lesson is IN_PROGRESS
+        if (lessonProgress?.status === SKILL_STATUS.IN_PROGRESS) {
+          return lesson.id;
+        }
+
+        // Check if this lesson is AVAILABLE (not completed, not in progress)
+        if (lessonProgress?.status !== SKILL_STATUS.COMPLETED) {
+          // Check if it should be available based on previous lesson
+          let isPreviousCompleted = false;
+
+          if (lessonIndex === 0) {
+            if (unitIndex === 0) {
+              isPreviousCompleted = true;
+            } else if (previousUnit) {
+              const prevUnitLastLesson =
+                previousUnit.lessons[previousUnit.lessons.length - 1];
+              isPreviousCompleted =
+                userProgress.lessons?.[prevUnitLastLesson.id]?.status ===
+                SKILL_STATUS.COMPLETED;
+            }
+          } else {
+            isPreviousCompleted =
+              userProgress.lessons?.[unit.lessons[lessonIndex - 1].id]?.status ===
+              SKILL_STATUS.COMPLETED;
+          }
+
+          if (isPreviousCompleted) {
+            return lesson.id;
+          }
+        }
+      }
+    }
+    return null;
+  }, [visibleUnits, userProgress]);
 
   // Calculate current level progress (for the active CEFR level)
   const levelProgress = useMemo(() => {
@@ -1897,16 +1953,6 @@ export default function SkillTree({
         position="relative"
         zIndex={1}
       >
-        {/* Path Mode Switcher */}
-        <MotionBox
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          mb={6}
-        >
-          <PathSwitcher selectedMode={pathMode} onModeChange={setPathMode} />
-        </MotionBox>
-
         {/* CEFR Level Navigator - hidden in conversations mode */}
         {effectiveOnLevelChange && pathMode !== "conversations" && (
           <CEFRLevelNavigator
@@ -2101,6 +2147,8 @@ export default function SkillTree({
                       supportLang={supportLang}
                       hasNextUnit={index < visibleUnits.length - 1}
                       previousUnit={index > 0 ? visibleUnits[index - 1] : null}
+                      latestUnlockedLessonId={latestUnlockedLessonId}
+                      latestUnlockedRef={latestUnlockedRef}
                     />
                   ))
                 ) : (

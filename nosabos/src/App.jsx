@@ -48,6 +48,7 @@ import {
   Menu,
   MenuButton,
   MenuList,
+  MenuItem,
   MenuItemOption,
   MenuOptionGroup,
   Badge,
@@ -64,7 +65,14 @@ import {
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { RiSpeakLine, RiBook2Line, RiBookmarkLine } from "react-icons/ri";
+import {
+  RiSpeakLine,
+  RiBook2Line,
+  RiBookmarkLine,
+  RiRoadMapLine,
+  RiFileList3Line,
+  RiChat3Line,
+} from "react-icons/ri";
 import {
   LuBadgeCheck,
   LuBookOpen,
@@ -1190,6 +1198,24 @@ export default function App() {
     return "skillTree";
   });
   const [activeLesson, setActiveLesson] = useState(null);
+
+  // Path mode state (path, flashcards, conversations)
+  const [pathMode, setPathMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("pathMode") || "path";
+    }
+    return "path";
+  });
+
+  // Ref to trigger scroll to latest unlocked lesson
+  const scrollToLatestUnlockedRef = useRef(null);
+
+  // Save pathMode to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("pathMode", pathMode);
+    }
+  }, [pathMode]);
 
   // Tutorial mode state
   const [isTutorialMode, setIsTutorialMode] = useState(false);
@@ -3631,6 +3657,17 @@ export default function App() {
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
         notesIsLoading={notesIsLoading}
         notesIsDone={notesIsDone}
+        pathMode={pathMode}
+        onPathModeChange={(newMode) => {
+          setPathMode(newMode);
+          // If switching to path mode while on skill tree, scroll to latest unlocked
+          if (newMode === "path" && viewMode === "skillTree") {
+            // Use setTimeout to allow state to update before scrolling
+            setTimeout(() => {
+              scrollToLatestUnlockedRef.current?.();
+            }, 100);
+          }
+        }}
       />
 
       {/* Tutorial Action Bar Popovers - shows when tutorial starts */}
@@ -3681,6 +3718,10 @@ export default function App() {
               levelCompletionStatus={levelCompletionStatus}
               // Conversations props
               activeNpub={activeNpub}
+              // Path mode props (lifted from SkillTree)
+              pathMode={pathMode}
+              onPathModeChange={setPathMode}
+              scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
             />
           )}
         </Box>
@@ -4265,6 +4306,8 @@ function BottomActionBar({
   hasPendingTeamInvite = false,
   notesIsLoading = false,
   notesIsDone = false,
+  pathMode = "path",
+  onPathModeChange,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -4276,6 +4319,29 @@ function BottomActionBar({
   const teamsLabel = t?.teams_drawer_title || "Teams";
   const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
   const backLabel = appLanguage === "es" ? "Volver" : "Go back";
+
+  // Path mode configuration
+  const PATH_MODES = [
+    {
+      id: "path",
+      label: appLanguage === "es" ? "Ruta" : "Path",
+      icon: RiRoadMapLine,
+    },
+    {
+      id: "flashcards",
+      label: appLanguage === "es" ? "Tarjetas" : "Cards",
+      icon: RiFileList3Line,
+    },
+    {
+      id: "conversations",
+      label: appLanguage === "es" ? "Conversación" : "Conversation",
+      icon: RiChat3Line,
+    },
+  ];
+
+  const currentMode = PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
+  const CurrentModeIcon = currentMode.icon;
+  const modeMenuLabel = appLanguage === "es" ? "Modo" : "Mode";
 
   // Determine notes button border styles based on loading/done state
   const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";
@@ -4434,6 +4500,53 @@ function BottomActionBar({
             transform: "translateY(-1px)",
           }}
         />
+
+        {/* Path Mode Menu - only show on skill tree */}
+        {viewMode === "skillTree" && (
+          <Menu>
+            <MenuButton
+              as={IconButton}
+              icon={<CurrentModeIcon size={20} />}
+              aria-label={modeMenuLabel}
+              rounded="xl"
+              flexShrink={0}
+              bg="whiteAlpha.100"
+              color="white"
+              borderWidth="1px"
+              borderColor="whiteAlpha.200"
+              _hover={{
+                bg: "whiteAlpha.200",
+              }}
+              _active={{
+                bg: "whiteAlpha.300",
+              }}
+            />
+            <MenuList
+              bg="gray.800"
+              borderColor="whiteAlpha.200"
+              boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
+              minW="180px"
+            >
+              {PATH_MODES.map((mode) => {
+                const ModeIcon = mode.icon;
+                const isSelected = pathMode === mode.id;
+                return (
+                  <MenuItem
+                    key={mode.id}
+                    onClick={() => onPathModeChange?.(mode.id)}
+                    bg={isSelected ? "whiteAlpha.100" : "transparent"}
+                    _hover={{ bg: "whiteAlpha.200" }}
+                    color="white"
+                    icon={<ModeIcon size={18} />}
+                    fontWeight={isSelected ? "bold" : "normal"}
+                  >
+                    {mode.label}
+                  </MenuItem>
+                );
+              })}
+            </MenuList>
+          </Menu>
+        )}
       </Flex>
     </Box>
   );
