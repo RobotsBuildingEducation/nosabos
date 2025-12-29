@@ -1708,6 +1708,7 @@ export default function SkillTree({
   pathMode = "path",
   onPathModeChange,
   scrollToLatestUnlockedRef,
+  scrollToLatestTrigger = 0,
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -1733,6 +1734,17 @@ export default function SkillTree({
       scrollToLatestUnlockedRef.current = scrollToLatestUnlocked;
     }
   }, [scrollToLatestUnlocked, scrollToLatestUnlockedRef]);
+
+  // Scroll to latest unlocked when trigger changes (and we're in path mode)
+  useEffect(() => {
+    if (scrollToLatestTrigger > 0 && pathMode === "path") {
+      // Use a longer timeout to ensure the path view has rendered
+      const timer = setTimeout(() => {
+        scrollToLatestUnlocked();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [scrollToLatestTrigger, pathMode, scrollToLatestUnlocked]);
 
   // Select appropriate level props based on current mode
   const effectiveActiveLevel =

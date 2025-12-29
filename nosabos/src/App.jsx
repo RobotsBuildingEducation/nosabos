@@ -1210,6 +1210,9 @@ export default function App() {
   // Ref to trigger scroll to latest unlocked lesson
   const scrollToLatestUnlockedRef = useRef(null);
 
+  // Counter to trigger scroll to latest unlocked (increments on each scroll request)
+  const [scrollToLatestTrigger, setScrollToLatestTrigger] = useState(0);
+
   // Save pathMode to localStorage when it changes
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -3660,16 +3663,15 @@ export default function App() {
         pathMode={pathMode}
         onPathModeChange={(newMode) => {
           setPathMode(newMode);
-          // Scroll to latest unlocked when clicking path mode (always, not just when switching)
+          // Trigger scroll when switching to path mode
           if (newMode === "path" && viewMode === "skillTree") {
-            setTimeout(() => {
-              scrollToLatestUnlockedRef.current?.();
-            }, 100);
+            setScrollToLatestTrigger((prev) => prev + 1);
           }
         }}
         onScrollToLatest={() => {
-          if (viewMode === "skillTree" && pathMode === "path") {
-            scrollToLatestUnlockedRef.current?.();
+          // Trigger scroll when already in path mode
+          if (viewMode === "skillTree") {
+            setScrollToLatestTrigger((prev) => prev + 1);
           }
         }}
       />
@@ -3725,6 +3727,7 @@ export default function App() {
               // Path mode props (lifted from SkillTree)
               pathMode={pathMode}
               onPathModeChange={setPathMode}
+              scrollToLatestTrigger={scrollToLatestTrigger}
               scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
             />
           )}
