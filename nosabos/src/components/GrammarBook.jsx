@@ -105,6 +105,9 @@ function shouldUseDragVariant(question, choices = [], answers = []) {
   if (!question || !choices.length) return false;
   const blanks = countBlanks(question);
   if (!blanks) return false;
+  // Don't use drag variant if there are fewer blanks than correct answers
+  // (user wouldn't be able to select all correct answers)
+  if (blanks < answers.length) return false;
   const signature = `${question}||${choices.join("|")}||${answers.join("|")}`;
   return stableHash(signature) % 4 < 2;
 }

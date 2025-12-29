@@ -1822,6 +1822,9 @@ export default function App() {
       localStorage.setItem("progress", JSON.stringify(next));
     } catch {}
 
+    // Derive appLanguage from supportLang to keep them in sync
+    const derivedAppLanguage = next.supportLang === "es" ? "es" : "en";
+
     await setDoc(
       doc(database, "users", npub),
       {
@@ -1830,6 +1833,7 @@ export default function App() {
         helpRequest: next.helpRequest || "",
         progress: next,
         practicePronunciation: next.practicePronunciation,
+        appLanguage: derivedAppLanguage,
       },
       { merge: true }
     );
