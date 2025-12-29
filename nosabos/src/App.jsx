@@ -1180,16 +1180,16 @@ export default function App() {
   );
 
   // Active lesson tracking and view mode
-  const [viewMode, setViewMode] = useState(
-    typeof window !== "undefined" && localStorage.getItem("viewMode")
-      ? localStorage.getItem("viewMode")
-      : "skillTree" // Default to skill tree view
-  );
-  const [activeLesson, setActiveLesson] = useState(
-    typeof window !== "undefined" && localStorage.getItem("activeLesson")
-      ? JSON.parse(localStorage.getItem("activeLesson"))
-      : null
-  );
+  // Always reset to skill tree on page refresh - users should restart lessons from the beginning
+  const [viewMode, setViewMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      // Clear lesson state on page load to redirect users to skill tree
+      localStorage.removeItem("viewMode");
+      localStorage.removeItem("activeLesson");
+    }
+    return "skillTree";
+  });
+  const [activeLesson, setActiveLesson] = useState(null);
 
   // Tutorial mode state
   const [isTutorialMode, setIsTutorialMode] = useState(false);
