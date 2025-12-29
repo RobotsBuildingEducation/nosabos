@@ -3660,12 +3660,16 @@ export default function App() {
         pathMode={pathMode}
         onPathModeChange={(newMode) => {
           setPathMode(newMode);
-          // If switching to path mode while on skill tree, scroll to latest unlocked
+          // Scroll to latest unlocked when clicking path mode (always, not just when switching)
           if (newMode === "path" && viewMode === "skillTree") {
-            // Use setTimeout to allow state to update before scrolling
             setTimeout(() => {
               scrollToLatestUnlockedRef.current?.();
             }, 100);
+          }
+        }}
+        onScrollToLatest={() => {
+          if (viewMode === "skillTree" && pathMode === "path") {
+            scrollToLatestUnlockedRef.current?.();
           }
         }}
       />
@@ -4308,6 +4312,7 @@ function BottomActionBar({
   notesIsDone = false,
   pathMode = "path",
   onPathModeChange,
+  onScrollToLatest,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -4533,7 +4538,14 @@ function BottomActionBar({
                 return (
                   <MenuItem
                     key={mode.id}
-                    onClick={() => onPathModeChange?.(mode.id)}
+                    onClick={() => {
+                      // If clicking path when already in path mode, just scroll
+                      if (mode.id === "path" && isSelected) {
+                        onScrollToLatest?.();
+                      } else {
+                        onPathModeChange?.(mode.id);
+                      }
+                    }}
                     bg={isSelected ? "whiteAlpha.100" : "transparent"}
                     _hover={{ bg: "whiteAlpha.200" }}
                     color="white"
