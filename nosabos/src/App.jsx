@@ -2214,6 +2214,11 @@ export default function App() {
 
         handleReturnToSkillTree();
 
+        // Scroll to latest unlocked lesson after returning to skill tree
+        if (pathMode === "path") {
+          setScrollToLatestTrigger((prev) => prev + 1);
+        }
+
         setTimeout(() => {
           if (
             pendingLessonCompletionRef.current &&
@@ -3666,6 +3671,10 @@ export default function App() {
           // Trigger scroll when switching to path mode
           if (newMode === "path" && viewMode === "skillTree") {
             setScrollToLatestTrigger((prev) => prev + 1);
+          }
+          // Scroll to top when switching to flashcards or conversations
+          if (newMode === "flashcards" || newMode === "conversations") {
+            window.scrollTo({ top: 0, behavior: "instant" });
           }
         }}
         onScrollToLatest={() => {
