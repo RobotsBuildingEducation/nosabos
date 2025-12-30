@@ -3590,10 +3590,10 @@ Return JSON ONLY:
         icon={<MdOutlineSupportAgent />}
         size="sm"
         fontSize="lg"
+        rounded="xl"
         bg="white"
         color="blue"
-        border="3px solid skyblue"
-        boxShadow={"lg"}
+        boxShadow="0 4px 0 blue"
         onClick={() => copyAll(q, h, tr)}
         mr={1}
       />
@@ -4938,10 +4938,10 @@ Return JSON ONLY:
                   icon={<MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"
+                  rounded="xl"
                   bg="white"
                   color="blue"
-                  border="3px solid skyblue"
-                  boxShadow={"lg"}
+                  boxShadow="0 4px 0 blue"
                   onClick={sendMatchHelp}
                 />
               )}

@@ -611,137 +611,134 @@ const HelpChatFab = forwardRef(
         .join(" ");
     }, [progress]);
 
-    const handleRealtimeEvent = useCallback(
-      (evt) => {
-        try {
-          const data = JSON.parse(evt.data);
+    const handleRealtimeEvent = useCallback((evt) => {
+      try {
+        const data = JSON.parse(evt.data);
 
-          // Handle transcription of user speech
-          if (
-            data.type ===
-            "conversation.item.input_audio_transcription.completed"
-          ) {
-            const text = data.transcript?.trim();
-            if (text) {
-              const userId = crypto.randomUUID?.() || String(Date.now());
-              const now = Date.now();
-              const newUserMsg = {
-                id: userId,
-                role: "user",
-                text,
-                done: true,
-                createdAt: now,
-              };
+        // Handle transcription of user speech
+        if (
+          data.type === "conversation.item.input_audio_transcription.completed"
+        ) {
+          const text = data.transcript?.trim();
+          if (text) {
+            const userId = crypto.randomUUID?.() || String(Date.now());
+            const now = Date.now();
+            const newUserMsg = {
+              id: userId,
+              role: "user",
+              text,
+              done: true,
+              createdAt: now,
+            };
 
-              setMessages((prev) => {
-                // If there's an assistant message being built, insert user message BEFORE it
-                // This ensures proper chat order: user message -> AI response
-                const candidateAssistantId =
-                  currentAssistantIdRef.current ||
-                  (latestAssistantRef.current.createdAt >
+            setMessages((prev) => {
+              // If there's an assistant message being built, insert user message BEFORE it
+              // This ensures proper chat order: user message -> AI response
+              const candidateAssistantId =
+                currentAssistantIdRef.current ||
+                (latestAssistantRef.current.createdAt >
+                lastUserInsertAtRef.current
+                  ? latestAssistantRef.current.id
+                  : null);
+
+              if (candidateAssistantId) {
+                const assistantIdx = prev.findIndex(
+                  (m) => m.id === candidateAssistantId
+                );
+                if (assistantIdx >= 0) {
+                  const updated = [...prev];
+                  updated.splice(assistantIdx, 0, newUserMsg);
+                  return updated;
+                }
+              }
+
+              // Fallback: if the last message is a recent assistant reply, still place
+              // the user message ahead of it to preserve natural order.
+              const lastAssistantIdx = (() => {
+                for (let i = prev.length - 1; i >= 0; i--) {
+                  if (prev[i].role === "assistant") return i;
+                }
+                return -1;
+              })();
+
+              if (
+                lastAssistantIdx >= 0 &&
+                (prev[lastAssistantIdx].createdAt || 0) >
                   lastUserInsertAtRef.current
-                    ? latestAssistantRef.current.id
-                    : null);
-
-                if (candidateAssistantId) {
-                  const assistantIdx = prev.findIndex(
-                    (m) => m.id === candidateAssistantId
-                  );
-                  if (assistantIdx >= 0) {
-                    const updated = [...prev];
-                    updated.splice(assistantIdx, 0, newUserMsg);
-                    return updated;
-                  }
-                }
-
-                // Fallback: if the last message is a recent assistant reply, still place
-                // the user message ahead of it to preserve natural order.
-                const lastAssistantIdx = (() => {
-                  for (let i = prev.length - 1; i >= 0; i--) {
-                    if (prev[i].role === "assistant") return i;
-                  }
-                  return -1;
-                })();
-
-                if (
-                  lastAssistantIdx >= 0 &&
-                  (prev[lastAssistantIdx].createdAt || 0) > lastUserInsertAtRef.current
-                ) {
-                  const updated = [...prev];
-                  updated.splice(lastAssistantIdx, 0, newUserMsg);
-                  return updated;
-                }
-
-                // Otherwise just append
-                return [...prev, newUserMsg];
-              });
-
-              lastUserInsertAtRef.current = now;
-            }
-          }
-
-          // Handle assistant response transcript
-          if (data.type === "response.audio_transcript.delta") {
-            const delta = data.delta || "";
-            setMessages((prev) => {
-              // If we have a current assistant message being built, always append to it
-              // (even if user messages were inserted after it)
-              if (currentAssistantIdRef.current) {
-                const idx = prev.findIndex(
-                  (m) => m.id === currentAssistantIdRef.current
-                );
-                if (idx >= 0 && !prev[idx].done) {
-                  const updated = [...prev];
-                  updated[idx] = {
-                    ...updated[idx],
-                    text: updated[idx].text + delta,
-                  };
-                  return updated;
-                }
+              ) {
+                const updated = [...prev];
+                updated.splice(lastAssistantIdx, 0, newUserMsg);
+                return updated;
               }
 
-              // Start new assistant message
-              const assistantId = crypto.randomUUID?.() || String(Date.now());
-              const createdAt = Date.now();
-              currentAssistantIdRef.current = assistantId;
-              latestAssistantRef.current = { id: assistantId, createdAt };
-              return [
-                ...prev,
-                {
-                  id: assistantId,
-                  role: "assistant",
-                  text: delta,
-                  done: false,
-                  createdAt,
-                },
-              ];
+              // Otherwise just append
+              return [...prev, newUserMsg];
             });
-          }
 
-          if (data.type === "response.audio_transcript.done") {
-            setMessages((prev) => {
-              // Mark the current assistant message as done
-              if (currentAssistantIdRef.current) {
-                const idx = prev.findIndex(
-                  (m) => m.id === currentAssistantIdRef.current
-                );
-                if (idx >= 0) {
-                  const updated = [...prev];
-                  updated[idx] = { ...updated[idx], done: true };
-                  currentAssistantIdRef.current = null;
-                  return updated;
-                }
-              }
-              currentAssistantIdRef.current = null;
-              return prev;
-            });
+            lastUserInsertAtRef.current = now;
           }
-        } catch (e) {
-          console.warn("Realtime event parse error:", e);
         }
-      },
-      []
-    );
+
+        // Handle assistant response transcript
+        if (data.type === "response.audio_transcript.delta") {
+          const delta = data.delta || "";
+          setMessages((prev) => {
+            // If we have a current assistant message being built, always append to it
+            // (even if user messages were inserted after it)
+            if (currentAssistantIdRef.current) {
+              const idx = prev.findIndex(
+                (m) => m.id === currentAssistantIdRef.current
+              );
+              if (idx >= 0 && !prev[idx].done) {
+                const updated = [...prev];
+                updated[idx] = {
+                  ...updated[idx],
+                  text: updated[idx].text + delta,
+                };
+                return updated;
+              }
+            }
+
+            // Start new assistant message
+            const assistantId = crypto.randomUUID?.() || String(Date.now());
+            const createdAt = Date.now();
+            currentAssistantIdRef.current = assistantId;
+            latestAssistantRef.current = { id: assistantId, createdAt };
+            return [
+              ...prev,
+              {
+                id: assistantId,
+                role: "assistant",
+                text: delta,
+                done: false,
+                createdAt,
+              },
+            ];
+          });
+        }
+
+        if (data.type === "response.audio_transcript.done") {
+          setMessages((prev) => {
+            // Mark the current assistant message as done
+            if (currentAssistantIdRef.current) {
+              const idx = prev.findIndex(
+                (m) => m.id === currentAssistantIdRef.current
+              );
+              if (idx >= 0) {
+                const updated = [...prev];
+                updated[idx] = { ...updated[idx], done: true };
+                currentAssistantIdRef.current = null;
+                return updated;
+              }
+            }
+            currentAssistantIdRef.current = null;
+            return prev;
+          });
+        }
+      } catch (e) {
+        console.warn("Realtime event parse error:", e);
+      }
+    }, []);
 
     const startRealtime = useCallback(async () => {
       setRealtimeStatus("connecting");
@@ -965,16 +962,15 @@ const HelpChatFab = forwardRef(
             <IconButton
               aria-label="Open help chat"
               icon={<MdOutlineSupportAgent size={20} />}
+              rounded="xl"
               bg="white"
               color="blue"
-              border="4px solid skyblue"
-              rounded="full"
+              boxShadow="0 4px 0 blue"
               size="lg"
               position="fixed"
               bottom={{ base: "4", md: "4" }}
               right="20px"
               zIndex={50}
-              boxShadow="lg"
               onClick={onOpen}
             />
           </Tooltip>
@@ -1046,53 +1042,53 @@ const HelpChatFab = forwardRef(
                       </Box>
                     </HStack>
                   ) : (
-                  <HStack key={m.id} justify="flex-start" align="flex-start">
-                    <Box
-                      bg="gray.800"
-                      border="1px solid"
-                      borderColor="gray.700"
-                      p={3}
-                      rounded="xl"
-                      maxW="85%"
-                      w="fit-content"
-                    >
-                      <HStack align="flex-start" spacing={3}>
-                        <IconButton
-                          aria-label={
-                            appLanguage === "es"
-                              ? "Reproducir respuesta"
-                              : "Replay response"
-                          }
-                          icon={
-                            replayLoadingId === m.id ? (
-                              <Spinner size="sm" />
-                            ) : (
-                              <RiVolumeUpLine />
-                            )
-                          }
-                          size="sm"
-                          variant="ghost"
-                          colorScheme="purple"
-                          onClick={() => playAssistantTts(m)}
-                          isDisabled={!m.text}
-                          mt={1}
-                        />
-                        <Box flex="1">
-                          <HStack mb={1} justify="space-between">
-                            {!m.done && <Spinner size="xs" speed="0.6s" />}
-                          </HStack>
+                    <HStack key={m.id} justify="flex-start" align="flex-start">
+                      <Box
+                        bg="gray.800"
+                        border="1px solid"
+                        borderColor="gray.700"
+                        p={3}
+                        rounded="xl"
+                        maxW="85%"
+                        w="fit-content"
+                      >
+                        <HStack align="flex-start" spacing={3}>
+                          <IconButton
+                            aria-label={
+                              appLanguage === "es"
+                                ? "Reproducir respuesta"
+                                : "Replay response"
+                            }
+                            icon={
+                              replayLoadingId === m.id ? (
+                                <Spinner size="sm" />
+                              ) : (
+                                <RiVolumeUpLine />
+                              )
+                            }
+                            size="sm"
+                            variant="ghost"
+                            colorScheme="purple"
+                            onClick={() => playAssistantTts(m)}
+                            isDisabled={!m.text}
+                            mt={1}
+                          />
+                          <Box flex="1">
+                            <HStack mb={1} justify="space-between">
+                              {!m.done && <Spinner size="xs" speed="0.6s" />}
+                            </HStack>
 
-                          <Markdown>{main}</Markdown>
+                            <Markdown>{main}</Markdown>
 
-                          {!!gloss && (
-                            <Box opacity={0.8} fontSize="sm" mt={1}>
-                              <Markdown>{gloss}</Markdown>
-                            </Box>
-                          )}
-                        </Box>
-                      </HStack>
-                    </Box>
-                  </HStack>
+                            {!!gloss && (
+                              <Box opacity={0.8} fontSize="sm" mt={1}>
+                                <Markdown>{gloss}</Markdown>
+                              </Box>
+                            )}
+                          </Box>
+                        </HStack>
+                      </Box>
+                    </HStack>
                   );
                 })}
               </VStack>

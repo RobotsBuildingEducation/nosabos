@@ -82,7 +82,13 @@ import {
   LuCalendarDays,
   LuCalendarCheck2,
 } from "react-icons/lu";
-import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
+import {
+  PiCardsBold,
+  PiPath,
+  PiUsers,
+  PiUsersBold,
+  PiUsersThreeBold,
+} from "react-icons/pi";
 import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -4342,12 +4348,12 @@ function BottomActionBar({
     {
       id: "path",
       label: appLanguage === "es" ? "Ruta" : "Path",
-      icon: RiRoadMapLine,
+      icon: PiPath,
     },
     {
       id: "flashcards",
       label: appLanguage === "es" ? "Tarjetas" : "Cards",
-      icon: RiFileList3Line,
+      icon: PiCardsBold,
     },
     {
       id: "conversations",
@@ -4356,7 +4362,8 @@ function BottomActionBar({
     },
   ];
 
-  const currentMode = PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
+  const currentMode =
+    PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
   const CurrentModeIcon = currentMode.icon;
   const modeMenuLabel = appLanguage === "es" ? "Modo" : "Mode";
 
@@ -4404,7 +4411,7 @@ function BottomActionBar({
         mx="auto"
         w="100%"
         align="center"
-        justify={{ base: "space-evenly", md: "space-evenly" }}
+        justify={{ base: "space-between", md: "space-between" }}
         flexWrap={{ base: "wrap", md: "wrap" }}
         overflow="visible"
       >
@@ -4416,26 +4423,15 @@ function BottomActionBar({
             aria-label={backLabel}
             rounded="xl"
             flexShrink={0}
-            colorScheme="teal"
-            variant="outline"
-            size="md"
+            colorScheme="gray"
+            bg="gray.800"
+            boxShadow="0 4px 0 #313a4b"
+            border="1px solid white"
           />
         )}
-        <IconButton
-          icon={<FaBitcoin size={18} />}
-          onClick={onOpenIdentity}
-          aria-label={identityLabel}
-          isLoading={isIdentitySaving}
-          rounded="xl"
-          flexShrink={0}
-          bg="#f08e19"
-          boxShadow="0px 0px 6px orange"
-          height="42px"
-          mt={"4px"}
-        />
 
         <IconButton
-          icon={<PiUsersBold size={20} />}
+          icon={<PiUsersBold size={18} />}
           onClick={onOpenTeams}
           aria-label={teamsLabel}
           rounded="xl"
@@ -4445,8 +4441,10 @@ function BottomActionBar({
           boxShadow={
             hasPendingTeamInvite
               ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
-              : undefined
+              : "0 4px 0 #313a4b"
           }
+          colorScheme="gray"
+          bg="gray.800"
         />
 
         <IconButton
@@ -4456,36 +4454,22 @@ function BottomActionBar({
           aria-label={settingsLabel}
           rounded="xl"
           flexShrink={0}
+          colorScheme="gray"
+          bg="gray.800"
+          boxShadow="0 4px 0 #313a4b"
         />
 
         <IconButton
-          icon={<MdOutlineSupportAgent size={20} />}
-          onClick={onOpenHelpChat}
-          aria-label={helpChatLabel}
-          rounded="full"
-          isDisabled={!onOpenHelpChat}
-          bg="white"
-          color="blue"
-          border="4px solid skyblue"
-          size="lg"
-          zIndex={50}
-          boxShadow="lg"
-          flexShrink={0}
-        />
-
-        <IconButton
-          icon={<RiBookmarkLine size={20} />}
+          icon={<RiBookmarkLine size={18} />}
           aria-label={notesLabel}
           onClick={onOpenNotes}
           isLoading={notesIsLoading}
+          colorScheme="gray"
           bg="gray.800"
+          boxShadow="0 4px 0 #313a4b"
           color="white"
-          size="lg"
+          // size="lg"
           zIndex={50}
-          boxShadow={notesBoxShadow || "lg"}
-          flexShrink={0}
-          borderWidth={notesBorderWidth}
-          borderColor={notesBorderColor}
           rounded="xl"
           transition="all 0.3s ease"
           animation={notesAnimation}
@@ -4512,10 +4496,30 @@ function BottomActionBar({
               "100%": { boxShadow: "none", borderColor: "gray.600" },
             },
           }}
-          _hover={{
-            bg: "gray.700",
-            transform: "translateY(-1px)",
-          }}
+        />
+
+        <IconButton
+          icon={<FaBitcoin size={18} />}
+          onClick={onOpenIdentity}
+          aria-label={identityLabel}
+          isLoading={isIdentitySaving}
+          rounded="xl"
+          flexShrink={0}
+          bg="#f08e19"
+          boxShadow="0px 4px 0px #834800ff"
+        />
+
+        <IconButton
+          icon={<MdOutlineSupportAgent size={18} />}
+          onClick={onOpenHelpChat}
+          aria-label={helpChatLabel}
+          isDisabled={!onOpenHelpChat}
+          rounded="xl"
+          bg="white"
+          color="blue"
+          boxShadow="0 4px 0 blue"
+          zIndex={50}
+          flexShrink={0}
         />
 
         {/* Path Mode Menu - only show on skill tree */}
@@ -4523,20 +4527,14 @@ function BottomActionBar({
           <Menu>
             <MenuButton
               as={IconButton}
-              icon={<CurrentModeIcon size={20} />}
+              icon={<CurrentModeIcon size={18} />}
               aria-label={modeMenuLabel}
               rounded="xl"
               flexShrink={0}
-              bg="whiteAlpha.100"
+              // bg="rgba(0, 98, 189, 0.6)"
+              colorScheme="teal"
+              // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
               color="white"
-              borderWidth="1px"
-              borderColor="whiteAlpha.200"
-              _hover={{
-                bg: "whiteAlpha.200",
-              }}
-              _active={{
-                bg: "whiteAlpha.300",
-              }}
             />
             <MenuList
               bg="gray.800"

@@ -9522,7 +9522,7 @@ const baseLearningPath = {
   ],
 };
 
-const LESSON_XP_RANGE = { min: 55, max: 80 };
+const LESSON_XP_RANGE = { min: 1, max: 1 };
 const LESSON_XP_STEP = 5;
 
 /**
