@@ -269,10 +269,10 @@ export default function RepeatWhatYouHear({
                           icon={<MdOutlineSupportAgent />}
                           size="sm"
                           fontSize="lg"
+                          rounded="xl"
                           bg="white"
                           color="blue"
-                          border="3px solid skyblue"
-                          boxShadow={"lg"}
+                          boxShadow="0 4px 0 blue"
                           onClick={handleSendHelp}
                         />
                       )}

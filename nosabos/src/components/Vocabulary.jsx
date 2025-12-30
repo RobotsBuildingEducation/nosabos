@@ -562,11 +562,14 @@ Hint (optional):
 ${hint || ""}
 
 Policy:
-- Say YES if the user's word fits the meaning and collocates naturally in context (allow close synonyms).
+- Say YES if the user's word fits the meaning and works grammatically in context.
+- IMPORTANT: Multiple answers may be valid. Accept ANY word that makes sense.
+- For example: "Yo ___ beber agua" - "quiero", "necesito", "puedo" are all valid.
+- Allow close synonyms that fit the context.
 - Ignore minor casing/inflection if meaning is equivalent.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
-- If it clearly doesn't fit the meaning or register, say NO.
-- Be lenient, good enough answers are acceptable.
+- Be lenient - if the answer makes sense in context, say YES.
+- Only say NO if the word clearly doesn't fit the meaning or is grammatically wrong.
 
 Reply ONE WORD ONLY: YES or NO
 `.trim();
@@ -597,11 +600,13 @@ Hint (optional):
 ${hint || ""}
 
 Rules:
-- Say YES if the selected word best fits the stem's meaning/context.
-- Allow close synonyms if they fit as well as the intended answer.
+- Say YES if the selected word fits the stem's meaning/context and is grammatically correct.
+- IMPORTANT: Multiple choices may be valid. Accept ANY choice that works, not just one specific answer.
+- For example: "Yo ___ beber agua" - both "quiero" and "necesito" are valid, accept either.
+- Allow close synonyms if they fit the context.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
-- Otherwise say NO.
-- Be lenient, good enough answers are acceptable.
+- Be lenient - if the answer makes sense and fits the context, say YES.
+- Only say NO if the answer clearly doesn't fit or is grammatically wrong.
 
 Reply ONE WORD ONLY: YES or NO
 `.trim();
@@ -3889,10 +3894,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         icon={<MdOutlineSupportAgent />}
         size="sm"
         fontSize="lg"
+        rounded="xl"
         bg="white"
         color="blue"
-        border="3px solid skyblue"
-        boxShadow={"lg"}
+        boxShadow="0 4px 0 blue"
         onClick={() => copyAll(q, h, tr)}
         mr={1}
       />
@@ -5018,10 +5023,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   icon={<MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"
+                  rounded="xl"
                   bg="white"
                   color="blue"
-                  border="3px solid skyblue"
-                  boxShadow={"lg"}
+                  boxShadow="0 4px 0 blue"
                   onClick={sendSpeakHelp}
                 />
               ) : null}
@@ -5226,10 +5231,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   icon={<MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"
+                  rounded="xl"
                   bg="white"
                   color="blue"
-                  border="3px solid skyblue"
-                  boxShadow={"lg"}
+                  boxShadow="0 4px 0 blue"
                   onClick={sendMatchHelp}
                 />
               )}

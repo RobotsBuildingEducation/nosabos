@@ -16,7 +16,7 @@ import {
   ChevronRightIcon,
 } from "@chakra-ui/icons";
 import { PiUsersBold } from "react-icons/pi";
-import { RiBookmarkLine } from "react-icons/ri";
+import { RiBookmarkLine, RiRoadMapLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaBitcoin, FaKey } from "react-icons/fa";
@@ -89,6 +89,16 @@ const BUTTON_EXPLANATIONS = [
       es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
     },
     position: 5,
+  },
+  {
+    id: "mode",
+    icon: RiRoadMapLine,
+    label: { en: "Learning Mode", es: "Modo de Aprendizaje" },
+    description: {
+      en: "Switch between learning path, practice cards, and free conversation modes. The icon changes based on your current mode.",
+      es: "Cambia entre la ruta de aprendizaje, tarjetas de práctica y modos de conversación libre. El icono cambia según tu modo actual.",
+    },
+    position: 6,
   },
 ];
 

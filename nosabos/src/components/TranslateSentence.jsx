@@ -211,11 +211,7 @@ export default function TranslateSentence({
           ? `Banco de palabras: ${wordBank.join(" | ")}`
           : `Word bank: ${wordBank.join(" | ")}`
         : null,
-      hint
-        ? isSpanishUI
-          ? `Pista: ${hint}`
-          : `Hint: ${hint}`
-        : null,
+      hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
       isSpanishUI
         ? "Responde con la traducción correcta armada con las opciones del banco de palabras."
         : "Respond with the correct translation assembled from the word bank options.",
@@ -296,10 +292,10 @@ export default function TranslateSentence({
                       icon={<MdOutlineSupportAgent />}
                       size="sm"
                       fontSize="lg"
+                      rounded="xl"
                       bg="white"
                       color="blue"
-                      border="3px solid skyblue"
-                      boxShadow={"lg"}
+                      boxShadow="0 4px 0 blue"
                       onClick={handleSendHelp}
                     />
                   )}

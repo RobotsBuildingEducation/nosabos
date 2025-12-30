@@ -48,6 +48,7 @@ import {
   Menu,
   MenuButton,
   MenuList,
+  MenuItem,
   MenuItemOption,
   MenuOptionGroup,
   Badge,
@@ -64,7 +65,14 @@ import {
 } from "@chakra-ui/icons";
 import { CiUser, CiEdit } from "react-icons/ci";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { RiSpeakLine, RiBook2Line, RiBookmarkLine } from "react-icons/ri";
+import {
+  RiSpeakLine,
+  RiBook2Line,
+  RiBookmarkLine,
+  RiRoadMapLine,
+  RiFileList3Line,
+  RiChat3Line,
+} from "react-icons/ri";
 import {
   LuBadgeCheck,
   LuBookOpen,
@@ -74,7 +82,13 @@ import {
   LuCalendarDays,
   LuCalendarCheck2,
 } from "react-icons/lu";
-import { PiUsers, PiUsersBold, PiUsersThreeBold } from "react-icons/pi";
+import {
+  PiCardsBold,
+  PiPath,
+  PiUsers,
+  PiUsersBold,
+  PiUsersThreeBold,
+} from "react-icons/pi";
 import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
@@ -1191,6 +1205,27 @@ export default function App() {
   });
   const [activeLesson, setActiveLesson] = useState(null);
 
+  // Path mode state (path, flashcards, conversations)
+  const [pathMode, setPathMode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("pathMode") || "path";
+    }
+    return "path";
+  });
+
+  // Ref to trigger scroll to latest unlocked lesson
+  const scrollToLatestUnlockedRef = useRef(null);
+
+  // Counter to trigger scroll to latest unlocked (increments on each scroll request)
+  const [scrollToLatestTrigger, setScrollToLatestTrigger] = useState(0);
+
+  // Save pathMode to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("pathMode", pathMode);
+    }
+  }, [pathMode]);
+
   // Tutorial mode state
   const [isTutorialMode, setIsTutorialMode] = useState(false);
   const [tutorialCompletedModules, setTutorialCompletedModules] = useState([]);
@@ -2184,6 +2219,11 @@ export default function App() {
         pendingLessonCompletionRef.current = lessonData;
 
         handleReturnToSkillTree();
+
+        // Scroll to latest unlocked lesson after returning to skill tree
+        if (pathMode === "path") {
+          setScrollToLatestTrigger((prev) => prev + 1);
+        }
 
         setTimeout(() => {
           if (
@@ -3631,6 +3671,24 @@ export default function App() {
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
         notesIsLoading={notesIsLoading}
         notesIsDone={notesIsDone}
+        pathMode={pathMode}
+        onPathModeChange={(newMode) => {
+          setPathMode(newMode);
+          // Trigger scroll when switching to path mode
+          if (newMode === "path" && viewMode === "skillTree") {
+            setScrollToLatestTrigger((prev) => prev + 1);
+          }
+          // Scroll to top when switching to flashcards or conversations
+          if (newMode === "flashcards" || newMode === "conversations") {
+            window.scrollTo({ top: 0, behavior: "instant" });
+          }
+        }}
+        onScrollToLatest={() => {
+          // Trigger scroll when already in path mode
+          if (viewMode === "skillTree") {
+            setScrollToLatestTrigger((prev) => prev + 1);
+          }
+        }}
       />
 
       {/* Tutorial Action Bar Popovers - shows when tutorial starts */}
@@ -3681,6 +3739,11 @@ export default function App() {
               levelCompletionStatus={levelCompletionStatus}
               // Conversations props
               activeNpub={activeNpub}
+              // Path mode props (lifted from SkillTree)
+              pathMode={pathMode}
+              onPathModeChange={setPathMode}
+              scrollToLatestTrigger={scrollToLatestTrigger}
+              scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
             />
           )}
         </Box>
@@ -4265,6 +4328,9 @@ function BottomActionBar({
   hasPendingTeamInvite = false,
   notesIsLoading = false,
   notesIsDone = false,
+  pathMode = "path",
+  onPathModeChange,
+  onScrollToLatest,
 }) {
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
@@ -4276,6 +4342,30 @@ function BottomActionBar({
   const teamsLabel = t?.teams_drawer_title || "Teams";
   const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
   const backLabel = appLanguage === "es" ? "Volver" : "Go back";
+
+  // Path mode configuration
+  const PATH_MODES = [
+    {
+      id: "path",
+      label: appLanguage === "es" ? "Ruta" : "Path",
+      icon: PiPath,
+    },
+    {
+      id: "flashcards",
+      label: appLanguage === "es" ? "Tarjetas" : "Cards",
+      icon: PiCardsBold,
+    },
+    {
+      id: "conversations",
+      label: appLanguage === "es" ? "Conversación" : "Conversation",
+      icon: RiChat3Line,
+    },
+  ];
+
+  const currentMode =
+    PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
+  const CurrentModeIcon = currentMode.icon;
+  const modeMenuLabel = appLanguage === "es" ? "Modo" : "Mode";
 
   // Determine notes button border styles based on loading/done state
   const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";
@@ -4321,7 +4411,7 @@ function BottomActionBar({
         mx="auto"
         w="100%"
         align="center"
-        justify={{ base: "space-evenly", md: "space-evenly" }}
+        justify={{ base: "space-between", md: "space-between" }}
         flexWrap={{ base: "wrap", md: "wrap" }}
         overflow="visible"
       >
@@ -4333,26 +4423,15 @@ function BottomActionBar({
             aria-label={backLabel}
             rounded="xl"
             flexShrink={0}
-            colorScheme="teal"
-            variant="outline"
-            size="md"
+            colorScheme="gray"
+            bg="gray.800"
+            boxShadow="0 4px 0 #313a4b"
+            border="1px solid white"
           />
         )}
-        <IconButton
-          icon={<FaBitcoin size={18} />}
-          onClick={onOpenIdentity}
-          aria-label={identityLabel}
-          isLoading={isIdentitySaving}
-          rounded="xl"
-          flexShrink={0}
-          bg="#f08e19"
-          boxShadow="0px 0px 6px orange"
-          height="42px"
-          mt={"4px"}
-        />
 
         <IconButton
-          icon={<PiUsersBold size={20} />}
+          icon={<PiUsersBold size={18} />}
           onClick={onOpenTeams}
           aria-label={teamsLabel}
           rounded="xl"
@@ -4362,8 +4441,10 @@ function BottomActionBar({
           boxShadow={
             hasPendingTeamInvite
               ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
-              : undefined
+              : "0 4px 0 #313a4b"
           }
+          colorScheme="gray"
+          bg="gray.800"
         />
 
         <IconButton
@@ -4373,36 +4454,22 @@ function BottomActionBar({
           aria-label={settingsLabel}
           rounded="xl"
           flexShrink={0}
+          colorScheme="gray"
+          bg="gray.800"
+          boxShadow="0 4px 0 #313a4b"
         />
 
         <IconButton
-          icon={<MdOutlineSupportAgent size={20} />}
-          onClick={onOpenHelpChat}
-          aria-label={helpChatLabel}
-          rounded="full"
-          isDisabled={!onOpenHelpChat}
-          bg="white"
-          color="blue"
-          border="4px solid skyblue"
-          size="lg"
-          zIndex={50}
-          boxShadow="lg"
-          flexShrink={0}
-        />
-
-        <IconButton
-          icon={<RiBookmarkLine size={20} />}
+          icon={<RiBookmarkLine size={18} />}
           aria-label={notesLabel}
           onClick={onOpenNotes}
           isLoading={notesIsLoading}
+          colorScheme="gray"
           bg="gray.800"
+          boxShadow="0 4px 0 #313a4b"
           color="white"
-          size="lg"
+          // size="lg"
           zIndex={50}
-          boxShadow={notesBoxShadow || "lg"}
-          flexShrink={0}
-          borderWidth={notesBorderWidth}
-          borderColor={notesBorderColor}
           rounded="xl"
           transition="all 0.3s ease"
           animation={notesAnimation}
@@ -4429,11 +4496,79 @@ function BottomActionBar({
               "100%": { boxShadow: "none", borderColor: "gray.600" },
             },
           }}
-          _hover={{
-            bg: "gray.700",
-            transform: "translateY(-1px)",
-          }}
         />
+
+        <IconButton
+          icon={<FaBitcoin size={18} />}
+          onClick={onOpenIdentity}
+          aria-label={identityLabel}
+          isLoading={isIdentitySaving}
+          rounded="xl"
+          flexShrink={0}
+          bg="#f08e19"
+          boxShadow="0px 4px 0px #834800ff"
+        />
+
+        <IconButton
+          icon={<MdOutlineSupportAgent size={18} />}
+          onClick={onOpenHelpChat}
+          aria-label={helpChatLabel}
+          isDisabled={!onOpenHelpChat}
+          rounded="xl"
+          bg="white"
+          color="blue"
+          boxShadow="0 4px 0 blue"
+          zIndex={50}
+          flexShrink={0}
+        />
+
+        {/* Path Mode Menu - only show on skill tree */}
+        {viewMode === "skillTree" && (
+          <Menu>
+            <MenuButton
+              as={IconButton}
+              icon={<CurrentModeIcon size={18} />}
+              aria-label={modeMenuLabel}
+              rounded="xl"
+              flexShrink={0}
+              // bg="rgba(0, 98, 189, 0.6)"
+              colorScheme="teal"
+              // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
+              color="white"
+            />
+            <MenuList
+              bg="gray.800"
+              borderColor="whiteAlpha.200"
+              boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
+              minW="180px"
+            >
+              {PATH_MODES.map((mode) => {
+                const ModeIcon = mode.icon;
+                const isSelected = pathMode === mode.id;
+                return (
+                  <MenuItem
+                    key={mode.id}
+                    onClick={() => {
+                      // If clicking path when already in path mode, just scroll
+                      if (mode.id === "path" && isSelected) {
+                        onScrollToLatest?.();
+                      } else {
+                        onPathModeChange?.(mode.id);
+                      }
+                    }}
+                    bg={isSelected ? "whiteAlpha.100" : "transparent"}
+                    _hover={{ bg: "whiteAlpha.200" }}
+                    color="white"
+                    icon={<ModeIcon size={18} />}
+                    fontWeight={isSelected ? "bold" : "normal"}
+                  >
+                    {mode.label}
+                  </MenuItem>
+                );
+              })}
+            </MenuList>
+          </Menu>
+        )}
       </Flex>
     </Box>
   );
