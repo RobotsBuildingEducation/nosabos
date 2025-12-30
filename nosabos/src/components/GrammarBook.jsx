@@ -312,10 +312,12 @@ ${hint || ""}
 
 Policy:
 - Say YES if the answer is grammatically correct and fits the context.
+- IMPORTANT: Multiple answers may be valid. Accept ANY answer that works grammatically.
+- For example: "Yo ___ beber agua" - "quiero", "necesito", "puedo" are all valid.
 - Allow contractions, minor casing/punctuation differences, and natural variants.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
 - Accept words only (if the question is como ___? the appropriate answer is just a word without the ?)
-- Be lenient, good enough answers are acceptable.
+- Be lenient - if the answer makes grammatical sense in context, say YES.
 
 Reply ONE WORD ONLY:
 YES or NO
@@ -457,12 +459,14 @@ Hint (optional):
 ${hint || ""}
 
 Instructions:
-- Say YES if the selected choice is a grammatically correct, context-appropriate answer to the stem.
+- Say YES if the selected choice is grammatically correct AND makes sense in context.
+- IMPORTANT: Multiple choices may be valid. Accept ANY choice that works grammatically, not just one specific answer.
+- For example: "Yo ___ beber agua" - both "quiero" and "necesito" are valid, accept either.
 - Use the hint and any time/aspect cues in the stem (e.g., "usually", "yesterday", "for/since").
 - Allow contractions, minor punctuation/casing differences, and natural variation.
 - Allow missing or incorrect accent marks/diacritics (e.g., "Cual" is acceptable for "Cuál").
-- If more than one choice could be acceptable, accept the user's if it fits well or is good enough.
-- Otherwise say NO.
+- Be lenient - if the answer is grammatically sound and contextually reasonable, say YES.
+- Only say NO if the answer is clearly grammatically wrong or doesn't fit the context at all.
 
 Reply with ONE WORD ONLY:
 YES or NO
