@@ -1397,7 +1397,7 @@ const LandingPage = ({ onAuthenticated }) => {
       {/* Scholarship Section */}
       <section
         style={{
-          padding: `${theme.spacing.section} 24px`,
+          padding: "60px 24px",
           position: "relative",
           zIndex: 10,
         }}
@@ -1409,7 +1409,7 @@ const LandingPage = ({ onAuthenticated }) => {
           style={{
             maxWidth: "900px",
             margin: "0 auto",
-            padding: "64px",
+            padding: "32px",
             background: `linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%)`,
             borderRadius: "32px",
             border: `1px solid rgba(249, 115, 22, 0.2)`,
