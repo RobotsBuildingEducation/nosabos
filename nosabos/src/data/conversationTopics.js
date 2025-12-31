@@ -12,7 +12,7 @@ import { getLearningPath } from "./skillTreeData";
  * Returns a list of unit titles and lesson topics for AI context
  *
  * @param {string} level - CEFR level (A1, A2, B1, B2, C1, C2)
- * @param {string} targetLang - Target language code (es, en, pt, fr, it, nah)
+ * @param {string} targetLang - Target language code (es, en, pt, fr, it, nl, nah)
  * @returns {string[]} - Array of topic strings
  */
 export function getSkillTreeTopics(level = "A1", targetLang = "es") {

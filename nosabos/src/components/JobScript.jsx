@@ -122,6 +122,8 @@ const toLangKey = (value) => {
   if (["fr", "french", "francés", "francais", "français"].includes(raw))
     return "fr";
   if (["it", "italian", "italiano"].includes(raw)) return "it";
+  if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
+    return "nl";
   if (["nah", "nahuatl", "náhuatl", "huastec nahuatl", "náhuatl huasteco"].includes(raw))
     return "nah";
   return null;
@@ -534,6 +536,18 @@ const STRICT = {
     MIN_LANG_LIKE: 0.45,
     DURATION_PER_CHAR_SEC: 0.045,
     DURATION_TOLERANCE: [0.5, 3.0],
+  },
+  nl: {
+    MIN_SPEECH_SEC: 1.1,
+    MIN_RMS: 0.008,
+    MIN_ZCR_PSEC: 500,
+    MAX_ZCR_PSEC: 8000,
+    MIN_CONFIDENCE: 0.55,
+    MIN_CHAR_SIM: 0.72,
+    MIN_WORD_F1: 0.62,
+    MIN_LANG_LIKE: 0.55,
+    DURATION_PER_CHAR_SEC: 0.045,
+    DURATION_TOLERANCE: [0.5, 2.8],
   },
 };
 
