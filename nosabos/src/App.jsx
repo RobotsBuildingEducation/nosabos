@@ -133,6 +133,7 @@ import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
+import SkillTreeTutorialPopovers from "./components/SkillTreeTutorialPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import {
   FaBitcoin,
@@ -1239,6 +1240,10 @@ export default function App() {
   const [showTutorialPopovers, setShowTutorialPopovers] = useState(false);
   const tutorialPopoverShownRef = useRef(false);
 
+  // Skill tree tutorial state (shows on first login)
+  const [showSkillTreeTutorial, setShowSkillTreeTutorial] = useState(false);
+  const skillTreeTutorialCheckedRef = useRef(false);
+
   // Lesson completion celebration modal
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
@@ -1286,6 +1291,49 @@ export default function App() {
     },
     [getShownCelebrations]
   );
+
+  // Check if skill tree tutorial was completed
+  const hasCompletedSkillTreeTutorial = useMemo(() => {
+    return user?.skillTreeTutorialCompleted === true;
+  }, [user?.skillTreeTutorialCompleted]);
+
+  // Show skill tree tutorial on first login (only once per session)
+  useEffect(() => {
+    if (skillTreeTutorialCheckedRef.current) return;
+    if (!user || !activeNpub) return;
+    if (isLoadingApp || needsOnboarding) return;
+
+    skillTreeTutorialCheckedRef.current = true;
+
+    // Show tutorial if not completed
+    if (!user.skillTreeTutorialCompleted) {
+      // Small delay to let UI settle
+      setTimeout(() => {
+        setShowSkillTreeTutorial(true);
+      }, 500);
+    }
+  }, [user, activeNpub, isLoadingApp, needsOnboarding]);
+
+  // Handler for completing the skill tree tutorial
+  const handleSkillTreeTutorialComplete = useCallback(async () => {
+    setShowSkillTreeTutorial(false);
+
+    if (!activeNpub) return;
+
+    try {
+      await setDoc(
+        doc(database, "users", activeNpub),
+        {
+          skillTreeTutorialCompleted: true,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      patchUser?.({ skillTreeTutorialCompleted: true });
+    } catch (e) {
+      console.error("Failed to save skill tree tutorial state:", e);
+    }
+  }, [activeNpub, patchUser]);
 
   // Helper mapping for keys/index
   const TAB_KEYS = [
@@ -3713,6 +3761,13 @@ export default function App() {
         autoAdvanceMs={3500}
       />
 
+      {/* Skill Tree Tutorial Popovers - shows on first login */}
+      <SkillTreeTutorialPopovers
+        isActive={showSkillTreeTutorial && viewMode === "skillTree"}
+        lang={appLanguage}
+        onComplete={handleSkillTreeTutorialComplete}
+      />
+
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
         <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
@@ -3758,6 +3813,8 @@ export default function App() {
               onPathModeChange={setPathMode}
               scrollToLatestTrigger={scrollToLatestTrigger}
               scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
+              // Tutorial props
+              isTutorialComplete={hasCompletedSkillTreeTutorial}
             />
           )}
         </Box>

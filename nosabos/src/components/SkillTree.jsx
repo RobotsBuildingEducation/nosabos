@@ -1017,6 +1017,7 @@ const UnitSection = React.memo(function UnitSection({
   previousUnit,
   latestUnlockedLessonId,
   latestUnlockedRef,
+  isTutorialComplete = true,
 }) {
   const bgColor = "gray.800";
   const borderColor = "gray.700";
@@ -1225,8 +1226,8 @@ const UnitSection = React.memo(function UnitSection({
               if (lessonIndex === 0) {
                 // First lesson of the unit
                 if (index === 0) {
-                  // First lesson of first unit - always available
-                  isPreviousLessonCompleted = true;
+                  // First lesson of first unit - only available if tutorial is complete
+                  isPreviousLessonCompleted = isTutorialComplete;
                 } else if (previousUnit) {
                   // First lesson of subsequent units - check if last lesson of previous unit is completed
                   const previousUnitLastLesson =
@@ -1709,6 +1710,8 @@ export default function SkillTree({
   onPathModeChange,
   scrollToLatestUnlockedRef,
   scrollToLatestTrigger = 0,
+  // Tutorial props
+  isTutorialComplete = true, // Whether skill tree tutorial is complete (lessons locked until complete)
 }) {
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
@@ -1834,6 +1837,9 @@ export default function SkillTree({
 
   // Find the latest unlocked lesson (first AVAILABLE or IN_PROGRESS lesson)
   const latestUnlockedLessonId = useMemo(() => {
+    // If tutorial not complete, no lesson is available
+    if (!isTutorialComplete) return null;
+
     for (let unitIndex = 0; unitIndex < visibleUnits.length; unitIndex++) {
       const unit = visibleUnits[unitIndex];
       const previousUnit = unitIndex > 0 ? visibleUnits[unitIndex - 1] : null;
@@ -1875,7 +1881,7 @@ export default function SkillTree({
       }
     }
     return null;
-  }, [visibleUnits, userProgress]);
+  }, [visibleUnits, userProgress, isTutorialComplete]);
 
   // Calculate current level progress (for the active CEFR level)
   const levelProgress = useMemo(() => {
@@ -2161,6 +2167,7 @@ export default function SkillTree({
                       previousUnit={index > 0 ? visibleUnits[index - 1] : null}
                       latestUnlockedLessonId={latestUnlockedLessonId}
                       latestUnlockedRef={latestUnlockedRef}
+                      isTutorialComplete={isTutorialComplete}
                     />
                   ))
                 ) : (
