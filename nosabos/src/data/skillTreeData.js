@@ -9522,7 +9522,7 @@ const baseLearningPath = {
   ],
 };
 
-const LESSON_XP_RANGE = { min: 1, max: 1 };
+const LESSON_XP_RANGE = { min: 55, max: 80 };
 const LESSON_XP_STEP = 5;
 
 /**
@@ -10893,7 +10893,15 @@ function applyCEFRScaffolding(path) {
 
 const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
 
-const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nl", "nah"]);
+const SUPPORTED_TARGET_LANGS = new Set([
+  "en",
+  "es",
+  "pt",
+  "fr",
+  "it",
+  "nl",
+  "nah",
+]);
 const DEFAULT_TARGET_LANG = "es";
 
 const VOCABULARY_LIBRARY = {
