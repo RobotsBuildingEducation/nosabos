@@ -18,7 +18,11 @@ import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
-import { database, analytics, simplemodel } from "../firebaseResources/firebaseResources";
+import {
+  database,
+  analytics,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -631,8 +635,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       for await (const chunk of result.stream) {
         if (!streamingRef.current) break;
 
-        const chunkText =
-          typeof chunk.text === "function" ? chunk.text() : "";
+        const chunkText = typeof chunk.text === "function" ? chunk.text() : "";
 
         if (!chunkText) continue;
 
@@ -1815,9 +1818,10 @@ Do not return the whole sentence as a single chunk.`;
                         color="white"
                         flex="1"
                       >
-                        {streamingText || (uiLang === "es"
-                          ? "Generando nuevo tema..."
-                          : "Generating new topic...")}
+                        {streamingText ||
+                          (uiLang === "es"
+                            ? "Generando nuevo tema..."
+                            : "Generating new topic...")}
                       </Text>
                     </>
                   ) : (
