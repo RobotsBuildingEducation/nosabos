@@ -160,6 +160,7 @@ const LANG_NAME = (code) =>
     pt: "Brazilian Portuguese",
     fr: "French",
     it: "Italian",
+    nl: "Dutch",
     nah: "Huastec Nahuatl",
   }[code] || code);
 
@@ -174,6 +175,7 @@ const LANGUAGE_LABELS = {
   ],
   fr: ["French", "Francés"],
   it: ["Italian", "Italiano"],
+  nl: ["Dutch", "Holandés", "Nederlands"],
   nah: ["Huastec Nahuatl", "Náhuatl huasteco"],
 };
 
@@ -606,6 +608,7 @@ const BCP47 = {
   pt: { tts: "pt-BR" },
   fr: { tts: "fr-FR" },
   it: { tts: "it-IT" },
+  nl: { tts: "nl-NL" },
   nah: { tts: "es-ES" },
 };
 

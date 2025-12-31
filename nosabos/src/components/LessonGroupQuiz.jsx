@@ -111,6 +111,7 @@ function LANG_NAME(code) {
     pt: "Portuguese",
     fr: "French",
     it: "Italian",
+    nl: "Dutch",
   };
   return map[code] || code;
 }

@@ -279,6 +279,7 @@ const HelpChatFab = forwardRef(
           pt: "Portuguese (português brasileiro)",
           fr: "French (français)",
           it: "Italian (italiano)",
+          nl: "Dutch (Nederlands)",
           nah: "Huastec Nahuatl (náhuatl huasteco)",
         }[code] || code);
 
@@ -580,6 +581,7 @@ const HelpChatFab = forwardRef(
           pt: "Portuguese",
           fr: "French",
           it: "Italian",
+          nl: "Dutch",
           nah: "Huastec Nahuatl",
         }[code] || code);
 
