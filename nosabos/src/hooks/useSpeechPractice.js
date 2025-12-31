@@ -11,6 +11,7 @@ const BCP47 = {
   pt: "pt-BR",
   fr: "fr-FR",
   it: "it-IT",
+  nl: "nl-NL",
   nah: "es-ES",
 };
 
