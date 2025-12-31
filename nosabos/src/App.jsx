@@ -133,6 +133,7 @@ import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
+import AnimatedBackground from "./components/AnimatedBackground";
 import {
   FaBitcoin,
   FaCalendarAlt,
@@ -3597,7 +3598,8 @@ export default function App() {
   ----------------------------------- */
 
   return (
-    <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
+    <Box minH="100dvh" bg="transparent" color="gray.50" width="100%" position="relative">
+      <AnimatedBackground />
       <TopBar
         appLanguage={appLanguage}
         user={user}
