@@ -27,6 +27,7 @@ import {
 import RobotBuddyPro from "./RobotBuddyPro";
 import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
+import { detectUserLanguage } from "../utils/languageDetection";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
 const useDecentralizedIdentity = () => ({
@@ -936,7 +937,14 @@ const LandingPage = ({ onAuthenticated }) => {
   const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
     useDecentralizedIdentity();
 
-  const [lang, setLang] = useState("en");
+  const [lang, setLang] = useState(() => {
+    const detected = detectUserLanguage();
+    // Save detected language to localStorage for App.jsx to use
+    if (typeof window !== "undefined") {
+      localStorage.setItem("appLanguage", detected);
+    }
+    return detected;
+  });
   const [view, setView] = useState("landing");
   const [displayName, setDisplayName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -953,6 +961,13 @@ const LandingPage = ({ onAuthenticated }) => {
     const timer = setTimeout(() => setHasExtension(isNip07Available()), 500);
     return () => clearTimeout(timer);
   }, [isNip07Available]);
+
+  // Update localStorage when language changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("appLanguage", lang);
+    }
+  }, [lang]);
 
   const handleCreate = useCallback(async () => {
     if (displayName.trim().length < 2 || isCreating) return;

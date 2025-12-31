@@ -1414,7 +1414,7 @@ export default function App() {
   // Default progress (mirrors onboarding)
   const DEFAULT_PROGRESS = {
     level: "A1",
-    supportLang: "en",
+    supportLang: appLanguage, // Use detected/selected app language
     voice: "alloy",
     voicePersona:
       translations?.[appLanguage]?.onboarding_persona_default_example ||
@@ -3598,7 +3598,13 @@ export default function App() {
   ----------------------------------- */
 
   return (
-    <Box minH="100dvh" bg="transparent" color="gray.50" width="100%" position="relative">
+    <Box
+      minH="100dvh"
+      bg="transparent"
+      color="gray.50"
+      width="100%"
+      position="relative"
+    >
       <AnimatedBackground />
       <TopBar
         appLanguage={appLanguage}
