@@ -11,6 +11,7 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
+import RobotBuddyPro from "./RobotBuddyPro";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
 const useDecentralizedIdentity = () => ({
@@ -1215,16 +1216,22 @@ const LandingPage = ({ onAuthenticated }) => {
             zIndex: 10,
           }}
         >
-          {/* Logo */}
+          {/* Robot Buddy Pro */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            style={{ marginBottom: "20px" }}
+            style={{ marginBottom: "16px" }}
           >
-            <div style={{ display: "inline-block" }}>
-              <Logo size={64} />
-            </div>
+            <RobotBuddyPro
+              state="idle"
+              mood="happy"
+              palette="ocean"
+              variant="abstract"
+              showBadges={false}
+              compact={true}
+              maxW={140}
+            />
           </motion.div>
 
           {/* Title */}
