@@ -100,15 +100,15 @@ const translations = {
     feature_reading: "Reading Practice",
     feature_reading_desc:
       "Subject-focused lectures expanding your vocabulary and cultural knowledge through comprehension exercises.",
-    feature_grammar: "Grammar Labs",
+    feature_grammar: "Grammar Book",
     feature_grammar_desc:
       "Quick rule references, concept drills, and adaptive review sets that strengthen your foundation.",
     feature_skilltree: "Skill Tree",
     feature_skilltree_desc:
       "Structured learning paths that build your abilities step by step with clear progress visualization.",
-    feature_flashcards: "Vocabulary Drills",
+    feature_flashcards: "Vocabulary",
     feature_flashcards_desc:
-      "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
+      "Practice new words based on your level and various common situations.",
     feature_goals: "Daily Goals",
     feature_goals_desc:
       "Personalized targets tracking your progress and celebrating streaks to keep you motivated.",
@@ -118,9 +118,9 @@ const translations = {
     feature_pronunciation: "Speech & Pronunciation",
     feature_pronunciation_desc:
       "Speak aloud and get real-time feedback on your pronunciation, accent, and fluency with voice recognition.",
-    feature_flashcards_spaced: "Smart Flashcards",
+    feature_flashcards_spaced: "Flashcard Drills",
     feature_flashcards_spaced_desc:
-      "Review words and phrases with spaced repetition that adapts to what you know and what needs more practice.",
+      "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
 
     value_label: "WHY NO SABOS",
     value_title: "Learning That",
@@ -199,8 +199,9 @@ const translations = {
     feature_skilltree_desc:
       "Rutas de aprendizaje estructuradas que construyen tus habilidades paso a paso.",
     feature_flashcards: "Ejercicios de Vocabulario",
+
     feature_flashcards_desc:
-      "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
+      "Aprende y practica nuevas palabras según tu nivel y situaciones reales.",
     feature_goals: "Metas Diarias",
     feature_goals_desc:
       "Objetivos personalizados que rastrean tu progreso y celebran tus rachas.",
@@ -212,7 +213,7 @@ const translations = {
       "Habla en voz alta y recibe retroalimentación en tiempo real sobre tu pronunciación, acento y fluidez.",
     feature_flashcards_spaced: "Tarjetas Inteligentes",
     feature_flashcards_spaced_desc:
-      "Repasa palabras y frases con repetición espaciada que se adapta a lo que sabes y lo que necesita más práctica.",
+      "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
     value_label: "POR QUÉ NO SABOS",
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
@@ -1471,7 +1472,7 @@ const LandingPage = ({ onAuthenticated }) => {
       </section>
 
       {/* FAQ Section */}
-      <section
+      {/* <section
         style={{
           padding: `${theme.spacing.section} 24px`,
           position: "relative",
@@ -1508,7 +1509,7 @@ const LandingPage = ({ onAuthenticated }) => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Final CTA */}
       <section
