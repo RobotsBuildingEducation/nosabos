@@ -100,6 +100,7 @@ const baseLearningPath = {
               successCriteria_pt: 'O aluno diz "olá" para você.',
               successCriteria_fr: 'L\'apprenant te dit "bonjour".',
               successCriteria_it: 'L\'apprendente ti dice "ciao".',
+              successCriteria_nl: 'De leerling zegt "hallo" tegen je.',
               successCriteria_nah: 'The learner says "niltze" to you.',
               tutorialDescription: {
                 en: "Practice speaking with realtime conversations and goal oriented chats.",
@@ -10911,6 +10912,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["bonjour", "salut", "bonsoir", "bonne nuit", "à bientôt"],
     pt: ["olá", "tchau", "bom dia", "boa tarde", "boa noite"],
     it: ["ciao", "arrivederci", "buongiorno", "buon pomeriggio", "buonanotte"],
+    nl: ["hallo", "dag", "goedemorgen", "goedemiddag", "goedenacht"],
     nah: ["niltze", "motlazotla", "tlaneci", "tlahco tonalli", "yohualli"],
   },
   "question words": {
@@ -10919,6 +10921,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["qui", "quoi", "où", "quand", "pourquoi"],
     pt: ["quem", "o que", "onde", "quando", "por quê"],
     it: ["chi", "che cosa", "dove", "quando", "perché"],
+    nl: ["wie", "wat", "waar", "wanneer", "waarom"],
     nah: ["aqueni", "tlen", "canin", "quema", "tleca"],
   },
   preferences: {
@@ -10927,6 +10930,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["j'aime", "je n'aime pas", "j'adore", "je préfère", "je déteste"],
     pt: ["eu gosto", "eu não gosto", "eu adoro", "eu prefiro", "eu detesto"],
     it: ["mi piace", "non mi piace", "adoro", "preferisco", "detesto"],
+    nl: ["ik hou van", "ik hou niet van", "ik ben gek op", "ik prefereer", "ik heb een hekel aan"],
     nah: [
       "nicniqui",
       "axnicniqui",
@@ -10941,6 +10945,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["un", "deux", "trois", "dix", "vingt"],
     pt: ["um", "dois", "três", "dez", "vinte"],
     it: ["uno", "due", "tre", "dieci", "venti"],
+    nl: ["een", "twee", "drie", "tien", "twintig"],
     nah: ["ce", "ome", "eyi", "mahtlactli", "cempualli"],
   },
   "food and drinks": {
@@ -10949,6 +10954,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["eau", "café", "pain", "riz", "poulet"],
     pt: ["água", "café", "pão", "arroz", "frango"],
     it: ["acqua", "caffè", "pane", "riso", "pollo"],
+    nl: ["water", "koffie", "brood", "rijst", "kip"],
     nah: ["atl", "cafeto", "pantli", "ollohtli", "totolin"],
   },
   time: {
@@ -10957,6 +10963,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["matin", "après-midi", "nuit", "heure pile", "minute"],
     pt: ["manhã", "tarde", "noite", "em ponto", "minuto"],
     it: ["mattina", "pomeriggio", "notte", "in punto", "minuto"],
+    nl: ["ochtend", "middag", "nacht", "uur", "minuut"],
     nah: ["tlaneci", "tlahco", "yohualli", "ce hora", "momimi"],
   },
   "daily activities": {
@@ -10971,6 +10978,7 @@ const VOCABULARY_LIBRARY = {
     ],
     pt: ["acordar", "tomar café", "trabalhar", "estudar", "dormir"],
     it: ["svegliarsi", "fare colazione", "lavorare", "studiare", "dormire"],
+    nl: ["wakker worden", "ontbijten", "werken", "studeren", "slapen"],
   },
   family: {
     en: ["mother", "father", "brother", "sister", "grandmother"],
@@ -10978,6 +10986,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["mère", "père", "frère", "sœur", "grand-mère"],
     pt: ["mãe", "pai", "irmão", "irmã", "avó"],
     it: ["madre", "padre", "fratello", "sorella", "nonna"],
+    nl: ["moeder", "vader", "broer", "zus", "grootmoeder"],
   },
   places: {
     en: ["home", "school", "office", "park", "store"],
@@ -10985,6 +10994,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["maison", "école", "bureau", "parc", "magasin"],
     pt: ["casa", "escola", "escritório", "parque", "loja"],
     it: ["casa", "scuola", "ufficio", "parco", "negozio"],
+    nl: ["huis", "school", "kantoor", "park", "winkel"],
   },
   directions: {
     en: ["left", "right", "straight", "north", "south"],
@@ -10992,6 +11002,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["gauche", "droite", "tout droit", "nord", "sud"],
     pt: ["esquerda", "direita", "em frente", "norte", "sul"],
     it: ["sinistra", "destra", "dritto", "nord", "sud"],
+    nl: ["links", "rechts", "rechtdoor", "noord", "zuid"],
   },
   transportation: {
     en: ["bus", "train", "plane", "ticket", "station"],
@@ -10999,6 +11010,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["bus", "train", "avion", "billet", "gare"],
     pt: ["ônibus", "trem", "avião", "bilhete", "estação"],
     it: ["autobus", "treno", "aereo", "biglietto", "stazione"],
+    nl: ["bus", "trein", "vliegtuig", "kaartje", "station"],
   },
   shopping: {
     en: ["price", "money", "sale", "cashier", "receipt"],
@@ -11006,6 +11018,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["prix", "argent", "promotion", "caissier", "reçu"],
     pt: ["preço", "dinheiro", "promoção", "caixa", "recibo"],
     it: ["prezzo", "denaro", "offerta", "cassiere", "scontrino"],
+    nl: ["prijs", "geld", "uitverkoop", "kassier", "bon"],
   },
   clothing: {
     en: ["shirt", "pants", "dress", "shoes", "jacket"],
@@ -11013,6 +11026,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["chemise", "pantalon", "robe", "chaussures", "veste"],
     pt: ["camisa", "calça", "vestido", "sapatos", "jaqueta"],
     it: ["camicia", "pantaloni", "abito", "scarpe", "giacca"],
+    nl: ["shirt", "broek", "jurk", "schoenen", "jas"],
   },
   colors: {
     en: ["red", "blue", "green", "yellow", "black"],
@@ -11020,6 +11034,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["rouge", "bleu", "vert", "jaune", "noir"],
     pt: ["vermelho", "azul", "verde", "amarelo", "preto"],
     it: ["rosso", "blu", "verde", "giallo", "nero"],
+    nl: ["rood", "blauw", "groen", "geel", "zwart"],
   },
   "physical descriptions": {
     en: ["tall", "short", "young", "old", "strong"],
@@ -11027,6 +11042,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["grand", "petit", "jeune", "vieux", "fort"],
     pt: ["alto", "baixo", "jovem", "velho", "forte"],
     it: ["alto", "basso", "giovane", "anziano", "forte"],
+    nl: ["lang", "kort", "jong", "oud", "sterk"],
   },
   personality: {
     en: ["kind", "funny", "serious", "friendly", "shy"],
@@ -11034,6 +11050,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["gentil", "drôle", "sérieux", "amical", "timide"],
     pt: ["amável", "engraçado", "sério", "amigável", "tímido"],
     it: ["gentile", "divertente", "serio", "amichevole", "timido"],
+    nl: ["aardig", "grappig", "serieus", "vriendelijk", "verlegen"],
   },
   sports: {
     en: ["soccer", "basketball", "tennis", "swimming", "running"],
@@ -11041,6 +11058,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["football", "basket", "tennis", "natation", "course"],
     pt: ["futebol", "basquete", "tênis", "natação", "corrida"],
     it: ["calcio", "basket", "tennis", "nuoto", "corsa"],
+    nl: ["voetbal", "basketbal", "tennis", "zwemmen", "hardlopen"],
   },
   entertainment: {
     en: ["music", "movie", "concert", "series", "game"],
@@ -11048,6 +11066,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["musique", "film", "concert", "série", "jeu"],
     pt: ["música", "filme", "show", "série", "jogo"],
     it: ["musica", "film", "concerto", "serie", "gioco"],
+    nl: ["muziek", "film", "concert", "serie", "spel"],
   },
   "arts and reading": {
     en: ["book", "author", "painting", "poem", "chapter"],
@@ -11055,6 +11074,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["livre", "auteur", "peinture", "poème", "chapitre"],
     pt: ["livro", "autor", "pintura", "poema", "capítulo"],
     it: ["libro", "autore", "dipinto", "poesia", "capitolo"],
+    nl: ["boek", "auteur", "schilderij", "gedicht", "hoofdstuk"],
   },
   "time expressions": {
     en: ["always", "often", "sometimes", "rarely", "never"],
@@ -11062,6 +11082,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["toujours", "souvent", "parfois", "rarement", "jamais"],
     pt: ["sempre", "frequentemente", "às vezes", "raramente", "nunca"],
     it: ["sempre", "spesso", "a volte", "raramente", "mai"],
+    nl: ["altijd", "vaak", "soms", "zelden", "nooit"],
   },
   travel: {
     en: ["passport", "flight", "hotel", "reservation", "luggage"],
@@ -11069,6 +11090,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["passeport", "vol", "hôtel", "réservation", "bagage"],
     pt: ["passaporte", "voo", "hotel", "reserva", "bagagem"],
     it: ["passaporto", "volo", "hotel", "prenotazione", "bagaglio"],
+    nl: ["paspoort", "vlucht", "hotel", "reservering", "bagage"],
   },
   weather: {
     en: ["sunny", "rainy", "cloudy", "windy", "storm"],
@@ -11076,6 +11098,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["ensoleillé", "pluvieux", "nuageux", "venteux", "tempête"],
     pt: ["ensolarado", "chuvoso", "nublado", "ventoso", "tempestade"],
     it: ["soleggiato", "piovoso", "nuvoloso", "ventoso", "tempesta"],
+    nl: ["zonnig", "regenachtig", "bewolkt", "winderig", "storm"],
   },
   careers: {
     en: ["engineer", "doctor", "teacher", "artist", "entrepreneur"],
@@ -11083,6 +11106,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["ingénieur", "médecin", "professeur", "artiste", "entrepreneur"],
     pt: ["engenheiro", "médico", "professor", "artista", "empreendedor"],
     it: ["ingegnere", "medico", "insegnante", "artista", "imprenditore"],
+    nl: ["ingenieur", "dokter", "leraar", "kunstenaar", "ondernemer"],
   },
   "body parts": {
     en: ["head", "hand", "arm", "leg", "heart"],
@@ -11090,6 +11114,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["tête", "main", "bras", "jambe", "cœur"],
     pt: ["cabeça", "mão", "braço", "perna", "coração"],
     it: ["testa", "mano", "braccio", "gamba", "cuore"],
+    nl: ["hoofd", "hand", "arm", "been", "hart"],
   },
   health: {
     en: ["doctor", "medicine", "appointment", "pain", "healthy"],
@@ -11097,6 +11122,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["médecin", "médicament", "rendez-vous", "douleur", "sain"],
     pt: ["médico", "medicamento", "consulta", "dor", "saudável"],
     it: ["medico", "medicina", "appuntamento", "dolore", "sano"],
+    nl: ["dokter", "medicijn", "afspraak", "pijn", "gezond"],
   },
   wellness: {
     en: ["exercise", "sleep", "hydrate", "relax", "balance"],
@@ -11104,6 +11130,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["exercice", "sommeil", "s'hydrater", "se détendre", "équilibre"],
     pt: ["exercício", "dormir", "hidratar", "relaxar", "equilíbrio"],
     it: ["esercizio", "dormire", "idratare", "rilassarsi", "equilibrio"],
+    nl: ["oefening", "slapen", "hydrateren", "ontspannen", "balans"],
   },
   nature: {
     en: ["forest", "river", "mountain", "tree", "flower"],
@@ -11111,6 +11138,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["forêt", "rivière", "montagne", "arbre", "fleur"],
     pt: ["floresta", "rio", "montanha", "árvore", "flor"],
     it: ["foresta", "fiume", "montagna", "albero", "fiore"],
+    nl: ["bos", "rivier", "berg", "boom", "bloem"],
   },
   environment: {
     en: ["recycle", "pollution", "energy", "climate", "conservation"],
@@ -11118,6 +11146,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["recycler", "pollution", "énergie", "climat", "conservation"],
     pt: ["reciclar", "poluição", "energia", "clima", "conservação"],
     it: ["riciclare", "inquinamento", "energia", "clima", "conservazione"],
+    nl: ["recyclen", "vervuiling", "energie", "klimaat", "behoud"],
   },
   geography: {
     en: ["continent", "country", "city", "coast", "desert"],
@@ -11125,6 +11154,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["continent", "pays", "ville", "côte", "désert"],
     pt: ["continente", "país", "cidade", "costa", "deserto"],
     it: ["continente", "paese", "città", "costa", "deserto"],
+    nl: ["continent", "land", "stad", "kust", "woestijn"],
   },
   debate: {
     en: ["argument", "evidence", "counterpoint", "rebuttal", "stance"],
@@ -11132,6 +11162,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["argument", "preuve", "contrepoint", "réfutation", "position"],
     pt: ["argumento", "prova", "contraponto", "réplica", "posição"],
     it: ["argomento", "prova", "controparte", "confutazione", "posizione"],
+    nl: ["argument", "bewijs", "tegenwerpingen", "weerlegging", "standpunt"],
   },
   "current events": {
     en: ["headline", "election", "policy", "protest", "update"],
@@ -11139,6 +11170,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["titre", "élection", "politique", "manifestation", "actualité"],
     pt: ["manchete", "eleição", "política", "protesto", "atualização"],
     it: ["titolo", "elezione", "politica", "protesta", "aggiornamento"],
+    nl: ["kop", "verkiezing", "beleid", "protest", "update"],
   },
   professional: {
     en: ["meeting", "deadline", "proposal", "client", "team"],
@@ -11146,6 +11178,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["réunion", "échéance", "proposition", "client", "équipe"],
     pt: ["reunião", "prazo", "proposta", "cliente", "equipe"],
     it: ["riunione", "scadenza", "proposta", "cliente", "squadra"],
+    nl: ["vergadering", "deadline", "voorstel", "klant", "team"],
   },
   literature: {
     en: ["novel", "character", "plot", "metaphor", "theme"],
@@ -11153,6 +11186,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["roman", "personnage", "intrigue", "métaphore", "thème"],
     pt: ["romance", "personagem", "enredo", "metáfora", "tema"],
     it: ["romanzo", "personaggio", "trama", "metafora", "tema"],
+    nl: ["roman", "personage", "plot", "metafoor", "thema"],
   },
   "visual arts": {
     en: ["canvas", "brush", "gallery", "sculpture", "exhibit"],
@@ -11160,6 +11194,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["toile", "pinceau", "galerie", "sculpture", "exposition"],
     pt: ["tela", "pincel", "galeria", "escultura", "exposição"],
     it: ["tela", "pennello", "galleria", "scultura", "mostra"],
+    nl: ["canvas", "penseel", "galerie", "beeldhouwwerk", "tentoonstelling"],
   },
   cinema: {
     en: ["director", "scene", "script", "actor", "premiere"],
@@ -11167,6 +11202,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["réalisateur", "scène", "scénario", "acteur", "première"],
     pt: ["diretor", "cena", "roteiro", "ator", "estreia"],
     it: ["regista", "scena", "copione", "attore", "prima"],
+    nl: ["regisseur", "scène", "script", "acteur", "première"],
   },
   "digital communication": {
     en: ["message", "emoji", "video call", "notification", "link"],
@@ -11174,6 +11210,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["message", "emoji", "appel vidéo", "notification", "lien"],
     pt: ["mensagem", "emoji", "chamada de vídeo", "notificação", "link"],
     it: ["messaggio", "emoji", "videochiamata", "notifica", "link"],
+    nl: ["bericht", "emoji", "videogesprek", "melding", "link"],
   },
   science: {
     en: ["experiment", "laboratory", "hypothesis", "data", "discovery"],
@@ -11181,6 +11218,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["expérience", "laboratoire", "hypothèse", "données", "découverte"],
     pt: ["experimento", "laboratório", "hipótese", "dados", "descoberta"],
     it: ["esperimento", "laboratorio", "ipotesi", "dati", "scoperta"],
+    nl: ["experiment", "laboratorium", "hypothese", "data", "ontdekking"],
   },
   "digital economy": {
     en: ["startup", "platform", "subscription", "analytics", "cryptocurrency"],
@@ -11188,6 +11226,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["startup", "plateforme", "abonnement", "analyse", "cryptomonnaie"],
     pt: ["startup", "plataforma", "assinatura", "analítica", "criptomoeda"],
     it: ["startup", "piattaforma", "abbonamento", "analitica", "criptovaluta"],
+    nl: ["startup", "platform", "abonnement", "analyse", "cryptocurrency"],
   },
   "social justice": {
     en: ["equality", "rights", "inclusion", "advocacy", "community"],
@@ -11195,6 +11234,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["égalité", "droits", "inclusion", "plaidoyer", "communauté"],
     pt: ["igualdade", "direitos", "inclusão", "advocacia", "comunidade"],
     it: ["uguaglianza", "diritti", "inclusione", "advocacy", "comunità"],
+    nl: ["gelijkheid", "rechten", "inclusie", "voorspraak", "gemeenschap"],
   },
   "global issues": {
     en: [
@@ -11214,6 +11254,7 @@ const VOCABULARY_LIBRARY = {
       "desenvolvimento",
     ],
     it: ["clima", "migrazione", "cooperazione", "sostenibilità", "sviluppo"],
+    nl: ["klimaat", "migratie", "samenwerking", "duurzaamheid", "ontwikkeling"],
   },
   emotions: {
     en: ["happy", "sad", "angry", "nervous", "excited"],
@@ -11221,6 +11262,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["heureux", "triste", "en colère", "nerveux", "excité"],
     pt: ["feliz", "triste", "zangado", "nervoso", "animado"],
     it: ["felice", "triste", "arrabbiato", "nervoso", "eccitato"],
+    nl: ["blij", "verdrietig", "boos", "nerveus", "opgewonden"],
   },
   "physical states": {
     en: ["tired", "sick", "hot", "cold", "hungry"],
@@ -11228,6 +11270,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["fatigué", "malade", "chaud", "froid", "faim"],
     pt: ["cansado", "doente", "calor", "frio", "fome"],
     it: ["stanco", "malato", "caldo", "freddo", "fame"],
+    nl: ["moe", "ziek", "warm", "koud", "hongerig"],
   },
   "days of week": {
     en: [
@@ -11275,6 +11318,15 @@ const VOCABULARY_LIBRARY = {
       "sabato",
       "domenica",
     ],
+    nl: [
+      "maandag",
+      "dinsdag",
+      "woensdag",
+      "donderdag",
+      "vrijdag",
+      "zaterdag",
+      "zondag",
+    ],
   },
   invitations: {
     en: ["do you want to", "would you like", "let's", "join us", "come with"],
@@ -11282,6 +11334,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["veux-tu", "aimerais-tu", "allons", "rejoins-nous", "viens avec"],
     pt: ["você quer", "gostaria de", "vamos", "junte-se", "venha com"],
     it: ["vuoi", "ti piacerebbe", "andiamo", "unisciti", "vieni con"],
+    nl: ["wil je", "zou je willen", "laten we", "kom erbij", "kom mee"],
   },
   abilities: {
     en: ["can", "know how", "skill", "ability", "talent"],
@@ -11289,6 +11342,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["pouvoir", "savoir", "compétence", "capacité", "talent"],
     pt: ["poder", "saber", "habilidade", "capacidade", "talento"],
     it: ["potere", "sapere", "abilità", "capacità", "talento"],
+    nl: ["kunnen", "weten hoe", "vaardigheid", "vermogen", "talent"],
   },
   comparisons: {
     en: ["more", "less", "equal", "different", "better", "worse"],
@@ -11296,6 +11350,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["plus", "moins", "égal", "différent", "meilleur", "pire"],
     pt: ["mais", "menos", "igual", "diferente", "melhor", "pior"],
     it: ["più", "meno", "uguale", "diverso", "migliore", "peggiore"],
+    nl: ["meer", "minder", "gelijk", "anders", "beter", "slechter"],
   },
   "advice and suggestions": {
     en: ["should", "could", "recommend", "advise", "suggest"],
@@ -11303,6 +11358,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["devoir", "pouvoir", "recommander", "conseiller", "suggérer"],
     pt: ["dever", "poder", "recomendar", "aconselhar", "sugerir"],
     it: ["dovere", "potere", "raccomandare", "consigliare", "suggerire"],
+    nl: ["zou moeten", "zou kunnen", "aanbevelen", "adviseren", "voorstellen"],
   },
   "opinions and debate": {
     en: ["opinion", "think", "believe", "agree", "disagree"],
@@ -11328,6 +11384,7 @@ const VOCABULARY_LIBRARY = {
       "essere d'accordo",
       "non essere d'accordo",
     ],
+    nl: ["mening", "denken", "geloven", "eens zijn", "oneens zijn"],
   },
   "narrative and storytelling": {
     en: ["once upon a time", "then", "after", "finally", "story"],
@@ -11335,6 +11392,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["il était une fois", "puis", "après", "finalement", "histoire"],
     pt: ["era uma vez", "então", "depois", "finalmente", "história"],
     it: ["c'era una volta", "poi", "dopo", "finalmente", "storia"],
+    nl: ["er was eens", "toen", "daarna", "uiteindelijk", "verhaal"],
   },
   idioms: {
     en: [
@@ -11372,6 +11430,13 @@ const VOCABULARY_LIBRARY = {
       "essere tra le nuvole",
       "fare una gaffe",
     ],
+    nl: [
+      "makkie",
+      "het ijs breken",
+      "de spijker op de kop slaan",
+      "niet lekker voelen",
+      "uit de school klappen",
+    ],
   },
   "idioms and colloquial expressions": {
     en: ["no way", "for real", "hang out", "freak out", "catch up"],
@@ -11391,6 +11456,7 @@ const VOCABULARY_LIBRARY = {
       "andare fuori di testa",
       "recuperare",
     ],
+    nl: ["geen sprake van", "echt waar", "rondhangen", "flippen", "bijpraten"],
   },
   "regional language": {
     en: ["dialect", "accent", "slang", "regional", "variation"],
@@ -11398,6 +11464,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["dialecte", "accent", "argot", "régional", "variation"],
     pt: ["dialeto", "sotaque", "gíria", "regional", "variação"],
     it: ["dialetto", "accento", "gergo", "regionale", "variazione"],
+    nl: ["dialect", "accent", "slang", "regionaal", "variatie"],
   },
   "advanced vocabulary and nuanced expressions": {
     en: ["nuance", "implication", "subtle", "connotation", "rhetoric"],
@@ -11405,6 +11472,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["nuance", "implication", "subtil", "connotation", "rhétorique"],
     pt: ["nuance", "implicação", "sutil", "conotação", "retórica"],
     it: ["sfumatura", "implicazione", "sottile", "connotazione", "retorica"],
+    nl: ["nuance", "implicatie", "subtiel", "connotatie", "retoriek"],
   },
   conditional: {
     en: ["would", "could", "should", "if", "hypothetical"],
@@ -11412,6 +11480,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["ferais", "pourrais", "devrais", "si", "hypothétique"],
     pt: ["faria", "poderia", "deveria", "se", "hipotético"],
     it: ["farei", "potrei", "dovrei", "se", "ipotetico"],
+    nl: ["zou", "kon", "moest", "als", "hypothetisch"],
   },
   experiences: {
     en: ["experience", "memory", "event", "story", "moment"],
@@ -11419,6 +11488,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["expérience", "mémoire", "événement", "histoire", "moment"],
     pt: ["experiência", "memória", "evento", "história", "momento"],
     it: ["esperienza", "memoria", "evento", "storia", "momento"],
+    nl: ["ervaring", "herinnering", "gebeurtenis", "verhaal", "moment"],
   },
   probability: {
     en: ["maybe", "probably", "possibly", "might", "could"],
@@ -11438,6 +11508,7 @@ const VOCABULARY_LIBRARY = {
       "potrebbe",
       "eventualmente",
     ],
+    nl: ["misschien", "waarschijnlijk", "mogelijk", "zou kunnen", "eventueel"],
   },
   complaints: {
     en: ["complaint", "problem", "issue", "dissatisfied", "unhappy"],
@@ -11445,6 +11516,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["plainte", "problème", "question", "insatisfait", "mécontent"],
     pt: ["reclamação", "problema", "questão", "insatisfeito", "infeliz"],
     it: ["reclamo", "problema", "questione", "insoddisfatto", "scontento"],
+    nl: ["klacht", "probleem", "kwestie", "ontevreden", "ongelukkig"],
   },
   "current events": {
     en: ["news", "media", "press", "journalism", "report"],
@@ -11452,6 +11524,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["nouvelles", "médias", "presse", "journalisme", "rapport"],
     pt: ["notícias", "mídia", "imprensa", "jornalismo", "relatório"],
     it: ["notizie", "media", "stampa", "giornalismo", "rapporto"],
+    nl: ["nieuws", "media", "pers", "journalistiek", "rapport"],
   },
   passive: {
     en: ["is done", "was made", "has been", "being", "by"],
@@ -11459,6 +11532,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["est fait", "a été fait", "a été", "étant", "par"],
     pt: ["é feito", "foi feito", "tem sido", "sendo", "por"],
     it: ["è fatto", "è stato fatto", "è stato", "essendo", "da"],
+    nl: ["wordt gedaan", "werd gemaakt", "is geweest", "zijnde", "door"],
   },
   "relative clauses": {
     en: ["who", "which", "that", "where", "whose"],
@@ -11466,6 +11540,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["qui", "que", "lequel", "où", "dont"],
     pt: ["que", "quem", "o qual", "onde", "cujo"],
     it: ["che", "il quale", "dove", "cui", "il cui"],
+    nl: ["die", "welke", "dat", "waar", "wiens"],
   },
   register: {
     en: ["formal", "informal", "polite", "casual", "respectful"],
@@ -11473,6 +11548,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["formel", "informel", "poli", "décontracté", "respectueux"],
     pt: ["formal", "informal", "educado", "casual", "respeitoso"],
     it: ["formale", "informale", "cortese", "casuale", "rispettoso"],
+    nl: ["formeel", "informeel", "beleefd", "casual", "respectvol"],
   },
   science: {
     en: ["research", "study", "experiment", "theory", "discovery"],
@@ -11480,6 +11556,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["recherche", "étude", "expérience", "théorie", "découverte"],
     pt: ["pesquisa", "estudo", "experimento", "teoria", "descoberta"],
     it: ["ricerca", "studio", "esperimento", "teoria", "scoperta"],
+    nl: ["onderzoek", "studie", "experiment", "theorie", "ontdekking"],
   },
   wellness: {
     en: ["wellness", "fitness", "nutrition", "mental health", "balance"],
@@ -11493,6 +11570,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["bien-être", "forme", "nutrition", "santé mentale", "équilibre"],
     pt: ["bem-estar", "fitness", "nutrição", "saúde mental", "equilíbrio"],
     it: ["benessere", "fitness", "nutrizione", "salute mentale", "equilibrio"],
+    nl: ["welzijn", "fitness", "voeding", "mentale gezondheid", "balans"],
   },
   abstract: {
     en: ["concept", "idea", "notion", "philosophy", "principle"],
@@ -11500,6 +11578,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["concept", "idée", "notion", "philosophie", "principe"],
     pt: ["conceito", "ideia", "noção", "filosofia", "princípio"],
     it: ["concetto", "idea", "nozione", "filosofia", "principio"],
+    nl: ["concept", "idee", "notie", "filosofie", "principe"],
   },
   subjunctive: {
     en: ["wish", "hope", "doubt", "uncertainty", "desire"],
@@ -11507,6 +11586,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["souhait", "espoir", "doute", "incertitude", "désir"],
     pt: ["desejo", "esperança", "dúvida", "incerteza", "desejo"],
     it: ["desiderio", "speranza", "dubbio", "incertezza", "desiderio"],
+    nl: ["wens", "hoop", "twijfel", "onzekerheid", "verlangen"],
   },
   debate: {
     en: ["argument", "counterargument", "evidence", "persuade", "convince"],
@@ -11520,6 +11600,7 @@ const VOCABULARY_LIBRARY = {
       "convencer",
     ],
     it: ["argomento", "controargomento", "prova", "persuadere", "convincere"],
+    nl: ["argument", "tegenargument", "bewijs", "overtuigen", "overreden"],
   },
   academic: {
     en: ["thesis", "research", "citation", "bibliography", "scholarly"],
@@ -11527,6 +11608,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["thèse", "recherche", "citation", "bibliographie", "universitaire"],
     pt: ["tese", "pesquisa", "citação", "bibliografia", "acadêmico"],
     it: ["tesi", "ricerca", "citazione", "bibliografia", "accademico"],
+    nl: ["thesis", "onderzoek", "citaat", "bibliografie", "wetenschappelijk"],
   },
   discourse: {
     en: ["therefore", "however", "moreover", "nevertheless", "thus"],
@@ -11534,6 +11616,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["donc", "cependant", "de plus", "néanmoins", "ainsi"],
     pt: ["portanto", "no entanto", "além disso", "não obstante", "assim"],
     it: ["quindi", "tuttavia", "inoltre", "nondimeno", "così"],
+    nl: ["daarom", "echter", "bovendien", "desalniettemin", "aldus"],
   },
   style: {
     en: ["elegant", "concise", "formal", "casual", "tone"],
@@ -11541,6 +11624,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["élégant", "concis", "formel", "décontracté", "ton"],
     pt: ["elegante", "conciso", "formal", "casual", "tom"],
     it: ["elegante", "conciso", "formale", "informale", "tono"],
+    nl: ["elegant", "bondig", "formeel", "casual", "toon"],
   },
   rhetoric: {
     en: ["metaphor", "irony", "analogy", "persuasion", "ethos"],
@@ -11548,6 +11632,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["métaphore", "ironie", "analogie", "persuasion", "ethos"],
     pt: ["metáfora", "ironia", "analogia", "persuasão", "ética"],
     it: ["metafora", "ironia", "analogia", "persuasione", "etica"],
+    nl: ["metafoor", "ironie", "analogie", "overtuiging", "ethos"],
   },
   specialized: {
     en: ["technical", "terminology", "jargon", "specific", "expert"],
@@ -11555,6 +11640,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["technique", "terminologie", "jargon", "spécifique", "expert"],
     pt: ["técnico", "terminologia", "jargão", "específico", "especialista"],
     it: ["tecnico", "terminologia", "gergo", "specifico", "esperto"],
+    nl: ["technisch", "terminologie", "jargon", "specifiek", "expert"],
   },
   fluency: {
     en: ["fluent", "native", "proficient", "mastery", "command"],
@@ -11562,6 +11648,7 @@ const VOCABULARY_LIBRARY = {
     fr: ["fluide", "natif", "compétent", "maîtrise", "commande"],
     pt: ["fluente", "nativo", "proficiente", "domínio", "comando"],
     it: ["fluente", "nativo", "competente", "padronanza", "comando"],
+    nl: ["vloeiend", "moedertaal", "bekwaam", "meesterschap", "beheersing"],
   },
 };
 
