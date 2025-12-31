@@ -26,6 +26,7 @@ import {
 } from "react-icons/fa";
 import RobotBuddyPro from "./RobotBuddyPro";
 import AnimatedBackground from "./AnimatedBackground";
+import { MdSupportAgent } from "react-icons/md";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
 const useDecentralizedIdentity = () => ({
@@ -115,13 +116,13 @@ const translations = {
       "Personalized targets tracking your progress and celebrating streaks to keep you motivated.",
     feature_notes: "Generate Notes",
     feature_notes_desc:
-      "Create comprehensive study notes automatically from your conversations and lessons to review later.",
+      "Create comprehensive study notes from your lessons to review later.",
     feature_teams: "Create Teams",
     feature_teams_desc:
       "Form study groups and learn together with friends, family, or classmates in collaborative spaces.",
     feature_assistant: "Personal Assistant",
     feature_assistant_desc:
-      "Get personalized guidance and recommendations tailored to your learning style and goals.",
+      "Get personalized guidance and recommendations when you need help.",
     feature_flashcards_spaced: "Flashcard Drills",
     feature_flashcards_spaced_desc:
       "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
@@ -211,13 +212,14 @@ const translations = {
       "Objetivos personalizados que rastrean tu progreso y celebran tus rachas.",
     feature_notes: "Generar Notas",
     feature_notes_desc:
-      "Crea notas de estudio completas automáticamente de tus conversaciones y lecciones para revisar después.",
+      "Crea notas de estudio de tus lecciones para revisarlas más tarde.",
     feature_teams: "Crear Equipos",
     feature_teams_desc:
       "Forma grupos de estudio y aprende junto con amigos, familia o compañeros en espacios colaborativos.",
     feature_assistant: "Asistente Personal",
     feature_assistant_desc:
-      "Obtén orientación y recomendaciones personalizadas adaptadas a tu estilo de aprendizaje y objetivos.",
+      "Obtén orientación y recomendaciones personalizadas cuando las necesites.",
+
     feature_flashcards_spaced: "Tarjetas Inteligentes",
     feature_flashcards_spaced_desc:
       "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
@@ -1023,7 +1025,7 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_teams_desc,
     },
     {
-      icon: <FaRobot />,
+      icon: <MdSupportAgent />,
       title: copy.feature_assistant,
       desc: copy.feature_assistant_desc,
     },
