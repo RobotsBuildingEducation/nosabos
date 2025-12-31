@@ -1019,7 +1019,11 @@ const LandingPage = ({ onAuthenticated }) => {
       title: copy.feature_skilltree,
       desc: copy.feature_skilltree_desc,
     },
-    { icon: <FaBullseye />, title: copy.feature_goals, desc: copy.feature_goals_desc },
+    {
+      icon: <FaBullseye />,
+      title: copy.feature_goals,
+      desc: copy.feature_goals_desc,
+    },
   ];
 
   const faqs = [
