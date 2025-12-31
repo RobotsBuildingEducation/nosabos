@@ -87,7 +87,7 @@ const translations = {
     hero_title_accent: "Language Tutor",
     hero_subtitle: "Use intelligent tools to practice and learn new languages.",
     cta_start: "Start Learning",
-    cta_signin: "I Have a Key",
+    cta_signin: "I Already Have A Key",
     features_label: "CAPABILITIES",
     features_title: "Everything You Need to",
     features_title_accent: "Become Fluent",
@@ -174,8 +174,8 @@ const translations = {
   },
   es: {
     nav_signin: "Iniciar Sesión",
-    hero_title: "Tu",
-    hero_title_accent: "Tutor Lingüístico Personal",
+    hero_title: "Tu Tutor",
+    hero_title_accent: "Lingüístico Personal",
     hero_subtitle:
       "Usa herramientas inteligentes para practicar y aprender nuevos idiomas.",
     cta_start: "Comienza",
@@ -1081,7 +1081,6 @@ const LandingPage = ({ onAuthenticated }) => {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Logo size={36} />
             <span
               style={{
                 fontFamily: theme.fonts.display,
@@ -1091,22 +1090,6 @@ const LandingPage = ({ onAuthenticated }) => {
             >
               No Sabos
             </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setLang(lang === "en" ? "es" : "en")}
-            >
-              {lang === "en" ? "ES" : "EN"}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setView("signIn")}
-            >
-              {copy.nav_signin}
-            </Button>
           </div>
         </div>
       </motion.header>
@@ -1372,7 +1355,8 @@ const LandingPage = ({ onAuthenticated }) => {
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
-                    color: "#030712",
+                    color: "white",
+                    textShadow: "0px 1px 1px black",
                     fontWeight: 700,
                     fontSize: "1.25rem",
                   }}
@@ -1627,49 +1611,6 @@ const LandingPage = ({ onAuthenticated }) => {
           </div>
         </motion.div>
       </section>
-
-      {/* Footer */}
-      <footer
-        style={{
-          padding: "48px 24px",
-          borderTop: `1px solid ${theme.colors.border.subtle}`,
-          position: "relative",
-          zIndex: 10,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: "16px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <Logo size={32} />
-            <span
-              style={{
-                fontFamily: theme.fonts.display,
-                fontSize: "1.25rem",
-                fontWeight: 600,
-              }}
-            >
-              {copy.footer_brand}
-            </span>
-          </div>
-          <p
-            style={{
-              fontFamily: theme.fonts.body,
-              fontSize: "0.875rem",
-              color: theme.colors.text.muted,
-            }}
-          >
-            {copy.footer_tagline}
-          </p>
-        </div>
-      </footer>
     </>
   );
 };
