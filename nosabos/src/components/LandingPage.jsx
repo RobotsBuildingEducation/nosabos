@@ -1,1320 +1,1745 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Box,
-  Button,
-  Checkbox,
-  Divider,
-  Flex,
-  HStack,
-  Icon,
-  Input,
-  Link,
-  SimpleGrid,
-  Spinner,
-  Stack,
-  Text,
-  VStack,
-  usePrefersReducedMotion,
-  useToast,
-} from "@chakra-ui/react";
-import { ArrowForwardIcon, LockIcon } from "@chakra-ui/icons";
-import {
-  FiBookOpen,
-  FiCheckSquare,
-  FiCopy,
-  FiLayers,
-  FiMap,
-  FiMessageCircle,
-  FiTarget,
-} from "react-icons/fi";
-import { IoIosMore } from "react-icons/io";
-import { MdOutlineFileUpload } from "react-icons/md";
-import { CiSquarePlus } from "react-icons/ci";
-import { LuBadgeCheck } from "react-icons/lu";
-import { keyframes } from "@emotion/react";
-import { motion } from "framer-motion";
+  motion,
+  useScroll,
+  useTransform,
+  AnimatePresence,
+} from "framer-motion";
 
-import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
-import RobotBuddyPro from "./RobotBuddyPro";
-import { BitcoinWalletSection } from "./IdentityDrawer";
+// Minimal hook stubs for standalone demo - replace with your actual implementations
+const useDecentralizedIdentity = () => ({
+  generateNostrKeys: async () => ({}),
+  auth: async () => true,
+  authWithExtension: async () => true,
+  isNip07Available: () => false,
+});
 
-const FAQ_ITEMS = [
-  {
-    question: "What happens when I create an account?",
-    answer:
-      "We generate a secure key that unlocks your personal study space. Keep it safe—it's the only way to sign in from another device.",
-  },
-  {
-    question: "Do I need to know anything about blockchains or Nostr?",
-    answer:
-      "No. We take care of the technical details for you. All you need is your key to come back to your lessons.",
-  },
-  {
-    question: "Which languages can I practice?",
-    answer:
-      "Start with Spanish, English, Portuguese, French, or Italian right away, then explore Nahuatl-inspired cultural modules and more advanced grammar labs as you progress.",
-  },
-  {
-    question: "Is there a cost?",
-    answer:
-      "The core practice tools are free. Some advanced labs and live workshops may require scholarships or paid access—those details appear inside the app when available.",
-  },
-];
+const useToast = () => (config) => console.log("Toast:", config);
 
-const FEATURE_CARD_CONFIG = [
-  {
-    titleKey: "feature_skilltree_title",
-    legacyTitleKey: "landing_feature_skilltree_title",
-    descriptionKey: "feature_skilltree_desc",
-    legacyDescriptionKey: "landing_feature_skilltree_desc",
-    icon: FiMap,
-  },
-  {
-    titleKey: "feature_flashcards_title",
-    legacyTitleKey: "landing_feature_flashcards_title",
-    descriptionKey: "feature_flashcards_desc",
-    legacyDescriptionKey: "landing_feature_flashcards_desc",
-    icon: FiCopy,
-  },
-  {
-    titleKey: "feature_dailygoals_title",
-    legacyTitleKey: "landing_feature_dailygoals_title",
-    descriptionKey: "feature_dailygoals_desc",
-    legacyDescriptionKey: "landing_feature_dailygoals_desc",
-    icon: FiCheckSquare,
-  },
-  {
-    titleKey: "feature_conversations_title",
-    legacyTitleKey: "landing_feature_conversations_title",
-    descriptionKey: "feature_conversations_desc",
-    legacyDescriptionKey: "landing_feature_conversations_desc",
-    icon: FiMessageCircle,
-  },
-  {
-    titleKey: "feature_stories_title",
-    legacyTitleKey: "landing_feature_stories_title",
-    descriptionKey: "feature_stories_desc",
-    legacyDescriptionKey: "landing_feature_stories_desc",
-    icon: FiBookOpen,
-  },
-  {
-    titleKey: "feature_reading_title",
-    legacyTitleKey: "landing_feature_reading_title",
-    descriptionKey: "feature_reading_desc",
-    legacyDescriptionKey: "landing_feature_reading_desc",
-    icon: FiLayers,
-  },
-  {
-    titleKey: "feature_grammar_title",
-    legacyTitleKey: "landing_feature_grammar_title",
-    descriptionKey: "feature_grammar_desc",
-    legacyDescriptionKey: "landing_feature_grammar_desc",
-    icon: FiTarget,
-  },
-];
+// ═══════════════════════════════════════════════════════════════════════════════
+// DESIGN SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const extendWithFeatureAliases = (copy) => {
-  const next = { ...copy };
-  FEATURE_CARD_CONFIG.forEach(
-    ({ titleKey, legacyTitleKey, descriptionKey, legacyDescriptionKey }) => {
-      if (legacyTitleKey && !next[legacyTitleKey] && next[titleKey]) {
-        next[legacyTitleKey] = next[titleKey];
-      }
-      if (
-        legacyDescriptionKey &&
-        !next[legacyDescriptionKey] &&
-        next[descriptionKey]
-      ) {
-        next[legacyDescriptionKey] = next[descriptionKey];
-      }
-    }
-  );
-  return next;
-};
-
-const VALUE_POINTS = [
-  "Personalized study paths generated from every conversation",
-  "Daily goals that track your streaks and celebrate milestones",
-  "Lesson summaries and transcripts you can download anytime",
-  "Community prompts that keep you motivated and curious",
-];
-
-const LandingSection = ({ children, ...rest }) => (
-  <Box
-    as="section"
-    width="100%"
-    maxWidth="1200px"
-    px={{ base: 6, md: 10 }}
-    py={{ base: 12, md: 16 }}
-    {...rest}
-  >
-    {children}
-  </Box>
-);
-
-const MotionBox = motion(Box);
-const MotionVStack = motion(VStack);
-const MotionText = motion(Text);
-const MotionInput = motion(Input);
-const MotionButton = motion(Button);
-const MotionHStack = motion(HStack);
-const MotionStack = motion(Stack);
-const glowPulse = keyframes`
-  0% { transform: translateY(0) scale(1); opacity: 0.65; }
-  50% { transform: translateY(-12px) scale(1.04); opacity: 0.9; }
-  100% { transform: translateY(0) scale(1); opacity: 0.65; }
-`;
-
-const gradientShift = keyframes`
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-`;
-
-const shimmerSweep = keyframes`
-  0% { transform: translateX(-20%) rotate(-6deg); opacity: 0; }
-  40% { opacity: 0.45; }
-  60% { opacity: 0.6; }
-  100% { transform: translateX(120%) rotate(-6deg); opacity: 0; }
-`;
-
-const caretBlink = keyframes`
-  0%, 55% { opacity: 0.82; }
-  55%, 100% { opacity: 0; }
-`;
-
-const StreamingText = ({
-  text = "",
-  as: Component = Text,
-  delay = 120,
-  speed = 8,
-  caretColor = "teal.200",
-  prefersReducedMotion: prefersReducedMotionProp,
-  ...rest
-}) => {
-  const motionPreference = usePrefersReducedMotion();
-  const prefersReducedMotion =
-    prefersReducedMotionProp !== undefined
-      ? prefersReducedMotionProp
-      : motionPreference;
-
-  const characters = useMemo(() => Array.from(text ?? ""), [text]);
-  const [visibleCount, setVisibleCount] = useState(
-    prefersReducedMotion ? characters.length : 0
-  );
-
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      setVisibleCount(characters.length);
-      return undefined;
-    }
-
-    setVisibleCount(0);
-    let streamInterval;
-    const delayTimer = setTimeout(() => {
-      streamInterval = setInterval(() => {
-        setVisibleCount((current) => {
-          if (current >= characters.length) {
-            clearInterval(streamInterval);
-            return current;
-          }
-          return current + 1;
-        });
-      }, speed);
-    }, delay);
-
-    return () => {
-      clearTimeout(delayTimer);
-      clearInterval(streamInterval);
-    };
-  }, [characters.length, delay, prefersReducedMotion, speed]);
-
-  const caretVisible =
-    !prefersReducedMotion && visibleCount < characters.length;
-
-  return (
-    <Component {...rest} whiteSpace="pre-wrap">
-      {characters.slice(0, visibleCount).join("")}
-      {caretVisible ? (
-        <Box
-          as="span"
-          ml="4px"
-          display="inline-block"
-          w="7px"
-          h="1.15em"
-          bg={caretColor}
-          borderRadius="full"
-          animation={`${caretBlink} 1s steps(2) infinite`}
-        />
-      ) : null}
-    </Component>
-  );
-};
-
-const HeroBackground = ({ prefersReducedMotion }) => (
-  <Box position="absolute" inset={0} overflow="hidden" zIndex={-2}>
-    <Box
-      position="absolute"
-      inset={0}
-      bgGradient="linear(to-br, #040b14, #0c1e31 45%, #0a2f40)"
-      backgroundSize="200% 200%"
-      animation={
-        prefersReducedMotion
-          ? undefined
-          : `${gradientShift} 20s ease-in-out infinite`
-      }
-    />
-
-    <Box
-      position="absolute"
-      top="-10%"
-      left="-12%"
-      w="60%"
-      h="60%"
-      bgGradient="radial(closest-side, rgba(32, 197, 190, 0.35), transparent 60%)"
-      filter="blur(40px)"
-      animation={
-        prefersReducedMotion
-          ? undefined
-          : `${glowPulse} 14s ease-in-out infinite alternate`
-      }
-    />
-    <Box
-      position="absolute"
-      bottom="-12%"
-      right="-16%"
-      w="55%"
-      h="55%"
-      bgGradient="radial(closest-side, rgba(79, 70, 229, 0.28), transparent 60%)"
-      filter="blur(40px)"
-      animation={
-        prefersReducedMotion
-          ? undefined
-          : `${glowPulse} 16s ease-in-out infinite alternate`
-      }
-    />
-
-    <Box
-      position="absolute"
-      insetY={-10}
-      left="-30%"
-      w="50%"
-      bgGradient="linear(to-b, rgba(255,255,255,0.12), transparent 60%)"
-      filter="blur(18px)"
-      opacity={0.35}
-      animation={
-        prefersReducedMotion ? undefined : `${shimmerSweep} 18s linear infinite`
-      }
-    />
-  </Box>
-);
-
-const BASE_BUTTON_PROPS = {
-  size: "lg",
-  fontWeight: "semibold",
-  px: 8,
-  minH: 12,
-  transition: "all 0.2s ease",
-  whiteSpace: "nowrap",
-  flexShrink: 0,
-};
-
-const BUTTON_VARIANTS = {
-  primary: {
-    bg: "teal.400",
-    color: "gray.900",
-    _hover: {
-      bg: "teal.300",
+const theme = {
+  colors: {
+    bg: {
+      deep: "#030712",
+      elevated: "rgba(15, 23, 42, 0.8)",
+      glass: "rgba(15, 23, 42, 0.4)",
+      glow: "rgba(20, 184, 166, 0.08)",
+    },
+    text: {
+      primary: "#f8fafc",
+      secondary: "rgba(148, 163, 184, 1)",
+      accent: "#2dd4bf",
+      muted: "rgba(100, 116, 139, 1)",
+    },
+    accent: {
+      primary: "#14b8a6",
+      secondary: "#0ea5e9",
+      tertiary: "#a78bfa",
+      warm: "#f97316",
+    },
+    border: {
+      subtle: "rgba(51, 65, 85, 0.5)",
+      accent: "rgba(20, 184, 166, 0.3)",
     },
   },
-  secondary: {
-    bg: "rgba(45, 212, 191, 0.12)",
-    color: "teal.100",
-    border: "1px solid rgba(45, 212, 191, 0.45)",
-    _hover: {
-      bg: "rgba(45, 212, 191, 0.18)",
-    },
+  fonts: {
+    display: "'Playfair Display', Georgia, serif",
+    body: "'DM Sans', -apple-system, sans-serif",
+    mono: "'JetBrains Mono', monospace",
   },
-  ghost: {
-    bg: "transparent",
-    color: "cyan.200",
-    border: "1px solid rgba(59, 130, 246, 0.35)",
-    _hover: {
-      bg: "rgba(30, 64, 175, 0.25)",
-      borderColor: "rgba(96, 165, 250, 0.55)",
-    },
+  spacing: {
+    section: "clamp(80px, 12vw, 160px)",
+    container: "clamp(20px, 5vw, 80px)",
   },
 };
 
-const landingTranslations = {
-  en: extendWithFeatureAliases({
-    language_en: "English",
-    language_es: "Spanish",
-    default_loading: "Setting up your study space...",
-    toast_account_created_title: "Account created",
-    toast_account_created_desc: "Save your secret key before you continue.",
-    error_create_generic: "Something went wrong. Please try again.",
-    toast_copy_success_title: "Secret key copied",
-    toast_copy_success_desc:
-      "Store it somewhere safe—it's your only way back in.",
-    toast_copy_error_title: "Copy failed",
-    toast_copy_error_desc:
-      "Select the key manually if clipboard access is blocked.",
-    toast_signin_success_title: "Welcome back!",
-    error_signin_invalid:
-      "We couldn't verify that key. Check it and try again.",
-    error_signin_generic: "We couldn't sign you in. Try again.",
-    brand_name: "No Sabos",
-    hero_title: "A smart tool to help you practice your language skills.",
-    hero_languages: "English, Spanish, Portuguese, French, Italian or Nahuatl.",
-    display_name_placeholder: "Display name",
-    create_button: "Create account",
-    create_loading: "Creating",
-    have_key_button: "I already have a key",
-    section_features_title: "What you can do inside the app today",
-    feature_conversations_title: "Real-time conversations",
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRANSLATIONS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const translations = {
+  en: {
+    nav_signin: "Sign In",
+    hero_title: "Your Personal",
+    hero_title_accent: "Language Tutor",
+    hero_subtitle:
+      "Stories, conversations, flashcards, grammar labs, and skill trees—all powered by AI that adapts to how you learn best. Practice Spanish, English, Portuguese, French, Italian, or Nahuatl.",
+    cta_start: "Start Learning",
+    cta_signin: "I Have a Key",
+    features_label: "CAPABILITIES",
+    features_title: "Everything You Need to",
+    features_title_accent: "Become Fluent",
+    feature_conversations: "Real-Time Conversations",
     feature_conversations_desc:
-      "Stay immersed with responsive dialogues that coach you through speaking and listening in the moment.",
-    feature_stories_title: "Stories for reading & speaking",
+      "Immersive dialogues that adapt to your level, coaching you through speaking and listening in real-time.",
+    feature_stories: "Interactive Stories",
     feature_stories_desc:
-      "Follow interactive stories that invite you to read aloud, summarize, and role-play to your liking.",
-    feature_reading_title: "Reading practice",
+      "Engaging narratives that invite you to read aloud, summarize, and role-play in your target language.",
+    feature_reading: "Reading Practice",
     feature_reading_desc:
-      "Practice reading comprehension with subject-focused lectures to expand your vocabulary and cultural knowledge.",
-    feature_grammar_title: "Grammar & vocabulary books",
+      "Subject-focused lectures expanding your vocabulary and cultural knowledge through comprehension exercises.",
+    feature_grammar: "Grammar Labs",
     feature_grammar_desc:
-      "Check rules quickly, drill tricky concepts, and test yourself with adaptive review sets.",
-    feature_skilltree_title: "Skill tree",
+      "Quick rule references, concept drills, and adaptive review sets that strengthen your foundation.",
+    feature_skilltree: "Skill Tree",
     feature_skilltree_desc:
-      "Learn in a structured way with guided paths that build your skills step by step.",
-    feature_flashcards_title: "Flash cards",
+      "Structured learning paths that build your abilities step by step with clear progress visualization.",
+    feature_flashcards: "Smart Flashcards",
     feature_flashcards_desc:
-      "Learn how to speak with others fast using quick-fire vocabulary and phrase drills.",
-    feature_dailygoals_title: "Daily goals",
-    feature_dailygoals_desc:
-      "Stay motivated with daily targets that track your progress and celebrate your streaks.",
-    wallet_section_title: "Create scholarships with Bitcoin",
-    wallet_section_description_prefix:
-      "Top up your in-app Bitcoin wallet to help us create scholarships with learning with",
-    wallet_section_description_suffix: ".",
-    wallet_section_note:
+      "Spaced repetition vocabulary drills that optimize retention and accelerate your learning.",
+    feature_goals: "Daily Goals",
+    feature_goals_desc:
+      "Personalized targets tracking your progress and celebrating streaks to keep you motivated.",
+    value_label: "WHY NO SABOS",
+    value_title: "Learning That",
+    value_title_accent: "Actually Works",
+    value_1: "Personalized study paths generated from every conversation",
+    value_2: "Daily goals that track your streaks and celebrate milestones",
+    value_3: "Lesson summaries and transcripts you can download anytime",
+    value_4: "Community prompts that keep you motivated and curious",
+    scholarship_label: "GIVE BACK",
+    scholarship_title: "Create Scholarships",
+    scholarship_title_accent: "with Bitcoin",
+    scholarship_desc:
+      "Top up your in-app Bitcoin wallet to help create scholarships through learning with",
+    scholarship_link: "RobotsBuildingEducation.com",
+    scholarship_note:
       "Choose a community identity in the app so every satoshi you spend supports real people.",
-    wallet_section_link_label: "RobotsBuildingEducation.com",
-    ready_title: "Ready to jump in?",
-    ready_subtitle:
-      "Create your secure profile in seconds, save your key, and unlock every mode you just explored.",
-    ready_cta: "Create account",
-    signin_title: "Welcome back",
+    faq_label: "QUESTIONS",
+    faq_title: "Frequently Asked",
+    faq_q1: "What happens when I create an account?",
+    faq_a1:
+      "We generate a secure key that unlocks your personal study space. Keep it safe—it's the only way to sign in from another device.",
+    faq_q2: "Do I need to know anything about blockchains or Nostr?",
+    faq_a2:
+      "No. We take care of the technical details for you. All you need is your key to come back to your lessons.",
+    faq_q3: "Which languages can I practice?",
+    faq_a3:
+      "Start with Spanish, English, Portuguese, French, or Italian right away, then explore Nahuatl-inspired cultural modules.",
+    faq_q4: "Is there a cost?",
+    faq_a4:
+      "The core practice tools are free. Some advanced labs may require scholarships or paid access.",
+    cta_final_title: "Ready to Begin Your",
+    cta_final_accent: "Language Journey?",
+    cta_final_subtitle:
+      "Create your secure profile in seconds, save your key, and unlock a world of language learning.",
+    placeholder_name: "Your display name",
+    footer_brand: "No Sabos",
+    footer_tagline: "Making language learning accessible to everyone.",
+    signin_title: "Welcome Back",
     signin_subtitle:
-      "Paste the secret key you saved when you first created an account.",
+      "Paste the secret key you saved when you created your account.",
     signin_placeholder: "Paste your secret key",
-    signin_button: "Sign in",
-    signin_or: "or",
-    signin_extension_button: "Sign in with NIP-07 extension",
-    error_extension_signin: "Could not sign in with extension.",
-    error_extension_generic: "Extension sign-in failed. Please try again.",
+    signin_button: "Sign In",
+    signin_extension: "Sign in with Extension",
     back_button: "Back",
-    created_title: "Save your secret key",
-    created_description:
-      "This key is the only way to access your accounts on Robots Building Education apps. Store it in a password manager or a safe place. We cannot recover it for you.",
-    created_generating: "Generating key...",
-    created_checkbox:
-      "I understand that I must store this key securely to keep my account safe—it protects everything, including my Bitcoin deposits.",
-    created_copy: "Copy key",
-    created_launch: "Start learning",
-    created_back: "Go back",
-  }),
-  es: extendWithFeatureAliases({
-    language_en: "Inglés",
+    language_en: "English",
     language_es: "Español",
-    default_loading: "Preparando tu espacio de estudio...",
-    toast_account_created_title: "Cuenta creada",
-    toast_account_created_desc: "Guarda tu llave secreta antes de continuar.",
-    error_create_generic: "Ocurrió un problema. Inténtalo de nuevo.",
-    toast_copy_success_title: "Llave secreta copiada",
-    toast_copy_success_desc:
-      "Guárdala en un lugar seguro: es la única forma de volver a entrar.",
-    toast_copy_error_title: "No se pudo copiar",
-    toast_copy_error_desc:
-      "Selecciona la llave manualmente si el portapapeles está bloqueado.",
-    toast_signin_success_title: "¡Bienvenido de nuevo!",
-    error_signin_invalid:
-      "No pudimos verificar esa llave. Revísala e inténtalo otra vez.",
-    error_signin_generic: "No pudimos iniciar tu sesión. Inténtalo de nuevo.",
-    brand_name: "No Sabos",
-    hero_title:
-      "Una herramienta inteligente para practicar tus habilidades lingüísticas.",
-    hero_languages: "Inglés, Español, Portugués, Francés, Italiano o Huasteco.",
-    display_name_placeholder: "Nombre para mostrar",
-    create_button: "Crear cuenta",
-    create_loading: "Creando",
-    have_key_button: "Ya tengo una llave",
-    section_features_title: "Lo que puedes hacer en la app hoy",
-    feature_conversations_title: "Conversaciones en tiempo real",
+  },
+  es: {
+    nav_signin: "Iniciar Sesión",
+    hero_title: "Tu",
+    hero_title_accent: "Tutor Lingüístico Personal",
+    hero_subtitle:
+      "Historias, conversaciones, tarjetas, laboratorios de gramática y árboles de habilidades—todo impulsado por IA que se adapta a cómo aprendes mejor. Practica español, inglés, portugués, francés, italiano o náhuatl.",
+    cta_start: "Comienza",
+    cta_signin: "Tengo una Llave",
+    features_label: "CAPACIDADES",
+    features_title: "Todo lo que Necesitas para",
+    features_title_accent: "Ser Fluido",
+    feature_conversations: "Conversaciones en Tiempo Real",
     feature_conversations_desc:
-      "Mantente inmerso con diálogos receptivos que te guían en la expresión y comprensión al momento.",
-    feature_stories_title: "Historias para leer y hablar",
+      "Diálogos inmersivos que se adaptan a tu nivel, guiándote en habla y escucha en tiempo real.",
+    feature_stories: "Historias Interactivas",
     feature_stories_desc:
-      "Sigue historias interactivas que te invitan a leer en voz alta, resumir y representar papeles.",
-    feature_reading_title: "Práctica de lectura",
+      "Narrativas envolventes que te invitan a leer en voz alta, resumir y actuar en tu idioma objetivo.",
+    feature_reading: "Práctica de Lectura",
     feature_reading_desc:
-      "Practica la comprensión de lectura con lecciones enfocadas en temas para ampliar tu vocabulario y conocimiento cultural.",
-    feature_grammar_title: "Libros de gramática y vocabulario",
+      "Lecturas enfocadas que amplían tu vocabulario y conocimiento cultural.",
+    feature_grammar: "Laboratorios de Gramática",
     feature_grammar_desc:
-      "Consulta reglas rápido, practica puntos difíciles y pon a prueba tus conocimientos con repasos adaptativos.",
-    feature_skilltree_title: "Árbol de habilidades",
+      "Referencias rápidas, ejercicios conceptuales y sets de repaso adaptativos.",
+    feature_skilltree: "Árbol de Habilidades",
     feature_skilltree_desc:
-      "Aprende de manera estructurada con rutas guiadas que desarrollan tus habilidades paso a paso.",
-    feature_flashcards_title: "Tarjetas de memoria",
+      "Rutas de aprendizaje estructuradas que construyen tus habilidades paso a paso.",
+    feature_flashcards: "Tarjetas Inteligentes",
     feature_flashcards_desc:
-      "Aprende a hablar con otros rápidamente usando ejercicios ágiles de vocabulario y frases.",
-    feature_dailygoals_title: "Metas diarias",
-    feature_dailygoals_desc:
-      "Mantente motivado con objetivos diarios que rastrean tu progreso y celebran tus rachas.",
-    wallet_section_title: "Becas impulsadas con Bitcoin",
-    wallet_section_description_prefix:
-      "Recarga tu billetera de Bitcoin en la app para ayudarnos a crear becas con aprendizaje con",
-    wallet_section_description_suffix: ".",
-    wallet_section_note:
-      "Elige una identidad comunitaria en la app para dirigir tu apoyo a estudiantes reales.",
-    wallet_section_link_label: "RobotsBuildingEducation.com",
-    ready_title: "¿Listo para empezar?",
-    ready_subtitle:
-      "Crea tu perfil seguro en segundos, guarda tu llave y desbloquea todos los modos que viste.",
-    ready_cta: "Crear cuenta",
-    signin_title: "Bienvenido de nuevo",
+      "Ejercicios de vocabulario con repetición espaciada que optimizan la retención.",
+    feature_goals: "Metas Diarias",
+    feature_goals_desc:
+      "Objetivos personalizados que rastrean tu progreso y celebran tus rachas.",
+    value_label: "POR QUÉ NO SABOS",
+    value_title: "Aprendizaje que",
+    value_title_accent: "Realmente Funciona",
+    value_1: "Rutas de estudio personalizadas generadas de cada conversación",
+    value_2: "Metas diarias que rastrean tus rachas y celebran hitos",
+    value_3: "Resúmenes de lecciones y transcripciones descargables",
+    value_4: "Prompts comunitarios que te mantienen motivado y curioso",
+    scholarship_label: "CONTRIBUYE",
+    scholarship_title: "Crea Becas",
+    scholarship_title_accent: "con Bitcoin",
+    scholarship_desc:
+      "Recarga tu billetera de Bitcoin en la app para ayudar a crear becas a través del aprendizaje con",
+    scholarship_link: "RobotsBuildingEducation.com",
+    scholarship_note:
+      "Elige una identidad comunitaria para que cada satoshi que gastes apoye a personas reales.",
+    faq_label: "PREGUNTAS",
+    faq_title: "Preguntas Frecuentes",
+    faq_q1: "¿Qué pasa cuando creo una cuenta?",
+    faq_a1:
+      "Generamos una llave segura que desbloquea tu espacio de estudio personal. Guárdala bien—es la única forma de iniciar sesión desde otro dispositivo.",
+    faq_q2: "¿Necesito saber algo sobre blockchains o Nostr?",
+    faq_a2:
+      "No. Nos encargamos de los detalles técnicos. Solo necesitas tu llave para volver a tus lecciones.",
+    faq_q3: "¿Qué idiomas puedo practicar?",
+    faq_a3:
+      "Comienza con español, inglés, portugués, francés o italiano, luego explora módulos culturales inspirados en náhuatl.",
+    faq_q4: "¿Tiene costo?",
+    faq_a4:
+      "Las herramientas principales son gratuitas. Algunos laboratorios avanzados pueden requerir becas o acceso de pago.",
+    cta_final_title: "¿Listo para Comenzar tu",
+    cta_final_accent: "Viaje Lingüístico?",
+    cta_final_subtitle:
+      "Crea tu perfil seguro en segundos, guarda tu llave y desbloquea un mundo de aprendizaje.",
+    placeholder_name: "Tu nombre para mostrar",
+    footer_brand: "No Sabos",
+    footer_tagline: "Haciendo el aprendizaje de idiomas accesible para todos.",
+    signin_title: "Bienvenido de Nuevo",
     signin_subtitle:
       "Pega la llave secreta que guardaste cuando creaste tu cuenta.",
     signin_placeholder: "Pega tu llave secreta",
-    signin_button: "Iniciar sesión",
-    signin_or: "o",
-    signin_extension_button: "Iniciar con NIP-07 extensión",
-    error_extension_signin: "No se pudo iniciar sesión con la extensión.",
-    error_extension_generic:
-      "Error al iniciar sesión con extensión. Inténtalo de nuevo.",
+    signin_button: "Iniciar Sesión",
+    signin_extension: "Iniciar con Extensión",
     back_button: "Regresar",
-    created_title: "Guarda tu llave secreta",
-    created_description:
-      "Esta llave es la única forma de acceder a tus cuentas en las apps de Robots Building Education. Guárdala en un gestor de contraseñas o en un lugar seguro. No podemos recuperarla por ti.",
-    created_generating: "Generando llave...",
-    created_checkbox:
-      "Entiendo que debo guardar esta llave de forma segura para proteger mi cuenta; resguarda todo, incluso mis depósitos de Bitcoin.",
-    created_copy: "Copiar llave",
-    created_launch: "Comenzar a aprender",
-    created_back: "Regresar",
-  }),
+    language_en: "English",
+    language_es: "Español",
+  },
 };
 
-const MEXICO_TIMEZONES = new Set([
-  "America/Mexico_City",
-  "America/Cancun",
-  "America/Chihuahua",
-  "America/Hermosillo",
-]);
+// ═══════════════════════════════════════════════════════════════════════════════
+// GLOBAL STYLES
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const getInitialLandingLanguage = () => {
-  if (typeof window === "undefined") return "en";
-
-  try {
-    const stored = localStorage.getItem("appLanguage");
-    if (stored === "es" || stored === "en") return stored;
-
-    const languages = navigator.languages || [navigator.language];
-    const isMexicoLocale = languages?.some(
-      (lang) =>
-        typeof lang === "string" && lang.toLowerCase().startsWith("es-mx")
-    );
-
-    const timeZone = Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone;
-    const isMexicoTimeZone = timeZone && MEXICO_TIMEZONES.has(timeZone);
-
-    if (isMexicoLocale || isMexicoTimeZone) {
-      localStorage.setItem("appLanguage", "es");
-      return "es";
+const GlobalStyles = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-  } catch {}
+    
+    html {
+      scroll-behavior: smooth;
+    }
+    
+    body {
+      font-family: ${theme.fonts.body};
+      background: ${theme.colors.bg.deep};
+      color: ${theme.colors.text.primary};
+      line-height: 1.6;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    ::selection {
+      background: ${theme.colors.accent.primary};
+      color: ${theme.colors.bg.deep};
+    }
+    
+    input::placeholder {
+      color: ${theme.colors.text.muted};
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(2deg); }
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.3; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(1.05); }
+    }
+    
+    @keyframes gradient-shift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    @keyframes shimmer {
+      0% { transform: translateX(-100%) skewX(-15deg); }
+      100% { transform: translateX(200%) skewX(-15deg); }
+    }
+    
+    @keyframes orbit {
+      0% { transform: rotate(0deg) translateX(150px) rotate(0deg); }
+      100% { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
+    }
+  `}</style>
+);
 
-  return "en";
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANIMATED BACKGROUND
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const AnimatedBackground = () => (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      zIndex: 0,
+      overflow: "hidden",
+      pointerEvents: "none",
+    }}
+  >
+    {/* Base gradient */}
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: `
+          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(20, 184, 166, 0.15) 0%, transparent 50%),
+          radial-gradient(ellipse 60% 40% at 80% 100%, rgba(14, 165, 233, 0.1) 0%, transparent 40%),
+          radial-gradient(ellipse 50% 30% at 10% 80%, rgba(167, 139, 250, 0.08) 0%, transparent 40%),
+          linear-gradient(to bottom, #030712 0%, #0f172a 50%, #030712 100%)
+        `,
+      }}
+    />
+
+    {/* Animated orbs */}
+    <motion.div
+      animate={{
+        scale: [1, 1.2, 1],
+        opacity: [0.3, 0.5, 0.3],
+      }}
+      transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      style={{
+        position: "absolute",
+        top: "10%",
+        left: "5%",
+        width: "500px",
+        height: "500px",
+        borderRadius: "50%",
+        background: `radial-gradient(circle, rgba(20, 184, 166, 0.2) 0%, transparent 70%)`,
+        filter: "blur(60px)",
+      }}
+    />
+    <motion.div
+      animate={{
+        scale: [1.2, 1, 1.2],
+        opacity: [0.2, 0.4, 0.2],
+      }}
+      transition={{
+        duration: 10,
+        repeat: Infinity,
+        ease: "easeInOut",
+        delay: 2,
+      }}
+      style={{
+        position: "absolute",
+        bottom: "20%",
+        right: "10%",
+        width: "400px",
+        height: "400px",
+        borderRadius: "50%",
+        background: `radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%)`,
+        filter: "blur(50px)",
+      }}
+    />
+
+    {/* Grid overlay */}
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        backgroundImage: `
+          linear-gradient(rgba(20, 184, 166, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(20, 184, 166, 0.03) 1px, transparent 1px)
+        `,
+        backgroundSize: "60px 60px",
+        maskImage:
+          "radial-gradient(ellipse 80% 50% at 50% 50%, black, transparent)",
+      }}
+    />
+
+    {/* Noise texture */}
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        opacity: 0.02,
+        background: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+      }}
+    />
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FLOATING LANGUAGE ELEMENTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const FloatingElements = () => {
+  const words = [
+    { text: "Hola", x: "15%", y: "20%", delay: 0 },
+    { text: "Bonjour", x: "80%", y: "15%", delay: 1 },
+    { text: "Ciao", x: "10%", y: "70%", delay: 2 },
+    { text: "Olá", x: "85%", y: "60%", delay: 0.5 },
+    { text: "Hello", x: "25%", y: "85%", delay: 1.5 },
+    { text: "Pialli", x: "70%", y: "80%", delay: 2.5 },
+  ];
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        overflow: "hidden",
+        pointerEvents: "none",
+        zIndex: 1,
+      }}
+    >
+      {words.map((word, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{
+            opacity: [0.1, 0.25, 0.1],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 6 + i,
+            repeat: Infinity,
+            delay: word.delay,
+            ease: "easeInOut",
+          }}
+          style={{
+            position: "absolute",
+            left: word.x,
+            top: word.y,
+            fontFamily: theme.fonts.display,
+            fontSize: "clamp(1.5rem, 3vw, 2.5rem)",
+            fontWeight: 500,
+            color: theme.colors.accent.primary,
+            opacity: 0.15,
+            textShadow: `0 0 40px ${theme.colors.accent.primary}`,
+          }}
+        >
+          {word.text}
+        </motion.div>
+      ))}
+    </div>
+  );
 };
 
-const LandingPage = ({
-  onAuthenticated,
-  user,
-  onSelectIdentity,
-  isIdentitySaving,
-}) => {
-  const toast = useToast();
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
-    useDecentralizedIdentity(
-      typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
-      typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
-    );
-  const [landingLanguage, setLandingLanguage] = useState(
-    getInitialLandingLanguage
-  );
-  const copy = landingTranslations[landingLanguage] || landingTranslations.en;
-  const defaultLoadingMessage = copy.default_loading;
-  const englishLabel = copy.language_en || landingTranslations.en.language_en;
-  const spanishLabel = copy.language_es || landingTranslations.en.language_es;
+// ═══════════════════════════════════════════════════════════════════════════════
+// LOGO COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
 
+const Logo = ({ size = 48 }) => (
+  <motion.div
+    style={{
+      borderRadius: "16px",
+      background: `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: `0 8px 32px rgba(20, 184, 166, 0.3)`,
+      position: "relative",
+      overflow: "hidden",
+    }}
+  >
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background:
+          "linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.2) 50%, transparent 60%)",
+        animation: "shimmer 3s infinite",
+      }}
+    />
+    <span
+      style={{
+        fontSize: size * 0.22,
+        fontFamily: theme.fonts.display,
+        fontWeight: 700,
+        color: "#030712",
+        position: "relative",
+        zIndex: 1,
+        padding: 16,
+      }}
+    >
+      No Sabos
+    </span>
+  </motion.div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BUTTON COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const Button = ({
+  children,
+  variant = "primary",
+  size = "md",
+  fullWidth = false,
+  disabled = false,
+  loading = false,
+  onClick,
+  style = {},
+  ...props
+}) => {
+  const variants = {
+    primary: {
+      background: `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, #0d9488 100%)`,
+      color: "#FFF",
+      border: "none",
+      boxShadow: `0 4px 24px rgba(20, 184, 166, 0.4)`,
+    },
+    secondary: {
+      background: "transparent",
+      color: theme.colors.text.primary,
+      border: `1px solid ${theme.colors.border.accent}`,
+      boxShadow: "none",
+    },
+    ghost: {
+      background: "transparent",
+      color: theme.colors.text.secondary,
+      border: "none",
+      boxShadow: "none",
+    },
+  };
+
+  const sizes = {
+    sm: { padding: "10px 20px", fontSize: "0.875rem" },
+    md: { padding: "14px 32px", fontSize: "1rem" },
+    lg: { padding: "18px 40px", fontSize: "1.125rem" },
+  };
+
+  const baseStyle = {
+    ...variants[variant],
+    ...sizes[size],
+    fontFamily: theme.fonts.body,
+    fontWeight: 600,
+    borderRadius: "12px",
+    cursor: disabled ? "not-allowed" : "pointer",
+    opacity: disabled ? 0.5 : 1,
+    width: fullWidth ? "100%" : "auto",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+    transition: "all 0.2s ease",
+    position: "relative",
+    overflow: "hidden",
+    ...style,
+  };
+
+  return (
+    <motion.button
+      whileHover={!disabled ? { scale: 1.02, y: -2 } : {}}
+      whileTap={!disabled ? { scale: 0.98 } : {}}
+      onClick={disabled || loading ? undefined : onClick}
+      style={baseStyle}
+      {...props}
+    >
+      {loading ? (
+        <motion.span
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          style={{ display: "inline-block" }}
+        >
+          ⟳
+        </motion.span>
+      ) : (
+        children
+      )}
+      {variant === "primary" && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%)",
+            animation: "shimmer 2.5s infinite",
+          }}
+        />
+      )}
+    </motion.button>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// INPUT COMPONENT
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const Input = ({
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  style = {},
+  ...props
+}) => (
+  <motion.input
+    type={type}
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    whileFocus={{ scale: 1.01 }}
+    style={{
+      width: "100%",
+      padding: "16px 20px",
+      fontSize: "1rem",
+      fontFamily: theme.fonts.body,
+      background: "rgba(15, 23, 42, 0.6)",
+      border: `1px solid ${theme.colors.border.subtle}`,
+      borderRadius: "12px",
+      color: theme.colors.text.primary,
+      outline: "none",
+      transition: "all 0.2s ease",
+      ...style,
+    }}
+    onFocus={(e) => {
+      e.target.style.borderColor = theme.colors.accent.primary;
+      e.target.style.boxShadow = `0 0 0 3px rgba(20, 184, 166, 0.1)`;
+    }}
+    onBlur={(e) => {
+      e.target.style.borderColor = theme.colors.border.subtle;
+      e.target.style.boxShadow = "none";
+    }}
+    {...props}
+  />
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SECTION LABEL
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SectionLabel = ({ children }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: "12px",
+      marginBottom: "16px",
+    }}
+  >
+    <span
+      style={{
+        width: "40px",
+        height: "1px",
+        background: `linear-gradient(90deg, transparent, ${theme.colors.accent.primary})`,
+      }}
+    />
+    <span
+      style={{
+        fontFamily: theme.fonts.mono,
+        fontSize: "0.75rem",
+        fontWeight: 500,
+        letterSpacing: "0.15em",
+        color: theme.colors.accent.primary,
+        textTransform: "uppercase",
+      }}
+    >
+      {children}
+    </span>
+    <span
+      style={{
+        width: "40px",
+        height: "1px",
+        background: `linear-gradient(90deg, ${theme.colors.accent.primary}, transparent)`,
+      }}
+    />
+  </motion.div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FEATURE CARD
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const FeatureCard = ({ icon, title, description, index }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 40 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, amount: 0.3 }}
+    transition={{ duration: 0.6, delay: index * 0.1 }}
+    whileHover={{ y: -8, scale: 1.02 }}
+    style={{
+      padding: "32px",
+      background: theme.colors.bg.elevated,
+      backdropFilter: "blur(20px)",
+      borderRadius: "24px",
+      border: `1px solid ${theme.colors.border.subtle}`,
+      position: "relative",
+      overflow: "hidden",
+    }}
+  >
+    {/* Gradient accent */}
+    <div
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "3px",
+        background: `linear-gradient(90deg, ${theme.colors.accent.primary}, ${theme.colors.accent.secondary})`,
+        opacity: 0.8,
+      }}
+    />
+
+    {/* Icon */}
+    <div
+      style={{
+        width: "56px",
+        height: "56px",
+        borderRadius: "16px",
+        background: theme.colors.bg.glow,
+        border: `1px solid ${theme.colors.border.accent}`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        marginBottom: "20px",
+        fontSize: "24px",
+      }}
+    >
+      {icon}
+    </div>
+
+    <h3
+      style={{
+        fontFamily: theme.fonts.display,
+        fontSize: "1.25rem",
+        fontWeight: 600,
+        color: theme.colors.text.primary,
+        marginBottom: "12px",
+      }}
+    >
+      {title}
+    </h3>
+
+    <p
+      style={{
+        fontFamily: theme.fonts.body,
+        fontSize: "0.95rem",
+        color: theme.colors.text.secondary,
+        lineHeight: 1.7,
+      }}
+    >
+      {description}
+    </p>
+  </motion.div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// FAQ ITEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const FAQItem = ({ question, answer, isOpen, onClick, index }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ delay: index * 0.1 }}
+    style={{
+      borderBottom: `1px solid ${theme.colors.border.subtle}`,
+      overflow: "hidden",
+    }}
+  >
+    <motion.button
+      onClick={onClick}
+      style={{
+        width: "100%",
+        padding: "24px 0",
+        background: "transparent",
+        border: "none",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        textAlign: "left",
+      }}
+    >
+      <span
+        style={{
+          fontFamily: theme.fonts.display,
+          fontSize: "1.125rem",
+          fontWeight: 500,
+          color: theme.colors.text.primary,
+        }}
+      >
+        {question}
+      </span>
+      <motion.span
+        animate={{ rotate: isOpen ? 45 : 0 }}
+        style={{
+          fontSize: "1.5rem",
+          color: theme.colors.accent.primary,
+          fontWeight: 300,
+        }}
+      >
+        +
+      </motion.span>
+    </motion.button>
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ height: 0, opacity: 0 }}
+          animate={{ height: "auto", opacity: 1 }}
+          exit={{ height: 0, opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <p
+            style={{
+              paddingBottom: "24px",
+              fontFamily: theme.fonts.body,
+              fontSize: "1rem",
+              color: theme.colors.text.secondary,
+              lineHeight: 1.7,
+            }}
+          >
+            {answer}
+          </p>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </motion.div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SIGN IN VIEW
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
+  const [secretKey, setSecretKey] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleSignIn = async () => {
+    if (!secretKey.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      await onSignIn(secretKey);
+    } catch (e) {
+      setError(e.message || "Sign in failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "20px",
+        position: "relative",
+        zIndex: 10,
+      }}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5 }}
+        style={{
+          maxWidth: "440px",
+          width: "100%",
+          padding: "48px",
+          background: theme.colors.bg.elevated,
+          backdropFilter: "blur(40px)",
+          borderRadius: "32px",
+          border: `1px solid ${theme.colors.border.subtle}`,
+        }}
+      >
+        <div style={{ textAlign: "center", marginBottom: "32px" }}>
+          <Logo size={56} />
+        </div>
+
+        <h1
+          style={{
+            fontFamily: theme.fonts.display,
+            fontSize: "2rem",
+            fontWeight: 600,
+            textAlign: "center",
+            marginBottom: "12px",
+          }}
+        >
+          {copy.signin_title}
+        </h1>
+
+        <p
+          style={{
+            fontFamily: theme.fonts.body,
+            fontSize: "1rem",
+            color: theme.colors.text.secondary,
+            textAlign: "center",
+            marginBottom: "32px",
+          }}
+        >
+          {copy.signin_subtitle}
+        </p>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+          <Input
+            value={secretKey}
+            onChange={(e) => setSecretKey(e.target.value)}
+            placeholder={copy.signin_placeholder}
+            type="password"
+          />
+
+          {error && (
+            <p
+              style={{
+                color: "#f87171",
+                fontSize: "0.875rem",
+                textAlign: "center",
+              }}
+            >
+              {error}
+            </p>
+          )}
+
+          <Button onClick={handleSignIn} loading={loading} fullWidth>
+            {copy.signin_button} →
+          </Button>
+
+          {hasExtension && (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "16px",
+                  margin: "8px 0",
+                }}
+              >
+                <div
+                  style={{
+                    flex: 1,
+                    height: "1px",
+                    background: theme.colors.border.subtle,
+                  }}
+                />
+                <span
+                  style={{
+                    color: theme.colors.text.muted,
+                    fontSize: "0.875rem",
+                  }}
+                >
+                  or
+                </span>
+                <div
+                  style={{
+                    flex: 1,
+                    height: "1px",
+                    background: theme.colors.border.subtle,
+                  }}
+                />
+              </div>
+              <Button variant="secondary" onClick={onExtension} fullWidth>
+                {copy.signin_extension}
+              </Button>
+            </>
+          )}
+
+          <Button
+            variant="ghost"
+            onClick={onBack}
+            fullWidth
+            style={{ marginTop: "8px" }}
+          >
+            ← {copy.back_button}
+          </Button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MAIN LANDING PAGE
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const LandingPage = ({ onAuthenticated }) => {
+  const toast = useToast();
+  const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
+    useDecentralizedIdentity();
+
+  const [lang, setLang] = useState("en");
   const [view, setView] = useState("landing");
   const [displayName, setDisplayName] = useState("");
-  const [secretKey, setSecretKey] = useState("");
-  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
-  const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isSigningInWithExtension, setIsSigningInWithExtension] =
-    useState(false);
-  const [loadingMessage, setLoadingMessage] = useState(defaultLoadingMessage);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [openFAQ, setOpenFAQ] = useState(null);
   const [hasExtension, setHasExtension] = useState(false);
-  const revealVariant = useMemo(
-    () => ({
-      hidden: { opacity: 0, y: 42 },
-      visible: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: 0.7, ease: "easeOut" },
-      },
-    }),
-    []
-  );
-  const featureVariant = useMemo(
-    () => ({
-      hidden: { opacity: 0, y: 26 },
-      visible: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: 0.65, ease: "easeOut" },
-      },
-    }),
-    []
-  );
-  const stackedVariant = useMemo(
-    () => ({
-      hidden: { opacity: 0, y: 30 },
-      visible: {
-        opacity: 1,
-        y: 0,
-        transition: { duration: 0.75, ease: "easeOut" },
-      },
-    }),
-    []
-  );
+
+  const copy = translations[lang];
+
+  const { scrollYProgress } = useScroll();
+  const headerOpacity = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
 
   useEffect(() => {
-    setLoadingMessage(copy.default_loading);
-  }, [copy.default_loading, landingLanguage]);
-
-  useEffect(() => {
-    // Check for NIP-07 extension availability
-    const checkExtension = () => {
-      setHasExtension(isNip07Available());
-    };
-    checkExtension();
-    // Check again after a short delay in case extension loads slowly
-    const timer = setTimeout(checkExtension, 500);
+    setHasExtension(isNip07Available());
+    const timer = setTimeout(() => setHasExtension(isNip07Available()), 500);
     return () => clearTimeout(timer);
   }, [isNip07Available]);
 
-  const hasDisplayName = displayName.trim().length >= 2;
-
-  const handleLanguageChange = useCallback((lang) => {
-    const norm = lang === "es" ? "es" : "en";
-    setLandingLanguage(norm);
+  const handleCreate = useCallback(async () => {
+    if (displayName.trim().length < 2 || isCreating) return;
+    setIsCreating(true);
     try {
-      localStorage.setItem("appLanguage", norm);
-    } catch {}
-  }, []);
-
-  const handleCreateAccount = useCallback(async () => {
-    if (!hasDisplayName || isCreatingAccount) return;
-    setIsCreatingAccount(true);
-    setLoadingMessage(defaultLoadingMessage);
-    setErrorMessage("");
-
-    try {
-      const keys = await generateNostrKeys(displayName.trim());
+      await generateNostrKeys(displayName.trim());
       localStorage.setItem("displayName", displayName.trim());
-      // Skip the "created" view and go directly to onboarding
       onAuthenticated?.();
-    } catch (error) {
-      console.error("Failed to create account", error);
-      setErrorMessage(error?.message || copy.error_create_generic);
+    } catch (e) {
+      console.error(e);
     } finally {
-      setIsCreatingAccount(false);
+      setIsCreating(false);
     }
-  }, [
-    copy.error_create_generic,
-    copy.toast_account_created_desc,
-    copy.toast_account_created_title,
-    defaultLoadingMessage,
-    displayName,
-    generateNostrKeys,
-    hasDisplayName,
-    isCreatingAccount,
-    onAuthenticated,
-    toast,
-  ]);
+  }, [displayName, isCreating, generateNostrKeys, onAuthenticated]);
 
-  const handleSignIn = useCallback(async () => {
-    if (!secretKey.trim()) return;
-    setIsSigningIn(true);
-    setErrorMessage("");
-    try {
-      const result = await auth(secretKey.trim());
-      if (!result) {
-        throw new Error(copy.error_signin_invalid);
-      }
-      toast({
-        title: copy.toast_signin_success_title,
-        status: "success",
-        duration: 2000,
-      });
+  const handleSignIn = useCallback(
+    async (key) => {
+      const result = await auth(key);
+      if (!result) throw new Error("Invalid key");
       onAuthenticated?.();
-    } catch (error) {
-      console.error("Failed to sign in", error);
-      setErrorMessage(error?.message || copy.error_signin_generic);
-    } finally {
-      setIsSigningIn(false);
-    }
-  }, [
-    auth,
-    copy.error_signin_generic,
-    copy.error_signin_invalid,
-    copy.toast_signin_success_title,
-    onAuthenticated,
-    secretKey,
-    toast,
-  ]);
-
-  const handleSignInWithExtension = useCallback(async () => {
-    setIsSigningInWithExtension(true);
-    setErrorMessage("");
-    try {
-      const result = await authWithExtension();
-      if (!result) {
-        throw new Error(
-          copy.error_extension_signin || "Could not sign in with extension."
-        );
-      }
-      toast({
-        title: copy.toast_signin_success_title,
-        status: "success",
-        duration: 2000,
-      });
-      onAuthenticated?.();
-    } catch (error) {
-      console.error("Failed to sign in with extension", error);
-      setErrorMessage(
-        error?.message ||
-          copy.error_extension_generic ||
-          "Extension sign-in failed."
-      );
-    } finally {
-      setIsSigningInWithExtension(false);
-    }
-  }, [
-    authWithExtension,
-    copy.error_extension_signin,
-    copy.error_extension_generic,
-    copy.toast_signin_success_title,
-    onAuthenticated,
-    toast,
-  ]);
-
-  const ActionButton = ({ variant = "primary", ...props }) => (
-    <Button
-      {...BASE_BUTTON_PROPS}
-      {...(BUTTON_VARIANTS[variant] || BUTTON_VARIANTS.primary)}
-      {...props}
-    />
+    },
+    [auth, onAuthenticated]
   );
+
+  const handleExtension = useCallback(async () => {
+    const result = await authWithExtension();
+    if (!result) throw new Error("Extension sign-in failed");
+    onAuthenticated?.();
+  }, [authWithExtension, onAuthenticated]);
+
+  const features = [
+    {
+      icon: "💬",
+      title: copy.feature_conversations,
+      desc: copy.feature_conversations_desc,
+    },
+    {
+      icon: "📖",
+      title: copy.feature_stories,
+      desc: copy.feature_stories_desc,
+    },
+    {
+      icon: "📚",
+      title: copy.feature_reading,
+      desc: copy.feature_reading_desc,
+    },
+    {
+      icon: "🧪",
+      title: copy.feature_grammar,
+      desc: copy.feature_grammar_desc,
+    },
+    {
+      icon: "🗺️",
+      title: copy.feature_skilltree,
+      desc: copy.feature_skilltree_desc,
+    },
+    {
+      icon: "🎴",
+      title: copy.feature_flashcards,
+      desc: copy.feature_flashcards_desc,
+    },
+    { icon: "🎯", title: copy.feature_goals, desc: copy.feature_goals_desc },
+  ];
+
+  const faqs = [
+    { q: copy.faq_q1, a: copy.faq_a1 },
+    { q: copy.faq_q2, a: copy.faq_a2 },
+    { q: copy.faq_q3, a: copy.faq_a3 },
+    { q: copy.faq_q4, a: copy.faq_a4 },
+  ];
+
+  const values = [copy.value_1, copy.value_2, copy.value_3, copy.value_4];
 
   if (view === "signIn") {
     return (
-      <Flex
-        minH="100vh"
-        align="center"
-        justify="center"
-        bg="gray.900"
-        color="gray.100"
-        px={4}
-      >
-        <VStack
-          spacing={6}
-          align="stretch"
-          maxW="md"
-          w="full"
-          bg="rgba(10, 20, 34, 0.95)"
-          borderRadius="2xl"
-          border="1px solid rgba(45, 212, 191, 0.35)"
-          p={{ base: 6, md: 8 }}
-        >
-          <StreamingText
-            as={Text}
-            fontSize="2xl"
-            fontWeight="bold"
-            text={copy.signin_title}
-            prefersReducedMotion={prefersReducedMotion}
-          />
-          <StreamingText
-            as={Text}
-            fontSize="sm"
-            color="teal.100"
-            text={copy.signin_subtitle}
-            prefersReducedMotion={prefersReducedMotion}
-          />
-          <Input
-            value={secretKey}
-            onChange={(event) => setSecretKey(event.target.value)}
-            placeholder={copy.signin_placeholder}
-            bg="rgba(6, 18, 30, 0.9)"
-            borderColor="rgba(45, 212, 191, 0.4)"
-            color="white"
-            _placeholder={{ color: "gray.600" }}
-            fontSize="16px"
-          />
-          {errorMessage && (
-            <StreamingText
-              as={Text}
-              color="red.300"
-              fontSize="sm"
-              text={errorMessage}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-          )}
-          <ActionButton
-            onClick={handleSignIn}
-            isLoading={isSigningIn}
-            rightIcon={<LockIcon />}
-            colorScheme="teal"
-            color="white"
-          >
-            <StreamingText
-              as="span"
-              text={copy.signin_button}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-          </ActionButton>
-          {hasExtension && (
-            <>
-              <HStack spacing={4} align="center">
-                <Divider borderColor="rgba(45, 212, 191, 0.3)" />
-                <Text fontSize="sm" color="cyan.300" whiteSpace="nowrap">
-                  {copy.signin_or || "or"}
-                </Text>
-                <Divider borderColor="rgba(45, 212, 191, 0.3)" />
-              </HStack>
-              <ActionButton
-                variant="secondary"
-                onClick={handleSignInWithExtension}
-                isLoading={isSigningInWithExtension}
-                colorScheme="teal"
-              >
-                <StreamingText
-                  as="span"
-                  text={
-                    copy.signin_extension_button || "Sign in with extension"
-                  }
-                  prefersReducedMotion={prefersReducedMotion}
-                />
-              </ActionButton>
-            </>
-          )}
-          <ActionButton
-            variant="ghost"
-            onClick={() => {
-              setView("landing");
-            }}
-          >
-            <StreamingText
-              as="span"
-              text={copy.back_button}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-          </ActionButton>
-        </VStack>
-      </Flex>
+      <>
+        <GlobalStyles />
+        <AnimatedBackground />
+        <SignInView
+          copy={copy}
+          onBack={() => setView("landing")}
+          onSignIn={handleSignIn}
+          onExtension={handleExtension}
+          hasExtension={hasExtension}
+        />
+      </>
     );
   }
 
   return (
-    <Box
-      position="relative"
-      minH="100vh"
-      color="gray.100"
-      pb={24}
-      overflow="hidden"
-    >
-      <HeroBackground prefersReducedMotion={prefersReducedMotion} />
-      <Flex
-        align="center"
-        justify="center"
-        px={{ base: 4, md: 8 }}
-        py={{ base: 4, md: 4 }}
-        textAlign="center"
-      >
-        <MotionVStack
-          spacing={8}
-          bg="rgba(8, 18, 29, 0.92)"
-          borderRadius="3xl"
-          p={{ base: 8, md: 12 }}
-          maxW="lg"
-          w="full"
-          initial={prefersReducedMotion ? undefined : { opacity: 0, y: 24 }}
-          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        >
-          <MotionVStack spacing={3} align="center">
-            {copy.hero_badge ? (
-              <MotionBox
-                px={4}
-                py={1}
-                borderRadius="full"
-                bgGradient="linear(to-r, teal.300, cyan.200, teal.300)"
-                backgroundSize="200% 200%"
-                color="gray.900"
-                fontWeight="bold"
-                fontSize="xs"
-                letterSpacing="0.08em"
-                animation={
-                  prefersReducedMotion
-                    ? undefined
-                    : `${gradientShift} 12s ease-in-out infinite`
-                }
-                initial={
-                  prefersReducedMotion ? undefined : { opacity: 0, y: 12 }
-                }
-                animate={
-                  prefersReducedMotion ? undefined : { opacity: 1, y: 0 }
-                }
-                transition={{ duration: 0.7, delay: 0.15 }}
-              >
-                <StreamingText
-                  as="span"
-                  text={copy.hero_badge}
-                  caretColor="gray.900"
-                  prefersReducedMotion={prefersReducedMotion}
-                />
-              </MotionBox>
-            ) : null}
-            <RobotBuddyPro palette="ocean" variant="abstract" />
-            <StreamingText
-              as={MotionText}
-              fontSize="2xl"
-              fontWeight="semibold"
-              color="cyan.200"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 10 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.25 }}
-              text={copy.brand_name}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-            <StreamingText
-              as={MotionText}
-              fontSize={{ base: "xl", md: "xl" }}
-              fontWeight="black"
-              lineHeight="1.1"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.35 }}
-              text={copy.hero_title}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-            <StreamingText
-              as={MotionText}
-              color="teal.100"
-              initial={prefersReducedMotion ? undefined : { opacity: 0, y: 14 }}
-              animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.45 }}
-              text={copy.hero_languages}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-          </MotionVStack>
+    <>
+      <GlobalStyles />
+      <AnimatedBackground />
 
-          <MotionStack
-            direction={{ base: "column", md: "column" }}
-            spacing={4}
-            w="full"
-            display="flex"
-            alignItems={"center"}
-            initial={prefersReducedMotion ? undefined : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={prefersReducedMotion ? undefined : stackedVariant}
-            transition={{ staggerChildren: 0.08 }}
+      {/* Fixed Header */}
+      <motion.header
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+          padding: "16px 24px",
+          background: "rgba(3, 7, 18, 0.8)",
+          backdropFilter: "blur(20px)",
+          borderBottom: `1px solid ${theme.colors.border.subtle}`,
+          opacity: headerOpacity,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1200px",
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Logo size={36} />
+            <span
+              style={{
+                fontFamily: theme.fonts.display,
+                fontSize: "1.25rem",
+                fontWeight: 600,
+              }}
+            >
+              No Sabos
+            </span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLang(lang === "en" ? "es" : "en")}
+            >
+              {lang === "en" ? "ES" : "EN"}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setView("signIn")}
+            >
+              {copy.nav_signin}
+            </Button>
+          </div>
+        </div>
+      </motion.header>
+
+      {/* Hero Section */}
+      <section
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          padding: `${theme.spacing.container} 24px`,
+          overflow: "hidden",
+        }}
+      >
+        <FloatingElements />
+
+        <div
+          style={{
+            maxWidth: "900px",
+            width: "100%",
+            textAlign: "center",
+            position: "relative",
+            zIndex: 10,
+          }}
+        >
+          {/* Logo */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            style={{ marginBottom: "32px" }}
           >
-            <MotionInput
+            <div style={{ display: "inline-block" }}>
+              <Logo size={80} />
+            </div>
+          </motion.div>
+
+          {/* Title */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            style={{
+              fontFamily: theme.fonts.display,
+              fontSize: "clamp(2.5rem, 8vw, 5rem)",
+              fontWeight: 600,
+              lineHeight: 1.1,
+              marginBottom: "24px",
+            }}
+          >
+            {copy.hero_title}
+            <br />
+            <span
+              style={{
+                background: `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              {copy.hero_title_accent}
+            </span>
+          </motion.h1>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            style={{
+              fontFamily: theme.fonts.body,
+              fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
+              color: theme.colors.text.secondary,
+              maxWidth: "600px",
+              margin: "0 auto 48px",
+              lineHeight: 1.7,
+            }}
+          >
+            {copy.hero_subtitle}
+          </motion.p>
+
+          {/* CTA Form */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            style={{
+              maxWidth: "440px",
+              margin: "0 auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
+            <Input
               value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-              placeholder={copy.display_name_placeholder}
-              bg="rgba(6, 18, 30, 0.95)"
-              borderColor="rgba(45, 212, 191, 0.45)"
-              color="white"
-              variants={prefersReducedMotion ? undefined : featureVariant}
-              transition={{ duration: 0.55, ease: "easeOut" }}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder={copy.placeholder_name}
             />
             <Button
-              // color="gray.900"
-              onClick={handleCreateAccount}
-              isLoading={isCreatingAccount}
-              isDisabled={!hasDisplayName}
-              width="75%"
-              p={6}
-              variants={prefersReducedMotion ? undefined : featureVariant}
-              transition={{ duration: 0.6, ease: "easeOut", delay: 0.08 }}
+              onClick={handleCreate}
+              loading={isCreating}
+              disabled={displayName.trim().length < 2}
+              fullWidth
+              size="lg"
+              variant="primary"
+              color="white"
             >
-              <StreamingText
-                as="span"
-                text={
-                  isCreatingAccount ? copy.create_loading : copy.create_button
-                }
-                prefersReducedMotion={prefersReducedMotion}
-              />
+              {copy.cta_start} →
             </Button>
-          </MotionStack>
-          {errorMessage && (
-            <StreamingText
-              as={Text}
-              color="red.300"
-              fontSize="sm"
-              text={errorMessage}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-          )}
+            <Button
+              variant="secondary"
+              onClick={() => setView("signIn")}
+              fullWidth
+            >
+              {copy.cta_signin}
+            </Button>
 
-          <MotionButton
-            {...BASE_BUTTON_PROPS}
-            {...BUTTON_VARIANTS.primary}
-            onClick={() => {
-              setView("signIn");
+            {/* Language Toggle */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                gap: "8px",
+                marginTop: "8px",
+              }}
+            >
+              <Button
+                variant={lang === "en" ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setLang("en")}
+              >
+                {copy.language_en}
+              </Button>
+              <Button
+                variant={lang === "es" ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setLang("es")}
+              >
+                {copy.language_es}
+              </Button>
+            </div>
+          </motion.div>
+
+          {/* Scroll indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5 }}
+            style={{
+              position: "absolute",
+              bottom: "-80px",
+              left: "50%",
+              transform: "translateX(-50%)",
             }}
-            color="white"
-            width="75%"
-            p={6}
-            colorScheme="teal"
-            initial={prefersReducedMotion ? undefined : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={prefersReducedMotion ? undefined : featureVariant}
-            transition={{ duration: 0.6, ease: "easeOut", delay: 0.16 }}
           >
-            <StreamingText
-              as="span"
-              text={copy.have_key_button}
-              prefersReducedMotion={prefersReducedMotion}
-            />
-          </MotionButton>
-
-          <MotionHStack
-            spacing={2}
-            justify="center"
-            initial={prefersReducedMotion ? undefined : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={prefersReducedMotion ? undefined : featureVariant}
-            transition={{ duration: 0.6, ease: "easeOut", delay: 0.2 }}
-          >
-            <MotionButton
-              size="sm"
-              variant={landingLanguage === "en" ? "solid" : "ghost"}
-              colorScheme="teal"
-              onClick={() => handleLanguageChange("en")}
-              initial={prefersReducedMotion ? undefined : "hidden"}
-              animate={prefersReducedMotion ? undefined : "visible"}
-              variants={prefersReducedMotion ? undefined : featureVariant}
-              transition={{ duration: 0.55, ease: "easeOut", delay: 0.22 }}
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              style={{
+                width: "24px",
+                height: "40px",
+                border: `2px solid ${theme.colors.border.accent}`,
+                borderRadius: "12px",
+                display: "flex",
+                justifyContent: "center",
+                paddingTop: "8px",
+              }}
             >
-              <StreamingText
-                as="span"
-                text={englishLabel}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-            </MotionButton>
-            <MotionButton
-              size="sm"
-              variant={landingLanguage === "es" ? "solid" : "ghost"}
-              colorScheme="teal"
-              onClick={() => handleLanguageChange("es")}
-              initial={prefersReducedMotion ? undefined : "hidden"}
-              animate={prefersReducedMotion ? undefined : "visible"}
-              variants={prefersReducedMotion ? undefined : featureVariant}
-              transition={{ duration: 0.55, ease: "easeOut", delay: 0.26 }}
-            >
-              <StreamingText
-                as="span"
-                text={spanishLabel}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-            </MotionButton>
-          </MotionHStack>
-        </MotionVStack>
-      </Flex>
-
-      <Box px={{ base: 4, md: 8 }} pb={{ base: 12, md: 20 }}>
-        <Flex direction="column" align="center" gap={12}>
-          <LandingSection
-            as={MotionBox}
-            bg="rgba(4, 12, 22, 0.92)"
-            borderRadius="3xl"
-            initial={prefersReducedMotion ? undefined : "hidden"}
-            animate={prefersReducedMotion ? undefined : "visible"}
-            variants={prefersReducedMotion ? undefined : revealVariant}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-          >
-            <VStack spacing={8} align="stretch">
-              <StreamingText
-                as={MotionText}
-                textAlign="center"
-                fontSize="3xl"
-                fontWeight="bold"
-                color="white"
-                initial={
-                  prefersReducedMotion ? undefined : { opacity: 0, y: 18 }
-                }
-                animate={
-                  prefersReducedMotion ? undefined : { opacity: 1, y: 0 }
-                }
-                transition={{ duration: 0.6, ease: "easeOut", delay: 0.05 }}
-                text={copy.section_features_title}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
-                {FEATURE_CARD_CONFIG.map((feature, index) => (
-                  <MotionBox
-                    key={feature.titleKey}
-                    p={6}
-                    borderRadius="xl"
-                    bg="rgba(6, 18, 30, 0.95)"
-                    border="1px solid rgba(45, 212, 191, 0.18)"
-                    initial={prefersReducedMotion ? undefined : "hidden"}
-                    animate={
-                      prefersReducedMotion
-                        ? undefined
-                        : index < 2
-                        ? "visible"
-                        : undefined
-                    }
-                    whileInView={
-                      prefersReducedMotion
-                        ? undefined
-                        : index < 2
-                        ? undefined
-                        : "visible"
-                    }
-                    variants={prefersReducedMotion ? undefined : featureVariant}
-                    transition={{
-                      duration: 0.6,
-                      delay: index < 2 ? 0 : (index - 2) * 0.05,
-                    }}
-                    viewport={
-                      index < 2 || prefersReducedMotion
-                        ? undefined
-                        : { once: true, amount: 0.35 }
-                    }
-                  >
-                    {(() => {
-                      const featureTitle =
-                        copy[feature.titleKey] ||
-                        (feature.legacyTitleKey
-                          ? copy[feature.legacyTitleKey]
-                          : null) ||
-                        landingTranslations.en[feature.titleKey] ||
-                        (feature.legacyTitleKey
-                          ? landingTranslations.en[feature.legacyTitleKey]
-                          : null) ||
-                        feature.titleKey;
-                      const featureDescription =
-                        copy[feature.descriptionKey] ||
-                        (feature.legacyDescriptionKey
-                          ? copy[feature.legacyDescriptionKey]
-                          : null) ||
-                        landingTranslations.en[feature.descriptionKey] ||
-                        (feature.legacyDescriptionKey
-                          ? landingTranslations.en[feature.legacyDescriptionKey]
-                          : null) ||
-                        feature.descriptionKey;
-
-                      return (
-                        <VStack align="flex-start" spacing={4}>
-                          <Icon
-                            as={feature.icon}
-                            color="teal.200"
-                            boxSize={8}
-                          />
-                          <StreamingText
-                            as={Text}
-                            fontSize="xl"
-                            fontWeight="semibold"
-                            color="white"
-                            text={featureTitle}
-                            prefersReducedMotion={prefersReducedMotion}
-                          />
-                          <StreamingText
-                            as={Text}
-                            color="cyan.100"
-                            text={featureDescription}
-                            prefersReducedMotion={prefersReducedMotion}
-                          />
-                        </VStack>
-                      );
-                    })()}
-                  </MotionBox>
-                ))}
-              </SimpleGrid>
-            </VStack>
-          </LandingSection>
-
-          <LandingSection
-            as={MotionBox}
-            bg="rgba(8, 26, 36, 0.9)"
-            borderRadius="3xl"
-            initial={prefersReducedMotion ? undefined : "hidden"}
-            whileInView={prefersReducedMotion ? undefined : "visible"}
-            variants={prefersReducedMotion ? undefined : revealVariant}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-          >
-            <VStack spacing={5} align="center">
-              <StreamingText
-                as={Text}
-                fontSize="3xl"
-                fontWeight="bold"
-                textAlign="center"
-                text={copy.wallet_section_title}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-              <Text textAlign="center" color="cyan.100" maxW="3xl">
-                <StreamingText
-                  as="span"
-                  text={copy.wallet_section_description_prefix}
-                  prefersReducedMotion={prefersReducedMotion}
-                />{" "}
-                <Link
-                  href="https://robotsbuildingeducation.com/learning"
-                  isExternal
-                  color="teal.200"
-                  textDecoration="underline"
-                >
-                  <StreamingText
-                    as="span"
-                    text={
-                      copy.wallet_section_link_label ||
-                      landingTranslations.en.wallet_section_link_label
-                    }
-                    prefersReducedMotion={prefersReducedMotion}
-                  />
-                </Link>
-                <StreamingText
-                  as="span"
-                  text={copy.wallet_section_description_suffix}
-                  prefersReducedMotion={prefersReducedMotion}
-                />
-              </Text>
-              <StreamingText
-                as={Text}
-                textAlign="center"
-                color="teal.100"
-                maxW="2xl"
-                text={copy.wallet_section_note}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-            </VStack>
-          </LandingSection>
-
-          <LandingSection
-            as={MotionBox}
-            bg="rgba(6, 18, 30, 0.9)"
-            borderRadius="3xl"
-            initial={prefersReducedMotion ? undefined : "hidden"}
-            whileInView={prefersReducedMotion ? undefined : "visible"}
-            variants={prefersReducedMotion ? undefined : revealVariant}
-            viewport={{ once: true, amount: 0.35 }}
-            transition={{ duration: 0.6, delay: 0.12 }}
-          >
-            <VStack spacing={6} align="center">
-              <StreamingText
-                as={MotionText}
-                fontSize="3xl"
-                fontWeight="bold"
-                textAlign="center"
-                initial={prefersReducedMotion ? undefined : "hidden"}
-                animate={prefersReducedMotion ? undefined : "visible"}
-                variants={prefersReducedMotion ? undefined : featureVariant}
-                transition={{ duration: 0.55, delay: 0.02 }}
-                text={copy.ready_title}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-              <StreamingText
-                as={MotionText}
-                textAlign="center"
-                color="cyan.100"
-                maxW="2xl"
-                initial={prefersReducedMotion ? undefined : "hidden"}
-                animate={prefersReducedMotion ? undefined : "visible"}
-                variants={prefersReducedMotion ? undefined : featureVariant}
-                transition={{ duration: 0.6, delay: 0.06 }}
-                text={copy.ready_subtitle}
-                prefersReducedMotion={prefersReducedMotion}
-              />
-              <MotionInput
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-                placeholder={copy.display_name_placeholder}
-                bg="rgba(6, 18, 30, 0.95)"
-                borderColor="rgba(45, 212, 191, 0.45)"
-                color="white"
-                maxW="400px"
-                initial={prefersReducedMotion ? undefined : "hidden"}
-                animate={prefersReducedMotion ? undefined : "visible"}
-                variants={prefersReducedMotion ? undefined : featureVariant}
-                transition={{ duration: 0.6, delay: 0.1 }}
-                fontSize="16px"
-              />
-              <MotionButton
-                onClick={handleCreateAccount}
-                isDisabled={!hasDisplayName || isCreatingAccount}
-                width="75%"
-                p={6}
-                initial={prefersReducedMotion ? undefined : "hidden"}
-                animate={prefersReducedMotion ? undefined : "visible"}
-                variants={prefersReducedMotion ? undefined : featureVariant}
-                transition={{ duration: 0.6, delay: 0.14 }}
-              >
-                <StreamingText
-                  as="span"
-                  text={copy.ready_cta}
-                  prefersReducedMotion={prefersReducedMotion}
-                />
-              </MotionButton>
-              <MotionButton
-                as={ActionButton}
-                color="white"
-                onClick={() => {
-                  setView("signIn");
+              <motion.div
+                animate={{ opacity: [0.3, 1, 0.3], y: [0, 8, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{
+                  width: "4px",
+                  height: "8px",
+                  background: theme.colors.accent.primary,
+                  borderRadius: "2px",
                 }}
-                width="75%"
-                p={6}
-                colorScheme="teal"
-                initial={prefersReducedMotion ? undefined : "hidden"}
-                animate={prefersReducedMotion ? undefined : "visible"}
-                variants={prefersReducedMotion ? undefined : featureVariant}
-                transition={{ duration: 0.6, delay: 0.18 }}
+              />
+            </motion.div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section
+        style={{
+          padding: `${theme.spacing.section} 24px`,
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "64px" }}>
+            <SectionLabel>{copy.features_label}</SectionLabel>
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              style={{
+                fontFamily: theme.fonts.display,
+                fontSize: "clamp(2rem, 5vw, 3rem)",
+                fontWeight: 600,
+                lineHeight: 1.2,
+              }}
+            >
+              {copy.features_title}
+              <br />
+              <span style={{ color: theme.colors.accent.primary }}>
+                {copy.features_title_accent}
+              </span>
+            </motion.h2>
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "24px",
+            }}
+          >
+            {features.map((f, i) => (
+              <FeatureCard
+                key={i}
+                icon={f.icon}
+                title={f.title}
+                description={f.desc}
+                index={i}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Value Props Section */}
+      <section
+        style={{
+          padding: `${theme.spacing.section} 24px`,
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "64px" }}>
+            <SectionLabel>{copy.value_label}</SectionLabel>
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              style={{
+                fontFamily: theme.fonts.display,
+                fontSize: "clamp(2rem, 5vw, 3rem)",
+                fontWeight: 600,
+                lineHeight: 1.2,
+              }}
+            >
+              {copy.value_title}
+              <br />
+              <span style={{ color: theme.colors.accent.primary }}>
+                {copy.value_title_accent}
+              </span>
+            </motion.h2>
+          </div>
+
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+          >
+            {values.map((v, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: i % 2 === 0 ? -40 : 40 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "20px",
+                  padding: "24px 32px",
+                  background: theme.colors.bg.elevated,
+                  backdropFilter: "blur(20px)",
+                  borderRadius: "16px",
+                  border: `1px solid ${theme.colors.border.subtle}`,
+                }}
               >
-                <StreamingText
-                  as="span"
-                  text={copy.have_key_button}
-                  prefersReducedMotion={prefersReducedMotion}
-                />
-              </MotionButton>
-            </VStack>
-          </LandingSection>
-        </Flex>
-      </Box>
-    </Box>
+                <div
+                  style={{
+                    width: "48px",
+                    height: "48px",
+                    borderRadius: "12px",
+                    background: `linear-gradient(135deg, ${theme.colors.accent.primary} 0%, ${theme.colors.accent.secondary} 100%)`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    color: "#030712",
+                    fontWeight: 700,
+                    fontSize: "1.25rem",
+                  }}
+                >
+                  {i + 1}
+                </div>
+                <p
+                  style={{
+                    fontFamily: theme.fonts.body,
+                    fontSize: "1.1rem",
+                    color: theme.colors.text.primary,
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {v}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Scholarship Section */}
+      <section
+        style={{
+          padding: `${theme.spacing.section} 24px`,
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          style={{
+            maxWidth: "900px",
+            margin: "0 auto",
+            padding: "64px",
+            background: `linear-gradient(135deg, rgba(249, 115, 22, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%)`,
+            borderRadius: "32px",
+            border: `1px solid rgba(249, 115, 22, 0.2)`,
+            textAlign: "center",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Bitcoin decoration */}
+          <div
+            style={{
+              position: "absolute",
+              top: "20px",
+              right: "40px",
+              fontSize: "80px",
+              opacity: 0.1,
+            }}
+          >
+            ₿
+          </div>
+
+          <SectionLabel>{copy.scholarship_label}</SectionLabel>
+
+          <h2
+            style={{
+              fontFamily: theme.fonts.display,
+              fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
+              fontWeight: 600,
+              lineHeight: 1.2,
+              marginBottom: "24px",
+            }}
+          >
+            {copy.scholarship_title}{" "}
+            <span style={{ color: "#f97316" }}>
+              {copy.scholarship_title_accent}
+            </span>
+          </h2>
+
+          <p
+            style={{
+              fontFamily: theme.fonts.body,
+              fontSize: "1.125rem",
+              color: theme.colors.text.secondary,
+              maxWidth: "600px",
+              margin: "0 auto 16px",
+              lineHeight: 1.7,
+            }}
+          >
+            {copy.scholarship_desc}{" "}
+            <a
+              href="https://robotsbuildingeducation.com/learning"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                color: theme.colors.accent.primary,
+                textDecoration: "underline",
+              }}
+            >
+              {copy.scholarship_link}
+            </a>
+          </p>
+
+          <p
+            style={{
+              fontFamily: theme.fonts.body,
+              fontSize: "1rem",
+              color: theme.colors.text.muted,
+              fontStyle: "italic",
+            }}
+          >
+            {copy.scholarship_note}
+          </p>
+        </motion.div>
+      </section>
+
+      {/* FAQ Section */}
+      <section
+        style={{
+          padding: `${theme.spacing.section} 24px`,
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        <div style={{ maxWidth: "700px", margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: "64px" }}>
+            <SectionLabel>{copy.faq_label}</SectionLabel>
+            <motion.h2
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              style={{
+                fontFamily: theme.fonts.display,
+                fontSize: "clamp(2rem, 5vw, 3rem)",
+                fontWeight: 600,
+              }}
+            >
+              {copy.faq_title}
+            </motion.h2>
+          </div>
+
+          <div>
+            {faqs.map((faq, i) => (
+              <FAQItem
+                key={i}
+                question={faq.q}
+                answer={faq.a}
+                isOpen={openFAQ === i}
+                onClick={() => setOpenFAQ(openFAQ === i ? null : i)}
+                index={i}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section
+        style={{
+          padding: `${theme.spacing.section} 24px`,
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          style={{
+            maxWidth: "700px",
+            margin: "0 auto",
+            textAlign: "center",
+            padding: "80px 48px",
+            background: theme.colors.bg.elevated,
+            backdropFilter: "blur(40px)",
+            borderRadius: "32px",
+            border: `1px solid ${theme.colors.border.subtle}`,
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {/* Glow effect */}
+          <div
+            style={{
+              position: "absolute",
+              top: "-50%",
+              left: "-50%",
+              width: "200%",
+              height: "200%",
+              background: `radial-gradient(circle at center, rgba(20, 184, 166, 0.1) 0%, transparent 50%)`,
+              pointerEvents: "none",
+            }}
+          />
+
+          <h2
+            style={{
+              fontFamily: theme.fonts.display,
+              fontSize: "clamp(1.75rem, 4vw, 2.5rem)",
+              fontWeight: 600,
+              lineHeight: 1.2,
+              marginBottom: "16px",
+              position: "relative",
+            }}
+          >
+            {copy.cta_final_title}
+            <br />
+            <span style={{ color: theme.colors.accent.primary }}>
+              {copy.cta_final_accent}
+            </span>
+          </h2>
+
+          <p
+            style={{
+              fontFamily: theme.fonts.body,
+              fontSize: "1.125rem",
+              color: theme.colors.text.secondary,
+              marginBottom: "40px",
+              position: "relative",
+            }}
+          >
+            {copy.cta_final_subtitle}
+          </p>
+
+          <div
+            style={{
+              maxWidth: "400px",
+              margin: "0 auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+              position: "relative",
+            }}
+          >
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder={copy.placeholder_name}
+            />
+            <Button
+              onClick={handleCreate}
+              loading={isCreating}
+              disabled={displayName.trim().length < 2}
+              fullWidth
+              size="lg"
+            >
+              {copy.cta_start} →
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setView("signIn")}
+              fullWidth
+            >
+              {copy.cta_signin}
+            </Button>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Footer */}
+      <footer
+        style={{
+          padding: "48px 24px",
+          borderTop: `1px solid ${theme.colors.border.subtle}`,
+          position: "relative",
+          zIndex: 10,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: "1200px",
+            margin: "0 auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <Logo size={32} />
+            <span
+              style={{
+                fontFamily: theme.fonts.display,
+                fontSize: "1.25rem",
+                fontWeight: 600,
+              }}
+            >
+              {copy.footer_brand}
+            </span>
+          </div>
+          <p
+            style={{
+              fontFamily: theme.fonts.body,
+              fontSize: "0.875rem",
+              color: theme.colors.text.muted,
+            }}
+          >
+            {copy.footer_tagline}
+          </p>
+        </div>
+      </footer>
+    </>
   );
 };
 
