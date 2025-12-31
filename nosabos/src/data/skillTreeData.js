@@ -11601,6 +11601,7 @@ export const LEARNING_PATHS = {
   pt: cloneLearningPath(), // Portuguese
   fr: cloneLearningPath(), // French
   it: cloneLearningPath(), // Italian
+  nl: cloneLearningPath(), // Dutch
   nah: cloneLearningPath(), // Huastec Nahuatl
 };
 
