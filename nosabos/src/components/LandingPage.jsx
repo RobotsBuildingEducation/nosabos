@@ -72,7 +72,7 @@ const translations = {
     hero_title: "Your Personal",
     hero_title_accent: "Language Tutor",
     hero_subtitle:
-      "Stories, conversations, flashcards, grammar labs, and skill trees—all powered by AI that adapts to how you learn best. Practice Spanish, English, Portuguese, French, Italian, or Nahuatl.",
+      "Conversations, stories, vocabulary drills, grammar labs, translation practice, and pronunciation coaching—all powered by AI that adapts to your level. Practice Spanish, English, Portuguese, French, Italian, or Nahuatl.",
     cta_start: "Start Learning",
     cta_signin: "I Have a Key",
     features_label: "CAPABILITIES",
@@ -93,19 +93,25 @@ const translations = {
     feature_skilltree: "Skill Tree",
     feature_skilltree_desc:
       "Structured learning paths that build your abilities step by step with clear progress visualization.",
-    feature_flashcards: "Smart Flashcards",
+    feature_flashcards: "Vocabulary Drills",
     feature_flashcards_desc:
-      "Spaced repetition vocabulary drills that optimize retention and accelerate your learning.",
+      "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
     feature_goals: "Daily Goals",
     feature_goals_desc:
       "Personalized targets tracking your progress and celebrating streaks to keep you motivated.",
+    feature_translation: "Translation Practice",
+    feature_translation_desc:
+      "Translate sentences between languages with AI-powered feedback that explains your mistakes and helps you improve.",
+    feature_pronunciation: "Speech & Pronunciation",
+    feature_pronunciation_desc:
+      "Speak aloud and get real-time feedback on your pronunciation, accent, and fluency with voice recognition.",
     value_label: "WHY NO SABOS",
     value_title: "Learning That",
     value_title_accent: "Actually Works",
-    value_1: "Personalized study paths generated from every conversation",
-    value_2: "Daily goals that track your streaks and celebrate milestones",
-    value_3: "Lesson summaries and transcripts you can download anytime",
-    value_4: "Community prompts that keep you motivated and curious",
+    value_1: "AI that adapts in real-time—conversations, exercises, and feedback adjust to your exact level",
+    value_2: "Six practice modes for every learning style: speaking, reading, writing, listening, grammar, and vocabulary",
+    value_3: "Structured CEFR progression from A1 beginner to C2 mastery with 324 lessons and clear milestones",
+    value_4: "Real-time pronunciation coaching that listens, corrects, and builds your confidence to speak",
     scholarship_label: "GIVE BACK",
     scholarship_title: "Create Scholarships",
     scholarship_title_accent: "with Bitcoin",
@@ -150,7 +156,7 @@ const translations = {
     hero_title: "Tu",
     hero_title_accent: "Tutor Lingüístico Personal",
     hero_subtitle:
-      "Historias, conversaciones, tarjetas, laboratorios de gramática y árboles de habilidades—todo impulsado por IA que se adapta a cómo aprendes mejor. Practica español, inglés, portugués, francés, italiano o náhuatl.",
+      "Conversaciones, historias, ejercicios de vocabulario, laboratorios de gramática, práctica de traducción y entrenamiento de pronunciación—todo impulsado por IA que se adapta a tu nivel. Practica español, inglés, portugués, francés, italiano o náhuatl.",
     cta_start: "Comienza",
     cta_signin: "Tengo una Llave",
     features_label: "CAPACIDADES",
@@ -171,19 +177,25 @@ const translations = {
     feature_skilltree: "Árbol de Habilidades",
     feature_skilltree_desc:
       "Rutas de aprendizaje estructuradas que construyen tus habilidades paso a paso.",
-    feature_flashcards: "Tarjetas Inteligentes",
+    feature_flashcards: "Ejercicios de Vocabulario",
     feature_flashcards_desc:
-      "Ejercicios de vocabulario con repetición espaciada que optimizan la retención.",
+      "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
     feature_goals: "Metas Diarias",
     feature_goals_desc:
       "Objetivos personalizados que rastrean tu progreso y celebran tus rachas.",
+    feature_translation: "Práctica de Traducción",
+    feature_translation_desc:
+      "Traduce oraciones entre idiomas con retroalimentación de IA que explica tus errores y te ayuda a mejorar.",
+    feature_pronunciation: "Habla y Pronunciación",
+    feature_pronunciation_desc:
+      "Habla en voz alta y recibe retroalimentación en tiempo real sobre tu pronunciación, acento y fluidez.",
     value_label: "POR QUÉ NO SABOS",
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
-    value_1: "Rutas de estudio personalizadas generadas de cada conversación",
-    value_2: "Metas diarias que rastrean tus rachas y celebran hitos",
-    value_3: "Resúmenes de lecciones y transcripciones descargables",
-    value_4: "Prompts comunitarios que te mantienen motivado y curioso",
+    value_1: "IA que se adapta en tiempo real—conversaciones, ejercicios y retroalimentación ajustados a tu nivel exacto",
+    value_2: "Seis modos de práctica para cada estilo de aprendizaje: hablar, leer, escribir, escuchar, gramática y vocabulario",
+    value_3: "Progresión CEFR estructurada de A1 principiante a C2 maestría con 324 lecciones y hitos claros",
+    value_4: "Entrenamiento de pronunciación en tiempo real que escucha, corrige y construye tu confianza para hablar",
     scholarship_label: "CONTRIBUYE",
     scholarship_title: "Crea Becas",
     scholarship_title_accent: "con Bitcoin",
@@ -1051,14 +1063,24 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_grammar_desc,
     },
     {
+      icon: "📝",
+      title: copy.feature_flashcards,
+      desc: copy.feature_flashcards_desc,
+    },
+    {
+      icon: "🔄",
+      title: copy.feature_translation,
+      desc: copy.feature_translation_desc,
+    },
+    {
+      icon: "🎤",
+      title: copy.feature_pronunciation,
+      desc: copy.feature_pronunciation_desc,
+    },
+    {
       icon: "🗺️",
       title: copy.feature_skilltree,
       desc: copy.feature_skilltree_desc,
-    },
-    {
-      icon: "🎴",
-      title: copy.feature_flashcards,
-      desc: copy.feature_flashcards_desc,
     },
     { icon: "🎯", title: copy.feature_goals, desc: copy.feature_goals_desc },
   ];
