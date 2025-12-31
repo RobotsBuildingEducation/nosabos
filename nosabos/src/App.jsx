@@ -431,6 +431,12 @@ function TopBar({
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
 
+  // Color mode values
+  const headerColor = useColorModeValue("gray.800", "gray.100");
+  const headerBorderColor = useColorModeValue("gray.200", "gray.700");
+  const drawerBg = useColorModeValue("white", "gray.900");
+  const drawerColor = useColorModeValue("gray.800", "gray.100");
+
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
   const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "A1");
@@ -680,10 +686,9 @@ function TopBar({
         w="100%"
         px={{ base: 2, md: 3 }}
         py={2}
-        // bg="gray.900"
-        color="gray.100"
+        color={headerColor}
         borderBottom="1px solid"
-        borderColor="gray.700"
+        borderColor={headerBorderColor}
         position="sticky"
         top={0}
         zIndex={100}
@@ -762,8 +767,8 @@ function TopBar({
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
         <DrawerOverlay bg="blackAlpha.600" />
         <DrawerContent
-          bg="gray.900"
-          color="gray.100"
+          bg={drawerBg}
+          color={drawerColor}
           borderTopRadius="24px"
           maxH="100vh"
           sx={{
@@ -1020,6 +1025,12 @@ export default function App() {
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
+
+  // Color mode values
+  const bgMain = useColorModeValue("#FAFAFA", "gray.950");
+  const textMain = useColorModeValue("gray.800", "gray.50");
+  const bgOnboarding = useColorModeValue("#FFFFFF", "gray.900");
+  const textOnboarding = useColorModeValue("gray.800", "gray.100");
 
   // Notes store state for action bar animations
   const notesIsLoading = useNotesStore((s) => s.isLoading);
@@ -3560,7 +3571,7 @@ export default function App() {
     }
 
     return (
-      <Box minH="100vh" bg="gray.900" color="gray.100">
+      <Box minH="100vh" bg={bgOnboarding} color={textOnboarding}>
         <Onboarding
           userLanguage={appLanguage}
           onComplete={handleOnboardingComplete}
@@ -3599,7 +3610,7 @@ export default function App() {
   ----------------------------------- */
 
   return (
-    <Box minH="100dvh" bg="gray.950" color="gray.50" width="100%">
+    <Box minH="100dvh" bg={bgMain} color={textMain} width="100%">
       <TopBar
         appLanguage={appLanguage}
         user={user}

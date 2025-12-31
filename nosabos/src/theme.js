@@ -218,6 +218,25 @@ export const theme = extendTheme({
         bg: mode("#FAFAFA", "#0b1220")(props),
         color: mode("#1F1F1F", "#e5e7eb")(props),
       },
+      // Override hardcoded text colors to be theme-aware
+      ".chakra-text": {
+        color: mode("gray.800", "gray.100")(props),
+      },
+      ".chakra-heading": {
+        color: mode("gray.900", "white")(props),
+      },
+      // Make sure modal content inherits properly
+      ".chakra-modal__content": {
+        bg: mode("white", "gray.900")(props),
+        color: mode("gray.800", "gray.100")(props),
+      },
+      ".chakra-modal__header": {
+        color: mode("gray.900", "white")(props),
+      },
+      ".chakra-drawer__content": {
+        bg: mode("white", "gray.900")(props),
+        color: mode("gray.800", "gray.100")(props),
+      },
     }),
   },
   semanticTokens: {

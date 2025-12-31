@@ -1128,7 +1128,7 @@ const UnitSection = React.memo(function UnitSection({
             </VStack>
 
             <VStack spacing={1}>
-              <Text fontSize="sm" fontWeight="bold" color="white">
+              <Text fontSize="sm" fontWeight="bold" color={textColor}>
                 {completedCount}/{unit.lessons.length}
               </Text>
             </VStack>
@@ -1440,8 +1440,8 @@ function LessonDetailModal({
     <Modal isOpen={isOpen} onClose={onClose} size="xl" isCentered>
       <ModalOverlay backdropFilter="blur(8px)" bg="blackAlpha.600" />
       <ModalContent
-        bg="gray.900"
-        color="gray.100"
+        bg={modalBg}
+        color={modalColor}
         borderRadius="2xl"
         overflow="hidden"
         boxShadow={`0 20px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px ${unit.color}40`}
@@ -1710,6 +1710,11 @@ export default function SkillTree({
   scrollToLatestUnlockedRef,
   scrollToLatestTrigger = 0,
 }) {
+  // Color mode values
+  const modalBg = useColorModeValue("white", "gray.900");
+  const modalColor = useColorModeValue("gray.800", "gray.100");
+  const textColor = useColorModeValue("gray.800", "white");
+
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
 
