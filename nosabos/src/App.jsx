@@ -3598,7 +3598,13 @@ export default function App() {
   ----------------------------------- */
 
   return (
-    <Box minH="100dvh" bg="transparent" color="gray.50" width="100%" position="relative">
+    <Box
+      minH="100dvh"
+      bg="transparent"
+      color="gray.50"
+      width="100%"
+      position="relative"
+    >
       <AnimatedBackground />
       <TopBar
         appLanguage={appLanguage}
