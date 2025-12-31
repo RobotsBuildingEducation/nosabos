@@ -403,11 +403,6 @@ function UserBubble({ label, text }) {
       boxShadow="0 6px 20px rgba(0,0,0,0.25)"
       border="1px solid rgba(255,255,255,0.08)"
     >
-      <HStack justify="space-between" mb={1}>
-        <Badge variant="solid" colorScheme="blackAlpha" bg="blackAlpha.600">
-          {label}
-        </Badge>
-      </HStack>
       <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX}>
         {text}
       </Box>

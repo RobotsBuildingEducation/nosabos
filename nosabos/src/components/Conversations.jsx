@@ -18,7 +18,11 @@ import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 
 import { doc, setDoc, getDoc, increment } from "firebase/firestore";
-import { database, analytics, simplemodel } from "../firebaseResources/firebaseResources";
+import {
+  database,
+  analytics,
+  simplemodel,
+} from "../firebaseResources/firebaseResources";
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
@@ -397,11 +401,6 @@ function UserBubble({ label, text }) {
       boxShadow="0 6px 20px rgba(0,0,0,0.25)"
       border="1px solid rgba(255,255,255,0.08)"
     >
-      <HStack justify="space-between" mb={1}>
-        <Badge variant="solid" colorScheme="blackAlpha" bg="blackAlpha.600">
-          {label}
-        </Badge>
-      </HStack>
       <Box as="p" fontSize="md" lineHeight="1.6" sx={MOBILE_TEXT_SX}>
         {text}
       </Box>
@@ -631,8 +630,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       for await (const chunk of result.stream) {
         if (!streamingRef.current) break;
 
-        const chunkText =
-          typeof chunk.text === "function" ? chunk.text() : "";
+        const chunkText = typeof chunk.text === "function" ? chunk.text() : "";
 
         if (!chunkText) continue;
 
@@ -1815,9 +1813,10 @@ Do not return the whole sentence as a single chunk.`;
                         color="white"
                         flex="1"
                       >
-                        {streamingText || (uiLang === "es"
-                          ? "Generando nuevo tema..."
-                          : "Generating new topic...")}
+                        {streamingText ||
+                          (uiLang === "es"
+                            ? "Generando nuevo tema..."
+                            : "Generating new topic...")}
                       </Text>
                     </>
                   ) : (
