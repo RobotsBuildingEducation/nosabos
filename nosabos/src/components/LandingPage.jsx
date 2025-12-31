@@ -11,6 +11,18 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
+import {
+  FaComments,
+  FaBookOpen,
+  FaBook,
+  FaFlask,
+  FaPencilAlt,
+  FaLayerGroup,
+  FaExchangeAlt,
+  FaMicrophone,
+  FaMap,
+  FaBullseye,
+} from "react-icons/fa";
 import RobotBuddyPro from "./RobotBuddyPro";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
@@ -1058,51 +1070,51 @@ const LandingPage = ({ onAuthenticated }) => {
 
   const features = [
     {
-      icon: "💬",
+      icon: <FaComments />,
       title: copy.feature_conversations,
       desc: copy.feature_conversations_desc,
     },
     {
-      icon: "📖",
+      icon: <FaBookOpen />,
       title: copy.feature_stories,
       desc: copy.feature_stories_desc,
     },
     {
-      icon: "📚",
+      icon: <FaBook />,
       title: copy.feature_reading,
       desc: copy.feature_reading_desc,
     },
     {
-      icon: "🧪",
+      icon: <FaFlask />,
       title: copy.feature_grammar,
       desc: copy.feature_grammar_desc,
     },
     {
-      icon: "📝",
+      icon: <FaPencilAlt />,
       title: copy.feature_flashcards,
       desc: copy.feature_flashcards_desc,
     },
     {
-      icon: "🎴",
+      icon: <FaLayerGroup />,
       title: copy.feature_flashcards_spaced,
       desc: copy.feature_flashcards_spaced_desc,
     },
     {
-      icon: "🔄",
+      icon: <FaExchangeAlt />,
       title: copy.feature_translation,
       desc: copy.feature_translation_desc,
     },
     {
-      icon: "🎤",
+      icon: <FaMicrophone />,
       title: copy.feature_pronunciation,
       desc: copy.feature_pronunciation_desc,
     },
     {
-      icon: "🗺️",
+      icon: <FaMap />,
       title: copy.feature_skilltree,
       desc: copy.feature_skilltree_desc,
     },
-    { icon: "🎯", title: copy.feature_goals, desc: copy.feature_goals_desc },
+    { icon: <FaBullseye />, title: copy.feature_goals, desc: copy.feature_goals_desc },
   ];
 
   const faqs = [
