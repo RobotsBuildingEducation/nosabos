@@ -1021,12 +1021,6 @@ export default function App() {
   const [notesOpen, setNotesOpen] = useState(false);
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
 
-  // Color mode values for action bar
-  const actionBarBg = useColorModeValue("white", "gray.800");
-  const actionBarColor = useColorModeValue("gray.800", "gray.100");
-  const actionBarShadow = useColorModeValue("0 4px 0 #d1d5db", "0 4px 0 #313a4b");
-  const actionBarBorder = useColorModeValue("gray.300", "white");
-
   // Notes store state for action bar animations
   const notesIsLoading = useNotesStore((s) => s.isLoading);
   const notesIsDone = useNotesStore((s) => s.isDone);
@@ -4340,6 +4334,12 @@ function BottomActionBar({
   onPathModeChange,
   onScrollToLatest,
 }) {
+  // Color mode values for action bar
+  const actionBarBg = useColorModeValue("white", "gray.800");
+  const actionBarColor = useColorModeValue("gray.800", "gray.100");
+  const actionBarShadow = useColorModeValue("0 4px 0 #d1d5db", "0 4px 0 #313a4b");
+  const actionBarBorder = useColorModeValue("gray.300", "white");
+
   const identityLabel = t?.app_account_aria || "Identity";
   const settingsLabel =
     t?.app_settings_aria || t?.ra_btn_settings || "Settings";
