@@ -72,8 +72,7 @@ const translations = {
     nav_signin: "Sign In",
     hero_title: "Your Personal",
     hero_title_accent: "Language Tutor",
-    hero_subtitle:
-      "Meet Robot Buddy Pro—your AI tutor for conversations, stories, flashcards, vocabulary drills, grammar labs, translation, and pronunciation coaching. Practice Spanish, English, Portuguese, French, Italian, or Nahuatl.",
+    hero_subtitle: "Use intelligent tools to practice and learn new languages.",
     cta_start: "Start Learning",
     cta_signin: "I Have a Key",
     features_label: "CAPABILITIES",
@@ -109,16 +108,18 @@ const translations = {
     feature_flashcards_spaced: "Smart Flashcards",
     feature_flashcards_spaced_desc:
       "Review words and phrases with spaced repetition that adapts to what you know and what needs more practice.",
-    feature_robot_buddy: "Robot Buddy Pro",
-    feature_robot_buddy_desc:
-      "Your personal AI tutor that guides every lesson, answers questions, and gives real-time coaching as you learn.",
+
     value_label: "WHY NO SABOS",
     value_title: "Learning That",
     value_title_accent: "Actually Works",
-    value_1: "AI that adapts in real-time—conversations, exercises, and feedback adjust to your exact level",
-    value_2: "Six practice modes for every learning style: speaking, reading, writing, listening, grammar, and vocabulary",
-    value_3: "Structured CEFR progression from A1 beginner to C2 mastery with 324 lessons and clear milestones",
-    value_4: "Real-time pronunciation coaching that listens, corrects, and builds your confidence to speak",
+    value_1:
+      "AI that adapts in real-time—conversations, exercises, and feedback adjust to your exact level",
+    value_2:
+      "Six practice modes for every learning style: speaking, reading, writing, listening, grammar, and vocabulary",
+    value_3:
+      "Structured CEFR progression from A1 beginner to C2 mastery with 324 lessons and clear milestones",
+    value_4:
+      "Real-time pronunciation coaching that listens, corrects, and builds your confidence to speak",
     scholarship_label: "GIVE BACK",
     scholarship_title: "Create Scholarships",
     scholarship_title_accent: "with Bitcoin",
@@ -163,7 +164,7 @@ const translations = {
     hero_title: "Tu",
     hero_title_accent: "Tutor Lingüístico Personal",
     hero_subtitle:
-      "Conoce a Robot Buddy Pro—tu tutor de IA para conversaciones, historias, tarjetas de memoria, ejercicios de vocabulario, gramática, traducción y pronunciación. Practica español, inglés, portugués, francés, italiano o náhuatl.",
+      "Usa herramientas inteligentes para practicar y aprender nuevos idiomas.",
     cta_start: "Comienza",
     cta_signin: "Tengo una Llave",
     features_label: "CAPACIDADES",
@@ -199,16 +200,17 @@ const translations = {
     feature_flashcards_spaced: "Tarjetas Inteligentes",
     feature_flashcards_spaced_desc:
       "Repasa palabras y frases con repetición espaciada que se adapta a lo que sabes y lo que necesita más práctica.",
-    feature_robot_buddy: "Robot Buddy Pro",
-    feature_robot_buddy_desc:
-      "Tu tutor de IA personal que guía cada lección, responde preguntas y te entrena en tiempo real mientras aprendes.",
     value_label: "POR QUÉ NO SABOS",
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
-    value_1: "IA que se adapta en tiempo real—conversaciones, ejercicios y retroalimentación ajustados a tu nivel exacto",
-    value_2: "Seis modos de práctica para cada estilo de aprendizaje: hablar, leer, escribir, escuchar, gramática y vocabulario",
-    value_3: "Progresión CEFR estructurada de A1 principiante a C2 maestría con 324 lecciones y hitos claros",
-    value_4: "Entrenamiento de pronunciación en tiempo real que escucha, corrige y construye tu confianza para hablar",
+    value_1:
+      "IA que se adapta en tiempo real—conversaciones, ejercicios y retroalimentación ajustados a tu nivel exacto",
+    value_2:
+      "Seis modos de práctica para cada estilo de aprendizaje: hablar, leer, escribir, escuchar, gramática y vocabulario",
+    value_3:
+      "Progresión CEFR estructurada de A1 principiante a C2 maestría con 324 lecciones y hitos claros",
+    value_4:
+      "Entrenamiento de pronunciación en tiempo real que escucha, corrige y construye tu confianza para hablar",
     scholarship_label: "CONTRIBUYE",
     scholarship_title: "Crea Becas",
     scholarship_title_accent: "con Bitcoin",
@@ -1055,11 +1057,6 @@ const LandingPage = ({ onAuthenticated }) => {
   }, [authWithExtension, onAuthenticated]);
 
   const features = [
-    {
-      icon: "🤖",
-      title: copy.feature_robot_buddy,
-      desc: copy.feature_robot_buddy_desc,
-    },
     {
       icon: "💬",
       title: copy.feature_conversations,
