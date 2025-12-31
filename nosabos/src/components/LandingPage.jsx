@@ -18,8 +18,9 @@ import {
   FaFlask,
   FaPencilAlt,
   FaLayerGroup,
-  FaExchangeAlt,
-  FaMicrophone,
+  FaStickyNote,
+  FaUsers,
+  FaRobot,
   FaMap,
   FaBullseye,
 } from "react-icons/fa";
@@ -112,12 +113,15 @@ const translations = {
     feature_goals: "Daily Goals",
     feature_goals_desc:
       "Personalized targets tracking your progress and celebrating streaks to keep you motivated.",
-    feature_translation: "Translation Practice",
-    feature_translation_desc:
-      "Translate sentences between languages with AI-powered feedback that explains your mistakes and helps you improve.",
-    feature_pronunciation: "Speech & Pronunciation",
-    feature_pronunciation_desc:
-      "Speak aloud and get real-time feedback on your pronunciation, accent, and fluency with voice recognition.",
+    feature_notes: "Generate Notes",
+    feature_notes_desc:
+      "Create comprehensive study notes automatically from your conversations and lessons to review later.",
+    feature_teams: "Create Teams",
+    feature_teams_desc:
+      "Form study groups and learn together with friends, family, or classmates in collaborative spaces.",
+    feature_assistant: "Personal Assistant",
+    feature_assistant_desc:
+      "Get personalized guidance and recommendations tailored to your learning style and goals.",
     feature_flashcards_spaced: "Flashcard Drills",
     feature_flashcards_spaced_desc:
       "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
@@ -205,12 +209,15 @@ const translations = {
     feature_goals: "Metas Diarias",
     feature_goals_desc:
       "Objetivos personalizados que rastrean tu progreso y celebran tus rachas.",
-    feature_translation: "Práctica de Traducción",
-    feature_translation_desc:
-      "Traduce oraciones entre idiomas con retroalimentación de IA que explica tus errores y te ayuda a mejorar.",
-    feature_pronunciation: "Habla y Pronunciación",
-    feature_pronunciation_desc:
-      "Habla en voz alta y recibe retroalimentación en tiempo real sobre tu pronunciación, acento y fluidez.",
+    feature_notes: "Generar Notas",
+    feature_notes_desc:
+      "Crea notas de estudio completas automáticamente de tus conversaciones y lecciones para revisar después.",
+    feature_teams: "Crear Equipos",
+    feature_teams_desc:
+      "Forma grupos de estudio y aprende junto con amigos, familia o compañeros en espacios colaborativos.",
+    feature_assistant: "Asistente Personal",
+    feature_assistant_desc:
+      "Obtén orientación y recomendaciones personalizadas adaptadas a tu estilo de aprendizaje y objetivos.",
     feature_flashcards_spaced: "Tarjetas Inteligentes",
     feature_flashcards_spaced_desc:
       "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
@@ -1006,14 +1013,19 @@ const LandingPage = ({ onAuthenticated }) => {
       desc: copy.feature_flashcards_spaced_desc,
     },
     {
-      icon: <FaExchangeAlt />,
-      title: copy.feature_translation,
-      desc: copy.feature_translation_desc,
+      icon: <FaStickyNote />,
+      title: copy.feature_notes,
+      desc: copy.feature_notes_desc,
     },
     {
-      icon: <FaMicrophone />,
-      title: copy.feature_pronunciation,
-      desc: copy.feature_pronunciation_desc,
+      icon: <FaUsers />,
+      title: copy.feature_teams,
+      desc: copy.feature_teams_desc,
+    },
+    {
+      icon: <FaRobot />,
+      title: copy.feature_assistant,
+      desc: copy.feature_assistant_desc,
     },
     {
       icon: <FaMap />,
