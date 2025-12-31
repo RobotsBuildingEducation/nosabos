@@ -747,6 +747,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     if (code === "pt") return translations[uiLang].language_pt || "Portuguese";
     if (code === "fr") return translations[uiLang].language_fr || "French";
     if (code === "it") return translations[uiLang].language_it || "Italian";
+    if (code === "nl") return translations[uiLang].language_nl || "Dutch";
     if (code === "nah")
       return translations[uiLang].language_nah || "Huastec Nahuatl";
     return code;
@@ -1120,6 +1121,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
+    } else if (tLang === "nl") {
+      strict =
+        "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
@@ -1211,6 +1215,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           ? "French"
           : tLang === "it"
           ? "Italian"
+          : tLang === "nl"
+          ? "Dutch"
           : tLang === "nah"
           ? "Huastec Nahuatl"
           : "English";

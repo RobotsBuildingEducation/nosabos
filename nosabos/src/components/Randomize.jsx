@@ -102,7 +102,7 @@ export default function Randomize() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
         p.targetLang
       )
         ? p.targetLang

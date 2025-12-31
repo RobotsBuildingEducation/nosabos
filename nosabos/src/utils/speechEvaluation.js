@@ -204,6 +204,15 @@ const STOPWORDS = {
     "here",
   ]),
   nah: new Set(),
+  nl: new Set([
+    "de", "het", "een", "van", "en", "in", "is", "op", "te", "dat", "die",
+    "voor", "zijn", "met", "aan", "niet", "ook", "als", "maar", "om", "dan",
+    "of", "wat", "bij", "er", "nog", "wel", "naar", "kan", "tot", "uit",
+    "al", "werd", "zo", "zou", "ze", "hem", "haar", "hun", "dit", "deze",
+    "meer", "nu", "waar", "worden", "wij", "zij", "veel", "over", "door",
+    "geen", "heb", "heeft", "hebben", "hebben", "ben", "bent", "was", "waren",
+    "je", "jij", "u", "uw", "mij", "ons", "onze", "jullie",
+  ]),
   pt: new Set([
     "de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "não",
     "uma", "os", "no", "se", "na", "por", "mais", "as", "dos", "como", "mas",
@@ -414,6 +423,18 @@ const STRICT = {
     MIN_LANG_LIKE: 0.35,
     DURATION_PER_CHAR_SEC: 0.045,
     DURATION_TOLERANCE: [0.35, 3.5],
+  },
+  nl: {
+    MIN_SPEECH_SEC: 1.0,
+    MIN_RMS: 0.006,
+    MIN_ZCR_PSEC: 400,
+    MAX_ZCR_PSEC: 9000,
+    MIN_CONFIDENCE: 0.45,
+    MIN_CHAR_SIM: 0.56,
+    MIN_WORD_F1: 0.46,
+    MIN_LANG_LIKE: 0.45,
+    DURATION_PER_CHAR_SEC: 0.045,
+    DURATION_TOLERANCE: [0.4, 3.2],
   },
 };
 

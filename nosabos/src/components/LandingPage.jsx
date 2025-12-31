@@ -353,6 +353,7 @@ const FloatingElements = () => {
     { text: "Olá", x: "85%", y: "60%", delay: 0.5 },
     { text: "Hello", x: "25%", y: "85%", delay: 1.5 },
     { text: "Pialli", x: "70%", y: "80%", delay: 2.5 },
+    { text: "Hallo", x: "50%", y: "12%", delay: 1.8 },
   ];
 
   return (

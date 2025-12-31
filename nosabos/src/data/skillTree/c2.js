@@ -1424,7 +1424,7 @@ function applyCEFRScaffolding(path) {
 
 const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
 
-const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nah"]);
+const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nl", "nah"]);
 const DEFAULT_TARGET_LANG = "es";
 
 const VOCABULARY_LIBRARY = {
@@ -2132,5 +2132,6 @@ export const LEARNING_PATHS = {
   pt: cloneLearningPath(), // Portuguese
   fr: cloneLearningPath(), // French
   it: cloneLearningPath(), // Italian
+  nl: cloneLearningPath(), // Dutch
   nah: cloneLearningPath(), // Huastec Nahuatl
 };

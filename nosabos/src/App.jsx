@@ -848,6 +848,8 @@ function TopBar({
                         translations[appLanguage].onboarding_practice_fr}
                       {targetLang === "it" &&
                         translations[appLanguage].onboarding_practice_it}
+                      {targetLang === "nl" &&
+                        translations[appLanguage].onboarding_practice_nl}
                       {targetLang === "en" &&
                         translations[appLanguage].onboarding_practice_en}
                     </MenuButton>
@@ -874,6 +876,9 @@ function TopBar({
                         </MenuItemOption>
                         <MenuItemOption value="it">
                           {translations[appLanguage].onboarding_practice_it}
+                        </MenuItemOption>
+                        <MenuItemOption value="nl">
+                          {translations[appLanguage].onboarding_practice_nl}
                         </MenuItemOption>
                         <MenuItemOption value="en">
                           {translations[appLanguage].onboarding_practice_en}
@@ -1823,7 +1828,7 @@ export default function App() {
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
         .slice(0, 240)
         .trim(),
-      targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
+      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
         partial.targetLang ?? prev.targetLang
       )
         ? partial.targetLang ?? prev.targetLang
@@ -1939,7 +1944,7 @@ export default function App() {
           translations[appLanguage]?.onboarding_persona_default_example ||
             translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
+        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
           payload.targetLang
         )
           ? payload.targetLang

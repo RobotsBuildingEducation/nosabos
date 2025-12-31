@@ -83,6 +83,8 @@ const LLM_LANG_NAME = (codeOrName) => {
   if (m === "fr" || m === "french" || m === "francés" || m === "français")
     return "French";
   if (m === "it" || m === "italian" || m === "italiano") return "Italian";
+  if (m === "nl" || m === "dutch" || m === "nederlands" || m === "holandés")
+    return "Dutch";
   if (m === "nah" || m === "nahuatl" || m === "huastec nahuatl")
     return "Huastec Nahuatl";
   return capName(m);
@@ -102,6 +104,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "pt") return "pt-BR";
   if (m === "fr") return "fr-FR";
   if (m === "it") return "it-IT";
+  if (m === "nl") return "nl-NL";
   if (m === "nah") return "es-ES"; // fallback
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
@@ -163,7 +166,7 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
         p.targetLang
       )
         ? p.targetLang
