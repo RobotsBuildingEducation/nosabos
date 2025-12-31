@@ -11,6 +11,20 @@ import {
   useTransform,
   AnimatePresence,
 } from "framer-motion";
+import {
+  FaComments,
+  FaBookOpen,
+  FaBook,
+  FaFlask,
+  FaPencilAlt,
+  FaLayerGroup,
+  FaExchangeAlt,
+  FaMicrophone,
+  FaMap,
+  FaBullseye,
+} from "react-icons/fa";
+import RobotBuddyPro from "./RobotBuddyPro";
+import AnimatedBackground from "./AnimatedBackground";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
 const useDecentralizedIdentity = () => ({
@@ -71,8 +85,7 @@ const translations = {
     nav_signin: "Sign In",
     hero_title: "Your Personal",
     hero_title_accent: "Language Tutor",
-    hero_subtitle:
-      "Stories, conversations, flashcards, grammar labs, and skill trees—all powered by AI that adapts to how you learn best. Practice Spanish, English, Portuguese, French, Italian, or Nahuatl.",
+    hero_subtitle: "Use intelligent tools to practice and learn new languages.",
     cta_start: "Start Learning",
     cta_signin: "I Have a Key",
     features_label: "CAPABILITIES",
@@ -93,19 +106,33 @@ const translations = {
     feature_skilltree: "Skill Tree",
     feature_skilltree_desc:
       "Structured learning paths that build your abilities step by step with clear progress visualization.",
-    feature_flashcards: "Smart Flashcards",
+    feature_flashcards: "Vocabulary Drills",
     feature_flashcards_desc:
-      "Spaced repetition vocabulary drills that optimize retention and accelerate your learning.",
+      "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
     feature_goals: "Daily Goals",
     feature_goals_desc:
       "Personalized targets tracking your progress and celebrating streaks to keep you motivated.",
+    feature_translation: "Translation Practice",
+    feature_translation_desc:
+      "Translate sentences between languages with AI-powered feedback that explains your mistakes and helps you improve.",
+    feature_pronunciation: "Speech & Pronunciation",
+    feature_pronunciation_desc:
+      "Speak aloud and get real-time feedback on your pronunciation, accent, and fluency with voice recognition.",
+    feature_flashcards_spaced: "Smart Flashcards",
+    feature_flashcards_spaced_desc:
+      "Review words and phrases with spaced repetition that adapts to what you know and what needs more practice.",
+
     value_label: "WHY NO SABOS",
     value_title: "Learning That",
     value_title_accent: "Actually Works",
-    value_1: "Personalized study paths generated from every conversation",
-    value_2: "Daily goals that track your streaks and celebrate milestones",
-    value_3: "Lesson summaries and transcripts you can download anytime",
-    value_4: "Community prompts that keep you motivated and curious",
+    value_1:
+      "AI that adapts in real-time—conversations, exercises, and feedback adjust to your exact level",
+    value_2:
+      "Six practice modes for every learning style: speaking, reading, writing, listening, grammar, and vocabulary",
+    value_3:
+      "Structured CEFR progression from A1 beginner to C2 mastery with 324 lessons and clear milestones",
+    value_4:
+      "Real-time pronunciation coaching that listens, corrects, and builds your confidence to speak",
     scholarship_label: "GIVE BACK",
     scholarship_title: "Create Scholarships",
     scholarship_title_accent: "with Bitcoin",
@@ -150,7 +177,7 @@ const translations = {
     hero_title: "Tu",
     hero_title_accent: "Tutor Lingüístico Personal",
     hero_subtitle:
-      "Historias, conversaciones, tarjetas, laboratorios de gramática y árboles de habilidades—todo impulsado por IA que se adapta a cómo aprendes mejor. Practica español, inglés, portugués, francés, italiano o náhuatl.",
+      "Usa herramientas inteligentes para practicar y aprender nuevos idiomas.",
     cta_start: "Comienza",
     cta_signin: "Tengo una Llave",
     features_label: "CAPACIDADES",
@@ -171,19 +198,32 @@ const translations = {
     feature_skilltree: "Árbol de Habilidades",
     feature_skilltree_desc:
       "Rutas de aprendizaje estructuradas que construyen tus habilidades paso a paso.",
-    feature_flashcards: "Tarjetas Inteligentes",
+    feature_flashcards: "Ejercicios de Vocabulario",
     feature_flashcards_desc:
-      "Ejercicios de vocabulario con repetición espaciada que optimizan la retención.",
+      "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
     feature_goals: "Metas Diarias",
     feature_goals_desc:
       "Objetivos personalizados que rastrean tu progreso y celebran tus rachas.",
+    feature_translation: "Práctica de Traducción",
+    feature_translation_desc:
+      "Traduce oraciones entre idiomas con retroalimentación de IA que explica tus errores y te ayuda a mejorar.",
+    feature_pronunciation: "Habla y Pronunciación",
+    feature_pronunciation_desc:
+      "Habla en voz alta y recibe retroalimentación en tiempo real sobre tu pronunciación, acento y fluidez.",
+    feature_flashcards_spaced: "Tarjetas Inteligentes",
+    feature_flashcards_spaced_desc:
+      "Repasa palabras y frases con repetición espaciada que se adapta a lo que sabes y lo que necesita más práctica.",
     value_label: "POR QUÉ NO SABOS",
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
-    value_1: "Rutas de estudio personalizadas generadas de cada conversación",
-    value_2: "Metas diarias que rastrean tus rachas y celebran hitos",
-    value_3: "Resúmenes de lecciones y transcripciones descargables",
-    value_4: "Prompts comunitarios que te mantienen motivado y curioso",
+    value_1:
+      "IA que se adapta en tiempo real—conversaciones, ejercicios y retroalimentación ajustados a tu nivel exacto",
+    value_2:
+      "Seis modos de práctica para cada estilo de aprendizaje: hablar, leer, escribir, escuchar, gramática y vocabulario",
+    value_3:
+      "Progresión CEFR estructurada de A1 principiante a C2 maestría con 324 lecciones y hitos claros",
+    value_4:
+      "Entrenamiento de pronunciación en tiempo real que escucha, corrige y construye tu confianza para hablar",
     scholarship_label: "CONTRIBUYE",
     scholarship_title: "Crea Becas",
     scholarship_title_accent: "con Bitcoin",
@@ -288,102 +328,6 @@ const GlobalStyles = () => (
       100% { transform: rotate(360deg) translateX(150px) rotate(-360deg); }
     }
   `}</style>
-);
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// ANIMATED BACKGROUND
-// ═══════════════════════════════════════════════════════════════════════════════
-
-const AnimatedBackground = () => (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      zIndex: 0,
-      overflow: "hidden",
-      pointerEvents: "none",
-    }}
-  >
-    {/* Base gradient */}
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        background: `
-          radial-gradient(ellipse 80% 50% at 50% -20%, rgba(20, 184, 166, 0.15) 0%, transparent 50%),
-          radial-gradient(ellipse 60% 40% at 80% 100%, rgba(14, 165, 233, 0.1) 0%, transparent 40%),
-          radial-gradient(ellipse 50% 30% at 10% 80%, rgba(167, 139, 250, 0.08) 0%, transparent 40%),
-          linear-gradient(to bottom, #030712 0%, #0f172a 50%, #030712 100%)
-        `,
-      }}
-    />
-
-    {/* Animated orbs */}
-    <motion.div
-      animate={{
-        scale: [1, 1.2, 1],
-        opacity: [0.3, 0.5, 0.3],
-      }}
-      transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-      style={{
-        position: "absolute",
-        top: "10%",
-        left: "5%",
-        width: "500px",
-        height: "500px",
-        borderRadius: "50%",
-        background: `radial-gradient(circle, rgba(20, 184, 166, 0.2) 0%, transparent 70%)`,
-        filter: "blur(60px)",
-      }}
-    />
-    <motion.div
-      animate={{
-        scale: [1.2, 1, 1.2],
-        opacity: [0.2, 0.4, 0.2],
-      }}
-      transition={{
-        duration: 10,
-        repeat: Infinity,
-        ease: "easeInOut",
-        delay: 2,
-      }}
-      style={{
-        position: "absolute",
-        bottom: "20%",
-        right: "10%",
-        width: "400px",
-        height: "400px",
-        borderRadius: "50%",
-        background: `radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%)`,
-        filter: "blur(50px)",
-      }}
-    />
-
-    {/* Grid overlay */}
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        backgroundImage: `
-          linear-gradient(rgba(20, 184, 166, 0.03) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(20, 184, 166, 0.03) 1px, transparent 1px)
-        `,
-        backgroundSize: "60px 60px",
-        maskImage:
-          "radial-gradient(ellipse 80% 50% at 50% 50%, black, transparent)",
-      }}
-    />
-
-    {/* Noise texture */}
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        opacity: 0.02,
-        background: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }}
-    />
-  </div>
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1031,36 +975,55 @@ const LandingPage = ({ onAuthenticated }) => {
 
   const features = [
     {
-      icon: "💬",
+      icon: <FaComments />,
       title: copy.feature_conversations,
       desc: copy.feature_conversations_desc,
     },
     {
-      icon: "📖",
+      icon: <FaBookOpen />,
       title: copy.feature_stories,
       desc: copy.feature_stories_desc,
     },
     {
-      icon: "📚",
+      icon: <FaBook />,
       title: copy.feature_reading,
       desc: copy.feature_reading_desc,
     },
     {
-      icon: "🧪",
+      icon: <FaFlask />,
       title: copy.feature_grammar,
       desc: copy.feature_grammar_desc,
     },
     {
-      icon: "🗺️",
+      icon: <FaPencilAlt />,
+      title: copy.feature_flashcards,
+      desc: copy.feature_flashcards_desc,
+    },
+    {
+      icon: <FaLayerGroup />,
+      title: copy.feature_flashcards_spaced,
+      desc: copy.feature_flashcards_spaced_desc,
+    },
+    {
+      icon: <FaExchangeAlt />,
+      title: copy.feature_translation,
+      desc: copy.feature_translation_desc,
+    },
+    {
+      icon: <FaMicrophone />,
+      title: copy.feature_pronunciation,
+      desc: copy.feature_pronunciation_desc,
+    },
+    {
+      icon: <FaMap />,
       title: copy.feature_skilltree,
       desc: copy.feature_skilltree_desc,
     },
     {
-      icon: "🎴",
-      title: copy.feature_flashcards,
-      desc: copy.feature_flashcards_desc,
+      icon: <FaBullseye />,
+      title: copy.feature_goals,
+      desc: copy.feature_goals_desc,
     },
-    { icon: "🎯", title: copy.feature_goals, desc: copy.feature_goals_desc },
   ];
 
   const faqs = [
@@ -1151,12 +1114,12 @@ const LandingPage = ({ onAuthenticated }) => {
       {/* Hero Section */}
       <section
         style={{
-          minHeight: "100vh",
+          minHeight: "auto",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          padding: `${theme.spacing.container} 24px`,
+          padding: "100px 24px 60px",
           overflow: "hidden",
         }}
       >
@@ -1164,23 +1127,29 @@ const LandingPage = ({ onAuthenticated }) => {
 
         <div
           style={{
-            maxWidth: "900px",
+            maxWidth: "800px",
             width: "100%",
             textAlign: "center",
             position: "relative",
             zIndex: 10,
           }}
         >
-          {/* Logo */}
+          {/* Robot Buddy Pro */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            style={{ marginBottom: "32px" }}
+            style={{ marginBottom: "16px" }}
           >
-            <div style={{ display: "inline-block" }}>
-              <Logo size={80} />
-            </div>
+            <RobotBuddyPro
+              state="idle"
+              mood="happy"
+              palette="ocean"
+              variant="abstract"
+              showBadges={false}
+              compact={true}
+              maxW={140}
+            />
           </motion.div>
 
           {/* Title */}
@@ -1190,7 +1159,7 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.4 }}
             style={{
               fontFamily: theme.fonts.display,
-              fontSize: "clamp(2.5rem, 8vw, 5rem)",
+              fontSize: "clamp(2rem, 6vw, 3.5rem)",
               fontWeight: 600,
               lineHeight: 1.1,
               marginBottom: "24px",
@@ -1217,11 +1186,11 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.5 }}
             style={{
               fontFamily: theme.fonts.body,
-              fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
+              fontSize: "clamp(0.95rem, 2vw, 1.1rem)",
               color: theme.colors.text.secondary,
-              maxWidth: "600px",
-              margin: "0 auto 48px",
-              lineHeight: 1.7,
+              maxWidth: "580px",
+              margin: "0 auto 32px",
+              lineHeight: 1.6,
             }}
           >
             {copy.hero_subtitle}
@@ -1288,44 +1257,6 @@ const LandingPage = ({ onAuthenticated }) => {
                 {copy.language_es}
               </Button>
             </div>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5 }}
-            style={{
-              position: "absolute",
-              bottom: "-80px",
-              left: "50%",
-              transform: "translateX(-50%)",
-            }}
-          >
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{
-                width: "24px",
-                height: "40px",
-                border: `2px solid ${theme.colors.border.accent}`,
-                borderRadius: "12px",
-                display: "flex",
-                justifyContent: "center",
-                paddingTop: "8px",
-              }}
-            >
-              <motion.div
-                animate={{ opacity: [0.3, 1, 0.3], y: [0, 8, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                style={{
-                  width: "4px",
-                  height: "8px",
-                  background: theme.colors.accent.primary,
-                  borderRadius: "2px",
-                }}
-              />
-            </motion.div>
           </motion.div>
         </div>
       </section>
