@@ -72,7 +72,7 @@ const translations = {
     hero_title: "Your Personal",
     hero_title_accent: "Language Tutor",
     hero_subtitle:
-      "Conversations, stories, vocabulary drills, grammar labs, translation practice, and pronunciation coaching—all powered by AI that adapts to your level. Practice Spanish, English, Portuguese, French, Italian, or Nahuatl.",
+      "Meet Robot Buddy Pro—your AI tutor for conversations, stories, flashcards, vocabulary drills, grammar labs, translation, and pronunciation coaching. Practice Spanish, English, Portuguese, French, Italian, or Nahuatl.",
     cta_start: "Start Learning",
     cta_signin: "I Have a Key",
     features_label: "CAPABILITIES",
@@ -105,6 +105,12 @@ const translations = {
     feature_pronunciation: "Speech & Pronunciation",
     feature_pronunciation_desc:
       "Speak aloud and get real-time feedback on your pronunciation, accent, and fluency with voice recognition.",
+    feature_flashcards_spaced: "Smart Flashcards",
+    feature_flashcards_spaced_desc:
+      "Review words and phrases with spaced repetition that adapts to what you know and what needs more practice.",
+    feature_robot_buddy: "Robot Buddy Pro",
+    feature_robot_buddy_desc:
+      "Your personal AI tutor that guides every lesson, answers questions, and gives real-time coaching as you learn.",
     value_label: "WHY NO SABOS",
     value_title: "Learning That",
     value_title_accent: "Actually Works",
@@ -156,7 +162,7 @@ const translations = {
     hero_title: "Tu",
     hero_title_accent: "Tutor Lingüístico Personal",
     hero_subtitle:
-      "Conversaciones, historias, ejercicios de vocabulario, laboratorios de gramática, práctica de traducción y entrenamiento de pronunciación—todo impulsado por IA que se adapta a tu nivel. Practica español, inglés, portugués, francés, italiano o náhuatl.",
+      "Conoce a Robot Buddy Pro—tu tutor de IA para conversaciones, historias, tarjetas de memoria, ejercicios de vocabulario, gramática, traducción y pronunciación. Practica español, inglés, portugués, francés, italiano o náhuatl.",
     cta_start: "Comienza",
     cta_signin: "Tengo una Llave",
     features_label: "CAPACIDADES",
@@ -189,6 +195,12 @@ const translations = {
     feature_pronunciation: "Habla y Pronunciación",
     feature_pronunciation_desc:
       "Habla en voz alta y recibe retroalimentación en tiempo real sobre tu pronunciación, acento y fluidez.",
+    feature_flashcards_spaced: "Tarjetas Inteligentes",
+    feature_flashcards_spaced_desc:
+      "Repasa palabras y frases con repetición espaciada que se adapta a lo que sabes y lo que necesita más práctica.",
+    feature_robot_buddy: "Robot Buddy Pro",
+    feature_robot_buddy_desc:
+      "Tu tutor de IA personal que guía cada lección, responde preguntas y te entrena en tiempo real mientras aprendes.",
     value_label: "POR QUÉ NO SABOS",
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
@@ -1043,6 +1055,11 @@ const LandingPage = ({ onAuthenticated }) => {
 
   const features = [
     {
+      icon: "🤖",
+      title: copy.feature_robot_buddy,
+      desc: copy.feature_robot_buddy_desc,
+    },
+    {
       icon: "💬",
       title: copy.feature_conversations,
       desc: copy.feature_conversations_desc,
@@ -1066,6 +1083,11 @@ const LandingPage = ({ onAuthenticated }) => {
       icon: "📝",
       title: copy.feature_flashcards,
       desc: copy.feature_flashcards_desc,
+    },
+    {
+      icon: "🎴",
+      title: copy.feature_flashcards_spaced,
+      desc: copy.feature_flashcards_spaced_desc,
     },
     {
       icon: "🔄",
@@ -1173,12 +1195,12 @@ const LandingPage = ({ onAuthenticated }) => {
       {/* Hero Section */}
       <section
         style={{
-          minHeight: "100vh",
+          minHeight: "auto",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           position: "relative",
-          padding: `${theme.spacing.container} 24px`,
+          padding: "100px 24px 60px",
           overflow: "hidden",
         }}
       >
@@ -1186,7 +1208,7 @@ const LandingPage = ({ onAuthenticated }) => {
 
         <div
           style={{
-            maxWidth: "900px",
+            maxWidth: "800px",
             width: "100%",
             textAlign: "center",
             position: "relative",
@@ -1198,10 +1220,10 @@ const LandingPage = ({ onAuthenticated }) => {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            style={{ marginBottom: "32px" }}
+            style={{ marginBottom: "20px" }}
           >
             <div style={{ display: "inline-block" }}>
-              <Logo size={80} />
+              <Logo size={64} />
             </div>
           </motion.div>
 
@@ -1212,7 +1234,7 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.4 }}
             style={{
               fontFamily: theme.fonts.display,
-              fontSize: "clamp(2.5rem, 8vw, 5rem)",
+              fontSize: "clamp(2rem, 6vw, 3.5rem)",
               fontWeight: 600,
               lineHeight: 1.1,
               marginBottom: "24px",
@@ -1239,11 +1261,11 @@ const LandingPage = ({ onAuthenticated }) => {
             transition={{ delay: 0.5 }}
             style={{
               fontFamily: theme.fonts.body,
-              fontSize: "clamp(1rem, 2.5vw, 1.25rem)",
+              fontSize: "clamp(0.95rem, 2vw, 1.1rem)",
               color: theme.colors.text.secondary,
-              maxWidth: "600px",
-              margin: "0 auto 48px",
-              lineHeight: 1.7,
+              maxWidth: "580px",
+              margin: "0 auto 32px",
+              lineHeight: 1.6,
             }}
           >
             {copy.hero_subtitle}
@@ -1310,44 +1332,6 @@ const LandingPage = ({ onAuthenticated }) => {
                 {copy.language_es}
               </Button>
             </div>
-          </motion.div>
-
-          {/* Scroll indicator */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.5 }}
-            style={{
-              position: "absolute",
-              bottom: "-80px",
-              left: "50%",
-              transform: "translateX(-50%)",
-            }}
-          >
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 2, repeat: Infinity }}
-              style={{
-                width: "24px",
-                height: "40px",
-                border: `2px solid ${theme.colors.border.accent}`,
-                borderRadius: "12px",
-                display: "flex",
-                justifyContent: "center",
-                paddingTop: "8px",
-              }}
-            >
-              <motion.div
-                animate={{ opacity: [0.3, 1, 0.3], y: [0, 8, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                style={{
-                  width: "4px",
-                  height: "8px",
-                  background: theme.colors.accent.primary,
-                  borderRadius: "2px",
-                }}
-              />
-            </motion.div>
           </motion.div>
         </div>
       </section>
