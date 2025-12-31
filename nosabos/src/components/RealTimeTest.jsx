@@ -966,7 +966,7 @@ export default function RealTimeTest({
       voicePersonaRef.current = p.voicePersona;
       setVoicePersona(p.voicePersona);
     }
-    if (["nah", "es", "pt", "en", "fr", "it"].includes(p.targetLang)) {
+    if (["nah", "es", "pt", "en", "fr", "it", "nl"].includes(p.targetLang)) {
       targetLangRef.current = p.targetLang;
       setTargetLang(p.targetLang);
     }
@@ -1920,6 +1920,9 @@ Return ONLY JSON:
         "Réponds UNIQUEMENT en français. N'utilise ni l'anglais ni l'espagnol.";
     } else if (tLang === "it") {
       strict = "Rispondi SOLO in italiano. Non usare inglese o spagnolo.";
+    } else if (tLang === "nl") {
+      strict =
+        "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";

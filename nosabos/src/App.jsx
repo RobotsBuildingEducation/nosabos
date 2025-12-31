@@ -1828,7 +1828,7 @@ export default function App() {
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
         .slice(0, 240)
         .trim(),
-      targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
+      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
         partial.targetLang ?? prev.targetLang
       )
         ? partial.targetLang ?? prev.targetLang
@@ -1944,7 +1944,7 @@ export default function App() {
           translations[appLanguage]?.onboarding_persona_default_example ||
             translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "pt", "en", "fr", "it"].includes(
+        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
           payload.targetLang
         )
           ? payload.targetLang

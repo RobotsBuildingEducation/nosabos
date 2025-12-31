@@ -1424,7 +1424,7 @@ function applyCEFRScaffolding(path) {
 
 const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
 
-const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nah"]);
+const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nl", "nah"]);
 const DEFAULT_TARGET_LANG = "es";
 
 const VOCABULARY_LIBRARY = {

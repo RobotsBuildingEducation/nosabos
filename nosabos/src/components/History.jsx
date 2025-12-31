@@ -302,7 +302,7 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
         p.targetLang
       )
         ? p.targetLang
@@ -704,7 +704,7 @@ export default function History({
   const { xp, levelNumber, progressPct, progress, npub, isLoading } =
     useSharedProgress();
 
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it"].includes(
+  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl"].includes(
     progress.targetLang
   )
     ? progress.targetLang
