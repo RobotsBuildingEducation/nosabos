@@ -5,926 +5,923 @@
 export const SKILL_TREE_C2 = [
   {
     id: "unit-c2-1",
-      title: {
-        en: "Native Idioms",
-        es: "Modismos Nativos",
-      },
-      description: {
-        en: "Advanced idioms",
-        es: "Modismos avanzados",
-      },
-      color: "#22C55E",
-      position: { row: 0, offset: 0 },
-      lessons: [
-        {
-          id: "lesson-c2-1-1",
-          title: {
-            en: "Advanced Expressions",
-            es: "Expresiones Avanzadas",
-          },
-          description: {
-            en: "Learn key vocabulary for native idioms",
-            es: "Aprende vocabulario clave para modismos nativos",
-          },
-          xpRequired: 8575,
-          xpReward: 55,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "idioms and colloquial expressions",
-            },
-            grammar: {
-              topic: "idioms and colloquial expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
-          },
-        },
-        {
-          id: "lesson-c2-1-2",
-          title: {
-            en: "Speaking Like a Native",
-            es: "Hablando Como Nativo",
-          },
-          description: {
-            en: "Practice native idioms in conversation",
-            es: "Practica modismos nativos en conversación",
-          },
-          xpRequired: 8615,
-          xpReward: 40,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario: "idioms and colloquial expressions conversation",
-              prompt:
-                "Practice using idioms and colloquial expressions in real conversation",
-            },
-            stories: {
-              topic: "idioms and colloquial expressions",
-              prompt: "Read and discuss idioms and colloquial expressions",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-1-3",
-          title: {
-            en: "Cultural Mastery",
-            es: "Maestría Cultural",
-          },
-          description: {
-            en: "Apply native idioms skills",
-            es: "Aplica habilidades de modismos nativos",
-          },
-          xpRequired: 8655,
-          xpReward: 45,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "idioms and colloquial expressions",
-              prompt:
-                "Advanced idioms and colloquial expressions content and comprehension",
-            },
-            realtime: {
-              scenario: "idioms and colloquial expressions mastery",
-              prompt:
-                "Demonstrate mastery of idioms and colloquial expressions",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-1-quiz",
-          title: {
-            en: "Native Idioms Quiz",
-            es: "Prueba de Modismos Nativos",
-          },
-          description: {
-            en: "Test your knowledge of native idioms",
-            es: "Prueba tus conocimientos de modismos nativos",
-          },
-          xpRequired: 8695,
-          xpReward: 50,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 12,
-            passingScore: 10,
-          },
-          content: {
-            vocabulary: {
-              topic: "idioms and colloquial expressions",
-            },
-            grammar: {
-              topics: ["idioms and colloquial expressions structures"],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
+    title: {
+      en: "Native Idioms",
+      es: "Modismos Nativos",
     },
-    {
-      id: "unit-c2-2",
-      title: {
-        en: "Regional Variations",
-        es: "Variaciones Regionales",
-      },
-      description: {
-        en: "Dialects",
-        es: "Dialectos",
-      },
-      color: "#3B82F6",
-      position: { row: 0, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-c2-2-1",
-          title: {
-            en: "Dialects",
-            es: "Dialectos",
-          },
-          description: {
-            en: "Learn key vocabulary for regional variations",
-            es: "Aprende vocabulario clave para variaciones regionales",
-          },
-          xpRequired: 8775,
-          xpReward: 55,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "regional language",
-            },
-            grammar: {
-              topic: "regional language structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
-          },
-        },
-        {
-          id: "lesson-c2-2-2",
-          title: {
-            en: "Accent and Usage",
-            es: "Acento y Uso",
-          },
-          description: {
-            en: "Practice regional variations in conversation",
-            es: "Practica variaciones regionales en conversación",
-          },
-          xpRequired: 8815,
-          xpReward: 50,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario: "regional language conversation",
-              prompt: "Practice using regional language in real conversation",
-            },
-            stories: {
-              topic: "regional language",
-              prompt: "Read and discuss regional language",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-2-3",
-          title: {
-            en: "Linguistic Diversity",
-            es: "Diversidad Lingüística",
-          },
-          description: {
-            en: "Apply regional variations skills",
-            es: "Aplica habilidades de variaciones regionales",
-          },
-          xpRequired: 8855,
-          xpReward: 55,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "regional language",
-              prompt: "Advanced regional language content and comprehension",
-            },
-            realtime: {
-              scenario: "regional language mastery",
-              prompt: "Demonstrate mastery of regional language",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-2-quiz",
-          title: {
-            en: "Regional Variations Quiz",
-            es: "Prueba de Variaciones Regionales",
-          },
-          description: {
-            en: "Test your knowledge of regional variations",
-            es: "Prueba tus conocimientos de variaciones regionales",
-          },
-          xpRequired: 8895,
-          xpReward: 40,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 12,
-            passingScore: 10,
-          },
-          content: {
-            vocabulary: {
-              topic: "regional language",
-            },
-            grammar: {
-              topics: ["regional language structures"],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
+    description: {
+      en: "Advanced idioms",
+      es: "Modismos avanzados",
     },
-    {
-      id: "unit-c2-3",
-      title: {
-        en: "Stylistic Mastery",
-        es: "Dominio Estilístico",
+    color: "#22C55E",
+    position: { row: 0, offset: 0 },
+    lessons: [
+      {
+        id: "lesson-c2-1-1",
+        title: {
+          en: "Advanced Expressions",
+          es: "Expresiones Avanzadas",
+        },
+        description: {
+          en: "Learn key vocabulary for native idioms",
+          es: "Aprende vocabulario clave para modismos nativos",
+        },
+        xpRequired: 8575,
+        xpReward: 55,
+        modes: ["vocabulary", "grammar"],
+        content: {
+          vocabulary: {
+            topic: "idioms and colloquial expressions",
+          },
+          grammar: {
+            topic: "idioms and colloquial expressions structures",
+            focusPoints: ["basic patterns", "common phrases"],
+          },
+        },
       },
-      description: {
-        en: "Style control",
-        es: "Control de estilo",
+      {
+        id: "lesson-c2-1-2",
+        title: {
+          en: "Speaking Like a Native",
+          es: "Hablando Como Nativo",
+        },
+        description: {
+          en: "Practice native idioms in conversation",
+          es: "Practica modismos nativos en conversación",
+        },
+        xpRequired: 8615,
+        xpReward: 40,
+        modes: ["realtime", "stories"],
+        content: {
+          realtime: {
+            scenario: "idioms and colloquial expressions conversation",
+            prompt:
+              "Practice using idioms and colloquial expressions in real conversation",
+          },
+          stories: {
+            topic: "idioms and colloquial expressions",
+            prompt: "Read and discuss idioms and colloquial expressions",
+          },
+        },
       },
-      color: "#F59E0B",
-      position: { row: 1, offset: 0 },
-      lessons: [
-        {
-          id: "lesson-c2-3-1",
-          title: {
-            en: "Refined Language",
-            es: "Dominio Estilístico - Vocabulario",
+      {
+        id: "lesson-c2-1-3",
+        title: {
+          en: "Cultural Mastery",
+          es: "Maestría Cultural",
+        },
+        description: {
+          en: "Apply native idioms skills",
+          es: "Aplica habilidades de modismos nativos",
+        },
+        xpRequired: 8655,
+        xpReward: 45,
+        modes: ["reading", "realtime"],
+        content: {
+          reading: {
+            topic: "idioms and colloquial expressions",
+            prompt:
+              "Advanced idioms and colloquial expressions content and comprehension",
           },
-          description: {
-            en: "Learn key vocabulary for stylistic mastery",
-            es: "Aprende vocabulario clave para dominio estilístico",
-          },
-          xpRequired: 8975,
-          xpReward: 55,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "style",
-            },
-            grammar: {
-              topic: "style structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
+          realtime: {
+            scenario: "idioms and colloquial expressions mastery",
+            prompt: "Demonstrate mastery of idioms and colloquial expressions",
           },
         },
-        {
-          id: "lesson-c2-3-2",
-          title: {
-            en: "Elegant Expression",
-            es: "Dominio Estilístico - Práctica",
+      },
+      {
+        id: "lesson-c2-1-quiz",
+        title: {
+          en: "Native Idioms Quiz",
+          es: "Prueba de Modismos Nativos",
+        },
+        description: {
+          en: "Test your knowledge of native idioms",
+          es: "Prueba tus conocimientos de modismos nativos",
+        },
+        xpRequired: 8695,
+        xpReward: 50,
+        modes: ["vocabulary", "grammar"],
+        isFinalQuiz: true,
+        quizConfig: {
+          questionsRequired: 12,
+          passingScore: 10,
+        },
+        content: {
+          vocabulary: {
+            topic: "idioms and colloquial expressions",
           },
-          description: {
-            en: "Practice stylistic mastery in conversation",
-            es: "Practica dominio estilístico en conversación",
-          },
-          xpRequired: 9015,
-          xpReward: 50,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario: "style conversation",
-              prompt: "Practice using style in real conversation",
-            },
-            stories: {
-              topic: "style",
-              prompt: "Read and discuss style",
-            },
+          grammar: {
+            topics: ["idioms and colloquial expressions structures"],
+            focusPoints: ["comprehensive review"],
           },
         },
-        {
-          id: "lesson-c2-3-3",
-          title: {
-            en: "Artistic Language",
-            es: "Dominio Estilístico - Aplicación",
-          },
-          description: {
-            en: "Apply stylistic mastery skills",
-            es: "Aplica habilidades de dominio estilístico",
-          },
-          xpRequired: 9055,
-          xpReward: 45,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "style",
-              prompt: "Advanced style content and comprehension",
-            },
-            realtime: {
-              scenario: "style mastery",
-              prompt: "Demonstrate mastery of style",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-3-quiz",
-          title: {
-            en: "Stylistic Mastery Quiz",
-            es: "Prueba de Dominio Estilístico",
-          },
-          description: {
-            en: "Test your knowledge of stylistic mastery",
-            es: "Prueba tus conocimientos de dominio estilístico",
-          },
-          xpRequired: 9095,
-          xpReward: 40,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 12,
-            passingScore: 10,
-          },
-          content: {
-            vocabulary: {
-              topic: "style",
-            },
-            grammar: {
-              topics: ["style structures"],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
+      },
+    ],
+  },
+  {
+    id: "unit-c2-2",
+    title: {
+      en: "Regional Variations",
+      es: "Variaciones Regionales",
     },
-    {
-      id: "unit-c2-4",
-      title: {
-        en: "Rhetorical Devices",
-        es: "Dispositivos Retóricos",
-      },
-      description: {
-        en: "Persuasive techniques",
-        es: "Técnicas persuasivas",
-      },
-      color: "#8B5CF6",
-      position: { row: 1, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-c2-4-1",
-          title: {
-            en: "Persuasive Techniques",
-            es: "Técnicas Persuasivas",
-          },
-          description: {
-            en: "Learn key vocabulary for rhetorical devices",
-            es: "Aprende vocabulario clave para dispositivos retóricos",
-          },
-          xpRequired: 9175,
-          xpReward: 35,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "rhetoric",
-            },
-            grammar: {
-              topic: "rhetoric structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
-          },
-        },
-        {
-          id: "lesson-c2-4-2",
-          title: {
-            en: "Powerful Speech",
-            es: "Discurso Poderoso",
-          },
-          description: {
-            en: "Practice rhetorical devices in conversation",
-            es: "Practica dispositivos retóricos en conversación",
-          },
-          xpRequired: 9215,
-          xpReward: 50,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario: "rhetoric conversation",
-              prompt: "Practice using rhetoric in real conversation",
-            },
-            stories: {
-              topic: "rhetoric",
-              prompt: "Read and discuss rhetoric",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-4-3",
-          title: {
-            en: "Master Rhetoric",
-            es: "Maestría Retórica",
-          },
-          description: {
-            en: "Apply rhetorical devices skills",
-            es: "Aplica habilidades de dispositivos retóricos",
-          },
-          xpRequired: 9255,
-          xpReward: 45,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "rhetoric",
-              prompt: "Advanced rhetoric content and comprehension",
-            },
-            realtime: {
-              scenario: "rhetoric mastery",
-              prompt: "Demonstrate mastery of rhetoric",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-4-quiz",
-          title: {
-            en: "Rhetorical Devices Quiz",
-            es: "Prueba de Dispositivos Retóricos",
-          },
-          description: {
-            en: "Test your knowledge of rhetorical devices",
-            es: "Prueba tus conocimientos de dispositivos retóricos",
-          },
-          xpRequired: 9295,
-          xpReward: 40,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 12,
-            passingScore: 10,
-          },
-          content: {
-            vocabulary: {
-              topic: "rhetoric",
-            },
-            grammar: {
-              topics: ["rhetoric structures"],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
+    description: {
+      en: "Dialects",
+      es: "Dialectos",
     },
-    {
-      id: "unit-c2-5",
-      title: {
-        en: "Specialized Vocabulary",
-        es: "Vocabulario Especializado",
+    color: "#3B82F6",
+    position: { row: 0, offset: 1 },
+    lessons: [
+      {
+        id: "lesson-c2-2-1",
+        title: {
+          en: "Dialects",
+          es: "Dialectos",
+        },
+        description: {
+          en: "Learn key vocabulary for regional variations",
+          es: "Aprende vocabulario clave para variaciones regionales",
+        },
+        xpRequired: 8775,
+        xpReward: 55,
+        modes: ["vocabulary", "grammar"],
+        content: {
+          vocabulary: {
+            topic: "regional language",
+          },
+          grammar: {
+            topic: "regional language structures",
+            focusPoints: ["basic patterns", "common phrases"],
+          },
+        },
       },
-      description: {
-        en: "Technical terms",
-        es: "Términos técnicos",
+      {
+        id: "lesson-c2-2-2",
+        title: {
+          en: "Accent and Usage",
+          es: "Acento y Uso",
+        },
+        description: {
+          en: "Practice regional variations in conversation",
+          es: "Practica variaciones regionales en conversación",
+        },
+        xpRequired: 8815,
+        xpReward: 50,
+        modes: ["realtime", "stories"],
+        content: {
+          realtime: {
+            scenario: "regional language conversation",
+            prompt: "Practice using regional language in real conversation",
+          },
+          stories: {
+            topic: "regional language",
+            prompt: "Read and discuss regional language",
+          },
+        },
       },
-      color: "#EC4899",
-      position: { row: 2, offset: 0 },
-      lessons: [
-        {
-          id: "lesson-c2-5-1",
-          title: {
-            en: "Expert Terminology",
-            es: "Terminología Experta",
+      {
+        id: "lesson-c2-2-3",
+        title: {
+          en: "Linguistic Diversity",
+          es: "Diversidad Lingüística",
+        },
+        description: {
+          en: "Apply regional variations skills",
+          es: "Aplica habilidades de variaciones regionales",
+        },
+        xpRequired: 8855,
+        xpReward: 55,
+        modes: ["reading", "realtime"],
+        content: {
+          reading: {
+            topic: "regional language",
+            prompt: "Advanced regional language content and comprehension",
           },
-          description: {
-            en: "Learn key vocabulary for specialized vocabulary",
-            es: "Aprende vocabulario clave para vocabulario especializado",
-          },
-          xpRequired: 9375,
-          xpReward: 45,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "specialized",
-            },
-            grammar: {
-              topic: "specialized structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
+          realtime: {
+            scenario: "regional language mastery",
+            prompt: "Demonstrate mastery of regional language",
           },
         },
-        {
-          id: "lesson-c2-5-2",
-          title: {
-            en: "Professional Fields",
-            es: "Campos Profesionales",
+      },
+      {
+        id: "lesson-c2-2-quiz",
+        title: {
+          en: "Regional Variations Quiz",
+          es: "Prueba de Variaciones Regionales",
+        },
+        description: {
+          en: "Test your knowledge of regional variations",
+          es: "Prueba tus conocimientos de variaciones regionales",
+        },
+        xpRequired: 8895,
+        xpReward: 40,
+        modes: ["vocabulary", "grammar"],
+        isFinalQuiz: true,
+        quizConfig: {
+          questionsRequired: 12,
+          passingScore: 10,
+        },
+        content: {
+          vocabulary: {
+            topic: "regional language",
           },
-          description: {
-            en: "Practice specialized vocabulary in conversation",
-            es: "Practica vocabulario especializado en conversación",
-          },
-          xpRequired: 9415,
-          xpReward: 60,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario: "specialized conversation",
-              prompt: "Practice using specialized in real conversation",
-            },
-            stories: {
-              topic: "specialized",
-              prompt: "Read and discuss specialized",
-            },
+          grammar: {
+            topics: ["regional language structures"],
+            focusPoints: ["comprehensive review"],
           },
         },
-        {
-          id: "lesson-c2-5-3",
-          title: {
-            en: "Domain Expertise",
-            es: "Experiencia en el Dominio",
-          },
-          description: {
-            en: "Apply specialized vocabulary skills",
-            es: "Aplica habilidades de vocabulario especializado",
-          },
-          xpRequired: 9455,
-          xpReward: 55,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "specialized",
-              prompt: "Advanced specialized content and comprehension",
-            },
-            realtime: {
-              scenario: "specialized mastery",
-              prompt: "Demonstrate mastery of specialized",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-5-quiz",
-          title: {
-            en: "Specialized Vocabulary Quiz",
-            es: "Prueba de Vocabulario Especializado",
-          },
-          description: {
-            en: "Test your knowledge of specialized vocabulary",
-            es: "Prueba tus conocimientos de vocabulario especializado",
-          },
-          xpRequired: 9495,
-          xpReward: 60,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 12,
-            passingScore: 10,
-          },
-          content: {
-            vocabulary: {
-              topic: "specialized",
-            },
-            grammar: {
-              topics: ["specialized structures"],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
+      },
+    ],
+  },
+  {
+    id: "unit-c2-3",
+    title: {
+      en: "Stylistic Mastery",
+      es: "Dominio Estilístico",
     },
-    {
-      id: "unit-c2-6",
-      title: {
-        en: "Subtle Nuances",
-        es: "Matices Sutiles",
-      },
-      description: {
-        en: "Fine distinctions",
-        es: "Distinciones finas",
-      },
-      color: "#10B981",
-      position: { row: 2, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-c2-6-1",
-          title: {
-            en: "Fine Distinctions",
-            es: "Distinciones Finas",
-          },
-          description: {
-            en: "Learn key vocabulary for subtle nuances",
-            es: "Aprende vocabulario clave para matices sutiles",
-          },
-          xpRequired: 9575,
-          xpReward: 35,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "advanced vocabulary and nuanced expressions",
-            },
-            grammar: {
-              topic: "advanced vocabulary and nuanced expressions structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
-          },
-        },
-        {
-          id: "lesson-c2-6-2",
-          title: {
-            en: "Precise Meaning",
-            es: "Significado Preciso",
-          },
-          description: {
-            en: "Practice subtle nuances in conversation",
-            es: "Practica matices sutiles en conversación",
-          },
-          xpRequired: 9615,
-          xpReward: 50,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario:
-                "advanced vocabulary and nuanced expressions conversation",
-              prompt:
-                "Practice using advanced vocabulary and nuanced expressions in real conversation",
-            },
-            stories: {
-              topic: "advanced vocabulary and nuanced expressions",
-              prompt:
-                "Read and discuss advanced vocabulary and nuanced expressions",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-6-3",
-          title: {
-            en: "Mastery of Detail",
-            es: "Maestría del Detalle",
-          },
-          description: {
-            en: "Apply subtle nuances skills",
-            es: "Aplica habilidades de matices sutiles",
-          },
-          xpRequired: 9655,
-          xpReward: 55,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "advanced vocabulary and nuanced expressions",
-              prompt:
-                "Advanced advanced vocabulary and nuanced expressions content and comprehension",
-            },
-            realtime: {
-              scenario: "advanced vocabulary and nuanced expressions mastery",
-              prompt:
-                "Demonstrate mastery of advanced vocabulary and nuanced expressions",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-6-quiz",
-          title: {
-            en: "Subtle Nuances Quiz",
-            es: "Prueba de Matices Sutiles",
-          },
-          description: {
-            en: "Test your knowledge of subtle nuances",
-            es: "Prueba tus conocimientos de matices sutiles",
-          },
-          xpRequired: 9695,
-          xpReward: 40,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 12,
-            passingScore: 10,
-          },
-          content: {
-            vocabulary: {
-              topic: "advanced vocabulary and nuanced expressions",
-            },
-            grammar: {
-              topics: [
-                "advanced vocabulary and nuanced expressions structures",
-              ],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
+    description: {
+      en: "Style control",
+      es: "Control de estilo",
     },
-    {
-      id: "unit-c2-7",
-      title: {
-        en: "Cultural Expertise",
-        es: "Experiencia Cultural",
+    color: "#F59E0B",
+    position: { row: 1, offset: 0 },
+    lessons: [
+      {
+        id: "lesson-c2-3-1",
+        title: {
+          en: "Refined Language",
+          es: "Dominio Estilístico - Vocabulario",
+        },
+        description: {
+          en: "Learn key vocabulary for stylistic mastery",
+          es: "Aprende vocabulario clave para dominio estilístico",
+        },
+        xpRequired: 8975,
+        xpReward: 55,
+        modes: ["vocabulary", "grammar"],
+        content: {
+          vocabulary: {
+            topic: "style",
+          },
+          grammar: {
+            topic: "style structures",
+            focusPoints: ["basic patterns", "common phrases"],
+          },
+        },
       },
-      description: {
-        en: "Cultural mastery",
-        es: "Dominio cultural",
+      {
+        id: "lesson-c2-3-2",
+        title: {
+          en: "Elegant Expression",
+          es: "Dominio Estilístico - Práctica",
+        },
+        description: {
+          en: "Practice stylistic mastery in conversation",
+          es: "Practica dominio estilístico en conversación",
+        },
+        xpRequired: 9015,
+        xpReward: 50,
+        modes: ["realtime", "stories"],
+        content: {
+          realtime: {
+            scenario: "style conversation",
+            prompt: "Practice using style in real conversation",
+          },
+          stories: {
+            topic: "style",
+            prompt: "Read and discuss style",
+          },
+        },
       },
-      color: "#06B6D4",
-      position: { row: 3, offset: 0 },
-      lessons: [
-        {
-          id: "lesson-c2-7-1",
-          title: {
-            en: "Cultural Intelligence",
-            es: "Inteligencia Cultural",
+      {
+        id: "lesson-c2-3-3",
+        title: {
+          en: "Artistic Language",
+          es: "Dominio Estilístico - Aplicación",
+        },
+        description: {
+          en: "Apply stylistic mastery skills",
+          es: "Aplica habilidades de dominio estilístico",
+        },
+        xpRequired: 9055,
+        xpReward: 45,
+        modes: ["reading", "realtime"],
+        content: {
+          reading: {
+            topic: "style",
+            prompt: "Advanced style content and comprehension",
           },
-          description: {
-            en: "Learn key vocabulary for cultural expertise",
-            es: "Aprende vocabulario clave para experiencia cultural",
-          },
-          xpRequired: 9775,
-          xpReward: 35,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "culture",
-            },
-            grammar: {
-              topic: "culture structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
+          realtime: {
+            scenario: "style mastery",
+            prompt: "Demonstrate mastery of style",
           },
         },
-        {
-          id: "lesson-c2-7-2",
-          title: {
-            en: "Cultural Navigator",
-            es: "Navegador Cultural",
+      },
+      {
+        id: "lesson-c2-3-quiz",
+        title: {
+          en: "Stylistic Mastery Quiz",
+          es: "Prueba de Dominio Estilístico",
+        },
+        description: {
+          en: "Test your knowledge of stylistic mastery",
+          es: "Prueba tus conocimientos de dominio estilístico",
+        },
+        xpRequired: 9095,
+        xpReward: 40,
+        modes: ["vocabulary", "grammar"],
+        isFinalQuiz: true,
+        quizConfig: {
+          questionsRequired: 12,
+          passingScore: 10,
+        },
+        content: {
+          vocabulary: {
+            topic: "style",
           },
-          description: {
-            en: "Practice cultural expertise in conversation",
-            es: "Practica experiencia cultural en conversación",
-          },
-          xpRequired: 9815,
-          xpReward: 50,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario: "culture conversation",
-              prompt: "Practice using culture in real conversation",
-            },
-            stories: {
-              topic: "culture",
-              prompt: "Read and discuss culture",
-            },
+          grammar: {
+            topics: ["style structures"],
+            focusPoints: ["comprehensive review"],
           },
         },
-        {
-          id: "lesson-c2-7-3",
-          title: {
-            en: "Cultural Ambassador",
-            es: "Embajador Cultural",
-          },
-          description: {
-            en: "Apply cultural expertise skills",
-            es: "Aplica habilidades de experiencia cultural",
-          },
-          xpRequired: 9855,
-          xpReward: 35,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "culture",
-              prompt: "Advanced culture content and comprehension",
-            },
-            realtime: {
-              scenario: "culture mastery",
-              prompt: "Demonstrate mastery of culture",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-7-quiz",
-          title: {
-            en: "Cultural Expertise Quiz",
-            es: "Prueba de Experiencia Cultural",
-          },
-          description: {
-            en: "Test your knowledge of cultural expertise",
-            es: "Prueba tus conocimientos de experiencia cultural",
-          },
-          xpRequired: 9895,
-          xpReward: 50,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 12,
-            passingScore: 10,
-          },
-          content: {
-            vocabulary: {
-              topic: "culture",
-            },
-            grammar: {
-              topics: ["culture structures"],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
+      },
+    ],
+  },
+  {
+    id: "unit-c2-4",
+    title: {
+      en: "Rhetorical Devices",
+      es: "Dispositivos Retóricos",
     },
-    {
-      id: "unit-c2-8",
-      title: {
-        en: "Near-Native Fluency",
-        es: "Fluidez Casi Nativa",
-      },
-      description: {
-        en: "Native-like skills",
-        es: "Habilidades casi nativas",
-      },
-      color: "#EF4444",
-      position: { row: 3, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-c2-8-1",
-          title: {
-            en: "Native-Like Skills",
-            es: "Habilidades Nativas",
-          },
-          description: {
-            en: "Learn key vocabulary for near-native fluency",
-            es: "Aprende vocabulario clave para fluidez casi nativa",
-          },
-          xpRequired: 9975,
-          xpReward: 35,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "fluency",
-            },
-            grammar: {
-              topic: "fluency structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
-          },
-        },
-        {
-          id: "lesson-c2-8-2",
-          title: {
-            en: "Perfect Fluency",
-            es: "Fluidez Perfecta",
-          },
-          description: {
-            en: "Practice near-native fluency in conversation",
-            es: "Practica fluidez casi nativa en conversación",
-          },
-          xpRequired: 10015,
-          xpReward: 40,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario: "fluency conversation",
-              prompt: "Practice using fluency in real conversation",
-            },
-            stories: {
-              topic: "fluency",
-              prompt: "Read and discuss fluency",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-8-3",
-          title: {
-            en: "Complete Mastery",
-            es: "Maestría Completa",
-          },
-          description: {
-            en: "Apply near-native fluency skills",
-            es: "Aplica habilidades de fluidez casi nativa",
-          },
-          xpRequired: 10055,
-          xpReward: 35,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "fluency",
-              prompt: "Advanced fluency content and comprehension",
-            },
-            realtime: {
-              scenario: "fluency mastery",
-              prompt: "Demonstrate mastery of fluency",
-            },
-          },
-        },
-        {
-          id: "lesson-c2-8-quiz",
-          title: {
-            en: "Near-Native Fluency Quiz",
-            es: "Prueba de Fluidez Casi Nativa",
-          },
-          description: {
-            en: "Test your knowledge of near-native fluency",
-            es: "Prueba tus conocimientos de fluidez casi nativa",
-          },
-          xpRequired: 10095,
-          xpReward: 50,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 12,
-            passingScore: 10,
-          },
-          content: {
-            vocabulary: {
-              topic: "fluency",
-            },
-            grammar: {
-              topics: ["fluency structures"],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
+    description: {
+      en: "Persuasive techniques",
+      es: "Técnicas persuasivas",
     },
+    color: "#8B5CF6",
+    position: { row: 1, offset: 1 },
+    lessons: [
+      {
+        id: "lesson-c2-4-1",
+        title: {
+          en: "Persuasive Techniques",
+          es: "Técnicas Persuasivas",
+        },
+        description: {
+          en: "Learn key vocabulary for rhetorical devices",
+          es: "Aprende vocabulario clave para dispositivos retóricos",
+        },
+        xpRequired: 9175,
+        xpReward: 35,
+        modes: ["vocabulary", "grammar"],
+        content: {
+          vocabulary: {
+            topic: "rhetoric",
+          },
+          grammar: {
+            topic: "rhetoric structures",
+            focusPoints: ["basic patterns", "common phrases"],
+          },
+        },
+      },
+      {
+        id: "lesson-c2-4-2",
+        title: {
+          en: "Powerful Speech",
+          es: "Discurso Poderoso",
+        },
+        description: {
+          en: "Practice rhetorical devices in conversation",
+          es: "Practica dispositivos retóricos en conversación",
+        },
+        xpRequired: 9215,
+        xpReward: 50,
+        modes: ["realtime", "stories"],
+        content: {
+          realtime: {
+            scenario: "rhetoric conversation",
+            prompt: "Practice using rhetoric in real conversation",
+          },
+          stories: {
+            topic: "rhetoric",
+            prompt: "Read and discuss rhetoric",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-4-3",
+        title: {
+          en: "Master Rhetoric",
+          es: "Maestría Retórica",
+        },
+        description: {
+          en: "Apply rhetorical devices skills",
+          es: "Aplica habilidades de dispositivos retóricos",
+        },
+        xpRequired: 9255,
+        xpReward: 45,
+        modes: ["reading", "realtime"],
+        content: {
+          reading: {
+            topic: "rhetoric",
+            prompt: "Advanced rhetoric content and comprehension",
+          },
+          realtime: {
+            scenario: "rhetoric mastery",
+            prompt: "Demonstrate mastery of rhetoric",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-4-quiz",
+        title: {
+          en: "Rhetorical Devices Quiz",
+          es: "Prueba de Dispositivos Retóricos",
+        },
+        description: {
+          en: "Test your knowledge of rhetorical devices",
+          es: "Prueba tus conocimientos de dispositivos retóricos",
+        },
+        xpRequired: 9295,
+        xpReward: 40,
+        modes: ["vocabulary", "grammar"],
+        isFinalQuiz: true,
+        quizConfig: {
+          questionsRequired: 12,
+          passingScore: 10,
+        },
+        content: {
+          vocabulary: {
+            topic: "rhetoric",
+          },
+          grammar: {
+            topics: ["rhetoric structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: "unit-c2-5",
+    title: {
+      en: "Specialized Vocabulary",
+      es: "Vocabulario Especializado",
+    },
+    description: {
+      en: "Technical terms",
+      es: "Términos técnicos",
+    },
+    color: "#EC4899",
+    position: { row: 2, offset: 0 },
+    lessons: [
+      {
+        id: "lesson-c2-5-1",
+        title: {
+          en: "Expert Terminology",
+          es: "Terminología Experta",
+        },
+        description: {
+          en: "Learn key vocabulary for specialized vocabulary",
+          es: "Aprende vocabulario clave para vocabulario especializado",
+        },
+        xpRequired: 9375,
+        xpReward: 45,
+        modes: ["vocabulary", "grammar"],
+        content: {
+          vocabulary: {
+            topic: "specialized",
+          },
+          grammar: {
+            topic: "specialized structures",
+            focusPoints: ["basic patterns", "common phrases"],
+          },
+        },
+      },
+      {
+        id: "lesson-c2-5-2",
+        title: {
+          en: "Professional Fields",
+          es: "Campos Profesionales",
+        },
+        description: {
+          en: "Practice specialized vocabulary in conversation",
+          es: "Practica vocabulario especializado en conversación",
+        },
+        xpRequired: 9415,
+        xpReward: 60,
+        modes: ["realtime", "stories"],
+        content: {
+          realtime: {
+            scenario: "specialized conversation",
+            prompt: "Practice using specialized in real conversation",
+          },
+          stories: {
+            topic: "specialized",
+            prompt: "Read and discuss specialized",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-5-3",
+        title: {
+          en: "Domain Expertise",
+          es: "Experiencia en el Dominio",
+        },
+        description: {
+          en: "Apply specialized vocabulary skills",
+          es: "Aplica habilidades de vocabulario especializado",
+        },
+        xpRequired: 9455,
+        xpReward: 55,
+        modes: ["reading", "realtime"],
+        content: {
+          reading: {
+            topic: "specialized",
+            prompt: "Advanced specialized content and comprehension",
+          },
+          realtime: {
+            scenario: "specialized mastery",
+            prompt: "Demonstrate mastery of specialized",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-5-quiz",
+        title: {
+          en: "Specialized Vocabulary Quiz",
+          es: "Prueba de Vocabulario Especializado",
+        },
+        description: {
+          en: "Test your knowledge of specialized vocabulary",
+          es: "Prueba tus conocimientos de vocabulario especializado",
+        },
+        xpRequired: 9495,
+        xpReward: 60,
+        modes: ["vocabulary", "grammar"],
+        isFinalQuiz: true,
+        quizConfig: {
+          questionsRequired: 12,
+          passingScore: 10,
+        },
+        content: {
+          vocabulary: {
+            topic: "specialized",
+          },
+          grammar: {
+            topics: ["specialized structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: "unit-c2-6",
+    title: {
+      en: "Subtle Nuances",
+      es: "Matices Sutiles",
+    },
+    description: {
+      en: "Fine distinctions",
+      es: "Distinciones finas",
+    },
+    color: "#10B981",
+    position: { row: 2, offset: 1 },
+    lessons: [
+      {
+        id: "lesson-c2-6-1",
+        title: {
+          en: "Fine Distinctions",
+          es: "Distinciones Finas",
+        },
+        description: {
+          en: "Learn key vocabulary for subtle nuances",
+          es: "Aprende vocabulario clave para matices sutiles",
+        },
+        xpRequired: 9575,
+        xpReward: 35,
+        modes: ["vocabulary", "grammar"],
+        content: {
+          vocabulary: {
+            topic: "advanced vocabulary and nuanced expressions",
+          },
+          grammar: {
+            topic: "advanced vocabulary and nuanced expressions structures",
+            focusPoints: ["basic patterns", "common phrases"],
+          },
+        },
+      },
+      {
+        id: "lesson-c2-6-2",
+        title: {
+          en: "Precise Meaning",
+          es: "Significado Preciso",
+        },
+        description: {
+          en: "Practice subtle nuances in conversation",
+          es: "Practica matices sutiles en conversación",
+        },
+        xpRequired: 9615,
+        xpReward: 50,
+        modes: ["realtime", "stories"],
+        content: {
+          realtime: {
+            scenario:
+              "advanced vocabulary and nuanced expressions conversation",
+            prompt:
+              "Practice using advanced vocabulary and nuanced expressions in real conversation",
+          },
+          stories: {
+            topic: "advanced vocabulary and nuanced expressions",
+            prompt:
+              "Read and discuss advanced vocabulary and nuanced expressions",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-6-3",
+        title: {
+          en: "Mastery of Detail",
+          es: "Maestría del Detalle",
+        },
+        description: {
+          en: "Apply subtle nuances skills",
+          es: "Aplica habilidades de matices sutiles",
+        },
+        xpRequired: 9655,
+        xpReward: 55,
+        modes: ["reading", "realtime"],
+        content: {
+          reading: {
+            topic: "advanced vocabulary and nuanced expressions",
+            prompt:
+              "Advanced advanced vocabulary and nuanced expressions content and comprehension",
+          },
+          realtime: {
+            scenario: "advanced vocabulary and nuanced expressions mastery",
+            prompt:
+              "Demonstrate mastery of advanced vocabulary and nuanced expressions",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-6-quiz",
+        title: {
+          en: "Subtle Nuances Quiz",
+          es: "Prueba de Matices Sutiles",
+        },
+        description: {
+          en: "Test your knowledge of subtle nuances",
+          es: "Prueba tus conocimientos de matices sutiles",
+        },
+        xpRequired: 9695,
+        xpReward: 40,
+        modes: ["vocabulary", "grammar"],
+        isFinalQuiz: true,
+        quizConfig: {
+          questionsRequired: 12,
+          passingScore: 10,
+        },
+        content: {
+          vocabulary: {
+            topic: "advanced vocabulary and nuanced expressions",
+          },
+          grammar: {
+            topics: ["advanced vocabulary and nuanced expressions structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: "unit-c2-7",
+    title: {
+      en: "Cultural Expertise",
+      es: "Experiencia Cultural",
+    },
+    description: {
+      en: "Cultural mastery",
+      es: "Dominio cultural",
+    },
+    color: "#06B6D4",
+    position: { row: 3, offset: 0 },
+    lessons: [
+      {
+        id: "lesson-c2-7-1",
+        title: {
+          en: "Cultural Intelligence",
+          es: "Inteligencia Cultural",
+        },
+        description: {
+          en: "Learn key vocabulary for cultural expertise",
+          es: "Aprende vocabulario clave para experiencia cultural",
+        },
+        xpRequired: 9775,
+        xpReward: 35,
+        modes: ["vocabulary", "grammar"],
+        content: {
+          vocabulary: {
+            topic: "culture",
+          },
+          grammar: {
+            topic: "culture structures",
+            focusPoints: ["basic patterns", "common phrases"],
+          },
+        },
+      },
+      {
+        id: "lesson-c2-7-2",
+        title: {
+          en: "Cultural Navigator",
+          es: "Navegador Cultural",
+        },
+        description: {
+          en: "Practice cultural expertise in conversation",
+          es: "Practica experiencia cultural en conversación",
+        },
+        xpRequired: 9815,
+        xpReward: 50,
+        modes: ["realtime", "stories"],
+        content: {
+          realtime: {
+            scenario: "culture conversation",
+            prompt: "Practice using culture in real conversation",
+          },
+          stories: {
+            topic: "culture",
+            prompt: "Read and discuss culture",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-7-3",
+        title: {
+          en: "Cultural Ambassador",
+          es: "Embajador Cultural",
+        },
+        description: {
+          en: "Apply cultural expertise skills",
+          es: "Aplica habilidades de experiencia cultural",
+        },
+        xpRequired: 9855,
+        xpReward: 35,
+        modes: ["reading", "realtime"],
+        content: {
+          reading: {
+            topic: "culture",
+            prompt: "Advanced culture content and comprehension",
+          },
+          realtime: {
+            scenario: "culture mastery",
+            prompt: "Demonstrate mastery of culture",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-7-quiz",
+        title: {
+          en: "Cultural Expertise Quiz",
+          es: "Prueba de Experiencia Cultural",
+        },
+        description: {
+          en: "Test your knowledge of cultural expertise",
+          es: "Prueba tus conocimientos de experiencia cultural",
+        },
+        xpRequired: 9895,
+        xpReward: 50,
+        modes: ["vocabulary", "grammar"],
+        isFinalQuiz: true,
+        quizConfig: {
+          questionsRequired: 12,
+          passingScore: 10,
+        },
+        content: {
+          vocabulary: {
+            topic: "culture",
+          },
+          grammar: {
+            topics: ["culture structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+    ],
+  },
+  {
+    id: "unit-c2-8",
+    title: {
+      en: "Near-Native Fluency",
+      es: "Fluidez Casi Nativa",
+    },
+    description: {
+      en: "Native-like skills",
+      es: "Habilidades casi nativas",
+    },
+    color: "#EF4444",
+    position: { row: 3, offset: 1 },
+    lessons: [
+      {
+        id: "lesson-c2-8-1",
+        title: {
+          en: "Native-Like Skills",
+          es: "Habilidades Nativas",
+        },
+        description: {
+          en: "Learn key vocabulary for near-native fluency",
+          es: "Aprende vocabulario clave para fluidez casi nativa",
+        },
+        xpRequired: 9975,
+        xpReward: 35,
+        modes: ["vocabulary", "grammar"],
+        content: {
+          vocabulary: {
+            topic: "fluency",
+          },
+          grammar: {
+            topic: "fluency structures",
+            focusPoints: ["basic patterns", "common phrases"],
+          },
+        },
+      },
+      {
+        id: "lesson-c2-8-2",
+        title: {
+          en: "Perfect Fluency",
+          es: "Fluidez Perfecta",
+        },
+        description: {
+          en: "Practice near-native fluency in conversation",
+          es: "Practica fluidez casi nativa en conversación",
+        },
+        xpRequired: 10015,
+        xpReward: 40,
+        modes: ["realtime", "stories"],
+        content: {
+          realtime: {
+            scenario: "fluency conversation",
+            prompt: "Practice using fluency in real conversation",
+          },
+          stories: {
+            topic: "fluency",
+            prompt: "Read and discuss fluency",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-8-3",
+        title: {
+          en: "Complete Mastery",
+          es: "Maestría Completa",
+        },
+        description: {
+          en: "Apply near-native fluency skills",
+          es: "Aplica habilidades de fluidez casi nativa",
+        },
+        xpRequired: 10055,
+        xpReward: 35,
+        modes: ["reading", "realtime"],
+        content: {
+          reading: {
+            topic: "fluency",
+            prompt: "Advanced fluency content and comprehension",
+          },
+          realtime: {
+            scenario: "fluency mastery",
+            prompt: "Demonstrate mastery of fluency",
+          },
+        },
+      },
+      {
+        id: "lesson-c2-8-quiz",
+        title: {
+          en: "Near-Native Fluency Quiz",
+          es: "Prueba de Fluidez Casi Nativa",
+        },
+        description: {
+          en: "Test your knowledge of near-native fluency",
+          es: "Prueba tus conocimientos de fluidez casi nativa",
+        },
+        xpRequired: 10095,
+        xpReward: 50,
+        modes: ["vocabulary", "grammar"],
+        isFinalQuiz: true,
+        quizConfig: {
+          questionsRequired: 12,
+          passingScore: 10,
+        },
+        content: {
+          vocabulary: {
+            topic: "fluency",
+          },
+          grammar: {
+            topics: ["fluency structures"],
+            focusPoints: ["comprehensive review"],
+          },
+        },
+      },
+    ],
+  },
 ];
 
 const SUB_LEVEL_SEGMENTS = {
@@ -1424,7 +1421,15 @@ function applyCEFRScaffolding(path) {
 
 const cefrAlignedLearningPath = applyCEFRScaffolding(baseLearningPath);
 
-const SUPPORTED_TARGET_LANGS = new Set(["en", "es", "pt", "fr", "it", "nl", "nah"]);
+const SUPPORTED_TARGET_LANGS = new Set([
+  "en",
+  "es",
+  "pt",
+  "fr",
+  "it",
+  "nl",
+  "nah",
+]);
 const DEFAULT_TARGET_LANG = "es";
 
 const VOCABULARY_LIBRARY = {
@@ -1452,7 +1457,13 @@ const VOCABULARY_LIBRARY = {
     fr: ["j'aime", "je n'aime pas", "j'adore", "je préfère", "je déteste"],
     pt: ["eu gosto", "eu não gosto", "eu adoro", "eu prefiro", "eu detesto"],
     it: ["mi piace", "non mi piace", "adoro", "preferisco", "detesto"],
-    nl: ["ik hou van", "ik hou niet van", "ik ben gek op", "ik prefereer", "ik heb een hekel aan"],
+    nl: [
+      "ik hou van",
+      "ik hou niet van",
+      "ik ben gek op",
+      "ik prefereer",
+      "ik heb een hekel aan",
+    ],
     nah: [
       "nicniqui",
       "axnicniqui",
