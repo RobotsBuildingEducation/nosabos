@@ -1414,7 +1414,7 @@ export default function App() {
   // Default progress (mirrors onboarding)
   const DEFAULT_PROGRESS = {
     level: "A1",
-    supportLang: "en",
+    supportLang: appLanguage, // Use detected/selected app language
     voice: "alloy",
     voicePersona:
       translations?.[appLanguage]?.onboarding_persona_default_example ||
