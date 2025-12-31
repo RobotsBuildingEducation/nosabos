@@ -1,6 +1,6 @@
 // theme/duoTheme.ts
 import { extendTheme, defineStyle, defineStyleConfig } from "@chakra-ui/react";
-import { getColor, darken } from "@chakra-ui/theme-tools";
+import { getColor, darken, mode } from "@chakra-ui/theme-tools";
 
 import { menuAnatomy as parts } from "@chakra-ui/anatomy";
 import { createMultiStyleConfigHelpers } from "@chakra-ui/styled-system";
@@ -92,27 +92,27 @@ const duoSolid = defineStyle((props) => {
 
 // Minimal OUTLINE (no press effect, neutral surface)
 const duoOutline = defineStyle((props) => {
-  const border = "gray.700";
+  const { colorMode } = props;
   return {
-    bg: "gray.900",
-    color: "gray.100",
+    bg: mode("white", "gray.900")(props),
+    color: mode("gray.800", "gray.100")(props),
     borderWidth: "1px",
-    borderColor: border,
+    borderColor: mode("gray.300", "gray.700")(props),
     boxShadow: "none",
     transform: "none",
-    _hover: { bg: "gray.800" },
-    _active: { bg: "gray.800", boxShadow: "none", transform: "none" },
+    _hover: { bg: mode("gray.50", "gray.800")(props) },
+    _active: { bg: mode("gray.100", "gray.800")(props), boxShadow: "none", transform: "none" },
   };
 });
 
 // Minimal GHOST (fully transparent, no press effect)
-const duoGhost = defineStyle(() => ({
+const duoGhost = defineStyle((props) => ({
   bg: "transparent",
-  color: "gray.100",
+  color: mode("gray.700", "gray.100")(props),
   boxShadow: "none",
   transform: "none",
-  _hover: { bg: "gray.800" },
-  _active: { bg: "gray.800", boxShadow: "none", transform: "none" },
+  _hover: { bg: mode("gray.100", "gray.800")(props) },
+  _active: { bg: mode("gray.200", "gray.800")(props), boxShadow: "none", transform: "none" },
 }));
 
 const Button = defineStyleConfig({
@@ -150,31 +150,31 @@ const IconButton = defineStyleConfig({
 });
 
 // -------------------------------------------------------
-// Menu (minimalist, dark, readable)
+// Menu (minimalist, readable, adapts to color mode)
 // -------------------------------------------------------
-const minimalMenu = definePartsStyle(() => ({
+const minimalMenu = definePartsStyle((props) => ({
   // Dropdown panel
   list: {
-    bg: "gray.900",
-    color: "gray.100",
+    bg: mode("white", "gray.900")(props),
+    color: mode("gray.800", "gray.100")(props),
     border: "1px solid",
-    borderColor: "gray.700",
+    borderColor: mode("gray.200", "gray.700")(props),
     rounded: "lg",
-    boxShadow: "none",
+    boxShadow: mode("md", "none")(props),
     p: "6px",
   },
 
   // Items (applies to MenuItem & MenuItemOption)
   item: {
     bg: "transparent",
-    color: "gray.100",
+    color: mode("gray.800", "gray.100")(props),
     px: 3,
     py: 2,
     rounded: "md",
-    _hover: { bg: "gray.800" },
-    _focus: { bg: "gray.800" },
+    _hover: { bg: mode("gray.100", "gray.800")(props) },
+    _focus: { bg: mode("gray.100", "gray.800")(props) },
     _active: { bg: "teal.600", color: "white" },
-    _expanded: { bg: "gray.800" },
+    _expanded: { bg: mode("gray.100", "gray.800")(props) },
     _disabled: { opacity: 0.45, cursor: "not-allowed" },
     _checked: {
       bg: "teal.600",
@@ -195,7 +195,7 @@ const minimalMenu = definePartsStyle(() => ({
 
   command: { color: "gray.400" },
 
-  divider: { my: 1, borderColor: "gray.700" },
+  divider: { my: 1, borderColor: mode("gray.200", "gray.700")(props) },
 }));
 
 const Menu = defineMultiStyleConfig({
@@ -207,7 +207,55 @@ const Menu = defineMultiStyleConfig({
 // Export theme
 // -------------------------------------------------------
 export const theme = extendTheme({
+  config: {
+    initialColorMode: "dark",
+    useSystemColorMode: false,
+  },
   colors: { duo: duoGreen },
+  styles: {
+    global: (props) => ({
+      body: {
+        bg: mode("#FAFAFA", "#0b1220")(props),
+        color: mode("#1F1F1F", "#e5e7eb")(props),
+      },
+    }),
+  },
+  semanticTokens: {
+    colors: {
+      "bg.canvas": {
+        default: "#FAFAFA",
+        _dark: "#0b1220",
+      },
+      "bg.surface": {
+        default: "#FFFFFF",
+        _dark: "#1a1a1a",
+      },
+      "bg.subtle": {
+        default: "#F5F5F5",
+        _dark: "#2a2a2a",
+      },
+      "text.primary": {
+        default: "#1F1F1F",
+        _dark: "#e5e7eb",
+      },
+      "text.secondary": {
+        default: "#666666",
+        _dark: "#9ca3af",
+      },
+      "text.muted": {
+        default: "#999999",
+        _dark: "#6b7280",
+      },
+      "border.default": {
+        default: "#E5E5E5",
+        _dark: "#374151",
+      },
+      "border.subtle": {
+        default: "#F0F0F0",
+        _dark: "#1f2937",
+      },
+    },
+  },
   components: {
     Button,
     IconButton,

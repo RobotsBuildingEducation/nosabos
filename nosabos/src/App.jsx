@@ -56,6 +56,7 @@ import {
   useDisclosure,
   Alert,
   AlertIcon,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -95,6 +96,7 @@ import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
 import { Navigate, useLocation } from "react-router-dom";
+import ThemeToggle from "./components/ThemeToggle";
 
 import useUserStore from "./hooks/useUserStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
@@ -1018,6 +1020,12 @@ export default function App() {
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [pendingTeamInviteCount, setPendingTeamInviteCount] = useState(0);
+
+  // Color mode values for action bar
+  const actionBarBg = useColorModeValue("white", "gray.800");
+  const actionBarColor = useColorModeValue("gray.800", "gray.100");
+  const actionBarShadow = useColorModeValue("0 4px 0 #d1d5db", "0 4px 0 #313a4b");
+  const actionBarBorder = useColorModeValue("gray.300", "white");
 
   // Notes store state for action bar animations
   const notesIsLoading = useNotesStore((s) => s.isLoading);
@@ -4424,9 +4432,10 @@ function BottomActionBar({
             rounded="xl"
             flexShrink={0}
             colorScheme="gray"
-            bg="gray.800"
-            boxShadow="0 4px 0 #313a4b"
-            border="1px solid white"
+            bg={actionBarBg}
+            color={actionBarColor}
+            boxShadow={actionBarShadow}
+            border={`1px solid ${actionBarBorder}`}
           />
         )}
 
@@ -4441,23 +4450,26 @@ function BottomActionBar({
           boxShadow={
             hasPendingTeamInvite
               ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
-              : "0 4px 0 #313a4b"
+              : actionBarShadow
           }
           colorScheme="gray"
-          bg="gray.800"
+          bg={actionBarBg}
+          color={actionBarColor}
         />
 
         <IconButton
           icon={<SettingsIcon boxSize={4} />}
-          color="gray.100"
+          color={actionBarColor}
           onClick={onOpenSettings}
           aria-label={settingsLabel}
           rounded="xl"
           flexShrink={0}
           colorScheme="gray"
-          bg="gray.800"
-          boxShadow="0 4px 0 #313a4b"
+          bg={actionBarBg}
+          boxShadow={actionBarShadow}
         />
+
+        <ThemeToggle />
 
         <IconButton
           icon={<RiBookmarkLine size={18} />}
@@ -4465,9 +4477,9 @@ function BottomActionBar({
           onClick={onOpenNotes}
           isLoading={notesIsLoading}
           colorScheme="gray"
-          bg="gray.800"
-          boxShadow="0 4px 0 #313a4b"
-          color="white"
+          bg={actionBarBg}
+          boxShadow={actionBarShadow}
+          color={actionBarColor}
           // size="lg"
           zIndex={50}
           rounded="xl"
@@ -4537,9 +4549,6 @@ function BottomActionBar({
               color="white"
             />
             <MenuList
-              bg="gray.800"
-              borderColor="whiteAlpha.200"
-              boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
               minW="180px"
             >
               {PATH_MODES.map((mode) => {

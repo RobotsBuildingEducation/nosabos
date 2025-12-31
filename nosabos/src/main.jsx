@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, ColorModeScript } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
@@ -42,16 +42,19 @@ function AppContainer() {
 }
 
 createRoot(document.getElementById("root")).render(
-  <ChakraProvider theme={theme}>
-    <MiniKitContextProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<AppContainer />} />
-          <Route path="/onboarding/*" element={<AppContainer />} />
-          <Route path="/subscribe" element={<AppContainer />} />
-          <Route path="/experiments" element={<WalletExperiment />} />
-        </Routes>
-      </Router>
-    </MiniKitContextProvider>
-  </ChakraProvider>
+  <>
+    <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+    <ChakraProvider theme={theme}>
+      <MiniKitContextProvider>
+        <Router>
+          <Routes>
+            <Route path="/" element={<AppContainer />} />
+            <Route path="/onboarding/*" element={<AppContainer />} />
+            <Route path="/subscribe" element={<AppContainer />} />
+            <Route path="/experiments" element={<WalletExperiment />} />
+          </Routes>
+        </Router>
+      </MiniKitContextProvider>
+    </ChakraProvider>
+  </>
 );
