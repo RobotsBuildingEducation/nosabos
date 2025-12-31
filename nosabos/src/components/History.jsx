@@ -743,6 +743,7 @@ export default function History({
       pt: t("language_pt"),
       fr: t("language_fr"),
       it: t("language_it"),
+      nl: t("language_nl"),
       nah: t("language_nah"),
     }[code] || code);
 

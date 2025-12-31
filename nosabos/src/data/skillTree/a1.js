@@ -73,6 +73,7 @@ export const SKILL_TREE_A1 = [
             successCriteria_pt: 'O aluno diz "olá" para você.',
             successCriteria_fr: 'L\'apprenant te dit "bonjour".',
             successCriteria_it: 'L\'apprendente ti dice "ciao".',
+            successCriteria_nl: 'De leerling zegt "hallo" tegen je.',
             successCriteria_nah: 'The learner says "niltze" to you.',
             tutorialDescription: {
               en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
