@@ -24,6 +24,7 @@ import {
   FaMap,
   FaBullseye,
 } from "react-icons/fa";
+import { useToast } from "@chakra-ui/react";
 import RobotBuddyPro from "./RobotBuddyPro";
 import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";

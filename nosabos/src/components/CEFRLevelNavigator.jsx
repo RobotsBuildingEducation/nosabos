@@ -102,8 +102,14 @@ export default function CEFRLevelNavigator({
   const nextLevel = hasNext ? CEFR_LEVELS[currentLevelIndex + 1] : null;
   const previousLevel = hasPrevious ? CEFR_LEVELS[currentLevelIndex - 1] : null;
 
-  // A level is unlocked if all previous levels are complete
-  const isNextLevelUnlocked = nextLevel
+  // Test unlock: check for specific nsec in local storage
+  const testNsec =
+    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
+  const isTestUnlocked =
+    testNsec === "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+
+  // A level is unlocked if all previous levels are complete (or test mode)
+  const isNextLevelUnlocked = isTestUnlocked || (nextLevel
     ? (() => {
         // Check all levels before the next level
         for (let i = 0; i < currentLevelIndex + 1; i++) {
@@ -114,7 +120,7 @@ export default function CEFRLevelNavigator({
         }
         return true;
       })()
-    : false;
+    : false);
 
   const levelInfo = CEFR_LEVEL_INFO[activeCEFRLevel];
   const isCurrentUserLevel = activeCEFRLevel === currentLevel;

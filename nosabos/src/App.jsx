@@ -1470,9 +1470,12 @@ export default function App() {
     setIsLoadingApp(true);
     try {
       let id = (localStorage.getItem("local_npub") || "").trim();
+      console.log("[CONNECT_DID] Read local_npub from localStorage:", id);
+      console.log("[CONNECT_DID] Read local_nsec from localStorage:", localStorage.getItem("local_nsec")?.substring(0, 20) + "...");
       let userDoc = null;
 
       if (id) {
+        console.log("[CONNECT_DID] Found existing npub, loading user from DB...");
         userDoc = await loadUserObjectFromDB(database, id);
         if (!userDoc) {
           const base = {
@@ -1489,8 +1492,10 @@ export default function App() {
           userDoc = await loadUserObjectFromDB(database, id);
         }
       } else {
+        console.log("[CONNECT_DID] No npub found, generating new keys...");
         const did = await generateNostrKeys();
         id = did?.npub || (localStorage.getItem("local_npub") || "").trim();
+        console.log("[CONNECT_DID] New npub after generation:", id);
         const base = {
           local_npub: id,
           createdAt: new Date().toISOString(),
