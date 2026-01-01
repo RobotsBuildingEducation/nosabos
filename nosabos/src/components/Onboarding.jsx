@@ -33,6 +33,9 @@ import { translations } from "../utils/translation";
 
 const BASE_PATH = "/onboarding";
 
+const JAPANESE_BETA_NPUB =
+  "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
+
 const personaDefaultFor = (lang) =>
   translations?.[lang]?.DEFAULT_PERSONA ||
   translations?.[lang]?.onboarding_persona_default_example ||
@@ -75,6 +78,11 @@ export default function Onboarding({
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
 
   const [isSaving, setIsSaving] = useState(false);
+
+  // Check if Japanese should be visible (beta feature)
+  const showJapanese =
+    typeof window !== "undefined" &&
+    localStorage.getItem("local_npub") === JAPANESE_BETA_NPUB;
 
   useEffect(() => {
     const localizedDefault = personaDefaultFor(supportLang);
@@ -239,14 +247,14 @@ export default function Onboarding({
                       textAlign="left"
                       title={ui.onboarding_practice_label_title}
                     >
-                      {targetLang === "nah" && ui.onboarding_practice_nah}
-                      {targetLang === "es" && ui.onboarding_practice_es}
-                      {targetLang === "pt" && ui.onboarding_practice_pt}
+                      {targetLang === "nl" && ui.onboarding_practice_nl}
+                      {targetLang === "en" && ui.onboarding_practice_en}
                       {targetLang === "fr" && ui.onboarding_practice_fr}
                       {targetLang === "it" && ui.onboarding_practice_it}
-                      {targetLang === "nl" && ui.onboarding_practice_nl}
                       {targetLang === "ja" && ui.onboarding_practice_ja}
-                      {targetLang === "en" && ui.onboarding_practice_en}
+                      {targetLang === "nah" && ui.onboarding_practice_nah}
+                      {targetLang === "pt" && ui.onboarding_practice_pt}
+                      {targetLang === "es" && ui.onboarding_practice_es}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
                       <MenuOptionGroup
@@ -254,14 +262,11 @@ export default function Onboarding({
                         value={targetLang}
                         onChange={(value) => setTargetLang(value)}
                       >
-                        <MenuItemOption value="nah">
-                          {ui.onboarding_practice_nah}
+                        <MenuItemOption value="nl">
+                          {ui.onboarding_practice_nl}
                         </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {ui.onboarding_practice_es}
-                        </MenuItemOption>
-                        <MenuItemOption value="pt">
-                          {ui.onboarding_practice_pt}
+                        <MenuItemOption value="en">
+                          {ui.onboarding_practice_en}
                         </MenuItemOption>
                         <MenuItemOption value="fr">
                           {ui.onboarding_practice_fr}
@@ -269,14 +274,19 @@ export default function Onboarding({
                         <MenuItemOption value="it">
                           {ui.onboarding_practice_it}
                         </MenuItemOption>
-                        <MenuItemOption value="nl">
-                          {ui.onboarding_practice_nl}
+                        {showJapanese && (
+                          <MenuItemOption value="ja">
+                            {ui.onboarding_practice_ja}
+                          </MenuItemOption>
+                        )}
+                        <MenuItemOption value="nah">
+                          {ui.onboarding_practice_nah}
                         </MenuItemOption>
-                        <MenuItemOption value="ja">
-                          {ui.onboarding_practice_ja}
+                        <MenuItemOption value="pt">
+                          {ui.onboarding_practice_pt}
                         </MenuItemOption>
-                        <MenuItemOption value="en">
-                          {ui.onboarding_practice_en}
+                        <MenuItemOption value="es">
+                          {ui.onboarding_practice_es}
                         </MenuItemOption>
                       </MenuOptionGroup>
                     </MenuList>
