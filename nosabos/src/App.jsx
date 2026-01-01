@@ -1297,23 +1297,6 @@ export default function App() {
     return user?.skillTreeTutorialCompleted === true;
   }, [user?.skillTreeTutorialCompleted]);
 
-  // Show skill tree tutorial on first login (only once per session)
-  useEffect(() => {
-    if (skillTreeTutorialCheckedRef.current) return;
-    if (!user || !activeNpub) return;
-    if (isLoadingApp || needsOnboarding) return;
-
-    skillTreeTutorialCheckedRef.current = true;
-
-    // Show tutorial if not completed
-    if (!user.skillTreeTutorialCompleted) {
-      // Small delay to let UI settle
-      setTimeout(() => {
-        setShowSkillTreeTutorial(true);
-      }, 500);
-    }
-  }, [user, activeNpub, isLoadingApp, needsOnboarding]);
-
   // Handler for completing the skill tree tutorial
   const handleSkillTreeTutorialComplete = useCallback(async () => {
     setShowSkillTreeTutorial(false);
@@ -1571,6 +1554,23 @@ export default function App() {
   }, [user]);
 
   const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
+
+  // Show skill tree tutorial on first login (only once per session)
+  useEffect(() => {
+    if (skillTreeTutorialCheckedRef.current) return;
+    if (!user || !activeNpub) return;
+    if (isLoadingApp || needsOnboarding) return;
+
+    skillTreeTutorialCheckedRef.current = true;
+
+    // Show tutorial if not completed
+    if (!user.skillTreeTutorialCompleted) {
+      // Small delay to let UI settle
+      setTimeout(() => {
+        setShowSkillTreeTutorial(true);
+      }, 500);
+    }
+  }, [user, activeNpub, isLoadingApp, needsOnboarding]);
 
   /* -----------------------------------
      Daily goal modals (open logic)
