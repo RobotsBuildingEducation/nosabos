@@ -1633,11 +1633,14 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const signature = `${maQ}||${maChoices.join("|")}|${maAnswers.join("|")}`;
     if (maKeyRef.current === signature) return;
     maKeyRef.current = signature;
-    const useDrag = shouldUseDragVariant(maQ, maChoices, maAnswers);
+    const preferDrag = shouldUseDragVariant(maQ, maChoices, maAnswers);
+    const blanksCount = countBlanks(maQ);
+    // Force button layout if answers exceed blanks (users can't place all answers in slots)
+    const useDrag = preferDrag && (blanksCount === 0 || blanksCount >= maAnswers.length);
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
-      const blanks = countBlanks(maQ) || maAnswers.length;
-      const slotCount = Math.min(Math.max(blanks, 1), maAnswers.length);
+      // Create slots matching blanks or answers for non-blank questions
+      const slotCount = blanksCount > 0 ? blanksCount : maAnswers.length;
       setMaSlots(Array.from({ length: slotCount }, () => null));
       setMaBankOrder(maChoices.map((_, idx) => idx));
     } else {
