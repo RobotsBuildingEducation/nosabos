@@ -780,7 +780,7 @@ const FAQItem = ({ question, answer, isOpen, onClick, index }) => (
 // SIGN IN VIEW
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
+const SignInView = ({ copy, onBack, onSignIn }) => {
   const [secretKey, setSecretKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -876,45 +876,6 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
             {copy.signin_button} →
           </Button>
 
-          {hasExtension && (
-            <>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "16px",
-                  margin: "8px 0",
-                }}
-              >
-                <div
-                  style={{
-                    flex: 1,
-                    height: "1px",
-                    background: theme.colors.border.subtle,
-                  }}
-                />
-                <span
-                  style={{
-                    color: theme.colors.text.muted,
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  or
-                </span>
-                <div
-                  style={{
-                    flex: 1,
-                    height: "1px",
-                    background: theme.colors.border.subtle,
-                  }}
-                />
-              </div>
-              <Button variant="secondary" onClick={onExtension} fullWidth>
-                {copy.signin_extension}
-              </Button>
-            </>
-          )}
-
           <Button
             variant="ghost"
             onClick={onBack}
@@ -935,8 +896,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
 
 const LandingPage = ({ onAuthenticated }) => {
   const toast = useToast();
-  const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
-    useDecentralizedIdentity();
+  const { generateNostrKeys, auth } = useDecentralizedIdentity();
 
   const [lang, setLang] = useState(() => {
     const detected = detectUserLanguage();
@@ -950,18 +910,11 @@ const LandingPage = ({ onAuthenticated }) => {
   const [displayName, setDisplayName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [openFAQ, setOpenFAQ] = useState(null);
-  const [hasExtension, setHasExtension] = useState(false);
 
   const copy = translations[lang];
 
   const { scrollYProgress } = useScroll();
   const headerOpacity = useTransform(scrollYProgress, [0, 0.1], [0, 1]);
-
-  useEffect(() => {
-    setHasExtension(isNip07Available());
-    const timer = setTimeout(() => setHasExtension(isNip07Available()), 500);
-    return () => clearTimeout(timer);
-  }, [isNip07Available]);
 
   // Update localStorage when language changes
   useEffect(() => {
@@ -992,12 +945,6 @@ const LandingPage = ({ onAuthenticated }) => {
     },
     [auth, onAuthenticated]
   );
-
-  const handleExtension = useCallback(async () => {
-    const result = await authWithExtension();
-    if (!result) throw new Error("Extension sign-in failed");
-    onAuthenticated?.();
-  }, [authWithExtension, onAuthenticated]);
 
   const features = [
     {
@@ -1075,8 +1022,6 @@ const LandingPage = ({ onAuthenticated }) => {
           copy={copy}
           onBack={() => setView("landing")}
           onSignIn={handleSignIn}
-          onExtension={handleExtension}
-          hasExtension={hasExtension}
         />
       </>
     );
