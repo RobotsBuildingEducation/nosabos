@@ -28,7 +28,7 @@ const pulseKeyframes = keyframes`
   100% { transform: scale(1);  }
 `;
 
-// Button explanations configuration
+// Button explanations configuration - ordered left to right as they appear on skill tree
 const BUTTON_EXPLANATIONS = [
   {
     id: "back",
@@ -41,16 +41,6 @@ const BUTTON_EXPLANATIONS = [
     position: 0,
   },
   {
-    id: "identity",
-    icon: FaBitcoin,
-    label: { en: "Account Key", es: "Llave de cuenta" },
-    description: {
-      en: "Access your account info to install the app and access your password",
-      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
-    },
-    position: 1,
-  },
-  {
     id: "teams",
     icon: PiUsersBold,
     label: { en: "Teams", es: "Equipos" },
@@ -58,7 +48,7 @@ const BUTTON_EXPLANATIONS = [
       en: "Join or create study groups to learn together with friends",
       es: "Únete o crea grupos de estudio para aprender junto con amigos",
     },
-    position: 2,
+    position: 1,
   },
   {
     id: "settings",
@@ -68,17 +58,7 @@ const BUTTON_EXPLANATIONS = [
       en: "Customize your learning experience, voice, and preferences",
       es: "Personaliza tu experiencia de aprendizaje, voz y preferencias",
     },
-    position: 3,
-  },
-  {
-    id: "help",
-    icon: MdOutlineSupportAgent,
-    label: { en: "AI Assistant", es: "Asistente IA" },
-    description: {
-      en: "Get instant help and answers from our AI learning assistant",
-      es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
-    },
-    position: 4,
+    position: 2,
   },
   {
     id: "notes",
@@ -87,6 +67,26 @@ const BUTTON_EXPLANATIONS = [
     description: {
       en: "View your study notes. Notes can be created when you attempt or complete exercises and flashcards.",
       es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
+    },
+    position: 3,
+  },
+  {
+    id: "identity",
+    icon: FaBitcoin,
+    label: { en: "Account Key", es: "Llave de cuenta" },
+    description: {
+      en: "Access your account info to install the app and access your password",
+      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
+    },
+    position: 4,
+  },
+  {
+    id: "help",
+    icon: MdOutlineSupportAgent,
+    label: { en: "Assistant", es: "Asistente" },
+    description: {
+      en: "Get instant help and answers from our learning assistant",
+      es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
     },
     position: 5,
   },
@@ -106,7 +106,13 @@ export default function TutorialActionBarPopovers({
   isActive = false,
   lang = "en",
   onComplete,
+  isOnSkillTree = false, // When true, skip the "back" button explanation
 }) {
+  // Filter out the back button when on skill tree (no back button there)
+  const activeExplanations = isOnSkillTree
+    ? BUTTON_EXPLANATIONS.filter((btn) => btn.id !== "back")
+    : BUTTON_EXPLANATIONS;
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -128,28 +134,27 @@ export default function TutorialActionBarPopovers({
   };
 
   const handleNext = () => {
-    if (currentStep < BUTTON_EXPLANATIONS.length - 1) {
+    if (currentStep < activeExplanations.length - 1) {
       setCurrentStep((prev) => prev + 1);
     }
   };
 
   const handleFinish = () => {
     setIsVisible(false);
-    if (onComplete) {
-      setTimeout(onComplete, 300);
-    }
+
+    onComplete();
   };
 
   if (!isActive || !isVisible) return null;
 
-  const currentButton = BUTTON_EXPLANATIONS[currentStep];
+  const currentButton = activeExplanations[currentStep];
   if (!currentButton) return null;
 
   const Icon = currentButton.icon;
   const isChakraIcon =
     currentButton.id === "back" || currentButton.id === "settings";
   const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep === BUTTON_EXPLANATIONS.length - 1;
+  const isLastStep = currentStep === activeExplanations.length - 1;
 
   return (
     <Box
@@ -205,7 +210,7 @@ export default function TutorialActionBarPopovers({
 
             {/* Progress dots */}
             <HStack spacing={2} mt={2}>
-              {BUTTON_EXPLANATIONS.map((_, index) => (
+              {activeExplanations.map((_, index) => (
                 <Box
                   key={index}
                   w="8px"
@@ -236,7 +241,7 @@ export default function TutorialActionBarPopovers({
                 minW="60px"
                 textAlign="center"
               >
-                {currentStep + 1} / {BUTTON_EXPLANATIONS.length}
+                {currentStep + 1} / {activeExplanations.length}
               </Text>
 
               {isLastStep ? (

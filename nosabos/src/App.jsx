@@ -1239,6 +1239,10 @@ export default function App() {
   const [showTutorialPopovers, setShowTutorialPopovers] = useState(false);
   const tutorialPopoverShownRef = useRef(false);
 
+  // Skill tree tutorial state (shows on first login)
+  const [showSkillTreeTutorial, setShowSkillTreeTutorial] = useState(false);
+  const skillTreeTutorialCheckedRef = useRef(false);
+
   // Lesson completion celebration modal
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
@@ -1286,6 +1290,32 @@ export default function App() {
     },
     [getShownCelebrations]
   );
+
+  // Check if skill tree tutorial was completed
+  const hasCompletedSkillTreeTutorial = useMemo(() => {
+    return user?.skillTreeTutorialCompleted === true;
+  }, [user?.skillTreeTutorialCompleted]);
+
+  // Handler for completing the skill tree tutorial
+  const handleSkillTreeTutorialComplete = useCallback(async () => {
+    setShowSkillTreeTutorial(false);
+
+    if (!activeNpub) return;
+
+    try {
+      setDoc(
+        doc(database, "users", activeNpub),
+        {
+          skillTreeTutorialCompleted: true,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      );
+      patchUser?.({ skillTreeTutorialCompleted: true });
+    } catch (e) {
+      console.error("Failed to save skill tree tutorial state:", e);
+    }
+  }, [activeNpub, patchUser]);
 
   // Helper mapping for keys/index
   const TAB_KEYS = [
@@ -1523,6 +1553,23 @@ export default function App() {
   }, [user]);
 
   const needsOnboarding = useMemo(() => !onboardingDone, [onboardingDone]);
+
+  // Show skill tree tutorial on first login (only once per session)
+  useEffect(() => {
+    if (skillTreeTutorialCheckedRef.current) return;
+    if (!user || !activeNpub) return;
+    if (isLoadingApp || needsOnboarding) return;
+
+    skillTreeTutorialCheckedRef.current = true;
+
+    // Show tutorial if not completed
+    if (!user.skillTreeTutorialCompleted) {
+      // Small delay to let UI settle
+      setTimeout(() => {
+        setShowSkillTreeTutorial(true);
+      }, 500);
+    }
+  }, [user, activeNpub, isLoadingApp, needsOnboarding]);
 
   /* -----------------------------------
      Daily goal modals (open logic)
@@ -3705,12 +3752,12 @@ export default function App() {
         }}
       />
 
-      {/* Tutorial Action Bar Popovers - shows when tutorial starts */}
+      {/* Tutorial Action Bar Popovers - shows on first login at skill tree only */}
       <TutorialActionBarPopovers
-        isActive={showTutorialPopovers}
+        isActive={showSkillTreeTutorial && viewMode === "skillTree"}
         lang={appLanguage}
-        onComplete={() => setShowTutorialPopovers(false)}
-        autoAdvanceMs={3500}
+        onComplete={handleSkillTreeTutorialComplete}
+        isOnSkillTree={true}
       />
 
       {/* Skill Tree Scene - Full Screen */}
@@ -3758,6 +3805,8 @@ export default function App() {
               onPathModeChange={setPathMode}
               scrollToLatestTrigger={scrollToLatestTrigger}
               scrollToLatestUnlockedRef={scrollToLatestUnlockedRef}
+              // Tutorial props
+              isTutorialComplete={hasCompletedSkillTreeTutorial}
             />
           )}
         </Box>
