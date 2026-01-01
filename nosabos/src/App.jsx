@@ -1484,11 +1484,16 @@ export default function App() {
     try {
       let id = (localStorage.getItem("local_npub") || "").trim();
       console.log("[CONNECT_DID] Read local_npub from localStorage:", id);
-      console.log("[CONNECT_DID] Read local_nsec from localStorage:", localStorage.getItem("local_nsec")?.substring(0, 20) + "...");
+      console.log(
+        "[CONNECT_DID] Read local_nsec from localStorage:",
+        localStorage.getItem("local_nsec")?.substring(0, 20) + "..."
+      );
       let userDoc = null;
 
       if (id) {
-        console.log("[CONNECT_DID] Found existing npub, loading user from DB...");
+        console.log(
+          "[CONNECT_DID] Found existing npub, loading user from DB..."
+        );
         userDoc = await loadUserObjectFromDB(database, id);
         if (!userDoc) {
           const base = {

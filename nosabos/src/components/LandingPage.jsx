@@ -818,10 +818,6 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
           border: `1px solid ${theme.colors.border.subtle}`,
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: "32px" }}>
-          <Logo size={56} />
-        </div>
-
         <h1
           style={{
             fontFamily: theme.fonts.display,
