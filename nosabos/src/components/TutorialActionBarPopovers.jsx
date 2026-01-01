@@ -106,7 +106,13 @@ export default function TutorialActionBarPopovers({
   isActive = false,
   lang = "en",
   onComplete,
+  isOnSkillTree = false, // When true, skip the "back" button explanation
 }) {
+  // Filter out the back button when on skill tree (no back button there)
+  const activeExplanations = isOnSkillTree
+    ? BUTTON_EXPLANATIONS.filter((btn) => btn.id !== "back")
+    : BUTTON_EXPLANATIONS;
+
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -128,7 +134,7 @@ export default function TutorialActionBarPopovers({
   };
 
   const handleNext = () => {
-    if (currentStep < BUTTON_EXPLANATIONS.length - 1) {
+    if (currentStep < activeExplanations.length - 1) {
       setCurrentStep((prev) => prev + 1);
     }
   };
@@ -142,14 +148,14 @@ export default function TutorialActionBarPopovers({
 
   if (!isActive || !isVisible) return null;
 
-  const currentButton = BUTTON_EXPLANATIONS[currentStep];
+  const currentButton = activeExplanations[currentStep];
   if (!currentButton) return null;
 
   const Icon = currentButton.icon;
   const isChakraIcon =
     currentButton.id === "back" || currentButton.id === "settings";
   const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep === BUTTON_EXPLANATIONS.length - 1;
+  const isLastStep = currentStep === activeExplanations.length - 1;
 
   return (
     <Box
@@ -205,7 +211,7 @@ export default function TutorialActionBarPopovers({
 
             {/* Progress dots */}
             <HStack spacing={2} mt={2}>
-              {BUTTON_EXPLANATIONS.map((_, index) => (
+              {activeExplanations.map((_, index) => (
                 <Box
                   key={index}
                   w="8px"
@@ -236,7 +242,7 @@ export default function TutorialActionBarPopovers({
                 minW="60px"
                 textAlign="center"
               >
-                {currentStep + 1} / {BUTTON_EXPLANATIONS.length}
+                {currentStep + 1} / {activeExplanations.length}
               </Text>
 
               {isLastStep ? (

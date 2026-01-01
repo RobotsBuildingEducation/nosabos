@@ -133,7 +133,6 @@ import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
-import SkillTreeTutorialPopovers from "./components/SkillTreeTutorialPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import {
   FaBitcoin,
@@ -3753,19 +3752,19 @@ export default function App() {
         }}
       />
 
-      {/* Tutorial Action Bar Popovers - shows when tutorial starts */}
+      {/* Tutorial Action Bar Popovers - shows when tutorial starts OR on first login at skill tree */}
       <TutorialActionBarPopovers
-        isActive={showTutorialPopovers}
+        isActive={showTutorialPopovers || (showSkillTreeTutorial && viewMode === "skillTree")}
         lang={appLanguage}
-        onComplete={() => setShowTutorialPopovers(false)}
-        autoAdvanceMs={3500}
-      />
-
-      {/* Skill Tree Tutorial Popovers - shows on first login */}
-      <SkillTreeTutorialPopovers
-        isActive={showSkillTreeTutorial && viewMode === "skillTree"}
-        lang={appLanguage}
-        onComplete={handleSkillTreeTutorialComplete}
+        onComplete={() => {
+          if (showTutorialPopovers) {
+            setShowTutorialPopovers(false);
+          }
+          if (showSkillTreeTutorial) {
+            handleSkillTreeTutorialComplete();
+          }
+        }}
+        isOnSkillTree={showSkillTreeTutorial && viewMode === "skillTree"}
       />
 
       {/* Skill Tree Scene - Full Screen */}
