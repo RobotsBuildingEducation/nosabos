@@ -1303,7 +1303,7 @@ export default function App() {
     if (!activeNpub) return;
 
     try {
-      await setDoc(
+      setDoc(
         doc(database, "users", activeNpub),
         {
           skillTreeTutorialCompleted: true,

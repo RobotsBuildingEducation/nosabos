@@ -83,9 +83,9 @@ const BUTTON_EXPLANATIONS = [
   {
     id: "help",
     icon: MdOutlineSupportAgent,
-    label: { en: "AI Assistant", es: "Asistente IA" },
+    label: { en: "Assistant", es: "Asistente" },
     description: {
-      en: "Get instant help and answers from our AI learning assistant",
+      en: "Get instant help and answers from our learning assistant",
       es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
     },
     position: 5,
@@ -141,9 +141,8 @@ export default function TutorialActionBarPopovers({
 
   const handleFinish = () => {
     setIsVisible(false);
-    if (onComplete) {
-      setTimeout(onComplete, 300);
-    }
+
+    onComplete();
   };
 
   if (!isActive || !isVisible) return null;
