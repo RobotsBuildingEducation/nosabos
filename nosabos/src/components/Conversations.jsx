@@ -1123,6 +1123,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } else if (tLang === "nl") {
       strict =
         "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
+    } else if (tLang === "ja") {
+      strict =
+        "日本語のみで応答してください。英語やスペイン語は使用しないでください。Respond ONLY in Japanese.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
@@ -1218,6 +1221,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           ? "Dutch"
           : tLang === "nah"
           ? "Huastec Nahuatl"
+          : tLang === "ja"
+          ? "Japanese"
           : "English";
       const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 
