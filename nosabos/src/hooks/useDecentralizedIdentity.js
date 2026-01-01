@@ -74,12 +74,14 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
   }, []);
 
   const generateNostrKeys = async (userDisplayName = null) => {
+    console.log("[GENERATE_KEYS] Generating NEW nostr keys...");
     const privateKeySigner = NDKPrivateKeySigner.generate();
 
     const privateKey = privateKeySigner.privateKey;
     const user = await privateKeySigner.user();
 
     const publicKey = user.npub;
+    console.log("[GENERATE_KEYS] Generated new npub:", publicKey);
 
     const encodedNsec = bech32.encode(
       "nsec",
@@ -211,28 +213,33 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
 
   const auth = async (nsec) => {
     try {
+      console.log("[AUTH] Starting auth with nsec:", nsec?.substring(0, 20) + "...");
+
       // Decode nsec to hex
       const { words: nsecWords } = bech32.decode(nsec);
       const hexNsec = Buffer.from(bech32.fromWords(nsecWords)).toString("hex");
+      console.log("[AUTH] Decoded hex length:", hexNsec.length);
 
       const signer = new NDKPrivateKeySigner(hexNsec);
       await signer.blockUntilReady();
       ndk.signer = signer;
 
       const user = await signer.user();
+      console.log("[AUTH] Derived npub:", user.npub);
       ndk.activeUser = user; // Add this line
 
       setNostrPubKey(user.npub);
       setNostrPrivKey(nsec);
       localStorage.setItem("local_npub", user.npub);
-      console.log("local_nsec", nsec);
+      console.log("[AUTH] Stored local_npub:", user.npub);
       localStorage.setItem("local_nsec", nsec);
+      console.log("[AUTH] Stored local_nsec:", nsec?.substring(0, 20) + "...");
       localStorage.removeItem("nip07_signer");
       setErrorMessage(null);
 
       return { user, signer };
     } catch (error) {
-      console.error("Error logging in with keys:", error);
+      console.error("[AUTH] Error logging in with keys:", error);
       setErrorMessage(error.message);
       return null;
     }
