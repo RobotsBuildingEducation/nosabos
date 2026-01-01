@@ -31,6 +31,10 @@ import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 
+// Minimal hook stubs for standalone demo - replace with your actual implementations
+
+const useToast = () => (config) => console.log("Toast:", config);
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM
 // ═══════════════════════════════════════════════════════════════════════════════
