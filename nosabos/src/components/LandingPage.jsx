@@ -24,20 +24,12 @@ import {
   FaMap,
   FaBullseye,
 } from "react-icons/fa";
+import { useToast } from "@chakra-ui/react";
 import RobotBuddyPro from "./RobotBuddyPro";
 import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
-
-// Minimal hook stubs for standalone demo - replace with your actual implementations
-const useDecentralizedIdentity = () => ({
-  generateNostrKeys: async () => ({}),
-  auth: async () => true,
-  authWithExtension: async () => true,
-  isNip07Available: () => false,
-});
-
-const useToast = () => (config) => console.log("Toast:", config);
+import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DESIGN SYSTEM
