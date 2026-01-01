@@ -194,7 +194,7 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
         p.targetLang
       )
         ? p.targetLang
@@ -1010,7 +1010,7 @@ export default function Vocabulary({
       : null;
 
   const level = progress.level || "beginner";
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl"].includes(
+  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja"].includes(
     progress.targetLang
   )
     ? progress.targetLang
@@ -1035,6 +1035,7 @@ export default function Vocabulary({
       it: t("language_it"),
       nl: t("language_nl"),
       nah: t("language_nah"),
+      ja: t("language_ja"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);

@@ -178,7 +178,10 @@ const TARGET_LANGUAGE_LABELS = {
   it: "Italian",
   nl: "Dutch",
   nah: "Huastec Nahuatl",
+  ja: "Japanese",
 };
+const JAPANESE_BETA_NPUB =
+  "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
 function extractJsonBlock(text = "") {
@@ -461,6 +464,9 @@ function TopBar({
     (appLanguage === "es"
       ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
       : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+
+  // Check if Japanese should be visible (beta feature)
+  const showJapanese = activeNpub === JAPANESE_BETA_NPUB;
 
   // Refill draft when store changes
   useEffect(() => {
@@ -839,20 +845,22 @@ function TopBar({
                           .onboarding_practice_label_title
                       }
                     >
-                      {targetLang === "nah" &&
-                        translations[appLanguage].onboarding_practice_nah}
-                      {targetLang === "es" &&
-                        translations[appLanguage].onboarding_practice_es}
-                      {targetLang === "pt" &&
-                        translations[appLanguage].onboarding_practice_pt}
-                      {targetLang === "fr" &&
-                        translations[appLanguage].onboarding_practice_fr}
-                      {targetLang === "it" &&
-                        translations[appLanguage].onboarding_practice_it}
                       {targetLang === "nl" &&
                         translations[appLanguage].onboarding_practice_nl}
                       {targetLang === "en" &&
                         translations[appLanguage].onboarding_practice_en}
+                      {targetLang === "fr" &&
+                        translations[appLanguage].onboarding_practice_fr}
+                      {targetLang === "it" &&
+                        translations[appLanguage].onboarding_practice_it}
+                      {targetLang === "ja" &&
+                        translations[appLanguage].onboarding_practice_ja}
+                      {targetLang === "nah" &&
+                        translations[appLanguage].onboarding_practice_nah}
+                      {targetLang === "pt" &&
+                        translations[appLanguage].onboarding_practice_pt}
+                      {targetLang === "es" &&
+                        translations[appLanguage].onboarding_practice_es}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
                       <MenuOptionGroup
@@ -863,14 +871,11 @@ function TopBar({
                           persistSettings({ targetLang: value });
                         }}
                       >
-                        <MenuItemOption value="nah">
-                          {translations[appLanguage].onboarding_practice_nah}
+                        <MenuItemOption value="nl">
+                          {translations[appLanguage].onboarding_practice_nl}
                         </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {translations[appLanguage].onboarding_practice_es}
-                        </MenuItemOption>
-                        <MenuItemOption value="pt">
-                          {translations[appLanguage].onboarding_practice_pt}
+                        <MenuItemOption value="en">
+                          {translations[appLanguage].onboarding_practice_en}
                         </MenuItemOption>
                         <MenuItemOption value="fr">
                           {translations[appLanguage].onboarding_practice_fr}
@@ -878,11 +883,19 @@ function TopBar({
                         <MenuItemOption value="it">
                           {translations[appLanguage].onboarding_practice_it}
                         </MenuItemOption>
-                        <MenuItemOption value="nl">
-                          {translations[appLanguage].onboarding_practice_nl}
+                        {showJapanese && (
+                          <MenuItemOption value="ja">
+                            {translations[appLanguage].onboarding_practice_ja}
+                          </MenuItemOption>
+                        )}
+                        <MenuItemOption value="nah">
+                          {translations[appLanguage].onboarding_practice_nah}
                         </MenuItemOption>
-                        <MenuItemOption value="en">
-                          {translations[appLanguage].onboarding_practice_en}
+                        <MenuItemOption value="pt">
+                          {translations[appLanguage].onboarding_practice_pt}
+                        </MenuItemOption>
+                        <MenuItemOption value="es">
+                          {translations[appLanguage].onboarding_practice_es}
                         </MenuItemOption>
                       </MenuOptionGroup>
                     </MenuList>
@@ -1881,7 +1894,7 @@ export default function App() {
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
         .slice(0, 240)
         .trim(),
-      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
+      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
         partial.targetLang ?? prev.targetLang
       )
         ? partial.targetLang ?? prev.targetLang
@@ -1997,7 +2010,7 @@ export default function App() {
           translations[appLanguage]?.onboarding_persona_default_example ||
             translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
+        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
           payload.targetLang
         )
           ? payload.targetLang

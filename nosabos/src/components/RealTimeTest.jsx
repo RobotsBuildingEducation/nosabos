@@ -961,7 +961,7 @@ export default function RealTimeTest({
       voicePersonaRef.current = p.voicePersona;
       setVoicePersona(p.voicePersona);
     }
-    if (["nah", "es", "pt", "en", "fr", "it", "nl"].includes(p.targetLang)) {
+    if (["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(p.targetLang)) {
       targetLangRef.current = p.targetLang;
       setTargetLang(p.targetLang);
     }
@@ -1918,6 +1918,9 @@ Return ONLY JSON:
     } else if (tLang === "nl") {
       strict =
         "Antwoord ALLEEN in het Nederlands. Gebruik geen Engels of Spaans.";
+    } else if (tLang === "ja") {
+      strict =
+        "日本語のみで応答してください。英語やスペイン語は使用しないでください。Respond ONLY in Japanese.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
@@ -2072,6 +2075,10 @@ Return ONLY JSON:
           ? "Voix mise à jour."
           : targetLangRef.current === "it"
           ? "Voce aggiornata."
+          : targetLangRef.current === "nl"
+          ? "Stem bijgewerkt."
+          : targetLangRef.current === "ja"
+          ? "音声を更新しました。"
           : "Voice updated.";
       try {
         dcRef.current.send(
