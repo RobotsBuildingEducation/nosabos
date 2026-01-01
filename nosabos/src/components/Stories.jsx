@@ -196,7 +196,7 @@ function useSharedProgress() {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
 
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
         p.targetLang
       )
         ? p.targetLang

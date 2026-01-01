@@ -102,6 +102,7 @@ const baseLearningPath = {
               successCriteria_it: 'L\'apprendente ti dice "ciao".',
               successCriteria_nl: 'De leerling zegt "hallo" tegen je.',
               successCriteria_nah: 'The learner says "niltze" to you.',
+              successCriteria_ja: 'The learner says "こんにちは" (konnichiwa) to you.',
               tutorialDescription: {
                 en: "Practice speaking with realtime conversations and goal oriented chats.",
                 es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
@@ -10902,6 +10903,7 @@ const SUPPORTED_TARGET_LANGS = new Set([
   "it",
   "nl",
   "nah",
+  "ja",
 ]);
 const DEFAULT_TARGET_LANG = "es";
 
@@ -10916,6 +10918,7 @@ export const LEARNING_PATHS = {
   it: cloneLearningPath(), // Italian
   nl: cloneLearningPath(), // Dutch
   nah: cloneLearningPath(), // Huastec Nahuatl
+  ja: cloneLearningPath(), // Japanese
 };
 
 /**

@@ -961,7 +961,7 @@ export default function RealTimeTest({
       voicePersonaRef.current = p.voicePersona;
       setVoicePersona(p.voicePersona);
     }
-    if (["nah", "es", "pt", "en", "fr", "it", "nl"].includes(p.targetLang)) {
+    if (["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(p.targetLang)) {
       targetLangRef.current = p.targetLang;
       setTargetLang(p.targetLang);
     }

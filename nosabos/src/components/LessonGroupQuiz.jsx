@@ -171,7 +171,7 @@ export default function LessonGroupQuiz({
       if (!snap.exists()) return;
       const data = snap.data();
       const prog = data.progress || {};
-      const tLang = ["nah", "es", "pt", "en", "fr", "it", "nl"].includes(
+      const tLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
         prog.targetLang
       )
         ? prog.targetLang

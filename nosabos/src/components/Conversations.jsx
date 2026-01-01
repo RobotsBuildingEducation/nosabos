@@ -748,6 +748,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     if (code === "nl") return translations[uiLang].language_nl || "Dutch";
     if (code === "nah")
       return translations[uiLang].language_nah || "Huastec Nahuatl";
+    if (code === "ja") return translations[uiLang].language_ja || "Japanese";
     return code;
   };
 

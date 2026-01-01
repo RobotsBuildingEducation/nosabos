@@ -245,6 +245,7 @@ export default function Onboarding({
                       {targetLang === "fr" && ui.onboarding_practice_fr}
                       {targetLang === "it" && ui.onboarding_practice_it}
                       {targetLang === "nl" && ui.onboarding_practice_nl}
+                      {targetLang === "ja" && ui.onboarding_practice_ja}
                       {targetLang === "en" && ui.onboarding_practice_en}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
@@ -270,6 +271,9 @@ export default function Onboarding({
                         </MenuItemOption>
                         <MenuItemOption value="nl">
                           {ui.onboarding_practice_nl}
+                        </MenuItemOption>
+                        <MenuItemOption value="ja">
+                          {ui.onboarding_practice_ja}
                         </MenuItemOption>
                         <MenuItemOption value="en">
                           {ui.onboarding_practice_en}
