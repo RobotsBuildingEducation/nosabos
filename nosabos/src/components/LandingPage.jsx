@@ -28,14 +28,9 @@ import RobotBuddyPro from "./RobotBuddyPro";
 import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
+import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
-const useDecentralizedIdentity = () => ({
-  generateNostrKeys: async () => ({}),
-  auth: async () => true,
-  authWithExtension: async () => true,
-  isNip07Available: () => false,
-});
 
 const useToast = () => (config) => console.log("Toast:", config);
 
