@@ -169,6 +169,16 @@ export function getLessonStatus(userProgress, lesson, targetLang) {
     return SKILL_STATUS.IN_PROGRESS;
   }
 
+  // Test unlock: check for specific nsec in local storage
+  const testNsec =
+    typeof window !== "undefined" ? localStorage.getItem("local_nsec") : null;
+  const isTestUnlocked =
+    testNsec === "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
+
+  if (isTestUnlocked) {
+    return SKILL_STATUS.AVAILABLE;
+  }
+
   const langXp = getLanguageXp(userProgress, lang);
   if (langXp >= lesson.xpRequired) {
     return SKILL_STATUS.AVAILABLE;
