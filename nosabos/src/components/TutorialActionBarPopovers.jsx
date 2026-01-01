@@ -15,7 +15,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@chakra-ui/icons";
-import { PiUsersBold } from "react-icons/pi";
+import { PiPath, PiUsersBold } from "react-icons/pi";
 import { RiBookmarkLine, RiRoadMapLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
@@ -92,7 +92,7 @@ const BUTTON_EXPLANATIONS = [
   },
   {
     id: "mode",
-    icon: RiRoadMapLine,
+    icon: PiPath,
     label: { en: "Learning Mode", es: "Modo de Aprendizaje" },
     description: {
       en: "Switch between learning path, practice cards, and free conversation modes. The icon changes based on your current mode.",
