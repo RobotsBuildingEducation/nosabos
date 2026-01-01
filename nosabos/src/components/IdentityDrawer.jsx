@@ -615,10 +615,14 @@ export function BitcoinWalletSection({
     // If NIP-07 mode and no nsec provided, show error
     if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
       toast({
-        title: userLanguage === "es" ? "Se requiere clave secreta" : "Secret key required",
-        description: userLanguage === "es"
-          ? "Ingresa tu nsec para crear la billetera."
-          : "Enter your nsec to create the wallet.",
+        title:
+          userLanguage === "es"
+            ? "Se requiere clave secreta"
+            : "Secret key required",
+        description:
+          userLanguage === "es"
+            ? "Ingresa tu nsec para crear la billetera."
+            : "Enter your nsec to create the wallet.",
         status: "warning",
         duration: 2500,
       });
@@ -629,9 +633,10 @@ export function BitcoinWalletSection({
     if (nsecForWallet.trim() && !nsecForWallet.trim().startsWith("nsec")) {
       toast({
         title: userLanguage === "es" ? "Clave inválida" : "Invalid key",
-        description: userLanguage === "es"
-          ? "La clave debe empezar con 'nsec'."
-          : "Key must start with 'nsec'.",
+        description:
+          userLanguage === "es"
+            ? "La clave debe empezar con 'nsec'."
+            : "Key must start with 'nsec'.",
         status: "error",
         duration: 2500,
       });
@@ -644,7 +649,8 @@ export function BitcoinWalletSection({
         await updateDoc(doc(database, "users", id), { createdWallet: true });
 
       // Pass the nsec to createNewWallet if we're in NIP-07 mode
-      const nsecToUse = isNip07Mode && nsecForWallet.trim() ? nsecForWallet.trim() : null;
+      const nsecToUse =
+        isNip07Mode && nsecForWallet.trim() ? nsecForWallet.trim() : null;
       await createNewWallet(nsecToUse);
 
       // Clear the nsec input after successful wallet creation
