@@ -28,7 +28,7 @@ const pulseKeyframes = keyframes`
   100% { transform: scale(1);  }
 `;
 
-// Button explanations configuration
+// Button explanations configuration - ordered left to right as they appear on skill tree
 const BUTTON_EXPLANATIONS = [
   {
     id: "back",
@@ -41,16 +41,6 @@ const BUTTON_EXPLANATIONS = [
     position: 0,
   },
   {
-    id: "identity",
-    icon: FaBitcoin,
-    label: { en: "Account Key", es: "Llave de cuenta" },
-    description: {
-      en: "Access your account info to install the app and access your password",
-      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
-    },
-    position: 1,
-  },
-  {
     id: "teams",
     icon: PiUsersBold,
     label: { en: "Teams", es: "Equipos" },
@@ -58,7 +48,7 @@ const BUTTON_EXPLANATIONS = [
       en: "Join or create study groups to learn together with friends",
       es: "Únete o crea grupos de estudio para aprender junto con amigos",
     },
-    position: 2,
+    position: 1,
   },
   {
     id: "settings",
@@ -68,17 +58,7 @@ const BUTTON_EXPLANATIONS = [
       en: "Customize your learning experience, voice, and preferences",
       es: "Personaliza tu experiencia de aprendizaje, voz y preferencias",
     },
-    position: 3,
-  },
-  {
-    id: "help",
-    icon: MdOutlineSupportAgent,
-    label: { en: "AI Assistant", es: "Asistente IA" },
-    description: {
-      en: "Get instant help and answers from our AI learning assistant",
-      es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
-    },
-    position: 4,
+    position: 2,
   },
   {
     id: "notes",
@@ -87,6 +67,26 @@ const BUTTON_EXPLANATIONS = [
     description: {
       en: "View your study notes. Notes can be created when you attempt or complete exercises and flashcards.",
       es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
+    },
+    position: 3,
+  },
+  {
+    id: "identity",
+    icon: FaBitcoin,
+    label: { en: "Account Key", es: "Llave de cuenta" },
+    description: {
+      en: "Access your account info to install the app and access your password",
+      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
+    },
+    position: 4,
+  },
+  {
+    id: "help",
+    icon: MdOutlineSupportAgent,
+    label: { en: "AI Assistant", es: "Asistente IA" },
+    description: {
+      en: "Get instant help and answers from our AI learning assistant",
+      es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
     },
     position: 5,
   },

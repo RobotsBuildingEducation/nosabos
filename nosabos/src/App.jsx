@@ -3752,19 +3752,12 @@ export default function App() {
         }}
       />
 
-      {/* Tutorial Action Bar Popovers - shows when tutorial starts OR on first login at skill tree */}
+      {/* Tutorial Action Bar Popovers - shows on first login at skill tree only */}
       <TutorialActionBarPopovers
-        isActive={showTutorialPopovers || (showSkillTreeTutorial && viewMode === "skillTree")}
+        isActive={showSkillTreeTutorial && viewMode === "skillTree"}
         lang={appLanguage}
-        onComplete={() => {
-          if (showTutorialPopovers) {
-            setShowTutorialPopovers(false);
-          }
-          if (showSkillTreeTutorial) {
-            handleSkillTreeTutorialComplete();
-          }
-        }}
-        isOnSkillTree={showSkillTreeTutorial && viewMode === "skillTree"}
+        onComplete={handleSkillTreeTutorialComplete}
+        isOnSkillTree={true}
       />
 
       {/* Skill Tree Scene - Full Screen */}
