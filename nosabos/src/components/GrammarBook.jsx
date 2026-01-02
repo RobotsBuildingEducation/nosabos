@@ -490,10 +490,7 @@ function buildMAStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = difficultyHint(cefrLevel);
-  const preferBlank = Math.random() < 0.6;
-  const stemDirective = preferBlank
-    ? `- Stem short (≤120 chars) and MUST include at least one blank "___".`
-    : `- Stem short (≤120 chars), may include "___".`;
+  const numBlanks = Math.random() < 0.5 ? 2 : 3;
 
   // If lesson content is provided, use specific grammar topic/focus
   // Special handling for tutorial mode - use very simple "hello" content only
@@ -518,24 +515,25 @@ function buildMAStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} multiple-answer grammar question (EXACTLY 2 or 3 correct, NEVER just 1). Difficulty: ${
+    `Create ONE ${TARGET} fill-in-the-blanks grammar question with EXACTLY ${numBlanks} blanks. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
     }`,
-    stemDirective,
-    `- 5–6 distinct choices in ${TARGET}.`,
-    `- CRITICAL: Each choice MUST be a single word or short phrase. NEVER combine multiple answers with "/" or "or". For example, use separate choices like "es", "tiene" instead of "es/tiene".`,
-    `- CRITICAL: If the stem contains a blank "___", the sentence MUST be in ${TARGET} (the language being learned), NOT in ${SUPPORT}. The user fills in ${TARGET} words into ${TARGET} sentences.`,
-    `- If the stem is a question WITHOUT blanks (asking to select correct translations or examples), then the question can be in ${SUPPORT}.`,
+    `- The sentence MUST contain EXACTLY ${numBlanks} blanks written as "___" (three underscores).`,
+    `- The sentence MUST be in ${TARGET} and make complete grammatical sense when all blanks are filled.`,
+    `- Each blank has EXACTLY ONE correct answer. The "answers" array MUST have EXACTLY ${numBlanks} items, one for each blank IN ORDER.`,
+    `- Example: "Mi ___ vive en una ___ grande" with answers ["hermano", "casa"] means blank 1 = hermano, blank 2 = casa.`,
+    `- 5–6 distinct single-word choices in ${TARGET}. Include the ${numBlanks} correct answers plus 2-4 distractors.`,
+    `- CRITICAL: Each choice MUST be a single word. NEVER combine words with "/" or "or".`,
     `- Hint in ${SUPPORT} (≤8 words).`,
     wantTranslation
-      ? `- ${SUPPORT} translation of stem.`
+      ? `- ${SUPPORT} translation of the complete sentence.`
       : `- Empty translation "".`,
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"ma","phase":"q","question":"<stem - if blank, MUST be in ${TARGET}>"}  // first`,
-    `{"type":"ma","phase":"choices","choices":["..."]}           // second`,
-    `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"ma","phase":"q","question":"<${TARGET} sentence with EXACTLY ${numBlanks} ___ blanks>"}  // first`,
+    `{"type":"ma","phase":"choices","choices":["<word1>","<word2>","..."]}  // second, 5-6 single words`,
+    `{"type":"ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<answer for blank 1>","<answer for blank 2>"${numBlanks === 3 ? ',"<answer for blank 3>"' : ''}],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
 }
@@ -1641,13 +1639,12 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const useDrag = true;
     const blanksCount = countBlanks(maQ);
     // const preferDrag = shouldUseDragVariant(maQ, maChoices, maAnswers);
-    // Force button layout if answers exceed blanks (users can't place all answers in slots)
-    // const useDrag = preferDrag && (blanksCount === 0 || blanksCount >= maAnswers.length);
+    // const useDrag = preferDrag && blanksCount > 0;
     // END TESTING ONLY
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
-      // MA questions need slots for ALL correct answers, not just blanks in text
-      const slotCount = maAnswers.length;
+      // Slot count = number of blanks in text (should match answers length from prompt)
+      const slotCount = blanksCount > 0 ? blanksCount : maAnswers.length;
       setMaSlots(Array.from({ length: slotCount }, () => null));
       setMaBankOrder(maChoices.map((_, idx) => idx));
     } else {

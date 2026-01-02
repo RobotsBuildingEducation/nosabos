@@ -918,12 +918,12 @@ export default function LessonGroupQuiz({
     maKeyRef.current = signature;
     const preferDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
     const blanksCount = countBlanks(qMA);
-    // Force button layout if answers exceed blanks (users can't place all answers in slots)
-    const useDrag = preferDrag && (blanksCount === 0 || blanksCount >= answersMA.length);
+    // Use drag layout only if there are blanks in the text
+    const useDrag = preferDrag && blanksCount > 0;
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
-      // MA questions need slots for ALL correct answers, not just blanks in text
-      const slotCount = answersMA.length;
+      // Slot count = number of blanks in text (should match answers length from prompt)
+      const slotCount = blanksCount > 0 ? blanksCount : answersMA.length;
       setMaSlots(Array.from({ length: slotCount }, () => null));
       setMaBankOrder(choicesMA.map((_, idx) => idx));
     } else {
