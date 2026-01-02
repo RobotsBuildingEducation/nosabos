@@ -1785,8 +1785,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     // END TESTING ONLY
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
-      // Create slots matching blanks or answers for non-blank questions
-      const slotCount = blanksCount > 0 ? blanksCount : answersMA.length;
+      // MA questions need slots for ALL correct answers, not just blanks in text
+      const slotCount = answersMA.length;
       setMaSlots(Array.from({ length: slotCount }, () => null));
       setMaBankOrder(choicesMA.map((_, idx) => idx));
     } else {
