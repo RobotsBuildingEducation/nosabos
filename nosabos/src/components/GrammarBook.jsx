@@ -3500,16 +3500,16 @@ Return JSON ONLY:
         return;
       }
 
-      // From slot -> slot
+      // From slot -> slot (swap items)
       if (source.droppableId.startsWith("slot-")) {
         const src = parseInt(source.droppableId.replace("slot-", ""), 10);
         if (Number.isNaN(src) || src === dest) return;
         const nextSlots = [...mSlots];
         const prevDest = nextSlots[dest];
         nextSlots[dest] = ri;
-        nextSlots[src] = null;
+        // Swap: put displaced item in source slot instead of bank
+        nextSlots[src] = prevDest;
         setMSlots(nextSlots);
-        if (prevDest !== null) setMBank((b) => [...b, prevDest]);
       }
     }
   }
