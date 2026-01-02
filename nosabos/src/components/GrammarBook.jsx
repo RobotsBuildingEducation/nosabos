@@ -1557,10 +1557,6 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function generateRandom() {
-    // TODO: TESTING ONLY - remove this to restore normal behavior
-    generateMA();
-    return;
-    // END TESTING ONLY
     const fn = drawGenerator();
     fn();
   }
@@ -1635,12 +1631,9 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const signature = `${maQ}||${maChoices.join("|")}|${maAnswers.join("|")}`;
     if (maKeyRef.current === signature) return;
     maKeyRef.current = signature;
-    // TODO: TESTING ONLY - force drag layout
-    const useDrag = true;
+    const preferDrag = shouldUseDragVariant(maQ, maChoices, maAnswers);
     const blanksCount = countBlanks(maQ);
-    // const preferDrag = shouldUseDragVariant(maQ, maChoices, maAnswers);
-    // const useDrag = preferDrag && blanksCount > 0;
-    // END TESTING ONLY
+    const useDrag = preferDrag && blanksCount > 0;
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
       // Slot count = number of blanks in text (should match answers length from prompt)
