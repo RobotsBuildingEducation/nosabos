@@ -194,9 +194,16 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
-        p.targetLang
-      )
+      const targetLang = [
+        "nah",
+        "es",
+        "pt",
+        "en",
+        "fr",
+        "it",
+        "nl",
+        "ja",
+      ].includes(p.targetLang)
         ? p.targetLang
         : "es";
       const langXp = getLanguageXp(p, targetLang);
@@ -408,13 +415,17 @@ function buildMAVocabStreamPrompt({
     `- 5–6 distinct single-word choices in ${TARGET}. Include the ${numBlanks} correct answers plus 2-4 distractors.`,
     `- CRITICAL: Each choice MUST be a single ${TARGET} word. NEVER combine words with "/" or "or".`,
     `- Hint in ${SUPPORT} (≤8 words).`,
-    wantTR ? `- ${SUPPORT} translation showing the complete sentence.` : `- Empty translation "".`,
+    wantTR
+      ? `- ${SUPPORT} translation showing the complete sentence.`
+      : `- Empty translation "".`,
     topicDirective,
     "",
     "Stream as NDJSON:",
     `{"type":"vocab_ma","phase":"q","question":"<${SUPPORT} sentence with EXACTLY ${numBlanks} ___ blanks for ${TARGET} words>"}  // first`,
     `{"type":"vocab_ma","phase":"choices","choices":["<${TARGET} word1>","<${TARGET} word2>","..."]}  // second, 5-6 single words`,
-    `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<answer for blank 1>","<answer for blank 2>"${numBlanks === 3 ? ',"<answer for blank 3>"' : ''}],"translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<answer for blank 1>","<answer for blank 2>"${
+      numBlanks === 3 ? ',"<answer for blank 3>"' : ""
+    }],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
 }

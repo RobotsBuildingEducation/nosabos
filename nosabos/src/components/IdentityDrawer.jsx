@@ -485,6 +485,8 @@ export default function IdentityDrawer({
               onClick={handleSignOut}
               padding={6}
               borderRadius="lg"
+              colorScheme="gray"
+              border="1px solid orange"
             >
               {t?.app_sign_out || "Sign out"}
             </Button>

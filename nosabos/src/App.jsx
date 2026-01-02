@@ -985,10 +985,11 @@ function TopBar({
           </DrawerBody>
           <DrawerFooter borderTop="1px solid" borderColor="gray.800">
             <Box maxW="600px" mx="auto" w="100%">
-              <HStack w="100%" justify="space-between" spacing={3}>
+              <HStack w="100%" justify="flex-end" spacing={3}>
+                <Button variant="ghost" onClick={closeSettings}>
+                  {t.app_close || "Close"}
+                </Button>
                 <Button
-                  variant="ghost"
-                  colorScheme="red"
                   onClick={() => {
                     if (typeof window === "undefined") return;
                     try {
@@ -999,11 +1000,10 @@ function TopBar({
                       window.location.reload();
                     }
                   }}
+                  colorScheme="gray"
+                  border="1px solid orange"
                 >
                   {t.app_sign_out || "Sign out"}
-                </Button>
-                <Button variant="ghost" onClick={closeSettings}>
-                  {t.app_close || "Close"}
                 </Button>
               </HStack>
             </Box>
