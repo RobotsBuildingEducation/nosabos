@@ -1707,6 +1707,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function generateRandom() {
+    // TODO: TESTING ONLY - remove this to restore normal behavior
+    setMode("ma");
+    return generatorFor("ma")();
+    // END TESTING ONLY
     const pick = drawType();
     // do NOT lock when randomizing
     setMode(pick);
@@ -1772,10 +1776,13 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const signature = `${qMA}||${choicesMA.join("|")}|${answersMA.join("|")}`;
     if (maKeyRef.current === signature) return;
     maKeyRef.current = signature;
-    const preferDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
+    // TODO: TESTING ONLY - force drag layout
+    const useDrag = true;
     const blanksCount = countBlanks(qMA);
+    // const preferDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
     // Force button layout if answers exceed blanks (users can't place all answers in slots)
-    const useDrag = preferDrag && (blanksCount === 0 || blanksCount >= answersMA.length);
+    // const useDrag = preferDrag && (blanksCount === 0 || blanksCount >= answersMA.length);
+    // END TESTING ONLY
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
       // Create slots matching blanks or answers for non-blank questions
