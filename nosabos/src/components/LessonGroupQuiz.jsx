@@ -916,11 +916,14 @@ export default function LessonGroupQuiz({
     const signature = `${qMA}||${choicesMA.join("|")}|${answersMA.join("|")}`;
     if (maKeyRef.current === signature) return;
     maKeyRef.current = signature;
-    const useDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
+    const preferDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
+    const blanksCount = countBlanks(qMA);
+    // Use drag layout only if there are blanks in the text
+    const useDrag = preferDrag && blanksCount > 0;
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
-      const blanks = countBlanks(qMA) || answersMA.length;
-      const slotCount = Math.min(Math.max(blanks, 1), answersMA.length);
+      // Slot count = number of blanks in text (should match answers length from prompt)
+      const slotCount = blanksCount > 0 ? blanksCount : answersMA.length;
       setMaSlots(Array.from({ length: slotCount }, () => null));
       setMaBankOrder(choicesMA.map((_, idx) => idx));
     } else {

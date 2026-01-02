@@ -786,7 +786,7 @@ function TopBar({
           />
           <DrawerHeader pb={2} pr={12}>
             <Box maxW="600px" mx="auto" w="100%">
-              {t.ra_settings_title || "Conversation settings"}
+              {t.ra_settings_title || "Settings"}
             </Box>
           </DrawerHeader>
           <DrawerBody pb={2}>
@@ -988,6 +988,22 @@ function TopBar({
               <HStack w="100%" justify="flex-end" spacing={3}>
                 <Button variant="ghost" onClick={closeSettings}>
                   {t.app_close || "Close"}
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (typeof window === "undefined") return;
+                    try {
+                      localStorage.clear();
+                      window.location.href = "/";
+                    } catch (err) {
+                      console.error("signOut error:", err);
+                      window.location.reload();
+                    }
+                  }}
+                  colorScheme="gray"
+                  border="1px solid orange"
+                >
+                  {t.app_sign_out || "Sign out"}
                 </Button>
               </HStack>
             </Box>

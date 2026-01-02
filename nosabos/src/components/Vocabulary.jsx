@@ -194,9 +194,16 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
-        p.targetLang
-      )
+      const targetLang = [
+        "nah",
+        "es",
+        "pt",
+        "en",
+        "fr",
+        "it",
+        "nl",
+        "ja",
+      ].includes(p.targetLang)
         ? p.targetLang
         : "es";
       const langXp = getLanguageXp(p, targetLang);
@@ -380,10 +387,7 @@ function buildMAVocabStreamPrompt({
     showTranslations &&
     SUPPORT_CODE !== (targetLang === "en" ? "en" : targetLang);
   const diff = vocabDifficulty(cefrLevel);
-  const preferBlank = Math.random() < 0.6;
-  const stemDirective = preferBlank
-    ? `- Stem ≤120 chars and MUST include at least one blank "___" within context.`
-    : `- Stem ≤120 chars with context (e.g., "Which words fit the sentence?" or "Select all synonyms for ___").`;
+  const numBlanks = Math.random() < 0.5 ? 2 : 3;
 
   // If lesson content is provided, use specific vocabulary/topic
   // Special handling for tutorial mode - use very simple "hello" content only
@@ -401,20 +405,27 @@ function buildMAVocabStreamPrompt({
       )}`;
 
   return [
-    `Create ONE ${TARGET} vocabulary multiple-answer question (EXACTLY 2 or 3 correct, never just 1). Difficulty: ${
+    `Create ONE ${TARGET} vocabulary fill-in-the-blanks question with EXACTLY ${numBlanks} blanks. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
     }`,
-    stemDirective,
-    `- 5–6 distinct choices in ${TARGET}.`,
-    `- Question/stem MUST be in ${SUPPORT} so the learner can understand what is being asked.`,
+    `- Create a sentence in ${SUPPORT} with EXACTLY ${numBlanks} blanks written as "___" where ${TARGET} vocabulary words should be inserted.`,
+    `- The sentence should test vocabulary knowledge by having the learner fill in ${TARGET} words.`,
+    `- Each blank has EXACTLY ONE correct answer. The "answers" array MUST have EXACTLY ${numBlanks} items, one for each blank IN ORDER.`,
+    `- Example: "The ___ is on the ___ in my room" with answers ["libro", "mesa"] means blank 1 = libro (book), blank 2 = mesa (table).`,
+    `- 5–6 distinct single-word choices in ${TARGET}. Include the ${numBlanks} correct answers plus 2-4 distractors.`,
+    `- CRITICAL: Each choice MUST be a single ${TARGET} word. NEVER combine words with "/" or "or".`,
     `- Hint in ${SUPPORT} (≤8 words).`,
-    wantTR ? `- ${SUPPORT} translation of stem.` : `- Empty translation "".`,
+    wantTR
+      ? `- ${SUPPORT} translation showing the complete sentence.`
+      : `- Empty translation "".`,
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"vocab_ma","phase":"q","question":"<stem in ${SUPPORT}>"}  // first`,
-    `{"type":"vocab_ma","phase":"choices","choices":["..."]}           // second`,
-    `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<correct>","<correct>"],"translation":"<${SUPPORT} translation or empty>"} // third`,
+    `{"type":"vocab_ma","phase":"q","question":"<${SUPPORT} sentence with EXACTLY ${numBlanks} ___ blanks for ${TARGET} words>"}  // first`,
+    `{"type":"vocab_ma","phase":"choices","choices":["<${TARGET} word1>","<${TARGET} word2>","..."]}  // second, 5-6 single words`,
+    `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<answer for blank 1>","<answer for blank 2>"${
+      numBlanks === 3 ? ',"<answer for blank 3>"' : ""
+    }],"translation":"<${SUPPORT} translation or empty>"} // third`,
     `{"type":"done"}`,
   ].join("\n");
 }
@@ -1772,11 +1783,13 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const signature = `${qMA}||${choicesMA.join("|")}|${answersMA.join("|")}`;
     if (maKeyRef.current === signature) return;
     maKeyRef.current = signature;
-    const useDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
+    const preferDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
+    const blanksCount = countBlanks(qMA);
+    const useDrag = preferDrag && blanksCount > 0;
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
-      const blanks = countBlanks(qMA) || answersMA.length;
-      const slotCount = Math.min(Math.max(blanks, 1), answersMA.length);
+      // Slot count = number of blanks in text (should match answers length from prompt)
+      const slotCount = blanksCount > 0 ? blanksCount : answersMA.length;
       setMaSlots(Array.from({ length: slotCount }, () => null));
       setMaBankOrder(choicesMA.map((_, idx) => idx));
     } else {
@@ -3716,16 +3729,16 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         return;
       }
 
-      // From slot -> slot
+      // From slot -> slot (swap items)
       if (source.droppableId.startsWith("slot-")) {
         const src = parseInt(source.droppableId.replace("slot-", ""), 10);
         if (Number.isNaN(src) || src === dest) return;
         const nextSlots = [...mSlots];
         const prevDest = nextSlots[dest];
         nextSlots[dest] = ri;
-        nextSlots[src] = null;
+        // Swap: put displaced item in source slot instead of bank
+        nextSlots[src] = prevDest;
         setMSlots(nextSlots);
-        if (prevDest !== null) setMBank((b) => [...b, prevDest]);
       }
     }
   }
