@@ -475,8 +475,8 @@ function TopBar({
     setSupportLang(q.supportLang || "en");
     setVoice(q.voice || "alloy");
     setVoicePersona(
-      q.voicePersona ||
-        personaDefaultFor(q.supportLang || supportLang || appLanguage) ||
+      q.voicePersona ??
+        personaDefaultFor(q.supportLang || supportLang || appLanguage) ??
         translations.en.onboarding_persona_default_example
     );
     setTargetLang(q.targetLang || "es");
