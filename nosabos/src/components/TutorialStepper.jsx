@@ -199,22 +199,22 @@ export default function TutorialStepper({
         </HStack>
       </Box>
 
-      {/* Current Module Description */}
-      {description && currentConfig && (
+      {/* Current Module Description - always show when currentConfig exists */}
+      {currentConfig && (
         <Box
           w="100%"
           maxWidth="600px"
           mx="auto"
-          bg="whiteAlpha.150"
+          bg="rgba(30, 41, 59, 0.9)"
           borderRadius="xl"
           p={4}
-          borderWidth="1px"
-          borderColor={`${currentConfig.color}40`}
+          borderWidth="2px"
+          borderColor={currentConfig.color}
         >
           <Flex align="center" gap={3}>
             <Circle
               size="40px"
-              bg={`${currentConfig.color}20`}
+              bg={`${currentConfig.color}30`}
               flexShrink={0}
             >
               {React.createElement(currentConfig.icon, {
@@ -230,8 +230,8 @@ export default function TutorialStepper({
               >
                 {currentConfig.label?.[supportLang] || currentConfig.label?.en || validModule}
               </Text>
-              <Text fontSize="sm" color="whiteAlpha.800" lineHeight="1.4">
-                {description}
+              <Text fontSize="sm" color="gray.300" lineHeight="1.4">
+                {description || currentConfig.description?.[supportLang] || currentConfig.description?.en || "No description available"}
               </Text>
             </VStack>
           </Flex>
