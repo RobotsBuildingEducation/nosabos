@@ -64,7 +64,7 @@ export default function TutorialStepper({
   const currentIndex = modules.indexOf(currentModule);
 
   return (
-    <VStack spacing={4} w="100%" mb={6}>
+    <VStack spacing={4} w="100%" mb={tutorialDescription ? 4 : 2}>
       {/* Stepper Progress */}
       <Box w="100%" px={2}>
         <HStack
