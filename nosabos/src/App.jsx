@@ -1912,9 +1912,10 @@ export default function App() {
         ? partial.supportLang ?? prev.supportLang
         : "en",
       voice: partial.voice ?? prev.voice ?? "alloy",
-      voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
-        .slice(0, 240)
-        .trim(),
+      voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "").slice(
+        0,
+        240
+      ),
       targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
         partial.targetLang ?? prev.targetLang
       )
