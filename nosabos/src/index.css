@@ -1,8 +1,8 @@
 html,
 body {
   background-color: #0b1220 !important;
-
   color: #e5e7eb !important; /* gray.100 */
+  overflow-x: hidden;
 }
 
 :root {
@@ -41,6 +41,7 @@ body {
   /* min-width: 320px; */
   min-height: 100vh;
   min-height: 100dvh;
+  overflow-x: hidden;
 }
 
 /* Hide scrollbars that Chakra adds to modal bodies so the dialogs stay clean */
