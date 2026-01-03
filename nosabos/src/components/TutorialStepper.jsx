@@ -95,7 +95,9 @@ export default function TutorialStepper({
         : tutorialDescription;
     }
     if (currentConfig?.description) {
-      return currentConfig.description[supportLang] || currentConfig.description.en;
+      return (
+        currentConfig.description[supportLang] || currentConfig.description.en
+      );
     }
     return null;
   };
@@ -210,13 +212,10 @@ export default function TutorialStepper({
           p={4}
           borderWidth="2px"
           borderColor={currentConfig.color}
+          zIndex="10"
         >
           <Flex align="center" gap={3}>
-            <Circle
-              size="40px"
-              bg={`${currentConfig.color}30`}
-              flexShrink={0}
-            >
+            <Circle size="40px" bg={`${currentConfig.color}30`} flexShrink={0}>
               {React.createElement(currentConfig.icon, {
                 size: 20,
                 color: currentConfig.color,
@@ -228,10 +227,15 @@ export default function TutorialStepper({
                 fontWeight="bold"
                 color={currentConfig.color || "white"}
               >
-                {currentConfig.label?.[supportLang] || currentConfig.label?.en || validModule}
+                {currentConfig.label?.[supportLang] ||
+                  currentConfig.label?.en ||
+                  validModule}
               </Text>
               <Text fontSize="sm" color="gray.300" lineHeight="1.4">
-                {description || currentConfig.description?.[supportLang] || currentConfig.description?.en || "No description available"}
+                {description ||
+                  currentConfig.description?.[supportLang] ||
+                  currentConfig.description?.en ||
+                  "No description available"}
               </Text>
             </VStack>
           </Flex>
