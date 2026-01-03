@@ -475,8 +475,8 @@ function TopBar({
     setSupportLang(q.supportLang || "en");
     setVoice(q.voice || "alloy");
     setVoicePersona(
-      q.voicePersona ||
-        personaDefaultFor(q.supportLang || supportLang || appLanguage) ||
+      q.voicePersona ??
+        personaDefaultFor(q.supportLang || supportLang || appLanguage) ??
         translations.en.onboarding_persona_default_example
     );
     setTargetLang(q.targetLang || "es");
@@ -526,6 +526,18 @@ function TopBar({
       }
     },
     [onPatchSettings, toast, appLanguage]
+  );
+
+  // Debounced persist for text inputs (voicePersona, helpRequest)
+  const debounceRef = useRef(null);
+  const debouncedPersist = useCallback(
+    (partial, delay = 400) => {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        persistSettings(partial);
+      }, delay);
+    },
+    [persistSettings]
   );
 
   useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
@@ -912,7 +924,7 @@ function TopBar({
                     onChange={(e) => {
                       const next = e.target.value.slice(0, 240);
                       setVoicePersona(next);
-                      persistSettings({ voicePersona: next });
+                      debouncedPersist({ voicePersona: next });
                     }}
                     bg="gray.700"
                     placeholder={
@@ -1912,9 +1924,10 @@ export default function App() {
         ? partial.supportLang ?? prev.supportLang
         : "en",
       voice: partial.voice ?? prev.voice ?? "alloy",
-      voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "")
-        .slice(0, 240)
-        .trim(),
+      voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "").slice(
+        0,
+        240
+      ),
       targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
         partial.targetLang ?? prev.targetLang
       )
