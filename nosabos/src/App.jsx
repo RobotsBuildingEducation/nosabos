@@ -3874,6 +3874,7 @@ export default function App() {
               currentModule={currentTab}
               completedModules={tutorialCompletedModules}
               lang={appLanguage}
+              supportLang={resolvedSupportLang}
               tutorialDescription={
                 activeLesson?.content?.[currentTab]?.tutorialDescription
               }

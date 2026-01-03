@@ -196,9 +196,16 @@ function useSharedProgress() {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
 
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
-        p.targetLang
-      )
+      const targetLang = [
+        "nah",
+        "es",
+        "pt",
+        "en",
+        "fr",
+        "it",
+        "nl",
+        "ja",
+      ].includes(p.targetLang)
         ? p.targetLang
         : "es";
 
@@ -1549,10 +1556,10 @@ export default function StoryMode({
   if (isLoading) {
     return (
       <Box
-        minH="100vh"
-        // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
+      // minH="100vh"
+      // bg="linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%)"
       >
-        <Center h="100vh">
+        <Center>
           <VStack spacing={6}>
             <Text color="white" fontSize="xl" fontWeight="600">
               {uiText.generatingTitle}

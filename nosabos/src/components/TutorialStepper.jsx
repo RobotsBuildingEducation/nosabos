@@ -19,37 +19,57 @@ import {
 import { RiBook2Line, RiPencilLine } from "react-icons/ri";
 import { MdOutlineDescription } from "react-icons/md";
 
-// Module configuration with icons and colors
+// Module configuration with icons, colors, and descriptions
 const MODULE_CONFIG = {
   vocabulary: {
     icon: RiBook2Line,
     color: "#10B981",
     label: { en: "Vocabulary", es: "Vocabulario" },
     shortLabel: { en: "Vocab", es: "Vocab" },
+    description: {
+      en: "Learn new words through interactive questions.",
+      es: "Aprende nuevas palabras mediante preguntas interactivas.",
+    },
   },
   grammar: {
     icon: RiPencilLine,
     color: "#3B82F6",
     label: { en: "Grammar", es: "Gramática" },
     shortLabel: { en: "Grammar", es: "Gram" },
+    description: {
+      en: "Master grammar rules through exercises.",
+      es: "Domina las reglas gramaticales mediante ejercicios.",
+    },
   },
   reading: {
     icon: FaBookOpen,
     color: "#F59E0B",
     label: { en: "Reading", es: "Lectura" },
     shortLabel: { en: "Read", es: "Leer" },
+    description: {
+      en: "Improve your reading skills by following along with passages.",
+      es: "Mejora tus habilidades de lectura siguiendo los textos.",
+    },
   },
   stories: {
     icon: MdOutlineDescription,
     color: "#EC4899",
     label: { en: "Stories", es: "Historias" },
     shortLabel: { en: "Story", es: "Historia" },
+    description: {
+      en: "Practice with interactive stories by reading and speaking sentence by sentence.",
+      es: "Practica con historias interactivas leyendo y hablando oración por oración.",
+    },
   },
   realtime: {
     icon: FaMicrophone,
     color: "#8B5CF6",
     label: { en: "Chat", es: "Chat" },
     shortLabel: { en: "Chat", es: "Hablar" },
+    description: {
+      en: "Practice speaking with realtime conversations.",
+      es: "Practica la expresión oral con conversaciones en tiempo real.",
+    },
   },
 };
 
@@ -58,13 +78,34 @@ export default function TutorialStepper({
   currentModule,
   completedModules = [],
   lang = "en",
+  supportLang = "en",
   tutorialDescription = null,
 }) {
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const currentIndex = modules.indexOf(currentModule);
+  // Ensure currentModule is valid, fallback to first module if not
+  const validModule = MODULE_CONFIG[currentModule] ? currentModule : modules[0];
+  const currentIndex = modules.indexOf(validModule);
+  const currentConfig = MODULE_CONFIG[validModule];
+
+  // Get description: prefer passed tutorialDescription, fall back to built-in
+  const getDescription = () => {
+    if (tutorialDescription) {
+      return typeof tutorialDescription === "object"
+        ? tutorialDescription[supportLang] || tutorialDescription.en
+        : tutorialDescription;
+    }
+    if (currentConfig?.description) {
+      return (
+        currentConfig.description[supportLang] || currentConfig.description.en
+      );
+    }
+    return null;
+  };
+
+  const description = getDescription();
 
   return (
-    <VStack spacing={4} w="100%" mb={6}>
+    <VStack spacing={4} w="100%" mb={2}>
       {/* Stepper Progress */}
       <Box w="100%" px={2}>
         <HStack
@@ -78,7 +119,7 @@ export default function TutorialStepper({
             const config = MODULE_CONFIG[module];
             const Icon = config?.icon || FaBook;
             const isCompleted = completedModules.includes(module);
-            const isCurrent = module === currentModule;
+            const isCurrent = module === validModule;
             const isPending = !isCompleted && !isCurrent;
 
             return (
@@ -160,42 +201,41 @@ export default function TutorialStepper({
         </HStack>
       </Box>
 
-      {/* Current Module Description */}
-      {tutorialDescription && (
+      {/* Current Module Description - always show when currentConfig exists */}
+      {currentConfig && (
         <Box
           w="100%"
           maxWidth="600px"
-          bg="whiteAlpha.100"
+          mx="auto"
+          bg="rgba(30, 41, 59, 0.9)"
           borderRadius="xl"
           p={4}
-          borderWidth="1px"
-          borderColor="whiteAlpha.200"
+          borderWidth="2px"
+          borderColor={currentConfig.color}
+          zIndex="10"
         >
           <Flex align="center" gap={3}>
-            {MODULE_CONFIG[currentModule] && (
-              <Circle
-                size="40px"
-                bg={`${MODULE_CONFIG[currentModule].color}20`}
-                flexShrink={0}
-              >
-                {React.createElement(MODULE_CONFIG[currentModule].icon, {
-                  size: 20,
-                  color: MODULE_CONFIG[currentModule].color,
-                })}
-              </Circle>
-            )}
+            <Circle size="40px" bg={`${currentConfig.color}30`} flexShrink={0}>
+              {React.createElement(currentConfig.icon, {
+                size: 20,
+                color: currentConfig.color,
+              })}
+            </Circle>
             <VStack align="start" spacing={0}>
               <Text
                 fontSize="sm"
                 fontWeight="bold"
-                color={MODULE_CONFIG[currentModule]?.color || "white"}
+                color={currentConfig.color || "white"}
               >
-                {MODULE_CONFIG[currentModule]?.label?.[lang] || currentModule}
+                {currentConfig.label?.[supportLang] ||
+                  currentConfig.label?.en ||
+                  validModule}
               </Text>
-              <Text fontSize="sm" color="whiteAlpha.800" lineHeight="1.4">
-                {typeof tutorialDescription === "object"
-                  ? tutorialDescription[lang] || tutorialDescription.en
-                  : tutorialDescription}
+              <Text fontSize="sm" color="gray.300" lineHeight="1.4">
+                {description ||
+                  currentConfig.description?.[supportLang] ||
+                  currentConfig.description?.en ||
+                  "No description available"}
               </Text>
             </VStack>
           </Flex>
