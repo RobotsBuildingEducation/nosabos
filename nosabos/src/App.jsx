@@ -528,6 +528,18 @@ function TopBar({
     [onPatchSettings, toast, appLanguage]
   );
 
+  // Debounced persist for text inputs (voicePersona, helpRequest)
+  const debounceRef = useRef(null);
+  const debouncedPersist = useCallback(
+    (partial, delay = 400) => {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = setTimeout(() => {
+        persistSettings(partial);
+      }, delay);
+    },
+    [persistSettings]
+  );
+
   useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
   useEffect(() => setCurrentSecret(activeNsec || ""), [activeNsec]);
 
@@ -912,7 +924,7 @@ function TopBar({
                     onChange={(e) => {
                       const next = e.target.value.slice(0, 240);
                       setVoicePersona(next);
-                      persistSettings({ voicePersona: next });
+                      debouncedPersist({ voicePersona: next });
                     }}
                     bg="gray.700"
                     placeholder={
