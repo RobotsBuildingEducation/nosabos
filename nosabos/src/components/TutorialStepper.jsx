@@ -82,8 +82,10 @@ export default function TutorialStepper({
   tutorialDescription = null,
 }) {
   const isMobile = useBreakpointValue({ base: true, md: false });
-  const currentIndex = modules.indexOf(currentModule);
-  const currentConfig = MODULE_CONFIG[currentModule];
+  // Ensure currentModule is valid, fallback to first module if not
+  const validModule = MODULE_CONFIG[currentModule] ? currentModule : modules[0];
+  const currentIndex = modules.indexOf(validModule);
+  const currentConfig = MODULE_CONFIG[validModule];
 
   // Get description: prefer passed tutorialDescription, fall back to built-in
   const getDescription = () => {
@@ -115,7 +117,7 @@ export default function TutorialStepper({
             const config = MODULE_CONFIG[module];
             const Icon = config?.icon || FaBook;
             const isCompleted = completedModules.includes(module);
-            const isCurrent = module === currentModule;
+            const isCurrent = module === validModule;
             const isPending = !isCompleted && !isCurrent;
 
             return (
@@ -202,11 +204,12 @@ export default function TutorialStepper({
         <Box
           w="100%"
           maxWidth="600px"
-          bg="whiteAlpha.100"
+          mx="auto"
+          bg="whiteAlpha.150"
           borderRadius="xl"
           p={4}
           borderWidth="1px"
-          borderColor="whiteAlpha.200"
+          borderColor={`${currentConfig.color}40`}
         >
           <Flex align="center" gap={3}>
             <Circle
@@ -225,7 +228,7 @@ export default function TutorialStepper({
                 fontWeight="bold"
                 color={currentConfig.color || "white"}
               >
-                {currentConfig.label?.[supportLang] || currentConfig.label?.en || currentModule}
+                {currentConfig.label?.[supportLang] || currentConfig.label?.en || validModule}
               </Text>
               <Text fontSize="sm" color="whiteAlpha.800" lineHeight="1.4">
                 {description}
