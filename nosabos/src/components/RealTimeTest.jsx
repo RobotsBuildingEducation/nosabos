@@ -2102,6 +2102,8 @@ Return ONLY JSON:
           ? "Stem bijgewerkt."
           : targetLangRef.current === "ja"
           ? "音声を更新しました。"
+          : targetLangRef.current === "ru"
+          ? "Голос обновлён."
           : "Voice updated.";
       try {
         dcRef.current.send(

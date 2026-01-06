@@ -962,6 +962,7 @@ export default function GrammarBook({
       nl: t("language_nl"),
       nah: t("language_nah"),
       ja: t("language_ja"),
+      ru: t("language_ru"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);

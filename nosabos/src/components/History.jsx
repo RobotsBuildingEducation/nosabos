@@ -748,6 +748,7 @@ export default function History({
       nl: t("language_nl"),
       nah: t("language_nah"),
       ja: t("language_ja"),
+      ru: t("language_ru"),
     }[code] || code);
 
   const targetDisplay = localizedLangName(targetLang);
