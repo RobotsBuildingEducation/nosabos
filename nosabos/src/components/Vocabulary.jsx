@@ -1023,9 +1023,17 @@ export default function Vocabulary({
       : null;
 
   const level = progress.level || "beginner";
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja", "ru"].includes(
-    progress.targetLang
-  )
+  const targetLang = [
+    "en",
+    "es",
+    "pt",
+    "nah",
+    "fr",
+    "it",
+    "nl",
+    "ja",
+    "ru",
+  ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
   const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
