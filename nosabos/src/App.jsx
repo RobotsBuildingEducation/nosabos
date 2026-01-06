@@ -183,8 +183,6 @@ const TARGET_LANGUAGE_LABELS = {
   ru: "Russian",
   de: "German",
 };
-const JAPANESE_BETA_NPUB =
-  "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
 function extractJsonBlock(text = "") {
@@ -468,8 +466,8 @@ function TopBar({
       ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
       : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
 
-  // Check if Japanese should be visible (beta feature)
-  const showJapanese = activeNpub === JAPANESE_BETA_NPUB;
+  // Japanese is visible for everyone (beta label applied in UI)
+  const showJapanese = true;
 
   // Refill draft when store changes
   useEffect(() => {
@@ -868,8 +866,12 @@ function TopBar({
                         translations[appLanguage].onboarding_practice_fr}
                       {targetLang === "it" &&
                         translations[appLanguage].onboarding_practice_it}
-                      {targetLang === "ja" &&
-                        translations[appLanguage].onboarding_practice_ja}
+                      {targetLang === "ja" && (
+                        <>
+                          {translations[appLanguage].onboarding_practice_ja}{" "}
+                          (beta)
+                        </>
+                      )}
                       {targetLang === "nah" &&
                         translations[appLanguage].onboarding_practice_nah}
                       {targetLang === "pt" &&
@@ -909,7 +911,8 @@ function TopBar({
                         </MenuItemOption>
                         {showJapanese && (
                           <MenuItemOption value="ja">
-                            {translations[appLanguage].onboarding_practice_ja}
+                            {translations[appLanguage].onboarding_practice_ja}{" "}
+                            (beta)
                           </MenuItemOption>
                         )}
                         <MenuItemOption value="nah">

@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   SimpleGrid,
   VStack,
@@ -12,8 +12,9 @@ import {
 import { RUSSIAN_ALPHABET } from "../data/russianAlphabet";
 import { JAPANESE_ALPHABET } from "../data/japaneseAlphabet";
 import { FiVolume2 } from "react-icons/fi";
+import { getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 
-function LetterCard({ letter, onPlay }) {
+function LetterCard({ letter, onPlay, isPlaying }) {
   const typeColor = useMemo(() => {
     switch (letter.type) {
       case "vowel":
@@ -69,6 +70,7 @@ function LetterCard({ letter, onPlay }) {
             borderRadius="full"
             p={2}
             _hover={{ bg: "whiteAlpha.300" }}
+            color={isPlaying ? "teal.200" : "white"}
             onClick={() => onPlay(letter)}
           >
             <FiVolume2 />
@@ -90,6 +92,8 @@ const LANGUAGE_ALPHABETS = {
 
 export default function AlphabetBootcamp({ appLanguage = "en", targetLang }) {
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
+  const playerRef = useRef(null);
+  const [playingId, setPlayingId] = useState(null);
   const headline =
     appLanguage === "es"
       ? "Bootcamp de alfabeto"
@@ -103,6 +107,15 @@ export default function AlphabetBootcamp({ appLanguage = "en", targetLang }) {
       ? "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones."
       : "After this, switch to Path mode in the menu to explore lessons.";
   const hasLetters = Array.isArray(alphabet) && alphabet.length;
+
+  useEffect(() => {
+    return () => {
+      try {
+        playerRef.current?.audio?.pause?.();
+      } catch {}
+      playerRef.current?.cleanup?.();
+    };
+  }, []);
 
   return (
     <VStack align="stretch" spacing={4} w="100%" color="white">
@@ -127,11 +140,50 @@ export default function AlphabetBootcamp({ appLanguage = "en", targetLang }) {
             <LetterCard
               key={item.id}
               letter={item}
-              onPlay={(data) => {
-                if (!("speechSynthesis" in window)) return;
-                const utter = new SpeechSynthesisUtterance(data.letter);
-                utter.lang = targetLang === "ja" ? "ja-JP" : "ru-RU";
-                window.speechSynthesis.speak(utter);
+              isPlaying={playingId === item.id}
+              onPlay={async (data) => {
+                const text = (data?.tts || data?.letter || "").toString().trim();
+                if (!text) return;
+
+                // Toggle off if the same card is playing
+                if (playingId === data.id) {
+                  try {
+                    playerRef.current?.audio?.pause?.();
+                  } catch {}
+                  playerRef.current?.cleanup?.();
+                  setPlayingId(null);
+                  return;
+                }
+
+                // Stop any existing playback
+                try {
+                  playerRef.current?.audio?.pause?.();
+                } catch {}
+                playerRef.current?.cleanup?.();
+
+                try {
+                  const player = await getTTSPlayer({
+                    text,
+                    langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+                  });
+                  playerRef.current = player;
+                  setPlayingId(data.id);
+
+                  const audio = player.audio;
+                  audio.onended = () => {
+                    setPlayingId(null);
+                    player.cleanup?.();
+                  };
+                  audio.onerror = () => {
+                    setPlayingId(null);
+                    player.cleanup?.();
+                  };
+                  await player.ready;
+                  await audio.play();
+                } catch (err) {
+                  console.error("AlphabetBootcamp TTS failed", err);
+                  setPlayingId(null);
+                }
               }}
             />
           ))}
