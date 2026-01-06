@@ -1262,7 +1262,17 @@ export default function RealTimeTest({
     const cefrLvl = lessonData?.id ? extractCEFRLevel(lessonData.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
     const goalLangCode = supportLangRef.current || supportLang || "en";
-    const goalLangName = goalLangCode === "es" ? "Spanish" : "English";
+    const goalLangName = {
+      es: "Spanish",
+      en: "English",
+      pt: "Portuguese",
+      fr: "French",
+      it: "Italian",
+      nl: "Dutch",
+      nah: "Huastec Nahuatl",
+      ja: "Japanese",
+      ru: "Russian",
+    }[goalLangCode] || "English";
 
     // Check if this is an integrated practice lesson
     const isIntegratedPractice =
@@ -1460,7 +1470,17 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
     const cefrLvl = lesson?.id ? extractCEFRLevel(lesson.id) : "A1";
     const cefrHint = getCEFRPromptHint(cefrLvl);
     const goalLangCode = supportLangRef.current || supportLang || "en";
-    const goalLangName = goalLangCode === "es" ? "Spanish" : "English";
+    const goalLangName = {
+      es: "Spanish",
+      en: "English",
+      pt: "Portuguese",
+      fr: "French",
+      it: "Italian",
+      nl: "Dutch",
+      nah: "Huastec Nahuatl",
+      ja: "Japanese",
+      ru: "Russian",
+    }[goalLangCode] || "English";
 
     // Get current goal for context
     const currentScenario =
@@ -1921,6 +1941,9 @@ Return ONLY JSON:
     } else if (tLang === "ja") {
       strict =
         "日本語のみで応答してください。英語やスペイン語は使用しないでください。Respond ONLY in Japanese.";
+    } else if (tLang === "ru") {
+      strict =
+        "Отвечайте ТОЛЬКО на русском языке. Не используйте английский или испанский. Respond ONLY in Russian.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
