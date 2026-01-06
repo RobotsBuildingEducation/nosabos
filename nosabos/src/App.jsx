@@ -1933,7 +1933,7 @@ export default function App() {
         0,
         240
       ),
-      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
+      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
         partial.targetLang ?? prev.targetLang
       )
         ? partial.targetLang ?? prev.targetLang
@@ -2049,7 +2049,7 @@ export default function App() {
           translations[appLanguage]?.onboarding_persona_default_example ||
             translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
+        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
           payload.targetLang
         )
           ? payload.targetLang
