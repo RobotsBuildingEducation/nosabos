@@ -72,7 +72,8 @@ export const JAPANESE_ALPHABET = [
     soundEs: "'ka' con k suave, sin mucha aspiración",
     type: "consonant",
     tip: "Less puff than English; pair with が for voiced contrast.",
-    tipEs: "Menos aire que en inglés; compárala con が para notar la sonoridad.",
+    tipEs:
+      "Menos aire que en inglés; compárala con が para notar la sonoridad.",
     practiceWord: "かさ",
     practiceWordMeaning: { en: "umbrella", es: "paraguas" },
     tts: "か",
