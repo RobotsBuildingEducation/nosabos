@@ -330,20 +330,21 @@ function LetterCard({
     <Box
       position="relative"
       w="100%"
-      minH="200px"
+      minH={{ base: "320px", md: "340px" }}
       sx={{ perspective: "1000px" }}
     >
       <MotionBox
-        position="absolute"
         w="100%"
         h="100%"
+        display="grid"
+        gridTemplateColumns="1fr"
         style={{ transformStyle: "preserve-3d" }}
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.5, ease: "easeInOut" }}
       >
         {/* Front Side - Letter Info */}
         <VStack
-          position="absolute"
+          gridArea="1 / 1"
           w="100%"
           h="100%"
           align="flex-start"
@@ -418,7 +419,7 @@ function LetterCard({
 
         {/* Back Side - Practice Mode */}
         <VStack
-          position="absolute"
+          gridArea="1 / 1"
           w="100%"
           h="100%"
           align="center"
