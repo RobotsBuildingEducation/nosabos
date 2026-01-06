@@ -874,10 +874,13 @@ function TopBar({
                       {targetLang === "pt" &&
                         translations[appLanguage].onboarding_practice_pt}
                       {targetLang === "ru" && (
-                        <>{translations[appLanguage].onboarding_practice_ru} (beta)</>
+                        <>
+                          {translations[appLanguage].onboarding_practice_ru}{" "}
+                          (beta)
+                        </>
                       )}
                       {targetLang === "de" && (
-                        <>{translations[appLanguage].onboarding_practice_de} (beta)</>
+                        <>{translations[appLanguage].onboarding_practice_de} </>
                       )}
                       {targetLang === "es" &&
                         translations[appLanguage].onboarding_practice_es}
@@ -915,10 +918,11 @@ function TopBar({
                           {translations[appLanguage].onboarding_practice_pt}
                         </MenuItemOption>
                         <MenuItemOption value="ru">
-                          {translations[appLanguage].onboarding_practice_ru} (beta)
+                          {translations[appLanguage].onboarding_practice_ru}{" "}
+                          (beta)
                         </MenuItemOption>
                         <MenuItemOption value="de">
-                          {translations[appLanguage].onboarding_practice_de} (beta)
+                          {translations[appLanguage].onboarding_practice_de}{" "}
                         </MenuItemOption>
                         <MenuItemOption value="es">
                           {translations[appLanguage].onboarding_practice_es}
@@ -1942,9 +1946,18 @@ export default function App() {
         0,
         240
       ),
-      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de"].includes(
-        partial.targetLang ?? prev.targetLang
-      )
+      targetLang: [
+        "nah",
+        "es",
+        "pt",
+        "en",
+        "fr",
+        "it",
+        "nl",
+        "ja",
+        "ru",
+        "de",
+      ].includes(partial.targetLang ?? prev.targetLang)
         ? partial.targetLang ?? prev.targetLang
         : "es",
       showTranslations:
@@ -2058,9 +2071,18 @@ export default function App() {
           translations[appLanguage]?.onboarding_persona_default_example ||
             translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de"].includes(
-          payload.targetLang
-        )
+        targetLang: [
+          "nah",
+          "es",
+          "pt",
+          "en",
+          "fr",
+          "it",
+          "nl",
+          "ja",
+          "ru",
+          "de",
+        ].includes(payload.targetLang)
           ? payload.targetLang
           : "es",
         pauseMs: typeof payload.pauseMs === "number" ? payload.pauseMs : 800,
