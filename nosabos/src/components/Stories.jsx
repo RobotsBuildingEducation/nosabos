@@ -208,6 +208,7 @@ function useSharedProgress() {
         "it",
         "nl",
         "ja",
+        "ru",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";

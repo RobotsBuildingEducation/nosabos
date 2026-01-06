@@ -709,7 +709,7 @@ export default function History({
   const { xp, levelNumber, progressPct, progress, npub, isLoading } =
     useSharedProgress();
 
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja"].includes(
+  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja", "ru"].includes(
     progress.targetLang
   )
     ? progress.targetLang
