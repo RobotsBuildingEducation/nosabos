@@ -14,7 +14,7 @@ import { JAPANESE_ALPHABET } from "../data/japaneseAlphabet";
 import { FiVolume2 } from "react-icons/fi";
 import { getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 
-function LetterCard({ letter, onPlay, isPlaying }) {
+function LetterCard({ letter, onPlay, isPlaying, appLanguage }) {
   const typeColor = useMemo(() => {
     switch (letter.type) {
       case "vowel":
@@ -27,6 +27,18 @@ function LetterCard({ letter, onPlay, isPlaying }) {
         return "gray";
     }
   }, [letter.type]);
+
+  const typeLabel =
+    appLanguage === "es"
+      ? letter.type === "vowel"
+        ? "Vocal"
+        : letter.type === "consonant"
+        ? "Consonante"
+        : "Signo"
+      : letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
+
+  const sound = appLanguage === "es" ? letter.soundEs || letter.sound : letter.sound;
+  const tip = appLanguage === "es" ? letter.tipEs || letter.tip : letter.tip;
 
   return (
     <VStack
@@ -41,7 +53,7 @@ function LetterCard({ letter, onPlay, isPlaying }) {
       color="white"
     >
       <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
-        {letter.type.charAt(0).toUpperCase() + letter.type.slice(1)}
+        {typeLabel}
       </Badge>
       <Flex
         align="center"
@@ -77,9 +89,9 @@ function LetterCard({ letter, onPlay, isPlaying }) {
           </Flex>
         )}
       </Flex>
-      <Text color="whiteAlpha.900">{letter.sound}</Text>
+      <Text color="whiteAlpha.900">{sound}</Text>
       <Text fontSize="sm" color="whiteAlpha.800">
-        {letter.tip}
+        {tip}
       </Text>
     </VStack>
   );
@@ -140,6 +152,7 @@ export default function AlphabetBootcamp({ appLanguage = "en", targetLang }) {
             <LetterCard
               key={item.id}
               letter={item}
+              appLanguage={appLanguage}
               isPlaying={playingId === item.id}
               onPlay={async (data) => {
                 const text = (data?.tts || data?.letter || "").toString().trim();
