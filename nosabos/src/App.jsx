@@ -3897,6 +3897,8 @@ export default function App() {
             <AlphabetBootcamp
               appLanguage={appLanguage}
               targetLang={resolvedTargetLang}
+              npub={activeNpub}
+              languageXp={userProgress?.totalXp || 0}
             />
           ) : (
             <SkillTree
