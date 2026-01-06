@@ -112,13 +112,14 @@ function LANG_NAME(code) {
     fr: "French",
     it: "Italian",
     nl: "Dutch",
+    ru: "Russian",
   };
   return map[code] || code;
 }
 
 function resolveSupportLang(support, appUILang) {
   if (!support || support === "auto") return appUILang === "es" ? "es" : "en";
-  return ["en", "es", "pt", "fr", "it", "nl", "nah"].includes(support)
+  return ["en", "es", "pt", "fr", "it", "nl", "nah", "ru"].includes(support)
     ? support
     : "en";
 }
@@ -171,7 +172,7 @@ export default function LessonGroupQuiz({
       if (!snap.exists()) return;
       const data = snap.data();
       const prog = data.progress || {};
-      const tLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
+      const tLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
         prog.targetLang
       )
         ? prog.targetLang

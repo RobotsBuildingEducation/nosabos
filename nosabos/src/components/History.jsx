@@ -162,6 +162,7 @@ const LANG_NAME = (code) =>
     it: "Italian",
     nl: "Dutch",
     nah: "Huastec Nahuatl",
+    ru: "Russian",
   }[code] || code);
 
 const LANGUAGE_LABELS = {
@@ -177,6 +178,7 @@ const LANGUAGE_LABELS = {
   it: ["Italian", "Italiano"],
   nl: ["Dutch", "Holandés", "Nederlands"],
   nah: ["Huastec Nahuatl", "Náhuatl huasteco"],
+  ru: ["Russian", "Ruso"],
 };
 
 const GENERIC_LANGUAGE_PREFIXES = [
@@ -304,7 +306,7 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
         p.targetLang
       )
         ? p.targetLang
@@ -707,7 +709,7 @@ export default function History({
   const { xp, levelNumber, progressPct, progress, npub, isLoading } =
     useSharedProgress();
 
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja"].includes(
+  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja", "ru"].includes(
     progress.targetLang
   )
     ? progress.targetLang
@@ -746,6 +748,7 @@ export default function History({
       nl: t("language_nl"),
       nah: t("language_nah"),
       ja: t("language_ja"),
+      ru: t("language_ru"),
     }[code] || code);
 
   const targetDisplay = localizedLangName(targetLang);

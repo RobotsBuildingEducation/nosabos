@@ -281,6 +281,7 @@ const HelpChatFab = forwardRef(
           it: "Italian (italiano)",
           nl: "Dutch (Nederlands)",
           nah: "Huastec Nahuatl (náhuatl huasteco)",
+          ru: "Russian (русский)",
         }[code] || code);
 
       const strict =
@@ -583,6 +584,7 @@ const HelpChatFab = forwardRef(
           it: "Italian",
           nl: "Dutch",
           nah: "Huastec Nahuatl",
+          ru: "Russian",
         }[code] || code);
 
       const levelHint =

@@ -161,6 +161,7 @@ const LANG_NAME = (code) =>
     it: "Italian",
     nl: "Dutch",
     nah: "Huastec Nahuatl",
+    ru: "Russian",
   }[code] || code);
 
 const strongNpub = (user) =>
@@ -193,7 +194,7 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
         p.targetLang
       )
         ? p.targetLang
@@ -935,7 +936,7 @@ export default function GrammarBook({
       : null;
 
   const level = progress.level || "beginner";
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja"].includes(
+  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja", "ru"].includes(
     progress.targetLang
   )
     ? progress.targetLang
@@ -961,6 +962,7 @@ export default function GrammarBook({
       nl: t("language_nl"),
       nah: t("language_nah"),
       ja: t("language_ja"),
+      ru: t("language_ru"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);

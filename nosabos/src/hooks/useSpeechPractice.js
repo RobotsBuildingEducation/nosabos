@@ -13,6 +13,7 @@ const BCP47 = {
   it: "it-IT",
   nl: "nl-NL",
   nah: "es-ES",
+  ru: "ru-RU",
 };
 
 function makeError(code, message) {

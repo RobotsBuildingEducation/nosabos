@@ -87,6 +87,7 @@ const LLM_LANG_NAME = (codeOrName) => {
     return "Dutch";
   if (m === "nah" || m === "nahuatl" || m === "huastec nahuatl")
     return "Huastec Nahuatl";
+  if (m === "ru" || m === "russian" || m === "русский") return "Russian";
   return capName(m);
 };
 
@@ -106,6 +107,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "it") return "it-IT";
   if (m === "nl") return "nl-NL";
   if (m === "nah") return "es-ES"; // fallback
+  if (m === "ru") return "ru-RU";
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
   return fallback;
@@ -126,6 +128,7 @@ const toLangKey = (value) => {
     return "nl";
   if (["nah", "nahuatl", "náhuatl", "huastec nahuatl", "náhuatl huasteco"].includes(raw))
     return "nah";
+  if (["ru", "russian", "ruso", "русский"].includes(raw)) return "ru";
   return null;
 };
 
@@ -168,7 +171,7 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
         p.targetLang
       )
         ? p.targetLang
