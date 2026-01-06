@@ -1272,12 +1272,14 @@ export default function App() {
   });
   const [activeLesson, setActiveLesson] = useState(null);
 
+  const ALPHABET_LANGS = ["ru", "ja"];
+
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
   const [pathMode, setPathMode] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("pathMode") || "path";
     }
-    return resolvedTargetLang === "ru" ? "alphabet" : "path";
+    return ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path";
   });
   const lastPathTargetRef = useRef(resolvedTargetLang);
 
@@ -1294,16 +1296,16 @@ export default function App() {
     }
   }, [pathMode]);
 
-  // Ensure Russian defaults to alphabet bootcamp on language switch; others fall back to path
+  // Ensure alphabet languages default to bootcamp on language switch; others fall back to path
   useEffect(() => {
     const validModes = ["alphabet", "path", "flashcards", "conversations"];
     if (!validModes.includes(pathMode)) {
-      setPathMode(resolvedTargetLang === "ru" ? "alphabet" : "path");
+      setPathMode(ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path");
       return;
     }
 
     if (lastPathTargetRef.current !== resolvedTargetLang) {
-      if (resolvedTargetLang === "ru") {
+      if (ALPHABET_LANGS.includes(resolvedTargetLang)) {
         setPathMode("alphabet");
       } else if (pathMode === "alphabet") {
         setPathMode("path");
@@ -1319,7 +1321,7 @@ export default function App() {
   const [showTutorialPopovers, setShowTutorialPopovers] = useState(false);
   const tutorialPopoverShownRef = useRef(false);
   const showAlphabetBootcamp =
-    resolvedTargetLang === "ru" && pathMode === "alphabet";
+    ALPHABET_LANGS.includes(resolvedTargetLang) && pathMode === "alphabet";
 
   // Skill tree tutorial state (shows on first login)
   const [showSkillTreeTutorial, setShowSkillTreeTutorial] = useState(false);
@@ -3889,7 +3891,10 @@ export default function App() {
               <RobotBuddyPro state="thinking" />
             </Box>
           ) : showAlphabetBootcamp ? (
-            <AlphabetBootcamp appLanguage={appLanguage} />
+            <AlphabetBootcamp
+              appLanguage={appLanguage}
+              targetLang={resolvedTargetLang}
+            />
           ) : (
             <SkillTree
               targetLang={resolvedTargetLang}
@@ -4527,8 +4532,9 @@ function BottomActionBar({
   const backLabel = appLanguage === "es" ? "Volver" : "Go back";
 
   // Path mode configuration
+  const ALPHABET_LANGS = ["ru", "ja"];
   const PATH_MODES = [
-    ...(targetLang === "ru"
+    ...(ALPHABET_LANGS.includes(targetLang)
       ? [
           {
             id: "alphabet",

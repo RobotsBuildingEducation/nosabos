@@ -10,8 +10,10 @@ import {
   Flex,
 } from "@chakra-ui/react";
 import { RUSSIAN_ALPHABET } from "../data/russianAlphabet";
+import { JAPANESE_ALPHABET } from "../data/japaneseAlphabet";
+import { FiVolume2 } from "react-icons/fi";
 
-function LetterCard({ letter }) {
+function LetterCard({ letter, onPlay }) {
   const typeColor = useMemo(() => {
     switch (letter.type) {
       case "vowel":
@@ -40,12 +42,39 @@ function LetterCard({ letter }) {
       <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
         {letter.type.charAt(0).toUpperCase() + letter.type.slice(1)}
       </Badge>
-      <Text fontSize="2xl" fontWeight="bold">
-        {letter.letter}
-      </Text>
-      <Text fontSize="lg" fontWeight="semibold">
-        {letter.name}
-      </Text>
+      <Flex
+        align="center"
+        justify="space-between"
+        w="100%"
+        gap={3}
+        minH="48px"
+      >
+        <VStack spacing={1} align="flex-start">
+          <Text fontSize="2xl" fontWeight="bold">
+            {letter.letter}
+          </Text>
+          <Text fontSize="lg" fontWeight="semibold">
+            {letter.name}
+          </Text>
+        </VStack>
+        {onPlay && (
+          <Flex
+            as="button"
+            aria-label="Play sound"
+            align="center"
+            justify="center"
+            bg="whiteAlpha.200"
+            border="1px solid"
+            borderColor="whiteAlpha.400"
+            borderRadius="full"
+            p={2}
+            _hover={{ bg: "whiteAlpha.300" }}
+            onClick={() => onPlay(letter)}
+          >
+            <FiVolume2 />
+          </Flex>
+        )}
+      </Flex>
       <Text color="whiteAlpha.900">{letter.sound}</Text>
       <Text fontSize="sm" color="whiteAlpha.800">
         {letter.tip}
@@ -54,11 +83,17 @@ function LetterCard({ letter }) {
   );
 }
 
-export default function AlphabetBootcamp({ appLanguage = "en" }) {
+const LANGUAGE_ALPHABETS = {
+  ru: RUSSIAN_ALPHABET,
+  ja: JAPANESE_ALPHABET,
+};
+
+export default function AlphabetBootcamp({ appLanguage = "en", targetLang }) {
+  const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const headline =
     appLanguage === "es"
-      ? "Bootcamp de alfabeto ruso"
-      : "Russian Alphabet Bootcamp";
+      ? "Bootcamp de alfabeto"
+      : "Alphabet Bootcamp";
   const subhead =
     appLanguage === "es"
       ? "Empieza aquí antes de entrar al árbol de habilidades."
@@ -67,7 +102,7 @@ export default function AlphabetBootcamp({ appLanguage = "en" }) {
     appLanguage === "es"
       ? "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones."
       : "After this, switch to Path mode in the menu to explore lessons.";
-  const hasLetters = Array.isArray(RUSSIAN_ALPHABET) && RUSSIAN_ALPHABET.length;
+  const hasLetters = Array.isArray(alphabet) && alphabet.length;
 
   return (
     <VStack align="stretch" spacing={4} w="100%" color="white">
@@ -81,9 +116,24 @@ export default function AlphabetBootcamp({ appLanguage = "en" }) {
       </Alert>
 
       {hasLetters ? (
-        <SimpleGrid columns={{ base: 1, sm: 2, md: 3 }} spacing={4} mt={2}>
-          {RUSSIAN_ALPHABET.map((item) => (
-            <LetterCard key={item.id} letter={item} />
+        <SimpleGrid
+          columns={{ base: 1, sm: 2, md: 3 }}
+          spacing={4}
+          mt={2}
+          zIndex={10}
+          position="relative"
+        >
+          {alphabet.map((item) => (
+            <LetterCard
+              key={item.id}
+              letter={item}
+              onPlay={(data) => {
+                if (!("speechSynthesis" in window)) return;
+                const utter = new SpeechSynthesisUtterance(data.letter);
+                utter.lang = targetLang === "ja" ? "ja-JP" : "ru-RU";
+                window.speechSynthesis.speak(utter);
+              }}
+            />
           ))}
         </SimpleGrid>
       ) : (
