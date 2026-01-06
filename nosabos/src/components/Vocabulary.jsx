@@ -163,6 +163,7 @@ const LANG_NAME = (code) =>
     nl: "Dutch",
     nah: "Huastec Nahuatl",
     ru: "Russian",
+    de: "German",
   }[code] || code);
 
 const strongNpub = (user) =>
@@ -205,6 +206,7 @@ function useSharedProgress() {
         "nl",
         "ja",
         "ru",
+        "de",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
@@ -1033,6 +1035,7 @@ export default function Vocabulary({
     "nl",
     "ja",
     "ru",
+    "de",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
@@ -1058,6 +1061,7 @@ export default function Vocabulary({
       nah: t("language_nah"),
       ja: t("language_ja"),
       ru: t("language_ru"),
+      de: t("language_de"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);

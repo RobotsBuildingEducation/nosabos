@@ -16,6 +16,7 @@ export const TTS_LANG_TAG = {
   nl: "nl-NL",
   nah: "es-MX",
   ru: "ru-RU",
+  de: "de-DE",
 };
 
 export const DEFAULT_TTS_VOICE = "alloy";

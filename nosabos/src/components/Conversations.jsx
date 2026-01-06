@@ -750,6 +750,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       return translations[uiLang].language_nah || "Huastec Nahuatl";
     if (code === "ja") return translations[uiLang].language_ja || "Japanese";
     if (code === "ru") return translations[uiLang].language_ru || "Russian";
+    if (code === "de") return translations[uiLang].language_de || "German";
     return code;
   };
 
@@ -1130,6 +1131,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } else if (tLang === "ru") {
       strict =
         "Отвечайте ТОЛЬКО на русском языке. Не используйте английский или испанский. Respond ONLY in Russian.";
+    } else if (tLang === "de") {
+      strict =
+        "Antworten Sie NUR auf Deutsch. Verwenden Sie kein Englisch oder Spanisch. Respond ONLY in German.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
@@ -1229,6 +1233,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           ? "Japanese"
           : tLang === "ru"
           ? "Russian"
+          : tLang === "de"
+          ? "German"
           : "English";
       const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 
