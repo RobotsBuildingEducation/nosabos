@@ -871,6 +871,8 @@ function TopBar({
                         translations[appLanguage].onboarding_practice_nah}
                       {targetLang === "pt" &&
                         translations[appLanguage].onboarding_practice_pt}
+                      {targetLang === "ru" &&
+                        translations[appLanguage].onboarding_practice_ru}
                       {targetLang === "es" &&
                         translations[appLanguage].onboarding_practice_es}
                     </MenuButton>
@@ -905,6 +907,9 @@ function TopBar({
                         </MenuItemOption>
                         <MenuItemOption value="pt">
                           {translations[appLanguage].onboarding_practice_pt}
+                        </MenuItemOption>
+                        <MenuItemOption value="ru">
+                          {translations[appLanguage].onboarding_practice_ru}
                         </MenuItemOption>
                         <MenuItemOption value="es">
                           {translations[appLanguage].onboarding_practice_es}
