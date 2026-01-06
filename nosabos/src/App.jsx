@@ -179,6 +179,7 @@ const TARGET_LANGUAGE_LABELS = {
   nl: "Dutch",
   nah: "Huastec Nahuatl",
   ja: "Japanese",
+  ru: "Russian",
 };
 const JAPANESE_BETA_NPUB =
   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
@@ -871,8 +872,9 @@ function TopBar({
                         translations[appLanguage].onboarding_practice_nah}
                       {targetLang === "pt" &&
                         translations[appLanguage].onboarding_practice_pt}
-                      {targetLang === "ru" &&
-                        translations[appLanguage].onboarding_practice_ru}
+                      {targetLang === "ru" && (
+                        <>{translations[appLanguage].onboarding_practice_ru} (beta)</>
+                      )}
                       {targetLang === "es" &&
                         translations[appLanguage].onboarding_practice_es}
                     </MenuButton>
@@ -909,7 +911,7 @@ function TopBar({
                           {translations[appLanguage].onboarding_practice_pt}
                         </MenuItemOption>
                         <MenuItemOption value="ru">
-                          {translations[appLanguage].onboarding_practice_ru}
+                          {translations[appLanguage].onboarding_practice_ru} (beta)
                         </MenuItemOption>
                         <MenuItemOption value="es">
                           {translations[appLanguage].onboarding_practice_es}

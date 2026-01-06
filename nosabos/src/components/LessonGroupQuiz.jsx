@@ -112,13 +112,14 @@ function LANG_NAME(code) {
     fr: "French",
     it: "Italian",
     nl: "Dutch",
+    ru: "Russian",
   };
   return map[code] || code;
 }
 
 function resolveSupportLang(support, appUILang) {
   if (!support || support === "auto") return appUILang === "es" ? "es" : "en";
-  return ["en", "es", "pt", "fr", "it", "nl", "nah"].includes(support)
+  return ["en", "es", "pt", "fr", "it", "nl", "nah", "ru"].includes(support)
     ? support
     : "en";
 }

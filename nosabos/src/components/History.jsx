@@ -162,6 +162,7 @@ const LANG_NAME = (code) =>
     it: "Italian",
     nl: "Dutch",
     nah: "Huastec Nahuatl",
+    ru: "Russian",
   }[code] || code);
 
 const LANGUAGE_LABELS = {
@@ -177,6 +178,7 @@ const LANGUAGE_LABELS = {
   it: ["Italian", "Italiano"],
   nl: ["Dutch", "Holandés", "Nederlands"],
   nah: ["Huastec Nahuatl", "Náhuatl huasteco"],
+  ru: ["Russian", "Ruso"],
 };
 
 const GENERIC_LANGUAGE_PREFIXES = [
