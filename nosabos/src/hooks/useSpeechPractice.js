@@ -15,6 +15,7 @@ const BCP47 = {
   nah: "es-ES",
   ru: "ru-RU",
   de: "de-DE",
+  ja: "ja-JP",
 };
 
 function makeError(code, message) {
@@ -133,24 +134,36 @@ export function useSpeechPractice({
         stream.getTracks().forEach((t) => t.stop());
       } catch {}
       if (!evalRef.current.speechDone) {
-        try {
-          const blob = new Blob(chunks, { type: "audio/webm" });
-          const metrics = await computeAudioMetricsFromBlob(blob);
+        // If we have a transcript from speech recognition, use it (manual stop case)
+        if (finalTranscript) {
+          evalRef.current.speechDone = true;
           await report({
-            recognizedText: "",
-            confidence: 0,
-            audioMetrics: metrics,
-            method: "audio-fallback",
-          });
-        } catch (err) {
-          onResult?.({
-            evaluation: null,
-            recognizedText: "",
-            confidence: 0,
+            recognizedText: finalTranscript,
+            confidence: finalConfidence,
             audioMetrics: null,
-            method: "audio-fallback",
-            error: err,
+            method: "manual-stop",
           });
+        } else {
+          // Fall back to audio metrics only if no transcript
+          try {
+            const blob = new Blob(chunks, { type: "audio/webm" });
+            const metrics = await computeAudioMetricsFromBlob(blob);
+            await report({
+              recognizedText: "",
+              confidence: 0,
+              audioMetrics: metrics,
+              method: "audio-fallback",
+            });
+          } catch (err) {
+            onResult?.({
+              evaluation: null,
+              recognizedText: "",
+              confidence: 0,
+              audioMetrics: null,
+              method: "audio-fallback",
+              error: err,
+            });
+          }
         }
       }
       if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
