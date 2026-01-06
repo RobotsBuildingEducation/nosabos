@@ -118,6 +118,7 @@ import IdentityDrawer from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
+import AlphabetBootcamp from "./components/AlphabetBootcamp";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import NotesDrawer from "./components/NotesDrawer";
 import useNotesStore from "./hooks/useNotesStore";
@@ -1271,13 +1272,14 @@ export default function App() {
   });
   const [activeLesson, setActiveLesson] = useState(null);
 
-  // Path mode state (path, flashcards, conversations)
+  // Path mode state (path, flashcards, conversations, alphabet bootcamp)
   const [pathMode, setPathMode] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("pathMode") || "path";
     }
-    return "path";
+    return resolvedTargetLang === "ru" ? "alphabet" : "path";
   });
+  const lastPathTargetRef = useRef(resolvedTargetLang);
 
   // Ref to trigger scroll to latest unlocked lesson
   const scrollToLatestUnlockedRef = useRef(null);
@@ -1292,11 +1294,32 @@ export default function App() {
     }
   }, [pathMode]);
 
+  // Ensure Russian defaults to alphabet bootcamp on language switch; others fall back to path
+  useEffect(() => {
+    const validModes = ["alphabet", "path", "flashcards", "conversations"];
+    if (!validModes.includes(pathMode)) {
+      setPathMode(resolvedTargetLang === "ru" ? "alphabet" : "path");
+      return;
+    }
+
+    if (lastPathTargetRef.current !== resolvedTargetLang) {
+      if (resolvedTargetLang === "ru") {
+        setPathMode("alphabet");
+      } else if (pathMode === "alphabet") {
+        setPathMode("path");
+      }
+    }
+
+    lastPathTargetRef.current = resolvedTargetLang;
+  }, [pathMode, resolvedTargetLang]);
+
   // Tutorial mode state
   const [isTutorialMode, setIsTutorialMode] = useState(false);
   const [tutorialCompletedModules, setTutorialCompletedModules] = useState([]);
   const [showTutorialPopovers, setShowTutorialPopovers] = useState(false);
   const tutorialPopoverShownRef = useRef(false);
+  const showAlphabetBootcamp =
+    resolvedTargetLang === "ru" && pathMode === "alphabet";
 
   // Skill tree tutorial state (shows on first login)
   const [showSkillTreeTutorial, setShowSkillTreeTutorial] = useState(false);
@@ -3814,6 +3837,7 @@ export default function App() {
         onToggleTranslations={handleToggleTranslations}
         translationLabel={translationToggleLabel}
         appLanguage={appLanguage}
+        targetLang={resolvedTargetLang}
         viewMode={viewMode}
         onNavigateToSkillTree={handleReturnToSkillTree}
         onOpenHelpChat={helpChatDisclosure.onOpen}
@@ -3827,8 +3851,12 @@ export default function App() {
           if (newMode === "path" && viewMode === "skillTree") {
             setScrollToLatestTrigger((prev) => prev + 1);
           }
-          // Scroll to top when switching to flashcards or conversations
-          if (newMode === "flashcards" || newMode === "conversations") {
+          // Scroll to top when switching to flashcards, conversations, or alphabet bootcamp
+          if (
+            newMode === "flashcards" ||
+            newMode === "conversations" ||
+            newMode === "alphabet"
+          ) {
             window.scrollTo({ top: 0, behavior: "instant" });
           }
         }}
@@ -3860,6 +3888,8 @@ export default function App() {
             >
               <RobotBuddyPro state="thinking" />
             </Box>
+          ) : showAlphabetBootcamp ? (
+            <AlphabetBootcamp appLanguage={appLanguage} />
           ) : (
             <SkillTree
               targetLang={resolvedTargetLang}
@@ -4473,6 +4503,7 @@ function BottomActionBar({
   onToggleTranslations,
   translationLabel,
   appLanguage = "en",
+  targetLang = "es",
   onNavigateToSkillTree,
   viewMode,
   onOpenHelpChat,
@@ -4497,6 +4528,15 @@ function BottomActionBar({
 
   // Path mode configuration
   const PATH_MODES = [
+    ...(targetLang === "ru"
+      ? [
+          {
+            id: "alphabet",
+            label: appLanguage === "es" ? "Alfabeto" : "Alphabet",
+            icon: LuLanguages,
+          },
+        ]
+      : []),
     {
       id: "path",
       label: appLanguage === "es" ? "Ruta" : "Path",
