@@ -3899,6 +3899,7 @@ export default function App() {
               targetLang={resolvedTargetLang}
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
+              pauseMs={user?.progress?.pauseMs}
             />
           ) : (
             <SkillTree

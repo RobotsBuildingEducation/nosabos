@@ -98,10 +98,10 @@ function LetterCard({
   targetLang,
   npub,
   onXpAwarded,
+  pauseMs = 2000,
 }) {
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
@@ -137,13 +137,11 @@ function LetterCard({
   const tip = appLanguage === "es" ? letter.tipEs || letter.tip : letter.tip;
   const practiceWordMeaning = letter.practiceWordMeaning?.[appLanguage === "es" ? "es" : "en"] || "";
 
-  // Speech practice hook
-  const { startRecording, stopRecording, supportsSpeech } = useSpeechPractice({
+  // Speech practice hook - use hook's isRecording state
+  const { startRecording, stopRecording, isRecording, supportsSpeech } = useSpeechPractice({
     targetText: letter.practiceWord || "placeholder",
     targetLang: targetLang,
     onResult: ({ recognizedText: text, error }) => {
-      setIsRecording(false);
-
       if (error) {
         toast({
           title: appLanguage === "es" ? "Error de grabación" : "Recording error",
@@ -163,7 +161,7 @@ function LetterCard({
         checkAnswerWithAI(recognized);
       }
     },
-    timeoutMs: 2000,
+    timeoutMs: pauseMs,
   });
 
   const checkAnswerWithAI = async (answer) => {
@@ -239,20 +237,18 @@ function LetterCard({
   const handleRecord = async () => {
     if (isRecording) {
       stopRecording();
-      setIsRecording(false);
       return;
     }
 
+    // Clear previous results
     setShowResult(false);
     setRecognizedText("");
     setIsCorrect(false);
     setXpAwarded(0);
 
     try {
-      setIsRecording(true);
       await startRecording();
     } catch (err) {
-      setIsRecording(false);
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
@@ -560,6 +556,7 @@ export default function AlphabetBootcamp({
   targetLang,
   npub,
   languageXp = 0,
+  pauseMs = 2000,
 }) {
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const playerRef = useRef(null);
@@ -657,6 +654,7 @@ export default function AlphabetBootcamp({
               appLanguage={appLanguage}
               targetLang={targetLang}
               npub={npub}
+              pauseMs={pauseMs}
               onXpAwarded={handleXpAwarded}
               isPlaying={playingId === item.id}
               onPlay={async (data) => {
