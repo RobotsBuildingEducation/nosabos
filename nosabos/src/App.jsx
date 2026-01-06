@@ -180,6 +180,7 @@ const TARGET_LANGUAGE_LABELS = {
   nah: "Huastec Nahuatl",
   ja: "Japanese",
   ru: "Russian",
+  de: "German",
 };
 const JAPANESE_BETA_NPUB =
   "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
@@ -875,6 +876,9 @@ function TopBar({
                       {targetLang === "ru" && (
                         <>{translations[appLanguage].onboarding_practice_ru} (beta)</>
                       )}
+                      {targetLang === "de" && (
+                        <>{translations[appLanguage].onboarding_practice_de} (beta)</>
+                      )}
                       {targetLang === "es" &&
                         translations[appLanguage].onboarding_practice_es}
                     </MenuButton>
@@ -912,6 +916,9 @@ function TopBar({
                         </MenuItemOption>
                         <MenuItemOption value="ru">
                           {translations[appLanguage].onboarding_practice_ru} (beta)
+                        </MenuItemOption>
+                        <MenuItemOption value="de">
+                          {translations[appLanguage].onboarding_practice_de} (beta)
                         </MenuItemOption>
                         <MenuItemOption value="es">
                           {translations[appLanguage].onboarding_practice_es}
@@ -1935,7 +1942,7 @@ export default function App() {
         0,
         240
       ),
-      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
+      targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de"].includes(
         partial.targetLang ?? prev.targetLang
       )
         ? partial.targetLang ?? prev.targetLang
@@ -2051,7 +2058,7 @@ export default function App() {
           translations[appLanguage]?.onboarding_persona_default_example ||
             translations.en.onboarding_persona_default_example
         ),
-        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
+        targetLang: ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de"].includes(
           payload.targetLang
         )
           ? payload.targetLang

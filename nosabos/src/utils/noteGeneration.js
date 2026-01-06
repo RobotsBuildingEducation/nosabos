@@ -12,6 +12,7 @@ const LANG_NAME = (code) =>
     nl: "Dutch",
     nah: "Huastec Nahuatl",
     ru: "Russian",
+    de: "German",
   }[code] || code);
 
 /**

@@ -108,6 +108,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "nl") return "nl-NL";
   if (m === "nah") return "es-ES"; // fallback
   if (m === "ru") return "ru-RU";
+  if (m === "de") return "de-DE";
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
   return fallback;
@@ -129,6 +130,7 @@ const toLangKey = (value) => {
   if (["nah", "nahuatl", "náhuatl", "huastec nahuatl", "náhuatl huasteco"].includes(raw))
     return "nah";
   if (["ru", "russian", "ruso", "русский"].includes(raw)) return "ru";
+  if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw)) return "de";
   return null;
 };
 
@@ -171,7 +173,7 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru"].includes(
+      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de"].includes(
         p.targetLang
       )
         ? p.targetLang

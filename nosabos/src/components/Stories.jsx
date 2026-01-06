@@ -97,6 +97,7 @@ const LLM_LANG_NAME = (code) =>
     nl: "Dutch",
     nah: "Huastec Nahuatl",
     ru: "Russian",
+    de: "German",
   }[code] || code);
 
 const BCP47 = {
@@ -108,6 +109,7 @@ const BCP47 = {
   nl: { stt: "nl-NL", tts: "nl-NL" },
   nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Huastec Nahuatl is unsupported by engines
   ru: { stt: "ru-RU", tts: "ru-RU" },
+  de: { stt: "de-DE", tts: "de-DE" },
 };
 
 const toLangKey = (value) => {
@@ -134,6 +136,7 @@ const toLangKey = (value) => {
   )
     return "nah";
   if (["ru", "russian", "ruso", "русский"].includes(raw)) return "ru";
+  if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw)) return "de";
   return null;
 };
 
@@ -209,6 +212,7 @@ function useSharedProgress() {
         "nl",
         "ja",
         "ru",
+        "de",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
