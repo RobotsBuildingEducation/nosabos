@@ -16,6 +16,7 @@ export const TTS_LANG_TAG = {
   nl: "nl-NL",
   nah: "es-MX",
   ru: "ru-RU",
+  ja: "ja-JP",
   de: "de-DE",
 };
 

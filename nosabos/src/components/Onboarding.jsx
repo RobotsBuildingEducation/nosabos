@@ -33,9 +33,6 @@ import { translations } from "../utils/translation";
 
 const BASE_PATH = "/onboarding";
 
-const JAPANESE_BETA_NPUB =
-  "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
-
 const personaDefaultFor = (lang) =>
   translations?.[lang]?.DEFAULT_PERSONA ||
   translations?.[lang]?.onboarding_persona_default_example ||
@@ -79,10 +76,8 @@ export default function Onboarding({
 
   const [isSaving, setIsSaving] = useState(false);
 
-  // Check if Japanese should be visible (beta feature)
-  const showJapanese =
-    typeof window !== "undefined" &&
-    localStorage.getItem("local_npub") === JAPANESE_BETA_NPUB;
+  // Japanese is visible for everyone (beta label applied in UI)
+  const showJapanese = true;
 
   useEffect(() => {
     const localizedDefault = personaDefaultFor(supportLang);
@@ -251,7 +246,11 @@ export default function Onboarding({
                       {targetLang === "en" && ui.onboarding_practice_en}
                       {targetLang === "fr" && ui.onboarding_practice_fr}
                       {targetLang === "it" && ui.onboarding_practice_it}
-                      {targetLang === "ja" && ui.onboarding_practice_ja}
+                      {targetLang === "ja" && (
+                        <>
+                          {ui.onboarding_practice_ja} (beta)
+                        </>
+                      )}
                       {targetLang === "nah" && ui.onboarding_practice_nah}
                       {targetLang === "pt" && ui.onboarding_practice_pt}
                       {targetLang === "es" && ui.onboarding_practice_es}
@@ -280,7 +279,7 @@ export default function Onboarding({
                         </MenuItemOption>
                         {showJapanese && (
                           <MenuItemOption value="ja">
-                            {ui.onboarding_practice_ja}
+                            {ui.onboarding_practice_ja} (beta)
                           </MenuItemOption>
                         )}
                         <MenuItemOption value="nah">

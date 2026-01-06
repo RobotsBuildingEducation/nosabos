@@ -118,6 +118,7 @@ import IdentityDrawer from "./components/IdentityDrawer";
 import SubscriptionGate from "./components/SubscriptionGate";
 import { useNostrWalletStore } from "./hooks/useNostrWalletStore";
 import { LuKey } from "react-icons/lu";
+import AlphabetBootcamp from "./components/AlphabetBootcamp";
 import TeamsDrawer from "./components/Teams/TeamsDrawer";
 import NotesDrawer from "./components/NotesDrawer";
 import useNotesStore from "./hooks/useNotesStore";
@@ -182,8 +183,6 @@ const TARGET_LANGUAGE_LABELS = {
   ru: "Russian",
   de: "German",
 };
-const JAPANESE_BETA_NPUB =
-  "npub14vskcp90k6gwp6sxjs2jwwqpcmahg6wz3h5vzq0yn6crrsq0utts52axlt";
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
 function extractJsonBlock(text = "") {
@@ -467,8 +466,8 @@ function TopBar({
       ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
       : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
 
-  // Check if Japanese should be visible (beta feature)
-  const showJapanese = activeNpub === JAPANESE_BETA_NPUB;
+  // Japanese is visible for everyone (beta label applied in UI)
+  const showJapanese = true;
 
   // Refill draft when store changes
   useEffect(() => {
@@ -867,8 +866,12 @@ function TopBar({
                         translations[appLanguage].onboarding_practice_fr}
                       {targetLang === "it" &&
                         translations[appLanguage].onboarding_practice_it}
-                      {targetLang === "ja" &&
-                        translations[appLanguage].onboarding_practice_ja}
+                      {targetLang === "ja" && (
+                        <>
+                          {translations[appLanguage].onboarding_practice_ja}{" "}
+                          (beta)
+                        </>
+                      )}
                       {targetLang === "nah" &&
                         translations[appLanguage].onboarding_practice_nah}
                       {targetLang === "pt" &&
@@ -908,7 +911,8 @@ function TopBar({
                         </MenuItemOption>
                         {showJapanese && (
                           <MenuItemOption value="ja">
-                            {translations[appLanguage].onboarding_practice_ja}
+                            {translations[appLanguage].onboarding_practice_ja}{" "}
+                            (beta)
                           </MenuItemOption>
                         )}
                         <MenuItemOption value="nah">
@@ -1271,13 +1275,16 @@ export default function App() {
   });
   const [activeLesson, setActiveLesson] = useState(null);
 
-  // Path mode state (path, flashcards, conversations)
+  const ALPHABET_LANGS = ["ru", "ja"];
+
+  // Path mode state (path, flashcards, conversations, alphabet bootcamp)
   const [pathMode, setPathMode] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("pathMode") || "path";
     }
-    return "path";
+    return ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path";
   });
+  const lastPathTargetRef = useRef(resolvedTargetLang);
 
   // Ref to trigger scroll to latest unlocked lesson
   const scrollToLatestUnlockedRef = useRef(null);
@@ -1292,11 +1299,32 @@ export default function App() {
     }
   }, [pathMode]);
 
+  // Ensure alphabet languages default to bootcamp on language switch; others fall back to path
+  useEffect(() => {
+    const validModes = ["alphabet", "path", "flashcards", "conversations"];
+    if (!validModes.includes(pathMode)) {
+      setPathMode(ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path");
+      return;
+    }
+
+    if (lastPathTargetRef.current !== resolvedTargetLang) {
+      if (ALPHABET_LANGS.includes(resolvedTargetLang)) {
+        setPathMode("alphabet");
+      } else if (pathMode === "alphabet") {
+        setPathMode("path");
+      }
+    }
+
+    lastPathTargetRef.current = resolvedTargetLang;
+  }, [pathMode, resolvedTargetLang]);
+
   // Tutorial mode state
   const [isTutorialMode, setIsTutorialMode] = useState(false);
   const [tutorialCompletedModules, setTutorialCompletedModules] = useState([]);
   const [showTutorialPopovers, setShowTutorialPopovers] = useState(false);
   const tutorialPopoverShownRef = useRef(false);
+  const showAlphabetBootcamp =
+    ALPHABET_LANGS.includes(resolvedTargetLang) && pathMode === "alphabet";
 
   // Skill tree tutorial state (shows on first login)
   const [showSkillTreeTutorial, setShowSkillTreeTutorial] = useState(false);
@@ -3814,6 +3842,7 @@ export default function App() {
         onToggleTranslations={handleToggleTranslations}
         translationLabel={translationToggleLabel}
         appLanguage={appLanguage}
+        targetLang={resolvedTargetLang}
         viewMode={viewMode}
         onNavigateToSkillTree={handleReturnToSkillTree}
         onOpenHelpChat={helpChatDisclosure.onOpen}
@@ -3827,8 +3856,12 @@ export default function App() {
           if (newMode === "path" && viewMode === "skillTree") {
             setScrollToLatestTrigger((prev) => prev + 1);
           }
-          // Scroll to top when switching to flashcards or conversations
-          if (newMode === "flashcards" || newMode === "conversations") {
+          // Scroll to top when switching to flashcards, conversations, or alphabet bootcamp
+          if (
+            newMode === "flashcards" ||
+            newMode === "conversations" ||
+            newMode === "alphabet"
+          ) {
             window.scrollTo({ top: 0, behavior: "instant" });
           }
         }}
@@ -3860,6 +3893,11 @@ export default function App() {
             >
               <RobotBuddyPro state="thinking" />
             </Box>
+          ) : showAlphabetBootcamp ? (
+            <AlphabetBootcamp
+              appLanguage={appLanguage}
+              targetLang={resolvedTargetLang}
+            />
           ) : (
             <SkillTree
               targetLang={resolvedTargetLang}
@@ -4473,6 +4511,7 @@ function BottomActionBar({
   onToggleTranslations,
   translationLabel,
   appLanguage = "en",
+  targetLang = "es",
   onNavigateToSkillTree,
   viewMode,
   onOpenHelpChat,
@@ -4496,7 +4535,17 @@ function BottomActionBar({
   const backLabel = appLanguage === "es" ? "Volver" : "Go back";
 
   // Path mode configuration
+  const ALPHABET_LANGS = ["ru", "ja"];
   const PATH_MODES = [
+    ...(ALPHABET_LANGS.includes(targetLang)
+      ? [
+          {
+            id: "alphabet",
+            label: appLanguage === "es" ? "Alfabeto" : "Alphabet",
+            icon: LuLanguages,
+          },
+        ]
+      : []),
     {
       id: "path",
       label: appLanguage === "es" ? "Ruta" : "Path",
