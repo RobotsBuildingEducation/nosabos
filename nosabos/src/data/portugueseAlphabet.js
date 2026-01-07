@@ -10,7 +10,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "La A acentuada es abierta. Sin acento en Brasil suena como 'uh'.",
     practiceWord: "água",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "a",
+    tts: "água",
   },
   {
     id: "b",
@@ -23,7 +23,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "A diferencia del español, B y V son sonidos distintos.",
     practiceWord: "bola",
     practiceWordMeaning: { en: "ball", es: "pelota" },
-    tts: "bê",
+    tts: "bola",
   },
   {
     id: "c",
@@ -36,7 +36,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Mismas reglas que español. Usa Ç para sonido 's' antes de a/o/u.",
     practiceWord: "casa",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "cê",
+    tts: "casa",
   },
   {
     id: "ç",
@@ -49,7 +49,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Solo aparece antes de a, o, u. Hace sonido 's': 'coração'.",
     practiceWord: "coração",
     practiceWordMeaning: { en: "heart", es: "corazón" },
-    tts: "cê cedilha",
+    tts: "coração",
   },
   {
     id: "d",
@@ -62,7 +62,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "En Brasil: D antes de i/e suena como 'dy'. 'Dia' = 'djia'.",
     practiceWord: "dia",
     practiceWordMeaning: { en: "day", es: "día" },
-    tts: "dê",
+    tts: "dia",
   },
   {
     id: "e",
@@ -75,7 +75,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Tres sonidos: É abierta, Ê cerrada, E final a menudo como 'i'.",
     practiceWord: "ele",
     practiceWordMeaning: { en: "he", es: "él" },
-    tts: "e",
+    tts: "ele",
   },
   {
     id: "f",
@@ -88,7 +88,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Igual que la F inglesa.",
     practiceWord: "família",
     practiceWordMeaning: { en: "family", es: "familia" },
-    tts: "efe",
+    tts: "família",
   },
   {
     id: "g",
@@ -101,7 +101,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "G antes de e/i = sonido 'zh'. ¡Muy diferente del español!",
     practiceWord: "gente",
     practiceWordMeaning: { en: "people", es: "gente" },
-    tts: "gê",
+    tts: "gente",
   },
   {
     id: "h",
@@ -114,7 +114,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Muda como en español. Solo importa en dígrafos: ch, lh, nh.",
     practiceWord: "hora",
     practiceWordMeaning: { en: "hour", es: "hora" },
-    tts: "agá",
+    tts: "hora",
   },
   {
     id: "i",
@@ -127,7 +127,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Sonido puro como la I española. Siempre consistente.",
     practiceWord: "isto",
     practiceWordMeaning: { en: "this", es: "esto" },
-    tts: "i",
+    tts: "isto",
   },
   {
     id: "j",
@@ -140,7 +140,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "¡NO como J española! J portuguesa = J francesa = 'measure' en inglés.",
     practiceWord: "janela",
     practiceWordMeaning: { en: "window", es: "ventana" },
-    tts: "jota",
+    tts: "janela",
   },
   {
     id: "k",
@@ -153,7 +153,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Solo en palabras prestadas. Palabras nativas usan C o QU.",
     practiceWord: "kiwi",
     practiceWordMeaning: { en: "kiwi", es: "kiwi" },
-    tts: "cá",
+    tts: "kiwi",
   },
   {
     id: "l",
@@ -166,7 +166,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "En Brasil, L final suena como W: 'Brasil' = 'Brasiw'.",
     practiceWord: "lua",
     practiceWordMeaning: { en: "moon", es: "luna" },
-    tts: "ele",
+    tts: "lua",
   },
   {
     id: "lh",
@@ -179,7 +179,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "L palatal. El medio de la lengua toca el paladar.",
     practiceWord: "filho",
     practiceWordMeaning: { en: "son", es: "hijo" },
-    tts: "lhe",
+    tts: "filho",
   },
   {
     id: "m",
@@ -192,7 +192,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Al final de sílaba, M nasaliza la vocal: 'bem' = 'bẽ'.",
     practiceWord: "mãe",
     practiceWordMeaning: { en: "mother", es: "madre" },
-    tts: "eme",
+    tts: "mãe",
   },
   {
     id: "n",
@@ -205,7 +205,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Al final de sílaba, N nasaliza la vocal. Ella misma es muda.",
     practiceWord: "não",
     practiceWordMeaning: { en: "no", es: "no" },
-    tts: "ene",
+    tts: "não",
   },
   {
     id: "nh",
@@ -218,7 +218,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "¡Exactamente como Ñ española! 'Amanhã' = 'amañá'.",
     practiceWord: "amanhã",
     practiceWordMeaning: { en: "tomorrow", es: "mañana" },
-    tts: "nhe",
+    tts: "amanhã",
   },
   {
     id: "o",
@@ -231,7 +231,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Tres sonidos: Ó abierta, Ô cerrada, sin acento a menudo como 'u'.",
     practiceWord: "novo",
     practiceWordMeaning: { en: "new", es: "nuevo" },
-    tts: "o",
+    tts: "novo",
   },
   {
     id: "p",
@@ -244,7 +244,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Igual que P española. Sin aspiración.",
     practiceWord: "pão",
     practiceWordMeaning: { en: "bread", es: "pan" },
-    tts: "pê",
+    tts: "pão",
   },
   {
     id: "q",
@@ -257,7 +257,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "QU antes de e/i: U usualmente muda. QU antes de a/o: U se pronuncia.",
     practiceWord: "quero",
     practiceWordMeaning: { en: "I want", es: "quiero" },
-    tts: "quê",
+    tts: "quero",
   },
   {
     id: "r",
@@ -270,7 +270,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "R inicial o RR = sonido 'h'. Entre vocales = golpe como español.",
     practiceWord: "rio",
     practiceWordMeaning: { en: "river", es: "río" },
-    tts: "erre",
+    tts: "rio",
   },
   {
     id: "rr",
@@ -283,7 +283,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "En Brasil: como 'h'. En Portugal: gutural. ¡NO vibrante como español!",
     practiceWord: "carro",
     practiceWordMeaning: { en: "car", es: "carro" },
-    tts: "erre duplo",
+    tts: "carro",
   },
   {
     id: "s",
@@ -296,7 +296,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Entre vocales S = 'z'. En Río/Portugal S final = 'sh'.",
     practiceWord: "casa",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "esse",
+    tts: "casa",
   },
   {
     id: "t",
@@ -309,7 +309,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "En Brasil: T antes de i/e suena como 'ch'. 'Tia' = 'chia'.",
     practiceWord: "tempo",
     practiceWordMeaning: { en: "time/weather", es: "tiempo" },
-    tts: "tê",
+    tts: "tempo",
   },
   {
     id: "u",
@@ -322,7 +322,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Sonido puro como U española. Consistente.",
     practiceWord: "um",
     practiceWordMeaning: { en: "one/a", es: "uno/un" },
-    tts: "u",
+    tts: "um",
   },
   {
     id: "v",
@@ -335,7 +335,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "¡A diferencia del español, V es distinta de B! Usa sonido V inglés.",
     practiceWord: "vida",
     practiceWordMeaning: { en: "life", es: "vida" },
-    tts: "vê",
+    tts: "vida",
   },
   {
     id: "w",
@@ -348,7 +348,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Solo en palabras prestadas.",
     practiceWord: "web",
     practiceWordMeaning: { en: "web", es: "web" },
-    tts: "dáblio",
+    tts: "web",
   },
   {
     id: "x",
@@ -361,7 +361,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Más común: 'sh' (xícara). También 'ks', 'z', 's' según palabra.",
     practiceWord: "xícara",
     practiceWordMeaning: { en: "cup", es: "taza" },
-    tts: "xis",
+    tts: "xícara",
   },
   {
     id: "y",
@@ -374,7 +374,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Solo en palabras prestadas. Suena como I.",
     practiceWord: "yoga",
     practiceWordMeaning: { en: "yoga", es: "yoga" },
-    tts: "ípsilon",
+    tts: "yoga",
   },
   {
     id: "z",
@@ -387,7 +387,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Sonora como Z inglesa. En Río/Portugal, Z final = 'sh'.",
     practiceWord: "zero",
     practiceWordMeaning: { en: "zero", es: "cero" },
-    tts: "zê",
+    tts: "zero",
   },
   {
     id: "ã",
@@ -400,7 +400,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Aire va por nariz Y boca. ¡Sonido único del portugués!",
     practiceWord: "irmã",
     practiceWordMeaning: { en: "sister", es: "hermana" },
-    tts: "ã",
+    tts: "irmã",
   },
   {
     id: "õ",
@@ -413,7 +413,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Labios redondeados + aire por nariz. Común en plural: 'ões'.",
     practiceWord: "corações",
     practiceWordMeaning: { en: "hearts", es: "corazones" },
-    tts: "õ",
+    tts: "corações",
   },
   {
     id: "á",
@@ -426,7 +426,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Acento agudo marca énfasis Y calidad abierta.",
     practiceWord: "água",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "á",
+    tts: "água",
   },
   {
     id: "é",
@@ -439,7 +439,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "E abierta, boca más abierta que Ê. 'Café' tiene E abierta.",
     practiceWord: "café",
     practiceWordMeaning: { en: "coffee", es: "café" },
-    tts: "é",
+    tts: "café",
   },
   {
     id: "ê",
@@ -452,7 +452,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "E cerrada, boca menos abierta. 'Você' tiene E cerrada.",
     practiceWord: "você",
     practiceWordMeaning: { en: "you", es: "tú/usted" },
-    tts: "ê",
+    tts: "você",
   },
   {
     id: "í",
@@ -465,7 +465,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Marca acento. Mismo sonido que I sin acento, solo enfatizada.",
     practiceWord: "saída",
     practiceWordMeaning: { en: "exit", es: "salida" },
-    tts: "í",
+    tts: "saída",
   },
   {
     id: "ó",
@@ -478,7 +478,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "O abierta, como 'aw'. Boca más abierta que Ô.",
     practiceWord: "avó",
     practiceWordMeaning: { en: "grandmother", es: "abuela" },
-    tts: "ó",
+    tts: "avó",
   },
   {
     id: "ô",
@@ -491,7 +491,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "O cerrada, labios más redondeados. 'Avô' vs 'avó'.",
     practiceWord: "avô",
     practiceWordMeaning: { en: "grandfather", es: "abuelo" },
-    tts: "ô",
+    tts: "avô",
   },
   {
     id: "ú",
@@ -504,7 +504,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Marca acento. Mismo sonido que U sin acento.",
     practiceWord: "último",
     practiceWordMeaning: { en: "last", es: "último" },
-    tts: "ú",
+    tts: "último",
   },
   {
     id: "â",
@@ -517,6 +517,6 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "A cerrada, menos común. Se encuentra en 'câmera'.",
     practiceWord: "câmera",
     practiceWordMeaning: { en: "camera", es: "cámara" },
-    tts: "â",
+    tts: "câmera",
   },
 ];

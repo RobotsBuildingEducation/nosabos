@@ -10,7 +10,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Una de las primeras vocales; compárala con O para notar el acento.",
     practiceWord: "арбуз",
     practiceWordMeaning: { en: "watermelon", es: "sandía" },
-    tts: "А",
+    tts: "арбуз",
   },
   {
     id: "be",
@@ -23,7 +23,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Familiar; labios suaves, sin explosión de aire.",
     practiceWord: "банан",
     practiceWordMeaning: { en: "banana", es: "plátano" },
-    tts: "Б",
+    tts: "банан",
   },
   {
     id: "ve",
@@ -36,7 +36,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Consonante sonora; vibra ligeramente las cuerdas vocales.",
     practiceWord: "вода",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "В",
+    tts: "вода",
   },
   {
     id: "ge",
@@ -49,7 +49,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "G dura; evita el sonido de 'j' que sale antes de e/i en inglés.",
     practiceWord: "год",
     practiceWordMeaning: { en: "year", es: "año" },
-    tts: "Г",
+    tts: "год",
   },
   {
     id: "de",
@@ -62,7 +62,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Toca justo detrás de los dientes para un sonido limpio.",
     practiceWord: "дом",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "Д",
+    tts: "дом",
   },
   {
     id: "ye",
@@ -75,7 +75,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Después de consonante la suaviza: 'me' → 'meh' con una ligera 'y'.",
     practiceWord: "еда",
     practiceWordMeaning: { en: "food", es: "comida" },
-    tts: "Е",
+    tts: "еда",
   },
   {
     id: "yo",
@@ -88,7 +88,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Siempre va acentuada; a veces omiten los puntos, escucha el 'yo'.",
     practiceWord: "ёж",
     practiceWordMeaning: { en: "hedgehog", es: "erizo" },
-    tts: "Ё",
+    tts: "ёж",
   },
   {
     id: "zhe",
@@ -101,7 +101,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Sonido 'zh' sonoro; mantenlo suave y vibrante.",
     practiceWord: "жук",
     practiceWordMeaning: { en: "beetle", es: "escarabajo" },
-    tts: "Ж",
+    tts: "жук",
   },
   {
     id: "ze",
@@ -114,7 +114,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Compárala con С (s) para notar la diferencia sonora/sorda.",
     practiceWord: "зима",
     practiceWordMeaning: { en: "winter", es: "invierno" },
-    tts: "З",
+    tts: "зима",
   },
   {
     id: "i",
@@ -127,7 +127,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Sonríe un poco; suaviza las consonantes cercanas.",
     practiceWord: "имя",
     practiceWordMeaning: { en: "name", es: "nombre" },
-    tts: "И",
+    tts: "имя",
   },
   {
     id: "short-i",
@@ -140,7 +140,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Aparece al final de diptongos: 'ой', 'ай', 'ей'.",
     practiceWord: "май",
     practiceWordMeaning: { en: "May", es: "mayo" },
-    tts: "Й",
+    tts: "май",
   },
   {
     id: "ka",
@@ -153,7 +153,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Seca y sin mucho aire; menos aspiración que en inglés.",
     practiceWord: "кот",
     practiceWordMeaning: { en: "cat", es: "gato" },
-    tts: "К",
+    tts: "кот",
   },
   {
     id: "el",
@@ -166,7 +166,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Toca detrás de los dientes; mantenla ligera.",
     practiceWord: "лето",
     practiceWordMeaning: { en: "summer", es: "verano" },
-    tts: "Л",
+    tts: "лето",
   },
   {
     id: "em",
@@ -179,7 +179,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Humear ayuda; siente la vibración en los labios.",
     practiceWord: "мама",
     practiceWordMeaning: { en: "mom", es: "mamá" },
-    tts: "М",
+    tts: "мама",
   },
   {
     id: "en",
@@ -192,7 +192,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Lengua detrás de los dientes; con vocales suaves se aligera.",
     practiceWord: "нос",
     practiceWordMeaning: { en: "nose", es: "nariz" },
-    tts: "Н",
+    tts: "нос",
   },
   {
     id: "o",
@@ -205,7 +205,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "La O se reduce sin acento; escucha pronto este cambio.",
     practiceWord: "окно",
     practiceWordMeaning: { en: "window", es: "ventana" },
-    tts: "О",
+    tts: "окно",
   },
   {
     id: "pe",
@@ -218,7 +218,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Menos aire que la 'p' inglesa; un golpe suave.",
     practiceWord: "папа",
     practiceWordMeaning: { en: "dad", es: "papá" },
-    tts: "П",
+    tts: "папа",
   },
   {
     id: "er",
@@ -231,7 +231,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Vibración ligera; practica con toques rápidos como en 'pero'.",
     practiceWord: "рука",
     practiceWordMeaning: { en: "hand/arm", es: "mano/brazo" },
-    tts: "Р",
+    tts: "рука",
   },
   {
     id: "es",
@@ -244,7 +244,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Sorda; compárala con З para notar la pareja sonora/sorda.",
     practiceWord: "сок",
     practiceWordMeaning: { en: "juice", es: "jugo" },
-    tts: "С",
+    tts: "сок",
   },
   {
     id: "te",
@@ -257,7 +257,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Toca detrás de los dientes; menos aire que en inglés.",
     practiceWord: "три",
     practiceWordMeaning: { en: "three", es: "tres" },
-    tts: "Т",
+    tts: "три",
   },
   {
     id: "u",
@@ -270,7 +270,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Labios redondeados; evita que suene como 'iu'.",
     practiceWord: "утро",
     practiceWordMeaning: { en: "morning", es: "mañana" },
-    tts: "У",
+    tts: "утро",
   },
   {
     id: "ef",
@@ -283,7 +283,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Dientes al labio suavemente; compárala con В para sentir sonoridad.",
     practiceWord: "фото",
     practiceWordMeaning: { en: "photo", es: "foto" },
-    tts: "Ф",
+    tts: "фото",
   },
   {
     id: "kha",
@@ -296,7 +296,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Sonido gutural sin voz; el flujo de aire es clave.",
     practiceWord: "хлеб",
     practiceWordMeaning: { en: "bread", es: "pan" },
-    tts: "Х",
+    tts: "хлеб",
   },
   {
     id: "tse",
@@ -309,7 +309,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Explosión corta de 'ts'; evita alargarla en 'tsss'.",
     practiceWord: "цвет",
     practiceWordMeaning: { en: "color/flower", es: "color/flor" },
-    tts: "Ц",
+    tts: "цвет",
   },
   {
     id: "che",
@@ -322,7 +322,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Más suave que la 'ch' inglesa; lengua más cerca de los dientes.",
     practiceWord: "час",
     practiceWordMeaning: { en: "hour", es: "hora" },
-    tts: "Ч",
+    tts: "час",
   },
   {
     id: "sha",
@@ -335,7 +335,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Labios neutrales; compárala con Щ para un siseo más suave.",
     practiceWord: "школа",
     practiceWordMeaning: { en: "school", es: "escuela" },
-    tts: "Ш",
+    tts: "школа",
   },
   {
     id: "shcha",
@@ -348,7 +348,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Un 'shch' largo y suave; sonríe un poco para suavizarlo.",
     practiceWord: "щи",
     practiceWordMeaning: { en: "cabbage soup", es: "sopa de col" },
-    tts: "Щ",
+    tts: "щи",
   },
   {
     id: "hard-y",
@@ -361,7 +361,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Sonido único; retrae la lengua y evita que suene como 'i' cerrada.",
     practiceWord: "сыр",
     practiceWordMeaning: { en: "cheese", es: "queso" },
-    tts: "Ы",
+    tts: "сыр",
   },
   {
     id: "e",
@@ -374,7 +374,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "A diferencia de Е, no añade 'y' ni suaviza consonantes.",
     practiceWord: "это",
     practiceWordMeaning: { en: "this", es: "esto" },
-    tts: "Э",
+    tts: "это",
   },
   {
     id: "yu",
@@ -387,7 +387,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Añade una 'y' suave y ablanda la consonante anterior.",
     practiceWord: "юг",
     practiceWordMeaning: { en: "south", es: "sur" },
-    tts: "Ю",
+    tts: "юг",
   },
   {
     id: "ya",
@@ -400,7 +400,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Desliz + vocal; suaviza la consonante previa.",
     practiceWord: "яйцо",
     practiceWordMeaning: { en: "egg", es: "huevo" },
-    tts: "Я",
+    tts: "яйцо",
   },
   {
     id: "soft-sign",
@@ -413,7 +413,7 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "Marca de suavidad; cambia la pronunciación pero no es vocal.",
     practiceWord: "соль",
     practiceWordMeaning: { en: "salt", es: "sal" },
-    tts: "Ь",
+    tts: "соль",
   },
   {
     id: "hard-sign",
@@ -426,6 +426,6 @@ export const RUSSIAN_ALPHABET = [
     tipEs: "En préstamos; añade una pequeña pausa antes de yo/ye/yu/ya.",
     practiceWord: "объект",
     practiceWordMeaning: { en: "object", es: "objeto" },
-    tts: "Ъ",
+    tts: "объект",
   },
 ];

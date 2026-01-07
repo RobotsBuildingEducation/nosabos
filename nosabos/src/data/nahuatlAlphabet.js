@@ -11,7 +11,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Igual que la A española. Mantenla abierta y consistente.",
     practiceWord: "atl",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "a",
+    tts: "atl",
   },
   {
     id: "e",
@@ -24,7 +24,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Sonido puro como la E española. Nunca cambia ni es muda.",
     practiceWord: "ehecatl",
     practiceWordMeaning: { en: "wind", es: "viento" },
-    tts: "e",
+    tts: "ehecatl",
   },
   {
     id: "i",
@@ -37,7 +37,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Igual que la I española. Corta y pura, nunca cambia.",
     practiceWord: "icniuhtli",
     practiceWordMeaning: { en: "friend", es: "amigo" },
-    tts: "i",
+    tts: "icniuhtli",
   },
   {
     id: "o",
@@ -50,7 +50,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Igual que la O española. Mantenla redondeada y pura.",
     practiceWord: "ocelotl",
     practiceWordMeaning: { en: "jaguar", es: "jaguar" },
-    tts: "o",
+    tts: "ocelotl",
   },
   // Long vowels (marked with macron in classical orthography)
   {
@@ -64,7 +64,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Mantén el sonido A más tiempo. La duración cambia el significado.",
     practiceWord: "tlācatl",
     practiceWordMeaning: { en: "person/human", es: "persona/humano" },
-    tts: "a",
+    tts: "tlācatl",
   },
   {
     id: "e-long",
@@ -78,7 +78,7 @@ export const NAHUATL_ALPHABET = [
       "Mantén el sonido E más tiempo. Importante para distinguir significados.",
     practiceWord: "tēuctli",
     practiceWordMeaning: { en: "lord/noble", es: "señor/noble" },
-    tts: "e",
+    tts: "tēuctli",
   },
   {
     id: "i-long",
@@ -91,7 +91,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Mantén el sonido I más tiempo. La duración importa en náhuatl.",
     practiceWord: "cīhuātl",
     practiceWordMeaning: { en: "woman", es: "mujer" },
-    tts: "i",
+    tts: "cīhuātl",
   },
   {
     id: "o-long",
@@ -104,7 +104,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Mantén el sonido O más tiempo. Distingue palabras de la O corta.",
     practiceWord: "tōchtli",
     practiceWordMeaning: { en: "rabbit", es: "conejo" },
-    tts: "o",
+    tts: "tōchtli",
   },
   // Consonants
   {
@@ -119,7 +119,7 @@ export const NAHUATL_ALPHABET = [
       "Antes de a/o: sonido K duro. Antes de e/i: sonido S suave. Como en español.",
     practiceWord: "calli",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "ce",
+    tts: "calli",
   },
   {
     id: "ch",
@@ -132,7 +132,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Igual que la CH española e inglesa. Muy común en palabras náhuatl.",
     practiceWord: "chilli",
     practiceWordMeaning: { en: "chili pepper", es: "chile" },
-    tts: "che",
+    tts: "chilli",
   },
   {
     id: "cu-uc",
@@ -146,7 +146,7 @@ export const NAHUATL_ALPHABET = [
       "K + W juntas. CU al inicio de sílaba, UC al final. Redondea los labios.",
     practiceWord: "cuauhtli",
     practiceWordMeaning: { en: "eagle", es: "águila" },
-    tts: "cu",
+    tts: "cuauhtli",
   },
   {
     id: "h",
@@ -160,7 +160,7 @@ export const NAHUATL_ALPHABET = [
       "Sonido de aliento muy suave, a veces casi como un corte en la garganta.",
     practiceWord: "huexolotl",
     practiceWordMeaning: { en: "turkey", es: "guajolote" },
-    tts: "hache",
+    tts: "huexolotl",
   },
   {
     id: "hu-uh",
@@ -173,7 +173,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "HU al inicio, UH al final. Mismo sonido W que en inglés 'water'.",
     practiceWord: "ahuacatl",
     practiceWordMeaning: { en: "avocado", es: "aguacate" },
-    tts: "wu",
+    tts: "ahuacatl",
   },
   {
     id: "l",
@@ -186,7 +186,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Siempre L clara como en español. Lengua toca detrás de dientes.",
     practiceWord: "tlalli",
     practiceWordMeaning: { en: "earth/land", es: "tierra" },
-    tts: "ele",
+    tts: "tlalli",
   },
   {
     id: "m",
@@ -199,7 +199,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Igual que la M española e inglesa. Labios juntos.",
     practiceWord: "metztli",
     practiceWordMeaning: { en: "moon", es: "luna" },
-    tts: "eme",
+    tts: "metztli",
   },
   {
     id: "n",
@@ -215,7 +215,7 @@ export const NAHUATL_ALPHABET = [
       en: "mother (respectful)",
       es: "madre (respetuoso)",
     },
-    tts: "ene",
+    tts: "nantzin",
   },
   {
     id: "p",
@@ -228,7 +228,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Como la P española. Menos aire que la P inglesa, sin soplo.",
     practiceWord: "papalotl",
     practiceWordMeaning: { en: "butterfly", es: "mariposa" },
-    tts: "pe",
+    tts: "papalotl",
   },
   {
     id: "qu",
@@ -241,7 +241,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "QU hace sonido K antes de e/i. La U es muda, como en español.",
     practiceWord: "quetzalli",
     practiceWordMeaning: { en: "precious feather", es: "pluma preciosa" },
-    tts: "cu",
+    tts: "quetzalli",
   },
   {
     id: "t",
@@ -255,7 +255,7 @@ export const NAHUATL_ALPHABET = [
       "Lengua toca los dientes superiores (dental). Sin soplo, como la T española.",
     practiceWord: "teotl",
     practiceWordMeaning: { en: "god/sacred force", es: "dios/fuerza sagrada" },
-    tts: "t-",
+    tts: "teotl",
   },
   {
     id: "tl",
@@ -269,7 +269,7 @@ export const NAHUATL_ALPHABET = [
       "¡EL sonido icónico del náhuatl! T + L juntas: lengua golpea el paladar, aire escapa por los lados. En 'Nahuatl', 'chocolate', 'tomate'.",
     practiceWord: "Nahuatl",
     practiceWordMeaning: { en: "Nahuatl language", es: "idioma náhuatl" },
-    tts: "tleh",
+    tts: "Nahuatl",
   },
   {
     id: "tz",
@@ -283,7 +283,7 @@ export const NAHUATL_ALPHABET = [
       "T + S juntas, pronunciadas como un sonido. Como 'ts' al final de 'cats'.",
     practiceWord: "itzcuintli",
     practiceWordMeaning: { en: "dog", es: "perro" },
-    tts: "tse",
+    tts: "itzcuintli",
   },
   {
     id: "x",
@@ -297,7 +297,7 @@ export const NAHUATL_ALPHABET = [
       "¡Siempre suena 'sh' en náhuatl! Por eso 'México' se pronunciaba 'Méshico'.",
     practiceWord: "xochitl",
     practiceWordMeaning: { en: "flower", es: "flor" },
-    tts: "equis",
+    tts: "xochitl",
   },
   {
     id: "y",
@@ -310,7 +310,7 @@ export const NAHUATL_ALPHABET = [
     tipEs: "Igual que la Y española/inglesa. Común en palabras náhuatl.",
     practiceWord: "yohualli",
     practiceWordMeaning: { en: "night", es: "noche" },
-    tts: "ye",
+    tts: "yohualli",
   },
   {
     id: "z",
@@ -324,7 +324,7 @@ export const NAHUATL_ALPHABET = [
       "En náhuatl, Z siempre suena como S. Nunca sonora como en inglés 'zoo'.",
     practiceWord: "mazatl",
     practiceWordMeaning: { en: "deer", es: "venado" },
-    tts: "zeta",
+    tts: "mazatl",
   },
   // Special sounds and combinations
   {
@@ -339,7 +339,7 @@ export const NAHUATL_ALPHABET = [
       "Como la pausa en 'uh-oh'. Se escribe como ʼ o h. ¡Cambia el significado!",
     practiceWord: "teʼtl",
     practiceWordMeaning: { en: "stone", es: "piedra" },
-    tts: "saltillo",
+    tts: "teʼtl",
   },
   // Common word endings (absolutive suffix)
   {
@@ -354,7 +354,7 @@ export const NAHUATL_ALPHABET = [
       "Sufijo absolutivo muy común para sustantivos. Aparece después de consonantes (excepto L).",
     practiceWord: "ocelotl",
     practiceWordMeaning: { en: "jaguar", es: "jaguar" },
-    tts: "tli",
+    tts: "ocelotl",
   },
   {
     id: "tl-suffix",
@@ -368,7 +368,7 @@ export const NAHUATL_ALPHABET = [
       "Sufijo absolutivo después de vocales. Ejemplo: a- (agua) + -tl = atl.",
     practiceWord: "atl",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "tl",
+    tts: "atl",
   },
   {
     id: "li-suffix",
@@ -382,7 +382,7 @@ export const NAHUATL_ALPHABET = [
       "Sufijo absolutivo después de L. Ejemplo: cal- (casa) + -li = calli.",
     practiceWord: "calli",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "li",
+    tts: "calli",
   },
   {
     id: "in-suffix",
@@ -396,6 +396,6 @@ export const NAHUATL_ALPHABET = [
       "Se usa para algunos seres animados. Ejemplo: citlal- (estrella) + -in = citlalin.",
     practiceWord: "citlalin",
     practiceWordMeaning: { en: "star", es: "estrella" },
-    tts: "in",
+    tts: "citlalin",
   },
 ];
