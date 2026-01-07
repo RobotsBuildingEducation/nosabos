@@ -59,6 +59,33 @@ import { database } from "../firebaseResources/firebaseResources";
 
 const MotionBox = motion(Box);
 
+// Language name and script mapping for all supported languages
+const LANGUAGE_NAMES = {
+  ru: "Russian",
+  ja: "Japanese",
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  it: "Italian",
+  nl: "Dutch",
+  de: "German",
+  nah: "Nahuatl",
+};
+
+const LANGUAGE_SCRIPTS = {
+  ru: "Cyrillic",
+  ja: "hiragana or katakana",
+  en: "Latin alphabet",
+  es: "Latin alphabet",
+  pt: "Latin alphabet",
+  fr: "Latin alphabet",
+  it: "Latin alphabet",
+  nl: "Latin alphabet",
+  de: "Latin alphabet",
+  nah: "Latin alphabet",
+};
+
 const normalizeMeaning = (meaning) => {
   if (!meaning) return { en: "", es: "" };
   if (typeof meaning === "string") {
@@ -73,7 +100,7 @@ const normalizeMeaning = (meaning) => {
 
 // Build AI grading prompt for alphabet practice
 function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang }) {
-  const langName = targetLang === "ja" ? "Japanese" : "Russian";
+  const langName = LANGUAGE_NAMES[targetLang] || "the target";
 
   return `
 Judge if the user correctly pronounced a ${langName} word.
@@ -152,7 +179,8 @@ async function saveAlphabetPracticeWord(
   targetLang,
   letterId,
   practiceWord,
-  practiceWordMeaning
+  practiceWordMeaning,
+  correctCount
 ) {
   if (!npub) return;
 
@@ -165,6 +193,7 @@ async function saveAlphabetPracticeWord(
         targetLang,
         currentWord: practiceWord,
         currentMeaning: practiceWordMeaning ?? null,
+        correctCount: correctCount ?? 0,
         updatedAt: serverTimestamp(),
       },
       { merge: true }
@@ -358,6 +387,9 @@ function LetterCard({
         }
       }
 
+      // Calculate new correctCount (since setCorrectCount is async)
+      const newCorrectCount = isYes ? correctCount + 1 : correctCount;
+
       // Save progress regardless of result
       await saveAlphabetProgress(
         npub,
@@ -372,7 +404,8 @@ function LetterCard({
         targetLang,
         letter.id,
         nextPracticeWord,
-        nextPracticeMeaning
+        nextPracticeMeaning,
+        newCorrectCount
       );
     } catch (error) {
       console.error("AI grading error:", error);
@@ -512,7 +545,8 @@ function LetterCard({
       targetLang,
       letter.id,
       nextPracticeWord,
-      nextPracticeMeaning
+      nextPracticeMeaning,
+      correctCount
     );
     setShowResult(false);
     setIsCorrect(false);
@@ -520,17 +554,14 @@ function LetterCard({
 
   const generateNewPracticeWord = useCallback(
     async (currentWord) => {
-      const languageName = targetLang === "ja" ? "Japanese" : "Russian";
+      const languageName = LANGUAGE_NAMES[targetLang] || "the target language";
+      const scriptName = LANGUAGE_SCRIPTS[targetLang] || "native script";
       const avoidClause = currentWord
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
-      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${
-        letter.letter
-      }" (${letter.name}). Respond ONLY with JSON in this shape:
+      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letter.name}). Respond ONLY with JSON in this shape:
 {"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>"}
-- Use native script (${
-        targetLang === "ja" ? "hiragana or katakana" : "Cyrillic"
-      }).
+- Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
 
@@ -604,8 +635,8 @@ function LetterCard({
         >
           {/* Star counter */}
           <HStack spacing={1} position="absolute" top={3} left={3}>
-            <RiStarFill size={14} color="#ECC94B" />
-            <Text fontSize="xs" fontWeight="bold" color="yellow.400">
+            <RiStarFill size={14} color="cyan" />
+            <Text fontSize="xs" fontWeight="bold">
               {correctCount}
             </Text>
           </HStack>
@@ -894,7 +925,7 @@ export default function AlphabetBootcamp({
 
     const loadProgress = async () => {
       try {
-        // Load practice words from subcollection
+        // Load practice words and correctCounts from subcollection
         const snapshot = await getDocs(
           query(
             collection(database, "users", npub, "alphabetPractice"),
@@ -903,28 +934,21 @@ export default function AlphabetBootcamp({
         );
 
         const mapped = {};
+        const correctCounts = {};
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-          if (data?.letterId && data?.currentWord) {
-            mapped[data.letterId] = {
-              word: data.currentWord,
-              meaning: normalizeMeaning(data.currentMeaning),
-            };
+          if (data?.letterId) {
+            if (data?.currentWord) {
+              mapped[data.letterId] = {
+                word: data.currentWord,
+                meaning: normalizeMeaning(data.currentMeaning),
+              };
+            }
+            if (data?.correctCount) {
+              correctCounts[data.letterId] = data.correctCount;
+            }
           }
         });
-
-        // Load correctCounts from main user document
-        const userDoc = await getDoc(doc(database, "users", npub));
-        const correctCounts = {};
-        if (userDoc.exists()) {
-          const alphabetProgress =
-            userDoc.data()?.progress?.alphabetPractice?.[targetLang] || {};
-          Object.entries(alphabetProgress).forEach(([letterId, data]) => {
-            if (data?.correctCount) {
-              correctCounts[letterId] = data.correctCount;
-            }
-          });
-        }
 
         if (!cancelled) {
           setSavedPracticeWords(mapped);
