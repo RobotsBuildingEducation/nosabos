@@ -250,6 +250,7 @@ function LetterCard({
   initialPracticeWordMeaning,
   initialCorrectCount = 0,
   onPracticeWordUpdated,
+  onCardCollected,
   pauseMs = 2000,
 }) {
   const [isPracticeMode, setIsPracticeMode] = useState(false);
@@ -384,6 +385,10 @@ function LetterCard({
         if (npub) {
           await awardXp(npub, xp, targetLang);
           onXpAwarded?.(xp);
+        }
+        // First successful practice - collect the card
+        if (correctCount === 0) {
+          onCardCollected?.(letter.id);
         }
       }
 
@@ -868,6 +873,16 @@ const LANGUAGE_ALPHABETS = {
   nah: NAHUATL_ALPHABET,
 };
 
+// Fisher-Yates shuffle
+function shuffleArray(arr) {
+  const shuffled = [...arr];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export default function AlphabetBootcamp({
   appLanguage = "en",
   targetLang,
@@ -881,6 +896,11 @@ export default function AlphabetBootcamp({
   const [currentXp, setCurrentXp] = useState(languageXp);
   const [savedPracticeWords, setSavedPracticeWords] = useState({});
   const [savedCorrectCounts, setSavedCorrectCounts] = useState({});
+
+  // Deck-based state
+  const [deck, setDeck] = useState([]);
+  const [collectedLetters, setCollectedLetters] = useState([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Update currentXp when languageXp prop changes
   useEffect(() => {
@@ -914,11 +934,38 @@ export default function AlphabetBootcamp({
     }));
   }, []);
 
+  // When a card is successfully practiced, move it from deck to collection
+  const handleCardCollected = useCallback((letterId) => {
+    setDeck((prevDeck) => {
+      const cardIndex = prevDeck.findIndex((l) => l.id === letterId);
+      if (cardIndex === -1) return prevDeck; // Already removed
+
+      const card = prevDeck[cardIndex];
+      // Add to collection
+      setCollectedLetters((prev) => [...prev, card]);
+
+      // Remove from deck
+      return prevDeck.filter((l) => l.id !== letterId);
+    });
+
+    // Update saved correct counts (they just got their first correct)
+    setSavedCorrectCounts((prev) => ({
+      ...prev,
+      [letterId]: (prev[letterId] || 0) + 1,
+    }));
+  }, []);
+
   useEffect(() => {
     setSavedPracticeWords({});
     setSavedCorrectCounts({});
+    setIsInitialized(false);
 
     if (!npub) {
+      // No user - initialize deck with all letters shuffled
+      const shuffled = shuffleArray(alphabet);
+      setDeck(shuffled);
+      setCollectedLetters([]);
+      setIsInitialized(true);
       return;
     }
     let cancelled = false;
@@ -935,6 +982,8 @@ export default function AlphabetBootcamp({
 
         const mapped = {};
         const correctCounts = {};
+        const collectedIds = new Set();
+
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
           if (data?.letterId) {
@@ -946,6 +995,10 @@ export default function AlphabetBootcamp({
             }
             if (data?.correctCount) {
               correctCounts[data.letterId] = data.correctCount;
+              // Letters with at least 1 correct are "collected"
+              if (data.correctCount >= 1) {
+                collectedIds.add(data.letterId);
+              }
             }
           }
         });
@@ -953,12 +1006,24 @@ export default function AlphabetBootcamp({
         if (!cancelled) {
           setSavedPracticeWords(mapped);
           setSavedCorrectCounts(correctCounts);
+
+          // Initialize deck: shuffle letters that haven't been collected
+          const uncollected = alphabet.filter((l) => !collectedIds.has(l.id));
+          const collected = alphabet.filter((l) => collectedIds.has(l.id));
+
+          setDeck(shuffleArray(uncollected));
+          setCollectedLetters(collected);
+          setIsInitialized(true);
         }
       } catch (error) {
         console.error("Failed to load alphabet progress:", error);
         if (!cancelled) {
           setSavedPracticeWords({});
           setSavedCorrectCounts({});
+          // Fallback: all letters in deck
+          setDeck(shuffleArray(alphabet));
+          setCollectedLetters([]);
+          setIsInitialized(true);
         }
       }
     };
@@ -968,7 +1033,7 @@ export default function AlphabetBootcamp({
     return () => {
       cancelled = true;
     };
-  }, [npub, targetLang]);
+  }, [npub, targetLang, alphabet]);
 
   useEffect(() => {
     return () => {
@@ -1015,81 +1080,212 @@ export default function AlphabetBootcamp({
         {note}
       </Alert> */}
 
-      {hasLetters ? (
-        <SimpleGrid
-          columns={{ base: 1, sm: 2, md: 3 }}
-          spacing={4}
-          mt={2}
-          zIndex={10}
-          position="relative"
-        >
-          {alphabet.map((item) => (
-            <LetterCard
-              key={item.id}
-              letter={item}
-              appLanguage={appLanguage}
-              targetLang={targetLang}
-              npub={npub}
-              pauseMs={pauseMs}
-              onXpAwarded={handleXpAwarded}
-              initialPracticeWord={
-                savedPracticeWords[item.id]?.word || item.practiceWord
-              }
-              initialPracticeWordMeaning={
-                savedPracticeWords[item.id]?.meaning || item.practiceWordMeaning
-              }
-              initialCorrectCount={savedCorrectCounts[item.id] || 0}
-              onPracticeWordUpdated={handlePracticeWordUpdated}
-              isPlaying={playingId === item.id}
-              onPlay={async (data) => {
-                const text = (data?.tts || data?.letter || "")
-                  .toString()
-                  .trim();
-                if (!text) return;
+      {!isInitialized ? (
+        <Flex align="center" justify="center" py={12}>
+          <Spinner size="lg" color="teal.300" />
+        </Flex>
+      ) : hasLetters ? (
+        <VStack spacing={8} w="100%" zIndex={10}>
+          {/* Deck Section */}
+          {deck.length > 0 ? (
+            <VStack spacing={4} w="100%">
+              <HStack spacing={2}>
+                <Badge colorScheme="purple" px={3} py={1} borderRadius="full">
+                  {appLanguage === "es" ? "En el mazo" : "In deck"}: {deck.length}
+                </Badge>
+              </HStack>
 
-                // Toggle off if the same card is playing
-                if (playingId === data.id) {
-                  try {
-                    playerRef.current?.audio?.pause?.();
-                  } catch {}
-                  playerRef.current?.cleanup?.();
-                  setPlayingId(null);
-                  return;
-                }
+              {/* Deck visual - stacked cards with top card active */}
+              <Box
+                position="relative"
+                w="100%"
+                maxW="400px"
+                mx="auto"
+                minH={{ base: "340px", md: "360px" }}
+              >
+                {/* Background cards to show stack effect */}
+                {deck.length > 2 && (
+                  <Box
+                    position="absolute"
+                    top="8px"
+                    left="50%"
+                    transform="translateX(-50%) rotate(2deg)"
+                    w="95%"
+                    h="320px"
+                    bg="whiteAlpha.50"
+                    borderRadius="lg"
+                    border="1px solid"
+                    borderColor="whiteAlpha.200"
+                  />
+                )}
+                {deck.length > 1 && (
+                  <Box
+                    position="absolute"
+                    top="4px"
+                    left="50%"
+                    transform="translateX(-50%) rotate(-1deg)"
+                    w="97%"
+                    h="320px"
+                    bg="whiteAlpha.80"
+                    borderRadius="lg"
+                    border="1px solid"
+                    borderColor="whiteAlpha.250"
+                  />
+                )}
 
-                // Stop any existing playback
-                try {
-                  playerRef.current?.audio?.pause?.();
-                } catch {}
-                playerRef.current?.cleanup?.();
+                {/* Top card (current card to practice) */}
+                <Box position="relative" zIndex={3}>
+                  <LetterCard
+                    key={deck[0].id}
+                    letter={deck[0]}
+                    appLanguage={appLanguage}
+                    targetLang={targetLang}
+                    npub={npub}
+                    pauseMs={pauseMs}
+                    onXpAwarded={handleXpAwarded}
+                    initialPracticeWord={
+                      savedPracticeWords[deck[0].id]?.word || deck[0].practiceWord
+                    }
+                    initialPracticeWordMeaning={
+                      savedPracticeWords[deck[0].id]?.meaning ||
+                      deck[0].practiceWordMeaning
+                    }
+                    initialCorrectCount={savedCorrectCounts[deck[0].id] || 0}
+                    onPracticeWordUpdated={handlePracticeWordUpdated}
+                    onCardCollected={handleCardCollected}
+                    isPlaying={playingId === deck[0].id}
+                    onPlay={async (data) => {
+                      const text = (data?.tts || data?.letter || "")
+                        .toString()
+                        .trim();
+                      if (!text) return;
 
-                try {
-                  const player = await getTTSPlayer({
-                    text,
-                    langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
-                  });
-                  playerRef.current = player;
-                  setPlayingId(data.id);
+                      if (playingId === data.id) {
+                        try {
+                          playerRef.current?.audio?.pause?.();
+                        } catch {}
+                        playerRef.current?.cleanup?.();
+                        setPlayingId(null);
+                        return;
+                      }
 
-                  const audio = player.audio;
-                  audio.onended = () => {
-                    setPlayingId(null);
-                    player.cleanup?.();
-                  };
-                  audio.onerror = () => {
-                    setPlayingId(null);
-                    player.cleanup?.();
-                  };
-                  await player.ready;
-                  await audio.play();
-                } catch (err) {
-                  console.error("AlphabetBootcamp TTS failed", err);
-                  setPlayingId(null);
-                }
-              }}
-            />
-          ))}
-        </SimpleGrid>
+                      try {
+                        playerRef.current?.audio?.pause?.();
+                      } catch {}
+                      playerRef.current?.cleanup?.();
+
+                      try {
+                        const player = await getTTSPlayer({
+                          text,
+                          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+                        });
+                        playerRef.current = player;
+                        setPlayingId(data.id);
+
+                        const audio = player.audio;
+                        audio.onended = () => {
+                          setPlayingId(null);
+                          player.cleanup?.();
+                        };
+                        audio.onerror = () => {
+                          setPlayingId(null);
+                          player.cleanup?.();
+                        };
+                        await player.ready;
+                        await audio.play();
+                      } catch (err) {
+                        console.error("AlphabetBootcamp TTS failed", err);
+                        setPlayingId(null);
+                      }
+                    }}
+                  />
+                </Box>
+              </Box>
+            </VStack>
+          ) : (
+            <Flex
+              align="center"
+              justify="center"
+              bg="green.900"
+              borderRadius="lg"
+              border="1px solid"
+              borderColor="green.500"
+              p={6}
+              maxW="400px"
+              mx="auto"
+            >
+              <VStack spacing={2}>
+                <Text fontSize="2xl">🎉</Text>
+                <Text color="green.200" fontWeight="bold" textAlign="center">
+                  {appLanguage === "es"
+                    ? "¡Felicidades! Has completado el alfabeto."
+                    : "Congratulations! You've completed the alphabet."}
+                </Text>
+              </VStack>
+            </Flex>
+          )}
+
+          {/* Collection Section */}
+          {collectedLetters.length > 0 && (
+            <VStack spacing={4} w="100%">
+              <HStack spacing={2}>
+                <Badge colorScheme="green" px={3} py={1} borderRadius="full">
+                  {appLanguage === "es" ? "Colección" : "Collection"}:{" "}
+                  {collectedLetters.length}
+                </Badge>
+              </HStack>
+
+              <SimpleGrid
+                columns={{ base: 2, sm: 3, md: 4 }}
+                spacing={3}
+                w="100%"
+              >
+                {collectedLetters.map((item) => (
+                  <Box
+                    key={item.id}
+                    bg="whiteAlpha.100"
+                    border="1px solid"
+                    borderColor="green.500"
+                    borderRadius="lg"
+                    p={3}
+                    textAlign="center"
+                    position="relative"
+                    _hover={{ bg: "whiteAlpha.150" }}
+                  >
+                    <Box
+                      position="absolute"
+                      top={1}
+                      right={1}
+                      bg="green.500"
+                      borderRadius="full"
+                      w={4}
+                      h={4}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                    >
+                      <RiCheckLine size={10} />
+                    </Box>
+                    <Text fontSize="xl" fontWeight="bold">
+                      {item.letter}
+                    </Text>
+                    <Text fontSize="xs" color="whiteAlpha.700">
+                      {item.name}
+                    </Text>
+                    {savedCorrectCounts[item.id] > 0 && (
+                      <HStack spacing={1} justify="center" mt={1}>
+                        <RiStarFill size={10} color="cyan" />
+                        <Text fontSize="xs" color="cyan.300">
+                          {savedCorrectCounts[item.id]}
+                        </Text>
+                      </HStack>
+                    )}
+                  </Box>
+                ))}
+              </SimpleGrid>
+            </VStack>
+          )}
+        </VStack>
       ) : (
         <Flex
           align="center"
