@@ -1275,7 +1275,7 @@ export default function App() {
   });
   const [activeLesson, setActiveLesson] = useState(null);
 
-  const ALPHABET_LANGS = ["ru", "ja"];
+  const ALPHABET_LANGS = ["ru", "ja", "en", "es", "pt", "fr", "it", "nl", "de"];
 
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
   const [pathMode, setPathMode] = useState(() => {
@@ -4533,7 +4533,7 @@ function BottomActionBar({
   const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
 
   // Path mode configuration
-  const ALPHABET_LANGS = ["ru", "ja"];
+  const ALPHABET_LANGS = ["ru", "ja", "en", "es", "pt", "fr", "it", "nl", "de"];
   const PATH_MODES = [
     ...(ALPHABET_LANGS.includes(targetLang)
       ? [
