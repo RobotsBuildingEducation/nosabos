@@ -236,14 +236,17 @@ function LetterCard({
     setPracticeWordMeaningData(
       normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning)
     );
-    setCorrectCount(initialCorrectCount);
   }, [
     initialPracticeWord,
     initialPracticeWordMeaning,
-    initialCorrectCount,
     letter.practiceWord,
     letter.practiceWordMeaning,
   ]);
+
+  // Sync correctCount only when initial value changes (on load)
+  useEffect(() => {
+    setCorrectCount(initialCorrectCount);
+  }, [initialCorrectCount]);
 
   const typeColor = useMemo(() => {
     switch (letter.type) {
@@ -588,20 +591,21 @@ function LetterCard({
           p={4}
           boxShadow="0 10px 30px rgba(0,0,0,0.35)"
           color="white"
+          position="relative"
           sx={{ backfaceVisibility: "hidden" }}
         >
+          {/* Star counter */}
+          <HStack spacing={1} position="absolute" top={3} left={3}>
+            <RiStarFill size={14} color="#ECC94B" />
+            <Text fontSize="xs" fontWeight="bold" color="yellow.400">
+              {correctCount}
+            </Text>
+          </HStack>
+
           <HStack justify="space-between" w="100%">
-            <HStack spacing={2}>
-              <HStack spacing={1}>
-                <RiStarFill size={14} color="#ECC94B" />
-                <Text fontSize="xs" fontWeight="bold" color="yellow.400">
-                  {correctCount}
-                </Text>
-              </HStack>
-              <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
-                {typeLabel}
-              </Badge>
-            </HStack>
+            <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
+              {typeLabel}
+            </Badge>
             {practiceWord && (
               <Button
                 size="xs"
