@@ -590,20 +590,12 @@ function LetterCard({
         >
           <HStack justify="space-between" w="100%">
             <HStack spacing={2}>
-              {correctCount > 0 && (
-                <HStack
-                  spacing={1}
-                  bg="yellow.500"
-                  borderRadius="md"
-                  px={2}
-                  py={1}
-                >
-                  <RiStarFill size={12} color="white" />
-                  <Text fontSize="xs" fontWeight="bold" color="white">
-                    {correctCount}
-                  </Text>
-                </HStack>
-              )}
+              <HStack spacing={1}>
+                <RiStarFill size={14} color="#ECC94B" />
+                <Text fontSize="xs" fontWeight="bold" color="yellow.400">
+                  {correctCount}
+                </Text>
+              </HStack>
               <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
                 {typeLabel}
               </Badge>
