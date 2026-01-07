@@ -31,6 +31,7 @@ import { FRENCH_ALPHABET } from "../data/frenchAlphabet";
 import { ITALIAN_ALPHABET } from "../data/italianAlphabet";
 import { DUTCH_ALPHABET } from "../data/dutchAlphabet";
 import { GERMAN_ALPHABET } from "../data/germanAlphabet";
+import { NAHUATL_ALPHABET } from "../data/nahuatlAlphabet";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -833,6 +834,7 @@ const LANGUAGE_ALPHABETS = {
   it: ITALIAN_ALPHABET,
   nl: DUTCH_ALPHABET,
   de: GERMAN_ALPHABET,
+  nah: NAHUATL_ALPHABET,
 };
 
 export default function AlphabetBootcamp({
