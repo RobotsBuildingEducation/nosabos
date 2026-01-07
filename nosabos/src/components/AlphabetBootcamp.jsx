@@ -25,13 +25,19 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
 import { WaveBar } from "./WaveBar";
-import { doc, serverTimestamp, getDoc, setDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 
 const MotionBox = motion(Box);
-
-const getPracticeStorageKey = (npub, targetLang) =>
-  `alphabetPractice:${npub || "guest"}:${targetLang || "unknown"}`;
 
 const normalizeMeaning = (meaning) => {
   if (!meaning) return { en: "", es: "" };
@@ -43,26 +49,6 @@ const normalizeMeaning = (meaning) => {
   const es = meaning.es || meaning.en || "";
 
   return { en, es };
-};
-
-const readPracticeWordsFromStorage = (npub, targetLang) => {
-  if (typeof window === "undefined") return {};
-  const key = getPracticeStorageKey(npub, targetLang);
-  const raw = window.localStorage.getItem(key);
-  if (!raw) return {};
-
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-};
-
-const writePracticeWordsToStorage = (npub, targetLang, data) => {
-  if (typeof window === "undefined") return;
-  const key = getPracticeStorageKey(npub, targetLang);
-  window.localStorage.setItem(key, JSON.stringify(data));
 };
 
 // Build AI grading prompt for alphabet practice
@@ -134,6 +120,33 @@ async function saveAlphabetProgress(
     );
   } catch (error) {
     console.error("Error saving alphabet progress:", error);
+  }
+}
+
+async function saveAlphabetPracticeWord(
+  npub,
+  targetLang,
+  letterId,
+  practiceWord,
+  practiceWordMeaning
+) {
+  if (!npub) return;
+
+  try {
+    const docId = `${targetLang}_${letterId}`;
+    await setDoc(
+      doc(database, "users", npub, "alphabetPractice", docId),
+      {
+        letterId,
+        targetLang,
+        currentWord: practiceWord,
+        currentMeaning: practiceWordMeaning ?? null,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error("Error saving alphabet practice word:", error);
   }
 }
 
@@ -276,6 +289,13 @@ function LetterCard({
         letter.id,
         nextPracticeWord,
         isYes,
+        nextPracticeMeaning
+      );
+      await saveAlphabetPracticeWord(
+        npub,
+        targetLang,
+        letter.id,
+        nextPracticeWord,
         nextPracticeMeaning
       );
 
@@ -687,52 +707,47 @@ export default function AlphabetBootcamp({
   const xpLevelNumber = Math.floor(currentXp / 100) + 1;
   const nextLevelProgressPct = currentXp % 100;
 
-  const handlePracticeWordUpdated = useCallback(
-    (letterId, word, meaning) => {
-      setSavedPracticeWords((prev) => {
-        const updated = {
-          ...prev,
-          [letterId]: { word, meaning: normalizeMeaning(meaning) },
-        };
-        writePracticeWordsToStorage(npub, targetLang, updated);
-        return updated;
-      });
-    },
-    [npub, targetLang]
-  );
+  const handlePracticeWordUpdated = useCallback((letterId, word, meaning) => {
+    setSavedPracticeWords((prev) => ({
+      ...prev,
+      [letterId]: { word, meaning: normalizeMeaning(meaning) },
+    }));
+  }, []);
 
   useEffect(() => {
-    const localSaved = readPracticeWordsFromStorage(npub, targetLang);
-    setSavedPracticeWords(localSaved);
+    setSavedPracticeWords({});
 
-    if (!npub) return;
+    if (!npub) {
+      return;
+    }
     let cancelled = false;
 
     const loadProgress = async () => {
       try {
-        const snap = await getDoc(doc(database, "users", npub));
-        if (!snap.exists()) {
-          if (!cancelled) setSavedPracticeWords(localSaved);
-          return;
-        }
+        const snapshot = await getDocs(
+          query(
+            collection(database, "users", npub, "alphabetPractice"),
+            where("targetLang", "==", targetLang)
+          )
+        );
 
-        const progress = snap.data()?.progress?.alphabetPractice?.[targetLang] || {};
-        const mapped = { ...localSaved };
-        Object.entries(progress).forEach(([id, entry]) => {
-          const word = entry?.lastWord;
-          const meaning = normalizeMeaning(entry?.lastWordMeaning);
-          if (word) {
-            mapped[id] = { word, meaning };
+        const mapped = {};
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data?.letterId && data?.currentWord) {
+            mapped[data.letterId] = {
+              word: data.currentWord,
+              meaning: normalizeMeaning(data.currentMeaning),
+            };
           }
         });
 
         if (!cancelled) {
           setSavedPracticeWords(mapped);
-          writePracticeWordsToStorage(npub, targetLang, mapped);
         }
       } catch (error) {
         console.error("Failed to load alphabet progress:", error);
-        if (!cancelled) setSavedPracticeWords(localSaved);
+        if (!cancelled) setSavedPracticeWords({});
       }
     };
 
