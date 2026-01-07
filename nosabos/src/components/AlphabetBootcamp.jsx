@@ -339,10 +339,12 @@ function LetterCard({
       let nextPracticeMeaning = practiceWordMeaningData;
 
       // Award XP and save progress
-      if (isYes && npub) {
-        await awardXp(npub, xp, targetLang);
-        onXpAwarded?.(xp);
+      if (isYes) {
         setCorrectCount((c) => c + 1);
+        if (npub) {
+          await awardXp(npub, xp, targetLang);
+          onXpAwarded?.(xp);
+        }
       }
 
       // Save progress regardless of result
@@ -669,11 +671,20 @@ function LetterCard({
           p={4}
           boxShadow="0 10px 30px rgba(0,0,0,0.35), 0 0 0 2px rgba(56, 178, 172, 0.3)"
           color="white"
+          position="relative"
           sx={{
             backfaceVisibility: "hidden",
             transform: "rotateY(180deg)",
           }}
         >
+          {/* Star counter */}
+          <HStack spacing={1} position="absolute" top={3} left={3}>
+            <RiStarFill size={14} color="#ECC94B" />
+            <Text fontSize="xs" fontWeight="bold" color="yellow.400">
+              {correctCount}
+            </Text>
+          </HStack>
+
           {/* Practice Word Display */}
           <Text fontSize="xs" color="whiteAlpha.700" fontWeight="medium">
             {appLanguage === "es" ? "Di esta palabra:" : "Say this word:"}
