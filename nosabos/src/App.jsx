@@ -4537,7 +4537,6 @@ function BottomActionBar({
     helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
   const teamsLabel = t?.teams_drawer_title || "Teams";
   const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
-  const backLabel = appLanguage === "es" ? "Volver" : "Go back";
 
   // Path mode configuration
   const ALPHABET_LANGS = ["ru", "ja"];
@@ -4621,21 +4620,6 @@ function BottomActionBar({
         flexWrap={{ base: "wrap", md: "wrap" }}
         overflow="visible"
       >
-        {/* Back button - only show when not in skill tree */}
-        {viewMode !== "skillTree" && (
-          <IconButton
-            icon={<ArrowBackIcon boxSize={5} />}
-            onClick={onNavigateToSkillTree}
-            aria-label={backLabel}
-            rounded="xl"
-            flexShrink={0}
-            colorScheme="gray"
-            bg="gray.800"
-            boxShadow="0 4px 0 #313a4b"
-            border="1px solid white"
-          />
-        )}
-
         <IconButton
           icon={<PiUsersBold size={18} />}
           onClick={onOpenTeams}
@@ -4728,9 +4712,8 @@ function BottomActionBar({
           flexShrink={0}
         />
 
-        {/* Path Mode Menu - only show on skill tree */}
-        {viewMode === "skillTree" && (
-          <Menu>
+        {/* Path Mode Menu */}
+        <Menu>
             <MenuButton
               as={IconButton}
               icon={<CurrentModeIcon size={18} />}
@@ -4774,7 +4757,6 @@ function BottomActionBar({
               })}
             </MenuList>
           </Menu>
-        )}
       </Flex>
     </Box>
   );
