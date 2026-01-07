@@ -36,7 +36,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Mismas reglas que español. Usa Ç para sonido 's' antes de a/o/u.",
     practiceWord: "casa",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "casa",
+    tts: "casa / céu",
   },
   {
     id: "ç",
@@ -62,7 +62,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "En Brasil: D antes de i/e suena como 'dy'. 'Dia' = 'djia'.",
     practiceWord: "dia",
     practiceWordMeaning: { en: "day", es: "día" },
-    tts: "dia",
+    tts: "dado / dia",
   },
   {
     id: "e",
@@ -101,7 +101,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "G antes de e/i = sonido 'zh'. ¡Muy diferente del español!",
     practiceWord: "gente",
     practiceWordMeaning: { en: "people", es: "gente" },
-    tts: "gente",
+    tts: "gato / gente",
   },
   {
     id: "h",
@@ -270,7 +270,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "R inicial o RR = sonido 'h'. Entre vocales = golpe como español.",
     practiceWord: "rio",
     practiceWordMeaning: { en: "river", es: "río" },
-    tts: "rio",
+    tts: "rio / caro",
   },
   {
     id: "rr",
@@ -296,7 +296,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Entre vocales S = 'z'. En Río/Portugal S final = 'sh'.",
     practiceWord: "casa",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "casa",
+    tts: "sol / casa",
   },
   {
     id: "t",
@@ -309,7 +309,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "En Brasil: T antes de i/e suena como 'ch'. 'Tia' = 'chia'.",
     practiceWord: "tempo",
     practiceWordMeaning: { en: "time/weather", es: "tiempo" },
-    tts: "tempo",
+    tts: "tempo / tia",
   },
   {
     id: "u",
@@ -361,7 +361,7 @@ export const PORTUGUESE_ALPHABET = [
     tipEs: "Más común: 'sh' (xícara). También 'ks', 'z', 's' según palabra.",
     practiceWord: "xícara",
     practiceWordMeaning: { en: "cup", es: "taza" },
-    tts: "xícara",
+    tts: "xícara / táxi",
   },
   {
     id: "y",

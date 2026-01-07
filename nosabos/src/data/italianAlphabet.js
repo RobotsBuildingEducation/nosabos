@@ -36,7 +36,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "C antes de e/i = sonido 'ch'. ¡Diferente del español!",
     practiceWord: "ciao",
     practiceWordMeaning: { en: "hello/goodbye", es: "hola/adiós" },
-    tts: "ciao",
+    tts: "casa / ciao",
   },
   {
     id: "d",
@@ -88,7 +88,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "G antes de e/i = sonido 'y' argentina. ¡Muy diferente del español!",
     practiceWord: "gente",
     practiceWordMeaning: { en: "people", es: "gente" },
-    tts: "gente",
+    tts: "gatto / gente",
   },
   {
     id: "h",
@@ -270,7 +270,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "¡Dos sonidos! 'Pizza' = 'ts', 'zero' = 'dz'. Varía por región.",
     practiceWord: "zero",
     practiceWordMeaning: { en: "zero", es: "cero" },
-    tts: "zero",
+    tts: "pizza / zero",
   },
   {
     id: "à",

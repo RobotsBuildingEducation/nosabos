@@ -36,7 +36,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "En España, C antes de e/i suena como 'z' (distinción).",
     practiceWord: "casa",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "casa",
+    tts: "casa / cero",
   },
   {
     id: "ch",
@@ -101,7 +101,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "G antes de e/i suena igual que J española.",
     practiceWord: "gato",
     practiceWordMeaning: { en: "cat", es: "gato" },
-    tts: "gato",
+    tts: "gato / gente",
   },
   {
     id: "h",
@@ -361,7 +361,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "'México' suena con J, 'examen' suena con 'ks'. Varía según origen.",
     practiceWord: "examen",
     practiceWordMeaning: { en: "exam", es: "examen" },
-    tts: "examen",
+    tts: "examen / México",
   },
   {
     id: "y",
