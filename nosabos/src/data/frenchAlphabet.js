@@ -10,7 +10,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "La A francesa está entre 'cat' y 'father' inglés. Mantenla pura.",
     practiceWord: "ami",
     practiceWordMeaning: { en: "friend", es: "amigo" },
-    tts: "ami",
+    tts: "a",
   },
   {
     id: "b",
@@ -23,7 +23,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Igual que B inglesa.",
     practiceWord: "bien",
     practiceWordMeaning: { en: "well/good", es: "bien" },
-    tts: "bien",
+    tts: "bé",
   },
   {
     id: "c",
@@ -36,7 +36,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Mismas reglas que español y portugués.",
     practiceWord: "café",
     practiceWordMeaning: { en: "coffee", es: "café" },
-    tts: "café",
+    tts: "cé",
   },
   {
     id: "ç",
@@ -49,7 +49,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Hace que C suene como 's' antes de a, o, u: 'français'.",
     practiceWord: "français",
     practiceWordMeaning: { en: "French", es: "francés" },
-    tts: "français",
+    tts: "cé cédille",
   },
   {
     id: "d",
@@ -62,7 +62,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "D dental, lengua toca detrás de dientes superiores.",
     practiceWord: "dans",
     practiceWordMeaning: { en: "in", es: "en" },
-    tts: "dans",
+    tts: "dé",
   },
   {
     id: "e",
@@ -75,7 +75,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "¡La letra más compleja! A menudo muda al final de palabras.",
     practiceWord: "le",
     practiceWordMeaning: { en: "the", es: "el" },
-    tts: "le",
+    tts: "e",
   },
   {
     id: "é",
@@ -88,7 +88,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "E cerrada. Siempre pronunciada, nunca muda. 'Été' = 'e-te'.",
     practiceWord: "été",
     practiceWordMeaning: { en: "summer", es: "verano" },
-    tts: "été",
+    tts: "é",
   },
   {
     id: "è",
@@ -101,7 +101,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "E abierta. Más abierta que É. 'Père' = 'per'.",
     practiceWord: "père",
     practiceWordMeaning: { en: "father", es: "padre" },
-    tts: "père",
+    tts: "è",
   },
   {
     id: "ê",
@@ -114,7 +114,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Mismo sonido que È. El circunflejo a menudo marca una 's' histórica.",
     practiceWord: "forêt",
     practiceWordMeaning: { en: "forest", es: "bosque" },
-    tts: "forêt",
+    tts: "ê",
   },
   {
     id: "ë",
@@ -127,7 +127,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Tréma significa '¡pronúnciame separada!' 'Noël' = 'no-el'.",
     practiceWord: "Noël",
     practiceWordMeaning: { en: "Christmas", es: "Navidad" },
-    tts: "Noël",
+    tts: "ë",
   },
   {
     id: "f",
@@ -140,7 +140,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Igual que F inglesa.",
     practiceWord: "famille",
     practiceWordMeaning: { en: "family", es: "familia" },
-    tts: "famille",
+    tts: "effe",
   },
   {
     id: "g",
@@ -153,7 +153,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "G antes de e/i = sonido 'zh'. ¡Igual que portugués!",
     practiceWord: "manger",
     practiceWordMeaning: { en: "to eat", es: "comer" },
-    tts: "manger",
+    tts: "gé",
   },
   {
     id: "h",
@@ -166,7 +166,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Dos tipos: H muda permite enlace, H aspirada lo bloquea. ¡Ambas mudas!",
     practiceWord: "heure",
     practiceWordMeaning: { en: "hour", es: "hora" },
-    tts: "heure",
+    tts: "ache",
   },
   {
     id: "i",
@@ -179,7 +179,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Sonido puro, como I española.",
     practiceWord: "ici",
     practiceWordMeaning: { en: "here", es: "aquí" },
-    tts: "ici",
+    tts: "i",
   },
   {
     id: "î",
@@ -192,7 +192,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Mismo sonido que I. El circunflejo marca cambio histórico.",
     practiceWord: "île",
     practiceWordMeaning: { en: "island", es: "isla" },
-    tts: "île",
+    tts: "î",
   },
   {
     id: "ï",
@@ -205,7 +205,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Separa I de otras vocales. 'Naïf' = 'na-if'.",
     practiceWord: "naïf",
     practiceWordMeaning: { en: "naive", es: "ingenuo" },
-    tts: "naïf",
+    tts: "ï",
   },
   {
     id: "j",
@@ -218,7 +218,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Igual que J portuguesa. ¡NO como J inglesa!",
     practiceWord: "jour",
     practiceWordMeaning: { en: "day", es: "día" },
-    tts: "jour",
+    tts: "ji",
   },
   {
     id: "k",
@@ -231,7 +231,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Solo en palabras prestadas.",
     practiceWord: "kilo",
     practiceWordMeaning: { en: "kilogram", es: "kilo" },
-    tts: "kilo",
+    tts: "ka",
   },
   {
     id: "l",
@@ -244,7 +244,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "L clara como español, no oscura como al final en inglés.",
     practiceWord: "lune",
     practiceWordMeaning: { en: "moon", es: "luna" },
-    tts: "lune",
+    tts: "elle",
   },
   {
     id: "m",
@@ -257,7 +257,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Igual que M inglesa.",
     practiceWord: "maison",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "maison",
+    tts: "emme",
   },
   {
     id: "n",
@@ -270,7 +270,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Igual que N inglesa.",
     practiceWord: "nuit",
     practiceWordMeaning: { en: "night", es: "noche" },
-    tts: "nuit",
+    tts: "enne",
   },
   {
     id: "o",
@@ -283,7 +283,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "O abierta antes de ciertas consonantes, cerrada al final de sílabas.",
     practiceWord: "rose",
     practiceWordMeaning: { en: "rose", es: "rosa" },
-    tts: "rose",
+    tts: "o",
   },
   {
     id: "ô",
@@ -296,7 +296,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Siempre O cerrada. 'Hôtel' tiene O cerrada.",
     practiceWord: "hôtel",
     practiceWordMeaning: { en: "hotel", es: "hotel" },
-    tts: "hôtel",
+    tts: "ô",
   },
   {
     id: "p",
@@ -309,7 +309,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Sin aspiración como P española.",
     practiceWord: "petit",
     practiceWordMeaning: { en: "small", es: "pequeño" },
-    tts: "petit",
+    tts: "pé",
   },
   {
     id: "q",
@@ -322,7 +322,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "QU suena como 'k' (U es muda). 'Que' = 'ke'.",
     practiceWord: "que",
     practiceWordMeaning: { en: "that/what", es: "que" },
-    tts: "que",
+    tts: "cu",
   },
   {
     id: "r",
@@ -335,7 +335,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "R francesa es uvular. ¡No vibrante! Como hacer gárgaras suavemente.",
     practiceWord: "rouge",
     practiceWordMeaning: { en: "red", es: "rojo" },
-    tts: "rouge",
+    tts: "erre",
   },
   {
     id: "s",
@@ -348,7 +348,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Entre vocales: S = 'z'. 'Maison' = 'me-zon'.",
     practiceWord: "soleil",
     practiceWordMeaning: { en: "sun", es: "sol" },
-    tts: "soleil",
+    tts: "esse",
   },
   {
     id: "t",
@@ -361,7 +361,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "T dental. A menudo muda al final: 'petit' = 'pe-ti'.",
     practiceWord: "table",
     practiceWordMeaning: { en: "table", es: "mesa" },
-    tts: "table",
+    tts: "té",
   },
   {
     id: "u",
@@ -374,7 +374,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Di 'i' pero redondea los labios. ¡NO como U española! Único del francés.",
     practiceWord: "tu",
     practiceWordMeaning: { en: "you", es: "tú" },
-    tts: "tu",
+    tts: "u",
   },
   {
     id: "ù",
@@ -387,7 +387,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Solo aparece en 'où' (donde) para distinguirlo de 'ou' (o).",
     practiceWord: "où",
     practiceWordMeaning: { en: "where", es: "donde" },
-    tts: "où",
+    tts: "ù",
   },
   {
     id: "û",
@@ -400,7 +400,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Mismo sonido que U. Marca ortografía histórica.",
     practiceWord: "sûr",
     practiceWordMeaning: { en: "sure", es: "seguro" },
-    tts: "sûr",
+    tts: "û",
   },
   {
     id: "ü",
@@ -413,7 +413,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Rara en francés. Separa U de otras vocales.",
     practiceWord: "capharnaüm",
     practiceWordMeaning: { en: "mess/chaos", es: "caos" },
-    tts: "capharnaüm",
+    tts: "ü",
   },
   {
     id: "v",
@@ -426,7 +426,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Dientes superiores tocan labio inferior. ¡Diferente de B!",
     practiceWord: "vin",
     practiceWordMeaning: { en: "wine", es: "vino" },
-    tts: "vin",
+    tts: "vé",
   },
   {
     id: "w",
@@ -439,7 +439,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Origen alemán = sonido 'v'. Origen inglés = sonido 'w'.",
     practiceWord: "wagon",
     practiceWordMeaning: { en: "wagon", es: "vagón" },
-    tts: "wagon",
+    tts: "double vé",
   },
   {
     id: "x",
@@ -452,7 +452,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Normalmente 'ks'. En 'examen' = 'gz'. Al final a menudo muda.",
     practiceWord: "taxi",
     practiceWordMeaning: { en: "taxi", es: "taxi" },
-    tts: "taxi",
+    tts: "ixe",
   },
   {
     id: "y",
@@ -465,7 +465,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Llamada 'I griega'. Mismo sonido que I.",
     practiceWord: "style",
     practiceWordMeaning: { en: "style", es: "estilo" },
-    tts: "style",
+    tts: "i grec",
   },
   {
     id: "z",
@@ -478,7 +478,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Sonora como Z inglesa. A menudo muda al final.",
     practiceWord: "zoo",
     practiceWordMeaning: { en: "zoo", es: "zoológico" },
-    tts: "zoo",
+    tts: "zède",
   },
   {
     id: "à",
@@ -491,7 +491,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Mismo sonido que A. Distingue palabras: 'a' (tiene) vs 'à' (a).",
     practiceWord: "là",
     practiceWordMeaning: { en: "there", es: "allí" },
-    tts: "là",
+    tts: "à",
   },
   {
     id: "â",
@@ -504,7 +504,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Tradicionalmente A más larga. Francés moderno: a menudo igual que A.",
     practiceWord: "âge",
     practiceWordMeaning: { en: "age", es: "edad" },
-    tts: "âge",
+    tts: "â",
   },
   {
     id: "nasal-an",
@@ -517,7 +517,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Di 'a' mientras el aire va por la nariz. ¡La N NO se pronuncia!",
     practiceWord: "enfant",
     practiceWordMeaning: { en: "child", es: "niño" },
-    tts: "enfant",
+    tts: "an",
   },
   {
     id: "nasal-on",
@@ -530,7 +530,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Di 'o' con labios redondeados mientras el aire va por la nariz.",
     practiceWord: "bon",
     practiceWordMeaning: { en: "good", es: "bueno" },
-    tts: "bon",
+    tts: "on",
   },
   {
     id: "nasal-in",
@@ -569,7 +569,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Este es el sonido que los hispanohablantes esperan de 'U'. ¡La U francesa es diferente!",
     practiceWord: "vous",
     practiceWordMeaning: { en: "you (formal)", es: "usted/ustedes" },
-    tts: "vous",
+    tts: "ou",
   },
   {
     id: "eu",
@@ -582,7 +582,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Di 'e' pero redondea los labios.",
     practiceWord: "deux",
     practiceWordMeaning: { en: "two", es: "dos" },
-    tts: "deux",
+    tts: "eu",
   },
   {
     id: "oi",
@@ -595,7 +595,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "OI = sonido 'ua'. 'Moi' = 'mua', 'toi' = 'tua'.",
     practiceWord: "moi",
     practiceWordMeaning: { en: "me", es: "yo/mí" },
-    tts: "moi",
+    tts: "oi",
   },
   {
     id: "gn",
@@ -608,7 +608,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "¡Igual que Ñ española! 'Montagne' = 'mon-ta-ñ'.",
     practiceWord: "montagne",
     practiceWordMeaning: { en: "mountain", es: "montaña" },
-    tts: "montagne",
+    tts: "gn",
   },
   {
     id: "silent-letters",
@@ -621,7 +621,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Las s, t, d, x, z, p finales son usualmente mudas.",
     practiceWord: "temps",
     practiceWordMeaning: { en: "time/weather", es: "tiempo" },
-    tts: "temps",
+    tts: "silent",
   },
   {
     id: "liaison",
@@ -634,6 +634,6 @@ export const FRENCH_ALPHABET = [
     tipEs: "¡Conecta palabras! 'Les amis' = 'le-za-mi'. La S final se vuelve Z.",
     practiceWord: "les amis",
     practiceWordMeaning: { en: "the friends", es: "los amigos" },
-    tts: "les amis",
+    tts: "liaison",
   },
 ];

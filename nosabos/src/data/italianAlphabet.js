@@ -10,7 +10,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Pura y abierta, como A española. Nunca cambia.",
     practiceWord: "amore",
     practiceWordMeaning: { en: "love", es: "amor" },
-    tts: "amore",
+    tts: "a",
   },
   {
     id: "b",
@@ -23,7 +23,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Igual que B inglesa. Cuando es doble (BB), mantenla más tiempo.",
     practiceWord: "bello",
     practiceWordMeaning: { en: "beautiful", es: "bello" },
-    tts: "bello",
+    tts: "bi",
   },
   {
     id: "c",
@@ -36,7 +36,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "C antes de e/i = sonido 'ch'. ¡Diferente del español!",
     practiceWord: "ciao",
     practiceWordMeaning: { en: "hello/goodbye", es: "hola/adiós" },
-    tts: "ciao",
+    tts: "ci",
   },
   {
     id: "d",
@@ -49,7 +49,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "D dental, lengua toca detrás de los dientes.",
     practiceWord: "dolce",
     practiceWordMeaning: { en: "sweet", es: "dulce" },
-    tts: "dolce",
+    tts: "di",
   },
   {
     id: "e",
@@ -62,7 +62,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Dos sonidos: E abierta y E cerrada. Varía por región.",
     practiceWord: "bene",
     practiceWordMeaning: { en: "well/good", es: "bien" },
-    tts: "bene",
+    tts: "e",
   },
   {
     id: "f",
@@ -75,7 +75,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Igual que F inglesa.",
     practiceWord: "famiglia",
     practiceWordMeaning: { en: "family", es: "familia" },
-    tts: "famiglia",
+    tts: "effe",
   },
   {
     id: "g",
@@ -88,7 +88,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "G antes de e/i = sonido 'y' argentina. ¡Muy diferente del español!",
     practiceWord: "gente",
     practiceWordMeaning: { en: "people", es: "gente" },
-    tts: "gente",
+    tts: "gi",
   },
   {
     id: "h",
@@ -101,7 +101,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "¡Muda! Pero cambia sonidos de C, G, SC: 'che' = 'ke', 'ghe' = 'ge'.",
     practiceWord: "hotel",
     practiceWordMeaning: { en: "hotel", es: "hotel" },
-    tts: "hotel",
+    tts: "acca",
   },
   {
     id: "i",
@@ -114,7 +114,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Sonido puro como I española.",
     practiceWord: "Italia",
     practiceWordMeaning: { en: "Italy", es: "Italia" },
-    tts: "Italia",
+    tts: "i",
   },
   {
     id: "l",
@@ -127,7 +127,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "L clara como español.",
     practiceWord: "luna",
     practiceWordMeaning: { en: "moon", es: "luna" },
-    tts: "luna",
+    tts: "elle",
   },
   {
     id: "m",
@@ -140,7 +140,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Igual que M inglesa.",
     practiceWord: "mamma",
     practiceWordMeaning: { en: "mom", es: "mamá" },
-    tts: "mamma",
+    tts: "emme",
   },
   {
     id: "n",
@@ -153,7 +153,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Igual que N inglesa.",
     practiceWord: "notte",
     practiceWordMeaning: { en: "night", es: "noche" },
-    tts: "notte",
+    tts: "enne",
   },
   {
     id: "o",
@@ -166,7 +166,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Dos sonidos: O abierta y O cerrada. Varía por región.",
     practiceWord: "oggi",
     practiceWordMeaning: { en: "today", es: "hoy" },
-    tts: "oggi",
+    tts: "o",
   },
   {
     id: "p",
@@ -179,7 +179,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Sin aspiración como P española.",
     practiceWord: "pizza",
     practiceWordMeaning: { en: "pizza", es: "pizza" },
-    tts: "pizza",
+    tts: "pi",
   },
   {
     id: "q",
@@ -192,7 +192,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "QU = sonido 'ku'. La U siempre se pronuncia: 'quando' = 'kuan-do'.",
     practiceWord: "quando",
     practiceWordMeaning: { en: "when", es: "cuando" },
-    tts: "quando",
+    tts: "cu",
   },
   {
     id: "r",
@@ -205,7 +205,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "¡Siempre vibrante! R simple = vibración suave, RR = fuerte. Como R española.",
     practiceWord: "rosso",
     practiceWordMeaning: { en: "red", es: "rojo" },
-    tts: "rosso",
+    tts: "erre",
   },
   {
     id: "s",
@@ -218,7 +218,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Antes de consonantes sonoras: S = 'z'. Entre vocales: varía por región.",
     practiceWord: "sole",
     practiceWordMeaning: { en: "sun", es: "sol" },
-    tts: "sole",
+    tts: "esse",
   },
   {
     id: "t",
@@ -231,7 +231,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "T dental, sin aspiración. Lengua toca los dientes.",
     practiceWord: "tempo",
     practiceWordMeaning: { en: "time", es: "tiempo" },
-    tts: "tempo",
+    tts: "ti",
   },
   {
     id: "u",
@@ -244,7 +244,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Sonido puro como U española.",
     practiceWord: "uno",
     practiceWordMeaning: { en: "one", es: "uno" },
-    tts: "uno",
+    tts: "u",
   },
   {
     id: "v",
@@ -257,7 +257,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Dientes superiores tocan labio inferior. ¡Diferente de B!",
     practiceWord: "vino",
     practiceWordMeaning: { en: "wine", es: "vino" },
-    tts: "vino",
+    tts: "vi",
   },
   {
     id: "z",
@@ -270,7 +270,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "¡Dos sonidos! 'Pizza' = 'ts', 'zero' = 'dz'. Varía por región.",
     practiceWord: "zero",
     practiceWordMeaning: { en: "zero", es: "cero" },
-    tts: "zero",
+    tts: "zeta",
   },
   {
     id: "à",
@@ -283,7 +283,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Solo aparece al final. 'Città', 'papà', 'perché no? → Sì!'",
     practiceWord: "città",
     practiceWordMeaning: { en: "city", es: "ciudad" },
-    tts: "città",
+    tts: "à",
   },
   {
     id: "è",
@@ -296,7 +296,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "E abierta al final. 'È' significa 'es'. 'Caffè' tiene E abierta.",
     practiceWord: "caffè",
     practiceWordMeaning: { en: "coffee", es: "café" },
-    tts: "caffè",
+    tts: "è",
   },
   {
     id: "é",
@@ -309,7 +309,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "E cerrada al final. 'Perché' (por qué/porque) tiene E cerrada.",
     practiceWord: "perché",
     practiceWordMeaning: { en: "why/because", es: "por qué/porque" },
-    tts: "perché",
+    tts: "é",
   },
   {
     id: "ì",
@@ -322,7 +322,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Solo al final. 'Così' (así), 'lì' (allí).",
     practiceWord: "così",
     practiceWordMeaning: { en: "so/thus", es: "así" },
-    tts: "così",
+    tts: "ì",
   },
   {
     id: "ò",
@@ -335,7 +335,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "O abierta al final. 'Però' (pero/sin embargo).",
     practiceWord: "però",
     practiceWordMeaning: { en: "but/however", es: "pero/sin embargo" },
-    tts: "però",
+    tts: "ò",
   },
   {
     id: "ó",
@@ -348,7 +348,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "El acento O cerrado es raro. La mayoría usa Ò.",
     practiceWord: "metró",
     practiceWordMeaning: { en: "subway", es: "metro" },
-    tts: "metró",
+    tts: "ó",
   },
   {
     id: "ù",
@@ -361,7 +361,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Solo al final. 'Più' (más), 'gioventù' (juventud).",
     practiceWord: "più",
     practiceWordMeaning: { en: "more", es: "más" },
-    tts: "più",
+    tts: "ù",
   },
   {
     id: "ch",
@@ -387,7 +387,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "H hace G dura antes de e/i: 'ghetto', 'spaghetti'.",
     practiceWord: "spaghetti",
     practiceWordMeaning: { en: "spaghetti", es: "espagueti" },
-    tts: "spaghetti",
+    tts: "ghe",
   },
   {
     id: "gl",
@@ -400,7 +400,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "GLI = L palatal. 'Famiglia' = 'fa-MI-lia'. ¡Hermoso sonido italiano!",
     practiceWord: "famiglia",
     practiceWordMeaning: { en: "family", es: "familia" },
-    tts: "famiglia",
+    tts: "gli",
   },
   {
     id: "gn",
@@ -413,7 +413,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "¡Igual que Ñ española! 'Gnocchi', 'lasagna', 'bagno'.",
     practiceWord: "gnocchi",
     practiceWordMeaning: { en: "gnocchi", es: "ñoquis" },
-    tts: "gnocchi",
+    tts: "gn",
   },
   {
     id: "sc",
@@ -426,7 +426,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "SC antes de e/i = sonido 'sh'. 'Pesce' = 'pe-she'. Añade H para 'sk': 'schema'.",
     practiceWord: "pesce",
     practiceWordMeaning: { en: "fish", es: "pescado" },
-    tts: "pesce",
+    tts: "sce",
   },
   {
     id: "double-consonants",
@@ -439,7 +439,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "¡Las dobles italianas se pronuncian más largas! El significado cambia.",
     practiceWord: "mamma",
     practiceWordMeaning: { en: "mom", es: "mamá" },
-    tts: "mamma",
+    tts: "emme",
   },
   {
     id: "foreign-j",
@@ -452,7 +452,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Solo en palabras extranjeras. El italiano nativo usa I o GI.",
     practiceWord: "jeans",
     practiceWordMeaning: { en: "jeans", es: "jeans" },
-    tts: "jeans",
+    tts: "i lunga",
   },
   {
     id: "foreign-k",
@@ -465,7 +465,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Solo en palabras extranjeras. El italiano nativo usa C o CH.",
     practiceWord: "kiwi",
     practiceWordMeaning: { en: "kiwi", es: "kiwi" },
-    tts: "kiwi",
+    tts: "cappa",
   },
   {
     id: "foreign-w",
@@ -478,7 +478,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Solo en palabras extranjeras. Los italianos a menudo dicen 'v'.",
     practiceWord: "weekend",
     practiceWordMeaning: { en: "weekend", es: "fin de semana" },
-    tts: "weekend",
+    tts: "doppia vu",
   },
   {
     id: "foreign-x",
@@ -491,7 +491,7 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Solo en palabras extranjeras: 'taxi', 'extra'.",
     practiceWord: "taxi",
     practiceWordMeaning: { en: "taxi", es: "taxi" },
-    tts: "taxi",
+    tts: "ics",
   },
   {
     id: "foreign-y",
@@ -504,6 +504,6 @@ export const ITALIAN_ALPHABET = [
     tipEs: "Solo en palabras extranjeras: 'yoga', 'yogurt'.",
     practiceWord: "yogurt",
     practiceWordMeaning: { en: "yogurt", es: "yogur" },
-    tts: "yogurt",
+    tts: "ipsilon",
   },
 ];

@@ -10,7 +10,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "El holandés tiene vocales cortas y largas. ¡La A corta es diferente!",
     practiceWord: "dag",
     practiceWordMeaning: { en: "day", es: "día" },
-    tts: "dag",
+    tts: "a",
   },
   {
     id: "b",
@@ -23,7 +23,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "B final se vuelve P: 'heb' suena como 'hep'.",
     practiceWord: "boek",
     practiceWordMeaning: { en: "book", es: "libro" },
-    tts: "boek",
+    tts: "bee",
   },
   {
     id: "c",
@@ -36,7 +36,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Mayormente en palabras prestadas. El holandés nativo usa K o S.",
     practiceWord: "cent",
     practiceWordMeaning: { en: "cent", es: "centavo" },
-    tts: "cent",
+    tts: "see",
   },
   {
     id: "d",
@@ -49,7 +49,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "D final se vuelve T: 'goed' suena como 'got'.",
     practiceWord: "door",
     practiceWordMeaning: { en: "through/door", es: "por/puerta" },
-    tts: "door",
+    tts: "dee",
   },
   {
     id: "e",
@@ -62,7 +62,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "E sin acento a menudo se vuelve schwa (uh). ¡Muy común!",
     practiceWord: "een",
     practiceWordMeaning: { en: "one/a", es: "uno/un" },
-    tts: "een",
+    tts: "ee",
   },
   {
     id: "f",
@@ -75,7 +75,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Igual que F inglesa.",
     practiceWord: "fiets",
     practiceWordMeaning: { en: "bicycle", es: "bicicleta" },
-    tts: "fiets",
+    tts: "ef",
   },
   {
     id: "g",
@@ -88,7 +88,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "¡EL sonido holandés! Como 'ch' alemán pero sonoro. ¡Practica gargarizando!",
     practiceWord: "goed",
     practiceWordMeaning: { en: "good", es: "bueno" },
-    tts: "goed",
+    tts: "gee",
   },
   {
     id: "h",
@@ -101,7 +101,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Se pronuncia como H inglesa, no muda como español.",
     practiceWord: "huis",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "huis",
+    tts: "ha",
   },
   {
     id: "i",
@@ -114,7 +114,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "I corta es muy corta. I larga se escribe 'ie'.",
     practiceWord: "dit",
     practiceWordMeaning: { en: "this", es: "esto" },
-    tts: "dit",
+    tts: "ie",
   },
   {
     id: "j",
@@ -127,7 +127,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "¡NO como J inglesa! J holandesa = sonido Y inglés.",
     practiceWord: "ja",
     practiceWordMeaning: { en: "yes", es: "sí" },
-    tts: "ja",
+    tts: "jee",
   },
   {
     id: "k",
@@ -140,7 +140,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Igual que K inglesa.",
     practiceWord: "kind",
     practiceWordMeaning: { en: "child", es: "niño" },
-    tts: "kind",
+    tts: "ka",
   },
   {
     id: "l",
@@ -153,7 +153,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "L clara, similar al español.",
     practiceWord: "land",
     practiceWordMeaning: { en: "land/country", es: "tierra/país" },
-    tts: "land",
+    tts: "el",
   },
   {
     id: "m",
@@ -166,7 +166,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Igual que M inglesa.",
     practiceWord: "man",
     practiceWordMeaning: { en: "man", es: "hombre" },
-    tts: "man",
+    tts: "em",
   },
   {
     id: "n",
@@ -179,7 +179,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Igual que N inglesa.",
     practiceWord: "nee",
     practiceWordMeaning: { en: "no", es: "no" },
-    tts: "nee",
+    tts: "en",
   },
   {
     id: "o",
@@ -192,7 +192,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "O corta es más abierta. O larga (oo) no tiene desliz.",
     practiceWord: "groot",
     practiceWordMeaning: { en: "big", es: "grande" },
-    tts: "groot",
+    tts: "oo",
   },
   {
     id: "p",
@@ -205,7 +205,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Sin aspiración como P española.",
     practiceWord: "paard",
     practiceWordMeaning: { en: "horse", es: "caballo" },
-    tts: "paard",
+    tts: "pee",
   },
   {
     id: "q",
@@ -218,7 +218,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Solo en palabras prestadas. El holandés nativo usa KW.",
     practiceWord: "quiz",
     practiceWordMeaning: { en: "quiz", es: "cuestionario" },
-    tts: "quiz",
+    tts: "kuu",
   },
   {
     id: "r",
@@ -231,7 +231,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "¡La R holandesa varía por región! Uvular es común en el oeste.",
     practiceWord: "rood",
     practiceWordMeaning: { en: "red", es: "rojo" },
-    tts: "rood",
+    tts: "er",
   },
   {
     id: "s",
@@ -244,7 +244,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Siempre sorda, como S inglesa en 'sun'.",
     practiceWord: "stad",
     practiceWordMeaning: { en: "city", es: "ciudad" },
-    tts: "stad",
+    tts: "es",
   },
   {
     id: "t",
@@ -257,7 +257,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "T dental, sin aspiración.",
     practiceWord: "tuin",
     practiceWordMeaning: { en: "garden", es: "jardín" },
-    tts: "tuin",
+    tts: "tee",
   },
   {
     id: "u",
@@ -270,7 +270,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "¡NO como 'u' española! Di 'i' con labios redondeados. ¡Sonido único!",
     practiceWord: "nu",
     practiceWordMeaning: { en: "now", es: "ahora" },
-    tts: "nu",
+    tts: "uu",
   },
   {
     id: "v",
@@ -283,7 +283,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "En holandés estándar = sonido V. En dialectos del sur = sonido F.",
     practiceWord: "van",
     practiceWordMeaning: { en: "from/of", es: "de" },
-    tts: "van",
+    tts: "vee",
   },
   {
     id: "w",
@@ -296,7 +296,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Entre W y V inglesas. Más como V que W.",
     practiceWord: "water",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "water",
+    tts: "wee",
   },
   {
     id: "x",
@@ -309,7 +309,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Solo en palabras prestadas.",
     practiceWord: "taxi",
     practiceWordMeaning: { en: "taxi", es: "taxi" },
-    tts: "taxi",
+    tts: "iks",
   },
   {
     id: "ij",
@@ -322,7 +322,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "¡Considerada una letra en holandés! Ambas letras se capitalizan juntas.",
     practiceWord: "zijn",
     practiceWordMeaning: { en: "to be / his", es: "ser / su" },
-    tts: "zijn",
+    tts: "ij",
   },
   {
     id: "y",
@@ -335,7 +335,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Solo en palabras extranjeras. El holandés nativo usa IJ.",
     practiceWord: "yoga",
     practiceWordMeaning: { en: "yoga", es: "yoga" },
-    tts: "yoga",
+    tts: "griekse ij",
   },
   {
     id: "z",
@@ -348,7 +348,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Sonora como Z inglesa. En Bélgica a menudo suena como S.",
     practiceWord: "zon",
     practiceWordMeaning: { en: "sun", es: "sol" },
-    tts: "zon",
+    tts: "zet",
   },
   {
     id: "ë",
@@ -361,7 +361,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Trema muestra que E es sílaba separada.",
     practiceWord: "geëerd",
     practiceWordMeaning: { en: "honored", es: "honrado" },
-    tts: "geëerd",
+    tts: "ë",
   },
   {
     id: "ï",
@@ -374,7 +374,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Trema separa vocales: 'egoïst' = e-go-ist.",
     practiceWord: "egoïst",
     practiceWordMeaning: { en: "egoist", es: "egoísta" },
-    tts: "egoïst",
+    tts: "ï",
   },
   {
     id: "ui",
@@ -387,7 +387,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Empieza con 'a', muévete a 'u' redondeada. ¡Sin equivalente!",
     practiceWord: "huis",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "huis",
+    tts: "ui",
   },
   {
     id: "eu",
@@ -400,7 +400,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Di 'e' pero redondea los labios. Como 'eu' francés.",
     practiceWord: "neus",
     practiceWordMeaning: { en: "nose", es: "nariz" },
-    tts: "neus",
+    tts: "eu",
   },
   {
     id: "oe",
@@ -413,7 +413,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "¡Esta es la forma holandesa de escribir el sonido 'u'!",
     practiceWord: "goed",
     practiceWordMeaning: { en: "good", es: "bueno" },
-    tts: "goed",
+    tts: "oe",
   },
   {
     id: "ou-au",
@@ -426,7 +426,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Tanto OU como AU hacen el mismo sonido en holandés.",
     practiceWord: "oud",
     practiceWordMeaning: { en: "old", es: "viejo" },
-    tts: "oud",
+    tts: "ou",
   },
   {
     id: "ei-ij",
@@ -439,7 +439,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "¡EI e IJ suenan igual! La diferencia ortográfica es histórica.",
     practiceWord: "trein",
     practiceWordMeaning: { en: "train", es: "tren" },
-    tts: "trein",
+    tts: "ei",
   },
   {
     id: "sch",
@@ -452,7 +452,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Estándar: S + G gutural. Bélgica/algunas áreas: solo S.",
     practiceWord: "school",
     practiceWordMeaning: { en: "school", es: "escuela" },
-    tts: "school",
+    tts: "sch",
   },
   {
     id: "ch",
@@ -465,7 +465,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "¡CH y G hacen el mismo sonido gutural!",
     practiceWord: "nacht",
     practiceWordMeaning: { en: "night", es: "noche" },
-    tts: "nacht",
+    tts: "ch",
   },
   {
     id: "ng",
@@ -478,7 +478,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "Igual que 'ng' inglés. Sin sonido G separado después.",
     practiceWord: "lang",
     practiceWordMeaning: { en: "long", es: "largo" },
-    tts: "lang",
+    tts: "ng",
   },
   {
     id: "final-n",
@@ -491,6 +491,6 @@ export const DUTCH_ALPHABET = [
     tipEs: "En habla casual, 'lopen' suena como 'lopuh'. ¡Muy holandés!",
     practiceWord: "lopen",
     practiceWordMeaning: { en: "to walk", es: "caminar" },
-    tts: "lopen",
+    tts: "en",
   },
 ];
