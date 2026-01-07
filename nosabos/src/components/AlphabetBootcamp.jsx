@@ -24,6 +24,13 @@ import {
 import { motion } from "framer-motion";
 import { RUSSIAN_ALPHABET } from "../data/russianAlphabet";
 import { JAPANESE_ALPHABET } from "../data/japaneseAlphabet";
+import { ENGLISH_ALPHABET } from "../data/englishAlphabet";
+import { SPANISH_ALPHABET } from "../data/spanishAlphabet";
+import { PORTUGUESE_ALPHABET } from "../data/portugueseAlphabet";
+import { FRENCH_ALPHABET } from "../data/frenchAlphabet";
+import { ITALIAN_ALPHABET } from "../data/italianAlphabet";
+import { DUTCH_ALPHABET } from "../data/dutchAlphabet";
+import { GERMAN_ALPHABET } from "../data/germanAlphabet";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -819,6 +826,13 @@ function LetterCard({
 const LANGUAGE_ALPHABETS = {
   ru: RUSSIAN_ALPHABET,
   ja: JAPANESE_ALPHABET,
+  en: ENGLISH_ALPHABET,
+  es: SPANISH_ALPHABET,
+  pt: PORTUGUESE_ALPHABET,
+  fr: FRENCH_ALPHABET,
+  it: ITALIAN_ALPHABET,
+  nl: DUTCH_ALPHABET,
+  de: GERMAN_ALPHABET,
 };
 
 export default function AlphabetBootcamp({
