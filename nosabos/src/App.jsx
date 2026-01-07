@@ -1275,7 +1275,18 @@ export default function App() {
   });
   const [activeLesson, setActiveLesson] = useState(null);
 
-  const ALPHABET_LANGS = ["ru", "ja", "en", "es", "pt", "fr", "it", "nl", "de"];
+  const ALPHABET_LANGS = [
+    "ru",
+    "ja",
+    "en",
+    "es",
+    "pt",
+    "fr",
+    "it",
+    "nl",
+    "de",
+    "nah",
+  ];
 
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
   const [pathMode, setPathMode] = useState(() => {
@@ -4533,7 +4544,18 @@ function BottomActionBar({
   const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
 
   // Path mode configuration
-  const ALPHABET_LANGS = ["ru", "ja", "en", "es", "pt", "fr", "it", "nl", "de"];
+  const ALPHABET_LANGS = [
+    "ru",
+    "ja",
+    "en",
+    "es",
+    "pt",
+    "fr",
+    "it",
+    "nl",
+    "de",
+    "nah",
+  ];
   const PATH_MODES = [
     ...(ALPHABET_LANGS.includes(targetLang)
       ? [
@@ -4708,49 +4730,49 @@ function BottomActionBar({
 
         {/* Path Mode Menu */}
         <Menu>
-            <MenuButton
-              as={IconButton}
-              icon={<CurrentModeIcon size={18} />}
-              aria-label={modeMenuLabel}
-              rounded="xl"
-              flexShrink={0}
-              // bg="rgba(0, 98, 189, 0.6)"
-              colorScheme="teal"
-              // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
-              color="white"
-            />
-            <MenuList
-              bg="gray.800"
-              borderColor="whiteAlpha.200"
-              boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
-              minW="180px"
-            >
-              {PATH_MODES.map((mode) => {
-                const ModeIcon = mode.icon;
-                const isSelected = pathMode === mode.id;
-                return (
-                  <MenuItem
-                    key={mode.id}
-                    onClick={() => {
-                      // If clicking path when already in path mode, just scroll
-                      if (mode.id === "path" && isSelected) {
-                        onScrollToLatest?.();
-                      } else {
-                        onPathModeChange?.(mode.id);
-                      }
-                    }}
-                    bg={isSelected ? "whiteAlpha.100" : "transparent"}
-                    _hover={{ bg: "whiteAlpha.200" }}
-                    color="white"
-                    icon={<ModeIcon size={18} />}
-                    fontWeight={isSelected ? "bold" : "normal"}
-                  >
-                    {mode.label}
-                  </MenuItem>
-                );
-              })}
-            </MenuList>
-          </Menu>
+          <MenuButton
+            as={IconButton}
+            icon={<CurrentModeIcon size={18} />}
+            aria-label={modeMenuLabel}
+            rounded="xl"
+            flexShrink={0}
+            // bg="rgba(0, 98, 189, 0.6)"
+            colorScheme="teal"
+            // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
+            color="white"
+          />
+          <MenuList
+            bg="gray.800"
+            borderColor="whiteAlpha.200"
+            boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
+            minW="180px"
+          >
+            {PATH_MODES.map((mode) => {
+              const ModeIcon = mode.icon;
+              const isSelected = pathMode === mode.id;
+              return (
+                <MenuItem
+                  key={mode.id}
+                  onClick={() => {
+                    // If clicking path when already in path mode, just scroll
+                    if (mode.id === "path" && isSelected) {
+                      onScrollToLatest?.();
+                    } else {
+                      onPathModeChange?.(mode.id);
+                    }
+                  }}
+                  bg={isSelected ? "whiteAlpha.100" : "transparent"}
+                  _hover={{ bg: "whiteAlpha.200" }}
+                  color="white"
+                  icon={<ModeIcon size={18} />}
+                  fontWeight={isSelected ? "bold" : "normal"}
+                >
+                  {mode.label}
+                </MenuItem>
+              );
+            })}
+          </MenuList>
+        </Menu>
       </Flex>
     </Box>
   );
