@@ -23,7 +23,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "B final se vuelve P: 'ab' suena como 'ap'.",
     practiceWord: "Buch",
     practiceWordMeaning: { en: "book", es: "libro" },
-    tts: "Buch",
+    tts: "Buch / halb",
   },
   {
     id: "c",
@@ -49,7 +49,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "D final se vuelve T: 'Hund' suena como 'Hunt'.",
     practiceWord: "dort",
     practiceWordMeaning: { en: "there", es: "allí" },
-    tts: "dort",
+    tts: "dort / Hund",
   },
   {
     id: "e",
@@ -88,7 +88,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "G final: 'k' en la mayoría, 'ch' en algunas regiones del norte.",
     practiceWord: "gut",
     practiceWordMeaning: { en: "good", es: "bueno" },
-    tts: "gut",
+    tts: "gut / Tag",
   },
   {
     id: "h",
@@ -244,7 +244,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "S antes de vocales = sonido 'z'. 'Sonne' = 'Zone'. ¡Diferente del inglés!",
     practiceWord: "Sonne",
     practiceWordMeaning: { en: "sun", es: "sol" },
-    tts: "Sonne",
+    tts: "Sonne / das",
   },
   {
     id: "t",
@@ -283,7 +283,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "V en palabras alemanas = sonido F. 'Vater' = 'Fater'.",
     practiceWord: "Vater",
     practiceWordMeaning: { en: "father", es: "padre" },
-    tts: "Vater",
+    tts: "Vater / Vase",
   },
   {
     id: "w",

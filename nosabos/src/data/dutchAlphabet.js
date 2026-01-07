@@ -23,7 +23,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "B final se vuelve P: 'heb' suena como 'hep'.",
     practiceWord: "boek",
     practiceWordMeaning: { en: "book", es: "libro" },
-    tts: "boek",
+    tts: "boek / heb",
   },
   {
     id: "c",
@@ -49,7 +49,7 @@ export const DUTCH_ALPHABET = [
     tipEs: "D final se vuelve T: 'goed' suena como 'got'.",
     practiceWord: "door",
     practiceWordMeaning: { en: "through/door", es: "por/puerta" },
-    tts: "door",
+    tts: "door / goed",
   },
   {
     id: "e",

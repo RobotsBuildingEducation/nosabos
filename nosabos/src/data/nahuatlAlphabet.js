@@ -119,7 +119,7 @@ export const NAHUATL_ALPHABET = [
       "Antes de a/o: sonido K duro. Antes de e/i: sonido S suave. Como en español.",
     practiceWord: "calli",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "calli",
+    tts: "calli / ce",
   },
   {
     id: "ch",

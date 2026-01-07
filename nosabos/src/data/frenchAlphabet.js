@@ -36,7 +36,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Mismas reglas que español y portugués.",
     practiceWord: "café",
     practiceWordMeaning: { en: "coffee", es: "café" },
-    tts: "café",
+    tts: "café / ciel",
   },
   {
     id: "ç",
@@ -153,7 +153,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "G antes de e/i = sonido 'zh'. ¡Igual que portugués!",
     practiceWord: "manger",
     practiceWordMeaning: { en: "to eat", es: "comer" },
-    tts: "manger",
+    tts: "grand / manger",
   },
   {
     id: "h",
@@ -348,7 +348,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Entre vocales: S = 'z'. 'Maison' = 'me-zon'.",
     practiceWord: "soleil",
     practiceWordMeaning: { en: "sun", es: "sol" },
-    tts: "soleil",
+    tts: "soleil / maison",
   },
   {
     id: "t",
@@ -452,7 +452,7 @@ export const FRENCH_ALPHABET = [
     tipEs: "Normalmente 'ks'. En 'examen' = 'gz'. Al final a menudo muda.",
     practiceWord: "taxi",
     practiceWordMeaning: { en: "taxi", es: "taxi" },
-    tts: "taxi",
+    tts: "taxi / examen",
   },
   {
     id: "y",
