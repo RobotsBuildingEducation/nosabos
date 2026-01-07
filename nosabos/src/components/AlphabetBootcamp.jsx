@@ -781,8 +781,10 @@ export default function AlphabetBootcamp({
               npub={npub}
               pauseMs={pauseMs}
               onXpAwarded={handleXpAwarded}
-              initialPracticeWord={savedPracticeWords[item.id]?.word}
-              initialPracticeWordMeaning={savedPracticeWords[item.id]?.meaning}
+              initialPracticeWord={savedPracticeWords[item.id]?.word || item.practiceWord}
+              initialPracticeWordMeaning={
+                savedPracticeWords[item.id]?.meaning || item.practiceWordMeaning
+              }
               onPracticeWordUpdated={handlePracticeWordUpdated}
               isPlaying={playingId === item.id}
               onPlay={async (data) => {
