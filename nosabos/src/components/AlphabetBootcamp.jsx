@@ -30,6 +30,9 @@ import { database } from "../firebaseResources/firebaseResources";
 
 const MotionBox = motion(Box);
 
+const getPracticeStorageKey = (npub, targetLang) =>
+  `alphabetPractice:${npub || "guest"}:${targetLang || "unknown"}`;
+
 const normalizeMeaning = (meaning) => {
   if (!meaning) return { en: "", es: "" };
   if (typeof meaning === "string") {
@@ -40,6 +43,26 @@ const normalizeMeaning = (meaning) => {
   const es = meaning.es || meaning.en || "";
 
   return { en, es };
+};
+
+const readPracticeWordsFromStorage = (npub, targetLang) => {
+  if (typeof window === "undefined") return {};
+  const key = getPracticeStorageKey(npub, targetLang);
+  const raw = window.localStorage.getItem(key);
+  if (!raw) return {};
+
+  try {
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const writePracticeWordsToStorage = (npub, targetLang, data) => {
+  if (typeof window === "undefined") return;
+  const key = getPracticeStorageKey(npub, targetLang);
+  window.localStorage.setItem(key, JSON.stringify(data));
 };
 
 // Build AI grading prompt for alphabet practice
@@ -664,31 +687,37 @@ export default function AlphabetBootcamp({
   const xpLevelNumber = Math.floor(currentXp / 100) + 1;
   const nextLevelProgressPct = currentXp % 100;
 
-  const handlePracticeWordUpdated = useCallback((letterId, word, meaning) => {
-    setSavedPracticeWords((prev) => ({
-      ...prev,
-      [letterId]: { word, meaning: normalizeMeaning(meaning) },
-    }));
-  }, []);
+  const handlePracticeWordUpdated = useCallback(
+    (letterId, word, meaning) => {
+      setSavedPracticeWords((prev) => {
+        const updated = {
+          ...prev,
+          [letterId]: { word, meaning: normalizeMeaning(meaning) },
+        };
+        writePracticeWordsToStorage(npub, targetLang, updated);
+        return updated;
+      });
+    },
+    [npub, targetLang]
+  );
 
   useEffect(() => {
-    if (!npub) {
-      setSavedPracticeWords({});
-      return;
-    }
+    const localSaved = readPracticeWordsFromStorage(npub, targetLang);
+    setSavedPracticeWords(localSaved);
 
+    if (!npub) return;
     let cancelled = false;
 
     const loadProgress = async () => {
       try {
         const snap = await getDoc(doc(database, "users", npub));
         if (!snap.exists()) {
-          if (!cancelled) setSavedPracticeWords({});
+          if (!cancelled) setSavedPracticeWords(localSaved);
           return;
         }
 
         const progress = snap.data()?.progress?.alphabetPractice?.[targetLang] || {};
-        const mapped = {};
+        const mapped = { ...localSaved };
         Object.entries(progress).forEach(([id, entry]) => {
           const word = entry?.lastWord;
           const meaning = normalizeMeaning(entry?.lastWordMeaning);
@@ -699,12 +728,11 @@ export default function AlphabetBootcamp({
 
         if (!cancelled) {
           setSavedPracticeWords(mapped);
+          writePracticeWordsToStorage(npub, targetLang, mapped);
         }
       } catch (error) {
         console.error("Failed to load alphabet progress:", error);
-        if (!cancelled) {
-          setSavedPracticeWords({});
-        }
+        if (!cancelled) setSavedPracticeWords(localSaved);
       }
     };
 
