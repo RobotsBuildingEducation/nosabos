@@ -1089,11 +1089,25 @@ export default function AlphabetBootcamp({
           {/* Deck Section */}
           {deck.length > 0 ? (
             <VStack spacing={4} w="100%">
-              <HStack spacing={2}>
-                <Badge colorScheme="purple" px={3} py={1} borderRadius="full">
-                  {appLanguage === "es" ? "En el mazo" : "In deck"}: {deck.length}
-                </Badge>
-              </HStack>
+              {/* Progress bar showing completion */}
+              <Box w="100%" maxW="400px" mx="auto">
+                <HStack justify="space-between" mb={1}>
+                  <Text fontSize="xs" color="whiteAlpha.700">
+                    {appLanguage === "es" ? "Progreso" : "Progress"}
+                  </Text>
+                  <Text fontSize="xs" color="yellow.300" fontWeight="bold">
+                    {collectedLetters.length} / {alphabet.length}
+                  </Text>
+                </HStack>
+                <WaveBar
+                  value={(collectedLetters.length / alphabet.length) * 100}
+                  height={10}
+                  start="#D69E2E"
+                  end="#F6E05E"
+                  bg="whiteAlpha.200"
+                  border="whiteAlpha.300"
+                />
+              </Box>
 
               {/* Deck visual - stacked cards with top card active */}
               <Box
@@ -1114,8 +1128,6 @@ export default function AlphabetBootcamp({
                     h="320px"
                     bg="whiteAlpha.50"
                     borderRadius="lg"
-                    border="1px solid"
-                    borderColor="whiteAlpha.200"
                   />
                 )}
                 {deck.length > 1 && (
@@ -1128,8 +1140,6 @@ export default function AlphabetBootcamp({
                     h="320px"
                     bg="whiteAlpha.80"
                     borderRadius="lg"
-                    border="1px solid"
-                    borderColor="whiteAlpha.250"
                   />
                 )}
 
@@ -1236,51 +1246,74 @@ export default function AlphabetBootcamp({
               </HStack>
 
               <SimpleGrid
-                columns={{ base: 2, sm: 3, md: 4 }}
-                spacing={3}
+                columns={{ base: 1, sm: 2, md: 3 }}
+                spacing={4}
                 w="100%"
               >
                 {collectedLetters.map((item) => (
-                  <Box
+                  <LetterCard
                     key={item.id}
-                    bg="whiteAlpha.100"
-                    border="1px solid"
-                    borderColor="green.500"
-                    borderRadius="lg"
-                    p={3}
-                    textAlign="center"
-                    position="relative"
-                    _hover={{ bg: "whiteAlpha.150" }}
-                  >
-                    <Box
-                      position="absolute"
-                      top={1}
-                      right={1}
-                      bg="green.500"
-                      borderRadius="full"
-                      w={4}
-                      h={4}
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                    >
-                      <RiCheckLine size={10} />
-                    </Box>
-                    <Text fontSize="xl" fontWeight="bold">
-                      {item.letter}
-                    </Text>
-                    <Text fontSize="xs" color="whiteAlpha.700">
-                      {item.name}
-                    </Text>
-                    {savedCorrectCounts[item.id] > 0 && (
-                      <HStack spacing={1} justify="center" mt={1}>
-                        <RiStarFill size={10} color="cyan" />
-                        <Text fontSize="xs" color="cyan.300">
-                          {savedCorrectCounts[item.id]}
-                        </Text>
-                      </HStack>
-                    )}
-                  </Box>
+                    letter={item}
+                    appLanguage={appLanguage}
+                    targetLang={targetLang}
+                    npub={npub}
+                    pauseMs={pauseMs}
+                    onXpAwarded={handleXpAwarded}
+                    initialPracticeWord={
+                      savedPracticeWords[item.id]?.word || item.practiceWord
+                    }
+                    initialPracticeWordMeaning={
+                      savedPracticeWords[item.id]?.meaning ||
+                      item.practiceWordMeaning
+                    }
+                    initialCorrectCount={savedCorrectCounts[item.id] || 0}
+                    onPracticeWordUpdated={handlePracticeWordUpdated}
+                    isPlaying={playingId === item.id}
+                    onPlay={async (data) => {
+                      const text = (data?.tts || data?.letter || "")
+                        .toString()
+                        .trim();
+                      if (!text) return;
+
+                      if (playingId === data.id) {
+                        try {
+                          playerRef.current?.audio?.pause?.();
+                        } catch {}
+                        playerRef.current?.cleanup?.();
+                        setPlayingId(null);
+                        return;
+                      }
+
+                      try {
+                        playerRef.current?.audio?.pause?.();
+                      } catch {}
+                      playerRef.current?.cleanup?.();
+
+                      try {
+                        const player = await getTTSPlayer({
+                          text,
+                          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+                        });
+                        playerRef.current = player;
+                        setPlayingId(data.id);
+
+                        const audio = player.audio;
+                        audio.onended = () => {
+                          setPlayingId(null);
+                          player.cleanup?.();
+                        };
+                        audio.onerror = () => {
+                          setPlayingId(null);
+                          player.cleanup?.();
+                        };
+                        await player.ready;
+                        await audio.play();
+                      } catch (err) {
+                        console.error("AlphabetBootcamp TTS failed", err);
+                        setPlayingId(null);
+                      }
+                    }}
+                  />
                 ))}
               </SimpleGrid>
             </VStack>
