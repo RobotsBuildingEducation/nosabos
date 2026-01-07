@@ -559,9 +559,7 @@ function LetterCard({
       const avoidClause = currentWord
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
-      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${
-        letter.letter
-      }" (${letter.name}). Respond ONLY with JSON in this shape:
+      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${letter.letter}" (${letter.name}). Respond ONLY with JSON in this shape:
 {"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>"}
 - Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
@@ -637,8 +635,8 @@ function LetterCard({
         >
           {/* Star counter */}
           <HStack spacing={1} position="absolute" top={3} left={3}>
-            <RiStarFill size={14} color="#ECC94B" />
-            <Text fontSize="xs" fontWeight="bold" color="yellow.400">
+            <RiStarFill size={14} color="cyan" />
+            <Text fontSize="xs" fontWeight="bold">
               {correctCount}
             </Text>
           </HStack>
