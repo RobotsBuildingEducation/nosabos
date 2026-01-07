@@ -843,20 +843,12 @@ export default function AlphabetBootcamp({
   return (
     <VStack align="stretch" spacing={4} w="100%" color="white">
       {/* XP Progress Bar */}
-      <Box
-        bg="whiteAlpha.100"
-        borderRadius="lg"
-        p={4}
-        border="1px solid"
-        borderColor="whiteAlpha.200"
-      >
-        <HStack justify="space-between" mb={2}>
-          <Text fontSize="sm" fontWeight="semibold" color="whiteAlpha.900">
-            {appLanguage === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-          </Text>
-          <Text fontSize="xs" color="whiteAlpha.700">
-            {currentXp} XP
-          </Text>
+      <Box maxW="400px" mx="auto" w="100%">
+        <HStack justify="space-between" mb={1}>
+          <Badge variant="subtle">
+            {appLanguage === "es" ? "NIVEL" : "LEVEL"} {xpLevelNumber}
+          </Badge>
+          <Badge variant="subtle">XP {currentXp}</Badge>
         </HStack>
         <WaveBar
           value={nextLevelProgressPct}
@@ -866,9 +858,6 @@ export default function AlphabetBootcamp({
           bg="whiteAlpha.200"
           border="whiteAlpha.300"
         />
-        <Text fontSize="xs" color="whiteAlpha.600" mt={1} textAlign="right">
-          {nextLevelProgressPct}/100 {appLanguage === "es" ? "para el próximo nivel" : "to next level"}
-        </Text>
       </Box>
 
       <Heading size="lg" color="whiteAlpha.900">
