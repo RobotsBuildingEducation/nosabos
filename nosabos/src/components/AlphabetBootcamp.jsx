@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   SimpleGrid,
   VStack,
@@ -19,7 +25,12 @@ import { motion } from "framer-motion";
 import { RUSSIAN_ALPHABET } from "../data/russianAlphabet";
 import { JAPANESE_ALPHABET } from "../data/japaneseAlphabet";
 import { FiVolume2 } from "react-icons/fi";
-import { RiMicLine, RiStopCircleLine, RiCheckLine, RiCloseLine } from "react-icons/ri";
+import {
+  RiMicLine,
+  RiStopCircleLine,
+  RiCheckLine,
+  RiCloseLine,
+} from "react-icons/ri";
 import { getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
@@ -98,11 +109,15 @@ async function saveAlphabetProgress(
       : null;
 
     const attempts = (existingProgress?.attempts || 0) + 1;
-    const correctCount = (existingProgress?.correctCount || 0) + (wasCorrect ? 1 : 0);
+    const correctCount =
+      (existingProgress?.correctCount || 0) + (wasCorrect ? 1 : 0);
     const lastWords = existingProgress?.practicedWords || [];
 
     // Keep track of last 10 practiced words
-    const updatedWords = [...new Set([practiceWord, ...lastWords])].slice(0, 10);
+    const updatedWords = [...new Set([practiceWord, ...lastWords])].slice(
+      0,
+      10
+    );
 
     await setDoc(
       userRef,
@@ -175,7 +190,10 @@ const getHighlightedWordParts = (word, marker) => {
     }
 
     // Use the actual characters from the word (preserving original case)
-    parts.push({ text: word.slice(matchIndex, matchIndex + marker.length), highlight: true });
+    parts.push({
+      text: word.slice(matchIndex, matchIndex + marker.length),
+      highlight: true,
+    });
     index = matchIndex + marker.length;
   }
 
@@ -201,7 +219,9 @@ function LetterCard({
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [isPlayingWord, setIsPlayingWord] = useState(false);
-  const [practiceWord, setPracticeWord] = useState(initialPracticeWord || letter.practiceWord || "");
+  const [practiceWord, setPracticeWord] = useState(
+    initialPracticeWord || letter.practiceWord || ""
+  );
   const [practiceWordMeaningData, setPracticeWordMeaningData] = useState(
     normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning)
   );
@@ -210,8 +230,15 @@ function LetterCard({
 
   useEffect(() => {
     setPracticeWord(initialPracticeWord || letter.practiceWord || "");
-    setPracticeWordMeaningData(normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning));
-  }, [initialPracticeWord, initialPracticeWordMeaning, letter.practiceWord, letter.practiceWordMeaning]);
+    setPracticeWordMeaningData(
+      normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning)
+    );
+  }, [
+    initialPracticeWord,
+    initialPracticeWordMeaning,
+    letter.practiceWord,
+    letter.practiceWordMeaning,
+  ]);
 
   const typeColor = useMemo(() => {
     switch (letter.type) {
@@ -235,7 +262,8 @@ function LetterCard({
         : "Signo"
       : letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
 
-  const sound = appLanguage === "es" ? letter.soundEs || letter.sound : letter.sound;
+  const sound =
+    appLanguage === "es" ? letter.soundEs || letter.sound : letter.sound;
   const tip = appLanguage === "es" ? letter.tipEs || letter.tip : letter.tip;
   const practiceWordMeaningText =
     practiceWordMeaningData?.[appLanguage === "es" ? "es" : "en"] || "";
@@ -247,29 +275,32 @@ function LetterCard({
   );
 
   // Speech practice hook - use hook's isRecording state
-  const { startRecording, stopRecording, isRecording, supportsSpeech } = useSpeechPractice({
-    targetText: practiceWord || "placeholder",
-    targetLang: targetLang,
-    onResult: ({ recognizedText: text, error }) => {
-      if (error) {
-        toast({
-          title: appLanguage === "es" ? "Error de grabación" : "Recording error",
-          description: appLanguage === "es"
-            ? "No se pudo grabar. Intenta de nuevo."
-            : "Could not record. Please try again.",
-          status: "error",
-          duration: 2500,
-        });
-        return;
-      }
+  const { startRecording, stopRecording, isRecording, supportsSpeech } =
+    useSpeechPractice({
+      targetText: practiceWord || "placeholder",
+      targetLang: targetLang,
+      onResult: ({ recognizedText: text, error }) => {
+        if (error) {
+          toast({
+            title:
+              appLanguage === "es" ? "Error de grabación" : "Recording error",
+            description:
+              appLanguage === "es"
+                ? "No se pudo grabar. Intenta de nuevo."
+                : "Could not record. Please try again.",
+            status: "error",
+            duration: 2500,
+          });
+          return;
+        }
 
-      const recognized = text || "";
-      if (recognized.trim()) {
-        checkAnswerWithAI(recognized);
-      }
-    },
-    timeoutMs: pauseMs,
-  });
+        const recognized = text || "";
+        if (recognized.trim()) {
+          checkAnswerWithAI(recognized);
+        }
+      },
+      timeoutMs: pauseMs,
+    });
 
   const checkAnswerWithAI = async (answer) => {
     setIsGrading(true);
@@ -324,14 +355,14 @@ function LetterCard({
         nextPracticeWord,
         nextPracticeMeaning
       );
-
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
         title: appLanguage === "es" ? "Error al evaluar" : "Grading error",
-        description: appLanguage === "es"
-          ? "No pudimos evaluar tu respuesta."
-          : "Could not grade your answer.",
+        description:
+          appLanguage === "es"
+            ? "No pudimos evaluar tu respuesta."
+            : "Could not grade your answer.",
         status: "error",
         duration: 3000,
       });
@@ -370,19 +401,25 @@ function LetterCard({
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
-          title: appLanguage === "es" ? "Sin soporte de voz" : "Speech not supported",
-          description: appLanguage === "es"
-            ? "Tu navegador no soporta reconocimiento de voz."
-            : "Your browser doesn't support speech recognition.",
+          title:
+            appLanguage === "es"
+              ? "Sin soporte de voz"
+              : "Speech not supported",
+          description:
+            appLanguage === "es"
+              ? "Tu navegador no soporta reconocimiento de voz."
+              : "Your browser doesn't support speech recognition.",
           status: "warning",
           duration: 3200,
         });
       } else if (code === "mic-denied") {
         toast({
-          title: appLanguage === "es" ? "Micrófono denegado" : "Microphone denied",
-          description: appLanguage === "es"
-            ? "Permite el acceso al micrófono para grabar."
-            : "Please allow microphone access to record.",
+          title:
+            appLanguage === "es" ? "Micrófono denegado" : "Microphone denied",
+          description:
+            appLanguage === "es"
+              ? "Permite el acceso al micrófono para grabar."
+              : "Please allow microphone access to record.",
           status: "error",
           duration: 3200,
         });
@@ -436,7 +473,10 @@ function LetterCard({
     const generated = await generateNewPracticeWord(practiceWord);
     if (!generated?.word) {
       toast({
-        title: appLanguage === "es" ? "No pudimos generar una palabra" : "Couldn't generate a new word",
+        title:
+          appLanguage === "es"
+            ? "No pudimos generar una palabra"
+            : "Couldn't generate a new word",
         status: "warning",
         duration: 2500,
       });
@@ -459,35 +499,45 @@ function LetterCard({
     setIsCorrect(false);
   };
 
-  const generateNewPracticeWord = useCallback(async (currentWord) => {
-    const languageName = targetLang === "ja" ? "Japanese" : "Russian";
-    const avoidClause = currentWord ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.` : "";
-    const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${
-      letter.letter
-    }" (${letter.name}). Respond ONLY with JSON in this shape:
+  const generateNewPracticeWord = useCallback(
+    async (currentWord) => {
+      const languageName = targetLang === "ja" ? "Japanese" : "Russian";
+      const avoidClause = currentWord
+        ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
+        : "";
+      const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${
+        letter.letter
+      }" (${letter.name}). Respond ONLY with JSON in this shape:
 {"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>"}
-- Use native script (${targetLang === "ja" ? "hiragana or katakana" : "Cyrillic"}).
+- Use native script (${
+        targetLang === "ja" ? "hiragana or katakana" : "Cyrillic"
+      }).
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
 
-    try {
-      const raw = await callResponses({ model: DEFAULT_RESPONSES_MODEL, input: prompt });
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
-      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
-      const word = String(parsed.word || "").trim();
-      const meaning = normalizeMeaning({
-        en: parsed.meaning_en || parsed.meaning || "",
-        es: parsed.meaning_es || parsed.meaning || "",
-      });
+      try {
+        const raw = await callResponses({
+          model: DEFAULT_RESPONSES_MODEL,
+          input: prompt,
+        });
+        const jsonMatch = raw.match(/\{[\s\S]*\}/);
+        const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+        const word = String(parsed.word || "").trim();
+        const meaning = normalizeMeaning({
+          en: parsed.meaning_en || parsed.meaning || "",
+          es: parsed.meaning_es || parsed.meaning || "",
+        });
 
-      if (!word) return null;
+        if (!word) return null;
 
-      return { word, meaning };
-    } catch (error) {
-      console.error("Failed to generate practice word:", error);
-      return null;
-    }
-  }, [letter.letter, letter.name, targetLang]);
+        return { word, meaning };
+      } catch (error) {
+        console.error("Failed to generate practice word:", error);
+        return null;
+      }
+    },
+    [letter.letter, letter.name, targetLang]
+  );
 
   // Cleanup on unmount
   useEffect(() => {
@@ -552,13 +602,7 @@ function LetterCard({
           </HStack>
 
           <VStack spacing={3} align="center" textAlign="center" w="100%">
-            <Flex
-              align="center"
-              justify="center"
-              w="100%"
-              gap={3}
-              minH="48px"
-            >
+            <Flex align="center" justify="center" w="100%" gap={3} minH="48px">
               <VStack spacing={1} align="center">
                 <Text fontSize="2xl" fontWeight="bold">
                   {letter.letter}
@@ -668,7 +712,11 @@ function LetterCard({
                 borderRadius="full"
                 bg={isCorrect ? "green.500" : "red.500"}
               >
-                {isCorrect ? <RiCheckLine size={24} /> : <RiCloseLine size={24} />}
+                {isCorrect ? (
+                  <RiCheckLine size={24} />
+                ) : (
+                  <RiCloseLine size={24} />
+                )}
               </Flex>
 
               <HStack spacing={2} mt={1}>
@@ -714,8 +762,12 @@ function LetterCard({
                 _hover={{ transform: "scale(1.02)" }}
               >
                 {isRecording
-                  ? (appLanguage === "es" ? "Detener" : "Stop")
-                  : (appLanguage === "es" ? "Grabar" : "Record")}
+                  ? appLanguage === "es"
+                    ? "Detener"
+                    : "Stop"
+                  : appLanguage === "es"
+                  ? "Grabar"
+                  : "Record"}
               </Button>
 
               <Button
@@ -763,9 +815,7 @@ export default function AlphabetBootcamp({
   };
 
   const headline =
-    appLanguage === "es"
-      ? "Bootcamp de alfabeto"
-      : "Alphabet Bootcamp";
+    appLanguage === "es" ? "Bootcamp de alfabeto" : "Alphabet Bootcamp";
   const subhead =
     appLanguage === "es"
       ? "Empieza aquí antes de entrar al árbol de habilidades."
@@ -843,7 +893,7 @@ export default function AlphabetBootcamp({
   return (
     <VStack align="stretch" spacing={4} w="100%" color="white">
       {/* XP Progress Bar */}
-      <Box maxW="400px" mx="auto" w="100%">
+      <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
         <HStack justify="space-between" mb={1}>
           <Badge variant="subtle">
             {appLanguage === "es" ? "NIVEL" : "LEVEL"} {xpLevelNumber}
@@ -860,14 +910,21 @@ export default function AlphabetBootcamp({
         />
       </Box>
 
-      <Heading size="lg" color="whiteAlpha.900">
+      <Heading
+        size="lg"
+        color="whiteAlpha.900"
+        zIndex={10}
+        textAlign={"center"}
+      >
         {headline}
       </Heading>
-      <Text color="whiteAlpha.800">{subhead}</Text>
-      <Alert status="info" borderRadius="lg" bg="blue.900" color="white">
+      <Text color="whiteAlpha.800" zIndex={10} textAlign={"center"} mt={"-4"}>
+        {subhead}
+      </Text>
+      {/* <Alert status="info" borderRadius="lg" bg="blue.900" color="white">
         <AlertIcon />
         {note}
-      </Alert>
+      </Alert> */}
 
       {hasLetters ? (
         <SimpleGrid
@@ -886,14 +943,18 @@ export default function AlphabetBootcamp({
               npub={npub}
               pauseMs={pauseMs}
               onXpAwarded={handleXpAwarded}
-              initialPracticeWord={savedPracticeWords[item.id]?.word || item.practiceWord}
+              initialPracticeWord={
+                savedPracticeWords[item.id]?.word || item.practiceWord
+              }
               initialPracticeWordMeaning={
                 savedPracticeWords[item.id]?.meaning || item.practiceWordMeaning
               }
               onPracticeWordUpdated={handlePracticeWordUpdated}
               isPlaying={playingId === item.id}
               onPlay={async (data) => {
-                const text = (data?.tts || data?.letter || "").toString().trim();
+                const text = (data?.tts || data?.letter || "")
+                  .toString()
+                  .trim();
                 if (!text) return;
 
                 // Toggle off if the same card is playing
