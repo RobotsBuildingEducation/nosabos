@@ -59,6 +59,33 @@ import { database } from "../firebaseResources/firebaseResources";
 
 const MotionBox = motion(Box);
 
+// Language name and script mapping for all supported languages
+const LANGUAGE_NAMES = {
+  ru: "Russian",
+  ja: "Japanese",
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  it: "Italian",
+  nl: "Dutch",
+  de: "German",
+  nah: "Nahuatl",
+};
+
+const LANGUAGE_SCRIPTS = {
+  ru: "Cyrillic",
+  ja: "hiragana or katakana",
+  en: "Latin alphabet",
+  es: "Latin alphabet",
+  pt: "Latin alphabet",
+  fr: "Latin alphabet",
+  it: "Latin alphabet",
+  nl: "Latin alphabet",
+  de: "Latin alphabet",
+  nah: "Latin alphabet",
+};
+
 const normalizeMeaning = (meaning) => {
   if (!meaning) return { en: "", es: "" };
   if (typeof meaning === "string") {
@@ -73,7 +100,7 @@ const normalizeMeaning = (meaning) => {
 
 // Build AI grading prompt for alphabet practice
 function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang }) {
-  const langName = targetLang === "ja" ? "Japanese" : "Russian";
+  const langName = LANGUAGE_NAMES[targetLang] || "the target";
 
   return `
 Judge if the user correctly pronounced a ${langName} word.
@@ -520,7 +547,8 @@ function LetterCard({
 
   const generateNewPracticeWord = useCallback(
     async (currentWord) => {
-      const languageName = targetLang === "ja" ? "Japanese" : "Russian";
+      const languageName = LANGUAGE_NAMES[targetLang] || "the target language";
+      const scriptName = LANGUAGE_SCRIPTS[targetLang] || "native script";
       const avoidClause = currentWord
         ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.`
         : "";
@@ -528,9 +556,7 @@ function LetterCard({
         letter.letter
       }" (${letter.name}). Respond ONLY with JSON in this shape:
 {"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>"}
-- Use native script (${
-        targetLang === "ja" ? "hiragana or katakana" : "Cyrillic"
-      }).
+- Use ${scriptName}.
 - Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
 
