@@ -30,6 +30,7 @@ import {
   RiStopCircleLine,
   RiCheckLine,
   RiCloseLine,
+  RiStarFill,
 } from "react-icons/ri";
 import { getTTSPlayer, TTS_LANG_TAG } from "../utils/tts";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
@@ -210,6 +211,7 @@ function LetterCard({
   onXpAwarded,
   initialPracticeWord,
   initialPracticeWordMeaning,
+  initialCorrectCount = 0,
   onPracticeWordUpdated,
   pauseMs = 2000,
 }) {
@@ -225,6 +227,7 @@ function LetterCard({
   const [practiceWordMeaningData, setPracticeWordMeaningData] = useState(
     normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning)
   );
+  const [correctCount, setCorrectCount] = useState(initialCorrectCount);
   const wordPlayerRef = useRef(null);
   const toast = useToast();
 
@@ -233,9 +236,11 @@ function LetterCard({
     setPracticeWordMeaningData(
       normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning)
     );
+    setCorrectCount(initialCorrectCount);
   }, [
     initialPracticeWord,
     initialPracticeWordMeaning,
+    initialCorrectCount,
     letter.practiceWord,
     letter.practiceWordMeaning,
   ]);
@@ -337,6 +342,7 @@ function LetterCard({
       if (isYes && npub) {
         await awardXp(npub, xp, targetLang);
         onXpAwarded?.(xp);
+        setCorrectCount((c) => c + 1);
       }
 
       // Save progress regardless of result
@@ -583,9 +589,25 @@ function LetterCard({
           sx={{ backfaceVisibility: "hidden" }}
         >
           <HStack justify="space-between" w="100%">
-            <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
-              {typeLabel}
-            </Badge>
+            <HStack spacing={2}>
+              {correctCount > 0 && (
+                <HStack
+                  spacing={1}
+                  bg="yellow.500"
+                  borderRadius="md"
+                  px={2}
+                  py={1}
+                >
+                  <RiStarFill size={12} color="white" />
+                  <Text fontSize="xs" fontWeight="bold" color="white">
+                    {correctCount}
+                  </Text>
+                </HStack>
+              )}
+              <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
+                {typeLabel}
+              </Badge>
+            </HStack>
             {practiceWord && (
               <Button
                 size="xs"
@@ -804,6 +826,7 @@ export default function AlphabetBootcamp({
   const [playingId, setPlayingId] = useState(null);
   const [currentXp, setCurrentXp] = useState(languageXp);
   const [savedPracticeWords, setSavedPracticeWords] = useState({});
+  const [savedCorrectCounts, setSavedCorrectCounts] = useState({});
 
   // Update currentXp when languageXp prop changes
   useEffect(() => {
@@ -839,6 +862,7 @@ export default function AlphabetBootcamp({
 
   useEffect(() => {
     setSavedPracticeWords({});
+    setSavedCorrectCounts({});
 
     if (!npub) {
       return;
@@ -847,6 +871,7 @@ export default function AlphabetBootcamp({
 
     const loadProgress = async () => {
       try {
+        // Load practice words from subcollection
         const snapshot = await getDocs(
           query(
             collection(database, "users", npub, "alphabetPractice"),
@@ -865,12 +890,29 @@ export default function AlphabetBootcamp({
           }
         });
 
+        // Load correctCounts from main user document
+        const userDoc = await getDoc(doc(database, "users", npub));
+        const correctCounts = {};
+        if (userDoc.exists()) {
+          const alphabetProgress =
+            userDoc.data()?.progress?.alphabetPractice?.[targetLang] || {};
+          Object.entries(alphabetProgress).forEach(([letterId, data]) => {
+            if (data?.correctCount) {
+              correctCounts[letterId] = data.correctCount;
+            }
+          });
+        }
+
         if (!cancelled) {
           setSavedPracticeWords(mapped);
+          setSavedCorrectCounts(correctCounts);
         }
       } catch (error) {
         console.error("Failed to load alphabet progress:", error);
-        if (!cancelled) setSavedPracticeWords({});
+        if (!cancelled) {
+          setSavedPracticeWords({});
+          setSavedCorrectCounts({});
+        }
       }
     };
 
@@ -949,6 +991,7 @@ export default function AlphabetBootcamp({
               initialPracticeWordMeaning={
                 savedPracticeWords[item.id]?.meaning || item.practiceWordMeaning
               }
+              initialCorrectCount={savedCorrectCounts[item.id] || 0}
               onPracticeWordUpdated={handlePracticeWordUpdated}
               isPlaying={playingId === item.id}
               onPlay={async (data) => {
