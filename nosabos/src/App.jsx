@@ -1303,7 +1303,9 @@ export default function App() {
   useEffect(() => {
     const validModes = ["alphabet", "path", "flashcards", "conversations"];
     if (!validModes.includes(pathMode)) {
-      setPathMode(ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path");
+      setPathMode(
+        ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path"
+      );
       return;
     }
 
