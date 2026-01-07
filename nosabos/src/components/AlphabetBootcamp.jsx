@@ -179,7 +179,8 @@ async function saveAlphabetPracticeWord(
   targetLang,
   letterId,
   practiceWord,
-  practiceWordMeaning
+  practiceWordMeaning,
+  correctCount
 ) {
   if (!npub) return;
 
@@ -192,6 +193,7 @@ async function saveAlphabetPracticeWord(
         targetLang,
         currentWord: practiceWord,
         currentMeaning: practiceWordMeaning ?? null,
+        correctCount: correctCount ?? 0,
         updatedAt: serverTimestamp(),
       },
       { merge: true }
@@ -385,6 +387,9 @@ function LetterCard({
         }
       }
 
+      // Calculate new correctCount (since setCorrectCount is async)
+      const newCorrectCount = isYes ? correctCount + 1 : correctCount;
+
       // Save progress regardless of result
       await saveAlphabetProgress(
         npub,
@@ -399,7 +404,8 @@ function LetterCard({
         targetLang,
         letter.id,
         nextPracticeWord,
-        nextPracticeMeaning
+        nextPracticeMeaning,
+        newCorrectCount
       );
     } catch (error) {
       console.error("AI grading error:", error);
@@ -539,7 +545,8 @@ function LetterCard({
       targetLang,
       letter.id,
       nextPracticeWord,
-      nextPracticeMeaning
+      nextPracticeMeaning,
+      correctCount
     );
     setShowResult(false);
     setIsCorrect(false);
@@ -920,7 +927,7 @@ export default function AlphabetBootcamp({
 
     const loadProgress = async () => {
       try {
-        // Load practice words from subcollection
+        // Load practice words and correctCounts from subcollection
         const snapshot = await getDocs(
           query(
             collection(database, "users", npub, "alphabetPractice"),
@@ -929,28 +936,21 @@ export default function AlphabetBootcamp({
         );
 
         const mapped = {};
+        const correctCounts = {};
         snapshot.forEach((docSnap) => {
           const data = docSnap.data();
-          if (data?.letterId && data?.currentWord) {
-            mapped[data.letterId] = {
-              word: data.currentWord,
-              meaning: normalizeMeaning(data.currentMeaning),
-            };
+          if (data?.letterId) {
+            if (data?.currentWord) {
+              mapped[data.letterId] = {
+                word: data.currentWord,
+                meaning: normalizeMeaning(data.currentMeaning),
+              };
+            }
+            if (data?.correctCount) {
+              correctCounts[data.letterId] = data.correctCount;
+            }
           }
         });
-
-        // Load correctCounts from main user document
-        const userDoc = await getDoc(doc(database, "users", npub));
-        const correctCounts = {};
-        if (userDoc.exists()) {
-          const alphabetProgress =
-            userDoc.data()?.progress?.alphabetPractice?.[targetLang] || {};
-          Object.entries(alphabetProgress).forEach(([letterId, data]) => {
-            if (data?.correctCount) {
-              correctCounts[letterId] = data.correctCount;
-            }
-          });
-        }
 
         if (!cancelled) {
           setSavedPracticeWords(mapped);
