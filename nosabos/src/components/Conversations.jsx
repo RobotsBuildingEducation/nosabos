@@ -1266,7 +1266,7 @@ Only mark completed = true if BOTH language AND content relevance are satisfied.
 FEEDBACK GUIDELINES:
 - Provide feedback in ${feedbackLanguage}
 - If completed = true: Provide encouraging, specific praise (e.g., "Great! You talked about your favorite restaurant perfectly!")
-- If completed = false: Provide helpful guidance to redirect the user (e.g., "Try talking about your favorite place in the city instead of other topics")
+- If completed = false: Keep it SHORT - 1-2 sentences max. Just briefly tell them what to try instead (e.g., "Try talking about the goal topic." or "Use ${languageName} to respond.")
 
 Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, actionable feedback in ${feedbackLanguage}"}`;
 
@@ -1314,8 +1314,8 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         // Set guiding feedback for failed attempt
         const defaultGuidance =
           sLang === "es"
-            ? "Intenta abordar el tema de la meta más directamente."
-            : "Try to address the goal topic more directly.";
+            ? "Intenta hablar sobre la meta."
+            : "Try addressing the goal.";
         setGoalFeedback(parsed?.reason || defaultGuidance);
         goalCheckPendingRef.current = false;
       }
