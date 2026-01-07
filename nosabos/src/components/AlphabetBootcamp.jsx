@@ -15,7 +15,7 @@ import {
   Spinner,
   useToast,
 } from "@chakra-ui/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { RUSSIAN_ALPHABET } from "../data/russianAlphabet";
 import { JAPANESE_ALPHABET } from "../data/japaneseAlphabet";
 import { FiVolume2 } from "react-icons/fi";
@@ -25,10 +25,31 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { awardXp } from "../utils/utils";
 import { WaveBar } from "./WaveBar";
-import { doc, updateDoc, serverTimestamp, getDoc, setDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 
 const MotionBox = motion(Box);
+
+const normalizeMeaning = (meaning) => {
+  if (!meaning) return { en: "", es: "" };
+  if (typeof meaning === "string") {
+    return { en: meaning, es: meaning };
+  }
+
+  const en = meaning.en || meaning.es || "";
+  const es = meaning.es || meaning.en || "";
+
+  return { en, es };
+};
 
 // Build AI grading prompt for alphabet practice
 function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang }) {
@@ -57,11 +78,17 @@ Where <xp_amount> is 1-2 based on:
 }
 
 // Save alphabet practice progress to Firestore
-async function saveAlphabetProgress(npub, targetLang, letterId, practiceWord, wasCorrect) {
+async function saveAlphabetProgress(
+  npub,
+  targetLang,
+  letterId,
+  practiceWord,
+  wasCorrect,
+  practiceWordMeaning
+) {
   if (!npub) return;
 
   const userRef = doc(database, "users", npub);
-  const now = new Date().toISOString();
   const progressKey = `progress.alphabetPractice.${targetLang}.${letterId}`;
 
   try {
@@ -77,18 +104,80 @@ async function saveAlphabetProgress(npub, targetLang, letterId, practiceWord, wa
     // Keep track of last 10 practiced words
     const updatedWords = [...new Set([practiceWord, ...lastWords])].slice(0, 10);
 
-    await updateDoc(userRef, {
-      [`${progressKey}.attempts`]: attempts,
-      [`${progressKey}.correctCount`]: correctCount,
-      [`${progressKey}.practicedWords`]: updatedWords,
-      [`${progressKey}.lastAttemptAt`]: serverTimestamp(),
-      [`${progressKey}.lastWord`]: practiceWord,
-      "progress.lastActiveAt": serverTimestamp(),
-    });
+    await setDoc(
+      userRef,
+      {
+        [`${progressKey}.attempts`]: attempts,
+        [`${progressKey}.correctCount`]: correctCount,
+        [`${progressKey}.practicedWords`]: updatedWords,
+        [`${progressKey}.lastAttemptAt`]: serverTimestamp(),
+        [`${progressKey}.lastWord`]: practiceWord,
+        [`${progressKey}.lastWordMeaning`]:
+          practiceWordMeaning ?? existingProgress?.lastWordMeaning ?? null,
+        "progress.lastActiveAt": serverTimestamp(),
+      },
+      { merge: true }
+    );
   } catch (error) {
     console.error("Error saving alphabet progress:", error);
   }
 }
+
+async function saveAlphabetPracticeWord(
+  npub,
+  targetLang,
+  letterId,
+  practiceWord,
+  practiceWordMeaning
+) {
+  if (!npub) return;
+
+  try {
+    const docId = `${targetLang}_${letterId}`;
+    await setDoc(
+      doc(database, "users", npub, "alphabetPractice", docId),
+      {
+        letterId,
+        targetLang,
+        currentWord: practiceWord,
+        currentMeaning: practiceWordMeaning ?? null,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  } catch (error) {
+    console.error("Error saving alphabet practice word:", error);
+  }
+}
+
+const getPracticeLetterMarker = (letter) => {
+  if (!letter?.letter) return "";
+  return letter.letter.split("/")[0]?.trim()?.split(" ")[0] || "";
+};
+
+const getHighlightedWordParts = (word, marker) => {
+  if (!word || !marker) return [{ text: word, highlight: false }];
+
+  const parts = [];
+  let index = 0;
+
+  while (index < word.length) {
+    const matchIndex = word.indexOf(marker, index);
+    if (matchIndex === -1) {
+      parts.push({ text: word.slice(index), highlight: false });
+      break;
+    }
+
+    if (matchIndex > index) {
+      parts.push({ text: word.slice(index, matchIndex), highlight: false });
+    }
+
+    parts.push({ text: marker, highlight: true });
+    index = matchIndex + marker.length;
+  }
+
+  return parts;
+};
 
 function LetterCard({
   letter,
@@ -98,6 +187,9 @@ function LetterCard({
   targetLang,
   npub,
   onXpAwarded,
+  initialPracticeWord,
+  initialPracticeWordMeaning,
+  onPracticeWordUpdated,
   pauseMs = 2000,
 }) {
   const [isPracticeMode, setIsPracticeMode] = useState(false);
@@ -105,11 +197,18 @@ function LetterCard({
   const [isGrading, setIsGrading] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
-  const [xpAwarded, setXpAwarded] = useState(0);
-  const [recognizedText, setRecognizedText] = useState("");
   const [isPlayingWord, setIsPlayingWord] = useState(false);
+  const [practiceWord, setPracticeWord] = useState(initialPracticeWord || letter.practiceWord || "");
+  const [practiceWordMeaningData, setPracticeWordMeaningData] = useState(
+    normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning)
+  );
   const wordPlayerRef = useRef(null);
   const toast = useToast();
+
+  useEffect(() => {
+    setPracticeWord(initialPracticeWord || letter.practiceWord || "");
+    setPracticeWordMeaningData(normalizeMeaning(initialPracticeWordMeaning || letter.practiceWordMeaning));
+  }, [initialPracticeWord, initialPracticeWordMeaning, letter.practiceWord, letter.practiceWordMeaning]);
 
   const typeColor = useMemo(() => {
     switch (letter.type) {
@@ -135,11 +234,18 @@ function LetterCard({
 
   const sound = appLanguage === "es" ? letter.soundEs || letter.sound : letter.sound;
   const tip = appLanguage === "es" ? letter.tipEs || letter.tip : letter.tip;
-  const practiceWordMeaning = letter.practiceWordMeaning?.[appLanguage === "es" ? "es" : "en"] || "";
+  const practiceWordMeaningText =
+    practiceWordMeaningData?.[appLanguage === "es" ? "es" : "en"] || "";
+  const showMeaning = Boolean(practiceWordMeaningText);
+  const practiceMarker = getPracticeLetterMarker(letter);
+  const highlightedPracticeWord = useMemo(
+    () => getHighlightedWordParts(practiceWord, practiceMarker),
+    [practiceMarker, practiceWord]
+  );
 
   // Speech practice hook - use hook's isRecording state
   const { startRecording, stopRecording, isRecording, supportsSpeech } = useSpeechPractice({
-    targetText: letter.practiceWord || "placeholder",
+    targetText: practiceWord || "placeholder",
     targetLang: targetLang,
     onResult: ({ recognizedText: text, error }) => {
       if (error) {
@@ -155,8 +261,6 @@ function LetterCard({
       }
 
       const recognized = text || "";
-      setRecognizedText(recognized);
-
       if (recognized.trim()) {
         checkAnswerWithAI(recognized);
       }
@@ -171,7 +275,7 @@ function LetterCard({
       const response = await callResponses({
         model: DEFAULT_RESPONSES_MODEL,
         input: buildAlphabetJudgePrompt({
-          practiceWord: letter.practiceWord,
+          practiceWord,
           userAnswer: answer,
           targetLang,
         }),
@@ -190,8 +294,10 @@ function LetterCard({
       }
 
       setIsCorrect(isYes);
-      setXpAwarded(xp);
       setShowResult(true);
+
+      let nextPracticeWord = practiceWord;
+      let nextPracticeMeaning = practiceWordMeaningData;
 
       // Award XP and save progress
       if (isYes && npub) {
@@ -200,7 +306,21 @@ function LetterCard({
       }
 
       // Save progress regardless of result
-      await saveAlphabetProgress(npub, targetLang, letter.id, letter.practiceWord, isYes);
+      await saveAlphabetProgress(
+        npub,
+        targetLang,
+        letter.id,
+        nextPracticeWord,
+        isYes,
+        nextPracticeMeaning
+      );
+      await saveAlphabetPracticeWord(
+        npub,
+        targetLang,
+        letter.id,
+        nextPracticeWord,
+        nextPracticeMeaning
+      );
 
     } catch (error) {
       console.error("AI grading error:", error);
@@ -221,8 +341,6 @@ function LetterCard({
     setIsPracticeMode(true);
     setIsFlipped(true);
     setShowResult(false);
-    setRecognizedText("");
-    setXpAwarded(0);
   };
 
   const handleFlipBack = () => {
@@ -230,7 +348,6 @@ function LetterCard({
     setTimeout(() => {
       setIsPracticeMode(false);
       setShowResult(false);
-      setRecognizedText("");
     }, 300);
   };
 
@@ -242,9 +359,7 @@ function LetterCard({
 
     // Clear previous results
     setShowResult(false);
-    setRecognizedText("");
     setIsCorrect(false);
-    setXpAwarded(0);
 
     try {
       await startRecording();
@@ -273,7 +388,7 @@ function LetterCard({
   };
 
   const handlePlayWord = async () => {
-    if (!letter.practiceWord) return;
+    if (!practiceWord) return;
 
     if (isPlayingWord) {
       try {
@@ -286,7 +401,7 @@ function LetterCard({
 
     try {
       const player = await getTTSPlayer({
-        text: letter.practiceWord,
+        text: practiceWord,
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
       });
       wordPlayerRef.current = player;
@@ -311,10 +426,64 @@ function LetterCard({
 
   const handleTryAgain = () => {
     setShowResult(false);
-    setRecognizedText("");
     setIsCorrect(false);
-    setXpAwarded(0);
   };
+
+  const handleNextWord = async () => {
+    const generated = await generateNewPracticeWord();
+    if (!generated?.word) {
+      toast({
+        title: appLanguage === "es" ? "No pudimos generar una palabra" : "Couldn't generate a new word",
+        status: "warning",
+        duration: 2500,
+      });
+      return;
+    }
+
+    const nextPracticeWord = generated.word;
+    const nextPracticeMeaning = normalizeMeaning(generated.meaning);
+    setPracticeWord(nextPracticeWord);
+    setPracticeWordMeaningData(nextPracticeMeaning);
+    onPracticeWordUpdated?.(letter.id, nextPracticeWord, nextPracticeMeaning);
+    await saveAlphabetPracticeWord(
+      npub,
+      targetLang,
+      letter.id,
+      nextPracticeWord,
+      nextPracticeMeaning
+    );
+    setShowResult(false);
+    setIsCorrect(false);
+  };
+
+  const generateNewPracticeWord = useCallback(async () => {
+    const languageName = targetLang === "ja" ? "Japanese" : "Russian";
+    const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${
+      letter.letter
+    }" (${letter.name}). Respond ONLY with JSON in this shape:
+{"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>"}
+- Use native script (${targetLang === "ja" ? "hiragana or katakana" : "Cyrillic"}).
+- Keep the word simple (2-4 syllables) and common.
+- Do not add any extra text.`;
+
+    try {
+      const raw = await callResponses({ model: DEFAULT_RESPONSES_MODEL, input: prompt });
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw);
+      const word = String(parsed.word || "").trim();
+      const meaning = normalizeMeaning({
+        en: parsed.meaning_en || parsed.meaning || "",
+        es: parsed.meaning_es || parsed.meaning || "",
+      });
+
+      if (!word) return null;
+
+      return { word, meaning };
+    } catch (error) {
+      console.error("Failed to generate practice word:", error);
+      return null;
+    }
+  }, [letter.letter, letter.name, targetLang]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -347,8 +516,9 @@ function LetterCard({
           gridArea="1 / 1"
           w="100%"
           h="100%"
-          align="flex-start"
-          spacing={2}
+          align="center"
+          justify="center"
+          spacing={4}
           bg="whiteAlpha.100"
           border="1px solid"
           borderColor="whiteAlpha.300"
@@ -362,7 +532,7 @@ function LetterCard({
             <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
               {typeLabel}
             </Badge>
-            {letter.practiceWord && (
+            {practiceWord && (
               <Button
                 size="xs"
                 variant="ghost"
@@ -377,44 +547,49 @@ function LetterCard({
             )}
           </HStack>
 
-          <Flex
-            align="center"
-            justify="space-between"
-            w="100%"
-            gap={3}
-            minH="48px"
-          >
-            <VStack spacing={1} align="flex-start">
-              <Text fontSize="2xl" fontWeight="bold">
-                {letter.letter}
-              </Text>
-              <Text fontSize="lg" fontWeight="semibold">
-                {letter.name}
-              </Text>
-            </VStack>
-            {onPlay && (
-              <Flex
-                as="button"
-                aria-label="Play sound"
-                align="center"
-                justify="center"
-                bg="whiteAlpha.200"
-                border="1px solid"
-                borderColor="whiteAlpha.400"
-                borderRadius="full"
-                p={2}
-                _hover={{ bg: "whiteAlpha.300" }}
-                color={isPlaying ? "teal.200" : "white"}
-                onClick={() => onPlay(letter)}
-              >
-                <FiVolume2 />
-              </Flex>
-            )}
-          </Flex>
-          <Text color="whiteAlpha.900" fontSize="sm">{sound}</Text>
-          <Text fontSize="xs" color="whiteAlpha.800">
-            {tip}
-          </Text>
+          <VStack spacing={3} align="center" textAlign="center" w="100%">
+            <Flex
+              align="center"
+              justify="center"
+              w="100%"
+              gap={3}
+              minH="48px"
+            >
+              <VStack spacing={1} align="center">
+                <Text fontSize="2xl" fontWeight="bold">
+                  {letter.letter}
+                </Text>
+                <Text fontSize="lg" fontWeight="semibold">
+                  {letter.name}
+                </Text>
+              </VStack>
+              {onPlay && (
+                <Flex
+                  as="button"
+                  aria-label="Play sound"
+                  align="center"
+                  justify="center"
+                  bg="whiteAlpha.200"
+                  border="1px solid"
+                  borderColor="whiteAlpha.400"
+                  borderRadius="full"
+                  p={2}
+                  _hover={{ bg: "whiteAlpha.300" }}
+                  color={isPlaying ? "teal.200" : "white"}
+                  onClick={() => onPlay(letter)}
+                >
+                  <FiVolume2 />
+                </Flex>
+              )}
+            </Flex>
+
+            <Text color="whiteAlpha.900" fontSize="sm">
+              {sound}
+            </Text>
+            <Text fontSize="xs" color="whiteAlpha.800">
+              {tip}
+            </Text>
+          </VStack>
         </VStack>
 
         {/* Back Side - Practice Mode */}
@@ -444,7 +619,15 @@ function LetterCard({
 
           <HStack spacing={2} align="center">
             <Text fontSize="2xl" fontWeight="black" color="white">
-              {letter.practiceWord}
+              {highlightedPracticeWord.map((part, index) => (
+                <Text
+                  key={`${part.text}-${index}`}
+                  as="span"
+                  color={part.highlight ? "green.300" : "white"}
+                >
+                  {part.text}
+                </Text>
+              ))}
             </Text>
             <IconButton
               aria-label="Play word"
@@ -457,9 +640,11 @@ function LetterCard({
             />
           </HStack>
 
-          <Text fontSize="sm" color="whiteAlpha.700">
-            ({practiceWordMeaning})
-          </Text>
+          {showMeaning && (
+            <Text fontSize="sm" color="whiteAlpha.700">
+              ({practiceWordMeaningText})
+            </Text>
+          )}
 
           {/* Recording / Result Area */}
           {isGrading ? (
@@ -470,7 +655,7 @@ function LetterCard({
               </Text>
             </VStack>
           ) : showResult ? (
-            <VStack spacing={2} py={2}>
+            <VStack spacing={3} py={2}>
               <Flex
                 align="center"
                 justify="center"
@@ -482,28 +667,27 @@ function LetterCard({
                 {isCorrect ? <RiCheckLine size={24} /> : <RiCloseLine size={24} />}
               </Flex>
 
-              {recognizedText && (
-                <Text fontSize="xs" color="whiteAlpha.700">
-                  {appLanguage === "es" ? "Escuchamos:" : "We heard:"} "{recognizedText}"
-                </Text>
-              )}
-
-              {isCorrect && (
-                <Badge colorScheme="green" fontSize="sm" px={3} py={1}>
-                  +{xpAwarded} XP
-                </Badge>
-              )}
-
               <HStack spacing={2} mt={1}>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  color="white"
-                  onClick={handleTryAgain}
-                  _hover={{ bg: "whiteAlpha.200" }}
-                >
-                  {appLanguage === "es" ? "Otra vez" : "Try again"}
-                </Button>
+                {isCorrect ? (
+                  <Button
+                    size="xs"
+                    colorScheme="green"
+                    onClick={handleNextWord}
+                    _hover={{ bg: "green.400" }}
+                  >
+                    {appLanguage === "es" ? "Siguiente palabra" : "Next word"}
+                  </Button>
+                ) : (
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    color="white"
+                    onClick={handleTryAgain}
+                    _hover={{ bg: "whiteAlpha.200" }}
+                  >
+                    {appLanguage === "es" ? "Otra vez" : "Try again"}
+                  </Button>
+                )}
                 <Button
                   size="xs"
                   variant="ghost"
@@ -563,6 +747,7 @@ export default function AlphabetBootcamp({
   const playerRef = useRef(null);
   const [playingId, setPlayingId] = useState(null);
   const [currentXp, setCurrentXp] = useState(languageXp);
+  const [savedPracticeWords, setSavedPracticeWords] = useState({});
 
   // Update currentXp when languageXp prop changes
   useEffect(() => {
@@ -590,6 +775,57 @@ export default function AlphabetBootcamp({
   // XP progress calculations
   const xpLevelNumber = Math.floor(currentXp / 100) + 1;
   const nextLevelProgressPct = currentXp % 100;
+
+  const handlePracticeWordUpdated = useCallback((letterId, word, meaning) => {
+    setSavedPracticeWords((prev) => ({
+      ...prev,
+      [letterId]: { word, meaning: normalizeMeaning(meaning) },
+    }));
+  }, []);
+
+  useEffect(() => {
+    setSavedPracticeWords({});
+
+    if (!npub) {
+      return;
+    }
+    let cancelled = false;
+
+    const loadProgress = async () => {
+      try {
+        const snapshot = await getDocs(
+          query(
+            collection(database, "users", npub, "alphabetPractice"),
+            where("targetLang", "==", targetLang)
+          )
+        );
+
+        const mapped = {};
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data?.letterId && data?.currentWord) {
+            mapped[data.letterId] = {
+              word: data.currentWord,
+              meaning: normalizeMeaning(data.currentMeaning),
+            };
+          }
+        });
+
+        if (!cancelled) {
+          setSavedPracticeWords(mapped);
+        }
+      } catch (error) {
+        console.error("Failed to load alphabet progress:", error);
+        if (!cancelled) setSavedPracticeWords({});
+      }
+    };
+
+    loadProgress();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [npub, targetLang]);
 
   useEffect(() => {
     return () => {
@@ -657,6 +893,11 @@ export default function AlphabetBootcamp({
               npub={npub}
               pauseMs={pauseMs}
               onXpAwarded={handleXpAwarded}
+              initialPracticeWord={savedPracticeWords[item.id]?.word || item.practiceWord}
+              initialPracticeWordMeaning={
+                savedPracticeWords[item.id]?.meaning || item.practiceWordMeaning
+              }
+              onPracticeWordUpdated={handlePracticeWordUpdated}
               isPlaying={playingId === item.id}
               onPlay={async (data) => {
                 const text = (data?.tts || data?.letter || "").toString().trim();
