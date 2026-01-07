@@ -1117,31 +1117,23 @@ export default function AlphabetBootcamp({
                 mx="auto"
                 minH={{ base: "340px", md: "360px" }}
               >
-                {/* Background cards to show stack effect */}
-                {deck.length > 2 && (
-                  <Box
-                    position="absolute"
-                    top="8px"
-                    left="50%"
-                    transform="translateX(-50%) rotate(2deg)"
-                    w="95%"
-                    h="320px"
-                    bg="whiteAlpha.50"
-                    borderRadius="lg"
-                  />
-                )}
-                {deck.length > 1 && (
-                  <Box
-                    position="absolute"
-                    top="4px"
-                    left="50%"
-                    transform="translateX(-50%) rotate(-1deg)"
-                    w="97%"
-                    h="320px"
-                    bg="whiteAlpha.80"
-                    borderRadius="lg"
-                  />
-                )}
+                {/* Stack effect - multiple layers to create depth */}
+                {deck.length > 1 &&
+                  [...Array(Math.min(deck.length - 1, 8))].map((_, i) => (
+                    <Box
+                      key={i}
+                      position="absolute"
+                      top={`${(8 - i) * 3}px`}
+                      left="50%"
+                      transform="translateX(-50%)"
+                      w="100%"
+                      h="320px"
+                      bg={i < 2 ? "whiteAlpha.100" : "whiteAlpha.50"}
+                      borderRadius="lg"
+                      boxShadow={i === 0 ? "0 4px 12px rgba(0,0,0,0.3)" : "none"}
+                      zIndex={i}
+                    />
+                  ))}
 
                 {/* Top card (current card to practice) */}
                 <Box position="relative" zIndex={3}>
