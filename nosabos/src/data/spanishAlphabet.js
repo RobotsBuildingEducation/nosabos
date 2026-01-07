@@ -10,7 +10,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "La A española nunca cambia. Mantenla abierta y consistente.",
     practiceWord: "agua",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "a",
+    tts: "agua",
   },
   {
     id: "b",
@@ -23,7 +23,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Al inicio: como B. Entre vocales: los labios no cierran del todo.",
     practiceWord: "bueno",
     practiceWordMeaning: { en: "good", es: "bueno" },
-    tts: "be",
+    tts: "bueno",
   },
   {
     id: "c",
@@ -36,7 +36,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "En España, C antes de e/i suena como 'z' (distinción).",
     practiceWord: "casa",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "ce",
+    tts: "casa",
   },
   {
     id: "ch",
@@ -49,7 +49,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Antes era una letra separada. Igual que la CH inglesa.",
     practiceWord: "chico",
     practiceWordMeaning: { en: "boy", es: "chico" },
-    tts: "che",
+    tts: "chico",
   },
   {
     id: "d",
@@ -62,7 +62,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Entre vocales, la D suena casi como la 'th' inglesa en 'the'.",
     practiceWord: "dado",
     practiceWordMeaning: { en: "dice", es: "dado" },
-    tts: "de",
+    tts: "dado",
   },
   {
     id: "e",
@@ -75,7 +75,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "La E española es siempre igual, nunca muda. Más pura que en inglés.",
     practiceWord: "enero",
     practiceWordMeaning: { en: "January", es: "enero" },
-    tts: "e",
+    tts: "enero",
   },
   {
     id: "f",
@@ -88,7 +88,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Igual que la F inglesa. Dientes superiores tocan el labio inferior.",
     practiceWord: "familia",
     practiceWordMeaning: { en: "family", es: "familia" },
-    tts: "efe",
+    tts: "familia",
   },
   {
     id: "g",
@@ -101,7 +101,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "G antes de e/i suena igual que J española.",
     practiceWord: "gato",
     practiceWordMeaning: { en: "cat", es: "gato" },
-    tts: "ge",
+    tts: "gato",
   },
   {
     id: "h",
@@ -114,7 +114,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "¡La H siempre es muda! 'Hola' suena como 'ola'. Nunca la pronuncies.",
     practiceWord: "hola",
     practiceWordMeaning: { en: "hello", es: "hola" },
-    tts: "hache",
+    tts: "hola",
   },
   {
     id: "i",
@@ -127,7 +127,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Sonido puro, nunca cambia. Más corta que la 'ee' inglesa.",
     practiceWord: "isla",
     practiceWordMeaning: { en: "island", es: "isla" },
-    tts: "i",
+    tts: "isla",
   },
   {
     id: "j",
@@ -140,7 +140,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Más fuerte que la H inglesa. Fricción desde la garganta.",
     practiceWord: "jugar",
     practiceWordMeaning: { en: "to play", es: "jugar" },
-    tts: "jota",
+    tts: "jugar",
   },
   {
     id: "k",
@@ -153,7 +153,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Solo en palabras prestadas. Normalmente se usa C o QU.",
     practiceWord: "kilo",
     practiceWordMeaning: { en: "kilogram", es: "kilo" },
-    tts: "ka",
+    tts: "kilo",
   },
   {
     id: "l",
@@ -166,7 +166,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Siempre L clara, nunca oscura como al final de palabras inglesas.",
     practiceWord: "luna",
     practiceWordMeaning: { en: "moon", es: "luna" },
-    tts: "ele",
+    tts: "luna",
   },
   {
     id: "ll",
@@ -179,7 +179,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "En la mayoría: como Y. En Argentina/Uruguay: como 'sh'.",
     practiceWord: "llama",
     practiceWordMeaning: { en: "flame / llama", es: "llama" },
-    tts: "elle",
+    tts: "llama",
   },
   {
     id: "m",
@@ -192,7 +192,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Igual que la M inglesa. Labios juntos.",
     practiceWord: "madre",
     practiceWordMeaning: { en: "mother", es: "madre" },
-    tts: "eme",
+    tts: "madre",
   },
   {
     id: "n",
@@ -205,7 +205,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Igual que la N inglesa. Lengua toca detrás de dientes superiores.",
     practiceWord: "noche",
     practiceWordMeaning: { en: "night", es: "noche" },
-    tts: "ene",
+    tts: "noche",
   },
   {
     id: "ñ",
@@ -218,7 +218,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "¡Única del español! El medio de la lengua toca el paladar.",
     practiceWord: "niño",
     practiceWordMeaning: { en: "child", es: "niño" },
-    tts: "eñe",
+    tts: "niño",
   },
   {
     id: "o",
@@ -231,7 +231,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Sonido redondeado puro, nunca se desliza como en inglés.",
     practiceWord: "oso",
     practiceWordMeaning: { en: "bear", es: "oso" },
-    tts: "o",
+    tts: "oso",
   },
   {
     id: "p",
@@ -244,7 +244,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Menos aire que la P inglesa. Sin soplo de aire.",
     practiceWord: "padre",
     practiceWordMeaning: { en: "father", es: "padre" },
-    tts: "pe",
+    tts: "padre",
   },
   {
     id: "q",
@@ -257,7 +257,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Siempre aparece como QUE o QUI. La U es muda. 'Que' = 'ke'.",
     practiceWord: "queso",
     practiceWordMeaning: { en: "cheese", es: "queso" },
-    tts: "cu",
+    tts: "queso",
   },
   {
     id: "r",
@@ -270,7 +270,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "R simple = un golpe rápido. Como la 't' americana en 'butter'.",
     practiceWord: "pero",
     practiceWordMeaning: { en: "but", es: "pero" },
-    tts: "ere",
+    tts: "pero",
   },
   {
     id: "rr",
@@ -283,7 +283,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "La lengua vibra múltiples veces. ¡Practica diciendo 'butter' rápido!",
     practiceWord: "perro",
     practiceWordMeaning: { en: "dog", es: "perro" },
-    tts: "erre",
+    tts: "perro",
   },
   {
     id: "s",
@@ -296,7 +296,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Siempre sorda como 's', nunca sonora como 'z' inglesa.",
     practiceWord: "sol",
     practiceWordMeaning: { en: "sun", es: "sol" },
-    tts: "ese",
+    tts: "sol",
   },
   {
     id: "t",
@@ -309,7 +309,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Lengua toca los dientes superiores (dental). Sin soplo.",
     practiceWord: "todo",
     practiceWordMeaning: { en: "all/everything", es: "todo" },
-    tts: "te",
+    tts: "todo",
   },
   {
     id: "u",
@@ -322,7 +322,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Sonido puro. Nunca cambia. Muda en QUE, QUI, GUE, GUI.",
     practiceWord: "uno",
     practiceWordMeaning: { en: "one", es: "uno" },
-    tts: "u",
+    tts: "uno",
   },
   {
     id: "v",
@@ -335,7 +335,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "¡En español B y V suenan igual! No uses el sonido V del inglés.",
     practiceWord: "vino",
     practiceWordMeaning: { en: "wine", es: "vino" },
-    tts: "uve",
+    tts: "vino",
   },
   {
     id: "w",
@@ -348,7 +348,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Solo en palabras extranjeras. Como W inglesa o U española.",
     practiceWord: "wifi",
     practiceWordMeaning: { en: "wifi", es: "wifi" },
-    tts: "doble uve",
+    tts: "wifi",
   },
   {
     id: "x",
@@ -361,7 +361,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "'México' suena con J, 'examen' suena con 'ks'. Varía según origen.",
     practiceWord: "examen",
     practiceWordMeaning: { en: "exam", es: "examen" },
-    tts: "equis",
+    tts: "examen",
   },
   {
     id: "y",
@@ -374,7 +374,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Como consonante: como Y inglesa. La palabra 'y' suena como 'i'.",
     practiceWord: "yo",
     practiceWordMeaning: { en: "I", es: "yo" },
-    tts: "ye",
+    tts: "yo",
   },
   {
     id: "z",
@@ -387,7 +387,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "En España: lengua entre dientes. Latinoamérica: como S.",
     practiceWord: "zapato",
     practiceWordMeaning: { en: "shoe", es: "zapato" },
-    tts: "zeta",
+    tts: "zapato",
   },
   {
     id: "accent-a",
@@ -400,7 +400,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "El acento muestra qué sílaba se enfatiza. El sonido no cambia.",
     practiceWord: "está",
     practiceWordMeaning: { en: "is (location/state)", es: "está" },
-    tts: "á",
+    tts: "está",
   },
   {
     id: "accent-e",
@@ -413,7 +413,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Marca el acento o distingue palabras: 'el' vs 'él'.",
     practiceWord: "café",
     practiceWordMeaning: { en: "coffee", es: "café" },
-    tts: "é",
+    tts: "café",
   },
   {
     id: "accent-i",
@@ -426,7 +426,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "También rompe diptongos: 'día' tiene dos sílabas (dí-a).",
     practiceWord: "día",
     practiceWordMeaning: { en: "day", es: "día" },
-    tts: "í",
+    tts: "día",
   },
   {
     id: "accent-o",
@@ -439,7 +439,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Común en pasado: 'habló', 'comió'.",
     practiceWord: "canción",
     practiceWordMeaning: { en: "song", es: "canción" },
-    tts: "ó",
+    tts: "canción",
   },
   {
     id: "accent-u",
@@ -452,7 +452,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Menos común, pero se usa en 'menú', 'Perú'.",
     practiceWord: "menú",
     practiceWordMeaning: { en: "menu", es: "menú" },
-    tts: "ú",
+    tts: "menú",
   },
   {
     id: "dieresis-u",
@@ -465,7 +465,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "Hace que la U se pronuncie en güe/güi: 'pingüino'.",
     practiceWord: "pingüino",
     practiceWordMeaning: { en: "penguin", es: "pingüino" },
-    tts: "ü",
+    tts: "pingüino",
   },
   {
     id: "inverted-question",
@@ -478,7 +478,7 @@ export const SPANISH_ALPHABET = [
     tipEs: "El español usa ¿ al inicio y ? al final de preguntas.",
     practiceWord: "¿Qué?",
     practiceWordMeaning: { en: "What?", es: "¿Qué?" },
-    tts: "signo de interrogación",
+    tts: "¿Qué?",
   },
   {
     id: "inverted-exclamation",
@@ -491,6 +491,6 @@ export const SPANISH_ALPHABET = [
     tipEs: "El español usa ¡ al inicio y ! al final de exclamaciones.",
     practiceWord: "¡Hola!",
     practiceWordMeaning: { en: "Hello!", es: "¡Hola!" },
-    tts: "signo de exclamación",
+    tts: "¡Hola!",
   },
 ];

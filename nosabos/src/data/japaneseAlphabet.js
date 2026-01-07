@@ -10,7 +10,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Hiragana (あ) y Katakana (ア) comparten el mismo sonido.",
     practiceWord: "あめ",
     practiceWordMeaning: { en: "rain", es: "lluvia" },
-    tts: "あ",
+    tts: "あめ",
   },
   {
     id: "i",
@@ -23,7 +23,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Hazla breve; evita sonar como 'yi'.",
     practiceWord: "いぬ",
     practiceWordMeaning: { en: "dog", es: "perro" },
-    tts: "い",
+    tts: "いぬ",
   },
   {
     id: "u",
@@ -36,7 +36,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Labios relajados; a veces se susurra entre consonantes.",
     practiceWord: "うみ",
     practiceWordMeaning: { en: "sea", es: "mar" },
-    tts: "う",
+    tts: "うみ",
   },
   {
     id: "e",
@@ -49,7 +49,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Vocal media limpia; sin desliz de 'y'.",
     practiceWord: "えき",
     practiceWordMeaning: { en: "station", es: "estación" },
-    tts: "え",
+    tts: "えき",
   },
   {
     id: "o",
@@ -62,7 +62,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Redondeada pero corta; evita convertirla en 'ou'.",
     practiceWord: "おちゃ",
     practiceWordMeaning: { en: "tea", es: "té" },
-    tts: "お",
+    tts: "おちゃ",
   },
   {
     id: "ka",
@@ -76,7 +76,7 @@ export const JAPANESE_ALPHABET = [
       "Menos aire que en inglés; compárala con が para notar la sonoridad.",
     practiceWord: "かさ",
     practiceWordMeaning: { en: "umbrella", es: "paraguas" },
-    tts: "か",
+    tts: "かさ",
   },
   {
     id: "sa",
@@ -89,7 +89,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "S nítida; compárala con ざ para la versión sonora.",
     practiceWord: "さくら",
     practiceWordMeaning: { en: "cherry blossom", es: "flor de cerezo" },
-    tts: "さ",
+    tts: "さくら",
   },
   {
     id: "ta",
@@ -102,7 +102,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Lengua contra los dientes; más suave que en inglés.",
     practiceWord: "たまご",
     practiceWordMeaning: { en: "egg", es: "huevo" },
-    tts: "た",
+    tts: "たまご",
   },
   {
     id: "na",
@@ -115,7 +115,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Nasal clásica; siente el ritmo de las moras japonesas.",
     practiceWord: "なつ",
     practiceWordMeaning: { en: "summer", es: "verano" },
-    tts: "な",
+    tts: "なつ",
   },
   {
     id: "ha",
@@ -128,7 +128,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Recuerda la excepción: は se pronuncia 'wa' cuando es partícula.",
     practiceWord: "はな",
     practiceWordMeaning: { en: "flower/nose", es: "flor/nariz" },
-    tts: "は",
+    tts: "はな",
   },
   {
     id: "ma",
@@ -141,7 +141,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Nasal suave; úsalas para practicar la duración.",
     practiceWord: "まち",
     practiceWordMeaning: { en: "town", es: "pueblo" },
-    tts: "ま",
+    tts: "まち",
   },
   {
     id: "ya",
@@ -154,7 +154,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Solo existen YA/YU/YO; no hay yi/ye.",
     practiceWord: "やま",
     practiceWordMeaning: { en: "mountain", es: "montaña" },
-    tts: "や",
+    tts: "やま",
   },
   {
     id: "ra",
@@ -167,7 +167,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Golpe rápido; entre la r y la l inglesas.",
     practiceWord: "らいねん",
     practiceWordMeaning: { en: "next year", es: "próximo año" },
-    tts: "ら",
+    tts: "らいねん",
   },
   {
     id: "wa",
@@ -180,7 +180,7 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Una de las pocas sílabas con W; 'wa' también es partícula (は).",
     practiceWord: "わたし",
     practiceWordMeaning: { en: "I/me", es: "yo" },
-    tts: "わ",
+    tts: "わたし",
   },
   {
     id: "n",
@@ -193,6 +193,6 @@ export const JAPANESE_ALPHABET = [
     tipEs: "Puede sonar m/n/ŋ según lo que siga; cuenta como una mora.",
     practiceWord: "にほん",
     practiceWordMeaning: { en: "Japan", es: "Japón" },
-    tts: "ん",
+    tts: "にほん",
   },
 ];

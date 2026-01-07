@@ -10,7 +10,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "El alemán tiene vocales cortas y largas. ¡La longitud cambia el significado!",
     practiceWord: "Tag",
     practiceWordMeaning: { en: "day", es: "día" },
-    tts: "a",
+    tts: "Tag",
   },
   {
     id: "b",
@@ -23,7 +23,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "B final se vuelve P: 'ab' suena como 'ap'.",
     practiceWord: "Buch",
     practiceWordMeaning: { en: "book", es: "libro" },
-    tts: "be",
+    tts: "Buch",
   },
   {
     id: "c",
@@ -36,7 +36,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Sola, C es rara en alemán. Usualmente parte de CH, CK, o en palabras extranjeras.",
     practiceWord: "Café",
     practiceWordMeaning: { en: "café", es: "café" },
-    tts: "ce",
+    tts: "Café",
   },
   {
     id: "d",
@@ -49,7 +49,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "D final se vuelve T: 'Hund' suena como 'Hunt'.",
     practiceWord: "dort",
     practiceWordMeaning: { en: "there", es: "allí" },
-    tts: "de",
+    tts: "dort",
   },
   {
     id: "e",
@@ -62,7 +62,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "E sin acento al final suena como schwa: 'Katze' = 'Kats-uh'.",
     practiceWord: "Erde",
     practiceWordMeaning: { en: "earth", es: "tierra" },
-    tts: "e",
+    tts: "Erde",
   },
   {
     id: "f",
@@ -75,7 +75,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Igual que F inglesa.",
     practiceWord: "Frau",
     practiceWordMeaning: { en: "woman/Mrs.", es: "mujer/Sra." },
-    tts: "ef",
+    tts: "Frau",
   },
   {
     id: "g",
@@ -88,7 +88,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "G final: 'k' en la mayoría, 'ch' en algunas regiones del norte.",
     practiceWord: "gut",
     practiceWordMeaning: { en: "good", es: "bueno" },
-    tts: "ge",
+    tts: "gut",
   },
   {
     id: "h",
@@ -101,7 +101,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "H después de vocal = vocal larga. 'Sohn' - H hace O larga.",
     practiceWord: "Haus",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "ha",
+    tts: "Haus",
   },
   {
     id: "i",
@@ -114,7 +114,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "I larga a menudo escrita IE: 'Liebe' (amor).",
     practiceWord: "ich",
     practiceWordMeaning: { en: "I", es: "yo" },
-    tts: "i",
+    tts: "ich",
   },
   {
     id: "j",
@@ -127,7 +127,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "¡NO como J inglesa! J alemana = sonido Y inglés.",
     practiceWord: "ja",
     practiceWordMeaning: { en: "yes", es: "sí" },
-    tts: "jot",
+    tts: "ja",
   },
   {
     id: "k",
@@ -140,7 +140,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Igual que K inglesa, pero sin aspiración.",
     practiceWord: "Kind",
     practiceWordMeaning: { en: "child", es: "niño" },
-    tts: "ka",
+    tts: "Kind",
   },
   {
     id: "l",
@@ -153,7 +153,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "L clara, como español. Nunca L oscura como en 'full' inglés.",
     practiceWord: "Land",
     practiceWordMeaning: { en: "land/country", es: "tierra/país" },
-    tts: "el",
+    tts: "Land",
   },
   {
     id: "m",
@@ -166,7 +166,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Igual que M inglesa.",
     practiceWord: "Mann",
     practiceWordMeaning: { en: "man", es: "hombre" },
-    tts: "em",
+    tts: "Mann",
   },
   {
     id: "n",
@@ -179,7 +179,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Igual que N inglesa.",
     practiceWord: "nein",
     practiceWordMeaning: { en: "no", es: "no" },
-    tts: "en",
+    tts: "nein",
   },
   {
     id: "o",
@@ -192,7 +192,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "O larga no tiene desliz—mantenla pura, a diferencia del inglés.",
     practiceWord: "oben",
     practiceWordMeaning: { en: "above", es: "arriba" },
-    tts: "o",
+    tts: "oben",
   },
   {
     id: "p",
@@ -205,7 +205,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Sin aspiración como P española.",
     practiceWord: "Platz",
     practiceWordMeaning: { en: "place/square", es: "lugar/plaza" },
-    tts: "pe",
+    tts: "Platz",
   },
   {
     id: "q",
@@ -218,7 +218,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "QU = sonido 'kv', ¡NO 'ku' como inglés!",
     practiceWord: "Quelle",
     practiceWordMeaning: { en: "source", es: "fuente" },
-    tts: "ku",
+    tts: "Quelle",
   },
   {
     id: "r",
@@ -231,7 +231,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "R alemana estándar es uvular. Después de vocales a menudo se vuelve 'uh'.",
     practiceWord: "rot",
     practiceWordMeaning: { en: "red", es: "rojo" },
-    tts: "er",
+    tts: "rot",
   },
   {
     id: "s",
@@ -244,7 +244,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "S antes de vocales = sonido 'z'. 'Sonne' = 'Zone'. ¡Diferente del inglés!",
     practiceWord: "Sonne",
     practiceWordMeaning: { en: "sun", es: "sol" },
-    tts: "es",
+    tts: "Sonne",
   },
   {
     id: "t",
@@ -257,7 +257,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "T dental, sin aspiración. Lengua toca detrás de los dientes.",
     practiceWord: "Tag",
     practiceWordMeaning: { en: "day", es: "día" },
-    tts: "te",
+    tts: "Tag",
   },
   {
     id: "u",
@@ -270,7 +270,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Tanto U corta como larga son como 'u' española, solo diferente longitud.",
     practiceWord: "und",
     practiceWordMeaning: { en: "and", es: "y" },
-    tts: "u",
+    tts: "und",
   },
   {
     id: "v",
@@ -283,7 +283,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "V en palabras alemanas = sonido F. 'Vater' = 'Fater'.",
     practiceWord: "Vater",
     practiceWordMeaning: { en: "father", es: "padre" },
-    tts: "fau",
+    tts: "Vater",
   },
   {
     id: "w",
@@ -296,7 +296,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "W alemana = sonido V inglés. 'Wasser' = 'Vasser'.",
     practiceWord: "Wasser",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "we",
+    tts: "Wasser",
   },
   {
     id: "x",
@@ -309,7 +309,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Igual que X inglesa.",
     practiceWord: "Taxi",
     practiceWordMeaning: { en: "taxi", es: "taxi" },
-    tts: "iks",
+    tts: "Taxi",
   },
   {
     id: "y",
@@ -322,7 +322,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "En palabras alemanas, Y suena como Ü. En extranjeras, varía.",
     practiceWord: "Typ",
     practiceWordMeaning: { en: "type/guy", es: "tipo" },
-    tts: "ypsilon",
+    tts: "Typ",
   },
   {
     id: "z",
@@ -335,7 +335,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Z alemana = sonido 'ts'. ¡NO como Z inglesa! 'Zeit' = 'Tsait'.",
     practiceWord: "Zeit",
     practiceWordMeaning: { en: "time", es: "tiempo" },
-    tts: "zet",
+    tts: "Zeit",
   },
   {
     id: "ä",
@@ -348,7 +348,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Ä es A con dos puntos (Umlaut). ¡Suena como E! 'Männer' = hombres.",
     practiceWord: "Mädchen",
     practiceWordMeaning: { en: "girl", es: "niña" },
-    tts: "ä",
+    tts: "Mädchen",
   },
   {
     id: "ö",
@@ -361,7 +361,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Di 'e' pero redondea los labios. Sin equivalente en español.",
     practiceWord: "schön",
     practiceWordMeaning: { en: "beautiful", es: "bonito" },
-    tts: "ö",
+    tts: "schön",
   },
   {
     id: "ü",
@@ -374,7 +374,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Di 'i' pero redondea los labios fuertemente. Como 'tu' francés.",
     practiceWord: "über",
     practiceWordMeaning: { en: "over/about", es: "sobre" },
-    tts: "ü",
+    tts: "über",
   },
   {
     id: "ß",
@@ -387,7 +387,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "ß = 'ss' pero después de vocales largas. Marca vocal larga antes.",
     practiceWord: "Straße",
     practiceWordMeaning: { en: "street", es: "calle" },
-    tts: "eszett",
+    tts: "Straße",
   },
   {
     id: "ch-ich",
@@ -400,7 +400,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Después de e, i, ä, ö, ü, y consonantes: CH suave.",
     practiceWord: "ich",
     practiceWordMeaning: { en: "I", es: "yo" },
-    tts: "i",
+    tts: "ich",
   },
   {
     id: "ch-ach",
@@ -426,7 +426,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "SCH = sonido 'sh' inglés. 'Schule' = 'Shu-le'.",
     practiceWord: "Schule",
     practiceWordMeaning: { en: "school", es: "escuela" },
-    tts: "sch",
+    tts: "Schule",
   },
   {
     id: "sp-st",
@@ -439,7 +439,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Al inicio: SP = 'shp', ST = 'sht'. ¡Importante!",
     practiceWord: "Sprache",
     practiceWordMeaning: { en: "language", es: "idioma" },
-    tts: "sp",
+    tts: "Sprache",
   },
   {
     id: "ei",
@@ -452,7 +452,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "EI siempre = sonido 'ai'. 'Mein' = 'main'. ¡Muy consistente!",
     practiceWord: "mein",
     practiceWordMeaning: { en: "my", es: "mi" },
-    tts: "ei",
+    tts: "mein",
   },
   {
     id: "ie",
@@ -465,7 +465,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "IE = sonido 'i' larga. 'Liebe' = 'Li-be'. ¡Opuesto al inglés!",
     practiceWord: "Liebe",
     practiceWordMeaning: { en: "love", es: "amor" },
-    tts: "ie",
+    tts: "Liebe",
   },
   {
     id: "eu-äu",
@@ -478,7 +478,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "EU y ÄU ambas = sonido 'oi'. 'Deutsch' = 'Doich'.",
     practiceWord: "Deutsch",
     practiceWordMeaning: { en: "German", es: "alemán" },
-    tts: "eu",
+    tts: "Deutsch",
   },
   {
     id: "au",
@@ -491,7 +491,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "AU = sonido 'au'. 'Haus' = 'Jaus'.",
     practiceWord: "Haus",
     practiceWordMeaning: { en: "house", es: "casa" },
-    tts: "au",
+    tts: "Haus",
   },
   {
     id: "pf",
@@ -504,7 +504,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "¡Pronuncia ambos sonidos! 'Pferd' = 'Pf-erd'. ¡Difícil para angloparlantes!",
     practiceWord: "Pferd",
     practiceWordMeaning: { en: "horse", es: "caballo" },
-    tts: "pf",
+    tts: "Pferd",
   },
   {
     id: "ng",
@@ -517,7 +517,7 @@ export const GERMAN_ALPHABET = [
     tipEs: "Igual que 'ng' inglés en 'sing'. Sin sonido G separado.",
     practiceWord: "lang",
     practiceWordMeaning: { en: "long", es: "largo" },
-    tts: "ng",
+    tts: "lang",
   },
   {
     id: "kn",
@@ -530,6 +530,6 @@ export const GERMAN_ALPHABET = [
     tipEs: "A diferencia del inglés, ¡pronuncia la K! 'Knie' = 'K-ni'.",
     practiceWord: "Knie",
     practiceWordMeaning: { en: "knee", es: "rodilla" },
-    tts: "kn",
+    tts: "Knie",
   },
 ];

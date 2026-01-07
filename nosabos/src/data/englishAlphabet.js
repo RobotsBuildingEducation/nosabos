@@ -10,7 +10,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Coloca la lengua entre los dientes y vibra las cuerdas vocales.",
     practiceWord: "the",
     practiceWordMeaning: { en: "the (article)", es: "el/la (artículo)" },
-    tts: "th",
+    tts: "the",
   },
   {
     id: "th-unvoiced",
@@ -23,7 +23,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Misma posición de lengua pero susurrada, sin vibrar las cuerdas vocales.",
     practiceWord: "think",
     practiceWordMeaning: { en: "think", es: "pensar" },
-    tts: "th",
+    tts: "think",
   },
   {
     id: "r-sound",
@@ -36,7 +36,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "A diferencia del español, nunca vibra. La lengua flota en medio de la boca.",
     practiceWord: "red",
     practiceWordMeaning: { en: "red", es: "rojo" },
-    tts: "r",
+    tts: "red",
   },
   {
     id: "w-sound",
@@ -49,7 +49,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Empieza con labios redondeados como 'u', luego abre rápido. ¡No como V!",
     practiceWord: "water",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "w",
+    tts: "water",
   },
   {
     id: "v-sound",
@@ -62,7 +62,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "¡Diferente de W! Muerde suavemente el labio inferior y tararea.",
     practiceWord: "very",
     practiceWordMeaning: { en: "very", es: "muy" },
-    tts: "v",
+    tts: "very",
   },
   {
     id: "short-i",
@@ -75,7 +75,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Relaja lengua y mandíbula. Está entre 'i' y 'e'. ¡La vocal más común del inglés!",
     practiceWord: "sit",
     practiceWordMeaning: { en: "sit", es: "sentarse" },
-    tts: "ih",
+    tts: "sit",
   },
   {
     id: "long-ee",
@@ -88,11 +88,11 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Sonríe amplio y sube la lengua. Esto es más parecido a la 'i' española.",
     practiceWord: "see",
     practiceWordMeaning: { en: "see", es: "ver" },
-    tts: "ee",
+    tts: "see",
   },
   {
     id: "schwa",
-    letter: "\u0259",
+    letter: "ə",
     name: "Schwa",
     sound: "The 'uh' in 'about', 'banana', 'sofa' - neutral, unstressed",
     soundEs: "El 'uh' en 'about', neutral y sin acento",
@@ -101,7 +101,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "¡El sonido más común del inglés! Relaja completamente la boca. Aparece en sílabas sin acento.",
     practiceWord: "about",
     practiceWordMeaning: { en: "about", es: "acerca de" },
-    tts: "uh",
+    tts: "about",
   },
   {
     id: "short-a",
@@ -114,7 +114,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Baja la mandíbula y abre los labios. ¡No existe en español!",
     practiceWord: "cat",
     practiceWordMeaning: { en: "cat", es: "gato" },
-    tts: "ae",
+    tts: "cat",
   },
   {
     id: "ah-sound",
@@ -127,7 +127,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Abre bien la boca, lengua baja y atrás. Similar a la 'a' pero más profunda.",
     practiceWord: "hot",
     practiceWordMeaning: { en: "hot", es: "caliente" },
-    tts: "ah",
+    tts: "hot",
   },
   {
     id: "aw-sound",
@@ -140,7 +140,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Redondea los labios y retrae la lengua. Como 'o' pero más abierta.",
     practiceWord: "law",
     practiceWordMeaning: { en: "law", es: "ley" },
-    tts: "aw",
+    tts: "law",
   },
   {
     id: "short-u",
@@ -153,7 +153,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "¡Relaja todo! Boca ligeramente abierta, lengua en medio.",
     practiceWord: "cup",
     practiceWordMeaning: { en: "cup", es: "taza" },
-    tts: "uh",
+    tts: "cup",
   },
   {
     id: "oo-short",
@@ -166,7 +166,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Labios redondeados pero relajados. Más corta que en 'moon'.",
     practiceWord: "book",
     practiceWordMeaning: { en: "book", es: "libro" },
-    tts: "oo",
+    tts: "book",
   },
   {
     id: "oo-long",
@@ -179,7 +179,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Redondea los labios fuertemente. Esto es más parecido a la 'u' española.",
     practiceWord: "moon",
     practiceWordMeaning: { en: "moon", es: "luna" },
-    tts: "oo",
+    tts: "moon",
   },
   {
     id: "ay-diphthong",
@@ -192,7 +192,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Empieza con boca abierta, luego desliza a una sonrisa. ¡Dos sonidos en uno!",
     practiceWord: "day",
     practiceWordMeaning: { en: "day", es: "día" },
-    tts: "ay",
+    tts: "day",
   },
   {
     id: "iy-diphthong",
@@ -205,7 +205,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Empieza con boca abierta, termina sonriendo. Di 'a-i' rápido.",
     practiceWord: "time",
     practiceWordMeaning: { en: "time", es: "tiempo" },
-    tts: "ai",
+    tts: "time",
   },
   {
     id: "ow-diphthong",
@@ -218,7 +218,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Empieza abierto, redondea labios al final. Di 'a-u' rápido.",
     practiceWord: "now",
     practiceWordMeaning: { en: "now", es: "ahora" },
-    tts: "ow",
+    tts: "now",
   },
   {
     id: "oh-diphthong",
@@ -231,7 +231,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Labios redondeados todo el tiempo, más apretados al final.",
     practiceWord: "go",
     practiceWordMeaning: { en: "go", es: "ir" },
-    tts: "oh",
+    tts: "go",
   },
   {
     id: "oy-diphthong",
@@ -244,7 +244,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Empieza con labios redondeados, termina sonriendo.",
     practiceWord: "boy",
     practiceWordMeaning: { en: "boy", es: "niño" },
-    tts: "oy",
+    tts: "boy",
   },
   {
     id: "ng-sound",
@@ -257,7 +257,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "La parte posterior de la lengua toca el paladar blando. ¡No añadas 'g' después!",
     practiceWord: "sing",
     practiceWordMeaning: { en: "sing", es: "cantar" },
-    tts: "ng",
+    tts: "sing",
   },
   {
     id: "sh-sound",
@@ -270,7 +270,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Redondea los labios, lengua detrás de la cresta. Como pedir silencio: '¡shhh!'",
     practiceWord: "ship",
     practiceWordMeaning: { en: "ship", es: "barco" },
-    tts: "sh",
+    tts: "ship",
   },
   {
     id: "ch-sound",
@@ -283,7 +283,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Es T + SH combinados rápido. La lengua empieza en la cresta, luego retrocede.",
     practiceWord: "church",
     practiceWordMeaning: { en: "church", es: "iglesia" },
-    tts: "ch",
+    tts: "church",
   },
   {
     id: "j-sound",
@@ -296,7 +296,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Misma posición que CH, pero con voz. ¡Siente la vibración en la garganta!",
     practiceWord: "jump",
     practiceWordMeaning: { en: "jump", es: "saltar" },
-    tts: "j",
+    tts: "jump",
   },
   {
     id: "zh-sound",
@@ -309,7 +309,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Igual que SH pero con voz. Poco común, usualmente escrito con S o G.",
     practiceWord: "measure",
     practiceWordMeaning: { en: "measure", es: "medir" },
-    tts: "zh",
+    tts: "measure",
   },
   {
     id: "h-sound",
@@ -322,7 +322,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Como empañar unos lentes. Muy ligero, sin fricción.",
     practiceWord: "hello",
     practiceWordMeaning: { en: "hello", es: "hola" },
-    tts: "h",
+    tts: "hello",
   },
   {
     id: "dark-l",
@@ -335,7 +335,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Al final de sílabas, la L se vuelve 'oscura'. La parte posterior de la lengua sube.",
     practiceWord: "full",
     practiceWordMeaning: { en: "full", es: "lleno" },
-    tts: "l",
+    tts: "full",
   },
   {
     id: "clear-l",
@@ -348,7 +348,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "Al inicio de sílabas, la L es 'clara'. Similar a la L española.",
     practiceWord: "love",
     practiceWordMeaning: { en: "love", es: "amor" },
-    tts: "l",
+    tts: "love",
   },
   {
     id: "flap-t",
@@ -361,7 +361,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "En inglés americano, la T entre vocales se convierte en un golpe rápido—¡como la R española!",
     practiceWord: "water",
     practiceWordMeaning: { en: "water", es: "agua" },
-    tts: "t",
+    tts: "water",
   },
   {
     id: "silent-letters",
@@ -374,7 +374,7 @@ export const ENGLISH_ALPHABET = [
     tipEs: "El inglés tiene muchas letras mudas. K en 'knee', W en 'write', B en 'doubt'.",
     practiceWord: "knight",
     practiceWordMeaning: { en: "knight", es: "caballero" },
-    tts: "silent",
+    tts: "knight",
   },
   {
     id: "word-stress",
@@ -387,6 +387,6 @@ export const ENGLISH_ALPHABET = [
     tipEs: "El inglés está basado en acentos. Las sílabas acentuadas destacan. PHOtograph vs phoTOGrapher.",
     practiceWord: "photograph",
     practiceWordMeaning: { en: "photograph", es: "fotografía" },
-    tts: "stress",
+    tts: "photograph",
   },
 ];
