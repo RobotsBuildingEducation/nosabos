@@ -160,9 +160,11 @@ const getHighlightedWordParts = (word, marker) => {
 
   const parts = [];
   let index = 0;
+  const lowerWord = word.toLowerCase();
+  const lowerMarker = marker.toLowerCase();
 
   while (index < word.length) {
-    const matchIndex = word.indexOf(marker, index);
+    const matchIndex = lowerWord.indexOf(lowerMarker, index);
     if (matchIndex === -1) {
       parts.push({ text: word.slice(index), highlight: false });
       break;
@@ -172,7 +174,8 @@ const getHighlightedWordParts = (word, marker) => {
       parts.push({ text: word.slice(index, matchIndex), highlight: false });
     }
 
-    parts.push({ text: marker, highlight: true });
+    // Use the actual characters from the word (preserving original case)
+    parts.push({ text: word.slice(matchIndex, matchIndex + marker.length), highlight: true });
     index = matchIndex + marker.length;
   }
 
@@ -430,7 +433,7 @@ function LetterCard({
   };
 
   const handleNextWord = async () => {
-    const generated = await generateNewPracticeWord();
+    const generated = await generateNewPracticeWord(practiceWord);
     if (!generated?.word) {
       toast({
         title: appLanguage === "es" ? "No pudimos generar una palabra" : "Couldn't generate a new word",
@@ -456,14 +459,15 @@ function LetterCard({
     setIsCorrect(false);
   };
 
-  const generateNewPracticeWord = useCallback(async () => {
+  const generateNewPracticeWord = useCallback(async (currentWord) => {
     const languageName = targetLang === "ja" ? "Japanese" : "Russian";
+    const avoidClause = currentWord ? `\n- Do NOT use the word "${currentWord}" - generate a DIFFERENT word.` : "";
     const prompt = `Generate one beginner-friendly ${languageName} word that starts with the ${languageName} letter/syllable "${
       letter.letter
     }" (${letter.name}). Respond ONLY with JSON in this shape:
 {"word":"<${languageName} word in native script>","meaning_en":"<short english meaning>","meaning_es":"<short spanish meaning>"}
 - Use native script (${targetLang === "ja" ? "hiragana or katakana" : "Cyrillic"}).
-- Keep the word simple (2-4 syllables) and common.
+- Keep the word simple (2-4 syllables) and common.${avoidClause}
 - Do not add any extra text.`;
 
     try {
