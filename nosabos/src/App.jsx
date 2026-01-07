@@ -3853,19 +3853,13 @@ export default function App() {
         notesIsDone={notesIsDone}
         pathMode={pathMode}
         onPathModeChange={(newMode) => {
+          // If in a lesson or other view, return to skill tree first
+          if (viewMode !== "skillTree") {
+            handleReturnToSkillTree();
+          }
           setPathMode(newMode);
-          // Trigger scroll when switching to path mode
-          if (newMode === "path" && viewMode === "skillTree") {
-            setScrollToLatestTrigger((prev) => prev + 1);
-          }
-          // Scroll to top when switching to flashcards, conversations, or alphabet bootcamp
-          if (
-            newMode === "flashcards" ||
-            newMode === "conversations" ||
-            newMode === "alphabet"
-          ) {
-            window.scrollTo({ top: 0, behavior: "instant" });
-          }
+          // Always scroll to top when switching modes
+          window.scrollTo({ top: 0, behavior: "instant" });
         }}
         onScrollToLatest={() => {
           // Trigger scroll when already in path mode
