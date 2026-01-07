@@ -150,6 +150,35 @@ async function saveAlphabetPracticeWord(
   }
 }
 
+const getPracticeLetterMarker = (letter) => {
+  if (!letter?.letter) return "";
+  return letter.letter.split("/")[0]?.trim()?.split(" ")[0] || "";
+};
+
+const getHighlightedWordParts = (word, marker) => {
+  if (!word || !marker) return [{ text: word, highlight: false }];
+
+  const parts = [];
+  let index = 0;
+
+  while (index < word.length) {
+    const matchIndex = word.indexOf(marker, index);
+    if (matchIndex === -1) {
+      parts.push({ text: word.slice(index), highlight: false });
+      break;
+    }
+
+    if (matchIndex > index) {
+      parts.push({ text: word.slice(index, matchIndex), highlight: false });
+    }
+
+    parts.push({ text: marker, highlight: true });
+    index = matchIndex + marker.length;
+  }
+
+  return parts;
+};
+
 function LetterCard({
   letter,
   onPlay,
@@ -208,6 +237,11 @@ function LetterCard({
   const practiceWordMeaningText =
     practiceWordMeaningData?.[appLanguage === "es" ? "es" : "en"] || "";
   const showMeaning = Boolean(practiceWordMeaningText);
+  const practiceMarker = getPracticeLetterMarker(letter);
+  const highlightedPracticeWord = useMemo(
+    () => getHighlightedWordParts(practiceWord, practiceMarker),
+    [practiceMarker, practiceWord]
+  );
 
   // Speech practice hook - use hook's isRecording state
   const { startRecording, stopRecording, isRecording, supportsSpeech } = useSpeechPractice({
@@ -269,17 +303,6 @@ function LetterCard({
       if (isYes && npub) {
         await awardXp(npub, xp, targetLang);
         onXpAwarded?.(xp);
-      }
-
-      if (isYes) {
-        const generated = await generateNewPracticeWord();
-        if (generated?.word) {
-          nextPracticeWord = generated.word;
-          nextPracticeMeaning = normalizeMeaning(generated.meaning);
-          setPracticeWord(nextPracticeWord);
-          setPracticeWordMeaningData(nextPracticeMeaning);
-          onPracticeWordUpdated?.(letter.id, nextPracticeWord, nextPracticeMeaning);
-        }
       }
 
       // Save progress regardless of result
@@ -402,6 +425,33 @@ function LetterCard({
   };
 
   const handleTryAgain = () => {
+    setShowResult(false);
+    setIsCorrect(false);
+  };
+
+  const handleNextWord = async () => {
+    const generated = await generateNewPracticeWord();
+    if (!generated?.word) {
+      toast({
+        title: appLanguage === "es" ? "No pudimos generar una palabra" : "Couldn't generate a new word",
+        status: "warning",
+        duration: 2500,
+      });
+      return;
+    }
+
+    const nextPracticeWord = generated.word;
+    const nextPracticeMeaning = normalizeMeaning(generated.meaning);
+    setPracticeWord(nextPracticeWord);
+    setPracticeWordMeaningData(nextPracticeMeaning);
+    onPracticeWordUpdated?.(letter.id, nextPracticeWord, nextPracticeMeaning);
+    await saveAlphabetPracticeWord(
+      npub,
+      targetLang,
+      letter.id,
+      nextPracticeWord,
+      nextPracticeMeaning
+    );
     setShowResult(false);
     setIsCorrect(false);
   };
@@ -569,7 +619,15 @@ function LetterCard({
 
           <HStack spacing={2} align="center">
             <Text fontSize="2xl" fontWeight="black" color="white">
-              {practiceWord}
+              {highlightedPracticeWord.map((part, index) => (
+                <Text
+                  key={`${part.text}-${index}`}
+                  as="span"
+                  color={part.highlight ? "green.300" : "white"}
+                >
+                  {part.text}
+                </Text>
+              ))}
             </Text>
             <IconButton
               aria-label="Play word"
@@ -610,15 +668,26 @@ function LetterCard({
               </Flex>
 
               <HStack spacing={2} mt={1}>
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  color="white"
-                  onClick={handleTryAgain}
-                  _hover={{ bg: "whiteAlpha.200" }}
-                >
-                  {appLanguage === "es" ? "Otra vez" : "Try again"}
-                </Button>
+                {isCorrect ? (
+                  <Button
+                    size="xs"
+                    colorScheme="green"
+                    onClick={handleNextWord}
+                    _hover={{ bg: "green.400" }}
+                  >
+                    {appLanguage === "es" ? "Siguiente palabra" : "Next word"}
+                  </Button>
+                ) : (
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    color="white"
+                    onClick={handleTryAgain}
+                    _hover={{ bg: "whiteAlpha.200" }}
+                  >
+                    {appLanguage === "es" ? "Otra vez" : "Try again"}
+                  </Button>
+                )}
                 <Button
                   size="xs"
                   variant="ghost"
