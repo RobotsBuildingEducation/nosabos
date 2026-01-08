@@ -893,6 +893,22 @@ function TopBar({
                       bg="gray.900"
                       maxH="300px"
                       overflowY="auto"
+                      sx={{
+                        "&::-webkit-scrollbar": {
+                          width: "8px",
+                        },
+                        "&::-webkit-scrollbar-track": {
+                          bg: "gray.800",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                          bg: "gray.600",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb:hover": {
+                          bg: "gray.500",
+                        },
+                      }}
                     >
                       <MenuOptionGroup
                         type="radio"
