@@ -990,6 +990,8 @@ const HelpChatFab = forwardRef(
           placement="right"
           scrollBehavior="inside"
           closeOnOverlayClick={false}
+          autoFocus={false}
+          returnFocusOnClose={false}
           trapFocus={false}
           blockScrollOnMount={false}
         >
@@ -1001,8 +1003,13 @@ const HelpChatFab = forwardRef(
             border="1px solid"
             borderColor="gray.700"
             h="75vh"
+            w="420px"
+            minW="320px"
+            maxW="80vw"
             display="flex"
             flexDirection="column"
+            overflow="auto"
+            sx={{ resize: "horizontal" }}
           >
             <DrawerHeader>
               {appLanguage === "es" ? "Ayuda rápida" : "Quick Help"}
