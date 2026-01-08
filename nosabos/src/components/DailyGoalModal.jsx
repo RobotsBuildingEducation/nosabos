@@ -32,6 +32,7 @@ import {
 import { WaveBar } from "./WaveBar.jsx";
 import GoalCalendar from "./GoalCalendar.jsx";
 import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
+import { normalizeLanguageCode } from "../utils/translation.jsx";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [75, 100, 150, 200, 300];
@@ -47,7 +48,7 @@ export default function DailyGoalModal({
   completedGoalDates = [],
   startDate,
 }) {
-  const resolvedLang = lang === "es" ? "es" : "en";
+  const resolvedLang = normalizeLanguageCode(lang) || "en";
   const resolvedTranslations = useMemo(
     () => t || allTranslations[resolvedLang] || allTranslations.en,
     [t, resolvedLang]
@@ -90,6 +91,7 @@ export default function DailyGoalModal({
       ),
       errSaveTitle: getLabel("daily_goal_error_save", "Could not save goal"),
       calendarTitle: getLabel("daily_goal_calendar_title", "Your progress"),
+      close: getLabel("teams_drawer_close", "Close"),
     }),
     [getLabel]
   );
@@ -128,16 +130,16 @@ export default function DailyGoalModal({
   // Pretty preview of “next reset” (local time)
   const resetPreview = useMemo(() => {
     const d = new Date(Date.now() + MS_24H);
-    const date = d.toLocaleDateString(undefined, {
+    const date = d.toLocaleDateString(resolvedLang, {
       month: "short",
       day: "numeric",
     });
-    const time = d.toLocaleTimeString(undefined, {
+    const time = d.toLocaleTimeString(resolvedLang, {
       hour: "2-digit",
       minute: "2-digit",
     });
     return `${date} · ${time}`;
-  }, [isOpen]); // recompute on open
+  }, [isOpen, resolvedLang]); // recompute on open
 
   const levelPct = Math.min(100, parsed); // % of one level (100 XP)
   const approxLevels = (parsed / 100).toFixed(parsed % 100 === 0 ? 0 : 1);
@@ -346,7 +348,7 @@ export default function DailyGoalModal({
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
             <Button variant={"ghost"} onClick={onClose}>
-              {t?.teams_drawer_close || "Close"}
+              {L.close}
             </Button>
             <Button colorScheme="teal" onClick={save} isDisabled={!npub}>
               {ui.save || L.save}
