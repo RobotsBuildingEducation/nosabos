@@ -4179,9 +4179,7 @@ Return JSON ONLY:
         {mode === "mc" && (mcQ || loadingMCQ) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
-              {userLanguage === "es"
-                ? "Elige la respuesta correcta"
-                : "Choose the correct answer"}
+              {t("practice_choose_correct_answer")}
             </Text>
             {mcLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMcDragEnd}>
