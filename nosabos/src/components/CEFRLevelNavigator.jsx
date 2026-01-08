@@ -32,43 +32,57 @@ const getTranslation = (key, params = {}) => {
 
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
-// CEFR level visual styling (translations are in centralized translations.jsx)
 const CEFR_LEVEL_INFO = {
   A1: {
-    nameKey: "cefr_a1_name",
+    name: { en: "Beginner", es: "Principiante" },
     color: "#3B82F6",
     gradient: "linear(135deg, #60A5FA, #3B82F6)",
-    descriptionKey: "cefr_a1_short_desc",
+    description: {
+      en: "Basic survival language",
+      es: "Lenguaje básico de supervivencia",
+    },
   },
   A2: {
-    nameKey: "cefr_a2_name",
+    name: { en: "Elementary", es: "Elemental" },
     color: "#8B5CF6",
     gradient: "linear(135deg, #A78BFA, #8B5CF6)",
-    descriptionKey: "cefr_a2_short_desc",
+    description: {
+      en: "Simple everyday communication",
+      es: "Comunicación cotidiana simple",
+    },
   },
   B1: {
-    nameKey: "cefr_b1_name",
+    name: { en: "Intermediate", es: "Intermedio" },
     color: "#A855F7",
     gradient: "linear(135deg, #C084FC, #A855F7)",
-    descriptionKey: "cefr_b1_short_desc",
+    description: {
+      en: "Handle everyday situations",
+      es: "Manejo de situaciones cotidianas",
+    },
   },
   B2: {
-    nameKey: "cefr_b2_name",
+    name: { en: "Upper Intermediate", es: "Intermedio Alto" },
     color: "#F97316",
     gradient: "linear(135deg, #FB923C, #F97316)",
-    descriptionKey: "cefr_b2_short_desc",
+    description: { en: "Complex discussions", es: "Discusiones complejas" },
   },
   C1: {
-    nameKey: "cefr_c1_name",
+    name: { en: "Advanced", es: "Avanzado" },
     color: "#EF4444",
     gradient: "linear(135deg, #F87171, #EF4444)",
-    descriptionKey: "cefr_c1_short_desc",
+    description: {
+      en: "Sophisticated language use",
+      es: "Uso sofisticado del idioma",
+    },
   },
   C2: {
-    nameKey: "cefr_c2_name",
+    name: { en: "Mastery", es: "Maestría" },
     color: "#EC4899",
     gradient: "linear(135deg, #F472B6, #EC4899)",
-    descriptionKey: "cefr_c2_short_desc",
+    description: {
+      en: "Near-native proficiency",
+      es: "Competencia casi nativa",
+    },
   },
 };
 
@@ -169,10 +183,11 @@ export default function CEFRLevelNavigator({
               color="white"
               textAlign={"center"}
             >
-              {getTranslation(levelInfo.nameKey)}
+              {levelInfo.name[getAppLanguage()] || levelInfo.name.en}
             </Text>
             <Text fontSize="sm" color="gray.400" textAlign="center">
-              {getTranslation(levelInfo.descriptionKey)}
+              {levelInfo.description[getAppLanguage()] ||
+                levelInfo.description.en}
             </Text>
           </VStack>
 

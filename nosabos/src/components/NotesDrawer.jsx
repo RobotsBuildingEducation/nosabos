@@ -26,7 +26,7 @@ import {
 import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
 import useNotesStore from "../hooks/useNotesStore";
 import { getTTSPlayer, TTS_LANG_TAG, getRandomVoice } from "../utils/tts";
-import { t } from "../utils/translation";
+import translations from "../utils/translation";
 
 // CEFR levels in order
 const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -41,11 +41,11 @@ const CEFR_COLORS = {
   C2: "#A855F7",
 };
 
-// Module type translation keys
-const MODULE_LABEL_KEYS = {
-  flashcard: "module_flashcard_label",
-  vocabulary: "module_vocabulary_label",
-  grammar: "module_grammar_label",
+// Module type labels
+const MODULE_LABELS = {
+  flashcard: { en: "Flashcard", es: "Tarjeta" },
+  vocabulary: { en: "Vocabulary", es: "Vocabulario" },
+  grammar: { en: "Grammar", es: "Gramática" },
 };
 
 export default function NotesDrawer({
@@ -60,20 +60,22 @@ export default function NotesDrawer({
   const audioRef = useRef(null);
   const pcRef = useRef(null);
 
-  const lang = appLanguage || "en";
+  const lang = appLanguage === "es" ? "es" : "en";
 
   // Filter notes by current target language
   const filteredNotes = useMemo(() => {
     return notes.filter((note) => note.targetLang === targetLang);
   }, [notes, targetLang]);
 
-  // Use centralized translations
-  const drawerTitle = t(lang, "notes_drawer_title");
-  const emptyMessage = t(lang, "notes_empty_message");
-  const clearAllLabel = t(lang, "notes_clear_all");
-  const summaryLabel = t(lang, "notes_summary");
-  const lessonLabel = t(lang, "notes_lesson");
-  const noNotesLabel = t(lang, "notes_no_notes");
+  const drawerTitle = lang === "es" ? "Mis Notas" : "My Notes";
+  const emptyMessage =
+    lang === "es"
+      ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
+      : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
+  const clearAllLabel = lang === "es" ? "Borrar todo" : "Clear all";
+  const summaryLabel = lang === "es" ? "Resumen" : "Summary";
+  const lessonLabel = lang === "es" ? "Lección" : "Lesson";
+  const noNotesLabel = lang === "es" ? "Sin notas" : "No notes";
 
   const stopAudio = () => {
     if (audioRef.current) {
@@ -164,9 +166,10 @@ export default function NotesDrawer({
         ? note.lessonTitle[lang] || note.lessonTitle.en || "Note"
         : note.lessonTitle || "Note";
 
-    const moduleLabel = MODULE_LABEL_KEYS[note.moduleType]
-      ? t(lang, MODULE_LABEL_KEYS[note.moduleType])
-      : note.moduleType;
+    const moduleLabel =
+      MODULE_LABELS[note.moduleType]?.[lang] ||
+      MODULE_LABELS[note.moduleType]?.en ||
+      note.moduleType;
 
     return (
       <AccordionItem
@@ -390,7 +393,7 @@ export default function NotesDrawer({
         </DrawerBody>
         <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
           <Button variant={"ghost"} onClick={onClose}>
-            {t(lang, "teams_drawer_close")}
+            {translations[appLanguage]["teams_drawer_close"] || "Close"}
           </Button>
         </DrawerFooter>
       </DrawerContent>

@@ -20,7 +20,6 @@ import { RiBookmarkLine, RiRoadMapLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaBitcoin, FaKey } from "react-icons/fa";
-import { t } from "../utils/translation";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -30,55 +29,75 @@ const pulseKeyframes = keyframes`
 `;
 
 // Button explanations configuration - ordered left to right as they appear on skill tree
-// Translations are in centralized translations.jsx
 const BUTTON_EXPLANATIONS = [
   {
     id: "back",
     icon: ArrowBackIcon,
-    labelKey: "tutorial_btn_back_label",
-    descriptionKey: "tutorial_btn_back_desc",
+    label: { en: "Back Button", es: "Botón Atrás" },
+    description: {
+      en: "Returns you to the skill tree to choose another lesson",
+      es: "Te regresa al árbol de habilidades para elegir otra lección",
+    },
     position: 0,
   },
   {
     id: "teams",
     icon: PiUsersBold,
-    labelKey: "tutorial_btn_teams_label",
-    descriptionKey: "tutorial_btn_teams_desc",
+    label: { en: "Teams", es: "Equipos" },
+    description: {
+      en: "Join or create study groups to learn together with friends",
+      es: "Únete o crea grupos de estudio para aprender junto con amigos",
+    },
     position: 1,
   },
   {
     id: "settings",
     icon: SettingsIcon,
-    labelKey: "tutorial_btn_settings_label",
-    descriptionKey: "tutorial_btn_settings_desc",
+    label: { en: "Settings", es: "Configuración" },
+    description: {
+      en: "Customize your learning experience, voice, and preferences",
+      es: "Personaliza tu experiencia de aprendizaje, voz y preferencias",
+    },
     position: 2,
   },
   {
     id: "notes",
     icon: RiBookmarkLine,
-    labelKey: "tutorial_btn_notes_label",
-    descriptionKey: "tutorial_btn_notes_desc",
+    label: { en: "Notes", es: "Notas" },
+    description: {
+      en: "View your study notes. Notes can be created when you attempt or complete exercises and flashcards.",
+      es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
+    },
     position: 3,
   },
   {
     id: "identity",
     icon: FaBitcoin,
-    labelKey: "tutorial_btn_identity_label",
-    descriptionKey: "tutorial_btn_identity_desc",
+    label: { en: "Account Key", es: "Llave de cuenta" },
+    description: {
+      en: "Access your account info to install the app and access your password",
+      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
+    },
     position: 4,
   },
   {
     id: "help",
     icon: MdOutlineSupportAgent,
-    labelKey: "tutorial_btn_help_label",
-    descriptionKey: "tutorial_btn_help_desc",
+    label: { en: "Assistant", es: "Asistente" },
+    description: {
+      en: "Get instant help and answers from our learning assistant",
+      es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
+    },
     position: 5,
   },
   {
     id: "mode",
     icon: PiPath,
-    labelKey: "tutorial_btn_mode_label",
-    descriptionKey: "tutorial_btn_mode_desc",
+    label: { en: "Learning Mode", es: "Modo de Aprendizaje" },
+    description: {
+      en: "Switch between learning path, practice cards, and free conversation modes. The icon changes based on your current mode.",
+      es: "Cambia entre la ruta de aprendizaje, tarjetas de práctica y modos de conversación libre. El icono cambia según tu modo actual.",
+    },
     position: 6,
   },
 ];
@@ -175,7 +194,7 @@ export default function TutorialActionBarPopovers({
                 )}
               </Box>
               <Text fontSize="lg" fontWeight="bold" color="white">
-                {t(lang, currentButton.labelKey)}
+                {currentButton.label[lang]}
               </Text>
             </HStack>
 
@@ -186,7 +205,7 @@ export default function TutorialActionBarPopovers({
               textAlign="center"
               lineHeight="1.5"
             >
-              {t(lang, currentButton.descriptionKey)}
+              {currentButton.description[lang]}
             </Text>
 
             {/* Progress dots */}
