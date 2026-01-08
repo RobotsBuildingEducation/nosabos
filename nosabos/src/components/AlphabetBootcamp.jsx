@@ -1067,7 +1067,7 @@ export default function AlphabetBootcamp({
       </Box>
 
       <Heading
-        size="lg"
+        size="md"
         color="whiteAlpha.900"
         zIndex={10}
         textAlign={"center"}
