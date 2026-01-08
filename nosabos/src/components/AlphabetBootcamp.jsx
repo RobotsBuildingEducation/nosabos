@@ -85,10 +85,23 @@ const normalizeMeaning = (meaning) => {
 
 const LETTER_LOCALIZATION_SUFFIX = {
   es: "Es",
+  pt: "Pt",
+  fr: "Fr",
+  it: "It",
+  nl: "Nl",
+  ja: "Ja",
+  ru: "Ru",
+  de: "De",
 };
 
 const getLetterField = (letter, baseKey, uiLang) => {
   const langKey = normalizeLanguageCode(uiLang);
+  const languageMap =
+    letter?.[`${baseKey}_language`] || letter?.[`${baseKey}Language`];
+  if (languageMap && typeof languageMap === "object") {
+    return languageMap[langKey] || languageMap.en || languageMap.es;
+  }
+
   const suffix = langKey ? LETTER_LOCALIZATION_SUFFIX[langKey] : undefined;
   if (suffix) {
     const localizedKey = `${baseKey}${suffix}`;
