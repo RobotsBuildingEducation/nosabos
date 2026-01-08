@@ -33,7 +33,7 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { WaveBar } from "./WaveBar";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
-import translations, { normalizeLanguageCode } from "../utils/translation";
+import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { awardXp } from "../utils/utils";
@@ -132,7 +132,7 @@ function buildFallbackDistractors(words = [], answerLang = "en") {
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = normalizeLanguageCode(uiLang) || "en";
+  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
@@ -206,10 +206,9 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang:
-          p.supportLang === "bilingual"
-            ? "bilingual"
-            : normalizeLanguageCode(p.supportLang) || "en",
+        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
+          ? p.supportLang
+          : "en",
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
       });
@@ -943,10 +942,9 @@ export default function GrammarBook({
   )
     ? progress.targetLang
     : "en";
-  const supportLang =
-    progress.supportLang === "bilingual"
-      ? "bilingual"
-      : normalizeLanguageCode(progress.supportLang) || "en";
+  const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
+    ? progress.supportLang
+    : "en";
   const showTranslations =
     typeof progress.showTranslations === "boolean"
       ? progress.showTranslations
@@ -4179,7 +4177,9 @@ Return JSON ONLY:
         {mode === "mc" && (mcQ || loadingMCQ) ? (
           <>
             <Text fontSize="xl" fontWeight="bold" color="white" mb={2}>
-              {t("practice_choose_correct_answer")}
+              {userLanguage === "es"
+                ? "Elige la respuesta correcta"
+                : "Choose the correct answer"}
             </Text>
             {mcLayout === "drag" ? (
               <DragDropContext onDragEnd={handleMcDragEnd}>

@@ -13,7 +13,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
-import translations, { normalizeLanguageCode } from "../utils/translation";
+import translations from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
 
 // Lazy-load modules
@@ -26,7 +26,7 @@ const History = React.lazy(() => import("./History"));
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = normalizeLanguageCode(uiLang) || "en";
+  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {

@@ -15,6 +15,7 @@ import {
 import { LockIcon } from "@chakra-ui/icons";
 
 export default function SubscriptionGate({
+  appLanguage = "en",
   t = {},
   onSubmit,
   isSubmitting = false,
@@ -37,18 +38,17 @@ export default function SubscriptionGate({
     t.invalid ||
     t.passcode?.invalid ||
     "Invalid passcode. Please try again.";
-  const missingMessage =
-    t.passcode_missing || t.passcode?.missing || "Enter the passcode";
-  const loadingLabel =
-    t.passcode_loading || t.passcode?.loading || "Verifying";
-  const submitLabel = t.passcode_submit || t.passcode?.submit || "Submit";
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
     setLocalError("");
     const normalized = (value || "").trim();
     if (!normalized) {
-      setLocalError(missingMessage);
+      setLocalError(
+        appLanguage === "es"
+          ? "Ingresa el código de acceso"
+          : "Enter the passcode"
+      );
       return;
     }
     await onSubmit?.(normalized, setLocalError);
@@ -110,9 +110,9 @@ export default function SubscriptionGate({
               colorScheme="teal"
               onClick={handleSubmit}
               isLoading={isSubmitting}
-              loadingText={loadingLabel}
+              loadingText={appLanguage === "es" ? "Verificando" : "Verifying"}
             >
-              {submitLabel}
+              {appLanguage === "es" ? "Enviar" : "Submit"}
             </Button>
           </Stack>
         </VStack>

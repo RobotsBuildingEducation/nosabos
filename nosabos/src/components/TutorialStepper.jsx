@@ -72,8 +72,6 @@ export default function TutorialStepper({
   const validModule = MODULE_CONFIG[currentModule] ? currentModule : modules[0];
   const currentIndex = modules.indexOf(validModule);
   const currentConfig = MODULE_CONFIG[validModule];
-  const noDescription =
-    t(supportLang, "tutorial_no_description") || "No description available";
 
   // Get description: prefer passed tutorialDescription, fall back to built-in
   const getDescription = () => {
@@ -218,10 +216,10 @@ export default function TutorialStepper({
                   : validModule}
               </Text>
               <Text fontSize="sm" color="gray.300" lineHeight="1.4">
-                    {description ||
-                      (currentConfig.descriptionKey
-                        ? t(supportLang, currentConfig.descriptionKey)
-                        : noDescription)}
+                {description ||
+                  (currentConfig.descriptionKey
+                    ? t(supportLang, currentConfig.descriptionKey)
+                    : "No description available")}
               </Text>
             </VStack>
           </Flex>

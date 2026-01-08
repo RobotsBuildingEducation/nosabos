@@ -29,12 +29,7 @@ import {
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import {
-  getLanguageLabel,
-  normalizeLanguageCode,
-  SUPPORTED_LANGUAGE_CODES,
-  translations,
-} from "../utils/translation";
+import { translations } from "../utils/translation";
 
 const BASE_PATH = "/onboarding";
 
@@ -52,17 +47,10 @@ export default function Onboarding({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const normalizedUserLang = normalizeLanguageCode(userLanguage) || "en";
-  const initialSupportLang =
-    normalizeLanguageCode(initialDraft.supportLang) || normalizedUserLang;
+  const normalizedUserLang = userLanguage === "es" ? "es" : "en";
+  const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
   const [supportLang, setSupportLang] = useState(initialSupportLang);
   const ui = translations[supportLang] || translations.en;
-  const supportLanguageOptions = useMemo(() => {
-    return SUPPORTED_LANGUAGE_CODES.map((code) => ({
-      code,
-      label: getLanguageLabel(supportLang, code),
-    })).sort((a, b) => a.label.localeCompare(b.label));
-  }, [supportLang]);
 
   const defaults = useMemo(() => {
     return {
@@ -139,20 +127,17 @@ export default function Onboarding({
     "{example}",
     ui.onboarding_persona_default_example || "patient, encouraging, playful"
   );
-  const supportLangLabel = `${
-    ui.onboarding_support_language_title || "Support Language"
-  }: ${getLanguageLabel(supportLang, supportLang)}`;
 
   const VAD_LABEL =
     ui.ra_vad_label ||
     (supportLang === "es" ? "Pausa entre turnos" : "Pause between replies");
   const VAD_HINT =
-    ui.onboarding_vad_hint || translations.en.onboarding_vad_hint;
+    ui.onboarding_vad_hint ||
+    (supportLang === "es"
+      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
+      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
-  const secondsLabel =
-    ui.onboarding_vad_seconds_label ||
-    translations.en.onboarding_vad_seconds_label ||
-    "seconds";
+  const secondsLabel = supportLang === "es" ? "segundos" : "seconds";
 
   return (
     <Box
@@ -215,7 +200,8 @@ export default function Onboarding({
                       w="100%"
                       textAlign="left"
                     >
-                      {supportLangLabel}
+                      {supportLang === "en" && ui.onboarding_support_en}
+                      {supportLang === "es" && ui.onboarding_support_es}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
                       <MenuOptionGroup
@@ -223,11 +209,12 @@ export default function Onboarding({
                         value={supportLang}
                         onChange={(value) => setSupportLang(value)}
                       >
-                        {supportLanguageOptions.map((option) => (
-                          <MenuItemOption key={option.code} value={option.code}>
-                            {option.label}
-                          </MenuItemOption>
-                        ))}
+                        <MenuItemOption value="en">
+                          {ui.onboarding_support_en}
+                        </MenuItemOption>
+                        <MenuItemOption value="es">
+                          {ui.onboarding_support_es}
+                        </MenuItemOption>
                       </MenuOptionGroup>
                     </MenuList>
                   </Menu>
