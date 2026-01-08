@@ -21,6 +21,35 @@ When adding a new language, choose an ISO 639-1 (2-letter) or ISO 639-3 (3-lette
 
 ---
 
+## Alphabet Bootcamp vs Skill Tree Entry Point
+
+When adding a new language, you must determine the **initial learning mode** based on the language's writing system:
+
+### Non-Latin Alphabet Languages
+Languages that do **not** use the Latin alphabet start in **Alphabet Bootcamp** mode first:
+- `ja` - Japanese (Hiragana/Katakana/Kanji)
+- `ru` - Russian (Cyrillic)
+- **Future examples**: Arabic, Korean, Greek, Hebrew, Thai, Chinese, etc.
+
+**Why?** Learners need to master the target language's writing system before they can effectively engage with vocabulary and grammar content in the skill tree.
+
+### Latin Alphabet Languages
+Languages that use the Latin alphabet start directly in the **Skill Tree** mode:
+- `en` - English
+- `es` - Spanish
+- `pt` - Portuguese
+- `fr` - French
+- `it` - Italian
+- `nl` - Dutch
+- `nah` - Huastec Nahuatl
+
+**Why?** Learners can immediately read and recognize words, so they can jump straight into vocabulary and grammar lessons.
+
+### Implementation Note
+When adding a new language, determine which entry point is appropriate and configure the app accordingly. This affects the initial onboarding flow and what content users see first when they select the language.
+
+---
+
 ## File Change Checklist
 
 ### 1. Translation Strings (`src/utils/translation.jsx`)
@@ -432,6 +461,8 @@ grep -rn 'tLang === "ja"' --include="*.jsx" --include="*.js" src/
 After adding a new language, test these scenarios:
 
 - [ ] **Onboarding**: Can select the new language during onboarding
+- [ ] **Entry point**: Non-Latin alphabet languages start in Alphabet Bootcamp; Latin alphabet languages start in Skill Tree
+- [ ] **Alphabet Bootcamp** (non-Latin only): Character recognition and writing practice works correctly
 - [ ] **Settings**: Can change to the new language in settings
 - [ ] **Language persists**: Language selection persists after refresh
 - [ ] **Vocabulary module**: Generates content in the new language
@@ -478,6 +509,11 @@ To mark a language as beta, add `(beta)` to the display text in Onboarding.jsx a
 If the new language should also be available as a **support language** (UI language for instructions), additional changes are needed in:
 - Language detection (`src/utils/languageDetection.js`)
 - Support language validation arrays throughout components
+
+### Alphabet Bootcamp Entry Point
+For non-Latin alphabet languages (Japanese, Russian, Arabic, Korean, etc.), the app automatically starts users in **Alphabet Bootcamp** mode to learn the writing system first. Users progress to the Skill Tree after completing the alphabet training.
+
+Latin alphabet languages skip the bootcamp entirely and start directly in the Skill Tree.
 
 ---
 
