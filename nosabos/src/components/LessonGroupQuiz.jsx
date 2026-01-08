@@ -50,10 +50,6 @@ import {
 } from "../utils/tts";
 import { doc, onSnapshot } from "firebase/firestore";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
-import {
-  normalizeLanguageCode,
-  t as translate,
-} from "../utils/translation";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -123,10 +119,10 @@ function LANG_NAME(code) {
 }
 
 function resolveSupportLang(support, appUILang) {
-  if (!support || support === "auto") {
-    return normalizeLanguageCode(appUILang) || "en";
-  }
-  return normalizeLanguageCode(support) || "en";
+  if (!support || support === "auto") return appUILang === "es" ? "es" : "en";
+  return ["en", "es", "pt", "fr", "it", "nl", "nah", "ru", "de"].includes(support)
+    ? support
+    : "en";
 }
 
 function quizDifficulty(cefrLevel) {
@@ -155,11 +151,6 @@ export default function LessonGroupQuiz({
   onComplete = null,
 }) {
   const toast = useToast();
-  const uiLang = normalizeLanguageCode(userLanguage) || "en";
-  const t = useCallback(
-    (key, vars) => translate(uiLang, key, vars),
-    [uiLang]
-  );
 
   // Extract CEFR level from lesson ID
   const cefrLevel = lessonId ? extractCEFRLevel(lessonId) : "A1";
@@ -1177,11 +1168,11 @@ YES or NO
         setIsQuestionPlaying(false);
       }
     },
-    [isQuestionPlaying, targetLang, toast]
+    [isQuestionPlaying, targetLang, toast, userLanguage]
   );
 
   const questionListenLabel =
-    t("lesson_quiz_listen_question") || "Listen to question";
+    userLanguage === "es" ? "Escuchar pregunta" : "Listen to question";
 
   function handleSubmit() {
     if (mode === "fill") checkFill();
@@ -1210,14 +1201,11 @@ YES or NO
         await awardXp(npub, xpReward, targetLang);
 
         toast({
-          title: t("lesson_quiz_passed_title") || "Quiz Passed!",
+          title: userLanguage === "es" ? "¡Examen aprobado!" : "Quiz Passed!",
           description:
-            t("lesson_quiz_passed_description", {
-              score: correctAnswers,
-              total: TOTAL_QUESTIONS,
-              xp: xpReward,
-            }) ||
-            `Score: ${correctAnswers}/${TOTAL_QUESTIONS}. +${xpReward} XP!`,
+            userLanguage === "es"
+              ? `Puntuación: ${correctAnswers}/${TOTAL_QUESTIONS}. +${xpReward} XP!`
+              : `Score: ${correctAnswers}/${TOTAL_QUESTIONS}. +${xpReward} XP!`,
           status: "success",
           duration: 4000,
         });
@@ -1237,18 +1225,23 @@ YES or NO
   // Results Modal
   if (showResults) {
     const passed = correctAnswers >= PASS_SCORE;
-    const modalTitle = passed
-      ? t("lesson_quiz_modal_passed_title") || "Quiz Passed! 🎉"
-      : t("lesson_quiz_modal_failed_title") || "Quiz Failed 😔";
     return (
       <Modal isOpen={true} onClose={handleComplete} size="lg">
         <ModalOverlay />
         <ModalContent bg="#1a1e2e" color="white">
-          <ModalHeader textAlign="center">{modalTitle}</ModalHeader>
+          <ModalHeader textAlign="center">
+            {userLanguage === "es"
+              ? passed
+                ? "¡Examen Aprobado! 🎉"
+                : "Examen Fallido 😔"
+              : passed
+              ? "Quiz Passed! 🎉"
+              : "Quiz Failed 😔"}
+          </ModalHeader>
           <ModalBody>
             <VStack spacing={4}>
               <Text fontSize="2xl">
-                {t("lesson_quiz_score_label") || "Score"}:{" "}
+                {userLanguage === "es" ? "Puntuación" : "Score"}:{" "}
                 {correctAnswers}/{TOTAL_QUESTIONS}
               </Text>
               <Progress
@@ -1260,16 +1253,12 @@ YES or NO
               />
               <Text textAlign="center">
                 {passed
-                  ? t("lesson_quiz_passed_body", {
-                      correct: correctAnswers,
-                      xp: xpReward,
-                    }) ||
-                    `Congratulations! You passed with ${correctAnswers} correct answers. You earned ${xpReward} XP!`
-                  : t("lesson_quiz_failed_body", {
-                      pass: PASS_SCORE,
-                      correct: correctAnswers,
-                    }) ||
-                    `You need ${PASS_SCORE} correct answers to pass. You got ${correctAnswers}. Try again!`}
+                  ? userLanguage === "es"
+                    ? `¡Felicitaciones! Aprobaste con ${correctAnswers} respuestas correctas. Ganaste ${xpReward} XP!`
+                    : `Congratulations! You passed with ${correctAnswers} correct answers. You earned ${xpReward} XP!`
+                  : userLanguage === "es"
+                  ? `Necesitas ${PASS_SCORE} respuestas correctas para aprobar. Obtuviste ${correctAnswers}. ¡Inténtalo de nuevo!`
+                  : `You need ${PASS_SCORE} correct answers to pass. You got ${correctAnswers}. Try again!`}
               </Text>
             </VStack>
           </ModalBody>
@@ -1277,11 +1266,11 @@ YES or NO
             <HStack spacing={4} w="full" justify="center">
               {!passed && (
                 <Button colorScheme="teal" onClick={handleRetry}>
-                  {t("lesson_quiz_retry") || "Retry Quiz"}
+                  {userLanguage === "es" ? "Reintentar" : "Retry Quiz"}
                 </Button>
               )}
               <Button onClick={handleComplete}>
-                {t("lesson_quiz_continue") || "Continue"}
+                {userLanguage === "es" ? "Continuar" : "Continue"}
               </Button>
             </HStack>
           </ModalFooter>
@@ -1305,11 +1294,11 @@ YES or NO
         <Box w="full">
           <HStack justify="space-between" mb={2}>
             <Badge colorScheme="teal">
-              {t("lesson_quiz_question_label") || "Question"}{" "}
+              {userLanguage === "es" ? "Pregunta" : "Question"}{" "}
               {questionsAnswered + 1}/{TOTAL_QUESTIONS}
             </Badge>
             <Badge colorScheme="purple">
-              {t("lesson_quiz_correct_label") || "Correct"}:{" "}
+              {userLanguage === "es" ? "Correctas" : "Correct"}:{" "}
               {correctAnswers}/{questionsAnswered}
             </Badge>
           </HStack>
@@ -1335,7 +1324,9 @@ YES or NO
             <VStack spacing={4}>
               <Spinner color="teal.300" />
               <Text color="white">
-                {t("lesson_quiz_generating") || "Generating question..."}
+                {userLanguage === "es"
+                  ? "Generando pregunta..."
+                  : "Generating question..."}
               </Text>
             </VStack>
           ) : mode === "fill" ? (
@@ -1367,8 +1358,9 @@ YES or NO
                 value={ansFill}
                 onChange={(e) => setAnsFill(e.target.value)}
                 placeholder={
-                  t("lesson_quiz_answer_placeholder") ||
-                  "Type your answer..."
+                  userLanguage === "es"
+                    ? "Escribe tu respuesta..."
+                    : "Type your answer..."
                 }
                 size="lg"
                 bg="whiteAlpha.100"
@@ -1502,12 +1494,17 @@ YES or NO
                 size="lg"
               >
                 {isListening
-                  ? t("lesson_quiz_stop_recording") || "Stop Recording"
-                  : t("lesson_quiz_start_speaking") || "Start Speaking"}
+                  ? userLanguage === "es"
+                    ? "Parar Grabación"
+                    : "Stop Recording"
+                  : userLanguage === "es"
+                  ? "Empezar a Hablar"
+                  : "Start Speaking"}
               </Button>
               {transcript && (
                 <Text color="white" fontSize="sm">
-                  {t("lesson_quiz_you_said_label") || "You said"}: "{transcript}"
+                  {userLanguage === "es" ? "Dijiste" : "You said"}: "
+                  {transcript}"
                 </Text>
               )}
             </VStack>
@@ -1515,8 +1512,9 @@ YES or NO
             <VStack spacing={4} align="stretch">
               <Text fontSize="lg" color="white">
                 {mStem ||
-                  t("lesson_quiz_match_prompt") ||
-                  "Match the words with their definitions"}
+                  (userLanguage === "es"
+                    ? "Empareja las palabras con sus definiciones"
+                    : "Match the words with their definitions")}
               </Text>
               {mHint && (
                 <Text fontSize="sm" color="gray.400">
@@ -1567,13 +1565,16 @@ YES or NO
                 </VStack>
               </HStack>
               <Text fontSize="xs" color="gray.500">
-                {t("lesson_quiz_match_hint") ||
-                  "(Click definitions to match them)"}
+                {userLanguage === "es"
+                  ? "(Haz clic en las definiciones para emparejarlas)"
+                  : "(Click definitions to match them)"}
               </Text>
             </VStack>
           ) : (
             <Text color="white">
-              {t("lesson_quiz_unknown_type") || "Unknown question type"}
+              {userLanguage === "es"
+                ? "Tipo de pregunta desconocida"
+                : "Unknown question type"}
             </Text>
           )}
 
@@ -1588,8 +1589,12 @@ YES or NO
               textAlign="center"
             >
               {lastOk
-                ? t("lesson_quiz_feedback_correct") || "✓ Correct!"
-                : t("lesson_quiz_feedback_incorrect") || "✗ Incorrect"}
+                ? userLanguage === "es"
+                  ? "✓ ¡Correcto!"
+                  : "✓ Correct!"
+                : userLanguage === "es"
+                ? "✗ Incorrecto"
+                : "✗ Incorrect"}
             </Box>
           )}
 
@@ -1613,7 +1618,7 @@ YES or NO
                 (mode === "match" && !mSlots.every((s) => s !== null))
               }
             >
-              {t("lesson_quiz_submit_answer") || "Submit Answer"}
+              {userLanguage === "es" ? "Enviar Respuesta" : "Submit Answer"}
             </Button>
           )}
         </Box>

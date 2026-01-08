@@ -39,13 +39,6 @@ export const SKILL_TREE_A1 = [
             tutorialDescription: {
               en: "Learn new words through interactive questions. Practice saying 'hello'.",
               es: "Aprende nuevas palabras mediante preguntas interactivas. Practica decir 'hola'.",
-              pt: "Aprenda novas palavras com perguntas interativas. Pratique dizer \"olá\".",
-              fr: "Apprenez de nouveaux mots avec des questions interactives. Entraînez-vous à dire \"bonjour\".",
-              it: "Impara nuove parole con domande interattive. Esercitati a dire \"ciao\".",
-              nl: "Leer nieuwe woorden met interactieve vragen. Oefen met het zeggen van \"hallo\".",
-              ja: "インタラクティブな質問で新しい単語を学びましょう。「こんにちは」と言う練習をします。",
-              ru: "Изучайте новые слова с помощью интерактивных вопросов. Практикуйтесь говорить \"привет\".",
-              de: "Lerne neue Wörter mit interaktiven Fragen. Übe, \"hallo\" zu sagen.",
             },
           },
           grammar: {
@@ -54,13 +47,6 @@ export const SKILL_TREE_A1 = [
             tutorialDescription: {
               en: "Master grammar rules through exercises. Practice greeting patterns.",
               es: "Domina las reglas gramaticales mediante ejercicios. Practica patrones de saludo.",
-              pt: "Domine regras gramaticais com exercícios. Pratique padrões de saudação.",
-              fr: "Maîtrisez les règles de grammaire grâce à des exercices. Entraînez-vous aux formules de salutation.",
-              it: "Impara le regole grammaticali con esercizi. Esercitati con i modelli di saluto.",
-              nl: "Beheers grammaticaregels met oefeningen. Oefen begroetingspatronen.",
-              ja: "練習問題で文法ルールを身につけ、あいさつのパターンを練習しましょう。",
-              ru: "Освойте грамматические правила с помощью упражнений. Практикуйте шаблоны приветствия.",
-              de: "Beherrsche Grammatikregeln mit Übungen. Übe Begrüßungsmuster.",
             },
           },
           reading: {
@@ -69,13 +55,6 @@ export const SKILL_TREE_A1 = [
             tutorialDescription: {
               en: "Improve your reading skills by following along with passages. Read a simple hello.",
               es: "Mejora tus habilidades de lectura siguiendo los textos. Lee un saludo simple.",
-              pt: "Melhore suas habilidades de leitura acompanhando textos. Leia um cumprimento simples.",
-              fr: "Améliorez votre compréhension écrite en suivant des textes. Lisez un simple bonjour.",
-              it: "Migliora le tue abilità di lettura seguendo i testi. Leggi un semplice saluto.",
-              nl: "Verbeter je leesvaardigheid door teksten te volgen. Lees een eenvoudige begroeting.",
-              ja: "文章に沿って読み進め、読解力を高めましょう。簡単なあいさつを読みます。",
-              ru: "Улучшайте навыки чтения, следуя текстам. Прочитайте простое приветствие.",
-              de: "Verbessere deine Lesefähigkeiten, indem du Texten folgst. Lies eine einfache Begrüßung.",
             },
           },
           stories: {
@@ -84,13 +63,6 @@ export const SKILL_TREE_A1 = [
             tutorialDescription: {
               en: "Practice with interactive stories by reading and speaking sentence by sentence. Say hello.",
               es: "Practica con historias interactivas leyendo y hablando oración por oración. Di hola.",
-              pt: "Pratique com histórias interativas lendo e falando frase por frase. Diga \"olá\".",
-              fr: "Entraînez-vous avec des histoires interactives en lisant et en parlant phrase par phrase. Dites \"bonjour\".",
-              it: "Esercitati con storie interattive leggendo e parlando frase per frase. Di' \"ciao\".",
-              nl: "Oefen met interactieve verhalen door zin voor zin te lezen en te spreken. Zeg \"hallo\".",
-              ja: "インタラクティブなストーリーで、文ごとに読んで話して練習しましょう。「こんにちは」と言ってみましょう。",
-              ru: "Практикуйтесь с интерактивными историями, читая и говоря по предложениям. Скажите \"привет\".",
-              de: "Übe mit interaktiven Geschichten, indem du Satz für Satz liest und sprichst. Sage \"hallo\".",
             },
           },
           realtime: {
@@ -109,13 +81,6 @@ export const SKILL_TREE_A1 = [
             tutorialDescription: {
               en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
               es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
-              pt: "Pratique a fala com conversas em tempo real. Diga \"olá\" para concluir esta atividade.",
-              fr: "Exercez-vous à parler avec des conversations en temps réel. Dites \"bonjour\" pour terminer cette activité.",
-              it: "Esercitati a parlare con conversazioni in tempo reale. Di' \"ciao\" per completare questa attività.",
-              nl: "Oefen spreken met realtime gesprekken. Zeg \"hallo\" om deze activiteit te voltooien.",
-              ja: "リアルタイムの会話で話す練習をしましょう。「こんにちは」と言ってこのアクティビティを完了します。",
-              ru: "Практикуйте разговорную речь с помощью бесед в реальном времени. Скажите \"привет\", чтобы завершить это задание.",
-              de: "Übe das Sprechen mit Echtzeit-Gesprächen. Sage \"hallo\", um diese Aktivität abzuschließen.",
             },
           },
         },

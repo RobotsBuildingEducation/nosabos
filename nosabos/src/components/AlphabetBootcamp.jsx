@@ -56,19 +56,34 @@ import {
   where,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
-import {
-  getLanguageLabel,
-  normalizeLanguageCode,
-  t,
-  translations,
-} from "../utils/translation";
 
 const MotionBox = motion(Box);
 
-const getScriptKey = (targetLang) => {
-  if (targetLang === "ru") return "cyrillic";
-  if (targetLang === "ja") return "hiragana";
-  return "latin";
+// Language name and script mapping for all supported languages
+const LANGUAGE_NAMES = {
+  ru: "Russian",
+  ja: "Japanese",
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  it: "Italian",
+  nl: "Dutch",
+  de: "German",
+  nah: "Nahuatl",
+};
+
+const LANGUAGE_SCRIPTS = {
+  ru: "Cyrillic",
+  ja: "hiragana or katakana",
+  en: "Latin alphabet",
+  es: "Latin alphabet",
+  pt: "Latin alphabet",
+  fr: "Latin alphabet",
+  it: "Latin alphabet",
+  nl: "Latin alphabet",
+  de: "Latin alphabet",
+  nah: "Latin alphabet",
 };
 
 const normalizeMeaning = (meaning) => {
@@ -83,36 +98,9 @@ const normalizeMeaning = (meaning) => {
   return { en, es };
 };
 
-const LETTER_LOCALIZATION_SUFFIX = {
-  es: "Es",
-  pt: "Pt",
-  fr: "Fr",
-  it: "It",
-  nl: "Nl",
-  ja: "Ja",
-  ru: "Ru",
-  de: "De",
-};
-
-const getLetterField = (letter, baseKey, uiLang) => {
-  const langKey = normalizeLanguageCode(uiLang);
-  const languageMap =
-    letter?.[`${baseKey}_language`] || letter?.[`${baseKey}Language`];
-  if (languageMap && typeof languageMap === "object") {
-    return languageMap[langKey] || languageMap.en || languageMap.es;
-  }
-
-  const suffix = langKey ? LETTER_LOCALIZATION_SUFFIX[langKey] : undefined;
-  if (suffix) {
-    const localizedKey = `${baseKey}${suffix}`;
-    if (letter?.[localizedKey]) return letter[localizedKey];
-  }
-  return letter?.[baseKey];
-};
-
 // Build AI grading prompt for alphabet practice
 function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang }) {
-  const langName = getLanguageLabel("en", targetLang) || "the target";
+  const langName = LANGUAGE_NAMES[targetLang] || "the target";
 
   return `
 Judge if the user correctly pronounced a ${langName} word.
@@ -265,8 +253,6 @@ function LetterCard({
   onCardCollected,
   pauseMs = 2000,
 }) {
-  const uiLang = normalizeLanguageCode(appLanguage) || "en";
-  const ui = translations[uiLang] || translations.en;
   const [isPracticeMode, setIsPracticeMode] = useState(false);
   const [isFlipped, setIsFlipped] = useState(false);
   const [isGrading, setIsGrading] = useState(false);
@@ -314,20 +300,19 @@ function LetterCard({
   }, [letter.type]);
 
   const typeLabel =
-    letter.type === "vowel"
-      ? ui.alphabet_letter_type_vowel
-      : letter.type === "consonant"
-      ? ui.alphabet_letter_type_consonant
-      : ui.alphabet_letter_type_sign;
+    appLanguage === "es"
+      ? letter.type === "vowel"
+        ? "Vocal"
+        : letter.type === "consonant"
+        ? "Consonante"
+        : "Signo"
+      : letter.type.charAt(0).toUpperCase() + letter.type.slice(1);
 
-  const name = getLetterField(letter, "name", uiLang);
-  const sound = getLetterField(letter, "sound", uiLang);
-  const tip = getLetterField(letter, "tip", uiLang);
+  const sound =
+    appLanguage === "es" ? letter.soundEs || letter.sound : letter.sound;
+  const tip = appLanguage === "es" ? letter.tipEs || letter.tip : letter.tip;
   const practiceWordMeaningText =
-    practiceWordMeaningData?.[uiLang] ||
-    practiceWordMeaningData?.en ||
-    practiceWordMeaningData?.es ||
-    "";
+    practiceWordMeaningData?.[appLanguage === "es" ? "es" : "en"] || "";
   const showMeaning = Boolean(practiceWordMeaningText);
   const practiceMarker = getPracticeLetterMarker(letter);
   const highlightedPracticeWord = useMemo(
@@ -343,8 +328,12 @@ function LetterCard({
       onResult: ({ recognizedText: text, error }) => {
         if (error) {
           toast({
-            title: ui.alphabet_recording_error_title,
-            description: ui.alphabet_recording_error_desc,
+            title:
+              appLanguage === "es" ? "Error de grabación" : "Recording error",
+            description:
+              appLanguage === "es"
+                ? "No se pudo grabar. Intenta de nuevo."
+                : "Could not record. Please try again.",
             status: "error",
             duration: 2500,
           });
@@ -426,8 +415,11 @@ function LetterCard({
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
-        title: ui.alphabet_grading_error_title,
-        description: ui.alphabet_grading_error_desc,
+        title: appLanguage === "es" ? "Error al evaluar" : "Grading error",
+        description:
+          appLanguage === "es"
+            ? "No pudimos evaluar tu respuesta."
+            : "Could not grade your answer.",
         status: "error",
         duration: 3000,
       });
@@ -466,15 +458,25 @@ function LetterCard({
       const code = err?.code;
       if (code === "no-speech-recognition") {
         toast({
-          title: ui.alphabet_speech_not_supported_title,
-          description: ui.alphabet_speech_not_supported_desc,
+          title:
+            appLanguage === "es"
+              ? "Sin soporte de voz"
+              : "Speech not supported",
+          description:
+            appLanguage === "es"
+              ? "Tu navegador no soporta reconocimiento de voz."
+              : "Your browser doesn't support speech recognition.",
           status: "warning",
           duration: 3200,
         });
       } else if (code === "mic-denied") {
         toast({
-          title: ui.alphabet_microphone_denied_title,
-          description: ui.alphabet_microphone_denied_desc,
+          title:
+            appLanguage === "es" ? "Micrófono denegado" : "Microphone denied",
+          description:
+            appLanguage === "es"
+              ? "Permite el acceso al micrófono para grabar."
+              : "Please allow microphone access to record.",
           status: "error",
           duration: 3200,
         });
@@ -528,7 +530,10 @@ function LetterCard({
     const generated = await generateNewPracticeWord(practiceWord);
     if (!generated?.word) {
       toast({
-        title: ui.alphabet_generate_word_failed,
+        title:
+          appLanguage === "es"
+            ? "No pudimos generar una palabra"
+            : "Couldn't generate a new word",
         status: "warning",
         duration: 2500,
       });
@@ -657,7 +662,7 @@ function LetterCard({
                 _hover={{ bg: "whiteAlpha.200" }}
                 fontSize="xs"
               >
-                {ui.alphabet_practice}
+                {appLanguage === "es" ? "Practicar" : "Practice"}
               </Button>
             )}
           </HStack>
@@ -669,13 +674,13 @@ function LetterCard({
                   {letter.letter}
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold">
-                  {name || letter.name}
+                  {letter.name}
                 </Text>
               </VStack>
               {onPlay && (
                 <Flex
                   as="button"
-                  aria-label={ui.alphabet_play_sound}
+                  aria-label="Play sound"
                   align="center"
                   justify="center"
                   bg="whiteAlpha.200"
@@ -732,7 +737,7 @@ function LetterCard({
 
           {/* Practice Word Display */}
           <Text fontSize="xs" color="whiteAlpha.700" fontWeight="medium">
-            {ui.alphabet_say_this_word}
+            {appLanguage === "es" ? "Di esta palabra:" : "Say this word:"}
           </Text>
 
           <HStack spacing={2} align="center">
@@ -769,7 +774,7 @@ function LetterCard({
             <VStack spacing={2} py={2}>
               <Spinner size="md" color="teal.300" />
               <Text fontSize="xs" color="whiteAlpha.700">
-                {ui.alphabet_grading}
+                {appLanguage === "es" ? "Evaluando..." : "Grading..."}
               </Text>
             </VStack>
           ) : showResult ? (
@@ -797,7 +802,7 @@ function LetterCard({
                     onClick={handleNextWord}
                     _hover={{ bg: "green.400" }}
                   >
-                    {ui.alphabet_next_word}
+                    {appLanguage === "es" ? "Siguiente palabra" : "Next word"}
                   </Button>
                 ) : (
                   <Button
@@ -807,7 +812,7 @@ function LetterCard({
                     onClick={handleTryAgain}
                     _hover={{ bg: "whiteAlpha.200" }}
                   >
-                    {ui.alphabet_try_again}
+                    {appLanguage === "es" ? "Otra vez" : "Try again"}
                   </Button>
                 )}
                 <Button
@@ -817,7 +822,7 @@ function LetterCard({
                   onClick={handleFlipBack}
                   _hover={{ bg: "whiteAlpha.200" }}
                 >
-                  {ui.alphabet_back}
+                  {appLanguage === "es" ? "Volver" : "Back"}
                 </Button>
               </HStack>
             </VStack>
@@ -831,7 +836,13 @@ function LetterCard({
                 isDisabled={!supportsSpeech}
                 _hover={{ transform: "scale(1.02)" }}
               >
-                {isRecording ? ui.alphabet_stop : ui.alphabet_record}
+                {isRecording
+                  ? appLanguage === "es"
+                    ? "Detener"
+                    : "Stop"
+                  : appLanguage === "es"
+                  ? "Grabar"
+                  : "Record"}
               </Button>
 
               <Button
@@ -841,7 +852,7 @@ function LetterCard({
                 onClick={handleFlipBack}
                 _hover={{ bg: "whiteAlpha.200" }}
               >
-                {ui.alphabet_cancel}
+                {appLanguage === "es" ? "Cancelar" : "Cancel"}
               </Button>
             </VStack>
           )}
@@ -881,8 +892,6 @@ export default function AlphabetBootcamp({
   languageXp = 0,
   pauseMs = 2000,
 }) {
-  const uiLang = normalizeLanguageCode(appLanguage) || "en";
-  const ui = translations[uiLang] || translations.en;
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const playerRef = useRef(null);
   const [playingId, setPlayingId] = useState(null);
@@ -904,14 +913,19 @@ export default function AlphabetBootcamp({
     setCurrentXp((prev) => prev + xp);
   };
 
-  const targetLanguage = getLanguageLabel(uiLang, targetLang) || "Language";
-  const scriptLabel = t(
-    uiLang,
-    `alphabet_script_${getScriptKey(targetLang)}`
-  );
-  const headline = t(uiLang, "alphabet_headline", { language: targetLanguage });
-  const subhead = t(uiLang, "alphabet_subhead", { language: scriptLabel });
-  const note = t(uiLang, "alphabet_note");
+  const targetLanguage = LANGUAGE_NAMES[targetLang] || "Language";
+  const headline =
+    appLanguage === "es"
+      ? `Alfabeto ${targetLanguage}`
+      : `${targetLanguage} Alphabet`;
+  const subhead =
+    appLanguage === "es"
+      ? `Empieza aprendiendo las letras y sonidos del ${targetLanguage}.`
+      : `Start by learning ${targetLanguage} letters and sounds.`;
+  const note =
+    appLanguage === "es"
+      ? "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones."
+      : "After this, switch to Path mode in the menu to explore lessons.";
   const hasLetters = Array.isArray(alphabet) && alphabet.length;
 
   // XP progress calculations
@@ -1041,7 +1055,7 @@ export default function AlphabetBootcamp({
       <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
         <HStack justify="space-between" mb={1}>
           <Badge variant="subtle">
-            {ui.alphabet_level_label} {xpLevelNumber}
+            {appLanguage === "es" ? "NIVEL" : "LEVEL"} {xpLevelNumber}
           </Badge>
           <Badge variant="subtle">XP {currentXp}</Badge>
         </HStack>
@@ -1084,7 +1098,7 @@ export default function AlphabetBootcamp({
               <Box w="100%" maxW="400px" mx="auto">
                 <HStack justify="space-between" mb={1}>
                   <Text fontSize="xs" color="whiteAlpha.700">
-                    {ui.alphabet_progress_label}
+                    {appLanguage === "es" ? "Progreso" : "Progress"}
                   </Text>
                   <Text fontSize="xs" color="yellow.300" fontWeight="bold">
                     {collectedLetters.length} / {alphabet.length}
@@ -1209,7 +1223,9 @@ export default function AlphabetBootcamp({
               <VStack spacing={2}>
                 <Text fontSize="2xl">🎉</Text>
                 <Text color="green.200" fontWeight="bold" textAlign="center">
-                  {ui.alphabet_complete}
+                  {appLanguage === "es"
+                    ? "¡Felicidades! Has completado el alfabeto."
+                    : "Congratulations! You've completed the alphabet."}
                 </Text>
               </VStack>
             </Flex>
@@ -1220,7 +1236,7 @@ export default function AlphabetBootcamp({
             <VStack spacing={4} w="100%">
               <HStack spacing={2}>
                 <Badge colorScheme="green" px={3} py={1} borderRadius="full">
-                  {ui.alphabet_collection_label}:{" "}
+                  {appLanguage === "es" ? "Colección" : "Collection"}:{" "}
                   {collectedLetters.length}
                 </Badge>
               </HStack>
@@ -1310,7 +1326,9 @@ export default function AlphabetBootcamp({
           p={6}
         >
           <Text color="whiteAlpha.800">
-            {ui.alphabet_load_error}
+            {appLanguage === "es"
+              ? "No pudimos cargar el alfabeto. Intenta nuevamente."
+              : "We couldn't load the alphabet. Please try again."}
           </Text>
         </Flex>
       )}

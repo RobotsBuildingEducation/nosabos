@@ -37,11 +37,7 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
-import {
-  getLanguageLabel,
-  normalizeLanguageCode,
-  translations,
-} from "../utils/translation";
+import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -644,24 +640,28 @@ export default function RealTimeTest({
     }
   }, []);
 
-  const normalizeSupportLang = (raw) => normalizeLanguageCode(raw);
+  const normalizeSupportLang = (raw) => {
+    const code = String(raw || "").toLowerCase();
+    if (code === "es" || code.startsWith("es-") || code === "spanish")
+      return "es";
+    if (code === "en" || code.startsWith("en-") || code === "english")
+      return "en";
+    return undefined;
+  };
 
-  const resolvedSupportLang =
+  const uiLang =
     normalizeSupportLang(supportLangRef.current || supportLang) ||
     normalizeSupportLang(storedUiLang) ||
     "en";
-  const uiLang = resolvedSupportLang;
   const ui = translations[uiLang];
 
   // ✅ Which language to show in secondary lane
   const secondaryPref =
-    resolvedSupportLang && resolvedSupportLang !== targetLang
-      ? resolvedSupportLang
-      : "en";
+    targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
   const toggleLabel =
     translations[uiLang].onboarding_translations_toggle?.replace(
       "{language}",
-      getLanguageLabel(uiLang, secondaryPref)
+      translations[uiLang][`language_${secondaryPref}`]
     ) || (uiLang === "es" ? "Mostrar traducción" : "Show translation");
 
   /* ---------------------------
@@ -716,7 +716,8 @@ export default function RealTimeTest({
     }
   }
 
-  const languageNameFor = (code) => getLanguageLabel(uiLang, code);
+  const languageNameFor = (code) =>
+    translations[uiLang][`language_${code === "nah" ? "nah" : code}`];
 
   const levelLabel = translations[uiLang][`onboarding_level_${level}`] || level;
   const levelColor =
@@ -940,8 +941,7 @@ export default function RealTimeTest({
      Helpers for priming prefs
   --------------------------- */
   function normalizeSupport(code) {
-    if (code === "bilingual") return "bilingual";
-    return normalizeLanguageCode(code) || "en";
+    return ["en", "es", "bilingual"].includes(code) ? code : "en";
   }
   function primeRefsFromPrefs(p = {}) {
     if (p.level) {

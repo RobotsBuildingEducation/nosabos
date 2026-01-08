@@ -181,30 +181,36 @@ export default function RepeatWhatYouHear({
 
   const handleSendHelp = useCallback(() => {
     if (!onSendHelpRequest) return;
+    const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      t("repeat_help_intro") ||
-        "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
+      isSpanishUI
+        ? "Ejercicio de 'Repite lo que escuchas'. Responde con la frase tal como se escuchó usando el banco de palabras."
+        : "Repeat What You Hear exercise. Respond with the sentence as spoken using the provided word bank.",
       sourceSentence
-        ? t("repeat_help_sentence", { sentence: sourceSentence }) ||
-          `Spoken sentence: ${sourceSentence}`
+        ? isSpanishUI
+          ? `Frase pronunciada: ${sourceSentence}`
+          : `Spoken sentence: ${sourceSentence}`
         : null,
       wordBank?.length
-        ? t("repeat_help_word_bank", { wordBank: wordBank.join(" | ") }) ||
-          `Word bank: ${wordBank.join(" | ")}`
+        ? isSpanishUI
+          ? `Banco de palabras: ${wordBank.join(" | ")}`
+          : `Word bank: ${wordBank.join(" | ")}`
         : null,
-      hint ? t("repeat_help_hint", { hint }) || `Hint: ${hint}` : null,
+      hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
     ].filter(Boolean);
     onSendHelpRequest(promptLines.join("\n"));
-  }, [hint, onSendHelpRequest, sourceSentence, t, wordBank]);
+  }, [hint, onSendHelpRequest, sourceSentence, userLanguage, wordBank]);
 
-  const headingLabel = t("repeat_heading") || "Tap what you hear";
+  const headingLabel =
+    userLanguage === "es" ? "Toca lo que escuchas" : "Tap what you hear";
   const instructionLabel =
-    t("repeat_instruction") || "Listen and tap the words in order";
-  const skipLabel = t("practice_skip_question") || "Skip";
-  const submitLabel = t("quiz_submit") || "Submit";
-  const nextLabel = t("practice_next_question") || "Next question";
-  const helpLabel = t("practice_ask_assistant") || "Ask the assistant";
-  const listenLabel = t("practice_listen") || "Listen";
+    userLanguage === "es"
+      ? "Escucha y toca las palabras en orden"
+      : "Listen and tap the words in order";
+  const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
+  const submitLabel = userLanguage === "es" ? "Comprobar" : "Submit";
+  const nextLabel =
+    userLanguage === "es" ? "Siguiente pregunta" : "Next question";
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -255,7 +261,11 @@ export default function RepeatWhatYouHear({
                     <Flex align="center" gap={3}>
                       {onSendHelpRequest && (
                         <IconButton
-                          aria-label={helpLabel}
+                          aria-label={
+                            userLanguage === "es"
+                              ? "Pedir ayuda"
+                              : "Ask the assistant"
+                          }
                           icon={<MdOutlineSupportAgent />}
                           size="sm"
                           fontSize="lg"
@@ -267,7 +277,9 @@ export default function RepeatWhatYouHear({
                         />
                       )}
                       <IconButton
-                        aria-label={listenLabel}
+                        aria-label={
+                          userLanguage === "es" ? "Escuchar" : "Listen"
+                        }
                         icon={renderSpeakerIcon(isSynthesizing)}
                         size="md"
                         fontSize="xl"
