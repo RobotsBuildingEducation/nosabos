@@ -913,12 +913,15 @@ export default function AlphabetBootcamp({
     setCurrentXp((prev) => prev + xp);
   };
 
+  const targetLanguage = LANGUAGE_NAMES[targetLang] || "Language";
   const headline =
-    appLanguage === "es" ? "Bootcamp de alfabeto" : "Alphabet Bootcamp";
+    appLanguage === "es"
+      ? `Alfabeto ${targetLanguage}`
+      : `${targetLanguage} Alphabet`;
   const subhead =
     appLanguage === "es"
-      ? "Empieza aquí antes de entrar al árbol de habilidades."
-      : "Start here before diving into the skill tree.";
+      ? `Empieza aprendiendo las letras y sonidos del ${targetLanguage}.`
+      : `Start by learning ${targetLanguage} letters and sounds.`;
   const note =
     appLanguage === "es"
       ? "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones."
