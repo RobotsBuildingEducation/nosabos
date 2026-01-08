@@ -28,7 +28,6 @@ const FeedbackRail = React.memo(
     onNext,
     nextLabel,
     t,
-    userLanguage,
     onExplainAnswer,
     explanationText,
     isLoadingExplanation,
@@ -41,10 +40,8 @@ const FeedbackRail = React.memo(
     if (ok === null) return null;
 
     // Note button labels
-    const createNoteLabel =
-      userLanguage === "es" ? "Crear nota" : "Create note";
-    const noteSavedLabel =
-      userLanguage === "es" ? "¡Nota guardada!" : "Note saved!";
+    const createNoteLabel = t?.("feedback_create_note") || "Create note";
+    const noteSavedLabel = t?.("feedback_note_saved") || "Note saved!";
 
     const label = ok
       ? t?.("correct") || "Correct!"
@@ -91,10 +88,7 @@ const FeedbackRail = React.memo(
                     : ok
                     ? t?.("practice_next_ready") ||
                       "Great work! Keep the streak going."
-                    : t?.("practice_try_again_hint") ||
-                      (userLanguage === "es"
-                        ? "Repasa y vuelve a intentarlo."
-                        : "Review and try again.")}
+                    : t?.("practice_try_again_hint") || "Review and try again."}
                 </Text>
               </Box>
               {/* Create Note Button - icon only */}
@@ -168,9 +162,7 @@ const FeedbackRail = React.memo(
                 py={6}
                 size="lg"
               >
-                {userLanguage === "es"
-                  ? "Explicar mi respuesta"
-                  : "Explain the answer"}
+                {t?.("feedback_explain_answer") || "Explain the answer"}
               </Button>
             )}
 
@@ -202,7 +194,7 @@ const FeedbackRail = React.memo(
               <HStack spacing={2} mb={2}>
                 <FiHelpCircle color="var(--chakra-colors-pink-400)" />
                 <Text fontWeight="semibold" color="pink.300">
-                  {userLanguage === "es" ? "Explicación" : "Explanation"}
+                  {t?.("feedback_explanation_title") || "Explanation"}
                 </Text>
               </HStack>
               <Box

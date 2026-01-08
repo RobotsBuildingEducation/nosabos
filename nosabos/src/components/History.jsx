@@ -18,7 +18,7 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { MdMenuBook } from "react-icons/md";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
-import translations from "../utils/translation";
+import translations, { normalizeLanguageCode } from "../utils/translation";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { database, simplemodel } from "../firebaseResources/firebaseResources"; // ✅ Gemini streaming
@@ -37,7 +37,7 @@ const renderSpeakerIcon = (loading) =>
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
+  const lang = normalizeLanguageCode(uiLang) || "en";
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
@@ -319,9 +319,10 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
-          ? p.supportLang
-          : "en",
+        supportLang:
+          p.supportLang === "bilingual"
+            ? "bilingual"
+            : normalizeLanguageCode(p.supportLang) || "en",
         showTranslations:
           typeof p.showTranslations === "boolean" ? p.showTranslations : true,
         voice: p.voice || "alloy",

@@ -196,39 +196,37 @@ export default function TranslateSentence({
 
   const handleSendHelp = useCallback(() => {
     if (!onSendHelpRequest) return;
-    const isSpanishUI = userLanguage === "es";
     const promptLines = [
-      isSpanishUI
-        ? "Traduce esta oración usando el banco de palabras proporcionado."
-        : "Translate this sentence using the provided word bank.",
+      t("translate_sentence_help_intro") ||
+        "Translate this sentence using the provided word bank.",
       sourceSentence
-        ? isSpanishUI
-          ? `Oración para traducir: ${sourceSentence}`
-          : `Sentence to translate: ${sourceSentence}`
+        ? t("translate_sentence_help_sentence", {
+            sentence: sourceSentence,
+          }) || `Sentence to translate: ${sourceSentence}`
         : null,
       wordBank?.length
-        ? isSpanishUI
-          ? `Banco de palabras: ${wordBank.join(" | ")}`
-          : `Word bank: ${wordBank.join(" | ")}`
+        ? t("translate_sentence_help_word_bank", {
+            wordBank: wordBank.join(" | "),
+          }) || `Word bank: ${wordBank.join(" | ")}`
         : null,
-      hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
-      isSpanishUI
-        ? "Responde con la traducción correcta armada con las opciones del banco de palabras."
-        : "Respond with the correct translation assembled from the word bank options.",
+      hint
+        ? t("translate_sentence_help_hint", { hint }) || `Hint: ${hint}`
+        : null,
+      t("translate_sentence_help_response") ||
+        "Respond with the correct translation assembled from the word bank options.",
     ].filter(Boolean);
     onSendHelpRequest(promptLines.join("\n"));
-  }, [hint, onSendHelpRequest, sourceSentence, userLanguage, wordBank]);
+  }, [hint, onSendHelpRequest, sourceSentence, t, wordBank]);
 
   const translateLabel =
-    userLanguage === "es" ? "Traduce esta frase" : "Translate this sentence";
-  const skipLabel = userLanguage === "es" ? "Saltar" : "Skip";
-  const submitLabel = userLanguage === "es" ? "Comprobar" : "Submit";
-  const nextLabel =
-    userLanguage === "es" ? "Siguiente pregunta" : "Next question";
+    t("translate_sentence_title") || "Translate this sentence";
+  const skipLabel = t("practice_skip_question") || "Skip";
+  const submitLabel = t("quiz_submit") || "Submit";
+  const nextLabel = t("practice_next_question") || "Next question";
   const instructionLabel =
-    userLanguage === "es"
-      ? "Toca las palabras para formar tu respuesta"
-      : "Tap the words to form your answer";
+    t("translate_sentence_instruction") || "Tap the words to form your answer";
+  const helpLabel = t("practice_ask_assistant") || "Ask the assistant";
+  const listenLabel = t("practice_listen") || "Listen";
 
   return (
     <DragDropContext onDragEnd={handleDragEnd}>
@@ -284,11 +282,7 @@ export default function TranslateSentence({
                 <HStack align="start" spacing={2}>
                   {onSendHelpRequest && (
                     <IconButton
-                      aria-label={
-                        userLanguage === "es"
-                          ? "Pedir ayuda"
-                          : "Ask the assistant"
-                      }
+                      aria-label={helpLabel}
                       icon={<MdOutlineSupportAgent />}
                       size="sm"
                       fontSize="lg"
@@ -300,7 +294,7 @@ export default function TranslateSentence({
                     />
                   )}
                   <IconButton
-                    aria-label={userLanguage === "es" ? "Escuchar" : "Listen"}
+                    aria-label={listenLabel}
                     icon={renderSpeakerIcon(isSynthesizing)}
                     size="sm"
                     fontSize="lg"

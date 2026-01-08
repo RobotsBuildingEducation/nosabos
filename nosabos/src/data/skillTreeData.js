@@ -66,6 +66,13 @@ const baseLearningPath = {
               tutorialDescription: {
                 en: "Learn new words with interactive questions.",
                 es: "Aprende nuevas palabras mediante preguntas interactivas.",
+                pt: "Aprenda novas palavras com perguntas interativas.",
+                fr: "Apprenez de nouveaux mots avec des questions interactives.",
+                it: "Impara nuove parole con domande interattive.",
+                nl: "Leer nieuwe woorden met interactieve vragen.",
+                ja: "インタラクティブな質問で新しい単語を学びましょう。",
+                ru: "Изучайте новые слова с помощью интерактивных вопросов.",
+                de: "Lerne neue Wörter mit interaktiven Fragen.",
               },
             },
             grammar: {
@@ -74,6 +81,13 @@ const baseLearningPath = {
               tutorialDescription: {
                 en: "Master grammar rules through exercises.",
                 es: "Domina las reglas gramaticales mediante ejercicios.",
+                pt: "Domine regras gramaticais com exercícios.",
+                fr: "Maîtrisez les règles de grammaire grâce à des exercices.",
+                it: "Impara le regole grammaticali con esercizi.",
+                nl: "Beheers grammaticaregels met oefeningen.",
+                ja: "練習問題で文法ルールを身につけましょう。",
+                ru: "Освойте грамматические правила с помощью упражнений.",
+                de: "Beherrsche Grammatikregeln mit Übungen.",
               },
             },
             reading: {
@@ -82,6 +96,13 @@ const baseLearningPath = {
               tutorialDescription: {
                 en: "Improve your reading skills by following along with passages.",
                 es: "Mejora tus habilidades de lectura siguiendo los textos.",
+                pt: "Melhore suas habilidades de leitura acompanhando textos.",
+                fr: "Améliorez votre compréhension écrite en suivant des textes.",
+                it: "Migliora le tue abilità di lettura seguendo i testi.",
+                nl: "Verbeter je leesvaardigheid door teksten te volgen.",
+                ja: "文章に沿って読み進め、読解力を高めましょう。",
+                ru: "Улучшайте навыки чтения, следуя текстам.",
+                de: "Verbessere deine Lesefähigkeiten, indem du Texten folgst.",
               },
             },
             stories: {
@@ -90,6 +111,13 @@ const baseLearningPath = {
               tutorialDescription: {
                 en: "Practice with interactive stories and roleplay by reading and speaking sentence by sentence.",
                 es: "Practica con historias interactivas y juegos de rol leyendo y hablando oración por oración.",
+                pt: "Pratique com histórias interativas e roleplay lendo e falando frase por frase.",
+                fr: "Entraînez-vous avec des histoires interactives et des jeux de rôle en lisant et en parlant phrase par phrase.",
+                it: "Esercitati con storie interattive e giochi di ruolo leggendo e parlando frase per frase.",
+                nl: "Oefen met interactieve verhalen en rollenspel door zin voor zin te lezen en te spreken.",
+                ja: "インタラクティブなストーリーとロールプレイで、文ごとに読んで話して練習しましょう。",
+                ru: "Практикуйтесь с интерактивными историями и ролевыми играми, читая и говоря по предложениям.",
+                de: "Übe mit interaktiven Geschichten und Rollenspielen, indem du Satz für Satz liest und sprichst.",
               },
             },
             realtime: {
@@ -106,6 +134,13 @@ const baseLearningPath = {
               tutorialDescription: {
                 en: "Practice speaking with realtime conversations and goal oriented chats.",
                 es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
+                pt: "Pratique a fala com conversas em tempo real e chats orientados a objetivos.",
+                fr: "Exercez-vous à parler avec des conversations en temps réel et des chats orientés objectifs.",
+                it: "Esercitati a parlare con conversazioni in tempo reale e chat orientate agli obiettivi.",
+                nl: "Oefen spreken met realtime gesprekken en doelgerichte chats.",
+                ja: "リアルタイムの会話や目標志向のチャットで話す練習をしましょう。",
+                ru: "Практикуйте разговорную речь с помощью разговоров в реальном времени и чатов с целями.",
+                de: "Übe das Sprechen mit Echtzeit-Gesprächen und zielorientierten Chats.",
               },
             },
           },

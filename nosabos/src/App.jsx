@@ -104,7 +104,13 @@ import Onboarding from "./components/Onboarding";
 import RobotBuddyPro from "./components/RobotBuddyPro";
 import RealTimeTest from "./components/RealTimeTest";
 
-import { translations, t } from "./utils/translation";
+import {
+  getLanguageLabel,
+  normalizeLanguageCode,
+  SUPPORTED_LANGUAGE_CODES,
+  translations,
+  t,
+} from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
@@ -434,11 +440,19 @@ function TopBar({
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
+  const supportLanguageOptions = useMemo(() => {
+    return SUPPORTED_LANGUAGE_CODES.map((code) => ({
+      code,
+      label: getLanguageLabel(appLanguage, code),
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [appLanguage]);
 
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
   const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "A1");
-  const [supportLang, setSupportLang] = useState(p.supportLang || "en");
+  const [supportLang, setSupportLang] = useState(
+    normalizeLanguageCode(p.supportLang) || "en"
+  );
   const [voice, setVoice] = useState(p.voice || "alloy");
   const defaultPersona =
     p.voicePersona ||
@@ -458,13 +472,16 @@ function TopBar({
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!p.practicePronunciation
   );
-  const vadSecondsLabel = appLanguage === "es" ? "segundos" : "seconds";
+  const vadSecondsLabel =
+    t.onboarding_vad_seconds_label ||
+    translations.en.onboarding_vad_seconds_label ||
+    "seconds";
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const vadHint =
-    t.onboarding_vad_hint ||
-    (appLanguage === "es"
-      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
-      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+    t.onboarding_vad_hint || translations.en.onboarding_vad_hint;
+  const supportLangLabel = `${
+    t.onboarding_support_language_title || "Support Language"
+  }: ${getLanguageLabel(appLanguage, supportLang)}`;
 
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
@@ -473,7 +490,7 @@ function TopBar({
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(migrateToCEFRLevel(q.level) || "A1");
-    setSupportLang(q.supportLang || "en");
+    setSupportLang(normalizeLanguageCode(q.supportLang) || "en");
     setVoice(q.voice || "alloy");
     setVoicePersona(
       q.voicePersona ??
@@ -521,7 +538,10 @@ function TopBar({
       } catch (e) {
         toast({
           status: "error",
-          title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+          title:
+            t.toast_save_failed_title ||
+            translations.en.toast_save_failed_title ||
+            "Save failed",
           description: String(e?.message || e),
         });
       }
@@ -637,7 +657,10 @@ function TopBar({
       } catch (e) {
         toast({
           status: "error",
-          title: appLanguage === "es" ? "Error al guardar" : "Save failed",
+          title:
+            t.toast_save_failed_title ||
+            translations.en.toast_save_failed_title ||
+            "Save failed",
           description: String(e?.message || e),
         });
       }
@@ -818,10 +841,7 @@ function TopBar({
                       _active={{ bg: "gray.750" }}
                       px={4}
                     >
-                      {supportLang === "en" &&
-                        translations[appLanguage].onboarding_support_en}
-                      {supportLang === "es" &&
-                        translations[appLanguage].onboarding_support_es}
+                      {supportLangLabel}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
                       <MenuOptionGroup
@@ -832,12 +852,11 @@ function TopBar({
                           persistSettings({ supportLang: value });
                         }}
                       >
-                        <MenuItemOption value="en">
-                          {translations[appLanguage].onboarding_support_en}
-                        </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {translations[appLanguage].onboarding_support_es}
-                        </MenuItemOption>
+                        {supportLanguageOptions.map((option) => (
+                          <MenuItemOption key={option.code} value={option.code}>
+                            {option.label}
+                          </MenuItemOption>
+                        ))}
                       </MenuOptionGroup>
                     </MenuList>
                   </Menu>
@@ -1143,18 +1162,19 @@ export default function App() {
   }, []);
 
   const normalizeSupportLang = useCallback(
-    (raw) => (raw === "es" ? "es" : raw === "en" ? "en" : undefined),
+    (raw) => normalizeLanguageCode(raw),
     []
   );
 
   const resolvedTargetLang = user?.progress?.targetLang || "es";
   const resolvedSupportLang =
     normalizeSupportLang(user?.progress?.supportLang) ||
-    (storedUiLang === "es" ? "es" : "en");
+    normalizeLanguageCode(storedUiLang) ||
+    "en";
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "A1";
 
   useEffect(() => {
-    const nextLang = resolvedSupportLang === "es" ? "es" : "en";
+    const nextLang = normalizeLanguageCode(resolvedSupportLang) || "en";
     setAppLanguage((prev) => {
       if (prev === nextLang) return prev;
       return nextLang;
@@ -1251,7 +1271,7 @@ export default function App() {
   const [appLanguage, setAppLanguage] = useState(() => {
     if (typeof window === "undefined") return "en";
     const stored = localStorage.getItem("appLanguage");
-    return stored === "es" ? "es" : "en";
+    return normalizeLanguageCode(stored) || "en";
   });
   const t = translations[appLanguage] || translations.en;
   const subscriptionVerified = useMemo(() => {
@@ -1538,7 +1558,9 @@ export default function App() {
 
   const translationToggleLabel = useMemo(() => {
     const fallback =
-      appLanguage === "es" ? "Mostrar traducción" : "Show translation";
+      t.translation_toggle_short ||
+      translations.en.translation_toggle_short ||
+      "Show translation";
     const template = translations[appLanguage]?.onboarding_translations_toggle;
     if (!template) return fallback;
 
@@ -1609,7 +1631,8 @@ export default function App() {
             createdAt: new Date().toISOString(),
             onboarding: { completed: false, currentStep: 1 },
             appLanguage:
-              localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+              normalizeLanguageCode(localStorage.getItem("appLanguage")) ||
+              "en",
             helpRequest: "",
             practicePronunciation: false,
             identity: null,
@@ -1627,7 +1650,7 @@ export default function App() {
           createdAt: new Date().toISOString(),
           onboarding: { completed: false, currentStep: 1 },
           appLanguage:
-            localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+            normalizeLanguageCode(localStorage.getItem("appLanguage")) || "en",
           helpRequest: "",
           practicePronunciation: false,
           identity: null,
@@ -1641,11 +1664,9 @@ export default function App() {
 
       if (userDoc) {
         const uiLang =
-          userDoc?.progress?.supportLang === "es"
-            ? "es"
-            : userDoc.appLanguage === "es"
-            ? "es"
-            : "en";
+          normalizeLanguageCode(userDoc?.progress?.supportLang) ||
+          normalizeLanguageCode(userDoc.appLanguage) ||
+          "en";
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
         setUser?.(userDoc);
@@ -1857,9 +1878,9 @@ export default function App() {
       const expected = (subscriptionPasscode || "").trim();
       if (!expected) {
         const msg =
-          appLanguage === "es"
-            ? "El código de acceso no está configurado"
-            : "Subscription passcode is not configured";
+          t.passcode_not_configured ||
+          translations.en.passcode_not_configured ||
+          "Subscription passcode is not configured";
         setPasscodeError(msg);
         setLocalError?.(msg);
         return;
@@ -1898,14 +1919,17 @@ export default function App() {
         patchUser?.({ subscriptionPasscodeVerified: true });
         toast({
           status: "success",
-          title: appLanguage === "es" ? "Código aceptado" : "Passcode accepted",
+          title:
+            t.passcode_accepted ||
+            translations.en.passcode_accepted ||
+            "Passcode accepted",
         });
       } catch (error) {
         console.error("Failed to save subscription passcode", error);
         const msg =
-          appLanguage === "es"
-            ? "No se pudo guardar el código"
-            : "Failed to save passcode";
+          t.passcode_save_failed ||
+          translations.en.passcode_save_failed ||
+          "Failed to save passcode";
         setPasscodeError(msg);
         setLocalError?.(msg);
       } finally {
@@ -1956,9 +1980,9 @@ export default function App() {
       if (!id) {
         setAllowPosts(previous);
         const message =
-          appLanguage === "es"
-            ? "Conecta tu cuenta para usar esta función."
-            : "Connect your account to use this feature.";
+          t.account_required_feature ||
+          translations.en.account_required_feature ||
+          "Connect your account to use this feature.";
         throw new Error(message);
       }
       try {
@@ -1998,11 +2022,8 @@ export default function App() {
     const next = {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "A1",
-      supportLang: ["en", "es"].includes(
-        partial.supportLang ?? prev.supportLang
-      )
-        ? partial.supportLang ?? prev.supportLang
-        : "en",
+      supportLang:
+        normalizeLanguageCode(partial.supportLang ?? prev.supportLang) || "en",
       voice: partial.voice ?? prev.voice ?? "alloy",
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "").slice(
         0,
@@ -2053,7 +2074,7 @@ export default function App() {
     } catch {}
 
     // Derive appLanguage from supportLang to keep them in sync
-    const derivedAppLanguage = next.supportLang === "es" ? "es" : "en";
+    const derivedAppLanguage = normalizeLanguageCode(next.supportLang) || "en";
 
     await setDoc(
       doc(database, "users", npub),
@@ -2125,9 +2146,7 @@ export default function App() {
       // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "A1")),
-        supportLang: ["en", "es"].includes(payload.supportLang)
-          ? payload.supportLang
-          : "en",
+        supportLang: normalizeLanguageCode(payload.supportLang) || "en",
         voicePersona: safe(
           payload.voicePersona,
           translations[appLanguage]?.onboarding_persona_default_example ||
@@ -2154,9 +2173,10 @@ export default function App() {
 
       const now = new Date().toISOString();
       const uiLangForPersist =
-        (user?.appLanguage === "es" && "es") ||
-        (localStorage.getItem("appLanguage") === "es" && "es") ||
-        (appLanguage === "es" ? "es" : "en");
+        normalizeLanguageCode(user?.appLanguage) ||
+        normalizeLanguageCode(localStorage.getItem("appLanguage")) ||
+        normalizeLanguageCode(appLanguage) ||
+        "en";
 
       await setDoc(
         doc(database, "users", id),
@@ -2269,11 +2289,14 @@ export default function App() {
     } catch (e) {
       console.error("Failed to start lesson:", e);
       toast({
-        title: appLanguage === "es" ? "Error" : "Error",
+        title:
+          t.app_error_title ||
+          translations.en.app_error_title ||
+          "Error",
         description:
-          appLanguage === "es"
-            ? "No se pudo iniciar la lección"
-            : "Failed to start lesson",
+          t.lesson_start_failed ||
+          translations.en.lesson_start_failed ||
+          "Failed to start lesson",
         status: "error",
         duration: 3000,
       });
@@ -2312,11 +2335,14 @@ export default function App() {
     } catch (error) {
       console.error("Failed to complete flashcard:", error);
       toast({
-        title: appLanguage === "es" ? "Error" : "Error",
+        title:
+          t.app_error_title ||
+          translations.en.app_error_title ||
+          "Error",
         description:
-          appLanguage === "es"
-            ? "No se pudo guardar el progreso"
-            : "Failed to save progress",
+          t.progress_save_failed ||
+          translations.en.progress_save_failed ||
+          "Failed to save progress",
         status: "error",
         duration: 3000,
       });
@@ -2355,11 +2381,14 @@ export default function App() {
     } catch (error) {
       console.error("Failed to complete random practice:", error);
       toast({
-        title: appLanguage === "es" ? "Error" : "Error",
+        title:
+          t.app_error_title ||
+          translations.en.app_error_title ||
+          "Error",
         description:
-          appLanguage === "es"
-            ? "No se pudo guardar el progreso"
-            : "Failed to save progress",
+          t.progress_save_failed ||
+          translations.en.progress_save_failed ||
+          "Failed to save progress",
         status: "error",
         duration: 3000,
       });
@@ -2625,12 +2654,12 @@ export default function App() {
       if (!activeNpub) {
         const title =
           t.app_cefr_need_account_title ||
-          (appLanguage === "es" ? "Cuenta requerida" : "Account required");
+          translations.en.app_cefr_need_account_title ||
+          "Account required";
         const description =
           t.app_cefr_need_account ||
-          (appLanguage === "es"
-            ? "Conéctate para analizar tu nivel con la IA."
-            : "Connect your account to analyze your level.");
+          translations.en.app_cefr_need_account ||
+          "Connect your account to analyze your level.";
         toast({ title, description, status: "info", duration: 2200 });
         return;
       }
@@ -2659,7 +2688,9 @@ export default function App() {
           updatedAt: user?.updatedAt || null,
         };
 
-        const localeName = appLanguage === "es" ? "Spanish" : "English";
+        const localeName =
+          getLanguageLabel("en", normalizeLanguageCode(appLanguage) || "en") ||
+          "English";
         const prompt = [
           "You are an expert language placement coach.",
           "Assign a CEFR level (A1, A2, B1, B2, C1, or C2) based on the learner metrics below.",
@@ -2709,13 +2740,9 @@ export default function App() {
         setCefrResult(result);
 
         const successTitle =
-          t.app_cefr_success_title ||
-          (appLanguage === "es" ? "Análisis completado" : "Analysis complete");
+          t.app_cefr_success_title || translations.en.app_cefr_success_title;
         const successDescTemplate =
-          t.app_cefr_success_desc ||
-          (appLanguage === "es"
-            ? "Nivel asignado: {level}."
-            : "Assigned level: {level}.");
+          t.app_cefr_success_desc || translations.en.app_cefr_success_desc;
 
         toast({
           title: successTitle,
@@ -2726,13 +2753,8 @@ export default function App() {
       } catch (err) {
         console.error("CEFR analysis failed:", err);
         const errorTitle =
-          t.app_cefr_error_title ||
-          (appLanguage === "es" ? "No se pudo analizar" : "Analysis failed");
-        const errorDesc =
-          t.app_cefr_error ||
-          (appLanguage === "es"
-            ? "Vuelve a intentarlo más tarde."
-            : "Please try again later.");
+          t.app_cefr_error_title || translations.en.app_cefr_error_title;
+        const errorDesc = t.app_cefr_error || translations.en.app_cefr_error;
         setCefrError(errorDesc);
         toast({
           title: errorTitle,
@@ -2972,13 +2994,9 @@ export default function App() {
 
         if (currentTab === "random") {
           const title =
-            t?.random_toast_title ??
-            (appLanguage === "es" ? "¡Buen trabajo!" : "Nice job!");
+            t?.random_toast_title ?? translations.en.random_toast_title;
           const descTpl =
-            t?.random_toast_desc ??
-            (appLanguage === "es"
-              ? "Ganaste +{xp} XP."
-              : "You earned +{xp} XP.");
+            t?.random_toast_desc ?? translations.en.random_toast_desc;
           const description = descTpl.replace("{xp}", String(diff));
 
           toast({
@@ -4227,14 +4245,12 @@ export default function App() {
 
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Meta diaria alcanzada!"
-                    : "Daily Goal Complete!"}
+                  {t.daily_goal_complete_title ||
+                    translations.en.daily_goal_complete_title}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
-                  {appLanguage === "es"
-                    ? "Alcanzaste tu objetivo de XP de hoy."
-                    : "You hit today’s XP target."}
+                  {t.daily_goal_complete_desc ||
+                    translations.en.daily_goal_complete_desc}
                 </Text>
               </VStack>
 
@@ -4254,14 +4270,13 @@ export default function App() {
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {appLanguage === "es"
-                      ? "Progreso diario"
-                      : "Daily progress"}
+                    {t.daily_goal_progress_label ||
+                      translations.en.daily_goal_progress_label}
                   </Text>
                   <HStack spacing={6} justify="center" flexWrap="wrap">
                     <VStack spacing={1} minW="120px">
                       <Text fontSize="xs" opacity={0.8}>
-                        {appLanguage === "es" ? "Meta" : "Goal"}
+                        {t.ra_goal_label || translations.en.ra_goal_label}
                       </Text>
                       <Text fontSize="3xl" fontWeight="bold" color="yellow.200">
                         {dailyGoalTarget || 0} XP
@@ -4269,9 +4284,8 @@ export default function App() {
                     </VStack>
                   </HStack>
                   <Text fontSize="sm" opacity={0.85}>
-                    {appLanguage === "es"
-                      ? "¡Sigue la racha y vuelve mañana para un nuevo objetivo!"
-                      : "Keep the streak going and come back tomorrow for a new goal!"}
+                    {t.daily_goal_streak_hint ||
+                      translations.en.daily_goal_streak_hint}
                   </Text>
                 </VStack>
               </Box>
@@ -4319,7 +4333,8 @@ export default function App() {
                 fontSize="lg"
                 py={6}
               >
-                {appLanguage === "es" ? "Seguir practicando" : "Keep learning"}
+                {t.lesson_keep_learning ||
+                  translations.en.lesson_keep_learning}
               </Button>
             </VStack>
           </ModalBody>
@@ -4348,9 +4363,8 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Lección Completada!"
-                    : "Lesson Complete!"}
+                  {t.lesson_complete_title ||
+                    translations.en.lesson_complete_title}
                 </Text>
                 <Text fontSize="lg" opacity={0.9}>
                   {completedLessonData?.title?.[appLanguage] ||
@@ -4375,15 +4389,14 @@ export default function App() {
                     letterSpacing="wide"
                     opacity={0.8}
                   >
-                    {appLanguage === "es" ? "XP Ganado" : "XP Earned"}
+                    {t.lesson_xp_earned || translations.en.lesson_xp_earned}
                   </Text>
                   <Text fontSize="5xl" fontWeight="bold" color="yellow.300">
                     +{completedLessonData?.xpEarned || 0}
                   </Text>
                   <Text fontSize="sm" opacity={0.8}>
-                    {appLanguage === "es"
-                      ? "Puntos de Experiencia"
-                      : "Experience Points"}
+                    {t.lesson_xp_points_label ||
+                      translations.en.lesson_xp_points_label}
                   </Text>
                 </VStack>
               </Box>
@@ -4401,7 +4414,7 @@ export default function App() {
                 fontSize="lg"
                 py={6}
               >
-                {appLanguage === "es" ? "Continuar" : "Continue"}
+                {t.common_continue || translations.en.common_continue}
               </Button>
             </VStack>
           </ModalBody>
@@ -4441,9 +4454,8 @@ export default function App() {
               {/* Title */}
               <VStack spacing={2}>
                 <Text fontSize="3xl" fontWeight="bold">
-                  {appLanguage === "es"
-                    ? "¡Nivel Completado!"
-                    : "Level Complete!"}
+                  {t.level_complete_title ||
+                    translations.en.level_complete_title}
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
                   {completedProficiencyData?.level} -{" "}
@@ -4465,18 +4477,19 @@ export default function App() {
               >
                 <VStack spacing={3}>
                   <Text fontSize="lg" fontWeight="bold">
-                    {appLanguage === "es"
-                      ? "¡Felicitaciones!"
-                      : "Congratulations!"}
+                    {t.level_complete_congrats ||
+                      translations.en.level_complete_congrats}
                   </Text>
                   <Text fontSize="md" opacity={0.9}>
                     {completedProficiencyData?.nextLevel
-                      ? appLanguage === "es"
-                        ? `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`
-                        : `You've unlocked level ${completedProficiencyData.nextLevel}`
-                      : appLanguage === "es"
-                      ? "¡Has completado todos los niveles!"
-                      : "You've completed all levels!"}
+                      ? (t.level_complete_next_level ||
+                          translations.en.level_complete_next_level ||
+                          "You've unlocked level {level}").replace(
+                          "{level}",
+                          completedProficiencyData.nextLevel
+                        )
+                      : t.level_complete_all_levels ||
+                        translations.en.level_complete_all_levels}
                   </Text>
                 </VStack>
               </Box>
@@ -4500,12 +4513,9 @@ export default function App() {
                 py={6}
               >
                 {completedProficiencyData?.nextLevel
-                  ? appLanguage === "es"
-                    ? "Ir al Siguiente Nivel"
-                    : "Go to Next Level"
-                  : appLanguage === "es"
-                  ? "Continuar"
-                  : "Continue"}
+                  ? t.proficiency_next_level_cta ||
+                    translations.en.proficiency_next_level_cta
+                  : t.common_continue || translations.en.common_continue}
               </Button>
             </VStack>
           </ModalBody>
@@ -4544,9 +4554,13 @@ function BottomActionBar({
   const toggleLabel =
     translationLabel || t?.ra_translations_toggle || "Translations";
   const helpChatLabel =
-    helpLabel || t?.app_help_chat || (appLanguage === "es" ? "Ayuda" : "Help");
+    helpLabel ||
+    t?.app_help_chat ||
+    translations.en.app_help_chat ||
+    "Help";
   const teamsLabel = t?.teams_drawer_title || "Teams";
-  const notesLabel = appLanguage === "es" ? "Notas" : "Notes";
+  const notesLabel =
+    t?.app_notes_label || translations.en.app_notes_label || "Notes";
 
   // Path mode configuration
   const ALPHABET_LANGS = [
@@ -4566,24 +4580,31 @@ function BottomActionBar({
       ? [
           {
             id: "alphabet",
-            label: appLanguage === "es" ? "Alfabeto" : "Alphabet",
+            label:
+              t?.mode_alphabet_label ||
+              translations.en.mode_alphabet_label ||
+              "Alphabet",
             icon: LuLanguages,
           },
         ]
       : []),
     {
       id: "path",
-      label: appLanguage === "es" ? "Ruta" : "Path",
+      label: t?.mode_path_label || translations.en.mode_path_label || "Path",
       icon: PiPath,
     },
     {
       id: "flashcards",
-      label: appLanguage === "es" ? "Tarjetas" : "Cards",
+      label:
+        t?.mode_cards_label || translations.en.mode_cards_label || "Cards",
       icon: PiCardsBold,
     },
     {
       id: "conversations",
-      label: appLanguage === "es" ? "Conversación" : "Conversation",
+      label:
+        t?.mode_conversation_label ||
+        translations.en.mode_conversation_label ||
+        "Conversation",
       icon: RiChat3Line,
     },
   ];
@@ -4591,7 +4612,8 @@ function BottomActionBar({
   const currentMode =
     PATH_MODES.find((m) => m.id === pathMode) || PATH_MODES[0];
   const CurrentModeIcon = currentMode.icon;
-  const modeMenuLabel = appLanguage === "es" ? "Modo" : "Mode";
+  const modeMenuLabel =
+    t?.app_mode_label || translations.en.app_mode_label || "Mode";
 
   // Determine notes button border styles based on loading/done state
   const notesBorderWidth = notesIsLoading || notesIsDone ? "2px" : "1px";
