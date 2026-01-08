@@ -14,6 +14,7 @@ import {
 import { DragDropContext, Draggable, Droppable } from "@hello-pangea/dnd";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
+import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
 
 const renderSpeakerIcon = (loading) =>
@@ -41,7 +42,10 @@ export default function RepeatWhatYouHear({
   onPlayTTS = () => {},
   canSkip = true,
 
-  onSendHelpRequest = null,
+  // Inline assistant support
+  onAskAssistant = null,
+  assistantSupportText = "",
+  isLoadingAssistantSupport = false,
 
   lastOk = null,
   recentXp = 0,
@@ -180,7 +184,7 @@ export default function RepeatWhatYouHear({
   }, [getUserAnswer, onSubmit]);
 
   const handleSendHelp = useCallback(() => {
-    if (!onSendHelpRequest) return;
+    if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText) return;
     const isSpanishUI = userLanguage === "es";
     const promptLines = [
       isSpanishUI
@@ -198,8 +202,8 @@ export default function RepeatWhatYouHear({
         : null,
       hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
     ].filter(Boolean);
-    onSendHelpRequest(promptLines.join("\n"));
-  }, [hint, onSendHelpRequest, sourceSentence, userLanguage, wordBank]);
+    onAskAssistant(promptLines.join("\n"));
+  }, [hint, onAskAssistant, isLoadingAssistantSupport, assistantSupportText, sourceSentence, userLanguage, wordBank]);
 
   const headingLabel =
     userLanguage === "es" ? "Toca lo que escuchas" : "Tap what you hear";
@@ -259,14 +263,14 @@ export default function RepeatWhatYouHear({
                     transition="background 0.2s ease"
                   >
                     <Flex align="center" gap={3}>
-                      {onSendHelpRequest && (
+                      {onAskAssistant && (
                         <IconButton
                           aria-label={
                             userLanguage === "es"
                               ? "Pedir ayuda"
                               : "Ask the assistant"
                           }
-                          icon={<MdOutlineSupportAgent />}
+                          icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
                           size="sm"
                           fontSize="lg"
                           rounded="xl"
@@ -274,6 +278,7 @@ export default function RepeatWhatYouHear({
                           color="blue"
                           boxShadow="0 4px 0 blue"
                           onClick={handleSendHelp}
+                          isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
                         />
                       )}
                       <IconButton
@@ -429,6 +434,41 @@ export default function RepeatWhatYouHear({
             </Flex>
           )}
         </Droppable>
+
+        {/* Inline assistant support response */}
+        {(assistantSupportText || isLoadingAssistantSupport) && (
+          <Box
+            p={4}
+            borderRadius="lg"
+            bg="rgba(66, 153, 225, 0.1)"
+            borderWidth="1px"
+            borderColor="blue.400"
+            boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+          >
+            <HStack spacing={2} mb={2}>
+              <MdOutlineSupportAgent color="var(--chakra-colors-blue-400)" />
+              <Text fontWeight="semibold" color="blue.300">
+                {userLanguage === "es" ? "Asistente" : "Assistant"}
+              </Text>
+              {isLoadingAssistantSupport && <Spinner size="xs" color="blue.400" />}
+            </HStack>
+            <Box
+              fontSize="md"
+              color="whiteAlpha.900"
+              lineHeight="1.6"
+              sx={{
+                "& p": { mb: 2 },
+                "& p:last-child": { mb: 0 },
+                "& strong": { fontWeight: "bold", color: "blue.200" },
+                "& em": { fontStyle: "italic" },
+                "& ul, & ol": { pl: 4, mb: 2 },
+                "& li": { mb: 1 },
+              }}
+            >
+              <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+            </Box>
+          </Box>
+        )}
 
         <Stack direction="row" spacing={3} align="center" justify="flex-end">
           {canSkip && (
