@@ -1115,31 +1115,7 @@ export default function AlphabetBootcamp({
                 w="100%"
                 maxW="400px"
                 mx="auto"
-                minH={{ base: "340px", md: "360px" }}
-                pb="20px"
               >
-                {/* Stack effect - thin card edges visible at bottom */}
-                {deck.length > 1 && (
-                  <>
-                    {[...Array(Math.min(deck.length - 1, 12))].map((_, i) => (
-                      <Box
-                        key={i}
-                        position="absolute"
-                        top={`${(12 - i) * 2}px`}
-                        left="0"
-                        right="0"
-                        h={{ base: "320px", md: "340px" }}
-                        bg="gray.700"
-                        borderRadius="lg"
-                        border="1px solid"
-                        borderColor="gray.600"
-                        boxShadow={i === 0 ? "0 4px 8px rgba(0,0,0,0.4)" : "none"}
-                        zIndex={i}
-                      />
-                    ))}
-                  </>
-                )}
-
                 {/* Top card (current card to practice) */}
                 <Box position="relative" zIndex={20}>
                   <LetterCard
@@ -1207,6 +1183,26 @@ export default function AlphabetBootcamp({
                     }}
                   />
                 </Box>
+
+                {/* Deck thickness indicator - stacked edges below */}
+                {deck.length > 1 && (
+                  <Box
+                    mx={2}
+                    mt={-1}
+                    position="relative"
+                    zIndex={1}
+                  >
+                    {[...Array(Math.min(deck.length - 1, 6))].map((_, i) => (
+                      <Box
+                        key={i}
+                        h="3px"
+                        bg={`gray.${600 + i * 50}`}
+                        borderBottomRadius={i === Math.min(deck.length - 2, 5) ? "md" : "none"}
+                        mx={`${i * 2}px`}
+                      />
+                    ))}
+                  </Box>
+                )}
               </Box>
             </VStack>
           ) : (
