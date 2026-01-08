@@ -1110,12 +1110,7 @@ export default function AlphabetBootcamp({
               </Box>
 
               {/* Deck visual - stacked cards with top card active */}
-              <Box
-                position="relative"
-                w="100%"
-                maxW="400px"
-                mx="auto"
-              >
+              <Box position="relative" w="100%" maxW="400px" mx="auto">
                 {/* Top card (current card to practice) */}
                 <Box position="relative" zIndex={20}>
                   <LetterCard
@@ -1127,7 +1122,8 @@ export default function AlphabetBootcamp({
                     pauseMs={pauseMs}
                     onXpAwarded={handleXpAwarded}
                     initialPracticeWord={
-                      savedPracticeWords[deck[0].id]?.word || deck[0].practiceWord
+                      savedPracticeWords[deck[0].id]?.word ||
+                      deck[0].practiceWord
                     }
                     initialPracticeWordMeaning={
                       savedPracticeWords[deck[0].id]?.meaning ||
@@ -1189,7 +1185,7 @@ export default function AlphabetBootcamp({
                   <Box
                     position="relative"
                     zIndex={1}
-                    mt="-8px"
+                    mt={{ base: "-84px", md: "-102px" }}
                     mx="1px"
                   >
                     {[...Array(Math.min(deck.length - 1, 8))].map((_, i) => (
@@ -1197,7 +1193,9 @@ export default function AlphabetBootcamp({
                         key={i}
                         h="4px"
                         bg={i % 2 === 0 ? "gray.600" : "gray.700"}
-                        borderBottomRadius={i === Math.min(deck.length - 2, 7) ? "lg" : "none"}
+                        borderBottomRadius={
+                          i === Math.min(deck.length - 2, 7) ? "lg" : "none"
+                        }
                         mx={`${i * 1}px`}
                       />
                     ))}
