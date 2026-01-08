@@ -888,7 +888,12 @@ function TopBar({
                       {targetLang === "es" &&
                         translations[appLanguage].onboarding_practice_es}
                     </MenuButton>
-                    <MenuList borderColor="gray.700" bg="gray.900">
+                    <MenuList
+                      borderColor="gray.700"
+                      bg="gray.900"
+                      maxH="300px"
+                      overflowY="auto"
+                    >
                       <MenuOptionGroup
                         type="radio"
                         value={targetLang}
