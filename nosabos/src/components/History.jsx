@@ -1217,17 +1217,25 @@ export default function History({
     const words = text.split(/\s+/).filter(Boolean);
     const totalWords = words.length;
 
-    // Estimate speaking rate: ~2.5 words per second for TTS
-    // Adjust slightly based on language (some languages are faster/slower)
-    const wordsPerSecond = langTag?.startsWith("ja") ? 3.0 : 2.5;
-    const estimatedDuration = totalWords / wordsPerSecond;
-
     try {
       const player = await getTTSPlayer({
         text,
         langTag: langTag || TTS_LANG_TAG.es,
         voice: getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
+        // Callback for real-time transcript updates from the TTS API
+        onTranscriptDelta: enableHighlighting
+          ? (cumulativeTranscript) => {
+              // Count words in the spoken transcript so far
+              const spokenWords = cumulativeTranscript
+                .split(/\s+/)
+                .filter(Boolean).length;
+              // Highlight the word being spoken (subtract 1 since we want
+              // to highlight the word currently being uttered, not the next one)
+              const wordIndex = Math.max(0, Math.min(spokenWords - 1, totalWords - 1));
+              setHighlightedWordIndex(wordIndex);
+            }
+          : undefined,
       });
 
       currentAudioRef.current = player.audio;
@@ -1252,26 +1260,9 @@ export default function History({
       await player.ready;
       setSynthesizing?.(false);
 
-      // Start word highlighting if enabled
+      // Set initial highlight when audio starts
       if (enableHighlighting && totalWords > 0) {
-        const startTime = Date.now();
         setHighlightedWordIndex(0);
-
-        highlightIntervalRef.current = setInterval(() => {
-          const elapsed = (Date.now() - startTime) / 1000;
-          const progress = elapsed / estimatedDuration;
-          const wordIndex = Math.min(
-            Math.floor(progress * totalWords),
-            totalWords - 1
-          );
-          setHighlightedWordIndex(wordIndex);
-
-          // Stop interval when we reach the end
-          if (wordIndex >= totalWords - 1) {
-            clearInterval(highlightIntervalRef.current);
-            highlightIntervalRef.current = null;
-          }
-        }, 100); // Update every 100ms for smooth highlighting
       }
 
       await player.audio.play();
