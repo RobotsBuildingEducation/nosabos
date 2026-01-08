@@ -1120,30 +1120,24 @@ export default function AlphabetBootcamp({
               >
                 {/* Stack effect - thin card edges visible at bottom */}
                 {deck.length > 1 && (
-                  <Box
-                    position="absolute"
-                    bottom="0"
-                    left="50%"
-                    transform="translateX(-50%)"
-                    w="100%"
-                    h="320px"
-                  >
+                  <>
                     {[...Array(Math.min(deck.length - 1, 12))].map((_, i) => (
                       <Box
                         key={i}
                         position="absolute"
-                        bottom={`${i * 2}px`}
-                        left={`${i * 0.5}px`}
-                        right={`${-i * 0.5}px`}
-                        h="100%"
+                        top={`${(12 - i) * 2}px`}
+                        left="0"
+                        right="0"
+                        h={{ base: "320px", md: "340px" }}
                         bg="gray.700"
                         borderRadius="lg"
                         border="1px solid"
                         borderColor="gray.600"
                         boxShadow={i === 0 ? "0 4px 8px rgba(0,0,0,0.4)" : "none"}
+                        zIndex={i}
                       />
                     ))}
-                  </Box>
+                  </>
                 )}
 
                 {/* Top card (current card to practice) */}
