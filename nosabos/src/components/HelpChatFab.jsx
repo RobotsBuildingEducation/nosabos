@@ -11,16 +11,16 @@ import {
   Badge,
   Box,
   Button,
+  Drawer,
+  DrawerBody,
+  DrawerCloseButton,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerOverlay,
   HStack,
   IconButton,
   Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
   Spinner,
   Text,
   Tooltip,
@@ -982,15 +982,19 @@ const HelpChatFab = forwardRef(
           </Tooltip>
         )}
 
-        {/* Modal chat */}
-        <Modal
+        {/* Drawer chat */}
+        <Drawer
           isOpen={isOpen}
           onClose={onClose}
           size="lg"
+          placement="right"
           scrollBehavior="inside"
+          closeOnOverlayClick={false}
+          trapFocus={false}
+          blockScrollOnMount={false}
         >
-          <ModalOverlay />
-          <ModalContent
+          <DrawerOverlay bg="transparent" pointerEvents="none" />
+          <DrawerContent
             bg="gray.900"
             color="gray.100"
             borderRadius="2xl"
@@ -1000,12 +1004,12 @@ const HelpChatFab = forwardRef(
             display="flex"
             flexDirection="column"
           >
-            <ModalHeader>
+            <DrawerHeader>
               {appLanguage === "es" ? "Ayuda rápida" : "Quick Help"}
-            </ModalHeader>
-            <ModalCloseButton />
+            </DrawerHeader>
+            <DrawerCloseButton />
 
-            <ModalBody
+            <DrawerBody
               flex="1"
               overflowY="auto"
               ref={scrollRef}
@@ -1098,12 +1102,12 @@ const HelpChatFab = forwardRef(
                   );
                 })}
               </VStack>
-            </ModalBody>
+            </DrawerBody>
 
             {/* Hidden audio element for realtime playback */}
             <audio ref={audioRef} style={{ display: "none" }} />
 
-            <ModalFooter>
+            <DrawerFooter>
               <HStack w="100%" spacing={2}>
                 {/* Microphone button for realtime voice chat */}
                 <IconButton
@@ -1174,9 +1178,9 @@ const HelpChatFab = forwardRef(
                   />
                 )}
               </HStack>
-            </ModalFooter>
-          </ModalContent>
-        </Modal>
+            </DrawerFooter>
+          </DrawerContent>
+        </Drawer>
       </>
     );
   }
