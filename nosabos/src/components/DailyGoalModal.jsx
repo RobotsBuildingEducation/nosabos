@@ -47,7 +47,9 @@ export default function DailyGoalModal({
   completedGoalDates = [],
   startDate,
 }) {
-  const resolvedLang = lang === "es" ? "es" : "en";
+  // Ensure we use the provided lang if supported, otherwise fallback to en
+  const resolvedLang = allTranslations[lang] ? lang : "en";
+
   const resolvedTranslations = useMemo(
     () => t || allTranslations[resolvedLang] || allTranslations.en,
     [t, resolvedLang]
@@ -90,6 +92,10 @@ export default function DailyGoalModal({
       ),
       errSaveTitle: getLabel("daily_goal_error_save", "Could not save goal"),
       calendarTitle: getLabel("daily_goal_calendar_title", "Your progress"),
+      completedLabel: getLabel("daily_goal_calendar_completed", "Completed"),
+      incompleteLabel: getLabel("daily_goal_calendar_incomplete", "Incomplete"),
+      // We'll use a generic "Today" if translation is missing, as it wasn't in original keys
+      todayLabel: getLabel("daily_goal_calendar_today", "Today"),
     }),
     [getLabel]
   );
@@ -332,6 +338,9 @@ export default function DailyGoalModal({
                   highlightToday={true}
                   size="md"
                   startDate={startDate}
+                  completedLabel={L.completedLabel}
+                  incompleteLabel={L.incompleteLabel}
+                  todayLabel={L.todayLabel}
                 />
               </Box>
             </Box>

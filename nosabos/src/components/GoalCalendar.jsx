@@ -28,6 +28,45 @@ function formatDateKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+// Helpers for internationalization of dates
+function getWeekdays(locale) {
+  if (locale === "en") return WEEKDAYS_EN;
+  if (locale === "es") return WEEKDAYS_ES;
+
+  try {
+    const format = new Intl.DateTimeFormat(locale, { weekday: "short" });
+    const days = [];
+    // Jan 7, 2024 is a Sunday. We want Sun-Sat.
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(2024, 0, 7 + i);
+      days.push(format.format(date));
+    }
+    return days;
+  } catch (e) {
+    console.warn("Intl date format failed, falling back to English", e);
+    return WEEKDAYS_EN;
+  }
+}
+
+function getMonths(locale) {
+  if (locale === "en") return MONTHS_EN;
+  if (locale === "es") return MONTHS_ES;
+
+  try {
+    const format = new Intl.DateTimeFormat(locale, { month: "long" });
+    const months = [];
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(2024, i, 1);
+      months.push(format.format(date));
+    }
+    return months;
+  } catch (e) {
+    console.warn("Intl date format failed, falling back to English", e);
+    return MONTHS_EN;
+  }
+}
+
+
 /**
  * GoalCalendar - A visual calendar showing completed goal days
  *
@@ -42,6 +81,7 @@ function formatDateKey(date) {
  * @param {string} [props.size="md"] - Size variant: "sm", "md", "lg"
  * @param {string} [props.completedLabel] - Custom label for "Completed" legend
  * @param {string} [props.incompleteLabel] - Custom label for "Incomplete" legend
+ * @param {string} [props.todayLabel] - Custom label for "Today" legend
  * @param {string} [props.variant="dark"] - Color variant: "dark" or "light"
  * @param {string|Date} [props.startDate] - First date when goals could be tracked (account creation)
  */
@@ -56,6 +96,7 @@ export default function GoalCalendar({
   size = "md",
   completedLabel,
   incompleteLabel,
+  todayLabel,
   variant = "dark",
   startDate,
 }) {
@@ -67,8 +108,8 @@ export default function GoalCalendar({
   const displayYear = year ?? today.getFullYear();
   const displayMonth = month ?? today.getMonth();
 
-  const weekdays = lang === "es" ? WEEKDAYS_ES : WEEKDAYS_EN;
-  const months = lang === "es" ? MONTHS_ES : MONTHS_EN;
+  const weekdays = useMemo(() => getWeekdays(lang), [lang]);
+  const months = useMemo(() => getMonths(lang), [lang]);
 
   // Parse startDate if provided
   const goalStartDate = useMemo(() => {
@@ -161,6 +202,24 @@ export default function GoalCalendar({
     todayBorder: isLight ? "yellow.300" : "yellow.400",
     navButtonScheme: isLight ? "whiteAlpha" : "teal",
   };
+
+  const resolvedCompletedLabel = useMemo(() => {
+      if (completedLabel) return completedLabel;
+      if (lang === "es") return "Completado";
+      return "Completed";
+  }, [completedLabel, lang]);
+
+  const resolvedIncompleteLabel = useMemo(() => {
+      if (incompleteLabel) return incompleteLabel;
+      if (lang === "es") return "Pendiente";
+      return "Incomplete";
+  }, [incompleteLabel, lang]);
+
+  const resolvedTodayLabel = useMemo(() => {
+      if (todayLabel) return todayLabel;
+      if (lang === "es") return "Hoy";
+      return "Today";
+  }, [todayLabel, lang]);
 
   return (
     <VStack spacing={3} w="100%">
@@ -279,13 +338,13 @@ export default function GoalCalendar({
         <HStack spacing={1}>
           <Box w="12px" h="12px" borderRadius="sm" bg={COMPLETED_GRADIENT_LEGEND} />
           <Text fontSize="xs" color={colors.legendText}>
-            {completedLabel || (lang === "es" ? "Completado" : "Completed")}
+            {resolvedCompletedLabel}
           </Text>
         </HStack>
         <HStack spacing={1}>
           <Box w="12px" h="12px" borderRadius="sm" bg={colors.legendIncompleteBg} />
           <Text fontSize="xs" color={colors.legendText}>
-            {incompleteLabel || (lang === "es" ? "Pendiente" : "Incomplete")}
+            {resolvedIncompleteLabel}
           </Text>
         </HStack>
         <HStack spacing={1}>
@@ -298,7 +357,7 @@ export default function GoalCalendar({
             borderColor={colors.todayBorder}
           />
           <Text fontSize="xs" color={colors.legendText}>
-            {lang === "es" ? "Hoy" : "Today"}
+            {resolvedTodayLabel}
           </Text>
         </HStack>
       </HStack>
