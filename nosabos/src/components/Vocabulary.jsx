@@ -39,6 +39,7 @@ import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { PiSpeakerHighDuotone } from "react-icons/pi";
+import ReactMarkdown from "react-markdown";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import {
@@ -1091,6 +1092,10 @@ export default function Vocabulary({
   const setNotesLoading = useNotesStore((s) => s.setLoading);
   const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
 
+  // inline assistant support feature (replaces modal)
+  const [assistantSupportText, setAssistantSupportText] = useState("");
+  const [isLoadingAssistantSupport, setIsLoadingAssistantSupport] = useState(false);
+
   function showCopyToast() {
     toast({
       title:
@@ -1136,7 +1141,83 @@ export default function Vocabulary({
         showCopyToast();
       } catch {}
     }
-    if (onSendHelpRequest) onSendHelpRequest(text);
+    // Trigger inline assistant instead of modal
+    handleAskAssistant(text);
+  }
+
+  // Inline assistant support - streams response directly in the UI
+  async function handleAskAssistant(questionContext) {
+    if (!questionContext || isLoadingAssistantSupport || assistantSupportText) return;
+
+    setIsLoadingAssistantSupport(true);
+    setAssistantSupportText("");
+
+    try {
+      // Build instruction similar to HelpChatFab
+      const levelHint =
+        level === "beginner"
+          ? "Use short, simple sentences."
+          : level === "intermediate"
+          ? "Be concise and natural."
+          : "Be succinct and native-like.";
+
+      const instruction = [
+        "You are a helpful language study buddy for quick questions.",
+        `The learner is practicing ${targetName}; their support/UI language is ${supportName}.`,
+        levelHint,
+        `Explain and guide in ${supportName}. Include examples or phrases in ${targetName} only when they help, but keep the explanation in ${supportName}.`,
+        "Keep replies ≤ 60 words.",
+        "Use concise Markdown when helpful (bullets, **bold**).",
+      ].join(" ");
+
+      const prompt = `${instruction}\n\nUser question:\n${questionContext}`;
+
+      if (simplemodel) {
+        const resp = await simplemodel.generateContentStream({
+          contents: [{ role: "user", parts: [{ text: prompt }] }],
+        });
+
+        let accumulatedText = "";
+        for await (const chunk of resp.stream) {
+          const piece = textFromChunk(chunk);
+          if (piece) {
+            accumulatedText += piece;
+            setAssistantSupportText(accumulatedText);
+          }
+        }
+
+        // Ensure final text is set
+        const finalAgg = await resp.response;
+        const finalText =
+          (typeof finalAgg?.text === "function"
+            ? finalAgg.text()
+            : finalAgg?.text) || accumulatedText;
+        if (finalText) {
+          setAssistantSupportText(finalText);
+        }
+      } else {
+        // Fallback to non-streaming if Gemini unavailable
+        const response = await callResponses({
+          model: DEFAULT_RESPONSES_MODEL,
+          input: prompt,
+        });
+        setAssistantSupportText(
+          response ||
+            (userLanguage === "es"
+              ? "No se pudo generar una respuesta en este momento."
+              : "Could not generate a response at this time.")
+        );
+      }
+    } catch (error) {
+      console.error("Failed to generate assistant support:", error);
+      setAssistantSupportText(
+        userLanguage === "es"
+          ? "No se pudo generar una respuesta en este momento."
+          : "Could not generate a response at this time."
+      );
+    } finally {
+      setIsLoadingAssistantSupport(false);
+    }
   }
 
   // Quiz mode helper function
@@ -1404,6 +1485,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     setLastOk(null);
     setRecentXp(0);
     setExplanationText("");
+    setAssistantSupportText("");
     setCurrentQuestionData(null);
     setNextAction(null);
     setNoteCreated(false);
@@ -3787,7 +3869,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
   }
 
   const sendMatchHelp = useCallback(() => {
-    if (!onSendHelpRequest) return;
+    if (isLoadingAssistantSupport || assistantSupportText) return;
     const isSpanishUI = userLanguage === "es";
     const promptLines = [
       isSpanishUI
@@ -3810,11 +3892,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         : null,
       mHint ? (isSpanishUI ? `Pista: ${mHint}` : `Hint: ${mHint}`) : null,
     ].filter(Boolean);
-    onSendHelpRequest(promptLines.join("\n"));
-  }, [mHint, mLeft, mRight, mStem, onSendHelpRequest, userLanguage]);
+    handleAskAssistant(promptLines.join("\n"));
+  }, [mHint, mLeft, mRight, mStem, isLoadingAssistantSupport, assistantSupportText, userLanguage]);
 
   const sendSpeakHelp = useCallback(() => {
-    if (!onSendHelpRequest) return;
+    if (isLoadingAssistantSupport || assistantSupportText) return;
     const isSpanishUI = userLanguage === "es";
     const base =
       sVariant === "translate"
@@ -3849,10 +3931,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         : null,
     ].filter(Boolean);
 
-    onSendHelpRequest([base, ...details].join("\n"));
+    handleAskAssistant([base, ...details].join("\n"));
   }, [
     userLanguage,
-    onSendHelpRequest,
+    isLoadingAssistantSupport,
+    assistantSupportText,
     sHint,
     sPrompt,
     sStimulus,
@@ -3915,14 +3998,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  // Single copy button (left of question)
+  // Single copy button (left of question) - now triggers inline assistant
   const CopyAllBtn = ({ q, h, tr }) => {
     const has = (q && q.trim()) || (h && h.trim()) || (tr && tr.trim());
     if (!has) return null;
     return (
       <IconButton
-        aria-label="Copy all"
-        icon={<MdOutlineSupportAgent />}
+        aria-label={userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"}
+        icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
         size="sm"
         fontSize="lg"
         rounded="xl"
@@ -3930,8 +4013,55 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         color="blue"
         boxShadow="0 4px 0 blue"
         onClick={() => copyAll(q, h, tr)}
+        isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
         mr={1}
       />
+    );
+  };
+
+  // Assistant support response box (blue theme)
+  const AssistantSupportBox = () => {
+    if (!assistantSupportText && !isLoadingAssistantSupport) return null;
+    return (
+      <Box
+        p={4}
+        borderRadius="lg"
+        bg="rgba(66, 153, 225, 0.1)"
+        borderWidth="1px"
+        borderColor="blue.400"
+        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+        mt={4}
+      >
+        <HStack spacing={2} mb={2}>
+          <MdOutlineSupportAgent color="var(--chakra-colors-blue-400)" />
+          <Text fontWeight="semibold" color="blue.300">
+            {userLanguage === "es" ? "Asistente" : "Assistant"}
+          </Text>
+          {isLoadingAssistantSupport && <Spinner size="xs" color="blue.400" />}
+        </HStack>
+        <Box
+          fontSize="md"
+          color="whiteAlpha.900"
+          lineHeight="1.6"
+          sx={{
+            "& p": { mb: 2 },
+            "& p:last-child": { mb: 0 },
+            "& strong": { fontWeight: "bold", color: "blue.200" },
+            "& em": { fontStyle: "italic" },
+            "& ul, & ol": { pl: 4, mb: 2 },
+            "& li": { mb: 1 },
+            "& code": {
+              bg: "rgba(0,0,0,0.3)",
+              px: 1,
+              py: 0.5,
+              borderRadius: "sm",
+              fontFamily: "mono",
+            },
+          }}
+        >
+          <ReactMarkdown>{assistantSupportText}</ReactMarkdown>
+        </Box>
+      </Box>
     );
   };
 
@@ -4439,6 +4569,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </VStack>
             </Box>
 
+            <AssistantSupportBox />
+
             <Input
               value={ansFill}
               onChange={(e) => setAnsFill(e.target.value)}
@@ -4709,6 +4841,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 </Stack>
               </>
             )}
+
+            <AssistantSupportBox />
 
             <Stack
               direction="row"
@@ -4985,6 +5119,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </>
             )}
 
+            <AssistantSupportBox />
+
             <Stack
               direction="row"
               spacing={3}
@@ -5045,13 +5181,12 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
                 {userLanguage === "es" ? "Dilo en voz alta" : "Say it aloud"}
               </Text>
-              {onSendHelpRequest &&
-              (sVariant === "translate" || sVariant === "complete") ? (
+              {(sVariant === "translate" || sVariant === "complete") ? (
                 <IconButton
                   aria-label={
                     userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
                   }
-                  icon={<MdOutlineSupportAgent />}
+                  icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
                   size="sm"
                   fontSize="lg"
                   rounded="xl"
@@ -5059,6 +5194,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   color="blue"
                   boxShadow="0 4px 0 blue"
                   onClick={sendSpeakHelp}
+                  isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
                 />
               ) : null}
             </HStack>
@@ -5113,6 +5249,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 {sRecognized}
               </Text>
             ) : null}
+
+            <AssistantSupportBox />
 
             <Stack
               direction="row"
@@ -5254,21 +5392,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   ? "Empareja las palabras"
                   : "Match the words"}
               </Text>
-              {onSendHelpRequest && (
-                <IconButton
-                  aria-label={
-                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
-                  }
-                  icon={<MdOutlineSupportAgent />}
-                  size="sm"
-                  fontSize="lg"
-                  rounded="xl"
-                  bg="white"
-                  color="blue"
-                  boxShadow="0 4px 0 blue"
-                  onClick={sendMatchHelp}
-                />
-              )}
+              <IconButton
+                aria-label={
+                  userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                }
+                icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+                size="sm"
+                fontSize="lg"
+                rounded="xl"
+                bg="white"
+                color="blue"
+                boxShadow="0 4px 0 blue"
+                onClick={sendMatchHelp}
+                isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
+              />
             </HStack>
             <DragDropContext onDragEnd={onDragEnd}>
               <VStack align="stretch" spacing={3}>
@@ -5444,6 +5581,8 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               </Box>
             </DragDropContext>
 
+            <AssistantSupportBox />
+
             <Stack
               direction="row"
               spacing={3}
@@ -5512,7 +5651,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
-              onSendHelpRequest={onSendHelpRequest}
+              onAskAssistant={handleAskAssistant}
+              assistantSupportText={assistantSupportText}
+              isLoadingAssistantSupport={isLoadingAssistantSupport}
               canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}
@@ -5540,7 +5681,9 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
               onSkip={handleSkip}
               onNext={handleNext}
               onPlayTTS={(text) => handlePlayQuestionTTS(text, questionTTsLang)}
-              onSendHelpRequest={onSendHelpRequest}
+              onAskAssistant={handleAskAssistant}
+              assistantSupportText={assistantSupportText}
+              isLoadingAssistantSupport={isLoadingAssistantSupport}
               canSkip={canSkip}
               lastOk={lastOk}
               recentXp={recentXp}
