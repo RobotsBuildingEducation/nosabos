@@ -1116,27 +1116,38 @@ export default function AlphabetBootcamp({
                 maxW="400px"
                 mx="auto"
                 minH={{ base: "340px", md: "360px" }}
+                pb="20px"
               >
-                {/* Stack effect - multiple layers to create depth */}
-                {deck.length > 1 &&
-                  [...Array(Math.min(deck.length - 1, 8))].map((_, i) => (
-                    <Box
-                      key={i}
-                      position="absolute"
-                      top={`${(8 - i) * 3}px`}
-                      left="50%"
-                      transform="translateX(-50%)"
-                      w="100%"
-                      h="320px"
-                      bg={i < 2 ? "whiteAlpha.100" : "whiteAlpha.50"}
-                      borderRadius="lg"
-                      boxShadow={i === 0 ? "0 4px 12px rgba(0,0,0,0.3)" : "none"}
-                      zIndex={i}
-                    />
-                  ))}
+                {/* Stack effect - thin card edges visible at bottom */}
+                {deck.length > 1 && (
+                  <Box
+                    position="absolute"
+                    bottom="0"
+                    left="50%"
+                    transform="translateX(-50%)"
+                    w="100%"
+                    h="320px"
+                  >
+                    {[...Array(Math.min(deck.length - 1, 12))].map((_, i) => (
+                      <Box
+                        key={i}
+                        position="absolute"
+                        bottom={`${i * 2}px`}
+                        left={`${i * 0.5}px`}
+                        right={`${-i * 0.5}px`}
+                        h="100%"
+                        bg="gray.700"
+                        borderRadius="lg"
+                        border="1px solid"
+                        borderColor="gray.600"
+                        boxShadow={i === 0 ? "0 4px 8px rgba(0,0,0,0.4)" : "none"}
+                      />
+                    ))}
+                  </Box>
+                )}
 
                 {/* Top card (current card to practice) */}
-                <Box position="relative" zIndex={3}>
+                <Box position="relative" zIndex={20}>
                   <LetterCard
                     key={deck[0].id}
                     letter={deck[0]}
