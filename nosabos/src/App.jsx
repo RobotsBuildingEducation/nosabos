@@ -1316,7 +1316,7 @@ export default function App() {
     }
     return ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path";
   });
-  const lastPathTargetRef = useRef(resolvedTargetLang);
+  const lastPathTargetRef = useRef(null);
 
   // Ref to trigger scroll to latest unlocked lesson
   const scrollToLatestUnlockedRef = useRef(null);
@@ -1332,16 +1332,22 @@ export default function App() {
   }, [pathMode]);
 
   // Ensure alphabet languages default to bootcamp on language switch; others fall back to path
+  // Only applies when user explicitly switches languages, not on initial load (respects localStorage)
   useEffect(() => {
     const validModes = ["alphabet", "path", "flashcards", "conversations"];
     if (!validModes.includes(pathMode)) {
       setPathMode(
         ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path"
       );
+      lastPathTargetRef.current = resolvedTargetLang;
       return;
     }
 
-    if (lastPathTargetRef.current !== resolvedTargetLang) {
+    // Only apply mode-switching logic after initial load (when ref has been set)
+    if (
+      lastPathTargetRef.current !== null &&
+      lastPathTargetRef.current !== resolvedTargetLang
+    ) {
       if (ALPHABET_LANGS.includes(resolvedTargetLang)) {
         setPathMode("alphabet");
       } else if (pathMode === "alphabet") {
