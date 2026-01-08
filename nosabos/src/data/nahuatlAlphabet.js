@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const NAHUATL_ALPHABET = [
   // Vowels
   {
@@ -398,4 +400,4 @@ export const NAHUATL_ALPHABET = [
     practiceWordMeaning: { en: "star", es: "estrella" },
     tts: "citlalin",
   },
-];
+].map(expandAlphabetEntry);

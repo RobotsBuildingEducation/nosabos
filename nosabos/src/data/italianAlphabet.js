@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const ITALIAN_ALPHABET = [
   {
     id: "a",
@@ -506,4 +508,4 @@ export const ITALIAN_ALPHABET = [
     practiceWordMeaning: { en: "yogurt", es: "yogur" },
     tts: "yogurt",
   },
-];
+].map(expandAlphabetEntry);

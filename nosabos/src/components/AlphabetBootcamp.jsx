@@ -320,6 +320,7 @@ function LetterCard({
       ? ui.alphabet_letter_type_consonant
       : ui.alphabet_letter_type_sign;
 
+  const name = getLetterField(letter, "name", uiLang);
   const sound = getLetterField(letter, "sound", uiLang);
   const tip = getLetterField(letter, "tip", uiLang);
   const practiceWordMeaningText =
@@ -668,7 +669,7 @@ function LetterCard({
                   {letter.letter}
                 </Text>
                 <Text fontSize="lg" fontWeight="semibold">
-                  {letter.name}
+                  {name || letter.name}
                 </Text>
               </VStack>
               {onPlay && (

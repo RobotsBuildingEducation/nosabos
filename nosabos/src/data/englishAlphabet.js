@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const ENGLISH_ALPHABET = [
   {
     id: "th-voiced",
@@ -389,4 +391,4 @@ export const ENGLISH_ALPHABET = [
     practiceWordMeaning: { en: "photograph", es: "fotografía" },
     tts: "photograph",
   },
-];
+].map(expandAlphabetEntry);

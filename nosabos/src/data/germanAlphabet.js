@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const GERMAN_ALPHABET = [
   {
     id: "a",
@@ -532,4 +534,4 @@ export const GERMAN_ALPHABET = [
     practiceWordMeaning: { en: "knee", es: "rodilla" },
     tts: "Knie",
   },
-];
+].map(expandAlphabetEntry);

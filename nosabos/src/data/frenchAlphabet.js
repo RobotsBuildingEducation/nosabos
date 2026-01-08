@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const FRENCH_ALPHABET = [
   {
     id: "a",
@@ -636,4 +638,4 @@ export const FRENCH_ALPHABET = [
     practiceWordMeaning: { en: "the friends", es: "los amigos" },
     tts: "les amis",
   },
-];
+].map(expandAlphabetEntry);

@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const PORTUGUESE_ALPHABET = [
   {
     id: "a",
@@ -519,4 +521,4 @@ export const PORTUGUESE_ALPHABET = [
     practiceWordMeaning: { en: "camera", es: "cámara" },
     tts: "câmera",
   },
-];
+].map(expandAlphabetEntry);

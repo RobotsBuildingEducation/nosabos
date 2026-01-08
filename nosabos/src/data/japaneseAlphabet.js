@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const JAPANESE_ALPHABET = [
   {
     id: "a",
@@ -195,4 +197,4 @@ export const JAPANESE_ALPHABET = [
     practiceWordMeaning: { en: "Japan", es: "Japón" },
     tts: "にほん",
   },
-];
+].map(expandAlphabetEntry);

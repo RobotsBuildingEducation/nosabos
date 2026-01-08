@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const DUTCH_ALPHABET = [
   {
     id: "a",
@@ -493,4 +495,4 @@ export const DUTCH_ALPHABET = [
     practiceWordMeaning: { en: "to walk", es: "caminar" },
     tts: "lopen",
   },
-];
+].map(expandAlphabetEntry);

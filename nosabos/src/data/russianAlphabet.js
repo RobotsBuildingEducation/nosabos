@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const RUSSIAN_ALPHABET = [
   {
     id: "a",
@@ -428,4 +430,4 @@ export const RUSSIAN_ALPHABET = [
     practiceWordMeaning: { en: "object", es: "objeto" },
     tts: "объект",
   },
-];
+].map(expandAlphabetEntry);

@@ -1,3 +1,5 @@
+import { expandAlphabetEntry } from "./alphabetUtils";
+
 export const SPANISH_ALPHABET = [
   {
     id: "a",
@@ -493,4 +495,4 @@ export const SPANISH_ALPHABET = [
     practiceWordMeaning: { en: "Hello!", es: "¡Hola!" },
     tts: "¡Hola!",
   },
-];
+].map(expandAlphabetEntry);
