@@ -83,6 +83,20 @@ const normalizeMeaning = (meaning) => {
   return { en, es };
 };
 
+const LETTER_LOCALIZATION_SUFFIX = {
+  es: "Es",
+};
+
+const getLetterField = (letter, baseKey, uiLang) => {
+  const langKey = normalizeLanguageCode(uiLang);
+  const suffix = langKey ? LETTER_LOCALIZATION_SUFFIX[langKey] : undefined;
+  if (suffix) {
+    const localizedKey = `${baseKey}${suffix}`;
+    if (letter?.[localizedKey]) return letter[localizedKey];
+  }
+  return letter?.[baseKey];
+};
+
 // Build AI grading prompt for alphabet practice
 function buildAlphabetJudgePrompt({ practiceWord, userAnswer, targetLang }) {
   const langName = getLanguageLabel("en", targetLang) || "the target";
@@ -293,8 +307,8 @@ function LetterCard({
       ? ui.alphabet_letter_type_consonant
       : ui.alphabet_letter_type_sign;
 
-  const sound = uiLang === "es" ? letter.soundEs || letter.sound : letter.sound;
-  const tip = uiLang === "es" ? letter.tipEs || letter.tip : letter.tip;
+  const sound = getLetterField(letter, "sound", uiLang);
+  const tip = getLetterField(letter, "tip", uiLang);
   const practiceWordMeaningText =
     practiceWordMeaningData?.[uiLang] ||
     practiceWordMeaningData?.en ||

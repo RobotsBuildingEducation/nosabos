@@ -581,7 +581,11 @@ export default function Conversations({
     streamingRef.current = true;
 
     // Determine the language for the response
-    const responseLang = supportLang === "es" ? "Spanish" : "English";
+    const responseLang =
+      getLanguageLabel(
+        "en",
+        normalizeLanguageCode(supportLang) || "en"
+      ) || "English";
 
     try {
       // Get skill tree topics for context
@@ -722,7 +726,27 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     "en";
 
   const uiLang = resolvedSupportLang;
-  const ui = translations[uiLang];
+  const ui = translations[uiLang] || translations.en;
+  const goalGeneratingText =
+    ui?.conversation_goal_generating ||
+    translations.en?.conversation_goal_generating ||
+    "Generating new topic...";
+  const goalNewTopicLabel =
+    ui?.conversation_goal_new_topic ||
+    translations.en?.conversation_goal_new_topic ||
+    "New topic";
+  const goalLevelLabel =
+    ui?.conversation_goal_level_label ||
+    translations.en?.conversation_goal_level_label ||
+    "Level";
+  const defaultGoalText = {
+    en:
+      translations.en?.conversation_goal_default ||
+      "Continue the conversation",
+    es:
+      translations.es?.conversation_goal_default ||
+      "Continúa la conversación",
+  };
 
   // Which language to show in secondary lane
   const secondaryPref =
@@ -1203,26 +1227,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       const tLang = targetLangRef.current;
       const sLang = supportLangRef.current;
       const languageName =
-        tLang === "es"
-          ? "Spanish"
-          : tLang === "pt"
-          ? "Portuguese"
-          : tLang === "fr"
-          ? "French"
-          : tLang === "it"
-          ? "Italian"
-          : tLang === "nl"
-          ? "Dutch"
-          : tLang === "nah"
-          ? "Huastec Nahuatl"
-          : tLang === "ja"
-          ? "Japanese"
-          : tLang === "ru"
-          ? "Russian"
-          : tLang === "de"
-          ? "German"
-          : "English";
-      const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
+        getLanguageLabel("en", tLang) || "English";
+      const feedbackLang = normalizeLanguageCode(sLang) || "en";
+      const feedbackLanguage =
+        getLanguageLabel("en", feedbackLang) || "English";
 
       const prompt = `You are evaluating if a language learner completed a conversation goal.
 
@@ -1288,20 +1296,22 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
       const parsed = safeParseJson(responseText);
       if (parsed?.completed) {
         // Set positive feedback
+        const feedbackDict = translations[feedbackLang] || translations.en;
         const defaultSuccess =
-          sLang === "es"
-            ? "¡Bien hecho! Completaste la meta."
-            : "Great job! You completed the goal!";
+          feedbackDict?.conversation_goal_completed_default ||
+          translations.en?.conversation_goal_completed_default ||
+          "Great job! You completed the goal!";
         setGoalFeedback(parsed?.reason || defaultSuccess);
         await awardGoalXp();
         // Generate contextual next goal
         setTimeout(() => generateContextualGoal(), 1500);
       } else {
         // Set guiding feedback for failed attempt
+        const feedbackDict = translations[feedbackLang] || translations.en;
         const defaultGuidance =
-          sLang === "es"
-            ? "Intenta hablar sobre la meta."
-            : "Try addressing the goal.";
+          feedbackDict?.conversation_goal_guidance_default ||
+          translations.en?.conversation_goal_guidance_default ||
+          "Try addressing the goal.";
         setGoalFeedback(parsed?.reason || defaultGuidance);
         goalCheckPendingRef.current = false;
       }
@@ -1365,10 +1375,7 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
       if (!r.ok) {
         // Fallback to default goal
         setCurrentGoal({
-          text: {
-            en: "Continue the conversation",
-            es: "Continúa la conversación",
-          },
+          text: defaultGoalText,
           completed: false,
         });
         goalCheckPendingRef.current = false;
@@ -1396,19 +1403,13 @@ Respond with ONLY a JSON object: {"en": "goal in English (max 15 words)", "es": 
         });
       } else {
         setCurrentGoal({
-          text: {
-            en: "Continue the conversation",
-            es: "Continúa la conversación",
-          },
+          text: defaultGoalText,
           completed: false,
         });
       }
     } catch (e) {
       setCurrentGoal({
-        text: {
-          en: "Continue the conversation",
-          es: "Continúa la conversación",
-        },
+        text: defaultGoalText,
         completed: false,
       });
     }
@@ -1818,9 +1819,7 @@ Do not return the whole sentence as a single chunk.`;
                         flex="1"
                       >
                         {streamingText ||
-                          (uiLang === "es"
-                            ? "Generando nuevo tema..."
-                            : "Generating new topic...")}
+                          goalGeneratingText}
                       </Text>
                     </>
                   ) : (
@@ -1831,7 +1830,7 @@ Do not return the whole sentence as a single chunk.`;
                         variant="ghost"
                         colorScheme="purple"
                         aria-label={
-                          uiLang === "es" ? "Nuevo tema" : "New topic"
+                          goalNewTopicLabel
                         }
                         onClick={handleShuffleTopic}
                         opacity={0.7}
@@ -1886,7 +1885,7 @@ Do not return the whole sentence as a single chunk.`;
               <Box w="100%">
                 <HStack justifyContent="space-between" mb={1}>
                   <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                    {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
+                    {goalLevelLabel} {xpLevelNumber}
                   </Badge>
                   <Badge colorScheme="teal" variant="subtle" fontSize="10px">
                     {ui.ra_label_xp} {xp}
@@ -1926,7 +1925,10 @@ Do not return the whole sentence as a single chunk.`;
 
             const canReplay =
               !!m.hasAudio || audioCacheIndexRef.current.has(m.id);
-            const replayLabel = uiLang === "es" ? "Reproducir" : "Replay";
+            const replayLabel =
+              ui?.conversation_replay_label ||
+              translations.en?.conversation_replay_label ||
+              "Replay";
 
             if (!primaryText.trim()) return null;
             return (

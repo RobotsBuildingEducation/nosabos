@@ -88,7 +88,7 @@ const FeedbackRail = React.memo(
                     : ok
                     ? t?.("practice_next_ready") ||
                       "Great work! Keep the streak going."
-                    : t?.("practice_try_again_hint") || "Review and try again.")}
+                    : t?.("practice_try_again_hint") || "Review and try again."}
                 </Text>
               </Box>
               {/* Create Note Button - icon only */}
