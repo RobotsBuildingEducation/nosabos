@@ -1339,12 +1339,15 @@ export default function App() {
       setPathMode(
         ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path"
       );
-      lastPathTargetRef.current = resolvedTargetLang;
+      if (user) {
+        lastPathTargetRef.current = resolvedTargetLang;
+      }
       return;
     }
 
-    // Only apply mode-switching logic after initial load (when ref has been set)
+    // Only apply mode-switching logic when user is loaded AND language explicitly changed
     if (
+      user &&
       lastPathTargetRef.current !== null &&
       lastPathTargetRef.current !== resolvedTargetLang
     ) {
@@ -1355,8 +1358,11 @@ export default function App() {
       }
     }
 
-    lastPathTargetRef.current = resolvedTargetLang;
-  }, [pathMode, resolvedTargetLang]);
+    // Only update ref when user data is loaded (prevents false "change" detection on initial load)
+    if (user) {
+      lastPathTargetRef.current = resolvedTargetLang;
+    }
+  }, [pathMode, resolvedTargetLang, user]);
 
   // Tutorial mode state
   const [isTutorialMode, setIsTutorialMode] = useState(false);
