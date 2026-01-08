@@ -18,58 +18,44 @@ import {
 } from "react-icons/fa";
 import { RiBook2Line, RiPencilLine } from "react-icons/ri";
 import { MdOutlineDescription } from "react-icons/md";
+import { t } from "../utils/translation";
 
-// Module configuration with icons, colors, and descriptions
+// Module configuration with icons, colors, and translation keys
 const MODULE_CONFIG = {
   vocabulary: {
     icon: RiBook2Line,
     color: "#10B981",
-    label: { en: "Vocabulary", es: "Vocabulario" },
-    shortLabel: { en: "Vocab", es: "Vocab" },
-    description: {
-      en: "Learn new words through interactive questions.",
-      es: "Aprende nuevas palabras mediante preguntas interactivas.",
-    },
+    labelKey: "module_vocabulary_label",
+    shortLabelKey: "module_vocabulary_short",
+    descriptionKey: "module_vocabulary_desc",
   },
   grammar: {
     icon: RiPencilLine,
     color: "#3B82F6",
-    label: { en: "Grammar", es: "Gramática" },
-    shortLabel: { en: "Grammar", es: "Gram" },
-    description: {
-      en: "Master grammar rules through exercises.",
-      es: "Domina las reglas gramaticales mediante ejercicios.",
-    },
+    labelKey: "module_grammar_label",
+    shortLabelKey: "module_grammar_short",
+    descriptionKey: "module_grammar_desc",
   },
   reading: {
     icon: FaBookOpen,
     color: "#F59E0B",
-    label: { en: "Reading", es: "Lectura" },
-    shortLabel: { en: "Read", es: "Leer" },
-    description: {
-      en: "Improve your reading skills by following along with passages.",
-      es: "Mejora tus habilidades de lectura siguiendo los textos.",
-    },
+    labelKey: "module_reading_label",
+    shortLabelKey: "module_reading_short",
+    descriptionKey: "module_reading_desc",
   },
   stories: {
     icon: MdOutlineDescription,
     color: "#EC4899",
-    label: { en: "Stories", es: "Historias" },
-    shortLabel: { en: "Story", es: "Historia" },
-    description: {
-      en: "Practice with interactive stories by reading and speaking sentence by sentence.",
-      es: "Practica con historias interactivas leyendo y hablando oración por oración.",
-    },
+    labelKey: "module_stories_label",
+    shortLabelKey: "module_stories_short",
+    descriptionKey: "module_stories_desc",
   },
   realtime: {
     icon: FaMicrophone,
     color: "#8B5CF6",
-    label: { en: "Chat", es: "Chat" },
-    shortLabel: { en: "Chat", es: "Hablar" },
-    description: {
-      en: "Practice speaking with realtime conversations.",
-      es: "Practica la expresión oral con conversaciones en tiempo real.",
-    },
+    labelKey: "module_realtime_label",
+    shortLabelKey: "module_realtime_short",
+    descriptionKey: "module_realtime_desc",
   },
 };
 
@@ -94,10 +80,8 @@ export default function TutorialStepper({
         ? tutorialDescription[supportLang] || tutorialDescription.en
         : tutorialDescription;
     }
-    if (currentConfig?.description) {
-      return (
-        currentConfig.description[supportLang] || currentConfig.description.en
-      );
+    if (currentConfig?.descriptionKey) {
+      return t(supportLang, currentConfig.descriptionKey);
     }
     return null;
   };
@@ -191,8 +175,8 @@ export default function TutorialStepper({
                     whiteSpace="nowrap"
                   >
                     {isMobile
-                      ? config?.shortLabel?.[lang] || module
-                      : config?.label?.[lang] || module}
+                      ? (config?.shortLabelKey ? t(supportLang, config.shortLabelKey) : module)
+                      : (config?.labelKey ? t(supportLang, config.labelKey) : module)}
                   </Text>
                 </VStack>
               </React.Fragment>
@@ -227,15 +211,15 @@ export default function TutorialStepper({
                 fontWeight="bold"
                 color={currentConfig.color || "white"}
               >
-                {currentConfig.label?.[supportLang] ||
-                  currentConfig.label?.en ||
-                  validModule}
+                {currentConfig.labelKey
+                  ? t(supportLang, currentConfig.labelKey)
+                  : validModule}
               </Text>
               <Text fontSize="sm" color="gray.300" lineHeight="1.4">
                 {description ||
-                  currentConfig.description?.[supportLang] ||
-                  currentConfig.description?.en ||
-                  "No description available"}
+                  (currentConfig.descriptionKey
+                    ? t(supportLang, currentConfig.descriptionKey)
+                    : "No description available")}
               </Text>
             </VStack>
           </Flex>
