@@ -639,12 +639,14 @@ function LetterCard({
           sx={{ backfaceVisibility: "hidden" }}
         >
           {/* Star counter */}
-          <HStack spacing={1} position="absolute" top={3} left={3}>
-            <RiStarFill size={14} color="cyan" />
-            <Text fontSize="xs" fontWeight="bold">
-              {correctCount}
-            </Text>
-          </HStack>
+          {correctCount === 0 ? null : (
+            <HStack spacing={1} position="absolute" top={3} left={3}>
+              <RiStarFill size={14} color="cyan" />
+              <Text fontSize="xs" fontWeight="bold">
+                {correctCount}
+              </Text>
+            </HStack>
+          )}
 
           <HStack justify="space-between" w="100%">
             <Badge colorScheme={typeColor} borderRadius="md" px={2} py={1}>
