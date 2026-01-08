@@ -1187,18 +1187,18 @@ export default function AlphabetBootcamp({
                 {/* Deck thickness indicator - stacked edges below */}
                 {deck.length > 1 && (
                   <Box
-                    mx={2}
-                    mt={-1}
                     position="relative"
                     zIndex={1}
+                    mt="-8px"
+                    mx="1px"
                   >
-                    {[...Array(Math.min(deck.length - 1, 6))].map((_, i) => (
+                    {[...Array(Math.min(deck.length - 1, 8))].map((_, i) => (
                       <Box
                         key={i}
-                        h="3px"
-                        bg={`gray.${600 + i * 50}`}
-                        borderBottomRadius={i === Math.min(deck.length - 2, 5) ? "md" : "none"}
-                        mx={`${i * 2}px`}
+                        h="4px"
+                        bg={i % 2 === 0 ? "gray.600" : "gray.700"}
+                        borderBottomRadius={i === Math.min(deck.length - 2, 7) ? "lg" : "none"}
+                        mx={`${i * 1}px`}
                       />
                     ))}
                   </Box>
