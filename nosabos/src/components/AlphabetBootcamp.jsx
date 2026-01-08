@@ -1236,11 +1236,7 @@ export default function AlphabetBootcamp({
                 </VStack>
               </Flex>
               {isComplete && (
-                <Button
-                  colorScheme="teal"
-                  size="lg"
-                  onClick={onStartSkillTree}
-                >
+                <Button colorScheme="teal" size="lg" onClick={onStartSkillTree}>
                   {appLanguage === "es"
                     ? "Iniciar árbol de habilidades"
                     : "Start skill tree"}
