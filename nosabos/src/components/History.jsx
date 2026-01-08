@@ -771,6 +771,10 @@ export default function History({
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
+  // TTS word highlighting state
+  const [highlightedWordIndex, setHighlightedWordIndex] = useState(-1);
+  const highlightIntervalRef = useRef(null);
+
   // Refs for audio
   const currentAudioRef = useRef(null);
 
@@ -1187,14 +1191,36 @@ export default function History({
         currentAudioRef.current = null;
       }
     } catch {}
+    // Clear highlight tracking
+    if (highlightIntervalRef.current) {
+      clearInterval(highlightIntervalRef.current);
+      highlightIntervalRef.current = null;
+    }
+    setHighlightedWordIndex(-1);
     setIsReadingTarget(false);
   };
 
-  async function speak({ text, langTag, setReading, setSynthesizing, onDone }) {
+  async function speak({
+    text,
+    langTag,
+    setReading,
+    setSynthesizing,
+    onDone,
+    enableHighlighting = false,
+  }) {
     stopSpeech();
     if (!text) return;
     setReading(true);
     setSynthesizing?.(true);
+
+    // Split text into words for highlighting
+    const words = text.split(/\s+/).filter(Boolean);
+    const totalWords = words.length;
+
+    // Estimate speaking rate: ~2.5 words per second for TTS
+    // Adjust slightly based on language (some languages are faster/slower)
+    const wordsPerSecond = langTag?.startsWith("ja") ? 3.0 : 2.5;
+    const estimatedDuration = totalWords / wordsPerSecond;
 
     try {
       const player = await getTTSPlayer({
@@ -1207,6 +1233,12 @@ export default function History({
       currentAudioRef.current = player.audio;
 
       const cleanup = () => {
+        // Clear highlight tracking
+        if (highlightIntervalRef.current) {
+          clearInterval(highlightIntervalRef.current);
+          highlightIntervalRef.current = null;
+        }
+        setHighlightedWordIndex(-1);
         setReading(false);
         currentAudioRef.current = null;
         player.cleanup?.();
@@ -1219,11 +1251,35 @@ export default function History({
 
       await player.ready;
       setSynthesizing?.(false);
+
+      // Start word highlighting if enabled
+      if (enableHighlighting && totalWords > 0) {
+        const startTime = Date.now();
+        setHighlightedWordIndex(0);
+
+        highlightIntervalRef.current = setInterval(() => {
+          const elapsed = (Date.now() - startTime) / 1000;
+          const progress = elapsed / estimatedDuration;
+          const wordIndex = Math.min(
+            Math.floor(progress * totalWords),
+            totalWords - 1
+          );
+          setHighlightedWordIndex(wordIndex);
+
+          // Stop interval when we reach the end
+          if (wordIndex >= totalWords - 1) {
+            clearInterval(highlightIntervalRef.current);
+            highlightIntervalRef.current = null;
+          }
+        }, 100); // Update every 100ms for smooth highlighting
+      }
+
       await player.audio.play();
       return;
     } catch {
       setSynthesizing?.(false);
       setReading(false);
+      setHighlightedWordIndex(-1);
       onDone?.();
     }
   }
@@ -1235,6 +1291,7 @@ export default function History({
       onDone: () => {},
       setReading: setIsReadingTarget,
       setSynthesizing: setIsSynthesizingTarget,
+      enableHighlighting: true,
     });
 
   const xpReasonText =
@@ -1388,7 +1445,25 @@ export default function History({
                 </Box>
 
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {viewLecture.target || ""}
+                  {isReadingTarget && highlightedWordIndex >= 0
+                    ? (viewLecture.target || "").split(/\s+/).map((word, idx) => (
+                        <Text
+                          as="span"
+                          key={idx}
+                          bg={
+                            idx === highlightedWordIndex
+                              ? "teal.500"
+                              : "transparent"
+                          }
+                          color={idx === highlightedWordIndex ? "white" : "inherit"}
+                          borderRadius="sm"
+                          px={idx === highlightedWordIndex ? "1" : "0"}
+                          transition="background 0.1s ease-in-out"
+                        >
+                          {word}{" "}
+                        </Text>
+                      ))
+                    : viewLecture.target || ""}
                 </Text>
 
                 {showTranslations && viewLecture.support ? (
