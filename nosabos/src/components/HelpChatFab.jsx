@@ -187,6 +187,38 @@ const HelpChatFab = forwardRef(
     const toast = useToast();
 
     const ui = translations[appLanguage] || translations.en;
+    const fallback = translations.en || {};
+    const helpChatErrorFallback =
+      ui.help_chat_error_fallback ||
+      fallback.help_chat_error_fallback ||
+      "Sorry, I couldn’t complete that request. Please try again.";
+    const helpChatErrorTitle =
+      ui.help_chat_error_title || fallback.help_chat_error_title || "Chat error";
+    const helpChatConnectionErrorTitle =
+      ui.help_chat_connection_error_title ||
+      fallback.help_chat_connection_error_title ||
+      "Connection error";
+    const helpChatTooltip = ui.help_chat_tooltip || fallback.help_chat_tooltip;
+    const helpChatTitle =
+      ui.help_chat_title || fallback.help_chat_title || "Quick Help";
+    const helpChatIntro =
+      ui.help_chat_intro ||
+      fallback.help_chat_intro ||
+      "Ask a quick question. I’ll give a short explanation in your support language and then answer in your practice language; if enabled, I’ll also include a brief translation into your support language.";
+    const helpChatReplay =
+      ui.help_chat_replay || fallback.help_chat_replay || "Replay response";
+    const helpChatVoiceStop =
+      ui.help_chat_voice_stop || fallback.help_chat_voice_stop || "Stop voice chat";
+    const helpChatVoiceStart =
+      ui.help_chat_voice_start || fallback.help_chat_voice_start || "Start voice chat";
+    const helpChatVoiceActivePlaceholder =
+      ui.help_chat_voice_active_placeholder ||
+      fallback.help_chat_voice_active_placeholder ||
+      "Voice chat active…";
+    const helpChatInputPlaceholder =
+      ui.help_chat_input_placeholder ||
+      fallback.help_chat_input_placeholder ||
+      "Type your question…";
 
     const [input, setInput] = useState("");
     const [sending, setSending] = useState(false);
@@ -453,16 +485,12 @@ const HelpChatFab = forwardRef(
           console.error("HelpChat streaming error:", e);
           patchLastAssistant((m) => ({
             ...m,
-            text:
-              m.text ||
-              (appLanguage === "es"
-                ? "Lo siento, no pude completar esa solicitud. Inténtalo nuevamente."
-                : "Sorry, I couldn’t complete that request. Please try again."),
+            text: m.text || helpChatErrorFallback,
             done: true,
           }));
           toast({
             status: "error",
-            title: appLanguage === "es" ? "Error de chat" : "Chat error",
+            title: helpChatErrorTitle,
             description: String(e?.message || e),
           });
         } finally {
@@ -819,8 +847,7 @@ const HelpChatFab = forwardRef(
         setRealtimeStatus("disconnected");
         toast({
           status: "error",
-          title:
-            appLanguage === "es" ? "Error de conexión" : "Connection error",
+          title: helpChatConnectionErrorTitle,
           description: e?.message || String(e),
         });
       }
@@ -961,7 +988,7 @@ const HelpChatFab = forwardRef(
       <>
         {/* Floating button */}
         {showFloatingTrigger && (
-          <Tooltip label={appLanguage === "es" ? "Ayuda" : "Help"}>
+          <Tooltip label={helpChatTooltip || "Help"}>
             <IconButton
               aria-label="Open help chat"
               icon={<MdOutlineSupportAgent size={20} />}
@@ -998,7 +1025,7 @@ const HelpChatFab = forwardRef(
             flexDirection="column"
           >
             <ModalHeader>
-              {appLanguage === "es" ? "Ayuda rápida" : "Quick Help"}
+              {helpChatTitle}
             </ModalHeader>
             <ModalCloseButton />
 
@@ -1023,9 +1050,7 @@ const HelpChatFab = forwardRef(
                     border="1px solid"
                     borderColor="gray.700"
                   >
-                    {appLanguage === "es"
-                      ? "Haz una pregunta rápida. Te daré una breve explicación en tu idioma de apoyo y luego responderé en tu idioma de práctica; si está activado, también incluiré una traducción corta a tu idioma de apoyo."
-                      : "Ask a quick question. I’ll give a short explanation in your support language and then answer in your practice language; if enabled, I’ll also include a brief translation into your support language."}
+                    {helpChatIntro}
                   </Box>
                 )}
 
@@ -1057,11 +1082,7 @@ const HelpChatFab = forwardRef(
                       >
                         <HStack align="flex-start" spacing={3}>
                           <IconButton
-                            aria-label={
-                              appLanguage === "es"
-                                ? "Reproducir respuesta"
-                                : "Replay response"
-                            }
+                            aria-label={helpChatReplay}
                             icon={
                               replayLoadingId === m.id ? (
                                 <Spinner size="sm" />
@@ -1106,12 +1127,8 @@ const HelpChatFab = forwardRef(
                 <IconButton
                   aria-label={
                     realtimeStatus === "connected"
-                      ? appLanguage === "es"
-                        ? "Detener chat de voz"
-                        : "Stop voice chat"
-                      : appLanguage === "es"
-                      ? "Iniciar chat de voz"
-                      : "Start voice chat"
+                      ? helpChatVoiceStop
+                      : helpChatVoiceStart
                   }
                   icon={
                     realtimeStatus === "connected" ? (
@@ -1134,12 +1151,8 @@ const HelpChatFab = forwardRef(
                 <Input
                   placeholder={
                     realtimeStatus === "connected"
-                      ? appLanguage === "es"
-                        ? "Chat de voz activo…"
-                        : "Voice chat active…"
-                      : appLanguage === "es"
-                      ? "Escribe tu pregunta…"
-                      : "Type your question…"
+                      ? helpChatVoiceActivePlaceholder
+                      : helpChatInputPlaceholder
                   }
                   value={input}
                   onChange={(e) => setInput(e.target.value)}

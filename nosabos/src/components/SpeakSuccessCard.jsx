@@ -9,7 +9,6 @@ export function SpeakSuccessCard({
   recognizedText = "",
   translation = "",
   t,
-  userLanguage = "en",
 }) {
   if (!title && !scoreLabel) return null;
 
@@ -18,11 +17,9 @@ export function SpeakSuccessCard({
       ? (t("practice_speak_banner_xp", { xp }) || `+${xp} XP`)
       : "";
   const saidLabel =
-    t("practice_speak_banner_you_said") ||
-    (userLanguage === "es" ? "Dijiste" : "You said");
+    t("practice_speak_banner_you_said") || "You said";
   const translationLabel =
-    t("practice_speak_banner_translation") ||
-    (userLanguage === "es" ? "Significado" : "Meaning");
+    t("practice_speak_banner_translation") || "Meaning";
 
   return (
     <Box

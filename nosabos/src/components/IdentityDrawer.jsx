@@ -41,7 +41,7 @@ import { database } from "../firebaseResources/firebaseResources";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
-import { translations } from "../utils/translation";
+import { normalizeLanguageCode, t as translate } from "../utils/translation";
 
 export default function IdentityDrawer({
   isOpen,
@@ -65,8 +65,23 @@ export default function IdentityDrawer({
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
 
-  const lang = appLanguage === "es" ? "es" : "en";
-  const ui = useMemo(() => translations[lang] || translations.en, [lang]);
+  const lang = normalizeLanguageCode(appLanguage) || "en";
+  const locale = useMemo(
+    () =>
+      ({
+        en: "en-US",
+        es: "es",
+        pt: "pt-BR",
+        fr: "fr-FR",
+        it: "it-IT",
+        nl: "nl-NL",
+        nah: "es",
+        ja: "ja-JP",
+        ru: "ru-RU",
+        de: "de-DE",
+      }[lang] || "en-US"),
+    [lang]
+  );
 
   // Mirror identity props for display
   const [currentId, setCurrentId] = useState(activeNpub || "");
@@ -160,9 +175,7 @@ export default function IdentityDrawer({
 
   const cefrTimestamp =
     cefrResult?.updatedAt &&
-    new Date(cefrResult.updatedAt).toLocaleString(
-      appLanguage === "es" ? "es" : "en-US"
-    );
+    new Date(cefrResult.updatedAt).toLocaleString(locale);
   const installSteps = useMemo(
     () => [
       {
@@ -313,14 +326,11 @@ export default function IdentityDrawer({
                 </Box>
                 <VStack align="start" spacing={0} flex={1}>
                   <Text fontWeight="semibold" fontSize="sm">
-                    {appLanguage === "es"
-                      ? "Apóyanos en Patreon"
-                      : "Join  us on Patreon"}
+                    {t?.patreon_title || "Join us on Patreon"}
                   </Text>
                   <Text fontSize="xs" color="gray.400">
-                    {appLanguage === "es"
-                      ? "Accede a más apps educativas y contenido"
-                      : "Access more education apps and content"}
+                    {t?.patreon_subtitle ||
+                      "Access more education apps and content"}
                   </Text>
                 </VStack>
                 <Button
@@ -333,8 +343,8 @@ export default function IdentityDrawer({
                       "_blank"
                     )
                   }
-                >
-                  {appLanguage === "es" ? "Unirse" : "Join"}
+                  >
+                  {t?.patreon_join || "Join"}
                 </Button>
               </HStack>
             </Box>
@@ -362,9 +372,7 @@ export default function IdentityDrawer({
                         fontWeight="semibold"
                         textShadow="0px 0px 24px black"
                       >
-                        {appLanguage === "es"
-                          ? "Billetera Bitcoin (experimental)"
-                          : "Bitcoin wallet (experimental)"}
+                        {t?.wallet_title || "Bitcoin wallet (experimental)"}
                       </Text>
                     </Flex>
                     <AccordionIcon />
@@ -562,69 +570,20 @@ export function BitcoinWalletSection({
     return Number.isFinite(numeric) ? numeric : 0;
   }, [walletBalance]);
 
-  const W = (key) => {
-    const es = {
-      createWallet: "Crear billetera",
-      loadingWallet: "Creando billetera…",
-      deposit: "Depositar",
-      loadingAddress: "Generando dirección…",
-      or: "o",
-      copyAddress: "Copiar dirección",
-      ps: "Usa una billetera Lightning compatible para pagar la factura.",
-      activeWalletTitle: "Tu billetera está activa",
-      activeWalletBody:
-        "Tu saldo aparece abajo. Puedes usarlo dentro de la app.",
-      activeWalletLink: "Conoce más",
-      generateNew: "Generar nuevo QR",
-      balanceLabel: "Saldo",
-      cardNameLabel: "Billetera",
-      scholarshipNote:
-        "Tus depósitos ayudan a crear becas con aprendizaje con ",
-      nip07NsecTitle: "Se requiere clave secreta",
-      nip07NsecDescription:
-        "Iniciaste sesión con una extensión de navegador, así que no tenemos acceso a tu clave privada. Para crear una billetera, ingresa tu nsec abajo.",
-      nip07NsecPlaceholder: "Ingresa tu nsec1...",
-      nip07NsecWarning:
-        "Tu clave solo se usa para crear la billetera y no se almacena.",
-    };
-    const en = {
-      createWallet: "Create wallet",
-      loadingWallet: "Creating wallet…",
-      deposit: "Deposit",
-      loadingAddress: "Generating address…",
-      or: "or",
-      copyAddress: "Copy address",
-      ps: "Use a compatible Lightning wallet to pay the invoice.",
-      activeWalletTitle: "Your wallet is active",
-      activeWalletBody: "Your balance is below. You can use it inside the app.",
-      activeWalletLink: "Learn more",
-      generateNew: "Generate New Address",
-      balanceLabel: "Balance",
-      cardNameLabel: "Wallet",
-      scholarshipNote:
-        "Your deposits help us create scholarships with learning with ",
-      nip07NsecTitle: "Secret key required",
-      nip07NsecDescription:
-        "You signed in with a browser extension, so we don't have access to your private key. To create a wallet, enter your nsec below.",
-      nip07NsecPlaceholder: "Enter your nsec1...",
-      nip07NsecWarning:
-        "Your key is only used to create the wallet and is not stored.",
-    };
-    return (userLanguage === "es" ? es : en)[key] ?? key;
-  };
+  const walletLang = normalizeLanguageCode(userLanguage) || "en";
+  const walletT = useCallback(
+    (key, vars) => translate(walletLang, key, vars),
+    [walletLang]
+  );
 
   const handleCreateWallet = async () => {
     // If NIP-07 mode and no nsec provided, show error
     if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
       toast({
-        title:
-          userLanguage === "es"
-            ? "Se requiere clave secreta"
-            : "Secret key required",
+        title: walletT("wallet_nip07_title") || "Secret key required",
         description:
-          userLanguage === "es"
-            ? "Ingresa tu nsec para crear la billetera."
-            : "Enter your nsec to create the wallet.",
+          walletT("wallet_secret_required_desc") ||
+          "Enter your nsec to create the wallet.",
         status: "warning",
         duration: 2500,
       });
@@ -634,11 +593,9 @@ export function BitcoinWalletSection({
     // Validate nsec format if provided
     if (nsecForWallet.trim() && !nsecForWallet.trim().startsWith("nsec")) {
       toast({
-        title: userLanguage === "es" ? "Clave inválida" : "Invalid key",
+        title: walletT("toast_invalid_key") || "Invalid key",
         description:
-          userLanguage === "es"
-            ? "La clave debe empezar con 'nsec'."
-            : "Key must start with 'nsec'.",
+          walletT("toast_must_start_nsec") || "Key must start with 'nsec'.",
         status: "error",
         duration: 2500,
       });
@@ -672,17 +629,11 @@ export function BitcoinWalletSection({
 
   const ensureIdentitySelected = () => {
     if (!selectedIdentity) {
-      const title =
-        userLanguage === "es"
-          ? "Selecciona una identidad"
-          : "Select an identity";
-      const description =
-        userLanguage === "es"
-          ? "Elige un destinatario para tus depósitos."
-          : "Choose who receives your deposits before continuing.";
       toast({
-        title,
-        description,
+        title: walletT("wallet_select_identity_title") || "Select an identity",
+        description:
+          walletT("wallet_select_identity_desc") ||
+          "Choose who receives your deposits before continuing.",
         status: "info",
         duration: 2200,
       });
@@ -727,11 +678,10 @@ export function BitcoinWalletSection({
     try {
       await navigator.clipboard.writeText(invoice || "");
       toast({
-        title: userLanguage === "es" ? "Dirección copiada" : "Address copied",
+        title: walletT("wallet_address_copied_title") || "Address copied",
         description:
-          userLanguage === "es"
-            ? "La factura Lightning se copió al portapapeles."
-            : "Lightning invoice copied to clipboard.",
+          walletT("wallet_address_copied_desc") ||
+          "Lightning invoice copied to clipboard.",
         status: "warning",
         duration: 1500,
         isClosable: true,
@@ -751,8 +701,7 @@ export function BitcoinWalletSection({
       await Promise.resolve(onSelectIdentity?.(nextIdentity));
       setSelectedIdentity(nextIdentity);
       toast({
-        title:
-          userLanguage === "es" ? "Identidad actualizada" : "Identity updated",
+        title: walletT("wallet_identity_updated_title") || "Identity updated",
         status: "success",
         duration: 1600,
       });
@@ -761,9 +710,8 @@ export function BitcoinWalletSection({
       setSelectedIdentity(previousIdentity || "");
       toast({
         title:
-          userLanguage === "es"
-            ? "No se pudo actualizar"
-            : "Could not update identity",
+          walletT("wallet_identity_update_failed_title") ||
+          "Could not update identity",
         description: error?.message || String(error),
         status: "error",
         duration: 2600,
@@ -775,13 +723,12 @@ export function BitcoinWalletSection({
   return (
     <Box bg="gray.800" rounded="md" p={3} mx={1}>
       <Text mb={2} fontSize="sm" fontWeight="bold">
-        {userLanguage === "es"
-          ? "Billetera Bitcoin (experimental)"
-          : "Bitcoin wallet (experimental)"}
+        {walletT("wallet_title") || "Bitcoin wallet (experimental)"}
       </Text>
 
       <Text fontSize="xs" color="teal.100" mb={3}>
-        {W("scholarshipNote")}{" "}
+        {walletT("wallet_scholarship_note") ||
+          "Your deposits help us create scholarships with learning with "}
         <Link
           href="https://robotsbuildingeducation.com"
           isExternal
@@ -793,9 +740,8 @@ export function BitcoinWalletSection({
 
       <Box bg="gray.900" p={3} rounded="md" mb={3}>
         <Text fontSize="sm" mb={2}>
-          {userLanguage === "es"
-            ? "Elige a quién apoyar con tus depósitos:"
-            : "Choose who you’d like to support with your deposits:"}
+          {walletT("wallet_select_identity_label") ||
+            "Choose who you’d like to support with your deposits:"}
         </Text>
         <RadioGroup
           value={selectedIdentity}
@@ -824,7 +770,7 @@ export function BitcoinWalletSection({
                       display="inline-block"
                       mt={1}
                     >
-                      {userLanguage === "es" ? "Ver sitio" : "View site"}
+                      {walletT("wallet_view_site") || "View site"}
                     </Link>
                   ) : null}
                 </Box>
@@ -834,9 +780,8 @@ export function BitcoinWalletSection({
         </RadioGroup>
         {!selectedIdentity && (
           <Text fontSize="xs" mt={2} color="orange.200">
-            {userLanguage === "es"
-              ? "Selecciona una opción para habilitar los depósitos."
-              : "Select an option to enable deposits."}
+            {walletT("wallet_select_identity_hint") ||
+              "Select an option to enable deposits."}
           </Text>
         )}
       </Box>
@@ -846,7 +791,7 @@ export function BitcoinWalletSection({
         <HStack py={2}>
           <Spinner size="sm" />
           <Text fontSize="sm">
-            {userLanguage === "es" ? "Cargando billetera…" : "Loading wallet…"}
+            {walletT("wallet_loading_wallet") || "Loading wallet…"}
           </Text>
         </HStack>
       )}
@@ -860,35 +805,39 @@ export function BitcoinWalletSection({
               <HStack mb={2}>
                 <FaKey color="#f08e19" />
                 <Text fontSize="sm" fontWeight="semibold">
-                  {W("nip07NsecTitle")}
+                  {walletT("wallet_nip07_title") || "Secret key required"}
                 </Text>
               </HStack>
               <Text fontSize="xs" color="gray.300" mb={3}>
-                {W("nip07NsecDescription")}
+                {walletT("wallet_nip07_description") ||
+                  "You signed in with a browser extension, so we don't have access to your private key. To create a wallet, enter your nsec below."}
               </Text>
               <Input
                 type="password"
                 value={nsecForWallet}
                 onChange={(e) => setNsecForWallet(e.target.value)}
-                placeholder={W("nip07NsecPlaceholder")}
+                placeholder={
+                  walletT("wallet_nip07_placeholder") || "Enter your nsec1..."
+                }
                 bg="gray.800"
                 borderColor="gray.600"
                 _focus={{ borderColor: "orange.400" }}
                 mb={2}
               />
               <Text fontSize="xs" color="orange.200">
-                {W("nip07NsecWarning")}
+                {walletT("wallet_nip07_warning") ||
+                  "Your key is only used to create the wallet and is not stored."}
               </Text>
             </Box>
           )}
           <Button
             onClick={handleCreateWallet}
             isLoading={isCreatingWallet}
-            loadingText={W("loadingWallet")}
+            loadingText={walletT("wallet_loading") || "Creating wallet…"}
             boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
             isDisabled={isNip07Mode && noWalletFound && !nsecForWallet.trim()}
           >
-            {W("createWallet")}
+            {walletT("wallet_create") || "Create wallet"}
           </Button>
         </Box>
       )}
@@ -897,22 +846,24 @@ export function BitcoinWalletSection({
       {cashuWallet && totalBalance > 0 && (
         <>
           <Text mb={2} fontSize="sm">
-            {W("activeWalletBody")}{" "}
+            {walletT("wallet_active_body") ||
+              "Your balance is below. You can use it inside the app."}{" "}
             <Link
               href="https://nutlife.lol"
               target="_blank"
               textDecoration="underline"
             >
-              {W("activeWalletLink")}
+              {walletT("wallet_active_link") || "Learn more"}
             </Link>
           </Text>
           <IdentityCard
             number={cashuWallet.walletId}
             name={
               <div>
-                {W("cardNameLabel")}
+                {walletT("wallet_card_name_label") || "Wallet"}
                 <div>
-                  {W("balanceLabel")}: {totalBalance || 0} sats
+                  {walletT("wallet_balance_label") || "Balance"}:{" "}
+                  {totalBalance || 0} sats
                 </div>
               </div>
             }
@@ -933,12 +884,13 @@ export function BitcoinWalletSection({
                 number={cashuWallet.walletId}
                 name={
                   <div>
-                    {W("cardNameLabel")}
-                    <div>
-                      {W("balanceLabel")}: {totalBalance || 0} sats
-                    </div>
-                  </div>
-                }
+                {walletT("wallet_card_name_label") || "Wallet"}
+                <div>
+                  {walletT("wallet_balance_label") || "Balance"}:{" "}
+                  {totalBalance || 0} sats
+                </div>
+              </div>
+            }
                 theme="BTC"
                 animateOnChange={false}
                 realValue={cashuWallet.walletId}
@@ -952,7 +904,7 @@ export function BitcoinWalletSection({
                 maxWidth="400px"
                 p={6}
               >
-                {W("deposit")}
+                {walletT("wallet_deposit") || "Deposit"}
               </Button>
             </Box>
           )}
@@ -961,17 +913,18 @@ export function BitcoinWalletSection({
             <VStack mt={2}>
               <QRCodeSVG value={invoice} size={256} style={{ zIndex: 10 }} />
               <Box mt={2}>
-                {W("or")} &nbsp;
+                {walletT("wallet_or") || "or"} &nbsp;
                 <Button
                   onClick={handleCopyInvoice}
                   boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
                 >
-                  🔑 {W("copyAddress")}
+                  🔑 {walletT("wallet_copy_address") || "Copy address"}
                 </Button>
               </Box>
               <br />
               <Text fontSize="sm" opacity={0.8} textAlign={"center"}>
-                {W("ps")}
+                {walletT("wallet_ps") ||
+                  "Use a compatible Lightning wallet to pay the invoice."}
                 <br />
 
                 <Link
@@ -997,7 +950,7 @@ export function BitcoinWalletSection({
                 leftIcon={<BsQrCode />}
                 boxShadow="0.5px 0.5px 1px 0px rgba(0,0,0,0.75)"
               >
-                {W("generateNew")}
+                {walletT("wallet_generate_new") || "Generate New Address"}
               </Button>
             </VStack>
           )}
