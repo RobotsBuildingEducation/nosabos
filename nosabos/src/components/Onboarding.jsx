@@ -147,12 +147,12 @@ export default function Onboarding({
     ui.ra_vad_label ||
     (supportLang === "es" ? "Pausa entre turnos" : "Pause between replies");
   const VAD_HINT =
-    ui.onboarding_vad_hint ||
-    (supportLang === "es"
-      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
-      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+    ui.onboarding_vad_hint || translations.en.onboarding_vad_hint;
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
-  const secondsLabel = supportLang === "es" ? "segundos" : "seconds";
+  const secondsLabel =
+    ui.onboarding_vad_seconds_label ||
+    translations.en.onboarding_vad_seconds_label ||
+    "seconds";
 
   return (
     <Box

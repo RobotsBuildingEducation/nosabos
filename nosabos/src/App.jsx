@@ -472,13 +472,13 @@ function TopBar({
   const [practicePronunciation, setPracticePronunciation] = useState(
     !!p.practicePronunciation
   );
-  const vadSecondsLabel = appLanguage === "es" ? "segundos" : "seconds";
+  const vadSecondsLabel =
+    t.onboarding_vad_seconds_label ||
+    translations.en.onboarding_vad_seconds_label ||
+    "seconds";
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const vadHint =
-    t.onboarding_vad_hint ||
-    (appLanguage === "es"
-      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
-      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+    t.onboarding_vad_hint || translations.en.onboarding_vad_hint;
   const supportLangLabel = `${
     t.onboarding_support_language_title || "Support Language"
   }: ${getLanguageLabel(appLanguage, supportLang)}`;

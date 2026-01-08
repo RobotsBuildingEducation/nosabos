@@ -662,6 +662,9 @@ export const translations = {
     notes_summary: "Summary",
     notes_lesson: "Lesson",
     notes_no_notes: "No notes",
+    onboarding_vad_hint:
+      "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.",
+    onboarding_vad_seconds_label: "seconds",
     alphabet_headline: "{language} Alphabet",
     alphabet_subhead: "Start by learning {language} letters and sounds.",
     alphabet_note:
@@ -1360,6 +1363,9 @@ export const translations = {
     notes_summary: "Resumen",
     notes_lesson: "Lección",
     notes_no_notes: "Sin notas",
+    onboarding_vad_hint:
+      "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
+    onboarding_vad_seconds_label: "segundos",
     alphabet_headline: "Alfabeto de {language}",
     alphabet_subhead: "Empieza aprendiendo las letras y sonidos del {language}.",
     alphabet_note:
@@ -1930,6 +1936,9 @@ export const translations = {
     notes_summary: "Resumo",
     notes_lesson: "Lição",
     notes_no_notes: "Sem notas",
+    onboarding_vad_hint:
+      "Mais curta = mais sensível; mais longa = dá tempo para terminar de falar. 1,2 segundos é o recomendado para fala natural.",
+    onboarding_vad_seconds_label: "segundos",
     alphabet_headline: "Alfabeto de {language}",
     alphabet_subhead: "Comece aprendendo as letras e sons do {language}.",
     alphabet_note:
@@ -2500,6 +2509,9 @@ export const translations = {
     notes_summary: "Résumé",
     notes_lesson: "Leçon",
     notes_no_notes: "Pas de notes",
+    onboarding_vad_hint:
+      "Plus court = plus réactif ; plus long = vous laisse finir de parler. 1,2 seconde est recommandé pour une parole naturelle.",
+    onboarding_vad_seconds_label: "secondes",
     alphabet_headline: "Alphabet {language}",
     alphabet_subhead: "Commencez par apprendre les lettres et les sons du {language}.",
     alphabet_note:
@@ -3070,6 +3082,9 @@ export const translations = {
     notes_summary: "Riepilogo",
     notes_lesson: "Lezione",
     notes_no_notes: "Nessuna nota",
+    onboarding_vad_hint:
+      "Più breve = più reattivo; più lungo = ti lascia finire di parlare. 1,2 secondi è consigliato per un parlato naturale.",
+    onboarding_vad_seconds_label: "secondi",
     alphabet_headline: "Alfabeto di {language}",
     alphabet_subhead: "Inizia imparando le lettere e i suoni del {language}.",
     alphabet_note:
@@ -3640,6 +3655,9 @@ export const translations = {
     notes_summary: "Samenvatting",
     notes_lesson: "Les",
     notes_no_notes: "Geen notities",
+    onboarding_vad_hint:
+      "Korter = meer responsief; langer = geeft je tijd om uit te spreken. 1,2 seconden wordt aanbevolen voor natuurlijke spraak.",
+    onboarding_vad_seconds_label: "seconden",
     alphabet_headline: "Alfabet van {language}",
     alphabet_subhead: "Begin met het leren van de letters en klanken van het {language}.",
     alphabet_note:
@@ -3704,6 +3722,9 @@ export const translations = {
     module_realtime_label: "Tlahtoa",
     module_flashcard_label: "Amatl",
     notes_drawer_title: "Notlahcuilol",
+    onboarding_vad_hint:
+      "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural.",
+    onboarding_vad_seconds_label: "segundos",
     alphabet_headline: "Alfabeto de {language}",
     alphabet_subhead: "Empieza aprendiendo las letras y sonidos del {language}.",
     alphabet_note:
@@ -4274,6 +4295,9 @@ export const translations = {
     notes_summary: "要約",
     notes_lesson: "レッスン",
     notes_no_notes: "ノートなし",
+    onboarding_vad_hint:
+      "短いほど反応が速く、長いほど話し終える時間ができます。自然な発話には1.2秒がおすすめです。",
+    onboarding_vad_seconds_label: "秒",
     alphabet_headline: "{language}のアルファベット",
     alphabet_subhead: "{language}の文字と音から始めましょう。",
     alphabet_note:
@@ -4844,6 +4868,9 @@ export const translations = {
     notes_summary: "Резюме",
     notes_lesson: "Урок",
     notes_no_notes: "Нет заметок",
+    onboarding_vad_hint:
+      "Короче — быстрее реагирует; длиннее — дает время закончить речь. 1,2 секунды рекомендуется для естественной речи.",
+    onboarding_vad_seconds_label: "секунд",
     alphabet_headline: "Алфавит {language}",
     alphabet_subhead: "Начните с изучения букв и звуков {language}.",
     alphabet_note:
@@ -5238,6 +5265,9 @@ export const translations = {
     notes_summary: "Zusammenfassung",
     notes_lesson: "Lektion",
     notes_no_notes: "Keine Notizen",
+    onboarding_vad_hint:
+      "Kürzer = reaktionsschneller; länger = gibt dir Zeit, auszusprechen. 1,2 Sekunden werden für natürliches Sprechen empfohlen.",
+    onboarding_vad_seconds_label: "Sekunden",
     alphabet_headline: "{language}-Alphabet",
     alphabet_subhead: "Beginnen Sie mit den Buchstaben und Lauten des {language}.",
     alphabet_note:
