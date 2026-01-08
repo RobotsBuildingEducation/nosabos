@@ -23,16 +23,38 @@ const buildLanguageMap = (primary = "", secondary = "") => {
   }, {});
 };
 
+const buildLanguageMapFromKeys = (entry, baseKey) => {
+  const hasAny = SUPPORTED_ALPHABET_LANGUAGES.some(
+    (lang) => entry?.[`${baseKey}_${lang}`]
+  );
+  if (!hasAny) return null;
+
+  return SUPPORTED_ALPHABET_LANGUAGES.reduce((acc, lang) => {
+    acc[lang] = entry?.[`${baseKey}_${lang}`] || "";
+    return acc;
+  }, {});
+};
+
 export const expandAlphabetEntry = (entry) => {
   if (!entry) return entry;
+  const keyedSound = buildLanguageMapFromKeys(entry, "sound");
+  const keyedTip = buildLanguageMapFromKeys(entry, "tip");
+  const keyedName = buildLanguageMapFromKeys(entry, "name");
   const soundLanguage =
     entry.sound_language ||
     entry.soundLanguage ||
+    keyedSound ||
     buildLanguageMap(entry.sound, entry.soundEs);
   const tipLanguage =
-    entry.tip_language || entry.tipLanguage || buildLanguageMap(entry.tip, entry.tipEs);
+    entry.tip_language ||
+    entry.tipLanguage ||
+    keyedTip ||
+    buildLanguageMap(entry.tip, entry.tipEs);
   const nameLanguage =
-    entry.name_language || entry.nameLanguage || buildLanguageMap(entry.name, entry.nameEs);
+    entry.name_language ||
+    entry.nameLanguage ||
+    keyedName ||
+    buildLanguageMap(entry.name, entry.nameEs);
 
   return {
     ...entry,
