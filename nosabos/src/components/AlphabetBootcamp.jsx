@@ -891,6 +891,7 @@ export default function AlphabetBootcamp({
   npub,
   languageXp = 0,
   pauseMs = 2000,
+  onStartSkillTree,
 }) {
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const playerRef = useRef(null);
@@ -927,6 +928,10 @@ export default function AlphabetBootcamp({
       ? "Después de esto, cambia al modo Ruta en el menú para explorar las lecciones."
       : "After this, switch to Path mode in the menu to explore lessons.";
   const hasLetters = Array.isArray(alphabet) && alphabet.length;
+  const isComplete =
+    hasLetters &&
+    deck.length === 0 &&
+    collectedLetters.length === alphabet.length;
 
   // XP progress calculations
   const xpLevelNumber = Math.floor(currentXp / 100) + 1;
@@ -1209,26 +1214,39 @@ export default function AlphabetBootcamp({
               </Box>
             </VStack>
           ) : (
-            <Flex
-              align="center"
-              justify="center"
-              bg="green.900"
-              borderRadius="lg"
-              border="1px solid"
-              borderColor="green.500"
-              p={6}
-              maxW="400px"
-              mx="auto"
-            >
-              <VStack spacing={2}>
-                <Text fontSize="2xl">🎉</Text>
-                <Text color="green.200" fontWeight="bold" textAlign="center">
+            <VStack spacing={4}>
+              <Flex
+                align="center"
+                justify="center"
+                bg="green.900"
+                borderRadius="lg"
+                border="1px solid"
+                borderColor="green.500"
+                p={6}
+                maxW="400px"
+                mx="auto"
+              >
+                <VStack spacing={2}>
+                  <Text fontSize="2xl">🎉</Text>
+                  <Text color="green.200" fontWeight="bold" textAlign="center">
+                    {appLanguage === "es"
+                      ? "¡Felicidades! Has completado el alfabeto."
+                      : "Congratulations! You've completed the alphabet."}
+                  </Text>
+                </VStack>
+              </Flex>
+              {isComplete && (
+                <Button
+                  colorScheme="teal"
+                  size="lg"
+                  onClick={onStartSkillTree}
+                >
                   {appLanguage === "es"
-                    ? "¡Felicidades! Has completado el alfabeto."
-                    : "Congratulations! You've completed the alphabet."}
-                </Text>
-              </VStack>
-            </Flex>
+                    ? "Iniciar árbol de habilidades"
+                    : "Start skill tree"}
+                </Button>
+              )}
+            </VStack>
           )}
 
           {/* Collection Section */}

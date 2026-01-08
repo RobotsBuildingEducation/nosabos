@@ -3928,6 +3928,7 @@ export default function App() {
               npub={activeNpub}
               languageXp={userProgress?.totalXp || 0}
               pauseMs={user?.progress?.pauseMs}
+              onStartSkillTree={() => setPathMode("path")}
             />
           ) : (
             <SkillTree
