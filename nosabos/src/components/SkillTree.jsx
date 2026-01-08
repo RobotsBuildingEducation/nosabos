@@ -213,7 +213,7 @@ import {
   getNextLesson,
   SKILL_STATUS,
 } from "../data/skillTreeData";
-import { translations } from "../utils/translation";
+import { translations, t } from "../utils/translation";
 import { FiTarget } from "react-icons/fi";
 import { WaveBar } from "./WaveBar";
 import {
@@ -1987,57 +1987,16 @@ export default function SkillTree({
         {pathMode === "conversations" &&
           (() => {
             // Use the correctly calculated maxProficiencyLevel
-            const LEVEL_INFO = {
-              A1: {
-                name: { en: "Beginner", es: "Principiante" },
-                desc: {
-                  en: "Basic survival language",
-                  es: "Lenguaje básico de supervivencia",
-                },
-                color: "#3B82F6",
-              },
-              A2: {
-                name: { en: "Elementary", es: "Elemental" },
-                desc: {
-                  en: "Simple everyday communication",
-                  es: "Comunicación cotidiana simple",
-                },
-                color: "#8B5CF6",
-              },
-              B1: {
-                name: { en: "Intermediate", es: "Intermedio" },
-                desc: {
-                  en: "Handle everyday situations",
-                  es: "Manejo de situaciones cotidianas",
-                },
-                color: "#A855F7",
-              },
-              B2: {
-                name: { en: "Upper Intermediate", es: "Intermedio Alto" },
-                desc: {
-                  en: "Complex discussions",
-                  es: "Discusiones complejas",
-                },
-                color: "#F97316",
-              },
-              C1: {
-                name: { en: "Advanced", es: "Avanzado" },
-                desc: {
-                  en: "Sophisticated language use",
-                  es: "Uso sofisticado del idioma",
-                },
-                color: "#EF4444",
-              },
-              C2: {
-                name: { en: "Mastery", es: "Maestría" },
-                desc: {
-                  en: "Near-native proficiency",
-                  es: "Competencia casi nativa",
-                },
-                color: "#EC4899",
-              },
+            // CEFR level styling (translations are centralized in translations.jsx)
+            const LEVEL_STYLE = {
+              A1: { nameKey: "cefr_a1_name", descKey: "cefr_a1_short_desc", color: "#3B82F6" },
+              A2: { nameKey: "cefr_a2_name", descKey: "cefr_a2_short_desc", color: "#8B5CF6" },
+              B1: { nameKey: "cefr_b1_name", descKey: "cefr_b1_short_desc", color: "#A855F7" },
+              B2: { nameKey: "cefr_b2_name", descKey: "cefr_b2_short_desc", color: "#F97316" },
+              C1: { nameKey: "cefr_c1_name", descKey: "cefr_c1_short_desc", color: "#EF4444" },
+              C2: { nameKey: "cefr_c2_name", descKey: "cefr_c2_short_desc", color: "#EC4899" },
             };
-            const info = LEVEL_INFO[maxProficiencyLevel];
+            const info = LEVEL_STYLE[maxProficiencyLevel];
             const lang = getAppLanguage();
 
             return (
@@ -2062,10 +2021,10 @@ export default function SkillTree({
                     {maxProficiencyLevel}
                   </Badge>
                   <Text fontSize="lg" fontWeight="bold" color="white">
-                    {info.name[lang] || info.name.en}
+                    {t(lang, info.nameKey)}
                   </Text>
                   <Text fontSize="sm" color="gray.400" textAlign="center">
-                    {info.desc[lang] || info.desc.en}
+                    {t(lang, info.descKey)}
                   </Text>
                 </VStack>
               </MotionBox>

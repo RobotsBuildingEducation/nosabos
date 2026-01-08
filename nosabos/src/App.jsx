@@ -104,7 +104,7 @@ import Onboarding from "./components/Onboarding";
 import RobotBuddyPro from "./components/RobotBuddyPro";
 import RealTimeTest from "./components/RealTimeTest";
 
-import { translations } from "./utils/translation";
+import { translations, t } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
@@ -3190,57 +3190,43 @@ export default function App() {
     C2: { flashcards: 50, lessons: 48 }, // 8 units × 6 lessons per unit
   };
 
+  // CEFR level styling (translations are centralized in translations.jsx)
   const CEFR_LEVEL_INFO = {
     A1: {
-      name: { en: "Beginner", es: "Principiante" },
+      nameKey: "cefr_a1_name",
       color: "#3B82F6",
       gradient: "linear(135deg, #60A5FA, #3B82F6)",
-      description: {
-        en: "Basic survival language",
-        es: "Lenguaje básico de supervivencia",
-      },
+      descriptionKey: "cefr_a1_short_desc",
     },
     A2: {
-      name: { en: "Elementary", es: "Elemental" },
+      nameKey: "cefr_a2_name",
       color: "#8B5CF6",
       gradient: "linear(135deg, #A78BFA, #8B5CF6)",
-      description: {
-        en: "Simple everyday communication",
-        es: "Comunicación cotidiana simple",
-      },
+      descriptionKey: "cefr_a2_short_desc",
     },
     B1: {
-      name: { en: "Intermediate", es: "Intermedio" },
+      nameKey: "cefr_b1_name",
       color: "#A855F7",
       gradient: "linear(135deg, #C084FC, #A855F7)",
-      description: {
-        en: "Handle everyday situations",
-        es: "Manejo de situaciones cotidianas",
-      },
+      descriptionKey: "cefr_b1_short_desc",
     },
     B2: {
-      name: { en: "Upper Intermediate", es: "Intermedio Alto" },
+      nameKey: "cefr_b2_name",
       color: "#F97316",
       gradient: "linear(135deg, #FB923C, #F97316)",
-      description: { en: "Complex discussions", es: "Discusiones complejas" },
+      descriptionKey: "cefr_b2_short_desc",
     },
     C1: {
-      name: { en: "Advanced", es: "Avanzado" },
+      nameKey: "cefr_c1_name",
       color: "#EF4444",
       gradient: "linear(135deg, #F87171, #EF4444)",
-      description: {
-        en: "Sophisticated language use",
-        es: "Uso sofisticado del idioma",
-      },
+      descriptionKey: "cefr_c1_short_desc",
     },
     C2: {
-      name: { en: "Mastery", es: "Maestría" },
+      nameKey: "cefr_c2_name",
       color: "#EC4899",
       gradient: "linear(135deg, #F472B6, #EC4899)",
-      description: {
-        en: "Near-native proficiency",
-        es: "Competencia casi nativa",
-      },
+      descriptionKey: "cefr_c2_short_desc",
     },
   };
 
@@ -4461,11 +4447,9 @@ export default function App() {
                 </Text>
                 <Text fontSize="2xl" opacity={0.95} fontWeight="semibold">
                   {completedProficiencyData?.level} -{" "}
-                  {
-                    CEFR_LEVEL_INFO[completedProficiencyData?.level]?.name[
-                      appLanguage
-                    ]
-                  }
+                  {CEFR_LEVEL_INFO[completedProficiencyData?.level]?.nameKey
+                    ? t(appLanguage, CEFR_LEVEL_INFO[completedProficiencyData?.level].nameKey)
+                    : completedProficiencyData?.level}
                 </Text>
               </VStack>
 
