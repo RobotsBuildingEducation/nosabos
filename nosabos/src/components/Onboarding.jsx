@@ -29,7 +29,12 @@ import {
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { translations } from "../utils/translation";
+import {
+  getLanguageLabel,
+  normalizeLanguageCode,
+  SUPPORTED_LANGUAGE_CODES,
+  translations,
+} from "../utils/translation";
 
 const BASE_PATH = "/onboarding";
 
@@ -47,10 +52,17 @@ export default function Onboarding({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const normalizedUserLang = userLanguage === "es" ? "es" : "en";
-  const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
+  const normalizedUserLang = normalizeLanguageCode(userLanguage) || "en";
+  const initialSupportLang =
+    normalizeLanguageCode(initialDraft.supportLang) || normalizedUserLang;
   const [supportLang, setSupportLang] = useState(initialSupportLang);
   const ui = translations[supportLang] || translations.en;
+  const supportLanguageOptions = useMemo(() => {
+    return SUPPORTED_LANGUAGE_CODES.map((code) => ({
+      code,
+      label: getLanguageLabel(supportLang, code),
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [supportLang]);
 
   const defaults = useMemo(() => {
     return {
@@ -127,6 +139,9 @@ export default function Onboarding({
     "{example}",
     ui.onboarding_persona_default_example || "patient, encouraging, playful"
   );
+  const supportLangLabel = `${
+    ui.onboarding_support_language_title || "Support Language"
+  }: ${getLanguageLabel(supportLang, supportLang)}`;
 
   const VAD_LABEL =
     ui.ra_vad_label ||
@@ -200,8 +215,7 @@ export default function Onboarding({
                       w="100%"
                       textAlign="left"
                     >
-                      {supportLang === "en" && ui.onboarding_support_en}
-                      {supportLang === "es" && ui.onboarding_support_es}
+                      {supportLangLabel}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
                       <MenuOptionGroup
@@ -209,12 +223,11 @@ export default function Onboarding({
                         value={supportLang}
                         onChange={(value) => setSupportLang(value)}
                       >
-                        <MenuItemOption value="en">
-                          {ui.onboarding_support_en}
-                        </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {ui.onboarding_support_es}
-                        </MenuItemOption>
+                        {supportLanguageOptions.map((option) => (
+                          <MenuItemOption key={option.code} value={option.code}>
+                            {option.label}
+                          </MenuItemOption>
+                        ))}
                       </MenuOptionGroup>
                     </MenuList>
                   </Menu>

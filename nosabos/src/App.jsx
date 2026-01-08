@@ -104,7 +104,13 @@ import Onboarding from "./components/Onboarding";
 import RobotBuddyPro from "./components/RobotBuddyPro";
 import RealTimeTest from "./components/RealTimeTest";
 
-import { translations, t } from "./utils/translation";
+import {
+  getLanguageLabel,
+  normalizeLanguageCode,
+  SUPPORTED_LANGUAGE_CODES,
+  translations,
+  t,
+} from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
 import StoryMode from "./components/Stories";
@@ -434,11 +440,19 @@ function TopBar({
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
+  const supportLanguageOptions = useMemo(() => {
+    return SUPPORTED_LANGUAGE_CODES.map((code) => ({
+      code,
+      label: getLanguageLabel(appLanguage, code),
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [appLanguage]);
 
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
   const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "A1");
-  const [supportLang, setSupportLang] = useState(p.supportLang || "en");
+  const [supportLang, setSupportLang] = useState(
+    normalizeLanguageCode(p.supportLang) || "en"
+  );
   const [voice, setVoice] = useState(p.voice || "alloy");
   const defaultPersona =
     p.voicePersona ||
@@ -465,6 +479,9 @@ function TopBar({
     (appLanguage === "es"
       ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
       : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+  const supportLangLabel = `${
+    t.onboarding_support_language_title || "Support Language"
+  }: ${getLanguageLabel(appLanguage, supportLang)}`;
 
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
@@ -473,7 +490,7 @@ function TopBar({
   useEffect(() => {
     const q = user?.progress || {};
     setLevel(migrateToCEFRLevel(q.level) || "A1");
-    setSupportLang(q.supportLang || "en");
+    setSupportLang(normalizeLanguageCode(q.supportLang) || "en");
     setVoice(q.voice || "alloy");
     setVoicePersona(
       q.voicePersona ??
@@ -818,10 +835,7 @@ function TopBar({
                       _active={{ bg: "gray.750" }}
                       px={4}
                     >
-                      {supportLang === "en" &&
-                        translations[appLanguage].onboarding_support_en}
-                      {supportLang === "es" &&
-                        translations[appLanguage].onboarding_support_es}
+                      {supportLangLabel}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
                       <MenuOptionGroup
@@ -832,12 +846,11 @@ function TopBar({
                           persistSettings({ supportLang: value });
                         }}
                       >
-                        <MenuItemOption value="en">
-                          {translations[appLanguage].onboarding_support_en}
-                        </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {translations[appLanguage].onboarding_support_es}
-                        </MenuItemOption>
+                        {supportLanguageOptions.map((option) => (
+                          <MenuItemOption key={option.code} value={option.code}>
+                            {option.label}
+                          </MenuItemOption>
+                        ))}
                       </MenuOptionGroup>
                     </MenuList>
                   </Menu>
@@ -1143,18 +1156,19 @@ export default function App() {
   }, []);
 
   const normalizeSupportLang = useCallback(
-    (raw) => (raw === "es" ? "es" : raw === "en" ? "en" : undefined),
+    (raw) => normalizeLanguageCode(raw),
     []
   );
 
   const resolvedTargetLang = user?.progress?.targetLang || "es";
   const resolvedSupportLang =
     normalizeSupportLang(user?.progress?.supportLang) ||
-    (storedUiLang === "es" ? "es" : "en");
+    normalizeLanguageCode(storedUiLang) ||
+    "en";
   const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "A1";
 
   useEffect(() => {
-    const nextLang = resolvedSupportLang === "es" ? "es" : "en";
+    const nextLang = normalizeLanguageCode(resolvedSupportLang) || "en";
     setAppLanguage((prev) => {
       if (prev === nextLang) return prev;
       return nextLang;
@@ -1251,7 +1265,7 @@ export default function App() {
   const [appLanguage, setAppLanguage] = useState(() => {
     if (typeof window === "undefined") return "en";
     const stored = localStorage.getItem("appLanguage");
-    return stored === "es" ? "es" : "en";
+    return normalizeLanguageCode(stored) || "en";
   });
   const t = translations[appLanguage] || translations.en;
   const subscriptionVerified = useMemo(() => {
@@ -1609,7 +1623,8 @@ export default function App() {
             createdAt: new Date().toISOString(),
             onboarding: { completed: false, currentStep: 1 },
             appLanguage:
-              localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+              normalizeLanguageCode(localStorage.getItem("appLanguage")) ||
+              "en",
             helpRequest: "",
             practicePronunciation: false,
             identity: null,
@@ -1627,7 +1642,7 @@ export default function App() {
           createdAt: new Date().toISOString(),
           onboarding: { completed: false, currentStep: 1 },
           appLanguage:
-            localStorage.getItem("appLanguage") === "es" ? "es" : "en",
+            normalizeLanguageCode(localStorage.getItem("appLanguage")) || "en",
           helpRequest: "",
           practicePronunciation: false,
           identity: null,
@@ -1641,11 +1656,9 @@ export default function App() {
 
       if (userDoc) {
         const uiLang =
-          userDoc?.progress?.supportLang === "es"
-            ? "es"
-            : userDoc.appLanguage === "es"
-            ? "es"
-            : "en";
+          normalizeLanguageCode(userDoc?.progress?.supportLang) ||
+          normalizeLanguageCode(userDoc.appLanguage) ||
+          "en";
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
         setUser?.(userDoc);
@@ -1998,11 +2011,8 @@ export default function App() {
     const next = {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "A1",
-      supportLang: ["en", "es"].includes(
-        partial.supportLang ?? prev.supportLang
-      )
-        ? partial.supportLang ?? prev.supportLang
-        : "en",
+      supportLang:
+        normalizeLanguageCode(partial.supportLang ?? prev.supportLang) || "en",
       voice: partial.voice ?? prev.voice ?? "alloy",
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "").slice(
         0,
@@ -2053,7 +2063,7 @@ export default function App() {
     } catch {}
 
     // Derive appLanguage from supportLang to keep them in sync
-    const derivedAppLanguage = next.supportLang === "es" ? "es" : "en";
+    const derivedAppLanguage = normalizeLanguageCode(next.supportLang) || "en";
 
     await setDoc(
       doc(database, "users", npub),
@@ -2125,9 +2135,7 @@ export default function App() {
       // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
         level: migrateToCEFRLevel(safe(payload.level, "A1")),
-        supportLang: ["en", "es"].includes(payload.supportLang)
-          ? payload.supportLang
-          : "en",
+        supportLang: normalizeLanguageCode(payload.supportLang) || "en",
         voicePersona: safe(
           payload.voicePersona,
           translations[appLanguage]?.onboarding_persona_default_example ||
@@ -2154,9 +2162,10 @@ export default function App() {
 
       const now = new Date().toISOString();
       const uiLangForPersist =
-        (user?.appLanguage === "es" && "es") ||
-        (localStorage.getItem("appLanguage") === "es" && "es") ||
-        (appLanguage === "es" ? "es" : "en");
+        normalizeLanguageCode(user?.appLanguage) ||
+        normalizeLanguageCode(localStorage.getItem("appLanguage")) ||
+        normalizeLanguageCode(appLanguage) ||
+        "en";
 
       await setDoc(
         doc(database, "users", id),

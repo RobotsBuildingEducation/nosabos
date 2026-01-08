@@ -42,7 +42,7 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
-import { t, translations } from "../utils/translation";
+import { normalizeLanguageCode, t, translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -223,9 +223,10 @@ function useSharedProgress() {
       setProgress({
         level: p.level || "beginner",
         targetLang,
-        supportLang: ["en", "es", "bilingual"].includes(p.supportLang)
-          ? p.supportLang
-          : "en",
+        supportLang:
+          p.supportLang === "bilingual"
+            ? "bilingual"
+            : normalizeLanguageCode(p.supportLang) || "en",
         voice: p.voice || "alloy",
       });
 

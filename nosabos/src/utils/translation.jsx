@@ -4900,4 +4900,28 @@ export const translations = {
   },
 };
 
+export const SUPPORTED_LANGUAGE_CODES = Object.keys(translations);
+
+export const normalizeLanguageCode = (raw) => {
+  if (!raw) return undefined;
+  const code = String(raw).trim().toLowerCase();
+  if (!code) return undefined;
+  if (SUPPORTED_LANGUAGE_CODES.includes(code)) return code;
+  const prefix = code.split("-")[0];
+  if (SUPPORTED_LANGUAGE_CODES.includes(prefix)) return prefix;
+  if (code === "english") return "en";
+  if (code === "spanish") return "es";
+  return undefined;
+};
+
+export const getLanguageLabel = (uiLang, code) => {
+  const key = `language_${code}`;
+  return (
+    translations?.[uiLang]?.[key] ||
+    translations?.en?.[key] ||
+    translations?.[code]?.[key] ||
+    code
+  );
+};
+
 export default translations;

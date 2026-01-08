@@ -42,7 +42,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import { simplemodel } from "../firebaseResources/firebaseResources";
-import { translations } from "../utils/translation";
+import { normalizeLanguageCode, translations } from "../utils/translation";
 import { FiSend } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
 
@@ -252,15 +252,12 @@ const HelpChatFab = forwardRef(
 
       // Resolve support language (what the learner already speaks)
       const supportRaw =
-        ["en", "es", "bilingual"].includes(progress?.supportLang) &&
-        progress?.supportLang
-          ? progress.supportLang
-          : "en";
+        progress?.supportLang === "bilingual"
+          ? "bilingual"
+          : normalizeLanguageCode(progress?.supportLang) || "en";
       const supportLang =
         supportRaw === "bilingual"
-          ? appLanguage === "es"
-            ? "es"
-            : "en"
+          ? normalizeLanguageCode(appLanguage) || "en"
           : supportRaw;
 
       const targetLang = progress?.targetLang || "es"; // practice language

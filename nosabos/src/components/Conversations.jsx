@@ -27,7 +27,11 @@ import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
-import { translations } from "../utils/translation";
+import {
+  getLanguageLabel,
+  normalizeLanguageCode,
+  translations,
+} from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -709,14 +713,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     }
   })();
 
-  const normalizeSupportLang = (raw) => {
-    const code = String(raw || "").toLowerCase();
-    if (code === "es" || code.startsWith("es-") || code === "spanish")
-      return "es";
-    if (code === "en" || code.startsWith("en-") || code === "english")
-      return "en";
-    return undefined;
-  };
+  const normalizeSupportLang = (raw) => normalizeLanguageCode(raw);
 
   const resolvedSupportLang =
     normalizeSupportLang(supportLangRef.current || supportLang) ||
@@ -729,7 +726,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
   // Which language to show in secondary lane
   const secondaryPref =
-    targetLang === "en" ? "es" : supportLang === "es" ? "es" : "en";
+    resolvedSupportLang && resolvedSupportLang !== targetLang
+      ? resolvedSupportLang
+      : "en";
 
   // XP level calculation
   const xpLevelNumber = Math.floor(xp / 100) + 1;
@@ -739,20 +738,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const timeline = [...messages].sort((a, b) => b.ts - a.ts);
 
   // Language name helper
-  const languageNameFor = (code) => {
-    if (code === "es") return translations[uiLang].language_es;
-    if (code === "en") return translations[uiLang].language_en;
-    if (code === "pt") return translations[uiLang].language_pt || "Portuguese";
-    if (code === "fr") return translations[uiLang].language_fr || "French";
-    if (code === "it") return translations[uiLang].language_it || "Italian";
-    if (code === "nl") return translations[uiLang].language_nl || "Dutch";
-    if (code === "nah")
-      return translations[uiLang].language_nah || "Huastec Nahuatl";
-    if (code === "ja") return translations[uiLang].language_ja || "Japanese";
-    if (code === "ru") return translations[uiLang].language_ru || "Russian";
-    if (code === "de") return translations[uiLang].language_de || "German";
-    return code;
-  };
+  const languageNameFor = (code) => getLanguageLabel(uiLang, code);
 
   /* ---------------------------
      Replay playback helpers

@@ -16,13 +16,13 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { shuffle } from "./utils";
-import translations from "../../utils/translation";
+import translations, { normalizeLanguageCode } from "../../utils/translation";
 
 /* ---------------------------
    Minimal i18n helper
 --------------------------- */
 function useT(uiLang = "en") {
-  const lang = ["en", "es"].includes(uiLang) ? uiLang : "en";
+  const lang = normalizeLanguageCode(uiLang) || "en";
   const dict = (translations && translations[lang]) || {};
   const enDict = (translations && translations.en) || {};
   return (key, params) => {
