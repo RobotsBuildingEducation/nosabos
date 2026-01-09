@@ -23,6 +23,7 @@ import {
   FaRobot,
   FaMap,
   FaBullseye,
+  FaVolumeUp,
 } from "react-icons/fa";
 
 import RobotBuddyPro from "./RobotBuddyPro";
@@ -121,6 +122,9 @@ const translations = {
     feature_flashcards_spaced: "Flashcard Drills",
     feature_flashcards_spaced_desc:
       "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
+    feature_phonics: "Phonics",
+    feature_phonics_desc:
+      "Practice words and sounds with our Alphabet bootcamp mode to master pronunciation from the ground up.",
 
     value_label: "WHY NO SABOS",
     value_title: "Learning That",
@@ -218,6 +222,9 @@ const translations = {
     feature_flashcards_spaced: "Tarjetas Inteligentes",
     feature_flashcards_spaced_desc:
       "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
+    feature_phonics: "Fonética",
+    feature_phonics_desc:
+      "Practica palabras y sonidos con nuestro modo de Alfabeto para dominar la pronunciación desde cero.",
     value_label: "POR QUÉ NO SABOS",
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
@@ -628,21 +635,12 @@ const SectionLabel = ({ children }) => (
 const FeatureCard = ({ icon, title, description }) => (
   <div
     style={{
-      padding: "32px",
+      padding: "20px",
       background: theme.colors.bg.elevated,
-      borderRadius: "24px",
+      borderRadius: "16px",
       border: `1px solid ${theme.colors.border.subtle}`,
       position: "relative",
       overflow: "hidden",
-      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.transform = "translateY(-4px)";
-      e.currentTarget.style.boxShadow = `0 8px 24px ${theme.colors.border.subtle}`;
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.transform = "translateY(0)";
-      e.currentTarget.style.boxShadow = "none";
     }}
   >
     {/* Gradient accent */}
@@ -661,16 +659,16 @@ const FeatureCard = ({ icon, title, description }) => (
     {/* Icon */}
     <div
       style={{
-        width: "56px",
-        height: "56px",
-        borderRadius: "16px",
+        width: "44px",
+        height: "44px",
+        borderRadius: "12px",
         background: theme.colors.bg.glow,
         border: `1px solid ${theme.colors.border.accent}`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: "20px",
-        fontSize: "24px",
+        marginBottom: "12px",
+        fontSize: "20px",
       }}
     >
       {icon}
@@ -679,10 +677,10 @@ const FeatureCard = ({ icon, title, description }) => (
     <h3
       style={{
         fontFamily: theme.fonts.display,
-        fontSize: "1.25rem",
+        fontSize: "1rem",
         fontWeight: 600,
         color: theme.colors.text.primary,
-        marginBottom: "12px",
+        marginBottom: "8px",
       }}
     >
       {title}
@@ -691,9 +689,9 @@ const FeatureCard = ({ icon, title, description }) => (
     <p
       style={{
         fontFamily: theme.fonts.body,
-        fontSize: "0.95rem",
+        fontSize: "0.85rem",
         color: theme.colors.text.secondary,
-        lineHeight: 1.7,
+        lineHeight: 1.6,
       }}
     >
       {description}
@@ -1050,6 +1048,11 @@ const LandingPage = ({ onAuthenticated }) => {
       title: copy.feature_goals,
       desc: copy.feature_goals_desc,
     },
+    {
+      icon: <FaVolumeUp />,
+      title: copy.feature_phonics,
+      desc: copy.feature_phonics_desc,
+    },
   ];
 
   const faqs = [
@@ -1303,8 +1306,8 @@ const LandingPage = ({ onAuthenticated }) => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "24px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+              gap: "16px",
             }}
           >
             {features.map((f, i) => (
