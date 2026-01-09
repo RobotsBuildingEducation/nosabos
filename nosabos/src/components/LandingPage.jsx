@@ -1306,7 +1306,8 @@ const LandingPage = ({ onAuthenticated }) => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 45%), 1fr))",
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(min(280px, 45%), 1fr))",
               gap: "clamp(12px, 2vw, 24px)",
             }}
           >
