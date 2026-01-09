@@ -625,21 +625,24 @@ const SectionLabel = ({ children }) => (
 // FEATURE CARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const FeatureCard = ({ icon, title, description, index }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 40 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.3 }}
-    transition={{ duration: 0.6, delay: index * 0.1 }}
-    whileHover={{ y: -8, scale: 1.02 }}
+const FeatureCard = ({ icon, title, description }) => (
+  <div
     style={{
       padding: "32px",
       background: theme.colors.bg.elevated,
-      backdropFilter: "blur(20px)",
       borderRadius: "24px",
       border: `1px solid ${theme.colors.border.subtle}`,
       position: "relative",
       overflow: "hidden",
+      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = "translateY(-4px)";
+      e.currentTarget.style.boxShadow = `0 8px 24px ${theme.colors.border.subtle}`;
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = "translateY(0)";
+      e.currentTarget.style.boxShadow = "none";
     }}
   >
     {/* Gradient accent */}
@@ -695,7 +698,7 @@ const FeatureCard = ({ icon, title, description, index }) => (
     >
       {description}
     </p>
-  </motion.div>
+  </div>
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1310,7 +1313,6 @@ const LandingPage = ({ onAuthenticated }) => {
                 icon={f.icon}
                 title={f.title}
                 description={f.desc}
-                index={i}
               />
             ))}
           </div>
