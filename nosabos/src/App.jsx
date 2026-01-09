@@ -701,8 +701,7 @@ function TopBar({
         py={2}
         // bg="gray.900"
         color="gray.100"
-        borderBottom="1px solid"
-        borderColor="gray.700"
+        borderBottom="1px solid #000026ff"
         position="sticky"
         top={0}
         zIndex={100}

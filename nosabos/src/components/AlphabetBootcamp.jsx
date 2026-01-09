@@ -1277,12 +1277,12 @@ export default function AlphabetBootcamp({
           {/* Collection Section */}
           {collectedLetters.length > 0 && (
             <VStack spacing={4} w="100%">
-              <HStack spacing={2}>
+              {/* <HStack spacing={2}>
                 <Badge colorScheme="green" px={3} py={1} borderRadius="full">
                   {appLanguage === "es" ? "Colección" : "Collection"}:{" "}
                   {collectedLetters.length}
                 </Badge>
-              </HStack>
+              </HStack> */}
 
               <SimpleGrid
                 columns={{ base: 1, sm: 2, md: 3 }}
