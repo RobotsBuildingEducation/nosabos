@@ -23,6 +23,7 @@ import {
   FaRobot,
   FaMap,
   FaBullseye,
+  FaVolumeUp,
 } from "react-icons/fa";
 
 import RobotBuddyPro from "./RobotBuddyPro";
@@ -121,6 +122,9 @@ const translations = {
     feature_flashcards_spaced: "Flashcard Drills",
     feature_flashcards_spaced_desc:
       "Master 1,000+ words and phrases with spaced repetition flashcards organized by CEFR level from beginner to advanced.",
+    feature_phonics: "Phonics",
+    feature_phonics_desc:
+      "Practice words and sounds with our Alphabet bootcamp mode to master pronunciation from the ground up.",
 
     value_label: "WHY NO SABOS",
     value_title: "Learning That",
@@ -218,6 +222,9 @@ const translations = {
     feature_flashcards_spaced: "Tarjetas Inteligentes",
     feature_flashcards_spaced_desc:
       "Domina más de 1,000 palabras y frases con tarjetas de repetición espaciada organizadas por nivel CEFR.",
+    feature_phonics: "Fonética",
+    feature_phonics_desc:
+      "Practica palabras y sonidos con nuestro modo de Alfabeto para dominar la pronunciación desde cero.",
     value_label: "POR QUÉ NO SABOS",
     value_title: "Aprendizaje que",
     value_title_accent: "Realmente Funciona",
@@ -625,18 +632,12 @@ const SectionLabel = ({ children }) => (
 // FEATURE CARD
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const FeatureCard = ({ icon, title, description, index }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 40 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, amount: 0.3 }}
-    transition={{ duration: 0.6, delay: index * 0.1 }}
-    whileHover={{ y: -8, scale: 1.02 }}
+const FeatureCard = ({ icon, title, description }) => (
+  <div
     style={{
-      padding: "32px",
+      padding: "clamp(16px, 3vw, 32px)",
       background: theme.colors.bg.elevated,
-      backdropFilter: "blur(20px)",
-      borderRadius: "24px",
+      borderRadius: "clamp(12px, 2vw, 24px)",
       border: `1px solid ${theme.colors.border.subtle}`,
       position: "relative",
       overflow: "hidden",
@@ -658,16 +659,16 @@ const FeatureCard = ({ icon, title, description, index }) => (
     {/* Icon */}
     <div
       style={{
-        width: "56px",
-        height: "56px",
-        borderRadius: "16px",
+        width: "clamp(40px, 5vw, 56px)",
+        height: "clamp(40px, 5vw, 56px)",
+        borderRadius: "clamp(10px, 1.5vw, 16px)",
         background: theme.colors.bg.glow,
         border: `1px solid ${theme.colors.border.accent}`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: "20px",
-        fontSize: "24px",
+        marginBottom: "clamp(10px, 2vw, 20px)",
+        fontSize: "clamp(18px, 2vw, 24px)",
       }}
     >
       {icon}
@@ -676,10 +677,10 @@ const FeatureCard = ({ icon, title, description, index }) => (
     <h3
       style={{
         fontFamily: theme.fonts.display,
-        fontSize: "1.25rem",
+        fontSize: "clamp(0.9rem, 1.5vw, 1.25rem)",
         fontWeight: 600,
         color: theme.colors.text.primary,
-        marginBottom: "12px",
+        marginBottom: "clamp(6px, 1vw, 12px)",
       }}
     >
       {title}
@@ -688,14 +689,14 @@ const FeatureCard = ({ icon, title, description, index }) => (
     <p
       style={{
         fontFamily: theme.fonts.body,
-        fontSize: "0.95rem",
+        fontSize: "clamp(0.8rem, 1.2vw, 0.95rem)",
         color: theme.colors.text.secondary,
         lineHeight: 1.7,
       }}
     >
       {description}
     </p>
-  </motion.div>
+  </div>
 );
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -1047,6 +1048,11 @@ const LandingPage = ({ onAuthenticated }) => {
       title: copy.feature_goals,
       desc: copy.feature_goals_desc,
     },
+    {
+      icon: <FaVolumeUp />,
+      title: copy.feature_phonics,
+      desc: copy.feature_phonics_desc,
+    },
   ];
 
   const faqs = [
@@ -1300,8 +1306,8 @@ const LandingPage = ({ onAuthenticated }) => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-              gap: "24px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 45%), 1fr))",
+              gap: "clamp(12px, 2vw, 24px)",
             }}
           >
             {features.map((f, i) => (
@@ -1310,7 +1316,6 @@ const LandingPage = ({ onAuthenticated }) => {
                 icon={f.icon}
                 title={f.title}
                 description={f.desc}
-                index={i}
               />
             ))}
           </div>
