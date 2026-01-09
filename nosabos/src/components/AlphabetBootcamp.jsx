@@ -73,6 +73,32 @@ const LANGUAGE_NAMES = {
   nah: "Nahuatl",
 };
 
+const LANGUAGE_NAMES_EN = {
+  ru: "Russian",
+  ja: "Japanese",
+  en: "English",
+  es: "Spanish",
+  pt: "Portuguese",
+  fr: "French",
+  it: "Italian",
+  nl: "Dutch",
+  de: "German",
+  nah: "Nahuatl",
+};
+
+const LANGUAGE_NAMES_ES = {
+  ru: "Ruso",
+  ja: "Japonés",
+  en: "Inglés",
+  es: "Español",
+  pt: "Portugués",
+  fr: "Francés",
+  it: "Italiano",
+  nl: "Neerlandés",
+  de: "Alemán",
+  nah: "Náhuatl",
+};
+
 const LANGUAGE_SCRIPTS = {
   ru: "Cyrillic",
   ja: "hiragana or katakana",
@@ -914,7 +940,10 @@ export default function AlphabetBootcamp({
     setCurrentXp((prev) => prev + xp);
   };
 
-  const targetLanguage = LANGUAGE_NAMES[targetLang] || "Language";
+  const targetLanguage =
+    appLanguage === "es"
+      ? LANGUAGE_NAMES_ES[targetLang]
+      : LANGUAGE_NAMES_EN[targetLang] || "Language";
   const headline =
     appLanguage === "es"
       ? `Alfabeto ${targetLanguage}`
