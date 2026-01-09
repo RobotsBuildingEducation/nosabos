@@ -635,9 +635,9 @@ const SectionLabel = ({ children }) => (
 const FeatureCard = ({ icon, title, description }) => (
   <div
     style={{
-      padding: "20px",
+      padding: "clamp(16px, 3vw, 32px)",
       background: theme.colors.bg.elevated,
-      borderRadius: "16px",
+      borderRadius: "clamp(12px, 2vw, 24px)",
       border: `1px solid ${theme.colors.border.subtle}`,
       position: "relative",
       overflow: "hidden",
@@ -659,16 +659,16 @@ const FeatureCard = ({ icon, title, description }) => (
     {/* Icon */}
     <div
       style={{
-        width: "44px",
-        height: "44px",
-        borderRadius: "12px",
+        width: "clamp(40px, 5vw, 56px)",
+        height: "clamp(40px, 5vw, 56px)",
+        borderRadius: "clamp(10px, 1.5vw, 16px)",
         background: theme.colors.bg.glow,
         border: `1px solid ${theme.colors.border.accent}`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        marginBottom: "12px",
-        fontSize: "20px",
+        marginBottom: "clamp(10px, 2vw, 20px)",
+        fontSize: "clamp(18px, 2vw, 24px)",
       }}
     >
       {icon}
@@ -677,10 +677,10 @@ const FeatureCard = ({ icon, title, description }) => (
     <h3
       style={{
         fontFamily: theme.fonts.display,
-        fontSize: "1rem",
+        fontSize: "clamp(0.9rem, 1.5vw, 1.25rem)",
         fontWeight: 600,
         color: theme.colors.text.primary,
-        marginBottom: "8px",
+        marginBottom: "clamp(6px, 1vw, 12px)",
       }}
     >
       {title}
@@ -689,9 +689,9 @@ const FeatureCard = ({ icon, title, description }) => (
     <p
       style={{
         fontFamily: theme.fonts.body,
-        fontSize: "0.85rem",
+        fontSize: "clamp(0.8rem, 1.2vw, 0.95rem)",
         color: theme.colors.text.secondary,
-        lineHeight: 1.6,
+        lineHeight: 1.7,
       }}
     >
       {description}
@@ -1306,8 +1306,8 @@ const LandingPage = ({ onAuthenticated }) => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-              gap: "16px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 45%), 1fr))",
+              gap: "clamp(12px, 2vw, 24px)",
             }}
           >
             {features.map((f, i) => (
