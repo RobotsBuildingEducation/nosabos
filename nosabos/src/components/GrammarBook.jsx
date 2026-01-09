@@ -57,6 +57,8 @@ import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import { shuffle } from "./quiz/utils";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
+import VirtualKeyboard from "./VirtualKeyboard";
+import { MdKeyboard } from "react-icons/md";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1478,6 +1480,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [input, setInput] = useState("");
   const [loadingQ, setLoadingQ] = useState(false);
   const [loadingG, setLoadingG] = useState(false);
+  const [showKeyboard, setShowKeyboard] = useState(false);
 
   // ---- MC ----
   const [mcQ, setMcQ] = useState("");
@@ -1529,6 +1532,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const questionAudioRef = useRef(null);
   const questionAudioUrlRef = useRef(null);
   const questionTextRef = useRef("");
+
+  // Match word TTS state
+  const [matchWordSynthesizing, setMatchWordSynthesizing] = useState(null); // index of word being synthesized
+  const matchWordAudioRef = useRef(null);
 
   useEffect(() => {
     return () => {
@@ -3057,6 +3064,20 @@ Return JSON ONLY:
   }
 
   /* ---------------------------
+     Virtual Keyboard handler
+  --------------------------- */
+  const handleKeyboardInput = useCallback((key) => {
+    if (key === "BACKSPACE") {
+      setInput((prev) => prev.slice(0, -1));
+    } else {
+      setInput((prev) => prev + key);
+    }
+  }, []);
+
+  // Check if keyboard should be available (Japanese or Russian)
+  const showKeyboardButton = targetLang === "ja" || targetLang === "ru";
+
+  /* ---------------------------
      Submits (backend judging for fill/mc/ma; deterministic for match)
   --------------------------- */
   async function submitFill() {
@@ -3876,6 +3897,59 @@ Return JSON ONLY:
     [isQuestionPlaying, targetLang, toast, userLanguage]
   );
 
+  // Handler for playing TTS on individual match words
+  const handlePlayMatchWordTTS = useCallback(
+    async (text, index) => {
+      const ttsText = (text || "").trim();
+      if (!ttsText) return;
+
+      // Stop current playback if clicking the same word
+      if (matchWordSynthesizing === index) {
+        try {
+          matchWordAudioRef.current?.pause?.();
+        } catch {}
+        matchWordAudioRef.current = null;
+        setMatchWordSynthesizing(null);
+        return;
+      }
+
+      try {
+        setMatchWordSynthesizing(index);
+
+        // Stop any existing playback
+        try {
+          matchWordAudioRef.current?.pause?.();
+        } catch {}
+        matchWordAudioRef.current = null;
+
+        const player = await getTTSPlayer({
+          text: ttsText,
+          langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
+          responseFormat: LOW_LATENCY_TTS_FORMAT,
+        });
+
+        const audio = player.audio;
+        matchWordAudioRef.current = audio;
+        audio.onended = () => {
+          setMatchWordSynthesizing(null);
+          matchWordAudioRef.current = null;
+          player.cleanup?.();
+        };
+        audio.onerror = () => {
+          setMatchWordSynthesizing(null);
+          matchWordAudioRef.current = null;
+          player.cleanup?.();
+        };
+        await player.ready;
+        await audio.play();
+      } catch (err) {
+        console.error("Match word playback failed", err);
+        setMatchWordSynthesizing(null);
+      }
+    },
+    [matchWordSynthesizing, targetLang]
+  );
+
   const renderMcPrompt = () => {
     if (!mcQ) return null;
     const segments = String(mcQ).split("___");
@@ -4248,12 +4322,39 @@ Return JSON ONLY:
               fontSize="16px"
             />
 
+            {showKeyboard && showKeyboardButton && (
+              <VirtualKeyboard
+                lang={targetLang}
+                onKeyPress={handleKeyboardInput}
+                onClose={() => setShowKeyboard(false)}
+                userLanguage={userLanguage}
+              />
+            )}
+
             <Stack
               direction="row"
               spacing={3}
               align="center"
               justify="flex-end"
             >
+              {showKeyboardButton && (
+                <Button
+                  variant="ghost"
+                  leftIcon={<MdKeyboard />}
+                  onClick={() => setShowKeyboard(!showKeyboard)}
+                  isDisabled={loadingQ || loadingG}
+                  px={{ base: 4, md: 6 }}
+                  py={{ base: 3, md: 4 }}
+                >
+                  {showKeyboard
+                    ? userLanguage === "es"
+                      ? "Cerrar teclado"
+                      : "Close keyboard"
+                    : userLanguage === "es"
+                    ? "Abrir teclado"
+                    : "Open keyboard"}
+                </Button>
+              )}
               {canSkip && (
                 <Button
                   variant="ghost"
@@ -5094,9 +5195,22 @@ Return JSON ONLY:
                 {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
                   (lhs, i) => (
                     <HStack key={i} align="stretch" spacing={3}>
-                      <Box minW="180px">
+                      <HStack minW="180px" spacing={1}>
+                        <IconButton
+                          aria-label={
+                            userLanguage === "es"
+                              ? "Escuchar palabra"
+                              : "Listen to word"
+                          }
+                          icon={renderSpeakerIcon(matchWordSynthesizing === i)}
+                          size="xs"
+                          fontSize="md"
+                          variant="ghost"
+                          onClick={() => handlePlayMatchWordTTS(lhs, i)}
+                          isDisabled={!lhs || lhs === "…"}
+                        />
                         <Text>{lhs}</Text>
-                      </Box>
+                      </HStack>
                       <Droppable
                         droppableId={`slot-${i}`}
                         direction="horizontal"
