@@ -152,11 +152,6 @@ function useT(uiLang = "en") {
 --------------------------- */
 const MODEL = DEFAULT_RESPONSES_MODEL;
 
-// TESTING FLAG: Force drag-and-drop mode for multiple answer questions
-// Set to true to always use drag-drop variant (when slots match answers)
-// Remove this flag after testing is complete
-const FORCE_MA_DRAG_MODE = true;
-
 /* ---------------------------
    User/XP helpers
 --------------------------- */
@@ -1632,9 +1627,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
     if (!generatorDeckRef.current.length) {
-      const order = FORCE_MA_DRAG_MODE
-        ? [generateMA]
-        : repeatOnlyQuestions
+      const order = repeatOnlyQuestions
         ? [generateRepeatTranslate]
         : [
             generateFill,
@@ -1731,7 +1724,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const signature = `${maQ}||${maChoices.join("|")}|${maAnswers.join("|")}`;
     if (maKeyRef.current === signature) return;
     maKeyRef.current = signature;
-    const preferDrag = FORCE_MA_DRAG_MODE || shouldUseDragVariant(maQ, maChoices, maAnswers);
+    const preferDrag = shouldUseDragVariant(maQ, maChoices, maAnswers);
     const blanksCount = countBlanks(maQ);
     // Only use drag mode if blanks count matches answers count exactly
     // This prevents users from being trapped when LLM generates mismatched slots/answers
