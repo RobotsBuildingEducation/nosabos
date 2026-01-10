@@ -5249,18 +5249,20 @@ Return JSON ONLY:
                                     ref={dragProvided.innerRef}
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
-                                    onClick={() =>
+                                    onClick={() => {
+                                      playSelectSound();
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
-                                      )
-                                    }
+                                      );
+                                    }}
                                     onKeyDown={(event) => {
                                       if (
                                         event.key === "Enter" ||
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
+                                        playSelectSound();
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5335,15 +5337,17 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  onClick={() =>
-                                    handleMatchAutoMove(ri, "bank")
-                                  }
+                                  onClick={() => {
+                                    playSelectSound();
+                                    handleMatchAutoMove(ri, "bank");
+                                  }}
                                   onKeyDown={(event) => {
                                     if (
                                       event.key === "Enter" ||
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
+                                      playSelectSound();
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}

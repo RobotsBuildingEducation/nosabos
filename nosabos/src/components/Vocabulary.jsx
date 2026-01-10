@@ -4161,8 +4161,14 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
+                        onClick={() => {
+                          playSelectSound();
+                          // Move from slot back to bank
+                          setMcBankOrder((prev) => [...prev, mcSlotIndex]);
+                          setMcSlotIndex(null);
+                        }}
                         style={{
-                          cursor: "grab",
+                          cursor: "pointer",
                           ...(dragProvided.draggableProps.style || {}),
                         }}
                         px={3}
@@ -4265,8 +4271,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         ref={dragProvided.innerRef}
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
+                        onClick={() => {
+                          playSelectSound();
+                          // Move from slot back to bank
+                          setMaBankOrder((prev) => [...prev, choiceIdx]);
+                          setMaSlots((prev) => {
+                            const next = [...prev];
+                            next[currentSlot] = null;
+                            return next;
+                          });
+                        }}
                         style={{
-                          cursor: "grab",
+                          cursor: "pointer",
                           ...(dragProvided.draggableProps.style || {}),
                         }}
                         px={3}
