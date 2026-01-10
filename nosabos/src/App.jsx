@@ -56,6 +56,11 @@ import {
   useDisclosure,
   Alert,
   AlertIcon,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
 } from "@chakra-ui/react";
 import {
   SettingsIcon,
@@ -4303,38 +4308,52 @@ export default function App() {
               </Box>
 
               {/* Calendar showing completed days including today */}
-              <Box
-                bg="whiteAlpha.150"
-                borderRadius="xl"
-                py={4}
-                px={4}
-                width="100%"
-                border="1px solid"
-                borderColor="whiteAlpha.300"
-              >
-                <GoalCalendar
-                  completedDates={(() => {
-                    // Include today's date in the completed dates for the celebration
-                    const today = new Date();
-                    const todayKey = `${today.getFullYear()}-${String(
-                      today.getMonth() + 1
-                    ).padStart(2, "0")}-${String(today.getDate()).padStart(
-                      2,
-                      "0"
-                    )}`;
-                    const existingDates = user?.completedGoalDates || [];
-                    return existingDates.includes(todayKey)
-                      ? existingDates
-                      : [...existingDates, todayKey];
-                  })()}
-                  lang={appLanguage}
-                  showNavigation={false}
-                  highlightToday={true}
-                  size="sm"
-                  variant="light"
-                  startDate={user?.createdAt}
-                />
-              </Box>
+              <Accordion allowToggle width="100%">
+                <AccordionItem
+                  bg="whiteAlpha.150"
+                  borderRadius="xl"
+                  border="1px solid"
+                  borderColor="whiteAlpha.300"
+                >
+                  <AccordionButton
+                    py={3}
+                    px={4}
+                    _hover={{ bg: "whiteAlpha.200" }}
+                    borderRadius="xl"
+                  >
+                    <Box flex="1" textAlign="left" fontWeight="medium">
+                      {appLanguage === "es"
+                        ? "Ver calendario de progreso"
+                        : "View progress calendar"}
+                    </Box>
+                    <AccordionIcon />
+                  </AccordionButton>
+                  <AccordionPanel pb={4} px={4}>
+                    <GoalCalendar
+                      completedDates={(() => {
+                        // Include today's date in the completed dates for the celebration
+                        const today = new Date();
+                        const todayKey = `${today.getFullYear()}-${String(
+                          today.getMonth() + 1
+                        ).padStart(2, "0")}-${String(today.getDate()).padStart(
+                          2,
+                          "0"
+                        )}`;
+                        const existingDates = user?.completedGoalDates || [];
+                        return existingDates.includes(todayKey)
+                          ? existingDates
+                          : [...existingDates, todayKey];
+                      })()}
+                      lang={appLanguage}
+                      showNavigation={false}
+                      highlightToday={true}
+                      size="sm"
+                      variant="light"
+                      startDate={user?.createdAt}
+                    />
+                  </AccordionPanel>
+                </AccordionItem>
+              </Accordion>
 
               <Button
                 size="lg"
