@@ -20,19 +20,19 @@ export default defineConfig({
         description: "PWA install handler package for No Sabos",
         icons: [
           {
-            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1756332943/Screenshot_2025-08-27_at_4.15.34_PM_hgwyj7.png",
+            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1768009140/logos_512_x_512_px_1_zvlhze.png",
             sizes: "192x192",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1756332943/Screenshot_2025-08-27_at_4.15.34_PM_hgwyj7.png",
+            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1768009140/logos_512_x_512_px_1_zvlhze.png",
             sizes: "256x256",
             type: "image/png",
             purpose: "any",
           },
           {
-            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1756332943/Screenshot_2025-08-27_at_4.15.34_PM_hgwyj7.png",
+            src: "https://res.cloudinary.com/dtkeyccga/image/upload/v1768009140/logos_512_x_512_px_1_zvlhze.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "any",
