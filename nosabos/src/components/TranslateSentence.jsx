@@ -17,6 +17,12 @@ import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
+import selectSound from "../assets/select.wav";
+
+const playSelectSound = () => {
+  const audio = new Audio(selectSound);
+  audio.play().catch(() => {});
+};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -433,9 +439,12 @@ export default function TranslateSentence({
                         }
                         fontSize="sm"
                         cursor={lastOk === true ? "default" : "pointer"}
-                        onClick={() =>
-                          lastOk !== true && handleSelectedWordClick(position)
-                        }
+                        onClick={() => {
+                          if (lastOk !== true) {
+                            playSelectSound();
+                            handleSelectedWordClick(position);
+                          }
+                        }}
                         _hover={
                           lastOk !== true
                             ? {
@@ -508,9 +517,12 @@ export default function TranslateSentence({
                       }
                       fontSize="sm"
                       cursor={lastOk === true ? "default" : "pointer"}
-                      onClick={() =>
-                        lastOk !== true && handleWordClick(wordIndex, position)
-                      }
+                      onClick={() => {
+                        if (lastOk !== true) {
+                          playSelectSound();
+                          handleWordClick(wordIndex, position);
+                        }
+                      }}
                       _hover={
                         lastOk !== true
                           ? {

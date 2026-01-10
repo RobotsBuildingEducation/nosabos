@@ -142,6 +142,7 @@ import {
   FaKey,
 } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
+import sparkleSound from "./assets/sparkle.mp3";
 
 /* ---------------------------
    Small helpers
@@ -1378,6 +1379,16 @@ export default function App() {
   // Lesson completion celebration modal
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [completedLessonData, setCompletedLessonData] = useState(null);
+
+  // Play sparkle sound when lesson completion modal opens
+  useEffect(() => {
+    if (showCompletionModal) {
+      const audio = new Audio(sparkleSound);
+      audio.play().catch(() => {
+        // Ignore autoplay errors
+      });
+    }
+  }, [showCompletionModal]);
 
   // Proficiency level completion celebration modal
   const [showProficiencyCompletionModal, setShowProficiencyCompletionModal] =

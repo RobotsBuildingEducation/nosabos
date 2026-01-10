@@ -59,6 +59,12 @@ import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
+import selectSound from "../assets/select.wav";
+
+const playSelectSound = () => {
+  const audio = new Audio(selectSound);
+  audio.play().catch(() => {});
+};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -4560,7 +4566,11 @@ Return JSON ONLY:
                   ).map((c, i) => (
                     <Box
                       key={i}
-                      onClick={() => mcChoices.length && setMcPick(c)}
+                      onClick={() => {
+                        if (!mcChoices.length) return;
+                        playSelectSound();
+                        setMcPick(c);
+                      }}
                       cursor={mcChoices.length ? "pointer" : "not-allowed"}
                       px={4}
                       py={3}
@@ -4839,6 +4849,7 @@ Return JSON ONLY:
                         key={i}
                         onClick={() => {
                           if (!maChoices.length) return;
+                          playSelectSound();
                           if (isSelected) {
                             setMaPicks(maPicks.filter((p) => p !== c));
                           } else {
@@ -5238,18 +5249,20 @@ Return JSON ONLY:
                                     ref={dragProvided.innerRef}
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
-                                    onClick={() =>
+                                    onClick={() => {
+                                      playSelectSound();
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
-                                      )
-                                    }
+                                      );
+                                    }}
                                     onKeyDown={(event) => {
                                       if (
                                         event.key === "Enter" ||
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
+                                        playSelectSound();
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5324,15 +5337,17 @@ Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  onClick={() =>
-                                    handleMatchAutoMove(ri, "bank")
-                                  }
+                                  onClick={() => {
+                                    playSelectSound();
+                                    handleMatchAutoMove(ri, "bank");
+                                  }}
                                   onKeyDown={(event) => {
                                     if (
                                       event.key === "Enter" ||
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
+                                      playSelectSound();
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}
