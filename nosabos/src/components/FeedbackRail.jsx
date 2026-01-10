@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -15,6 +15,7 @@ import { RiBookmarkLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { WaveBar } from "./WaveBar";
 import RandomCharacter from "./RandomCharacter";
+import deliciousSound from "../assets/delicious.mp3";
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -39,6 +40,23 @@ const FeedbackRail = React.memo(
     isCreatingNote,
     noteCreated,
   }) => {
+    const hasPlayedRef = useRef(false);
+
+    // Play success sound when answer is correct
+    useEffect(() => {
+      if (ok === true && !hasPlayedRef.current) {
+        hasPlayedRef.current = true;
+        const audio = new Audio(deliciousSound);
+        audio.play().catch(() => {
+          // Ignore autoplay errors (e.g., if user hasn't interacted with page yet)
+        });
+      }
+      // Reset when ok changes to null (new question)
+      if (ok === null) {
+        hasPlayedRef.current = false;
+      }
+    }, [ok]);
+
     if (ok === null) return null;
 
     // Note button labels
