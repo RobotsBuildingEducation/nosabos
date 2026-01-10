@@ -1889,7 +1889,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     maKeyRef.current = signature;
     const preferDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
     const blanksCount = countBlanks(qMA);
-    const useDrag = preferDrag && blanksCount > 0;
+    // Only use drag mode if blanks count matches answers count exactly
+    // This prevents users from being trapped when LLM generates mismatched slots/answers
+    const useDrag =
+      preferDrag && blanksCount > 0 && blanksCount === answersMA.length;
     setMaLayout(useDrag ? "drag" : "buttons");
     if (useDrag) {
       // Slot count = number of blanks in text (should match answers length from prompt)
