@@ -63,6 +63,7 @@ import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
+import sparkleSound from "../assets/sparkle.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -933,6 +934,16 @@ export default function Vocabulary({
   const [showQuizSuccessModal, setShowQuizSuccessModal] = useState(false);
   const [showQuizFailureModal, setShowQuizFailureModal] = useState(false);
   const [quizAnswerHistory, setQuizAnswerHistory] = useState([]); // Track correct/wrong for progress bar
+
+  // Play sparkle sound when quiz success modal opens
+  useEffect(() => {
+    if (showQuizSuccessModal) {
+      const audio = new Audio(sparkleSound);
+      audio.play().catch(() => {
+        // Ignore autoplay errors
+      });
+    }
+  }, [showQuizSuccessModal]);
 
   const quizStorageKey = useMemo(
     () => (lesson?.id ? `quiz-progress:${lesson.id}` : null),
