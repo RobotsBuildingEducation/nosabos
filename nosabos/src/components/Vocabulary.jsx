@@ -63,6 +63,12 @@ import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
+import selectSound from "../assets/select.wav";
+
+const playSelectSound = () => {
+  const audio = new Audio(selectSound);
+  audio.play().catch(() => {});
+};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -4880,7 +4886,11 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   ).map((c, i) => (
                     <Box
                       key={i}
-                      onClick={() => choicesMC.length && setPickMC(c)}
+                      onClick={() => {
+                        if (!choicesMC.length) return;
+                        playSelectSound();
+                        setPickMC(c);
+                      }}
                       cursor={choicesMC.length ? "pointer" : "not-allowed"}
                       px={4}
                       py={3}
@@ -5149,6 +5159,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         key={i}
                         onClick={() => {
                           if (!choicesMA.length) return;
+                          playSelectSound();
                           if (isSelected) {
                             setPicksMA(picksMA.filter((p) => p !== c));
                           } else {
