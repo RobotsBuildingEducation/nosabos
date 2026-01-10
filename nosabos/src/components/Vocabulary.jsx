@@ -4824,9 +4824,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
-                                onClick={() =>
-                                  handleMcAnswerClick(idx, position)
-                                }
+                                onClick={() => {
+                                  playSelectSound();
+                                  handleMcAnswerClick(idx, position);
+                                }}
                                 _hover={{
                                   bg: "rgba(128,90,213,0.12)",
                                   borderColor: "purple.200",
@@ -5093,9 +5094,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
-                                onClick={() =>
-                                  handleMaAnswerClick(idx, position)
-                                }
+                                onClick={() => {
+                                  playSelectSound();
+                                  handleMaAnswerClick(idx, position);
+                                }}
                                 _hover={{
                                   bg: "rgba(128,90,213,0.12)",
                                   borderColor: "purple.200",
@@ -5567,18 +5569,20 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     ref={dragProvided.innerRef}
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
-                                    onClick={() =>
+                                    onClick={() => {
+                                      playSelectSound();
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
-                                      )
-                                    }
+                                      );
+                                    }}
                                     onKeyDown={(event) => {
                                       if (
                                         event.key === "Enter" ||
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
+                                        playSelectSound();
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5653,15 +5657,17 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   ref={dragProvided.innerRef}
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
-                                  onClick={() =>
-                                    handleMatchAutoMove(ri, "bank")
-                                  }
+                                  onClick={() => {
+                                    playSelectSound();
+                                    handleMatchAutoMove(ri, "bank");
+                                  }}
                                   onKeyDown={(event) => {
                                     if (
                                       event.key === "Enter" ||
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
+                                      playSelectSound();
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}
