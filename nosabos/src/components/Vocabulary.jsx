@@ -1780,7 +1780,9 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }, [targetLang]);
 
   const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
-  const types = repeatOnlyQuestions
+  const types = FORCE_MA_DRAG_MODE
+    ? ["ma"]
+    : repeatOnlyQuestions
     ? ["repeat"]
     : ["fill", "mc", "ma", "speak", "match", "translate", "repeat"];
   const typeDeckRef = useRef([]);

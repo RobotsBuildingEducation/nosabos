@@ -1632,7 +1632,9 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
     if (!generatorDeckRef.current.length) {
-      const order = repeatOnlyQuestions
+      const order = FORCE_MA_DRAG_MODE
+        ? [generateMA]
+        : repeatOnlyQuestions
         ? [generateRepeatTranslate]
         : [
             generateFill,
