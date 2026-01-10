@@ -4820,6 +4820,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
+                                onClick={() => {
+                                  playSelectSound();
+                                  handleMcAnswerClick(idx, position);
+                                }}
                                 style={{
                                   cursor: "pointer",
                                   ...(dragProvided.draggableProps.style || {}),
@@ -4840,10 +4844,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
-                                onClick={() => {
-                                  playSelectSound();
-                                  handleMcAnswerClick(idx, position);
-                                }}
                                 _hover={{
                                   bg: "rgba(128,90,213,0.12)",
                                   borderColor: "purple.200",
@@ -5090,6 +5090,10 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 ref={dragProvided.innerRef}
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
+                                onClick={() => {
+                                  playSelectSound();
+                                  handleMaAnswerClick(idx, position);
+                                }}
                                 style={{
                                   cursor: "pointer",
                                   ...(dragProvided.draggableProps.style || {}),
@@ -5110,10 +5114,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 }
                                 fontSize="sm"
                                 textAlign="left"
-                                onClick={() => {
-                                  playSelectSound();
-                                  handleMaAnswerClick(idx, position);
-                                }}
                                 _hover={{
                                   bg: "rgba(128,90,213,0.12)",
                                   borderColor: "purple.200",
