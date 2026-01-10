@@ -153,6 +153,11 @@ function useT(uiLang = "en") {
 --------------------------- */
 const MODEL = DEFAULT_RESPONSES_MODEL;
 
+// TESTING FLAG: Force drag-and-drop mode for multiple answer questions
+// Set to true to always use drag-drop variant (when slots match answers)
+// Remove this flag after testing is complete
+const FORCE_MA_DRAG_MODE = true;
+
 /* ---------------------------
    User/XP helpers
 --------------------------- */
@@ -1887,7 +1892,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     const signature = `${qMA}||${choicesMA.join("|")}|${answersMA.join("|")}`;
     if (maKeyRef.current === signature) return;
     maKeyRef.current = signature;
-    const preferDrag = shouldUseDragVariant(qMA, choicesMA, answersMA);
+    const preferDrag = FORCE_MA_DRAG_MODE || shouldUseDragVariant(qMA, choicesMA, answersMA);
     const blanksCount = countBlanks(qMA);
     // Only use drag mode if blanks count matches answers count exactly
     // This prevents users from being trapped when LLM generates mismatched slots/answers
