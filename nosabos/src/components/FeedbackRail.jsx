@@ -14,6 +14,7 @@ import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
 import { RiBookmarkLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { WaveBar } from "./WaveBar";
+import RandomCharacter from "./RandomCharacter";
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -229,6 +230,9 @@ const FeedbackRail = React.memo(
               </Box>
             </Box>
           )}
+          <Box mt="-6" paddingBottom={6}>
+            <RandomCharacter />
+          </Box>
         </VStack>
       </SlideFade>
     );
