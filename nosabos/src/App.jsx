@@ -148,7 +148,9 @@ import {
   FaKey,
 } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
+import { HiVolumeUp } from "react-icons/hi";
 import sparkleSound from "./assets/sparkle.mp3";
+import submitActionSound from "./assets/submitaction.wav";
 import dailyGoalSound from "./assets/dailygoal.wav";
 
 /* ---------------------------
@@ -446,6 +448,8 @@ function TopBar({
   soundVolume,
   onVolumeChange,
   onVolumeSave,
+  playSound,
+  testSound,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -1070,30 +1074,39 @@ function TopBar({
                         "Sound effects are muted."}
                   </Text>
                   {soundEnabled && (
-                    <>
-                      <HStack justify="space-between" mt={3} mb={2}>
-                        <Text fontSize="sm">
-                          {t.sound_volume_label || "Volume"}
-                        </Text>
-                        <Text fontSize="sm" opacity={0.8}>
-                          {soundVolume}%
-                        </Text>
-                      </HStack>
-                      <Slider
-                        aria-label="sound-volume-slider"
-                        min={0}
-                        max={100}
-                        step={5}
-                        value={soundVolume}
-                        onChange={(val) => onVolumeChange(val)}
-                        onChangeEnd={(val) => onVolumeSave(val)}
-                      >
-                        <SliderTrack>
-                          <SliderFilledTrack />
-                        </SliderTrack>
-                        <SliderThumb />
-                      </Slider>
-                    </>
+                    <HStack mt={3} spacing={3} align="center">
+                      <Box w="50%">
+                        <HStack justify="space-between" mb={2}>
+                          <Text fontSize="sm">
+                            {t.sound_volume_label || "Volume"}
+                          </Text>
+                          <Text fontSize="sm" opacity={0.8}>
+                            {soundVolume}%
+                          </Text>
+                        </HStack>
+                        <Slider
+                          aria-label="sound-volume-slider"
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={soundVolume}
+                          onChange={(val) => onVolumeChange(val)}
+                          onChangeEnd={(val) => onVolumeSave(val)}
+                        >
+                          <SliderTrack>
+                            <SliderFilledTrack />
+                          </SliderTrack>
+                          <SliderThumb />
+                        </Slider>
+                      </Box>
+                      <IconButton
+                        aria-label="Test sound"
+                        icon={<HiVolumeUp />}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => playSound(testSound)}
+                      />
+                    </HStack>
                   )}
                 </Box>
               </VStack>
@@ -4021,6 +4034,8 @@ export default function App() {
         soundVolume={soundVolume}
         onVolumeChange={handleVolumeChange}
         onVolumeSave={handleVolumeSave}
+        playSound={playSound}
+        testSound={submitActionSound}
       />
 
       <TeamsDrawer
