@@ -37,12 +37,8 @@ import {
   getRandomSkillTreeTopics,
   getRandomFallbackTopic,
 } from "../data/conversationTopics";
+import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.wav";
-
-const playSubmitSound = () => {
-  const audio = new Audio(submitActionSound);
-  audio.play().catch(() => {});
-};
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -472,6 +468,7 @@ export default function Conversations({
   maxProficiencyLevel = "A1",
 }) {
   const aliveRef = useRef(false);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   // User id
   const user = useUserStore((s) => s.user);
@@ -953,7 +950,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
      WebRTC Start
   --------------------------- */
   async function start() {
-    playSubmitSound();
+    playSound(submitActionSound);
     setErr("");
     setStatus("connecting");
     setUiState("thinking");

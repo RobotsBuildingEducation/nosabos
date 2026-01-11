@@ -15,6 +15,7 @@ import { RiBookmarkLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { WaveBar } from "./WaveBar";
 import RandomCharacter from "./RandomCharacter";
+import useSoundSettings from "../hooks/useSoundSettings";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 
@@ -42,27 +43,22 @@ const FeedbackRail = React.memo(
     noteCreated,
   }) => {
     const hasPlayedRef = useRef(false);
+    const playSound = useSoundSettings((s) => s.playSound);
 
     // Play sound feedback based on answer correctness
     useEffect(() => {
       if (ok === true && !hasPlayedRef.current) {
         hasPlayedRef.current = true;
-        const audio = new Audio(deliciousSound);
-        audio.play().catch(() => {
-          // Ignore autoplay errors (e.g., if user hasn't interacted with page yet)
-        });
+        playSound(deliciousSound);
       } else if (ok === false && !hasPlayedRef.current) {
         hasPlayedRef.current = true;
-        const audio = new Audio(clickSound);
-        audio.play().catch(() => {
-          // Ignore autoplay errors
-        });
+        playSound(clickSound);
       }
       // Reset when ok changes to null (new question)
       if (ok === null) {
         hasPlayedRef.current = false;
       }
-    }, [ok]);
+    }, [ok, playSound]);
 
     if (ok === null) return null;
 

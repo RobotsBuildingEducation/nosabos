@@ -59,18 +59,9 @@ import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
+import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.wav";
 import submitActionSound from "../assets/submitaction.wav";
-
-const playSelectSound = () => {
-  const audio = new Audio(selectSound);
-  audio.play().catch(() => {});
-};
-
-const playSubmitSound = () => {
-  const audio = new Audio(submitActionSound);
-  audio.play().catch(() => {});
-};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -850,6 +841,7 @@ export default function GrammarBook({
   const t = useT(userLanguage);
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -3097,7 +3089,7 @@ Return JSON ONLY:
   --------------------------- */
   async function submitFill() {
     if (!question || !input.trim()) return;
-    playSubmitSound();
+    playSound(submitActionSound);
     setLoadingG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3164,7 +3156,7 @@ Return JSON ONLY:
 
   async function submitMC() {
     if (!mcQ || !mcPick) return;
-    playSubmitSound();
+    playSound(submitActionSound);
     setLoadingMCG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3234,7 +3226,7 @@ Return JSON ONLY:
 
   async function submitMA() {
     if (!maQ || !maPicks.length) return;
-    playSubmitSound();
+    playSound(submitActionSound);
     setLoadingMAG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3314,7 +3306,7 @@ Return JSON ONLY:
   // ✅ Deterministic judge for Match using the returned map
   async function submitMatch() {
     if (!canSubmitMatch()) return;
-    playSubmitSound();
+    playSound(submitActionSound);
     setLoadingMJ(true);
 
     // Clear previous explanation when attempting a new answer
@@ -4578,7 +4570,7 @@ Return JSON ONLY:
                       key={i}
                       onClick={() => {
                         if (!mcChoices.length) return;
-                        playSelectSound();
+                        playSound(selectSound);
                         setMcPick(c);
                       }}
                       cursor={mcChoices.length ? "pointer" : "not-allowed"}
@@ -4859,7 +4851,7 @@ Return JSON ONLY:
                         key={i}
                         onClick={() => {
                           if (!maChoices.length) return;
-                          playSelectSound();
+                          playSound(selectSound);
                           if (isSelected) {
                             setMaPicks(maPicks.filter((p) => p !== c));
                           } else {
@@ -5082,7 +5074,7 @@ Return JSON ONLY:
                   setLastOk(null);
                   setSRecognized("");
                   setSEval(null);
-                  playSubmitSound();
+                  playSound(submitActionSound);
                   try {
                     await startSpeakRecording();
                   } catch (err) {
@@ -5261,7 +5253,7 @@ Return JSON ONLY:
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
                                     onClick={() => {
-                                      playSelectSound();
+                                      playSound(selectSound);
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
@@ -5273,7 +5265,7 @@ Return JSON ONLY:
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
-                                        playSelectSound();
+                                        playSound(selectSound);
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5349,7 +5341,7 @@ Return JSON ONLY:
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
                                   onClick={() => {
-                                    playSelectSound();
+                                    playSound(selectSound);
                                     handleMatchAutoMove(ri, "bank");
                                   }}
                                   onKeyDown={(event) => {
@@ -5358,7 +5350,7 @@ Return JSON ONLY:
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
-                                      playSelectSound();
+                                      playSound(selectSound);
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}

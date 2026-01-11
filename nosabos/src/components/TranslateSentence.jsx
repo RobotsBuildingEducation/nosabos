@@ -17,12 +17,8 @@ import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
+import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.wav";
-
-const playSelectSound = () => {
-  const audio = new Audio(selectSound);
-  audio.play().catch(() => {});
-};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -79,6 +75,7 @@ export default function TranslateSentence({
   // Optional character (like Duolingo mascot)
   characterImage = null,
 }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   // Word bank state - indices of words still available
   const [bankOrder, setBankOrder] = useState([]);
   // Selected words - indices of words user has chosen, in order
@@ -441,7 +438,7 @@ export default function TranslateSentence({
                         cursor={lastOk === true ? "default" : "pointer"}
                         onClick={() => {
                           if (lastOk !== true) {
-                            playSelectSound();
+                            playSound(selectSound);
                             handleSelectedWordClick(position);
                           }
                         }}
@@ -519,7 +516,7 @@ export default function TranslateSentence({
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {
-                          playSelectSound();
+                          playSound(selectSound);
                           handleWordClick(wordIndex, position);
                         }
                       }}

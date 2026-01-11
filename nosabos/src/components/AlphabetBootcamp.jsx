@@ -56,12 +56,8 @@ import {
   where,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
+import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.wav";
-
-const playSubmitSound = () => {
-  const audio = new Audio(submitActionSound);
-  audio.play().catch(() => {});
-};
 
 const MotionBox = motion(Box);
 
@@ -483,7 +479,7 @@ function LetterCard({
     // Clear previous results
     setShowResult(false);
     setIsCorrect(false);
-    playSubmitSound();
+    playSound(submitActionSound);
 
     try {
       await startRecording();
@@ -928,6 +924,7 @@ export default function AlphabetBootcamp({
 }) {
   const alphabet = LANGUAGE_ALPHABETS[targetLang] || RUSSIAN_ALPHABET;
   const playerRef = useRef(null);
+  const playSound = useSoundSettings((s) => s.playSound);
   const [playingId, setPlayingId] = useState(null);
   const [currentXp, setCurrentXp] = useState(languageXp);
   const [savedPracticeWords, setSavedPracticeWords] = useState({});

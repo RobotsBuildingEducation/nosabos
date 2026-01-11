@@ -43,12 +43,8 @@ import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.wav";
-
-const playSubmitSound = () => {
-  const audio = new Audio(submitActionSound);
-  audio.play().catch(() => {});
-};
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -477,6 +473,7 @@ export default function RealTimeTest({
 }) {
   const toast = useToast();
   const aliveRef = useRef(false);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   // Lesson content ref
   const lessonContentRef = useRef(lessonContent);
@@ -1006,7 +1003,7 @@ export default function RealTimeTest({
     } catch {}
   }
   async function start() {
-    playSubmitSound();
+    playSound(submitActionSound);
     setErr("");
     setMessages([]);
     respToMsg.current.clear();

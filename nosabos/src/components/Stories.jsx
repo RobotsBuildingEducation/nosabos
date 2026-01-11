@@ -60,13 +60,9 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import RobotBuddyPro from "./RobotBuddyPro";
 import RandomCharacter from "./RandomCharacter";
+import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.wav";
 import deliciousSound from "../assets/delicious.mp3";
-
-const playSubmitSound = () => {
-  const audio = new Audio(submitActionSound);
-  audio.play().catch(() => {});
-};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -363,6 +359,7 @@ export default function StoryMode({
   const navigate = useNavigate();
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -1385,8 +1382,7 @@ export default function StoryMode({
       });
 
       // Play success sound
-      const audio = new Audio(deliciousSound);
-      audio.play().catch(() => {});
+      playSound(deliciousSound);
 
       // Mark sentence as completed, wait for user to click "Next"
       setSentenceCompleted(true);
@@ -1425,7 +1421,7 @@ export default function StoryMode({
     }
 
     setLastSuccessInfo(null);
-    playSubmitSound();
+    playSound(submitActionSound);
 
     try {
       await startSpeakRecording();
@@ -1724,7 +1720,7 @@ export default function StoryMode({
                   <Center>
                     <Button
                       onClick={() => {
-                        playSubmitSound();
+                        playSound(submitActionSound);
                         stopAllAudio();
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);

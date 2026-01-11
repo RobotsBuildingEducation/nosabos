@@ -103,6 +103,7 @@ import { Navigate, useLocation } from "react-router-dom";
 
 import useUserStore from "./hooks/useUserStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
+import useSoundSettings from "./hooks/useSoundSettings";
 
 import GrammarBook from "./components/GrammarBook";
 import Onboarding from "./components/Onboarding";
@@ -438,6 +439,9 @@ function TopBar({
   // 🆕 allow posts props
   allowPosts,
   onAllowPostsChange,
+  // 🆕 sound effects props
+  soundEnabled,
+  onSoundEnabledChange,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -1041,6 +1045,27 @@ function TopBar({
                         "Automatic community posts disabled."}
                   </Text>
                 </Box>
+
+                {/* Sound Effects toggle */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <HStack justifyContent="space-between">
+                    <Text fontSize="sm">
+                      {t.sound_effects_label || "Sound effects"}
+                    </Text>
+                    <Switch
+                      id="settings-sound-effects-switch"
+                      isChecked={soundEnabled}
+                      onChange={(e) => onSoundEnabledChange(e.target.checked)}
+                    />
+                  </HStack>
+                  <Text fontSize="xs" opacity={0.6} mt={2}>
+                    {soundEnabled
+                      ? t.sound_effects_enabled ||
+                        "Sound effects are enabled."
+                      : t.sound_effects_disabled ||
+                        "Sound effects are muted."}
+                  </Text>
+                </Box>
               </VStack>
             </Box>
           </DrawerBody>
@@ -1272,6 +1297,9 @@ export default function App() {
     user?.subscriptionPasscodeVerified,
   ]);
   const [allowPosts, setAllowPosts] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const setSoundSettingsEnabled = useSoundSettings((s) => s.setSoundEnabled);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);
@@ -1282,6 +1310,14 @@ export default function App() {
     // Default to true if user.allowPosts is not explicitly set
     setAllowPosts(user?.allowPosts !== false);
   }, [user?.allowPosts]);
+
+  // Sync soundEnabled state with global store
+  useEffect(() => {
+    // Default to true if user.soundEnabled is not explicitly set
+    const enabled = user?.soundEnabled !== false;
+    setSoundEnabled(enabled);
+    setSoundSettingsEnabled(enabled);
+  }, [user?.soundEnabled, setSoundSettingsEnabled]);
 
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
@@ -1389,12 +1425,9 @@ export default function App() {
   // Play sparkle sound when lesson completion modal opens
   useEffect(() => {
     if (showCompletionModal) {
-      const audio = new Audio(sparkleSound);
-      audio.play().catch(() => {
-        // Ignore autoplay errors
-      });
+      playSound(sparkleSound);
     }
-  }, [showCompletionModal]);
+  }, [showCompletionModal, playSound]);
 
   // Proficiency level completion celebration modal
   const [showProficiencyCompletionModal, setShowProficiencyCompletionModal] =
@@ -1743,12 +1776,9 @@ export default function App() {
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
     if (celebrateOpen) {
-      const audio = new Audio(dailyGoalSound);
-      audio.play().catch(() => {
-        // Ignore autoplay errors
-      });
+      playSound(dailyGoalSound);
     }
-  }, [celebrateOpen]);
+  }, [celebrateOpen, playSound]);
 
   /* -----------------------------------
      Session timer
@@ -2010,6 +2040,39 @@ export default function App() {
       }
     },
     [allowPosts, resolveNpub, appLanguage, user, setUser]
+  );
+
+  const handleSoundEnabledChange = useCallback(
+    async (nextValue) => {
+      const normalized = Boolean(nextValue);
+      const previous = soundEnabled;
+      if (normalized === previous && user?.soundEnabled === normalized) {
+        return;
+      }
+      setSoundEnabled(normalized);
+      setSoundSettingsEnabled(normalized);
+      const id = resolveNpub();
+      if (!id) {
+        setSoundEnabled(previous);
+        setSoundSettingsEnabled(previous);
+        const message =
+          appLanguage === "es"
+            ? "Conecta tu cuenta para usar esta función."
+            : "Connect your account to use this feature.";
+        throw new Error(message);
+      }
+      try {
+        await updateDoc(doc(database, "users", id), { soundEnabled: normalized });
+        if (user) {
+          setUser?.({ ...user, soundEnabled: normalized });
+        }
+      } catch (error) {
+        setSoundEnabled(previous);
+        setSoundSettingsEnabled(previous);
+        throw error;
+      }
+    },
+    [soundEnabled, resolveNpub, appLanguage, user, setUser, setSoundSettingsEnabled]
   );
 
   const saveGlobalSettings = async (partial = {}) => {
@@ -3884,6 +3947,8 @@ export default function App() {
         onOpenDailyGoalModal={() => setDailyGoalOpen(true)}
         allowPosts={allowPosts}
         onAllowPostsChange={handleAllowPostsChange}
+        soundEnabled={soundEnabled}
+        onSoundEnabledChange={handleSoundEnabledChange}
       />
 
       <TeamsDrawer
