@@ -30,6 +30,13 @@ import {
   getTTSPlayer,
   TTS_LANG_TAG,
 } from "../utils/tts";
+import submitActionSound from "../assets/submitaction.wav";
+
+const playSubmitSound = () => {
+  const audio = new Audio(submitActionSound);
+  audio.play().catch(() => {});
+};
+
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
 
@@ -1245,6 +1252,7 @@ export default function History({
   // Award XP for current lecture and move to next module
   async function finishReadingAndNext() {
     if (!npub || !activeLecture || isGenerating || isFinishing) return;
+    playSubmitSound();
     setIsFinishing(true);
     try {
       if (!activeLecture.awarded) {

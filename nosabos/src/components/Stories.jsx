@@ -59,6 +59,12 @@ import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import RobotBuddyPro from "./RobotBuddyPro";
+import submitActionSound from "../assets/submitaction.wav";
+
+const playSubmitSound = () => {
+  const audio = new Audio(submitActionSound);
+  audio.play().catch(() => {});
+};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1412,6 +1418,7 @@ export default function StoryMode({
     }
 
     setLastSuccessInfo(null);
+    playSubmitSound();
 
     try {
       await startSpeakRecording();
@@ -1710,6 +1717,7 @@ export default function StoryMode({
                   <Center>
                     <Button
                       onClick={() => {
+                        playSubmitSound();
                         stopAllAudio();
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);

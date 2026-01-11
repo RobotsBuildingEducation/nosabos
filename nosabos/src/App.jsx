@@ -148,6 +148,7 @@ import {
 } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import sparkleSound from "./assets/sparkle.mp3";
+import dailyGoalSound from "./assets/dailygoal.wav";
 
 /* ---------------------------
    Small helpers
@@ -1738,6 +1739,16 @@ export default function App() {
   const dailyGoalModalJustOpenedRef = useRef(false);
   const [shouldShowTimerAfterGoal, setShouldShowTimerAfterGoal] =
     useState(false);
+
+  // Play daily goal sound when daily goal celebration modal opens
+  useEffect(() => {
+    if (celebrateOpen) {
+      const audio = new Audio(dailyGoalSound);
+      audio.play().catch(() => {
+        // Ignore autoplay errors
+      });
+    }
+  }, [celebrateOpen]);
 
   /* -----------------------------------
      Session timer

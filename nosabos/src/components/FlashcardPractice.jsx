@@ -45,8 +45,14 @@ import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { RiBookmarkLine } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
+import submitActionSound from "../assets/submitaction.wav";
 
 const MotionBox = motion(Box);
+
+const playSubmitSound = () => {
+  const audio = new Audio(submitActionSound);
+  audio.play().catch(() => {});
+};
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -249,6 +255,7 @@ export default function FlashcardPractice({
 
   const handleTextSubmit = () => {
     if (textAnswer.trim()) {
+      playSubmitSound();
       setExplanationText("");
       checkAnswerWithAI(textAnswer);
     }
@@ -363,6 +370,7 @@ export default function FlashcardPractice({
     setXpAwarded(0);
     setExplanationText("");
     setIsLoadingExplanation(false);
+    playSubmitSound();
 
     try {
       await startRecording();
