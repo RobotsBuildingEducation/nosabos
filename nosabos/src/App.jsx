@@ -445,6 +445,7 @@ function TopBar({
   // 🆕 sound volume props
   soundVolume,
   onVolumeChange,
+  onVolumeSave,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -1085,6 +1086,7 @@ function TopBar({
                         step={5}
                         value={soundVolume}
                         onChange={(val) => onVolumeChange(val)}
+                        onChangeEnd={(val) => onVolumeSave(val)}
                       >
                         <SliderTrack>
                           <SliderFilledTrack />
@@ -2114,31 +2116,29 @@ export default function App() {
   );
 
   const handleVolumeChange = useCallback(
-    async (nextValue) => {
+    (nextValue) => {
       const normalized = Math.max(0, Math.min(100, Math.round(nextValue)));
-      const previous = soundVolume;
-      if (normalized === previous && user?.soundVolume === normalized) {
-        return;
-      }
       setSoundVolume(normalized);
       setSoundSettingsVolume(normalized);
+    },
+    [setSoundSettingsVolume]
+  );
+
+  const handleVolumeSave = useCallback(
+    async (nextValue) => {
+      const normalized = Math.max(0, Math.min(100, Math.round(nextValue)));
       const id = resolveNpub();
-      if (!id) {
-        setSoundVolume(previous);
-        setSoundSettingsVolume(previous);
-        return;
-      }
+      if (!id) return;
       try {
         await updateDoc(doc(database, "users", id), { soundVolume: normalized });
         if (user) {
           setUser?.({ ...user, soundVolume: normalized });
         }
       } catch (error) {
-        setSoundVolume(previous);
-        setSoundSettingsVolume(previous);
+        // Silently fail - local state is already updated
       }
     },
-    [soundVolume, resolveNpub, user, setUser, setSoundSettingsVolume]
+    [resolveNpub, user, setUser]
   );
 
   const saveGlobalSettings = async (partial = {}) => {
@@ -4020,6 +4020,7 @@ export default function App() {
         onSoundEnabledChange={handleSoundEnabledChange}
         soundVolume={soundVolume}
         onVolumeChange={handleVolumeChange}
+        onVolumeSave={handleVolumeSave}
       />
 
       <TeamsDrawer
