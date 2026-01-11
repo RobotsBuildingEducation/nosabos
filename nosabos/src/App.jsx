@@ -54,6 +54,7 @@ import {
   Badge,
   Tooltip,
   useDisclosure,
+  useBreakpointValue,
   Alert,
   AlertIcon,
   Accordion,
@@ -1073,7 +1074,7 @@ function TopBar({
                       : t.sound_effects_disabled ||
                         "Sound effects are muted."}
                   </Text>
-                  {soundEnabled && (
+                  {soundEnabled && !isMobile && (
                     <HStack mt={3} spacing={3} align="center">
                       <Box w="50%">
                         <HStack justify="space-between" mb={2}>
@@ -1170,6 +1171,7 @@ export default function App() {
   const toast = useToast();
   const initRef = useRef(false);
   const location = useLocation();
+  const isMobile = useBreakpointValue({ base: true, md: false });
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
   const handleSendToHelpChat = useCallback(

@@ -25,6 +25,7 @@ import {
   MenuList,
   MenuItemOption,
   MenuOptionGroup,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { HiVolumeUp } from "react-icons/hi";
@@ -49,6 +50,7 @@ export default function Onboarding({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const isMobile = useBreakpointValue({ base: true, md: false });
 
   const normalizedUserLang = userLanguage === "es" ? "es" : "en";
   const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
@@ -385,7 +387,7 @@ export default function Onboarding({
                       : ui.sound_effects_disabled ||
                         "Sound effects are muted."}
                   </Text>
-                  {soundEnabled && (
+                  {soundEnabled && !isMobile && (
                     <HStack mt={3} spacing={3} align="center">
                       <Box w="50%">
                         <HStack justify="space-between" mb={2}>
