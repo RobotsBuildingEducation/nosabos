@@ -442,6 +442,9 @@ function TopBar({
   // 🆕 sound effects props
   soundEnabled,
   onSoundEnabledChange,
+  // 🆕 sound volume props
+  soundVolume,
+  onVolumeChange,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -1065,6 +1068,31 @@ function TopBar({
                       : t.sound_effects_disabled ||
                         "Sound effects are muted."}
                   </Text>
+                  {soundEnabled && (
+                    <>
+                      <HStack justify="space-between" mt={3} mb={2}>
+                        <Text fontSize="sm">
+                          {t.sound_volume_label || "Volume"}
+                        </Text>
+                        <Text fontSize="sm" opacity={0.8}>
+                          {soundVolume}%
+                        </Text>
+                      </HStack>
+                      <Slider
+                        aria-label="sound-volume-slider"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={soundVolume}
+                        onChange={(val) => onVolumeChange(val)}
+                      >
+                        <SliderTrack>
+                          <SliderFilledTrack />
+                        </SliderTrack>
+                        <SliderThumb />
+                      </Slider>
+                    </>
+                  )}
                 </Box>
               </VStack>
             </Box>
@@ -1298,7 +1326,9 @@ export default function App() {
   ]);
   const [allowPosts, setAllowPosts] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundVolume, setSoundVolume] = useState(100);
   const setSoundSettingsEnabled = useSoundSettings((s) => s.setSoundEnabled);
+  const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
   const playSound = useSoundSettings((s) => s.playSound);
 
   const [cefrResult, setCefrResult] = useState(null);
@@ -1318,6 +1348,14 @@ export default function App() {
     setSoundEnabled(enabled);
     setSoundSettingsEnabled(enabled);
   }, [user?.soundEnabled, setSoundSettingsEnabled]);
+
+  // Sync soundVolume state with global store
+  useEffect(() => {
+    // Default to 100 if user.soundVolume is not set
+    const vol = typeof user?.soundVolume === "number" ? user.soundVolume : 100;
+    setSoundVolume(vol);
+    setSoundSettingsVolume(vol);
+  }, [user?.soundVolume, setSoundSettingsVolume]);
 
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
@@ -2075,6 +2113,34 @@ export default function App() {
     [soundEnabled, resolveNpub, appLanguage, user, setUser, setSoundSettingsEnabled]
   );
 
+  const handleVolumeChange = useCallback(
+    async (nextValue) => {
+      const normalized = Math.max(0, Math.min(100, Math.round(nextValue)));
+      const previous = soundVolume;
+      if (normalized === previous && user?.soundVolume === normalized) {
+        return;
+      }
+      setSoundVolume(normalized);
+      setSoundSettingsVolume(normalized);
+      const id = resolveNpub();
+      if (!id) {
+        setSoundVolume(previous);
+        setSoundSettingsVolume(previous);
+        return;
+      }
+      try {
+        await updateDoc(doc(database, "users", id), { soundVolume: normalized });
+        if (user) {
+          setUser?.({ ...user, soundVolume: normalized });
+        }
+      } catch (error) {
+        setSoundVolume(previous);
+        setSoundSettingsVolume(previous);
+      }
+    },
+    [soundVolume, resolveNpub, user, setUser, setSoundSettingsVolume]
+  );
+
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
     if (!npub) return;
@@ -2276,6 +2342,9 @@ export default function App() {
           streak: 0,
           progress: { ...normalized },
           identity: safe(payload.identity, user?.identity || null),
+          soundEnabled: payload.soundEnabled !== false,
+          soundVolume:
+            typeof payload.soundVolume === "number" ? payload.soundVolume : 100,
         },
         { merge: true }
       );
@@ -3949,6 +4018,8 @@ export default function App() {
         onAllowPostsChange={handleAllowPostsChange}
         soundEnabled={soundEnabled}
         onSoundEnabledChange={handleSoundEnabledChange}
+        soundVolume={soundVolume}
+        onVolumeChange={handleVolumeChange}
       />
 
       <TeamsDrawer

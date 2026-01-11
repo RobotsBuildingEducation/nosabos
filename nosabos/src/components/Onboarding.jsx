@@ -70,6 +70,10 @@ export default function Onboarding({
         typeof initialDraft.soundEnabled === "boolean"
           ? initialDraft.soundEnabled
           : true,
+      soundVolume:
+        typeof initialDraft.soundVolume === "number"
+          ? initialDraft.soundVolume
+          : 100,
     };
   }, [initialDraft, initialSupportLang, ui.DEFAULT_PERSONA]);
 
@@ -78,6 +82,7 @@ export default function Onboarding({
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
   const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
+  const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -120,6 +125,7 @@ export default function Onboarding({
         targetLang,
         pauseMs,
         soundEnabled,
+        soundVolume,
       };
       await Promise.resolve(onComplete(payload));
     } finally {
@@ -375,6 +381,31 @@ export default function Onboarding({
                       : ui.sound_effects_disabled ||
                         "Sound effects are muted."}
                   </Text>
+                  {soundEnabled && (
+                    <>
+                      <HStack justify="space-between" mt={3} mb={2}>
+                        <Text fontSize="sm">
+                          {ui.sound_volume_label || "Volume"}
+                        </Text>
+                        <Text fontSize="sm" opacity={0.8}>
+                          {soundVolume}%
+                        </Text>
+                      </HStack>
+                      <Slider
+                        aria-label="onboarding-volume-slider"
+                        min={0}
+                        max={100}
+                        step={5}
+                        value={soundVolume}
+                        onChange={(val) => setSoundVolume(val)}
+                      >
+                        <SliderTrack>
+                          <SliderFilledTrack />
+                        </SliderTrack>
+                        <SliderThumb />
+                      </Slider>
+                    </>
+                  )}
                 </Box>
               </VStack>
             </Box>
