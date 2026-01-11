@@ -1071,10 +1071,8 @@ function TopBar({
                   </HStack>
                   <Text fontSize="xs" opacity={0.6} mt={2}>
                     {soundEnabled
-                      ? t.sound_effects_enabled ||
-                        "Sound effects are enabled."
-                      : t.sound_effects_disabled ||
-                        "Sound effects are muted."}
+                      ? t.sound_effects_enabled || "Sound effects are enabled."
+                      : t.sound_effects_disabled || "Sound effects are muted."}
                   </Text>
                   {soundEnabled && !isMobile && (
                     <HStack mt={3} spacing={3} align="center">
@@ -2120,7 +2118,9 @@ export default function App() {
         throw new Error(message);
       }
       try {
-        await updateDoc(doc(database, "users", id), { soundEnabled: normalized });
+        await updateDoc(doc(database, "users", id), {
+          soundEnabled: normalized,
+        });
         if (user) {
           setUser?.({ ...user, soundEnabled: normalized });
         }
@@ -2130,7 +2130,14 @@ export default function App() {
         throw error;
       }
     },
-    [soundEnabled, resolveNpub, appLanguage, user, setUser, setSoundSettingsEnabled]
+    [
+      soundEnabled,
+      resolveNpub,
+      appLanguage,
+      user,
+      setUser,
+      setSoundSettingsEnabled,
+    ]
   );
 
   const handleVolumeChange = useCallback(
@@ -2148,7 +2155,9 @@ export default function App() {
       const id = resolveNpub();
       if (!id) return;
       try {
-        await updateDoc(doc(database, "users", id), { soundVolume: normalized });
+        await updateDoc(doc(database, "users", id), {
+          soundVolume: normalized,
+        });
         if (user) {
           setUser?.({ ...user, soundVolume: normalized });
         }
