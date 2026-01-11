@@ -59,7 +59,9 @@ import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import RobotBuddyPro from "./RobotBuddyPro";
+import RandomCharacter from "./RandomCharacter";
 import submitActionSound from "../assets/submitaction.wav";
+import deliciousSound from "../assets/delicious.mp3";
 
 const playSubmitSound = () => {
   const audio = new Audio(submitActionSound);
@@ -1381,6 +1383,10 @@ export default function StoryMode({
         translation: currentSentence?.sup || "",
       });
 
+      // Play success sound
+      const audio = new Audio(deliciousSound);
+      audio.play().catch(() => {});
+
       // Mark sentence as completed, wait for user to click "Next"
       setSentenceCompleted(true);
     },
@@ -2087,6 +2093,9 @@ export default function StoryMode({
                               border="rgba(255,255,255,0.2)"
                             />
                           </Box>
+                        </Box>
+                        <Box mt="-6" paddingBottom={6}>
+                          <RandomCharacter />
                         </Box>
                       </SlideFade>
                     ) : null}

@@ -46,6 +46,9 @@ import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { RiBookmarkLine } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
 import submitActionSound from "../assets/submitaction.wav";
+import deliciousSound from "../assets/delicious.mp3";
+import clickSound from "../assets/click.mp3";
+import RandomCharacter from "./RandomCharacter";
 
 const MotionBox = motion(Box);
 
@@ -232,6 +235,10 @@ export default function FlashcardPractice({
       setIsCorrect(isYes);
       setXpAwarded(xp);
       setShowResult(true);
+
+      // Play feedback sound
+      const feedbackAudio = new Audio(isYes ? deliciousSound : clickSound);
+      feedbackAudio.play().catch(() => {});
 
       // If correct, award XP and mark complete after a delay
       if (isYes) {
@@ -1054,6 +1061,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         <WaveBar value={nextLevelProgressPct} />
                       </VStack>
                     )}
+                    <Box mt="-6" paddingBottom={6}>
+                      <RandomCharacter />
+                    </Box>
                   </VStack>
                 </MotionBox>
               </AnimatePresence>
