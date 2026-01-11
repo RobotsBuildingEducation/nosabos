@@ -148,7 +148,9 @@ import {
   FaKey,
 } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
+import { HiVolumeUp } from "react-icons/hi";
 import sparkleSound from "./assets/sparkle.mp3";
+import submitActionSound from "./assets/submitaction.wav";
 import dailyGoalSound from "./assets/dailygoal.wav";
 
 /* ---------------------------
@@ -442,6 +444,12 @@ function TopBar({
   // 🆕 sound effects props
   soundEnabled,
   onSoundEnabledChange,
+  // 🆕 sound volume props
+  soundVolume,
+  onVolumeChange,
+  onVolumeSave,
+  playSound,
+  testSound,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -1065,6 +1073,42 @@ function TopBar({
                       : t.sound_effects_disabled ||
                         "Sound effects are muted."}
                   </Text>
+                  {soundEnabled && (
+                    <HStack mt={3} spacing={3} align="center">
+                      <Box w="50%">
+                        <HStack justify="space-between" mb={2}>
+                          <Text fontSize="sm">
+                            {t.sound_volume_label || "Volume"}
+                          </Text>
+                          <Text fontSize="sm" opacity={0.8}>
+                            {soundVolume}%
+                          </Text>
+                        </HStack>
+                        <Slider
+                          aria-label="sound-volume-slider"
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={soundVolume}
+                          onChange={(val) => onVolumeChange(val)}
+                          onChangeEnd={(val) => onVolumeSave(val)}
+                        >
+                          <SliderTrack>
+                            <SliderFilledTrack />
+                          </SliderTrack>
+                          <SliderThumb />
+                        </Slider>
+                      </Box>
+                      <Button
+                        leftIcon={<HiVolumeUp />}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => playSound(testSound)}
+                      >
+                        {t.test_sound || "Test sound"}
+                      </Button>
+                    </HStack>
+                  )}
                 </Box>
               </VStack>
             </Box>
@@ -1298,7 +1342,9 @@ export default function App() {
   ]);
   const [allowPosts, setAllowPosts] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [soundVolume, setSoundVolume] = useState(40);
   const setSoundSettingsEnabled = useSoundSettings((s) => s.setSoundEnabled);
+  const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
   const playSound = useSoundSettings((s) => s.playSound);
 
   const [cefrResult, setCefrResult] = useState(null);
@@ -1318,6 +1364,14 @@ export default function App() {
     setSoundEnabled(enabled);
     setSoundSettingsEnabled(enabled);
   }, [user?.soundEnabled, setSoundSettingsEnabled]);
+
+  // Sync soundVolume state with global store
+  useEffect(() => {
+    // Default to 40 if user.soundVolume is not set
+    const vol = typeof user?.soundVolume === "number" ? user.soundVolume : 40;
+    setSoundVolume(vol);
+    setSoundSettingsVolume(vol);
+  }, [user?.soundVolume, setSoundSettingsVolume]);
 
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
@@ -2075,6 +2129,32 @@ export default function App() {
     [soundEnabled, resolveNpub, appLanguage, user, setUser, setSoundSettingsEnabled]
   );
 
+  const handleVolumeChange = useCallback(
+    (nextValue) => {
+      const normalized = Math.max(0, Math.min(100, Math.round(nextValue)));
+      setSoundVolume(normalized);
+      setSoundSettingsVolume(normalized);
+    },
+    [setSoundSettingsVolume]
+  );
+
+  const handleVolumeSave = useCallback(
+    async (nextValue) => {
+      const normalized = Math.max(0, Math.min(100, Math.round(nextValue)));
+      const id = resolveNpub();
+      if (!id) return;
+      try {
+        await updateDoc(doc(database, "users", id), { soundVolume: normalized });
+        if (user) {
+          setUser?.({ ...user, soundVolume: normalized });
+        }
+      } catch (error) {
+        // Silently fail - local state is already updated
+      }
+    },
+    [resolveNpub, user, setUser]
+  );
+
   const saveGlobalSettings = async (partial = {}) => {
     const npub = resolveNpub();
     if (!npub) return;
@@ -2276,6 +2356,9 @@ export default function App() {
           streak: 0,
           progress: { ...normalized },
           identity: safe(payload.identity, user?.identity || null),
+          soundEnabled: payload.soundEnabled !== false,
+          soundVolume:
+            typeof payload.soundVolume === "number" ? payload.soundVolume : 40,
         },
         { merge: true }
       );
@@ -3949,6 +4032,11 @@ export default function App() {
         onAllowPostsChange={handleAllowPostsChange}
         soundEnabled={soundEnabled}
         onSoundEnabledChange={handleSoundEnabledChange}
+        soundVolume={soundVolume}
+        onVolumeChange={handleVolumeChange}
+        onVolumeSave={handleVolumeSave}
+        playSound={playSound}
+        testSound={submitActionSound}
       />
 
       <TeamsDrawer

@@ -27,6 +27,9 @@ import {
   MenuOptionGroup,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
+import { HiVolumeUp } from "react-icons/hi";
+import submitActionSound from "../assets/submitaction.wav";
+import useSoundSettings from "../hooks/useSoundSettings";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { translations } from "../utils/translation";
@@ -70,6 +73,10 @@ export default function Onboarding({
         typeof initialDraft.soundEnabled === "boolean"
           ? initialDraft.soundEnabled
           : true,
+      soundVolume:
+        typeof initialDraft.soundVolume === "number"
+          ? initialDraft.soundVolume
+          : 40,
     };
   }, [initialDraft, initialSupportLang, ui.DEFAULT_PERSONA]);
 
@@ -78,6 +85,8 @@ export default function Onboarding({
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
   const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
+  const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -120,6 +129,7 @@ export default function Onboarding({
         targetLang,
         pauseMs,
         soundEnabled,
+        soundVolume,
       };
       await Promise.resolve(onComplete(payload));
     } finally {
@@ -375,6 +385,41 @@ export default function Onboarding({
                       : ui.sound_effects_disabled ||
                         "Sound effects are muted."}
                   </Text>
+                  {soundEnabled && (
+                    <HStack mt={3} spacing={3} align="center">
+                      <Box w="50%">
+                        <HStack justify="space-between" mb={2}>
+                          <Text fontSize="sm">
+                            {ui.sound_volume_label || "Volume"}
+                          </Text>
+                          <Text fontSize="sm" opacity={0.8}>
+                            {soundVolume}%
+                          </Text>
+                        </HStack>
+                        <Slider
+                          aria-label="onboarding-volume-slider"
+                          min={0}
+                          max={100}
+                          step={5}
+                          value={soundVolume}
+                          onChange={(val) => setSoundVolume(val)}
+                        >
+                          <SliderTrack>
+                            <SliderFilledTrack />
+                          </SliderTrack>
+                          <SliderThumb />
+                        </Slider>
+                      </Box>
+                      <Button
+                        leftIcon={<HiVolumeUp />}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => playSound(submitActionSound)}
+                      >
+                        {ui.test_sound || "Test sound"}
+                      </Button>
+                    </HStack>
+                  )}
                 </Box>
               </VStack>
             </Box>

@@ -557,6 +557,8 @@ export const translations = {
     sound_effects_label: "Sound effects",
     sound_effects_enabled: "Sound effects are enabled.",
     sound_effects_disabled: "Sound effects are muted.",
+    sound_volume_label: "Volume",
+    test_sound: "Test sound",
     teams_feed_refresh: "Refresh",
     teams_feed_loading: "Syncing with the community...",
     teams_feed_empty: "No posts yet. Start the conversation!",
@@ -1165,6 +1167,8 @@ export const translations = {
     sound_effects_label: "Efectos de sonido",
     sound_effects_enabled: "Los efectos de sonido están activados.",
     sound_effects_disabled: "Los efectos de sonido están silenciados.",
+    sound_volume_label: "Volumen",
+    test_sound: "Probar sonido",
     teams_feed_refresh: "Actualizar",
     teams_feed_loading: "Sincronizando con la comunidad...",
     teams_feed_empty:
