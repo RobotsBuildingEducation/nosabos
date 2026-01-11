@@ -9,7 +9,6 @@ import {
   DrawerHeader,
   DrawerOverlay,
   HStack,
-  IconButton,
   Input,
   Switch,
   Text,
@@ -411,13 +410,14 @@ export default function Onboarding({
                           <SliderThumb />
                         </Slider>
                       </Box>
-                      <IconButton
-                        aria-label="Test sound"
-                        icon={<HiVolumeUp />}
+                      <Button
+                        leftIcon={<HiVolumeUp />}
                         size="sm"
                         variant="outline"
                         onClick={() => playSound(submitActionSound)}
-                      />
+                      >
+                        {ui.test_sound || "Test sound"}
+                      </Button>
                     </HStack>
                   )}
                 </Box>

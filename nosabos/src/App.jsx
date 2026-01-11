@@ -1099,13 +1099,14 @@ function TopBar({
                           <SliderThumb />
                         </Slider>
                       </Box>
-                      <IconButton
-                        aria-label="Test sound"
-                        icon={<HiVolumeUp />}
+                      <Button
+                        leftIcon={<HiVolumeUp />}
                         size="sm"
                         variant="outline"
                         onClick={() => playSound(testSound)}
-                      />
+                      >
+                        {t.test_sound || "Test sound"}
+                      </Button>
                     </HStack>
                   )}
                 </Box>
