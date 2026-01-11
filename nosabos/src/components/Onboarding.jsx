@@ -66,6 +66,10 @@ export default function Onboarding({
         typeof initialDraft.pauseMs === "number" && initialDraft.pauseMs > 0
           ? initialDraft.pauseMs
           : 1200,
+      soundEnabled:
+        typeof initialDraft.soundEnabled === "boolean"
+          ? initialDraft.soundEnabled
+          : true,
     };
   }, [initialDraft, initialSupportLang, ui.DEFAULT_PERSONA]);
 
@@ -73,6 +77,7 @@ export default function Onboarding({
   const [targetLang, setTargetLang] = useState(defaults.targetLang);
   const [voicePersona, setVoicePersona] = useState(defaults.voicePersona);
   const [pauseMs, setPauseMs] = useState(defaults.pauseMs);
+  const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -114,6 +119,7 @@ export default function Onboarding({
         voicePersona,
         targetLang,
         pauseMs,
+        soundEnabled,
       };
       await Promise.resolve(onComplete(payload));
     } finally {
@@ -347,6 +353,27 @@ export default function Onboarding({
                   </Slider>
                   <Text fontSize="xs" opacity={0.6} mt={2}>
                     {VAD_HINT}
+                  </Text>
+                </Box>
+
+                {/* Sound Effects toggle */}
+                <Box bg="gray.800" p={3} rounded="md">
+                  <HStack justifyContent="space-between">
+                    <Text fontSize="sm">
+                      {ui.sound_effects_label || "Sound effects"}
+                    </Text>
+                    <Switch
+                      id="onboarding-sound-effects-switch"
+                      isChecked={soundEnabled}
+                      onChange={(e) => setSoundEnabled(e.target.checked)}
+                    />
+                  </HStack>
+                  <Text fontSize="xs" opacity={0.6} mt={2}>
+                    {soundEnabled
+                      ? ui.sound_effects_enabled ||
+                        "Sound effects are enabled."
+                      : ui.sound_effects_disabled ||
+                        "Sound effects are muted."}
                   </Text>
                 </Box>
               </VStack>

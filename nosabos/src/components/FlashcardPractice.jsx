@@ -45,17 +45,13 @@ import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { RiBookmarkLine } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
+import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.wav";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import RandomCharacter from "./RandomCharacter";
 
 const MotionBox = motion(Box);
-
-const playSubmitSound = () => {
-  const audio = new Audio(submitActionSound);
-  audio.play().catch(() => {});
-};
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -166,6 +162,7 @@ export default function FlashcardPractice({
   const streamingRef = useRef(false);
   const explanationStreamingRef = useRef(false);
   const audioRef = useRef(null);
+  const playSound = useSoundSettings((s) => s.playSound);
   const toast = useToast();
 
   // Notes store
@@ -237,8 +234,7 @@ export default function FlashcardPractice({
       setShowResult(true);
 
       // Play feedback sound
-      const feedbackAudio = new Audio(isYes ? deliciousSound : clickSound);
-      feedbackAudio.play().catch(() => {});
+      playSound(isYes ? deliciousSound : clickSound);
 
       // If correct, award XP and mark complete after a delay
       if (isYes) {
@@ -262,7 +258,7 @@ export default function FlashcardPractice({
 
   const handleTextSubmit = () => {
     if (textAnswer.trim()) {
-      playSubmitSound();
+      playSound(submitActionSound);
       setExplanationText("");
       checkAnswerWithAI(textAnswer);
     }
@@ -377,7 +373,7 @@ export default function FlashcardPractice({
     setXpAwarded(0);
     setExplanationText("");
     setIsLoadingExplanation(false);
-    playSubmitSound();
+    playSound(submitActionSound);
 
     try {
       await startRecording();

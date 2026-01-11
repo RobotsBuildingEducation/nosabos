@@ -554,6 +554,9 @@ export const translations = {
     teams_feed_allow_label: "Allow posts",
     teams_feed_allow_enabled: "Automatic community posts enabled.",
     teams_feed_allow_disabled: "Automatic community posts disabled.",
+    sound_effects_label: "Sound effects",
+    sound_effects_enabled: "Sound effects are enabled.",
+    sound_effects_disabled: "Sound effects are muted.",
     teams_feed_refresh: "Refresh",
     teams_feed_loading: "Syncing with the community...",
     teams_feed_empty: "No posts yet. Start the conversation!",
@@ -1159,6 +1162,9 @@ export const translations = {
     teams_feed_allow_enabled: "Las publicaciones automáticas están activadas.",
     teams_feed_allow_disabled:
       "Las publicaciones automáticas están desactivadas.",
+    sound_effects_label: "Efectos de sonido",
+    sound_effects_enabled: "Los efectos de sonido están activados.",
+    sound_effects_disabled: "Los efectos de sonido están silenciados.",
     teams_feed_refresh: "Actualizar",
     teams_feed_loading: "Sincronizando con la comunidad...",
     teams_feed_empty:

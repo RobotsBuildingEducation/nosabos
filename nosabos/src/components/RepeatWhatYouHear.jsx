@@ -16,12 +16,8 @@ import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
+import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.wav";
-
-const playSelectSound = () => {
-  const audio = new Audio(selectSound);
-  audio.play().catch(() => {});
-};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -70,6 +66,7 @@ export default function RepeatWhatYouHear({
 
   characterImage = null,
 }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   const [bankOrder, setBankOrder] = useState([]);
   const [selectedWords, setSelectedWords] = useState([]);
   const hasPlayedRef = useRef(false);
@@ -341,7 +338,7 @@ export default function RepeatWhatYouHear({
                             cursor={lastOk === true ? "default" : "grab"}
                             onClick={() => {
                               if (lastOk !== true) {
-                                playSelectSound();
+                                playSound(selectSound);
                                 handleSelectedWordClick(position);
                               }
                             }}
@@ -420,7 +417,7 @@ export default function RepeatWhatYouHear({
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {
-                          playSelectSound();
+                          playSound(selectSound);
                           handleWordClick(wordIndex, position);
                         }
                       }}
