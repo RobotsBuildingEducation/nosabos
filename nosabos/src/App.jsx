@@ -451,6 +451,8 @@ function TopBar({
   onVolumeSave,
   playSound,
   testSound,
+  // 🆕 mobile detection prop
+  isMobile,
 }) {
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
@@ -4039,6 +4041,7 @@ export default function App() {
         onVolumeSave={handleVolumeSave}
         playSound={playSound}
         testSound={submitActionSound}
+        isMobile={isMobile}
       />
 
       <TeamsDrawer
