@@ -307,17 +307,19 @@ const RandomCharacter = ({
         justifyContent: "center",
       }}
     >
-      <div>
-        <img
-          src={
-            notSoRandomCharacter
-              ? characterImagesMap[notSoRandomCharacter]
-              : image
-          }
-          alt=""
-          width={width}
-          height={width}
-        />
+      <div style={{ display: "flex" }}>
+        <RiseUpAnimation speed="0.3s">
+          <img
+            src={
+              notSoRandomCharacter
+                ? characterImagesMap[notSoRandomCharacter]
+                : image
+            }
+            alt=""
+            width={width}
+            height={width}
+          />
+        </RiseUpAnimation>
       </div>
     </div>
   );
