@@ -1328,7 +1328,7 @@ export default function App() {
   ]);
   const [allowPosts, setAllowPosts] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [soundVolume, setSoundVolume] = useState(100);
+  const [soundVolume, setSoundVolume] = useState(40);
   const setSoundSettingsEnabled = useSoundSettings((s) => s.setSoundEnabled);
   const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
   const playSound = useSoundSettings((s) => s.playSound);
@@ -1353,8 +1353,8 @@ export default function App() {
 
   // Sync soundVolume state with global store
   useEffect(() => {
-    // Default to 100 if user.soundVolume is not set
-    const vol = typeof user?.soundVolume === "number" ? user.soundVolume : 100;
+    // Default to 40 if user.soundVolume is not set
+    const vol = typeof user?.soundVolume === "number" ? user.soundVolume : 40;
     setSoundVolume(vol);
     setSoundSettingsVolume(vol);
   }, [user?.soundVolume, setSoundSettingsVolume]);
@@ -2344,7 +2344,7 @@ export default function App() {
           identity: safe(payload.identity, user?.identity || null),
           soundEnabled: payload.soundEnabled !== false,
           soundVolume:
-            typeof payload.soundVolume === "number" ? payload.soundVolume : 100,
+            typeof payload.soundVolume === "number" ? payload.soundVolume : 40,
         },
         { merge: true }
       );

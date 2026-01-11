@@ -73,7 +73,7 @@ export default function Onboarding({
       soundVolume:
         typeof initialDraft.soundVolume === "number"
           ? initialDraft.soundVolume
-          : 100,
+          : 40,
     };
   }, [initialDraft, initialSupportLang, ui.DEFAULT_PERSONA]);
 

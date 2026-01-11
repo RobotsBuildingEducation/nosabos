@@ -7,7 +7,7 @@ import { create } from "zustand";
  */
 const useSoundSettings = create((set, get) => ({
   soundEnabled: true, // Default to enabled
-  volume: 100, // Volume level 0-100, default to full volume
+  volume: 40, // Volume level 0-100, default to 40%
 
   setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(100, volume)) }),
