@@ -59,6 +59,14 @@ import { speechReasonTips } from "../utils/speechEvaluation";
 import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import RobotBuddyPro from "./RobotBuddyPro";
+import RandomCharacter from "./RandomCharacter";
+import submitActionSound from "../assets/submitaction.wav";
+import deliciousSound from "../assets/delicious.mp3";
+
+const playSubmitSound = () => {
+  const audio = new Audio(submitActionSound);
+  audio.play().catch(() => {});
+};
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -136,7 +144,8 @@ const toLangKey = (value) => {
   )
     return "nah";
   if (["ru", "russian", "ruso", "русский"].includes(raw)) return "ru";
-  if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw)) return "de";
+  if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw))
+    return "de";
   return null;
 };
 
@@ -1375,6 +1384,10 @@ export default function StoryMode({
         translation: currentSentence?.sup || "",
       });
 
+      // Play success sound
+      const audio = new Audio(deliciousSound);
+      audio.play().catch(() => {});
+
       // Mark sentence as completed, wait for user to click "Next"
       setSentenceCompleted(true);
     },
@@ -1412,6 +1425,7 @@ export default function StoryMode({
     }
 
     setLastSuccessInfo(null);
+    playSubmitSound();
 
     try {
       await startSpeakRecording();
@@ -1710,6 +1724,7 @@ export default function StoryMode({
                   <Center>
                     <Button
                       onClick={() => {
+                        playSubmitSound();
                         stopAllAudio();
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);
@@ -2079,6 +2094,9 @@ export default function StoryMode({
                               border="rgba(255,255,255,0.2)"
                             />
                           </Box>
+                        </Box>
+                        <Box mt="-6" paddingBottom={6}>
+                          <RandomCharacter />
                         </Box>
                       </SlideFade>
                     ) : null}

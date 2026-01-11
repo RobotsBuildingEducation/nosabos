@@ -60,9 +60,15 @@ import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
 import selectSound from "../assets/select.wav";
+import submitActionSound from "../assets/submitaction.wav";
 
 const playSelectSound = () => {
   const audio = new Audio(selectSound);
+  audio.play().catch(() => {});
+};
+
+const playSubmitSound = () => {
+  const audio = new Audio(submitActionSound);
   audio.play().catch(() => {});
 };
 
@@ -3091,6 +3097,7 @@ Return JSON ONLY:
   --------------------------- */
   async function submitFill() {
     if (!question || !input.trim()) return;
+    playSubmitSound();
     setLoadingG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3157,6 +3164,7 @@ Return JSON ONLY:
 
   async function submitMC() {
     if (!mcQ || !mcPick) return;
+    playSubmitSound();
     setLoadingMCG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3226,6 +3234,7 @@ Return JSON ONLY:
 
   async function submitMA() {
     if (!maQ || !maPicks.length) return;
+    playSubmitSound();
     setLoadingMAG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3305,6 +3314,7 @@ Return JSON ONLY:
   // ✅ Deterministic judge for Match using the returned map
   async function submitMatch() {
     if (!canSubmitMatch()) return;
+    playSubmitSound();
     setLoadingMJ(true);
 
     // Clear previous explanation when attempting a new answer
@@ -5072,6 +5082,7 @@ Return JSON ONLY:
                   setLastOk(null);
                   setSRecognized("");
                   setSEval(null);
+                  playSubmitSound();
                   try {
                     await startSpeakRecording();
                   } catch (err) {

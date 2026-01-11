@@ -56,6 +56,12 @@ import {
   where,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
+import submitActionSound from "../assets/submitaction.wav";
+
+const playSubmitSound = () => {
+  const audio = new Audio(submitActionSound);
+  audio.play().catch(() => {});
+};
 
 const MotionBox = motion(Box);
 
@@ -477,6 +483,7 @@ function LetterCard({
     // Clear previous results
     setShowResult(false);
     setIsCorrect(false);
+    playSubmitSound();
 
     try {
       await startRecording();

@@ -64,9 +64,15 @@ import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
 import selectSound from "../assets/select.wav";
+import submitActionSound from "../assets/submitaction.wav";
 
 const playSelectSound = () => {
   const audio = new Audio(selectSound);
+  audio.play().catch(() => {});
+};
+
+const playSubmitSound = () => {
+  const audio = new Audio(submitActionSound);
   audio.play().catch(() => {});
 };
 
@@ -2244,6 +2250,7 @@ Return EXACTLY:
 
   async function submitFill() {
     if (!qFill || !ansFill.trim()) return;
+    playSubmitSound();
     setLoadingGFill(true);
 
     // Clear previous explanation when attempting a new answer
@@ -2521,6 +2528,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
 
   async function submitMC() {
     if (!qMC || !pickMC) return;
+    playSubmitSound();
     setLoadingGMC(true);
 
     // Clear previous explanation when attempting a new answer
@@ -2824,6 +2832,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
 
   async function submitMA() {
     if (!qMA || !picksMA.length) return;
+    playSubmitSound();
     setLoadingGMA(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3552,6 +3561,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   async function submitMatch() {
     if (!canSubmitMatch()) return;
+    playSubmitSound();
     setLoadingMJ(true);
 
     // Clear previous explanation when attempting a new answer
@@ -5416,6 +5426,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   setLastOk(null);
                   setSRecognized("");
                   setSEval(null);
+                  playSubmitSound();
                   try {
                     await startSpeakRecording();
                   } catch (err) {

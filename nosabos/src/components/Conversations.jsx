@@ -37,6 +37,12 @@ import {
   getRandomSkillTreeTopics,
   getRandomFallbackTopic,
 } from "../data/conversationTopics";
+import submitActionSound from "../assets/submitaction.wav";
+
+const playSubmitSound = () => {
+  const audio = new Audio(submitActionSound);
+  audio.play().catch(() => {});
+};
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -947,6 +953,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
      WebRTC Start
   --------------------------- */
   async function start() {
+    playSubmitSound();
     setErr("");
     setStatus("connecting");
     setUiState("thinking");
