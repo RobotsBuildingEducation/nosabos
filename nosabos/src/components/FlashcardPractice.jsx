@@ -1061,10 +1061,10 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                         <WaveBar value={nextLevelProgressPct} />
                       </VStack>
                     )}
-                    <Box mt="-6" paddingBottom={6}>
-                      <RandomCharacter />
-                    </Box>
                   </VStack>
+                  <Box mt="-2" paddingBottom={6}>
+                    <RandomCharacter />
+                  </Box>
                 </MotionBox>
               </AnimatePresence>
             )}

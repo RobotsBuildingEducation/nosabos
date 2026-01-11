@@ -144,7 +144,8 @@ const toLangKey = (value) => {
   )
     return "nah";
   if (["ru", "russian", "ruso", "русский"].includes(raw)) return "ru";
-  if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw)) return "de";
+  if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw))
+    return "de";
   return null;
 };
 
