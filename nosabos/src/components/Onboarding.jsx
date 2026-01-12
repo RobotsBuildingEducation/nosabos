@@ -89,6 +89,7 @@ export default function Onboarding({
   const [soundEnabled, setSoundEnabled] = useState(defaults.soundEnabled);
   const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
   const playSound = useSoundSettings((s) => s.playSound);
+  const setGlobalVolume = useSoundSettings((s) => s.setVolume);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -404,7 +405,10 @@ export default function Onboarding({
                           max={100}
                           step={5}
                           value={soundVolume}
-                          onChange={(val) => setSoundVolume(val)}
+                          onChange={(val) => {
+                            setSoundVolume(val);
+                            setGlobalVolume(val);
+                          }}
                         >
                           <SliderTrack>
                             <SliderFilledTrack />
