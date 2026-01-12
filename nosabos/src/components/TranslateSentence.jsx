@@ -18,7 +18,8 @@ import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.wav";
+import nextButtonSound from "../assets/nextbutton.mp3";
+import clickSound from "../assets/click.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -438,7 +439,7 @@ export default function TranslateSentence({
                         cursor={lastOk === true ? "default" : "pointer"}
                         onClick={() => {
                           if (lastOk !== true) {
-                            playSound(selectSound);
+                            playSound(clickSound);
                             handleSelectedWordClick(position);
                           }
                         }}
@@ -516,7 +517,7 @@ export default function TranslateSentence({
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {
-                          playSound(selectSound);
+                          playSound(clickSound);
                           handleWordClick(wordIndex, position);
                         }
                       }}

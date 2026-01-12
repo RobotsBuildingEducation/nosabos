@@ -64,8 +64,9 @@ import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.wav";
-import submitActionSound from "../assets/submitaction.wav";
+import submitActionSound from "../assets/submitaction.mp3";
+import nextButtonSound from "../assets/nextbutton.mp3";
+import clickSound from "../assets/click.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1488,6 +1489,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function handleNext() {
+    playSound(nextButtonSound);
     setLastOk(null);
     setRecentXp(0);
     setExplanationText("");
@@ -1612,6 +1614,8 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   function handleSkip() {
     // Skip button is disabled in quiz mode
     if (isFinalQuiz) return;
+
+    playSound(nextButtonSound);
 
     if (isSpeakRecording) {
       try {
@@ -4164,7 +4168,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
                         onClick={() => {
-                          playSound(selectSound);
+                          playSound(clickSound);
                           // Move from slot back to bank
                           setMcBankOrder((prev) => [...prev, mcSlotIndex]);
                           setMcSlotIndex(null);
@@ -4274,7 +4278,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
                         onClick={() => {
-                          playSound(selectSound);
+                          playSound(clickSound);
                           // Move from slot back to bank
                           setMaBankOrder((prev) => [...prev, choiceIdx]);
                           setMaSlots((prev) => {
@@ -4823,7 +4827,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 onClick={() => {
-                                  playSound(selectSound);
+                                  playSound(clickSound);
                                   handleMcAnswerClick(idx, position);
                                 }}
                                 style={{
@@ -4907,7 +4911,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       key={i}
                       onClick={() => {
                         if (!choicesMC.length) return;
-                        playSound(selectSound);
+                        playSound(clickSound);
                         setPickMC(c);
                       }}
                       cursor={choicesMC.length ? "pointer" : "not-allowed"}
@@ -5093,7 +5097,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 onClick={() => {
-                                  playSound(selectSound);
+                                  playSound(clickSound);
                                   handleMaAnswerClick(idx, position);
                                 }}
                                 style={{
@@ -5179,7 +5183,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         key={i}
                         onClick={() => {
                           if (!choicesMA.length) return;
-                          playSound(selectSound);
+                          playSound(clickSound);
                           if (isSelected) {
                             setPicksMA(picksMA.filter((p) => p !== c));
                           } else {
@@ -5589,7 +5593,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
                                     onClick={() => {
-                                      playSound(selectSound);
+                                      playSound(clickSound);
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
@@ -5601,7 +5605,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
-                                        playSound(selectSound);
+                                        playSound(clickSound);
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5677,7 +5681,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
                                   onClick={() => {
-                                    playSound(selectSound);
+                                    playSound(clickSound);
                                     handleMatchAutoMove(ri, "bank");
                                   }}
                                   onKeyDown={(event) => {
@@ -5686,7 +5690,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
-                                      playSound(selectSound);
+                                      playSound(clickSound);
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}

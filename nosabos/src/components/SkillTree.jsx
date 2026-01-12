@@ -223,6 +223,8 @@ import {
 import { CEFR_LEVELS } from "../data/flashcards/common";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
+import useSoundSettings from "../hooks/useSoundSettings";
+import modeSwitcherSound from "../assets/modeswitcher.mp3";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -1716,6 +1718,9 @@ export default function SkillTree({
   const [selectedLesson, setSelectedLesson] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
 
+  // Sound settings
+  const playSound = useSoundSettings((s) => s.playSound);
+
   // Ref for the latest unlocked lesson element
   const latestUnlockedRef = useRef(null);
 
@@ -1798,6 +1803,7 @@ export default function SkillTree({
   };
 
   const handleStartLesson = (lesson) => {
+    playSound(modeSwitcherSound);
     if (onStartLesson) {
       onStartLesson(lesson);
     }

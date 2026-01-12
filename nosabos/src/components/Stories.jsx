@@ -61,7 +61,8 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import RobotBuddyPro from "./RobotBuddyPro";
 import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.wav";
+import submitActionSound from "../assets/submitaction.mp3";
+import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 
 const renderSpeakerIcon = (loading) =>
@@ -1116,6 +1117,7 @@ export default function StoryMode({
 
   /* ----------------------------- Skip module ----------------------------- */
   const handleSkipModule = () => {
+    playSound(nextButtonSound);
     // If in lesson mode, call onSkip to switch to next random module type
     if (onSkip && typeof onSkip === "function") {
       console.log("[StoryMode] Skipping to next lesson module");
@@ -1506,6 +1508,7 @@ export default function StoryMode({
 
   // Handle manual advancement to next sentence
   const handleNextSentence = async () => {
+    playSound(nextButtonSound);
     const isLast =
       currentSentenceIndex >= (storyData?.sentences?.length || 0) - 1;
 
