@@ -266,9 +266,7 @@ export default function Onboarding({
                       {targetLang === "fr" && ui.onboarding_practice_fr}
                       {targetLang === "it" && ui.onboarding_practice_it}
                       {targetLang === "ja" && (
-                        <>
-                          {ui.onboarding_practice_ja} (beta)
-                        </>
+                        <>{ui.onboarding_practice_ja} (beta)</>
                       )}
                       {targetLang === "nah" && ui.onboarding_practice_nah}
                       {targetLang === "pt" && ui.onboarding_practice_pt}
@@ -383,10 +381,8 @@ export default function Onboarding({
                   </HStack>
                   <Text fontSize="xs" opacity={0.6} mt={2}>
                     {soundEnabled
-                      ? ui.sound_effects_enabled ||
-                        "Sound effects are enabled."
-                      : ui.sound_effects_disabled ||
-                        "Sound effects are muted."}
+                      ? ui.sound_effects_enabled || "Sound effects are enabled."
+                      : ui.sound_effects_disabled || "Sound effects are muted."}
                   </Text>
                   {soundEnabled && !isMobile && (
                     <HStack mt={3} spacing={3} align="center">
