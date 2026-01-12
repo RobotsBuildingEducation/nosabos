@@ -190,7 +190,8 @@ export default function RepeatWhatYouHear({
   }, [getUserAnswer, onSubmit, playSound]);
 
   const handleSendHelp = useCallback(() => {
-    if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText) return;
+    if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText)
+      return;
     const isSpanishUI = userLanguage === "es";
     const promptLines = [
       isSpanishUI
@@ -209,7 +210,15 @@ export default function RepeatWhatYouHear({
       hint ? (isSpanishUI ? `Pista: ${hint}` : `Hint: ${hint}`) : null,
     ].filter(Boolean);
     onAskAssistant(promptLines.join("\n"));
-  }, [hint, onAskAssistant, isLoadingAssistantSupport, assistantSupportText, sourceSentence, userLanguage, wordBank]);
+  }, [
+    hint,
+    onAskAssistant,
+    isLoadingAssistantSupport,
+    assistantSupportText,
+    sourceSentence,
+    userLanguage,
+    wordBank,
+  ]);
 
   const headingLabel =
     userLanguage === "es" ? "Toca lo que escuchas" : "Tap what you hear";
@@ -276,7 +285,13 @@ export default function RepeatWhatYouHear({
                               ? "Pedir ayuda"
                               : "Ask the assistant"
                           }
-                          icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+                          icon={
+                            isLoadingAssistantSupport ? (
+                              <Spinner size="xs" />
+                            ) : (
+                              <MdOutlineSupportAgent />
+                            )
+                          }
                           size="sm"
                           fontSize="lg"
                           rounded="xl"
@@ -284,7 +299,9 @@ export default function RepeatWhatYouHear({
                           color="blue"
                           boxShadow="0 4px 0 blue"
                           onClick={handleSendHelp}
-                          isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
+                          isDisabled={
+                            isLoadingAssistantSupport || !!assistantSupportText
+                          }
                         />
                       )}
                       <IconButton
@@ -461,7 +478,9 @@ export default function RepeatWhatYouHear({
               <Text fontWeight="semibold" color="blue.300">
                 {userLanguage === "es" ? "Asistente" : "Assistant"}
               </Text>
-              {isLoadingAssistantSupport && <Spinner size="xs" color="blue.400" />}
+              {isLoadingAssistantSupport && (
+                <Spinner size="xs" color="blue.400" />
+              )}
             </HStack>
             <Box
               fontSize="md"
