@@ -66,7 +66,7 @@ import { MdKeyboard } from "react-icons/md";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
-import clickSound from "../assets/click.mp3";
+import selectSound from "../assets/select.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -4168,7 +4168,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
                         onClick={() => {
-                          playSound(clickSound);
+                          playSound(selectSound);
                           // Move from slot back to bank
                           setMcBankOrder((prev) => [...prev, mcSlotIndex]);
                           setMcSlotIndex(null);
@@ -4278,7 +4278,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
                         onClick={() => {
-                          playSound(clickSound);
+                          playSound(selectSound);
                           // Move from slot back to bank
                           setMaBankOrder((prev) => [...prev, choiceIdx]);
                           setMaSlots((prev) => {
@@ -4827,7 +4827,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 onClick={() => {
-                                  playSound(clickSound);
+                                  playSound(selectSound);
                                   handleMcAnswerClick(idx, position);
                                 }}
                                 style={{
@@ -4911,7 +4911,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       key={i}
                       onClick={() => {
                         if (!choicesMC.length) return;
-                        playSound(clickSound);
+                        playSound(selectSound);
                         setPickMC(c);
                       }}
                       cursor={choicesMC.length ? "pointer" : "not-allowed"}
@@ -5097,7 +5097,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 onClick={() => {
-                                  playSound(clickSound);
+                                  playSound(selectSound);
                                   handleMaAnswerClick(idx, position);
                                 }}
                                 style={{
@@ -5183,7 +5183,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         key={i}
                         onClick={() => {
                           if (!choicesMA.length) return;
-                          playSound(clickSound);
+                          playSound(selectSound);
                           if (isSelected) {
                             setPicksMA(picksMA.filter((p) => p !== c));
                           } else {
@@ -5593,7 +5593,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
                                     onClick={() => {
-                                      playSound(clickSound);
+                                      playSound(selectSound);
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
@@ -5605,7 +5605,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
-                                        playSound(clickSound);
+                                        playSound(selectSound);
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5681,7 +5681,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
                                   onClick={() => {
-                                    playSound(clickSound);
+                                    playSound(selectSound);
                                     handleMatchAutoMove(ri, "bank");
                                   }}
                                   onKeyDown={(event) => {
@@ -5690,7 +5690,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
-                                      playSound(clickSound);
+                                      playSound(selectSound);
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}

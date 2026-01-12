@@ -18,7 +18,7 @@ import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
 import useSoundSettings from "../hooks/useSoundSettings";
 import nextButtonSound from "../assets/nextbutton.mp3";
-import clickSound from "../assets/click.mp3";
+import selectSound from "../assets/select.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -339,7 +339,7 @@ export default function RepeatWhatYouHear({
                             cursor={lastOk === true ? "default" : "grab"}
                             onClick={() => {
                               if (lastOk !== true) {
-                                playSound(clickSound);
+                                playSound(selectSound);
                                 handleSelectedWordClick(position);
                               }
                             }}
@@ -418,7 +418,7 @@ export default function RepeatWhatYouHear({
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {
-                          playSound(clickSound);
+                          playSound(selectSound);
                           handleWordClick(wordIndex, position);
                         }
                       }}

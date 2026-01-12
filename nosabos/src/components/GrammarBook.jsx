@@ -62,7 +62,7 @@ import { MdKeyboard } from "react-icons/md";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
-import clickSound from "../assets/click.mp3";
+import selectSound from "../assets/select.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -4573,7 +4573,7 @@ Return JSON ONLY:
                       key={i}
                       onClick={() => {
                         if (!mcChoices.length) return;
-                        playSound(clickSound);
+                        playSound(selectSound);
                         setMcPick(c);
                       }}
                       cursor={mcChoices.length ? "pointer" : "not-allowed"}
@@ -4854,7 +4854,7 @@ Return JSON ONLY:
                         key={i}
                         onClick={() => {
                           if (!maChoices.length) return;
-                          playSound(clickSound);
+                          playSound(selectSound);
                           if (isSelected) {
                             setMaPicks(maPicks.filter((p) => p !== c));
                           } else {
@@ -5256,7 +5256,7 @@ Return JSON ONLY:
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
                                     onClick={() => {
-                                      playSound(clickSound);
+                                      playSound(selectSound);
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
@@ -5268,7 +5268,7 @@ Return JSON ONLY:
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
-                                        playSound(clickSound);
+                                        playSound(selectSound);
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5344,7 +5344,7 @@ Return JSON ONLY:
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
                                   onClick={() => {
-                                    playSound(clickSound);
+                                    playSound(selectSound);
                                     handleMatchAutoMove(ri, "bank");
                                   }}
                                   onKeyDown={(event) => {
@@ -5353,7 +5353,7 @@ Return JSON ONLY:
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
-                                      playSound(clickSound);
+                                      playSound(selectSound);
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}
