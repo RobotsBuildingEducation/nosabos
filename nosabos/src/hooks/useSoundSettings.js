@@ -65,12 +65,13 @@ const useSoundSettings = create((set, get) => ({
   warmupAudio: () => {
     if (audioUnlocked) return;
     audioUnlocked = true;
-    // Play a silent/very quiet sound on each cached audio to "unlock" them
-    audioCache.forEach((audio) => {
-      const clone = audio.cloneNode();
-      clone.volume = 0.001; // Nearly silent
+    // Play just one silent sound to unlock the audio system
+    const firstAudio = audioCache.values().next().value;
+    if (firstAudio) {
+      const clone = firstAudio.cloneNode();
+      clone.volume = 0;
       clone.play().catch(() => {});
-    });
+    }
   },
 
   /**
