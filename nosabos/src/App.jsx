@@ -1393,6 +1393,7 @@ export default function App() {
   const setSoundSettingsEnabled = useSoundSettings((s) => s.setSoundEnabled);
   const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
   const playSound = useSoundSettings((s) => s.playSound);
+  const warmupAudio = useSoundSettings((s) => s.warmupAudio);
 
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);
@@ -1419,6 +1420,22 @@ export default function App() {
     setSoundVolume(vol);
     setSoundSettingsVolume(vol);
   }, [user?.soundVolume, setSoundSettingsVolume]);
+
+  // Warm up audio on first user interaction to eliminate mobile audio delay
+  useEffect(() => {
+    const handleFirstInteraction = () => {
+      warmupAudio();
+      // Remove listeners after first interaction
+      document.removeEventListener("touchstart", handleFirstInteraction);
+      document.removeEventListener("click", handleFirstInteraction);
+    };
+    document.addEventListener("touchstart", handleFirstInteraction, { once: true });
+    document.addEventListener("click", handleFirstInteraction, { once: true });
+    return () => {
+      document.removeEventListener("touchstart", handleFirstInteraction);
+      document.removeEventListener("click", handleFirstInteraction);
+    };
+  }, [warmupAudio]);
 
   // Tabs (order: Chat, Stories, JobScript, History, Grammar, Vocabulary, Random)
   const [currentTab, setCurrentTab] = useState(
