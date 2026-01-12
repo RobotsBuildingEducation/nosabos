@@ -77,13 +77,13 @@ const useSoundSettings = create((set, get) => ({
   /**
    * Warm up the audio system on first user interaction.
    * Call this on a user gesture (click, touch) to eliminate mobile audio delay.
-   * Uses Web Audio API (AudioContext) for more reliable mobile unlock.
+   * Uses Web Audio API (AudioContext) for reliable, silent unlock.
    */
   warmupAudio: () => {
     if (audioUnlocked) return;
     audioUnlocked = true;
 
-    // Method 1: Unlock Web Audio API context (most reliable for mobile)
+    // Unlock Web Audio API context (reliable and silent)
     const ctx = getAudioContext();
     if (ctx) {
       // Resume the context if it's suspended (required on iOS Safari)
@@ -100,18 +100,6 @@ const useSoundSettings = create((set, get) => ({
       } catch (e) {
         // Fallback if buffer creation fails
       }
-    }
-
-    // Method 2: Also "touch" the HTML5 Audio elements to preload them
-    // Play each cached audio very briefly at volume 0 to ensure they're ready
-    for (const cachedAudio of audioCache.values()) {
-      const clone = cachedAudio.cloneNode();
-      clone.volume = 0;
-      clone.play().then(() => {
-        // Immediately pause after starting to just "unlock" without playing
-        clone.pause();
-        clone.currentTime = 0;
-      }).catch(() => {});
     }
   },
 
