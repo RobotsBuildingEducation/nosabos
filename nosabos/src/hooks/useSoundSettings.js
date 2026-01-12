@@ -47,6 +47,22 @@ allSounds.forEach(preloadAudio);
 // Track if audio has been "unlocked" on mobile
 let audioUnlocked = false;
 
+// Shared AudioContext for Web Audio API (more reliable on mobile)
+let audioContext = null;
+
+/**
+ * Get or create a shared AudioContext
+ */
+const getAudioContext = () => {
+  if (!audioContext) {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (AudioContextClass) {
+      audioContext = new AudioContextClass();
+    }
+  }
+  return audioContext;
+};
+
 /**
  * Global sound settings store.
  * Manages sound enabled/disabled state, volume level, and provides a playSound utility.
@@ -61,16 +77,29 @@ const useSoundSettings = create((set, get) => ({
   /**
    * Warm up the audio system on first user interaction.
    * Call this on a user gesture (click, touch) to eliminate mobile audio delay.
+   * Uses Web Audio API (AudioContext) for reliable, silent unlock.
    */
   warmupAudio: () => {
     if (audioUnlocked) return;
     audioUnlocked = true;
-    // Play just one silent sound to unlock the audio system
-    const firstAudio = audioCache.values().next().value;
-    if (firstAudio) {
-      const clone = firstAudio.cloneNode();
-      clone.volume = 0;
-      clone.play().catch(() => {});
+
+    // Unlock Web Audio API context (reliable and silent)
+    const ctx = getAudioContext();
+    if (ctx) {
+      // Resume the context if it's suspended (required on iOS Safari)
+      if (ctx.state === "suspended") {
+        ctx.resume().catch(() => {});
+      }
+      // Play a tiny silent buffer to fully unlock audio
+      try {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.start(0);
+      } catch (e) {
+        // Fallback if buffer creation fails
+      }
     }
   },
 
