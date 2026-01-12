@@ -1429,7 +1429,9 @@ export default function App() {
       document.removeEventListener("touchstart", handleFirstInteraction);
       document.removeEventListener("click", handleFirstInteraction);
     };
-    document.addEventListener("touchstart", handleFirstInteraction, { once: true });
+    document.addEventListener("touchstart", handleFirstInteraction, {
+      once: true,
+    });
     document.addEventListener("click", handleFirstInteraction, { once: true });
     return () => {
       document.removeEventListener("touchstart", handleFirstInteraction);
