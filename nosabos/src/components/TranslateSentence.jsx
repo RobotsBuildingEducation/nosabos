@@ -20,6 +20,7 @@ import FeedbackRail from "./FeedbackRail";
 import useSoundSettings from "../hooks/useSoundSettings";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -198,9 +199,10 @@ export default function TranslateSentence({
 
   // Handle submit
   const handleSubmit = useCallback(() => {
+    playSound(submitActionSound);
     const userAnswer = getUserAnswer();
     onSubmit(userAnswer);
-  }, [getUserAnswer, onSubmit]);
+  }, [getUserAnswer, onSubmit, playSound]);
 
   const handleSendHelp = useCallback(() => {
     if (!onAskAssistant || isLoadingAssistantSupport || assistantSupportText) return;
