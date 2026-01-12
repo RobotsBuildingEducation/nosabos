@@ -267,6 +267,7 @@ const getHighlightedWordParts = (word, marker) => {
 };
 
 function LetterCard({
+  playSound,
   letter,
   onPlay,
   isPlaying,
@@ -1157,6 +1158,7 @@ export default function AlphabetBootcamp({
                 {/* Top card (current card to practice) */}
                 <Box position="relative" zIndex={20}>
                   <LetterCard
+                    playSound={playSound}
                     key={deck[0].id}
                     letter={deck[0]}
                     appLanguage={appLanguage}
