@@ -152,8 +152,9 @@ import {
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { HiVolumeUp } from "react-icons/hi";
 import sparkleSound from "./assets/sparkle.mp3";
-import submitActionSound from "./assets/submitaction.wav";
-import dailyGoalSound from "./assets/dailygoal.wav";
+import submitActionSound from "./assets/submitaction.mp3";
+import dailyGoalSound from "./assets/dailygoal.mp3";
+import modeSwitcherSound from "./assets/modeswitcher.mp3";
 
 /* ---------------------------
    Small helpers
@@ -4134,6 +4135,7 @@ export default function App() {
         notesIsDone={notesIsDone}
         pathMode={pathMode}
         onPathModeChange={(newMode) => {
+          playSound(modeSwitcherSound);
           // If in a lesson or other view, return to skill tree first
           if (viewMode !== "skillTree") {
             handleReturnToSkillTree();

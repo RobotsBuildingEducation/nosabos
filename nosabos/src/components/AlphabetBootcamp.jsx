@@ -57,7 +57,8 @@ import {
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.wav";
+import submitActionSound from "../assets/submitaction.mp3";
+import nextButtonSound from "../assets/nextbutton.mp3";
 
 const MotionBox = motion(Box);
 
@@ -557,6 +558,7 @@ function LetterCard({
   };
 
   const handleNextWord = async () => {
+    playSound(nextButtonSound);
     const generated = await generateNewPracticeWord(practiceWord);
     if (!generated?.word) {
       toast({

@@ -18,6 +18,8 @@ import { CEFR_COLORS, getConceptText } from "../data/flashcards/common";
 import FlashcardPractice from "./FlashcardPractice";
 import { translations } from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
+import useSoundSettings from "../hooks/useSoundSettings";
+import modeSwitcherSound from "../assets/modeswitcher.mp3";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -235,6 +237,9 @@ export default function FlashcardSkillTree({
   const [hasMounted, setHasMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
+  // Sound settings
+  const playSound = useSoundSettings((s) => s.playSound);
+
   const languageXp = useMemo(
     () => getLanguageXp(userProgress, targetLang),
     [userProgress, targetLang]
@@ -408,10 +413,11 @@ export default function FlashcardSkillTree({
 
   const handleCardClick = useCallback((card, status) => {
     if (status === "active") {
+      playSound(modeSwitcherSound);
       setPracticeCard(card);
       setIsPracticeOpen(true);
     }
-  }, []);
+  }, [playSound]);
 
   const handleComplete = useCallback(
     (card) => {

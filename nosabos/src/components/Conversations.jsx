@@ -38,7 +38,7 @@ import {
   getRandomFallbackTopic,
 } from "../data/conversationTopics";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.wav";
+import submitActionSound from "../assets/submitaction.mp3";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";

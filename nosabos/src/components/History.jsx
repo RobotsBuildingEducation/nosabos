@@ -31,7 +31,8 @@ import {
   TTS_LANG_TAG,
 } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.wav";
+import submitActionSound from "../assets/submitaction.mp3";
+import nextButtonSound from "../assets/nextbutton.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1276,6 +1277,7 @@ export default function History({
 
   // Skip handler
   function handleSkip() {
+    playSound(nextButtonSound);
     if (onSkip) {
       onSkip();
     }

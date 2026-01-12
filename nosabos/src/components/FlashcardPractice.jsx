@@ -46,9 +46,10 @@ import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { RiBookmarkLine } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.wav";
+import submitActionSound from "../assets/submitaction.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
+import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import RandomCharacter from "./RandomCharacter";
 
 const MotionBox = motion(Box);
