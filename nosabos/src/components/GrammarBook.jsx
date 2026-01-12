@@ -63,6 +63,7 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import selectSound from "../assets/select.mp3";
+import submitSound from "../assets/submit.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1062,6 +1063,7 @@ export default function GrammarBook({
   async function handleAskAssistant(questionContext) {
     if (!questionContext || isLoadingAssistantSupport || assistantSupportText) return;
 
+    playSound(submitSound);
     setIsLoadingAssistantSupport(true);
     setAssistantSupportText("");
 
@@ -1171,6 +1173,7 @@ export default function GrammarBook({
   async function handleExplainAnswer() {
     if (!currentQuestionData || isLoadingExplanation || explanationText) return;
 
+    playSound(submitSound);
     setIsLoadingExplanation(true);
     setExplanationText(""); // Clear any previous text
 
