@@ -22,6 +22,7 @@ import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaBitcoin, FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -145,6 +146,7 @@ export default function TutorialActionBarPopovers({
   };
 
   const handleFinish = () => {
+    playSound(submitActionSound);
     setIsVisible(false);
 
     onComplete();

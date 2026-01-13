@@ -799,7 +799,10 @@ function TopBar({
               colorScheme="teal"
               variant={timerPaused ? "outline" : "ghost"}
               size="sm"
-              onClick={onTogglePauseTimer}
+              onClick={() => {
+                playSound(selectSound);
+                onTogglePauseTimer?.();
+              }}
             >
               {timerPaused ? <FiPlay /> : <FiPause />}
             </Button>
