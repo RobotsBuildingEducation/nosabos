@@ -24,14 +24,14 @@ import {
 } from "@chakra-ui/react";
 import { FiChevronDown } from "react-icons/fi";
 
-// CEFR level information
+// CEFR level information (matches CEFR_LEVEL_INFO from FlashcardSkillTree)
 const CEFR_LEVELS = [
   {
     level: "A1",
     name: { en: "Beginner", es: "Principiante" },
     description: {
-      en: "greetings, numbers, colors",
-      es: "saludos, números, colores",
+      en: "Basic survival language",
+      es: "Lenguaje básico de supervivencia",
     },
     color: "#3B82F6",
   },
@@ -39,26 +39,26 @@ const CEFR_LEVELS = [
     level: "A2",
     name: { en: "Elementary", es: "Elemental" },
     description: {
-      en: "shopping, directions, routines",
-      es: "compras, direcciones, rutinas",
+      en: "Simple everyday communication",
+      es: "Comunicación cotidiana simple",
     },
-    color: "#22C55E",
+    color: "#8B5CF6",
   },
   {
     level: "B1",
     name: { en: "Intermediate", es: "Intermedio" },
     description: {
-      en: "opinions, travel, work",
-      es: "opiniones, viajes, trabajo",
+      en: "Handle everyday situations",
+      es: "Manejo de situaciones cotidianas",
     },
-    color: "#EAB308",
+    color: "#A855F7",
   },
   {
     level: "B2",
     name: { en: "Upper Intermediate", es: "Intermedio Alto" },
     description: {
-      en: "debates, abstract ideas",
-      es: "debates, ideas abstractas",
+      en: "Complex discussions",
+      es: "Discusiones complejas",
     },
     color: "#F97316",
   },
@@ -66,17 +66,17 @@ const CEFR_LEVELS = [
     level: "C1",
     name: { en: "Advanced", es: "Avanzado" },
     description: {
-      en: "nuanced expression, idioms",
-      es: "expresión matizada, modismos",
+      en: "Sophisticated language use",
+      es: "Uso sofisticado del idioma",
     },
-    color: "#8B5CF6",
+    color: "#EF4444",
   },
   {
     level: "C2",
     name: { en: "Mastery", es: "Maestría" },
     description: {
-      en: "near-native fluency",
-      es: "fluidez casi nativa",
+      en: "Near-native proficiency",
+      es: "Competencia casi nativa",
     },
     color: "#EC4899",
   },

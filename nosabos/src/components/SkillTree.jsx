@@ -1972,15 +1972,17 @@ export default function SkillTree({
         }}
       />
 
-      <Container
-        maxW={pathMode === "path" ? "container.lg" : "100%"}
-        py={pathMode === "path" ? 6 : 0}
-        px={pathMode === "path" ? { base: 3, sm: 4, md: 6 } : 0}
-        position="relative"
-        zIndex={1}
-      >
-        {/* CEFR Level Navigator - hidden in conversations mode */}
-        {effectiveOnLevelChange && pathMode !== "conversations" && (
+      {/* Container only for path mode content */}
+      {pathMode === "path" && (
+        <Container
+          maxW="container.lg"
+          py={6}
+          px={{ base: 3, sm: 4, md: 6 }}
+          position="relative"
+          zIndex={1}
+        >
+          {/* CEFR Level Navigator */}
+          {effectiveOnLevelChange && (
           <CEFRLevelNavigator
             currentLevel={effectiveCurrentLevel}
             activeCEFRLevel={effectiveActiveLevel}
@@ -1991,9 +1993,8 @@ export default function SkillTree({
           />
         )}
 
-        {/* Minimal Progress Header - hidden in conversations mode */}
-        {pathMode !== "conversations" && (
-          <MotionBox
+        {/* Minimal Progress Header */}
+        <MotionBox
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
@@ -2060,48 +2061,65 @@ export default function SkillTree({
               })()}
             </HStack>
           </MotionBox>
-        )}
 
-        {/* Skill Tree Units, Flashcards, or Conversations */}
+        {/* Skill Tree Units */}
         <AnimatePresence mode="wait" initial={false}>
-          {pathMode === "path" ? (
-            <MotionBox
-              key="path-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15, ease: "easeOut" }}
-            >
-              <VStack spacing={8} align="stretch">
-                {visibleUnits.length > 0 ? (
-                  visibleUnits.map((unit, index) => (
-                    <UnitSection
-                      key={unit.id}
-                      unit={unit}
-                      userProgress={userProgress}
-                      onLessonClick={handleLessonClick}
-                      index={index}
-                      supportLang={supportLang}
-                      hasNextUnit={index < visibleUnits.length - 1}
-                      previousUnit={index > 0 ? visibleUnits[index - 1] : null}
-                      latestUnlockedLessonId={latestUnlockedLessonId}
-                      latestUnlockedRef={latestUnlockedRef}
-                      isTutorialComplete={isTutorialComplete}
-                    />
-                  ))
-                ) : (
-                  <Box textAlign="center" py={12}>
-                    <Text fontSize="lg" color="gray.400">
-                      {getTranslation("skill_tree_no_path")}
-                    </Text>
-                    <Text fontSize="sm" color="gray.500" mt={2}>
-                      {getTranslation("skill_tree_check_back")}
-                    </Text>
-                  </Box>
-                )}
-              </VStack>
-            </MotionBox>
-          ) : pathMode === "flashcards" ? (
+          <MotionBox
+            key="path-view"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15, ease: "easeOut" }}
+          >
+            <VStack spacing={8} align="stretch">
+              {visibleUnits.length > 0 ? (
+                visibleUnits.map((unit, index) => (
+                  <UnitSection
+                    key={unit.id}
+                    unit={unit}
+                    userProgress={userProgress}
+                    onLessonClick={handleLessonClick}
+                    index={index}
+                    supportLang={supportLang}
+                    hasNextUnit={index < visibleUnits.length - 1}
+                    previousUnit={index > 0 ? visibleUnits[index - 1] : null}
+                    latestUnlockedLessonId={latestUnlockedLessonId}
+                    latestUnlockedRef={latestUnlockedRef}
+                    isTutorialComplete={isTutorialComplete}
+                  />
+                ))
+              ) : (
+                <Box textAlign="center" py={12}>
+                  <Text fontSize="lg" color="gray.400">
+                    {getTranslation("skill_tree_no_path")}
+                  </Text>
+                  <Text fontSize="sm" color="gray.500" mt={2}>
+                    {getTranslation("skill_tree_check_back")}
+                  </Text>
+                </Box>
+              )}
+            </VStack>
+          </MotionBox>
+        </AnimatePresence>
+
+        {/* Lesson Detail Modal */}
+        {selectedLesson && selectedUnit && (
+          <LessonDetailModal
+            isOpen={isOpen}
+            onClose={onClose}
+            lesson={selectedLesson}
+            unit={selectedUnit}
+            onStartLesson={handleStartLesson}
+            supportLang={supportLang}
+          />
+        )}
+        </Container>
+      )}
+
+      {/* Flashcards mode - outside Container for full width */}
+      {pathMode === "flashcards" && (
+        <Box position="relative" zIndex={1}>
+          <AnimatePresence mode="wait" initial={false}>
             <MotionBox
               key="flashcard-view"
               initial={{ opacity: 0 }}
@@ -2119,7 +2137,14 @@ export default function SkillTree({
                 pauseMs={pauseMs}
               />
             </MotionBox>
-          ) : (
+          </AnimatePresence>
+        </Box>
+      )}
+
+      {/* Conversations mode - outside Container for full width */}
+      {pathMode === "conversations" && (
+        <Box position="relative" zIndex={1}>
+          <AnimatePresence mode="wait" initial={false}>
             <MotionBox
               key="conversations-view"
               initial={{ opacity: 0 }}
@@ -2135,21 +2160,9 @@ export default function SkillTree({
                 maxProficiencyLevel={maxProficiencyLevel}
               />
             </MotionBox>
-          )}
-        </AnimatePresence>
-
-        {/* Lesson Detail Modal */}
-        {selectedLesson && selectedUnit && (
-          <LessonDetailModal
-            isOpen={isOpen}
-            onClose={onClose}
-            lesson={selectedLesson}
-            unit={selectedUnit}
-            onStartLesson={handleStartLesson}
-            supportLang={supportLang}
-          />
-        )}
-      </Container>
+          </AnimatePresence>
+        </Box>
+      )}
     </Box>
   );
 }

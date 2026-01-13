@@ -1918,13 +1918,13 @@ Do not return the whole sentence as a single chunk.`;
               {/* Robot and Settings Row */}
               <HStack width="100%" justify="space-between" align="center">
                 {/* RobotBuddyPro on the left */}
-                <Box width="50px" opacity={0.95} flexShrink={0}>
+                <Box width="75px" opacity={0.95} flexShrink={0} mt="-12px">
                   <RobotBuddyPro
                     state={uiState}
                     loudness={uiState === "listening" ? volume : 0}
                     mood={mood}
                     variant="abstract"
-                    maxW={50}
+                    maxW={75}
                   />
                 </Box>
 
