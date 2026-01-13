@@ -18,7 +18,7 @@ import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
 import { FiSettings } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
-import ConversationSettingsDrawer, { CEFR_LEVELS } from "./ConversationSettingsDrawer";
+import ConversationSettingsDrawer from "./ConversationSettingsDrawer";
 
 import { doc, setDoc, getDoc, increment, updateDoc } from "firebase/firestore";
 import {
@@ -1892,38 +1892,20 @@ Do not return the whole sentence as a single chunk.`;
             maxWidth="400px"
           >
             <VStack spacing={3} align="center" width="100%">
-              {/* Settings Button and Level Badge */}
-              <HStack width="100%" justify="space-between" align="center">
-                <Box width="32px" /> {/* Spacer for alignment */}
-                {/* Level Badge */}
-                <Badge
-                  px={3}
-                  py={1}
-                  borderRadius="full"
-                  bg={
-                    CEFR_LEVELS.find(
-                      (l) => l.level === conversationSettings.proficiencyLevel
-                    )?.color || "#3B82F6"
-                  }
-                  color="white"
-                  fontSize="xs"
-                  fontWeight="bold"
-                >
-                  {conversationSettings.proficiencyLevel}
-                </Badge>
-                {/* Settings Button */}
-                <IconButton
-                  icon={<FiSettings />}
-                  size="sm"
+              {/* Conversation Settings Button */}
+              <HStack width="100%" justify="flex-end">
+                <Button
+                  leftIcon={<FiSettings />}
+                  size="xs"
                   variant="ghost"
                   colorScheme="gray"
-                  aria-label={
-                    uiLang === "es" ? "Configuración" : "Settings"
-                  }
                   onClick={openSettings}
                   opacity={0.7}
                   _hover={{ opacity: 1 }}
-                />
+                  fontWeight="medium"
+                >
+                  {uiLang === "es" ? "Configuración de conversación" : "Conversation settings"}
+                </Button>
               </HStack>
 
               {/* Centered RobotBuddyPro */}
