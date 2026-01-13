@@ -32,6 +32,7 @@ import { ITALIAN_ALPHABET } from "../data/italianAlphabet";
 import { DUTCH_ALPHABET } from "../data/dutchAlphabet";
 import { GERMAN_ALPHABET } from "../data/germanAlphabet";
 import { NAHUATL_ALPHABET } from "../data/nahuatlAlphabet";
+import { GREEK_ALPHABET } from "../data/greekAlphabet";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -74,6 +75,7 @@ const LANGUAGE_NAMES = {
   nl: "Dutch",
   de: "German",
   nah: "Nahuatl",
+  el: "Greek",
 };
 
 const LANGUAGE_NAMES_EN = {
@@ -87,6 +89,7 @@ const LANGUAGE_NAMES_EN = {
   nl: "Dutch",
   de: "German",
   nah: "Nahuatl",
+  el: "Greek",
 };
 
 const LANGUAGE_NAMES_ES = {
@@ -100,6 +103,7 @@ const LANGUAGE_NAMES_ES = {
   nl: "Neerlandés",
   de: "Alemán",
   nah: "Náhuatl",
+  el: "Griego",
 };
 
 const LANGUAGE_SCRIPTS = {
@@ -113,6 +117,7 @@ const LANGUAGE_SCRIPTS = {
   nl: "Latin alphabet",
   de: "Latin alphabet",
   nah: "Latin alphabet",
+  el: "Greek alphabet",
 };
 
 const normalizeMeaning = (meaning) => {
@@ -905,6 +910,7 @@ const LANGUAGE_ALPHABETS = {
   nl: DUTCH_ALPHABET,
   de: GERMAN_ALPHABET,
   nah: NAHUATL_ALPHABET,
+  el: GREEK_ALPHABET,
 };
 
 // Fisher-Yates shuffle
