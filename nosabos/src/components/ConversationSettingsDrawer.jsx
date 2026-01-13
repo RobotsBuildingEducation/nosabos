@@ -91,9 +91,9 @@ export default function ConversationSettingsDrawer({
 }) {
   const lang = supportLang === "es" ? "es" : "en";
 
-  const currentLevel = CEFR_LEVELS.find(
-    (l) => l.level === settings.proficiencyLevel
-  ) || CEFR_LEVELS[0];
+  const currentLevel =
+    CEFR_LEVELS.find((l) => l.level === settings.proficiencyLevel) ||
+    CEFR_LEVELS[0];
 
   const handleLevelChange = (level) => {
     onSettingsChange({ ...settings, proficiencyLevel: level });
@@ -124,7 +124,8 @@ export default function ConversationSettingsDrawer({
     es: {
       title: "Configuración de Conversación",
       proficiencyLabel: "Nivel de Competencia",
-      proficiencyHint: "Establece el nivel de dificultad para los temas de conversación",
+      proficiencyHint:
+        "Establece el nivel de dificultad para los temas de conversación",
       pronunciationLabel: "Práctica de Pronunciación",
       pronunciationHint: "La IA te ayudará a mejorar la pronunciación",
       subjectLabel: "Temas Personalizados",
@@ -211,7 +212,12 @@ export default function ConversationSettingsDrawer({
                     </Box>
                   </HStack>
                 </MenuButton>
-                <MenuList bg="gray.800" borderColor="gray.700" maxH="300px" overflowY="auto">
+                <MenuList
+                  bg="gray.800"
+                  borderColor="gray.700"
+                  maxH="300px"
+                  overflowY="auto"
+                >
                   {CEFR_LEVELS.map((level) => (
                     <MenuItem
                       key={level.level}
@@ -289,17 +295,12 @@ export default function ConversationSettingsDrawer({
                 _focus={{ borderColor: "cyan.500", boxShadow: "none" }}
                 resize="vertical"
                 minH="120px"
-                fontSize="sm"
+                fontSize="16px"
               />
             </FormControl>
 
             {/* Save Button */}
-            <Button
-              colorScheme="cyan"
-              onClick={onClose}
-              size="lg"
-              mt="auto"
-            >
+            <Button colorScheme="cyan" onClick={onClose} size="lg" mt="auto">
               {t.save}
             </Button>
           </VStack>
