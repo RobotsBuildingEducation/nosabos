@@ -1091,7 +1091,7 @@ export default function AlphabetBootcamp({
   }, []);
 
   return (
-    <VStack align="stretch" spacing={4} w="100%" color="white">
+    <VStack align="stretch" spacing={4} w="100%" color="white" px={6}>
       {/* XP Progress Bar */}
       <Box maxW="400px" mx="auto" w="100%" zIndex={10} mt={12}>
         <HStack justify="space-between" mb={1}>

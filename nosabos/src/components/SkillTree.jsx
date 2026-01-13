@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import {
   Box,
   VStack,
@@ -1342,7 +1348,11 @@ const UnitSection = React.memo(function UnitSection({
 
                 {/* Lesson Node */}
                 <Box
-                  ref={lesson.id === latestUnlockedLessonId ? latestUnlockedRef : null}
+                  ref={
+                    lesson.id === latestUnlockedLessonId
+                      ? latestUnlockedRef
+                      : null
+                  }
                   position="absolute"
                   top={`${yPosition}px`}
                   left="50%"
@@ -1852,7 +1862,11 @@ export default function SkillTree({
       const unit = visibleUnits[unitIndex];
       const previousUnit = unitIndex > 0 ? visibleUnits[unitIndex - 1] : null;
 
-      for (let lessonIndex = 0; lessonIndex < unit.lessons.length; lessonIndex++) {
+      for (
+        let lessonIndex = 0;
+        lessonIndex < unit.lessons.length;
+        lessonIndex++
+      ) {
         const lesson = unit.lessons[lessonIndex];
         const lessonProgress = userProgress.lessons?.[lesson.id];
 
@@ -1878,8 +1892,8 @@ export default function SkillTree({
             }
           } else {
             isPreviousCompleted =
-              userProgress.lessons?.[unit.lessons[lessonIndex - 1].id]?.status ===
-              SKILL_STATUS.COMPLETED;
+              userProgress.lessons?.[unit.lessons[lessonIndex - 1].id]
+                ?.status === SKILL_STATUS.COMPLETED;
           }
 
           if (isPreviousCompleted) {
@@ -1915,7 +1929,7 @@ export default function SkillTree({
   }, [visibleUnits, userProgress.lessons]);
 
   return (
-    <Box bg={bgColor} minH="100vh" position="relative" overflow="hidden">
+    <Box minH="100vh" position="relative" overflow="hidden">
       {/* Animated Background Gradients */}
       <Box
         position="absolute"
@@ -1974,8 +1988,8 @@ export default function SkillTree({
 
       <Container
         maxW={pathMode === "path" ? "container.lg" : "100%"}
-        py={pathMode === "path" ? 6 : 0}
-        px={pathMode === "path" ? { base: 3, sm: 4, md: 6 } : 0}
+        py={6}
+        px={{ base: 3, sm: 4, md: 6 }}
         position="relative"
         zIndex={1}
       >

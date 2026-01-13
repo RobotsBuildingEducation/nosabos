@@ -587,7 +587,8 @@ export default function Conversations({
       if (currentNpub) {
         try {
           await updateDoc(doc(database, "users", currentNpub), {
-            "progress.conversationProficiencyLevel": newSettings.proficiencyLevel,
+            "progress.conversationProficiencyLevel":
+              newSettings.proficiencyLevel,
             "progress.practicePronunciation": newSettings.practicePronunciation,
             "progress.conversationSubjects": newSettings.conversationSubjects,
           });
@@ -599,7 +600,8 @@ export default function Conversations({
       // Mark for goal regeneration if proficiency level or subjects changed
       if (
         previousSettings.proficiencyLevel !== newSettings.proficiencyLevel ||
-        previousSettings.conversationSubjects !== newSettings.conversationSubjects
+        previousSettings.conversationSubjects !==
+          newSettings.conversationSubjects
       ) {
         shouldRegenerateGoalRef.current = true;
       }
@@ -652,7 +654,8 @@ export default function Conversations({
 
     // Get current settings from ref (for use in async context)
     const currentSettings = conversationSettingsRef.current;
-    const selectedLevel = currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const selectedLevel =
+      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
     const customSubjects = currentSettings.conversationSubjects || "";
 
     try {
@@ -736,7 +739,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } catch (e) {
       console.error("Topic generation error:", e);
       // Use fallback on error
-      const selectedLevel = conversationSettingsRef.current.proficiencyLevel || maxProficiencyLevel || "A1";
+      const selectedLevel =
+        conversationSettingsRef.current.proficiencyLevel ||
+        maxProficiencyLevel ||
+        "A1";
       setCurrentGoal({
         text: getRandomFallbackTopic(selectedLevel),
         completed: false,
@@ -989,7 +995,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
               maxProficiencyLevel ||
               prev.proficiencyLevel,
             practicePronunciation:
-              data.progress?.practicePronunciation ?? prev.practicePronunciation,
+              data.progress?.practicePronunciation ??
+              prev.practicePronunciation,
             conversationSubjects:
               data.progress?.conversationSubjects || prev.conversationSubjects,
           }));
@@ -1202,8 +1209,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
     const tLang = targetLangRef.current;
     const currentSettings = conversationSettingsRef.current;
-    const selectedLevel = currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
-    const practicePronunciation = currentSettings.practicePronunciation || false;
+    const selectedLevel =
+      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const practicePronunciation =
+      currentSettings.practicePronunciation || false;
     const customSubjects = currentSettings.conversationSubjects || "";
 
     let strict;
@@ -1440,7 +1449,8 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
 
     // Get current settings
     const currentSettings = conversationSettingsRef.current;
-    const selectedLevel = currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const selectedLevel =
+      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
     const customSubjects = currentSettings.conversationSubjects || "";
 
     try {
@@ -1898,17 +1908,12 @@ Do not return the whole sentence as a single chunk.`;
   --------------------------- */
   return (
     <>
-      <Box
-        minH="100vh"
-        color="gray.100"
-        position="relative"
-        pb="120px"
-      >
+      <Box minH="100vh" color="gray.100" position="relative" pb="120px">
         {/* Header area with centered Robot and Goal UI */}
-        <Box px={4} mt={3} display="flex" justifyContent="center">
+        <Box px={4} mt={0} display="flex" justifyContent="center">
           <Box
             bg="gray.800"
-            p={4}
+            p={2}
             rounded="2xl"
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
@@ -1918,7 +1923,13 @@ Do not return the whole sentence as a single chunk.`;
               {/* Robot and Settings Row */}
               <HStack width="100%" justify="space-between" align="center">
                 {/* RobotBuddyPro on the left */}
-                <Box width="75px" opacity={0.95} flexShrink={0} mt="-12px">
+                <Box
+                  width="75px"
+                  opacity={0.95}
+                  flexShrink={0}
+                  mt="-12px"
+                  ml={"-22px"}
+                >
                   <RobotBuddyPro
                     state={uiState}
                     loudness={uiState === "listening" ? volume : 0}
