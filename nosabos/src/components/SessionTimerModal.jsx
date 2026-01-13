@@ -269,7 +269,7 @@ export default function SessionTimerModal({
   }, [onStart, playSound]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
+    <Modal isOpen={isOpen} onClose={handleClose} isCentered size="lg">
       <ModalOverlay bg="blackAlpha.700" />
       <ModalContent
         bg="gray.900"
