@@ -295,31 +295,31 @@ export default function Onboarding({
                         <MenuItemOption value="fr">
                           {ui.onboarding_practice_fr}
                         </MenuItemOption>
+                        <MenuItemOption value="de">
+                          {ui.onboarding_practice_de}
+                        </MenuItemOption>
                         <MenuItemOption value="it">
                           {ui.onboarding_practice_it}
                         </MenuItemOption>
-                        {showJapanese && (
-                          <MenuItemOption value="ja">
-                            {ui.onboarding_practice_ja} (beta)
-                          </MenuItemOption>
-                        )}
                         <MenuItemOption value="nah">
                           {ui.onboarding_practice_nah}
                         </MenuItemOption>
                         <MenuItemOption value="pt">
                           {ui.onboarding_practice_pt}
                         </MenuItemOption>
-                        <MenuItemOption value="ru">
-                          {ui.onboarding_practice_ru} (beta)
-                        </MenuItemOption>
-                        <MenuItemOption value="de">
-                          {ui.onboarding_practice_de}
+                        <MenuItemOption value="es">
+                          {ui.onboarding_practice_es}
                         </MenuItemOption>
                         <MenuItemOption value="el">
                           {ui.onboarding_practice_el} (beta)
                         </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {ui.onboarding_practice_es}
+                        {showJapanese && (
+                          <MenuItemOption value="ja">
+                            {ui.onboarding_practice_ja} (beta)
+                          </MenuItemOption>
+                        )}
+                        <MenuItemOption value="ru">
+                          {ui.onboarding_practice_ru} (beta)
                         </MenuItemOption>
                       </MenuOptionGroup>
                     </MenuList>

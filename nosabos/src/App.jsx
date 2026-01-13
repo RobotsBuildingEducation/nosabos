@@ -966,8 +966,24 @@ function TopBar({
                         <MenuItemOption value="fr">
                           {translations[appLanguage].onboarding_practice_fr}
                         </MenuItemOption>
+                        <MenuItemOption value="de">
+                          {translations[appLanguage].onboarding_practice_de}{" "}
+                        </MenuItemOption>
                         <MenuItemOption value="it">
                           {translations[appLanguage].onboarding_practice_it}
+                        </MenuItemOption>
+                        <MenuItemOption value="nah">
+                          {translations[appLanguage].onboarding_practice_nah}
+                        </MenuItemOption>
+                        <MenuItemOption value="pt">
+                          {translations[appLanguage].onboarding_practice_pt}
+                        </MenuItemOption>
+                        <MenuItemOption value="es">
+                          {translations[appLanguage].onboarding_practice_es}
+                        </MenuItemOption>
+                        <MenuItemOption value="el">
+                          {translations[appLanguage].onboarding_practice_el}{" "}
+                          (beta)
                         </MenuItemOption>
                         {showJapanese && (
                           <MenuItemOption value="ja">
@@ -975,25 +991,9 @@ function TopBar({
                             (beta)
                           </MenuItemOption>
                         )}
-                        <MenuItemOption value="nah">
-                          {translations[appLanguage].onboarding_practice_nah}
-                        </MenuItemOption>
-                        <MenuItemOption value="pt">
-                          {translations[appLanguage].onboarding_practice_pt}
-                        </MenuItemOption>
                         <MenuItemOption value="ru">
                           {translations[appLanguage].onboarding_practice_ru}{" "}
                           (beta)
-                        </MenuItemOption>
-                        <MenuItemOption value="de">
-                          {translations[appLanguage].onboarding_practice_de}{" "}
-                        </MenuItemOption>
-                        <MenuItemOption value="el">
-                          {translations[appLanguage].onboarding_practice_el}{" "}
-                          (beta)
-                        </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {translations[appLanguage].onboarding_practice_es}
                         </MenuItemOption>
                       </MenuOptionGroup>
                     </MenuList>
