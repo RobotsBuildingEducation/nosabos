@@ -114,13 +114,16 @@ function LANG_NAME(code) {
     nl: "Dutch",
     ru: "Russian",
     de: "German",
+    el: "Greek",
   };
   return map[code] || code;
 }
 
 function resolveSupportLang(support, appUILang) {
   if (!support || support === "auto") return appUILang === "es" ? "es" : "en";
-  return ["en", "es", "pt", "fr", "it", "nl", "nah", "ru", "de"].includes(support)
+  return ["en", "es", "pt", "fr", "it", "nl", "nah", "ru", "de", "el"].includes(
+    support
+  )
     ? support
     : "en";
 }
@@ -173,9 +176,19 @@ export default function LessonGroupQuiz({
       if (!snap.exists()) return;
       const data = snap.data();
       const prog = data.progress || {};
-      const tLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de"].includes(
-        prog.targetLang
-      )
+      const tLang = [
+        "nah",
+        "es",
+        "pt",
+        "en",
+        "fr",
+        "it",
+        "nl",
+        "ja",
+        "ru",
+        "de",
+        "el",
+      ].includes(prog.targetLang)
         ? prog.targetLang
         : "es";
       const sLang = prog.supportLang || "auto";

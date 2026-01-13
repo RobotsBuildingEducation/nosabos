@@ -171,6 +171,7 @@ const LANG_NAME = (code) =>
     nah: "Huastec Nahuatl",
     ru: "Russian",
     de: "German",
+    el: "Greek",
   }[code] || code);
 
 const strongNpub = (user) =>
@@ -203,9 +204,19 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de"].includes(
-        p.targetLang
-      )
+      const targetLang = [
+        "nah",
+        "es",
+        "pt",
+        "en",
+        "fr",
+        "it",
+        "nl",
+        "ja",
+        "ru",
+        "de",
+        "el",
+      ].includes(p.targetLang)
         ? p.targetLang
         : "es";
       const langXp = getLanguageXp(p, targetLang);
@@ -946,9 +957,19 @@ export default function GrammarBook({
       : null;
 
   const level = progress.level || "beginner";
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja", "ru", "de"].includes(
-    progress.targetLang
-  )
+  const targetLang = [
+    "en",
+    "es",
+    "pt",
+    "nah",
+    "fr",
+    "it",
+    "nl",
+    "ja",
+    "ru",
+    "de",
+    "el",
+  ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
   const supportLang = ["en", "es", "bilingual"].includes(progress.supportLang)
@@ -974,6 +995,7 @@ export default function GrammarBook({
       ja: t("language_ja"),
       ru: t("language_ru"),
       de: t("language_de"),
+      el: t("language_el"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
@@ -3087,8 +3109,9 @@ Return JSON ONLY:
     }
   }, []);
 
-  // Check if keyboard should be available (Japanese or Russian)
-  const showKeyboardButton = targetLang === "ja" || targetLang === "ru";
+  // Check if keyboard should be available (Japanese, Russian, or Greek)
+  const showKeyboardButton =
+    targetLang === "ja" || targetLang === "ru" || targetLang === "el";
 
   /* ---------------------------
      Submits (backend judging for fill/mc/ma; deterministic for match)

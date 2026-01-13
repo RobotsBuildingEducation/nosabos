@@ -195,6 +195,7 @@ const TARGET_LANGUAGE_LABELS = {
   ja: "Japanese",
   ru: "Russian",
   de: "German",
+  el: "Greek",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -492,6 +493,38 @@ function TopBar({
 
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
+
+  const practiceLanguageOptions = useMemo(() => {
+    const collator = new Intl.Collator(appLanguage === "es" ? "es" : "en");
+    const options = [
+      { value: "nl", label: t.onboarding_practice_nl, beta: false },
+      { value: "en", label: t.onboarding_practice_en, beta: false },
+      { value: "fr", label: t.onboarding_practice_fr, beta: false },
+      { value: "de", label: t.onboarding_practice_de, beta: false },
+      { value: "it", label: t.onboarding_practice_it, beta: false },
+      { value: "nah", label: t.onboarding_practice_nah, beta: false },
+      { value: "pt", label: t.onboarding_practice_pt, beta: false },
+      { value: "es", label: t.onboarding_practice_es, beta: false },
+      { value: "el", label: t.onboarding_practice_el, beta: true },
+      {
+        value: "ja",
+        label: t.onboarding_practice_ja,
+        beta: true,
+        hidden: !showJapanese,
+      },
+      { value: "ru", label: t.onboarding_practice_ru, beta: true },
+    ];
+
+    const visible = options.filter((option) => !option.hidden);
+    const stable = visible
+      .filter((option) => !option.beta)
+      .sort((a, b) => collator.compare(a.label, b.label));
+    const beta = visible
+      .filter((option) => option.beta)
+      .sort((a, b) => collator.compare(a.label, b.label));
+
+    return [...stable, ...beta];
+  }, [appLanguage, showJapanese, t]);
 
   // Refill draft when store changes
   useEffect(() => {
@@ -917,6 +950,12 @@ function TopBar({
                       {targetLang === "de" && (
                         <>{translations[appLanguage].onboarding_practice_de} </>
                       )}
+                      {targetLang === "el" && (
+                        <>
+                          {translations[appLanguage].onboarding_practice_el}{" "}
+                          (beta)
+                        </>
+                      )}
                       {targetLang === "es" &&
                         translations[appLanguage].onboarding_practice_es}
                     </MenuButton>
@@ -950,40 +989,15 @@ function TopBar({
                           persistSettings({ targetLang: value });
                         }}
                       >
-                        <MenuItemOption value="nl">
-                          {translations[appLanguage].onboarding_practice_nl}
-                        </MenuItemOption>
-                        <MenuItemOption value="en">
-                          {translations[appLanguage].onboarding_practice_en}
-                        </MenuItemOption>
-                        <MenuItemOption value="fr">
-                          {translations[appLanguage].onboarding_practice_fr}
-                        </MenuItemOption>
-                        <MenuItemOption value="it">
-                          {translations[appLanguage].onboarding_practice_it}
-                        </MenuItemOption>
-                        {showJapanese && (
-                          <MenuItemOption value="ja">
-                            {translations[appLanguage].onboarding_practice_ja}{" "}
-                            (beta)
+                        {practiceLanguageOptions.map((option) => (
+                          <MenuItemOption
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                            {option.beta ? " (beta)" : ""}
                           </MenuItemOption>
-                        )}
-                        <MenuItemOption value="nah">
-                          {translations[appLanguage].onboarding_practice_nah}
-                        </MenuItemOption>
-                        <MenuItemOption value="pt">
-                          {translations[appLanguage].onboarding_practice_pt}
-                        </MenuItemOption>
-                        <MenuItemOption value="ru">
-                          {translations[appLanguage].onboarding_practice_ru}{" "}
-                          (beta)
-                        </MenuItemOption>
-                        <MenuItemOption value="de">
-                          {translations[appLanguage].onboarding_practice_de}{" "}
-                        </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {translations[appLanguage].onboarding_practice_es}
-                        </MenuItemOption>
+                        ))}
                       </MenuOptionGroup>
                     </MenuList>
                   </Menu>
@@ -1478,6 +1492,7 @@ export default function App() {
     "nl",
     "de",
     "nah",
+    "el",
   ];
 
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
@@ -2286,6 +2301,7 @@ export default function App() {
         "ja",
         "ru",
         "de",
+        "el",
       ].includes(partial.targetLang ?? prev.targetLang)
         ? partial.targetLang ?? prev.targetLang
         : "es",
@@ -2411,6 +2427,7 @@ export default function App() {
           "ja",
           "ru",
           "de",
+          "el",
         ].includes(payload.targetLang)
           ? payload.targetLang
           : "es",
@@ -4865,6 +4882,7 @@ function BottomActionBar({
     "nl",
     "de",
     "nah",
+    "el",
   ];
   const PATH_MODES = [
     ...(ALPHABET_LANGS.includes(targetLang)

@@ -78,6 +78,7 @@ export const SKILL_TREE_A1 = [
             successCriteria_ja: 'The learner says "こんにちは" (konnichiwa) to you.',
             successCriteria_ru: 'The learner says "привет" (privet) to you.',
             successCriteria_de: 'The learner says "hallo" to you.',
+            successCriteria_el: 'The learner says "γεια σου" to you.',
             tutorialDescription: {
               en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
               es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",

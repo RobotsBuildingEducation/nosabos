@@ -13,6 +13,7 @@ const LANG_NAME = (code) =>
     nah: "Huastec Nahuatl",
     ru: "Russian",
     de: "German",
+    el: "Greek",
   }[code] || code);
 
 /**
