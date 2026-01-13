@@ -155,7 +155,6 @@ import sparkleSound from "./assets/sparkle.mp3";
 import submitActionSound from "./assets/submitaction.mp3";
 import selectSound from "./assets/select.mp3";
 import dailyGoalSound from "./assets/dailygoal.mp3";
-import modeSwitcherSound from "./assets/modeswitcher.mp3";
 
 /* ---------------------------
    Small helpers
@@ -4153,12 +4152,12 @@ export default function App() {
         viewMode={viewMode}
         onNavigateToSkillTree={handleReturnToSkillTree}
         onOpenHelpChat={helpChatDisclosure.onOpen}
+        playSound={playSound}
         hasPendingTeamInvite={pendingTeamInviteCount > 0}
         notesIsLoading={notesIsLoading}
         notesIsDone={notesIsDone}
         pathMode={pathMode}
         onPathModeChange={(newMode) => {
-          playSound(modeSwitcherSound);
           // If in a lesson or other view, return to skill tree first
           if (viewMode !== "skillTree") {
             handleReturnToSkillTree();
@@ -4835,6 +4834,7 @@ function BottomActionBar({
   onNavigateToSkillTree,
   viewMode,
   onOpenHelpChat,
+  playSound,
   helpLabel,
   hasPendingTeamInvite = false,
   notesIsLoading = false,
@@ -4915,6 +4915,11 @@ function BottomActionBar({
     : notesIsDone
     ? "notesDone 1.5s ease-out"
     : undefined;
+  const handleActionClick = (action) => {
+    if (!action) return;
+    playSound?.(selectSound);
+    action();
+  };
 
   return (
     <Box
@@ -4948,7 +4953,7 @@ function BottomActionBar({
       >
         <IconButton
           icon={<PiUsersBold size={18} />}
-          onClick={onOpenTeams}
+          onClick={() => handleActionClick(onOpenTeams)}
           aria-label={teamsLabel}
           rounded="xl"
           flexShrink={0}
@@ -4966,7 +4971,7 @@ function BottomActionBar({
         <IconButton
           icon={<SettingsIcon boxSize={4} />}
           color="gray.100"
-          onClick={onOpenSettings}
+          onClick={() => handleActionClick(onOpenSettings)}
           aria-label={settingsLabel}
           rounded="xl"
           flexShrink={0}
@@ -4978,7 +4983,7 @@ function BottomActionBar({
         <IconButton
           icon={<RiBookmarkLine size={18} />}
           aria-label={notesLabel}
-          onClick={onOpenNotes}
+          onClick={() => handleActionClick(onOpenNotes)}
           isLoading={notesIsLoading}
           colorScheme="gray"
           bg="gray.800"
@@ -5016,7 +5021,7 @@ function BottomActionBar({
 
         <IconButton
           icon={<FaBitcoin size={18} />}
-          onClick={onOpenIdentity}
+          onClick={() => handleActionClick(onOpenIdentity)}
           aria-label={identityLabel}
           isLoading={isIdentitySaving}
           rounded="xl"
@@ -5027,7 +5032,7 @@ function BottomActionBar({
 
         <IconButton
           icon={<MdOutlineSupportAgent size={18} />}
-          onClick={onOpenHelpChat}
+          onClick={() => handleActionClick(onOpenHelpChat)}
           aria-label={helpChatLabel}
           isDisabled={!onOpenHelpChat}
           rounded="xl"
@@ -5046,6 +5051,7 @@ function BottomActionBar({
             aria-label={modeMenuLabel}
             rounded="xl"
             flexShrink={0}
+            onClick={() => playSound?.(selectSound)}
             // bg="rgba(0, 98, 189, 0.6)"
             colorScheme="teal"
             // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
@@ -5064,6 +5070,7 @@ function BottomActionBar({
                 <MenuItem
                   key={mode.id}
                   onClick={() => {
+                    playSound?.(selectSound);
                     // If clicking path when already in path mode, just scroll
                     if (mode.id === "path" && isSelected) {
                       onScrollToLatest?.();
