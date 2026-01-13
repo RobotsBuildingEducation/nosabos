@@ -32,6 +32,9 @@ import {
 import { WaveBar } from "./WaveBar.jsx";
 import GoalCalendar from "./GoalCalendar.jsx";
 import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [75, 100, 150, 200, 300];
@@ -94,6 +97,7 @@ export default function DailyGoalModal({
     [getLabel]
   );
   const [goal, setGoal] = useState(String(defaultGoal));
+  const playSound = useSoundSettings((s) => s.playSound);
 
   // Calendar month navigation state
   const [calendarYear, setCalendarYear] = useState(() =>
@@ -148,6 +152,7 @@ export default function DailyGoalModal({
       return;
     }
     try {
+      playSound(submitActionSound);
       const resetAt = new Date(Date.now() + MS_24H).toISOString();
       setDoc(
         doc(database, "users", npub),
@@ -165,6 +170,10 @@ export default function DailyGoalModal({
       console.error(L.errSaveTitle, e);
     }
   };
+  const handleClose = useCallback(() => {
+    playSound(selectSound);
+    onClose?.();
+  }, [onClose, playSound]);
 
   return (
     <Modal
@@ -193,7 +202,7 @@ export default function DailyGoalModal({
           },
         }}
       >
-        <ModalCloseButton />
+        <ModalCloseButton onClick={handleClose} />
         {/* Header */}
         <Box
           bgGradient="linear(to-r, teal.700, teal.500)"
@@ -236,7 +245,10 @@ export default function DailyGoalModal({
                       size="sm"
                       variant={active ? "solid" : "outline"}
                       colorScheme="teal"
-                      onClick={() => setGoal(String(v))}
+                      onClick={() => {
+                        playSound(selectSound);
+                        setGoal(String(v));
+                      }}
                     >
                       {v} XP
                     </Button>
@@ -345,7 +357,7 @@ export default function DailyGoalModal({
           borderColor="gray.800"
         >
           <HStack w="100%" justify="flex-end" spacing={3}>
-            <Button variant={"ghost"} onClick={onClose}>
+            <Button variant={"ghost"} onClick={handleClose}>
               {t?.teams_drawer_close || "Close"}
             </Button>
             <Button colorScheme="teal" onClick={save} isDisabled={!npub}>

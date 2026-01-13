@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   Box,
   Button,
@@ -17,6 +17,9 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { FiClock } from "react-icons/fi";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 // Analog clock component that visualizes the selected duration
 function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
@@ -255,6 +258,15 @@ export default function SessionTimerModal({
   t = {},
 }) {
   const presets = [10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240];
+  const playSound = useSoundSettings((s) => s.playSound);
+  const handleClose = useCallback(() => {
+    playSound(selectSound);
+    onClose?.();
+  }, [onClose, playSound]);
+  const handleStart = useCallback(() => {
+    playSound(submitActionSound);
+    onStart?.();
+  }, [onStart, playSound]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} isCentered size="lg">
@@ -273,7 +285,7 @@ export default function SessionTimerModal({
             <Text>{t.timer_modal_title || "Session timer"}</Text>
           </HStack>
         </ModalHeader>
-        <ModalCloseButton />
+        <ModalCloseButton onClick={handleClose} />
         <ModalBody>
           <VStack align="stretch" spacing={4}>
             <Text color="gray.400">
@@ -326,7 +338,10 @@ export default function SessionTimerModal({
                       size="sm"
                       variant={isActive ? "solid" : "outline"}
                       colorScheme="teal"
-                      onClick={() => onMinutesChange?.(String(preset))}
+                      onClick={() => {
+                        playSound(selectSound);
+                        onMinutesChange?.(String(preset));
+                      }}
                     >
                       {preset}m
                     </Button>
@@ -342,7 +357,7 @@ export default function SessionTimerModal({
           borderTop="1px solid"
           borderColor="gray.800"
         >
-          <Button colorScheme="teal" onClick={onStart}>
+          <Button colorScheme="teal" onClick={handleStart}>
             {isRunning
               ? t.timer_modal_restart || "Restart timer"
               : t.timer_modal_start || "Start timer"}
