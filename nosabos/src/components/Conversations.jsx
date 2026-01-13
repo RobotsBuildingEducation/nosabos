@@ -549,6 +549,10 @@ export default function Conversations({
     playSound(selectSound);
     openSettings();
   }, [openSettings, playSound]);
+  const scrollConversationToTop = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
 
   // Live refs
   const voiceRef = useRef(voice);
@@ -617,6 +621,7 @@ export default function Conversations({
   // Regenerate goal when settings drawer closes (if settings changed)
   const handleSettingsClose = useCallback(() => {
     closeSettings();
+    scrollConversationToTop();
     if (shouldRegenerateGoalRef.current) {
       shouldRegenerateGoalRef.current = false;
       // Small delay to let state update
@@ -624,7 +629,7 @@ export default function Conversations({
         generateConversationTopic();
       }, 150);
     }
-  }, [closeSettings]);
+  }, [closeSettings, scrollConversationToTop]);
 
   // XP
   const [xp, setXp] = useState(0);
