@@ -1,5 +1,5 @@
 // components/Conversations.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Badge,
   Box,
@@ -12,12 +12,15 @@ import {
   Wrap,
   WrapItem,
   Spinner,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
+import { FiSettings } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
+import ConversationSettingsDrawer from "./ConversationSettingsDrawer";
 
-import { doc, setDoc, getDoc, increment } from "firebase/firestore";
+import { doc, setDoc, getDoc, increment, updateDoc } from "firebase/firestore";
 import {
   database,
   analytics,
@@ -527,6 +530,21 @@ export default function Conversations({
     user?.progress?.showTranslations !== false
   );
 
+  // Conversation settings state
+  const [conversationSettings, setConversationSettings] = useState({
+    proficiencyLevel: maxProficiencyLevel || "A1",
+    practicePronunciation: user?.progress?.practicePronunciation || false,
+    conversationSubjects: user?.progress?.conversationSubjects || "",
+  });
+  const conversationSettingsRef = useRef(conversationSettings);
+
+  // Settings drawer
+  const {
+    isOpen: isSettingsOpen,
+    onOpen: openSettings,
+    onClose: closeSettings,
+  } = useDisclosure();
+
   // Live refs
   const voiceRef = useRef(voice);
   const voicePersonaRef = useRef(voicePersona);
@@ -550,6 +568,58 @@ export default function Conversations({
   useEffect(() => {
     pauseMsRef.current = pauseMs;
   }, [pauseMs]);
+
+  // Keep conversation settings ref updated
+  useEffect(() => {
+    conversationSettingsRef.current = conversationSettings;
+  }, [conversationSettings]);
+
+  // Track if we should regenerate goal after settings change
+  const shouldRegenerateGoalRef = useRef(false);
+
+  // Handle settings change with Firebase persistence
+  const handleSettingsChange = useCallback(
+    async (newSettings) => {
+      const previousSettings = conversationSettingsRef.current;
+      setConversationSettings(newSettings);
+
+      // Persist to Firebase
+      if (currentNpub) {
+        try {
+          await updateDoc(doc(database, "users", currentNpub), {
+            "progress.conversationProficiencyLevel":
+              newSettings.proficiencyLevel,
+            "progress.practicePronunciation": newSettings.practicePronunciation,
+            "progress.conversationSubjects": newSettings.conversationSubjects,
+          });
+        } catch (e) {
+          console.error("Failed to save conversation settings:", e);
+        }
+      }
+
+      // Mark for goal regeneration if proficiency level or subjects changed
+      if (
+        previousSettings.proficiencyLevel !== newSettings.proficiencyLevel ||
+        previousSettings.conversationSubjects !==
+          newSettings.conversationSubjects
+      ) {
+        shouldRegenerateGoalRef.current = true;
+      }
+    },
+    [currentNpub]
+  );
+
+  // Regenerate goal when settings drawer closes (if settings changed)
+  const handleSettingsClose = useCallback(() => {
+    closeSettings();
+    if (shouldRegenerateGoalRef.current) {
+      shouldRegenerateGoalRef.current = false;
+      // Small delay to let state update
+      setTimeout(() => {
+        generateConversationTopic();
+      }, 150);
+    }
+  }, [closeSettings]);
 
   // XP
   const [xp, setXp] = useState(0);
@@ -582,36 +652,47 @@ export default function Conversations({
     // Determine the language for the response
     const responseLang = supportLang === "es" ? "Spanish" : "English";
 
+    // Get current settings from ref (for use in async context)
+    const currentSettings = conversationSettingsRef.current;
+    const selectedLevel =
+      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const customSubjects = currentSettings.conversationSubjects || "";
+
     try {
       // Get skill tree topics for context
       const skillTreeTopics = getRandomSkillTreeTopics(
-        maxProficiencyLevel,
+        selectedLevel,
         targetLang,
         15
       );
 
       const levelDescription =
-        maxProficiencyLevel === "A1"
+        selectedLevel === "A1"
           ? "absolute beginner - use very simple vocabulary and short sentences"
-          : maxProficiencyLevel === "A2"
+          : selectedLevel === "A2"
           ? "elementary - use simple everyday topics and basic sentences"
-          : maxProficiencyLevel === "B1"
+          : selectedLevel === "B1"
           ? "intermediate - discuss experiences, opinions, and plans"
-          : maxProficiencyLevel === "B2"
+          : selectedLevel === "B2"
           ? "upper intermediate - handle complex and abstract topics"
-          : maxProficiencyLevel === "C1"
+          : selectedLevel === "C1"
           ? "advanced - use sophisticated vocabulary concisely"
           : "mastery - use nuanced vocabulary concisely";
 
-      const prompt = `You are creating a conversation practice topic for a ${maxProficiencyLevel} level language learner (${levelDescription}).
+      // Build custom subjects prompt if user has defined subjects
+      const customSubjectsPrompt = customSubjects
+        ? `\n\nIMPORTANT: The user has specified they want to practice these specific topics/contexts:\n"${customSubjects}"\nPrioritize generating topics related to these interests when possible.`
+        : "";
+
+      const prompt = `You are creating a conversation practice topic for a ${selectedLevel} level language learner (${levelDescription}).
 
 Here are some topics from their learning curriculum that you can reference or be inspired by:
-${skillTreeTopics.join("\n")}
+${skillTreeTopics.join("\n")}${customSubjectsPrompt}
 
 Generate ONE clear, specific conversation topic that:
-1. Is appropriate for ${maxProficiencyLevel} level complexity
+1. Is appropriate for ${selectedLevel} level complexity
 2. Encourages the learner to speak and practice
-3. Can be either based on the curriculum topics above OR a creative topic you think would be engaging
+3. Can be either based on the curriculum topics above, the user's custom interests, OR a creative topic you think would be engaging
 4. Is specific enough to guide the conversation (not generic like "practice speaking")
 5. Is CONCISE: Maximum 10-15 words. For advanced levels (C1/C2), use sophisticated vocabulary, NOT longer sentences.
 
@@ -651,15 +732,19 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       } else {
         // Use fallback if empty
         setCurrentGoal({
-          text: getRandomFallbackTopic(maxProficiencyLevel),
+          text: getRandomFallbackTopic(selectedLevel),
           completed: false,
         });
       }
     } catch (e) {
       console.error("Topic generation error:", e);
       // Use fallback on error
+      const selectedLevel =
+        conversationSettingsRef.current.proficiencyLevel ||
+        maxProficiencyLevel ||
+        "A1";
       setCurrentGoal({
-        text: getRandomFallbackTopic(maxProficiencyLevel),
+        text: getRandomFallbackTopic(selectedLevel),
         completed: false,
       });
     } finally {
@@ -903,11 +988,23 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           if (Number.isFinite(data.progress?.pauseMs)) {
             setPauseMs(data.progress.pauseMs);
           }
+          // Load conversation settings
+          setConversationSettings((prev) => ({
+            proficiencyLevel:
+              data.progress?.conversationProficiencyLevel ||
+              maxProficiencyLevel ||
+              prev.proficiencyLevel,
+            practicePronunciation:
+              data.progress?.practicePronunciation ??
+              prev.practicePronunciation,
+            conversationSubjects:
+              data.progress?.conversationSubjects || prev.conversationSubjects,
+          }));
         }
       } catch {}
     }
     loadXp();
-  }, [currentNpub, targetLang]);
+  }, [currentNpub, targetLang, maxProficiencyLevel]);
 
   // Cleanup on unmount
   useEffect(() => () => stop(), []);
@@ -1111,6 +1208,12 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   function buildLanguageInstructions() {
     const persona = String((voicePersonaRef.current ?? "").slice(0, 240));
     const tLang = targetLangRef.current;
+    const currentSettings = conversationSettingsRef.current;
+    const selectedLevel =
+      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const practicePronunciation =
+      currentSettings.practicePronunciation || false;
+    const customSubjects = currentSettings.conversationSubjects || "";
 
     let strict;
     if (tLang === "nah") {
@@ -1153,13 +1256,24 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
       C2: "CRITICAL: User is near-native (C2). Use native-like expressions, colloquialisms, and subtle distinctions. Can use any grammatical structure. Can handle any topic with precision and style.",
     };
 
-    const proficiencyHint =
-      levelGuidance[maxProficiencyLevel] || levelGuidance.A1;
+    const proficiencyHint = levelGuidance[selectedLevel] || levelGuidance.A1;
+
+    // Pronunciation practice instructions
+    const pronunciationInstructions = practicePronunciation
+      ? "PRONUNCIATION PRACTICE MODE: When the user makes pronunciation errors or uses awkward phrasing, gently correct them and ask them to repeat the correct pronunciation. Use phonetic hints when helpful. Praise good pronunciation."
+      : "";
+
+    // Custom subjects context
+    const customSubjectsContext = customSubjects
+      ? `CUSTOM CONTEXT: The user wants to practice conversations related to: "${customSubjects}". Try to incorporate relevant vocabulary and scenarios from this context when appropriate.`
+      : "";
 
     return [
       "Act as a friendly language practice partner for free-form conversation.",
       strict,
       proficiencyHint,
+      pronunciationInstructions,
+      customSubjectsContext,
       "IMPORTANT: Match your language complexity to the learner's proficiency level. Do not use vocabulary or grammar above their level.",
       "Keep replies very brief (≤25 words) and natural.",
       `PERSONA: ${persona}. Stay consistent with that tone/style.`,
@@ -1333,6 +1447,12 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
     setIsGeneratingGoal(true);
     setGoalFeedback(""); // Clear previous feedback
 
+    // Get current settings
+    const currentSettings = conversationSettingsRef.current;
+    const selectedLevel =
+      currentSettings.proficiencyLevel || maxProficiencyLevel || "A1";
+    const customSubjects = currentSettings.conversationSubjects || "";
+
     try {
       // Get recent conversation context
       const recentMessages = messagesRef.current
@@ -1342,24 +1462,29 @@ Respond with ONLY a JSON object: {"completed": true/false, "reason": "brief, act
         )
         .join("\n");
 
-      const prompt = `You are helping a ${maxProficiencyLevel} level language learner practice conversation.
+      // Build custom subjects hint
+      const customSubjectsHint = customSubjects
+        ? `\nThe user is interested in practicing: "${customSubjects}". Consider incorporating relevant topics when appropriate.`
+        : "";
+
+      const prompt = `You are helping a ${selectedLevel} level language learner practice conversation.
 
 Recent conversation:
 ${recentMessages || "Just started"}
 
-Previous goal was: "${currentGoal.text.en}"
+Previous goal was: "${currentGoal.text.en}"${customSubjectsHint}
 
 Generate the NEXT natural conversation goal that follows the flow of the conversation.
-The goal should be appropriate for ${maxProficiencyLevel} level (${
-        maxProficiencyLevel === "A1"
+The goal should be appropriate for ${selectedLevel} level (${
+        selectedLevel === "A1"
           ? "beginner - simple tasks"
-          : maxProficiencyLevel === "A2"
+          : selectedLevel === "A2"
           ? "elementary - everyday topics"
-          : maxProficiencyLevel === "B1"
+          : selectedLevel === "B1"
           ? "intermediate - opinions and experiences"
-          : maxProficiencyLevel === "B2"
+          : selectedLevel === "B2"
           ? "upper intermediate - complex discussions"
-          : maxProficiencyLevel === "C1"
+          : selectedLevel === "C1"
           ? "advanced - nuanced but concise"
           : "mastery - sophisticated but concise"
       }).
@@ -1783,34 +1908,51 @@ Do not return the whole sentence as a single chunk.`;
   --------------------------- */
   return (
     <>
-      <Box
-        minH="100vh"
-        color="gray.100"
-        position="relative"
-        pb="120px"
-        borderRadius="24px"
-      >
+      <Box minH="100vh" color="gray.100" position="relative" pb="120px">
         {/* Header area with centered Robot and Goal UI */}
-        <Box px={4} mt={3} display="flex" justifyContent="center">
+        <Box px={4} mt={0} display="flex" justifyContent="center">
           <Box
             bg="gray.800"
-            p={4}
+            p={2}
             rounded="2xl"
             border="1px solid rgba(255,255,255,0.06)"
             width="100%"
             maxWidth="400px"
           >
             <VStack spacing={3} align="center" width="100%">
-              {/* Centered RobotBuddyPro */}
-              <Box width="80px" opacity={0.95}>
-                <RobotBuddyPro
-                  state={uiState}
-                  loudness={uiState === "listening" ? volume : 0}
-                  mood={mood}
-                  variant="abstract"
-                  maxW={80}
-                />
-              </Box>
+              {/* Robot and Settings Row */}
+              <HStack width="100%" justify="space-between" align="center">
+                {/* RobotBuddyPro on the left */}
+                <Box
+                  width="75px"
+                  opacity={0.95}
+                  flexShrink={0}
+                  mt="-12px"
+                  ml={"-22px"}
+                >
+                  <RobotBuddyPro
+                    state={uiState}
+                    loudness={uiState === "listening" ? volume : 0}
+                    mood={mood}
+                    variant="abstract"
+                    maxW={75}
+                  />
+                </Box>
+
+                {/* Conversation Settings Button */}
+                <Button
+                  leftIcon={<FiSettings />}
+                  size="xs"
+                  variant="ghost"
+                  colorScheme="gray"
+                  onClick={openSettings}
+                  opacity={0.7}
+                  _hover={{ opacity: 1 }}
+                  fontWeight="medium"
+                >
+                  {uiLang === "es" ? "Configuración" : "Conversation settings"}
+                </Button>
+              </HStack>
 
               {/* Goal Text with Checkmark or Loader */}
               <VStack spacing={2} align="center" width="100%">
@@ -2023,6 +2165,15 @@ Do not return the whole sentence as a single chunk.`;
         {/* remote live audio sink */}
         <audio ref={audioRef} />
       </Box>
+
+      {/* Conversation Settings Drawer */}
+      <ConversationSettingsDrawer
+        isOpen={isSettingsOpen}
+        onClose={handleSettingsClose}
+        settings={conversationSettings}
+        onSettingsChange={handleSettingsChange}
+        supportLang={supportLang}
+      />
     </>
   );
 }

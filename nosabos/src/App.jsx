@@ -4072,13 +4072,7 @@ export default function App() {
   ----------------------------------- */
 
   return (
-    <Box
-      minH="100dvh"
-      bg="transparent"
-      color="gray.50"
-      width="100%"
-      position="relative"
-    >
+    <Box minH="100dvh" bg="transparent" color="gray.50" width="100%">
       <AnimatedBackground />
       <TopBar
         appLanguage={appLanguage}
@@ -4191,7 +4185,7 @@ export default function App() {
 
       {/* Skill Tree Scene - Full Screen */}
       {viewMode === "skillTree" && (
-        <Box px={[2, 3, 4]} pt={[2, 3]} pb={{ base: 32, md: 24 }} w="100%">
+        <Box pb={{ base: 32, md: 24 }} w="100%">
           {!hasInitializedLevels ? (
             <Box
               display="flex"
