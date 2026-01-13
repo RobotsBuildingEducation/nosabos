@@ -283,6 +283,7 @@ const HelpChatFab = forwardRef(
           nah: "Huastec Nahuatl (náhuatl huasteco)",
           ru: "Russian (русский)",
           de: "German (Deutsch)",
+          el: "Greek (Ελληνικά)",
         }[code] || code);
 
       const strict =
@@ -587,6 +588,7 @@ const HelpChatFab = forwardRef(
           nah: "Huastec Nahuatl",
           ru: "Russian",
           de: "German",
+          el: "Greek",
         }[code] || code);
 
       const levelHint =

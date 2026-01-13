@@ -195,6 +195,7 @@ const TARGET_LANGUAGE_LABELS = {
   ja: "Japanese",
   ru: "Russian",
   de: "German",
+  el: "Greek",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -917,6 +918,12 @@ function TopBar({
                       {targetLang === "de" && (
                         <>{translations[appLanguage].onboarding_practice_de} </>
                       )}
+                      {targetLang === "el" && (
+                        <>
+                          {translations[appLanguage].onboarding_practice_el}{" "}
+                          (beta)
+                        </>
+                      )}
                       {targetLang === "es" &&
                         translations[appLanguage].onboarding_practice_es}
                     </MenuButton>
@@ -980,6 +987,10 @@ function TopBar({
                         </MenuItemOption>
                         <MenuItemOption value="de">
                           {translations[appLanguage].onboarding_practice_de}{" "}
+                        </MenuItemOption>
+                        <MenuItemOption value="el">
+                          {translations[appLanguage].onboarding_practice_el}{" "}
+                          (beta)
                         </MenuItemOption>
                         <MenuItemOption value="es">
                           {translations[appLanguage].onboarding_practice_es}
@@ -2286,6 +2297,7 @@ export default function App() {
         "ja",
         "ru",
         "de",
+        "el",
       ].includes(partial.targetLang ?? prev.targetLang)
         ? partial.targetLang ?? prev.targetLang
         : "es",
@@ -2411,6 +2423,7 @@ export default function App() {
           "ja",
           "ru",
           "de",
+          "el",
         ].includes(payload.targetLang)
           ? payload.targetLang
           : "es",

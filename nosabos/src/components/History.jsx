@@ -168,6 +168,7 @@ const LANG_NAME = (code) =>
     nah: "Huastec Nahuatl",
     ru: "Russian",
     de: "German",
+    el: "Greek",
   }[code] || code);
 
 const LANGUAGE_LABELS = {
@@ -183,6 +184,7 @@ const LANGUAGE_LABELS = {
   it: ["Italian", "Italiano"],
   nl: ["Dutch", "Holandés", "Nederlands"],
   nah: ["Huastec Nahuatl", "Náhuatl huasteco"],
+  el: ["Greek", "Griego", "Ελληνικά"],
   ru: ["Russian", "Ruso"],
   de: ["German", "Alemán", "Deutsch"],
 };
@@ -312,9 +314,19 @@ function useSharedProgress() {
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.exists() ? snap.data() : {};
       const p = data?.progress || {};
-      const targetLang = ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de"].includes(
-        p.targetLang
-      )
+      const targetLang = [
+        "nah",
+        "es",
+        "pt",
+        "en",
+        "fr",
+        "it",
+        "nl",
+        "ja",
+        "ru",
+        "de",
+        "el",
+      ].includes(p.targetLang)
         ? p.targetLang
         : "es";
       const langXp = getLanguageXp(p, targetLang);
@@ -620,6 +632,7 @@ const BCP47 = {
   nah: { tts: "es-ES" },
   ru: { tts: "ru-RU" },
   de: { tts: "de-DE" },
+  el: { tts: "el-GR" },
 };
 
 /* ---------------------------
@@ -718,9 +731,19 @@ export default function History({
   const { xp, levelNumber, progressPct, progress, npub, isLoading } =
     useSharedProgress();
 
-  const targetLang = ["en", "es", "pt", "nah", "fr", "it", "nl", "ja", "ru", "de"].includes(
-    progress.targetLang
-  )
+  const targetLang = [
+    "en",
+    "es",
+    "pt",
+    "nah",
+    "fr",
+    "it",
+    "nl",
+    "ja",
+    "ru",
+    "de",
+    "el",
+  ].includes(progress.targetLang)
     ? progress.targetLang
     : "es";
 
@@ -759,6 +782,7 @@ export default function History({
       ja: t("language_ja"),
       ru: t("language_ru"),
       de: t("language_de"),
+      el: t("language_el"),
     }[code] || code);
 
   const targetDisplay = localizedLangName(targetLang);

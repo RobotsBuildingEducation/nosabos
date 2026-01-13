@@ -172,6 +172,7 @@ const LANG_NAME = (code) =>
     nah: "Huastec Nahuatl",
     ru: "Russian",
     de: "German",
+    el: "Greek",
   }[code] || code);
 
 const strongNpub = (user) =>
@@ -215,6 +216,7 @@ function useSharedProgress() {
         "ja",
         "ru",
         "de",
+        "el",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
@@ -1045,6 +1047,7 @@ export default function Vocabulary({
     "ja",
     "ru",
     "de",
+    "el",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
@@ -1071,6 +1074,7 @@ export default function Vocabulary({
       ja: t("language_ja"),
       ru: t("language_ru"),
       de: t("language_de"),
+      el: t("language_el"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);
