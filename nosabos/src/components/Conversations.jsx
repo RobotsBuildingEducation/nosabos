@@ -41,6 +41,7 @@ import {
   getRandomFallbackTopic,
 } from "../data/conversationTopics";
 import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
 
 const REALTIME_MODEL =
@@ -544,6 +545,10 @@ export default function Conversations({
     onOpen: openSettings,
     onClose: closeSettings,
   } = useDisclosure();
+  const handleSettingsOpen = useCallback(() => {
+    playSound(selectSound);
+    openSettings();
+  }, [openSettings, playSound]);
 
   // Live refs
   const voiceRef = useRef(voice);
@@ -1945,7 +1950,7 @@ Do not return the whole sentence as a single chunk.`;
                   size="xs"
                   variant="ghost"
                   colorScheme="gray"
-                  onClick={openSettings}
+                  onClick={handleSettingsOpen}
                   opacity={0.7}
                   _hover={{ opacity: 1 }}
                   fontWeight="medium"
