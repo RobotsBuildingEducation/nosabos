@@ -4192,7 +4192,7 @@ export default function App() {
               alignItems="center"
               minH="60vh"
             >
-              <RobotBuddyPro state="thinking" />
+              <RobotBuddyPro state="speaking" />
             </Box>
           ) : showAlphabetBootcamp ? (
             <AlphabetBootcamp
