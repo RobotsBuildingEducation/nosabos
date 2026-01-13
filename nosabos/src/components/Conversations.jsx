@@ -574,9 +574,13 @@ export default function Conversations({
     conversationSettingsRef.current = conversationSettings;
   }, [conversationSettings]);
 
+  // Track if we should regenerate goal after settings change
+  const shouldRegenerateGoalRef = useRef(false);
+
   // Handle settings change with Firebase persistence
   const handleSettingsChange = useCallback(
     async (newSettings) => {
+      const previousSettings = conversationSettingsRef.current;
       setConversationSettings(newSettings);
 
       // Persist to Firebase
@@ -591,9 +595,29 @@ export default function Conversations({
           console.error("Failed to save conversation settings:", e);
         }
       }
+
+      // Mark for goal regeneration if proficiency level or subjects changed
+      if (
+        previousSettings.proficiencyLevel !== newSettings.proficiencyLevel ||
+        previousSettings.conversationSubjects !== newSettings.conversationSubjects
+      ) {
+        shouldRegenerateGoalRef.current = true;
+      }
     },
     [currentNpub]
   );
+
+  // Regenerate goal when settings drawer closes (if settings changed)
+  const handleSettingsClose = useCallback(() => {
+    closeSettings();
+    if (shouldRegenerateGoalRef.current) {
+      shouldRegenerateGoalRef.current = false;
+      // Small delay to let state update
+      setTimeout(() => {
+        generateConversationTopic();
+      }, 150);
+    }
+  }, [closeSettings]);
 
   // XP
   const [xp, setXp] = useState(0);
@@ -1879,7 +1903,6 @@ Do not return the whole sentence as a single chunk.`;
         color="gray.100"
         position="relative"
         pb="120px"
-        borderRadius="24px"
       >
         {/* Header area with centered Robot and Goal UI */}
         <Box px={4} mt={3} display="flex" justifyContent="center">
@@ -2134,7 +2157,7 @@ Do not return the whole sentence as a single chunk.`;
       {/* Conversation Settings Drawer */}
       <ConversationSettingsDrawer
         isOpen={isSettingsOpen}
-        onClose={closeSettings}
+        onClose={handleSettingsClose}
         settings={conversationSettings}
         onSettingsChange={handleSettingsChange}
         supportLang={supportLang}

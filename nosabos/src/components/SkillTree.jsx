@@ -1973,9 +1973,9 @@ export default function SkillTree({
       />
 
       <Container
-        maxW="container.lg"
-        py={6}
-        px={{ base: 3, sm: 4, md: 6 }}
+        maxW={pathMode === "path" ? "container.lg" : "100%"}
+        py={pathMode === "path" ? 6 : 0}
+        px={pathMode === "path" ? { base: 3, sm: 4, md: 6 } : 0}
         position="relative"
         zIndex={1}
       >
