@@ -125,6 +125,7 @@ export default function Onboarding({
     }
     setIsSaving(true);
     try {
+      playSound(submitActionSound);
       const payload = {
         level,
         supportLang,

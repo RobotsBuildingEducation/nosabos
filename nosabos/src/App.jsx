@@ -153,6 +153,7 @@ import { BsCalendar2DateFill } from "react-icons/bs";
 import { HiVolumeUp } from "react-icons/hi";
 import sparkleSound from "./assets/sparkle.mp3";
 import submitActionSound from "./assets/submitaction.mp3";
+import selectSound from "./assets/select.mp3";
 import dailyGoalSound from "./assets/dailygoal.mp3";
 import modeSwitcherSound from "./assets/modeswitcher.mp3";
 
@@ -745,7 +746,10 @@ function TopBar({
             variant="outline"
             colorScheme="teal"
             icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
-            onClick={onOpenDailyGoalModal}
+            onClick={() => {
+              playSound(selectSound);
+              onOpenDailyGoalModal?.();
+            }}
             borderColor="teal.600"
             px={{ base: 2, md: 3 }}
           />
@@ -783,7 +787,10 @@ function TopBar({
             colorScheme="teal"
             variant={isTimerRunning ? "solid" : "outline"}
             size="sm"
-            onClick={onOpenTimerModal}
+            onClick={() => {
+              playSound(selectSound);
+              onOpenTimerModal?.();
+            }}
           >
             <FiClock />
           </Button>
@@ -792,7 +799,10 @@ function TopBar({
               colorScheme="teal"
               variant={timerPaused ? "outline" : "ghost"}
               size="sm"
-              onClick={onTogglePauseTimer}
+              onClick={() => {
+                playSound(selectSound);
+                onTogglePauseTimer?.();
+              }}
             >
               {timerPaused ? <FiPlay /> : <FiPause />}
             </Button>
