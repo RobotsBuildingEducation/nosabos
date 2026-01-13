@@ -30,8 +30,8 @@ const CEFR_LEVELS = [
     level: "A1",
     name: { en: "Beginner", es: "Principiante" },
     description: {
-      en: "Basic survival language - greetings, simple phrases",
-      es: "Lenguaje básico de supervivencia - saludos, frases simples",
+      en: "greetings, numbers, colors",
+      es: "saludos, números, colores",
     },
     color: "#3B82F6",
   },
@@ -39,8 +39,8 @@ const CEFR_LEVELS = [
     level: "A2",
     name: { en: "Elementary", es: "Elemental" },
     description: {
-      en: "Simple everyday topics - shopping, directions",
-      es: "Temas cotidianos simples - compras, direcciones",
+      en: "shopping, directions, routines",
+      es: "compras, direcciones, rutinas",
     },
     color: "#22C55E",
   },
@@ -48,8 +48,8 @@ const CEFR_LEVELS = [
     level: "B1",
     name: { en: "Intermediate", es: "Intermedio" },
     description: {
-      en: "Opinions, experiences, and plans",
-      es: "Opiniones, experiencias y planes",
+      en: "opinions, travel, work",
+      es: "opiniones, viajes, trabajo",
     },
     color: "#EAB308",
   },
@@ -57,8 +57,8 @@ const CEFR_LEVELS = [
     level: "B2",
     name: { en: "Upper Intermediate", es: "Intermedio Alto" },
     description: {
-      en: "Complex and abstract topics",
-      es: "Temas complejos y abstractos",
+      en: "debates, abstract ideas",
+      es: "debates, ideas abstractas",
     },
     color: "#F97316",
   },
@@ -66,8 +66,8 @@ const CEFR_LEVELS = [
     level: "C1",
     name: { en: "Advanced", es: "Avanzado" },
     description: {
-      en: "Sophisticated vocabulary and nuanced expression",
-      es: "Vocabulario sofisticado y expresión matizada",
+      en: "nuanced expression, idioms",
+      es: "expresión matizada, modismos",
     },
     color: "#8B5CF6",
   },
@@ -75,8 +75,8 @@ const CEFR_LEVELS = [
     level: "C2",
     name: { en: "Mastery", es: "Maestría" },
     description: {
-      en: "Near-native proficiency",
-      es: "Competencia casi nativa",
+      en: "near-native fluency",
+      es: "fluidez casi nativa",
     },
     color: "#EC4899",
   },
@@ -173,7 +173,7 @@ export default function ConversationSettingsDrawer({
               <Text fontSize="xs" color="gray.400" mb={3}>
                 {t.proficiencyHint}
               </Text>
-              <Menu>
+              <Menu matchWidth>
                 <MenuButton
                   as={Button}
                   rightIcon={<FiChevronDown />}
@@ -185,8 +185,10 @@ export default function ConversationSettingsDrawer({
                   fontWeight="normal"
                   h="auto"
                   py={3}
+                  px={3}
+                  whiteSpace="normal"
                 >
-                  <HStack spacing={3}>
+                  <HStack spacing={2} align="center" flex={1} minW={0}>
                     <Badge
                       px={2}
                       py={1}
@@ -195,17 +197,18 @@ export default function ConversationSettingsDrawer({
                       color="white"
                       fontSize="sm"
                       fontWeight="bold"
+                      flexShrink={0}
                     >
                       {currentLevel.level}
                     </Badge>
-                    <VStack align="start" spacing={0}>
-                      <Text fontSize="sm" fontWeight="medium">
+                    <Box minW={0} flex={1}>
+                      <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
                         {currentLevel.name[lang]}
                       </Text>
-                      <Text fontSize="xs" color="gray.400">
+                      <Text fontSize="xs" color="gray.400" noOfLines={1}>
                         {currentLevel.description[lang]}
                       </Text>
-                    </VStack>
+                    </Box>
                   </HStack>
                 </MenuButton>
                 <MenuList bg="gray.800" borderColor="gray.700" maxH="300px" overflowY="auto">
@@ -221,7 +224,7 @@ export default function ConversationSettingsDrawer({
                       _hover={{ bg: "gray.700" }}
                       py={3}
                     >
-                      <HStack spacing={3} w="100%">
+                      <HStack spacing={2} w="100%" align="center">
                         <Badge
                           px={2}
                           py={1}
@@ -230,19 +233,18 @@ export default function ConversationSettingsDrawer({
                           color="white"
                           fontSize="sm"
                           fontWeight="bold"
-                          minW="40px"
-                          textAlign="center"
+                          flexShrink={0}
                         >
                           {level.level}
                         </Badge>
-                        <VStack align="start" spacing={0} flex={1}>
+                        <Box minW={0} flex={1}>
                           <Text fontSize="sm" fontWeight="medium">
                             {level.name[lang]}
                           </Text>
                           <Text fontSize="xs" color="gray.400">
                             {level.description[lang]}
                           </Text>
-                        </VStack>
+                        </Box>
                       </HStack>
                     </MenuItem>
                   ))}

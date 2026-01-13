@@ -1915,8 +1915,20 @@ Do not return the whole sentence as a single chunk.`;
             maxWidth="400px"
           >
             <VStack spacing={3} align="center" width="100%">
-              {/* Conversation Settings Button */}
-              <HStack width="100%" justify="flex-end">
+              {/* Robot and Settings Row */}
+              <HStack width="100%" justify="space-between" align="center">
+                {/* RobotBuddyPro on the left */}
+                <Box width="50px" opacity={0.95} flexShrink={0}>
+                  <RobotBuddyPro
+                    state={uiState}
+                    loudness={uiState === "listening" ? volume : 0}
+                    mood={mood}
+                    variant="abstract"
+                    maxW={50}
+                  />
+                </Box>
+
+                {/* Conversation Settings Button */}
                 <Button
                   leftIcon={<FiSettings />}
                   size="xs"
@@ -1927,20 +1939,9 @@ Do not return the whole sentence as a single chunk.`;
                   _hover={{ opacity: 1 }}
                   fontWeight="medium"
                 >
-                  {uiLang === "es" ? "Configuración de conversación" : "Conversation settings"}
+                  {uiLang === "es" ? "Configuración" : "Conversation settings"}
                 </Button>
               </HStack>
-
-              {/* Centered RobotBuddyPro */}
-              <Box width="80px" opacity={0.95}>
-                <RobotBuddyPro
-                  state={uiState}
-                  loudness={uiState === "listening" ? volume : 0}
-                  mood={mood}
-                  variant="abstract"
-                  maxW={80}
-                />
-              </Box>
 
               {/* Goal Text with Checkmark or Loader */}
               <VStack spacing={2} align="center" width="100%">
