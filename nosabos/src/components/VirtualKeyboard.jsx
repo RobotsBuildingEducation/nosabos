@@ -252,6 +252,68 @@ const CYRILLIC_UPPER = [
   ],
 ];
 
+// Greek keyboard layout
+const GREEK = [
+  [
+    "α",
+    "β",
+    "γ",
+    "δ",
+    "ε",
+    "ζ",
+    "η",
+    "θ",
+    "ι",
+    "κ",
+    "λ",
+    "μ",
+    "ν",
+    "ξ",
+    "ο",
+    "π",
+    "ρ",
+    "σ",
+    "ς",
+    "τ",
+    "υ",
+    "φ",
+    "χ",
+    "ψ",
+    "ω",
+  ],
+  ["ά", "έ", "ή", "ί", "ό", "ύ", "ώ", "ϊ", "ϋ", "ΐ", "ΰ"],
+];
+
+const GREEK_UPPER = [
+  [
+    "Α",
+    "Β",
+    "Γ",
+    "Δ",
+    "Ε",
+    "Ζ",
+    "Η",
+    "Θ",
+    "Ι",
+    "Κ",
+    "Λ",
+    "Μ",
+    "Ν",
+    "Ξ",
+    "Ο",
+    "Π",
+    "Ρ",
+    "Σ",
+    "Τ",
+    "Υ",
+    "Φ",
+    "Χ",
+    "Ψ",
+    "Ω",
+  ],
+  ["Ά", "Έ", "Ή", "Ί", "Ό", "Ύ", "Ώ", "Ϊ", "Ϋ"],
+];
+
 export default function VirtualKeyboard({
   lang,
   onKeyPress,
@@ -260,11 +322,12 @@ export default function VirtualKeyboard({
 }) {
   const isJapanese = lang === "ja";
   const isRussian = lang === "ru";
+  const isGreek = lang === "el";
 
   // Japanese keyboard state
   const [japaneseMode, setJapaneseMode] = useState("hiragana"); // "hiragana" | "katakana"
 
-  // Russian keyboard state
+  // Russian/Greek keyboard state
   const [isUpperCase, setIsUpperCase] = useState(false);
 
   const handleKeyPress = (char) => {
@@ -279,7 +342,7 @@ export default function VirtualKeyboard({
     onKeyPress?.(" ");
   };
 
-  if (!isJapanese && !isRussian) return null;
+  if (!isJapanese && !isRussian && !isGreek) return null;
 
   // Get keyboard layout based on language and mode
   const getKeyboardLayout = () => {
@@ -288,6 +351,9 @@ export default function VirtualKeyboard({
     }
     if (isRussian) {
       return isUpperCase ? CYRILLIC_UPPER : CYRILLIC;
+    }
+    if (isGreek) {
+      return isUpperCase ? GREEK_UPPER : GREEK;
     }
     return [];
   };
@@ -326,7 +392,7 @@ export default function VirtualKeyboard({
               </Button>
             </>
           )}
-          {isRussian && (
+          {(isRussian || isGreek) && (
             <Button
               size="xs"
               colorScheme={isUpperCase ? "purple" : "gray"}

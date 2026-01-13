@@ -729,7 +729,7 @@ function LetterCard({
                   color={isPlaying ? "teal.200" : "white"}
                   onClick={() => onPlay(letter)}
                 >
-                  <FiVolume2 />
+                  {isPlaying ? <Spinner size="sm" /> : <FiVolume2 />}
                 </Flex>
               )}
             </Flex>
@@ -1201,6 +1201,8 @@ export default function AlphabetBootcamp({
                         return;
                       }
 
+                      setPlayingId(data.id);
+
                       try {
                         playerRef.current?.audio?.pause?.();
                       } catch {}
@@ -1212,7 +1214,6 @@ export default function AlphabetBootcamp({
                           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
                         });
                         playerRef.current = player;
-                        setPlayingId(data.id);
 
                         const audio = player.audio;
                         audio.onended = () => {

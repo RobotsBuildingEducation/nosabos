@@ -2248,8 +2248,9 @@ Return EXACTLY:
     }
   }, []);
 
-  // Check if keyboard should be available (Japanese or Russian)
-  const showKeyboardButton = targetLang === "ja" || targetLang === "ru";
+  // Check if keyboard should be available (Japanese, Russian, or Greek)
+  const showKeyboardButton =
+    targetLang === "ja" || targetLang === "ru" || targetLang === "el";
 
   async function submitFill() {
     if (!qFill || !ansFill.trim()) return;

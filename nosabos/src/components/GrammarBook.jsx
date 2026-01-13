@@ -3109,8 +3109,9 @@ Return JSON ONLY:
     }
   }, []);
 
-  // Check if keyboard should be available (Japanese or Russian)
-  const showKeyboardButton = targetLang === "ja" || targetLang === "ru";
+  // Check if keyboard should be available (Japanese, Russian, or Greek)
+  const showKeyboardButton =
+    targetLang === "ja" || targetLang === "ru" || targetLang === "el";
 
   /* ---------------------------
      Submits (backend judging for fill/mc/ma; deterministic for match)
