@@ -313,6 +313,16 @@ export default function Onboarding({
                       )}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
+                      <Box
+                        px={3}
+                        pt={2}
+                        pb={1}
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        color="gray.400"
+                      >
+                        {ui.onboarding_practice_menu_label || "Practice:"}
+                      </Box>
                       <MenuOptionGroup
                         type="radio"
                         value={targetLang}
