@@ -164,7 +164,9 @@ const DISPLAY_LANG_NAME = (code, uiLang) => {
 
 const getAppUILang = () => {
   const user = useUserStore.getState().user;
-  return (user?.appLanguage || localStorage.getItem("appLanguage")) === "es"
+  console.log("USER", user);
+  return user?.appLanguage === "es" ||
+    localStorage.getItem("appLanguage") === "es"
     ? "es"
     : "en";
 };
