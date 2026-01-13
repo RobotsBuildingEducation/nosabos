@@ -494,6 +494,38 @@ function TopBar({
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
 
+  const practiceLanguageOptions = useMemo(() => {
+    const collator = new Intl.Collator(appLanguage === "es" ? "es" : "en");
+    const options = [
+      { value: "nl", label: t.onboarding_practice_nl, beta: false },
+      { value: "en", label: t.onboarding_practice_en, beta: false },
+      { value: "fr", label: t.onboarding_practice_fr, beta: false },
+      { value: "de", label: t.onboarding_practice_de, beta: false },
+      { value: "it", label: t.onboarding_practice_it, beta: false },
+      { value: "nah", label: t.onboarding_practice_nah, beta: false },
+      { value: "pt", label: t.onboarding_practice_pt, beta: false },
+      { value: "es", label: t.onboarding_practice_es, beta: false },
+      { value: "el", label: t.onboarding_practice_el, beta: true },
+      {
+        value: "ja",
+        label: t.onboarding_practice_ja,
+        beta: true,
+        hidden: !showJapanese,
+      },
+      { value: "ru", label: t.onboarding_practice_ru, beta: true },
+    ];
+
+    const visible = options.filter((option) => !option.hidden);
+    const stable = visible
+      .filter((option) => !option.beta)
+      .sort((a, b) => collator.compare(a.label, b.label));
+    const beta = visible
+      .filter((option) => option.beta)
+      .sort((a, b) => collator.compare(a.label, b.label));
+
+    return [...stable, ...beta];
+  }, [appLanguage, showJapanese, t]);
+
   // Refill draft when store changes
   useEffect(() => {
     const q = user?.progress || {};
@@ -957,44 +989,15 @@ function TopBar({
                           persistSettings({ targetLang: value });
                         }}
                       >
-                        <MenuItemOption value="nl">
-                          {translations[appLanguage].onboarding_practice_nl}
-                        </MenuItemOption>
-                        <MenuItemOption value="en">
-                          {translations[appLanguage].onboarding_practice_en}
-                        </MenuItemOption>
-                        <MenuItemOption value="fr">
-                          {translations[appLanguage].onboarding_practice_fr}
-                        </MenuItemOption>
-                        <MenuItemOption value="de">
-                          {translations[appLanguage].onboarding_practice_de}{" "}
-                        </MenuItemOption>
-                        <MenuItemOption value="it">
-                          {translations[appLanguage].onboarding_practice_it}
-                        </MenuItemOption>
-                        <MenuItemOption value="nah">
-                          {translations[appLanguage].onboarding_practice_nah}
-                        </MenuItemOption>
-                        <MenuItemOption value="pt">
-                          {translations[appLanguage].onboarding_practice_pt}
-                        </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {translations[appLanguage].onboarding_practice_es}
-                        </MenuItemOption>
-                        <MenuItemOption value="el">
-                          {translations[appLanguage].onboarding_practice_el}{" "}
-                          (beta)
-                        </MenuItemOption>
-                        {showJapanese && (
-                          <MenuItemOption value="ja">
-                            {translations[appLanguage].onboarding_practice_ja}{" "}
-                            (beta)
+                        {practiceLanguageOptions.map((option) => (
+                          <MenuItemOption
+                            key={option.value}
+                            value={option.value}
+                          >
+                            {option.label}
+                            {option.beta ? " (beta)" : ""}
                           </MenuItemOption>
-                        )}
-                        <MenuItemOption value="ru">
-                          {translations[appLanguage].onboarding_practice_ru}{" "}
-                          (beta)
-                        </MenuItemOption>
+                        ))}
                       </MenuOptionGroup>
                     </MenuList>
                   </Menu>
