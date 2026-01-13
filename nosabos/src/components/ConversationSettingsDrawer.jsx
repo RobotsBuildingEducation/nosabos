@@ -205,7 +205,7 @@ export default function ConversationSettingsDrawer({
                   rightIcon={<FiChevronDown />}
                   w="100%"
                   bg="gray.800"
-                  _hover={{ bg: "gray.700" }}
+                  boxShadow="0 4px 0px black"
                   _active={{ bg: "gray.700" }}
                   textAlign="left"
                   fontWeight="normal"
@@ -327,9 +327,6 @@ export default function ConversationSettingsDrawer({
 
             {/* Save/Close Buttons */}
             <HStack spacing={3} mt="auto">
-              <Button colorScheme="cyan" onClick={handleSave} size="lg" flex={1}>
-                {t.save}
-              </Button>
               <Button
                 variant="outline"
                 colorScheme="gray"
@@ -338,6 +335,14 @@ export default function ConversationSettingsDrawer({
                 flex={1}
               >
                 {t.close}
+              </Button>
+              <Button
+                colorScheme="cyan"
+                onClick={handleSave}
+                size="lg"
+                flex={1}
+              >
+                {t.save}
               </Button>
             </HStack>
           </VStack>
