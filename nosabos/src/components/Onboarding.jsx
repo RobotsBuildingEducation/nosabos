@@ -34,6 +34,18 @@ import useSoundSettings from "../hooks/useSoundSettings";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { translations } from "../utils/translation";
+import {
+  brazilianFlag,
+  frenchFlag,
+  germanFlag,
+  greekFlag,
+  italianFlag,
+  japaneseFlag,
+  mexicanFlag,
+  netherlandsFlag,
+  russianFlag,
+  usaFlag,
+} from "./flagsIcons/flags";
 
 const BASE_PATH = "/onboarding";
 
@@ -99,22 +111,73 @@ export default function Onboarding({
   const practiceLanguageOptions = useMemo(() => {
     const collator = new Intl.Collator(supportLang === "es" ? "es" : "en");
     const options = [
-      { value: "nl", label: ui.onboarding_practice_nl, beta: false },
-      { value: "en", label: ui.onboarding_practice_en, beta: false },
-      { value: "fr", label: ui.onboarding_practice_fr, beta: false },
-      { value: "de", label: ui.onboarding_practice_de, beta: false },
-      { value: "it", label: ui.onboarding_practice_it, beta: false },
-      { value: "nah", label: ui.onboarding_practice_nah, beta: false },
-      { value: "pt", label: ui.onboarding_practice_pt, beta: false },
-      { value: "es", label: ui.onboarding_practice_es, beta: false },
-      { value: "el", label: ui.onboarding_practice_el, beta: true },
+      {
+        value: "nl",
+        label: ui.onboarding_practice_nl,
+        beta: false,
+        flag: netherlandsFlag(),
+      },
+      {
+        value: "en",
+        label: ui.onboarding_practice_en,
+        beta: false,
+        flag: usaFlag(),
+      },
+      {
+        value: "fr",
+        label: ui.onboarding_practice_fr,
+        beta: false,
+        flag: frenchFlag(),
+      },
+      {
+        value: "de",
+        label: ui.onboarding_practice_de,
+        beta: false,
+        flag: germanFlag(),
+      },
+      {
+        value: "it",
+        label: ui.onboarding_practice_it,
+        beta: false,
+        flag: italianFlag(),
+      },
+      {
+        value: "nah",
+        label: ui.onboarding_practice_nah,
+        beta: false,
+        flag: mexicanFlag(),
+      },
+      {
+        value: "pt",
+        label: ui.onboarding_practice_pt,
+        beta: false,
+        flag: brazilianFlag(),
+      },
+      {
+        value: "es",
+        label: ui.onboarding_practice_es,
+        beta: false,
+        flag: mexicanFlag(),
+      },
+      {
+        value: "el",
+        label: ui.onboarding_practice_el,
+        beta: true,
+        flag: greekFlag(),
+      },
       {
         value: "ja",
         label: ui.onboarding_practice_ja,
         beta: true,
         hidden: !showJapanese,
+        flag: japaneseFlag(),
       },
-      { value: "ru", label: ui.onboarding_practice_ru, beta: true },
+      {
+        value: "ru",
+        label: ui.onboarding_practice_ru,
+        beta: true,
+        flag: russianFlag(),
+      },
     ];
 
     const visible = options.filter((option) => !option.hidden);
@@ -343,8 +406,11 @@ export default function Onboarding({
                             key={option.value}
                             value={option.value}
                           >
-                            {option.label}
-                            {option.beta ? " (beta)" : ""}
+                            <div style={{ display: "inline-flex" }}>
+                              {option?.flag}&nbsp;
+                              {option.label}
+                              {option.beta ? " (beta)" : ""}
+                            </div>
                           </MenuItemOption>
                         ))}
                       </MenuOptionGroup>
