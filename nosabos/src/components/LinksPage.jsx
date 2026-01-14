@@ -22,20 +22,38 @@ import RobotBuddyPro from "./RobotBuddyPro";
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 
-const twinkle = keyframes`
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.2); }
+// Retro 80s star movement - diagonal scroll across screen
+const starScroll = keyframes`
+  0% {
+    transform: translateX(100vw) translateY(-100vh);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% {
+    transform: translateX(-100vw) translateY(100vh);
+    opacity: 0;
+  }
+`;
+
+// Pixel flicker effect for 8-bit feel
+const pixelFlicker = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+  75% { opacity: 1; }
+  90% { opacity: 0.5; }
+`;
+
+// Scanline animation
+const scanline = keyframes`
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
 `;
 
 const drift = keyframes`
   0% { transform: translateY(0) translateX(0); }
   50% { transform: translateY(-10px) translateX(5px); }
   100% { transform: translateY(0) translateX(0); }
-`;
-
-const pulse = keyframes`
-  0%, 100% { opacity: 0.1; }
-  50% { opacity: 0.3; }
 `;
 
 const links = [
@@ -65,35 +83,49 @@ const links = [
   },
 ];
 
-function Star({ size, top, left, delay, duration }) {
+// 8-bit pixel star - square shaped
+function PixelStar({ size, startX, startY, delay, duration, color }) {
   return (
     <Box
       position="absolute"
-      top={top}
-      left={left}
+      top={startY}
+      left={startX}
       w={`${size}px`}
       h={`${size}px`}
-      borderRadius="full"
-      bg="white"
-      boxShadow={`0 0 ${size * 2}px ${size / 2}px rgba(147, 112, 219, 0.6)`}
-      animation={`${twinkle} ${duration}s ease-in-out infinite`}
+      bg={color}
+      boxShadow={`0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color}`}
+      animation={`${starScroll} ${duration}s linear infinite, ${pixelFlicker} 0.5s steps(2) infinite`}
       animationDelay={`${delay}s`}
       pointerEvents="none"
+      sx={{
+        imageRendering: "pixelated",
+      }}
     />
   );
 }
 
-function StarryBackground() {
+function RetroStarfield() {
   const stars = useMemo(() => {
     const starArray = [];
-    for (let i = 0; i < 60; i++) {
+    // Neon 80s colors
+    const colors = [
+      "#ff00ff", // Magenta
+      "#00ffff", // Cyan
+      "#ff6ec7", // Hot pink
+      "#39ff14", // Neon green
+      "#fff", // White
+      "#ffff00", // Yellow
+    ];
+
+    for (let i = 0; i < 40; i++) {
       starArray.push({
         id: i,
-        size: Math.random() * 2 + 1,
-        top: `${Math.random() * 100}%`,
-        left: `${Math.random() * 100}%`,
-        delay: Math.random() * 5,
-        duration: Math.random() * 3 + 2,
+        size: Math.random() < 0.3 ? 4 : Math.random() < 0.6 ? 3 : 2,
+        startX: `${Math.random() * 100}%`,
+        startY: `${Math.random() * 100}%`,
+        delay: Math.random() * 15,
+        duration: Math.random() * 8 + 12,
+        color: colors[Math.floor(Math.random() * colors.length)],
       });
     }
     return starArray;
@@ -110,42 +142,43 @@ function StarryBackground() {
       pointerEvents="none"
     >
       {stars.map((star) => (
-        <Star key={star.id} {...star} />
+        <PixelStar key={star.id} {...star} />
       ))}
-      {/* Nebula-like gradients */}
+
+      {/* Retro grid lines */}
       <Box
         position="absolute"
-        top="10%"
-        left="-10%"
-        w="50%"
-        h="50%"
-        borderRadius="full"
-        bg="radial-gradient(circle, rgba(88, 28, 135, 0.15) 0%, transparent 70%)"
-        filter="blur(40px)"
-        animation={`${pulse} 8s ease-in-out infinite`}
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        opacity={0.03}
+        backgroundImage="linear-gradient(#ff00ff 1px, transparent 1px), linear-gradient(90deg, #ff00ff 1px, transparent 1px)"
+        backgroundSize="50px 50px"
+        pointerEvents="none"
       />
+
+      {/* Scanline effect */}
       <Box
         position="absolute"
-        bottom="20%"
-        right="-5%"
-        w="40%"
-        h="40%"
-        borderRadius="full"
-        bg="radial-gradient(circle, rgba(30, 64, 175, 0.15) 0%, transparent 70%)"
-        filter="blur(40px)"
-        animation={`${pulse} 10s ease-in-out infinite`}
-        animationDelay="2s"
+        top={0}
+        left={0}
+        right={0}
+        height="4px"
+        bg="linear-gradient(transparent, rgba(255,255,255,0.03), transparent)"
+        animation={`${scanline} 8s linear infinite`}
+        pointerEvents="none"
       />
+
+      {/* Vignette effect */}
       <Box
         position="absolute"
-        top="60%"
-        left="20%"
-        w="30%"
-        h="30%"
-        borderRadius="full"
-        bg="radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)"
-        filter="blur(30px)"
-        animation={`${drift} 15s ease-in-out infinite`}
+        top={0}
+        left={0}
+        right={0}
+        bottom={0}
+        bg="radial-gradient(ellipse at center, transparent 0%, rgba(0,0,0,0.4) 100%)"
+        pointerEvents="none"
       />
     </Box>
   );
@@ -169,20 +202,26 @@ function CarouselCard({ title, description, href, visual }) {
 
       {/* Title and Description */}
       <VStack spacing={3}>
-        <Heading size="xl" color="white">
+        <Heading
+          size="xl"
+          color="#ff00ff"
+          textShadow="0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff"
+          fontFamily="monospace"
+          letterSpacing="wider"
+        >
           <Link
             href={href}
             isExternal
-            _hover={{ color: "purple.300", textDecoration: "none" }}
-            transition="color 0.2s ease"
+            _hover={{ color: "#00ffff", textShadow: "0 0 10px #00ffff, 0 0 20px #00ffff", textDecoration: "none" }}
+            transition="all 0.3s ease"
           >
             {title}
           </Link>
         </Heading>
-        <Text color="gray.400" fontSize="lg" maxW="400px">
+        <Text color="gray.400" fontSize="lg" maxW="400px" fontFamily="monospace">
           {description}
         </Text>
-        <Text fontSize="sm" color="purple.300">
+        <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
           {href}
         </Text>
       </VStack>
@@ -191,8 +230,6 @@ function CarouselCard({ title, description, href, visual }) {
 }
 
 function ListCard({ title, description, href, visual }) {
-  const cardBorder = useColorModeValue("gray.200", "whiteAlpha.100");
-
   return (
     <Box
       as="a"
@@ -201,15 +238,14 @@ function ListCard({ title, description, href, visual }) {
       rel="noopener noreferrer"
       p={{ base: 5, md: 6 }}
       borderWidth="1px"
-      borderColor={cardBorder}
-      borderRadius="2xl"
-      bg="rgba(15, 23, 42, 0.6)"
-      backdropFilter="blur(10px)"
-      transition="transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease"
+      borderColor="rgba(255, 0, 255, 0.3)"
+      borderRadius="md"
+      bg="rgba(7, 16, 29, 0.8)"
+      transition="all 0.3s ease"
       _hover={{
         transform: "translateY(-2px)",
-        boxShadow: "0 0 30px rgba(139, 92, 246, 0.2)",
-        borderColor: "purple.500",
+        boxShadow: "0 0 20px rgba(255, 0, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2)",
+        borderColor: "#ff00ff",
       }}
       display="block"
       textDecoration="none"
@@ -223,11 +259,16 @@ function ListCard({ title, description, href, visual }) {
           {visual}
         </Box>
         <VStack align="start" spacing={2} flex="1">
-          <Heading size="md" color="white">
+          <Heading
+            size="md"
+            color="#ff00ff"
+            fontFamily="monospace"
+            textShadow="0 0 5px #ff00ff"
+          >
             {title}
           </Heading>
-          <Text color="gray.400">{description}</Text>
-          <Text fontSize="sm" color="purple.400">
+          <Text color="gray.400" fontFamily="monospace">{description}</Text>
+          <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
             {href}
           </Text>
         </VStack>
@@ -290,28 +331,33 @@ export default function LinksPage() {
     setCurrentIndex(index);
   };
 
-  const inactiveDotColor = useColorModeValue("gray.500", "gray.600");
-
   return (
     <Box
       minH="100vh"
       py={{ base: 12, md: 16 }}
-      bg="linear-gradient(180deg, rgba(7,16,29,1) 0%, rgba(15,23,42,1) 50%, rgba(7,16,29,1) 100%)"
+      bg="rgba(7,16,29)"
       position="relative"
       overflow="hidden"
     >
-      <StarryBackground />
+      <RetroStarfield />
 
       <Container maxW="container.md" position="relative" zIndex={1}>
         <VStack spacing={6} textAlign="center">
           <Heading
             size="2xl"
-            bgGradient="linear(to-r, purple.300, blue.300, purple.400)"
-            bgClip="text"
+            color="#ff00ff"
+            fontFamily="monospace"
+            letterSpacing="widest"
+            textShadow="0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 80px #ff00ff"
           >
-            Links
+            LINKS
           </Heading>
-          <Text color="gray.400" fontSize={{ base: "md", md: "lg" }}>
+          <Text
+            color="#00ffff"
+            fontSize={{ base: "md", md: "lg" }}
+            fontFamily="monospace"
+            textShadow="0 0 5px #00ffff"
+          >
             A quick linktree for the No Sabos ecosystem.
           </Text>
 
@@ -319,35 +365,38 @@ export default function LinksPage() {
           <HStack
             spacing={3}
             justify="center"
-            bg="rgba(15, 23, 42, 0.6)"
-            backdropFilter="blur(10px)"
+            bg="rgba(7, 16, 29, 0.8)"
             px={4}
             py={2}
-            borderRadius="full"
+            borderRadius="md"
             borderWidth="1px"
-            borderColor="whiteAlpha.100"
+            borderColor="rgba(255, 0, 255, 0.3)"
           >
             <Text
               fontSize="sm"
-              color={!isCarouselView ? "purple.300" : "gray.500"}
+              color={!isCarouselView ? "#ff00ff" : "gray.500"}
               fontWeight={!isCarouselView ? "bold" : "normal"}
+              fontFamily="monospace"
               transition="color 0.2s ease"
+              textShadow={!isCarouselView ? "0 0 5px #ff00ff" : "none"}
             >
-              List
+              LIST
             </Text>
             <Switch
               isChecked={isCarouselView}
               onChange={() => setIsCarouselView(!isCarouselView)}
-              colorScheme="purple"
+              colorScheme="pink"
               size="md"
             />
             <Text
               fontSize="sm"
-              color={isCarouselView ? "purple.300" : "gray.500"}
+              color={isCarouselView ? "#00ffff" : "gray.500"}
               fontWeight={isCarouselView ? "bold" : "normal"}
+              fontFamily="monospace"
               transition="color 0.2s ease"
+              textShadow={isCarouselView ? "0 0 5px #00ffff" : "none"}
             >
-              Carousel
+              CAROUSEL
             </Text>
           </HStack>
         </VStack>
@@ -367,10 +416,10 @@ export default function LinksPage() {
                 zIndex={2}
                 onClick={goToPrevious}
                 variant="ghost"
-                color="purple.300"
-                _hover={{ bg: "whiteAlpha.100", color: "purple.200" }}
+                color="#00ffff"
+                _hover={{ bg: "rgba(0, 255, 255, 0.1)", color: "#ff00ff" }}
                 size="lg"
-                borderRadius="full"
+                borderRadius="md"
               />
               <IconButton
                 aria-label="Next link"
@@ -382,10 +431,10 @@ export default function LinksPage() {
                 zIndex={2}
                 onClick={goToNext}
                 variant="ghost"
-                color="purple.300"
-                _hover={{ bg: "whiteAlpha.100", color: "purple.200" }}
+                color="#00ffff"
+                _hover={{ bg: "rgba(0, 255, 255, 0.1)", color: "#ff00ff" }}
                 size="lg"
-                borderRadius="full"
+                borderRadius="md"
               />
 
               {/* Carousel Content */}
@@ -394,20 +443,21 @@ export default function LinksPage() {
               </Box>
             </Box>
 
-            {/* Dot Indicators */}
+            {/* Dot Indicators - 8-bit style squares */}
             <HStack spacing={3} justify="center" mt={4}>
               {links.map((_, index) => (
                 <Box
                   key={index}
                   as="button"
-                  w={index === currentIndex ? 8 : 3}
+                  w={index === currentIndex ? 6 : 3}
                   h={3}
-                  borderRadius="full"
-                  bg={index === currentIndex ? "purple.500" : inactiveDotColor}
+                  bg={index === currentIndex ? "#ff00ff" : "gray.600"}
+                  boxShadow={index === currentIndex ? "0 0 10px #ff00ff" : "none"}
                   transition="all 0.3s ease"
                   onClick={() => goToSlide(index)}
                   _hover={{
-                    bg: index === currentIndex ? "purple.400" : "gray.500",
+                    bg: index === currentIndex ? "#ff00ff" : "#00ffff",
+                    boxShadow: "0 0 10px currentColor",
                   }}
                 />
               ))}
