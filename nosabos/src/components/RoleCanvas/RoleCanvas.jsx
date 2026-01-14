@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { createNoise2D } from "simplex-noise";
-import { useColorModeValue } from "@chakra-ui/react";
+import { useColorMode } from "@chakra-ui/react";
 import { useThemeStore } from "../../useThemeStore";
 
 // Theme color hex values
@@ -39,13 +39,15 @@ export function RoleCanvas({
   waterAmplitude = 0.01,
 
   transitionEase = 0.2,
-  backgroundColorX = "0,0,0",
+  backgroundColorX = "11,18,32",
 }) {
   const canvasRef = useRef(null);
   const roleRef = useRef(role);
   const progressRef = useRef(0);
   const frameRef = useRef(0);
   const themeColor = useThemeStore((state) => state.themeColor);
+  const { colorMode } = useColorMode();
+  const [pageBackground, setPageBackground] = useState("");
 
   // Use provided color or fall back to theme color
   const particleColor =
@@ -55,9 +57,21 @@ export function RoleCanvas({
     roleRef.current = role;
   }, [role]);
 
-  const baseRgb = useColorModeValue(backgroundColorX, "0,0,37, 0");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const bodyBg = getComputedStyle(document.body).backgroundColor;
+    if (bodyBg) {
+      setPageBackground(bodyBg);
+    }
+  }, [colorMode, backgroundColorX]);
+
+  const resolvedBg = pageBackground || `rgb(${backgroundColorX})`;
+  const rgbMatch = resolvedBg.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+  const baseRgb = rgbMatch
+    ? `${rgbMatch[1]},${rgbMatch[2]},${rgbMatch[3]}`
+    : backgroundColorX;
   const fadeColor = `rgba(${baseRgb},${trailOpacity})`;
-  const bgColor = useColorModeValue("rgba(255,255,255,1)", "rgba(0,0,0,1)");
+  const bgColor = resolvedBg.startsWith("rgb") ? resolvedBg : `rgb(${baseRgb})`;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -388,6 +402,7 @@ export function RoleCanvas({
     waterSpeed,
     waterAmplitude,
     transitionEase,
+    fadeColor,
   ]);
 
   return (
@@ -396,9 +411,8 @@ export function RoleCanvas({
       style={{
         width: `${200}px`,
         height: `${200}px`,
-        // backgroundColor: bgColor,
-        borderRadius: role === "sphere" ? "50%" : "0",
-        display: "block",
+        backgroundColor: bgColor,
+        borderRadius: role === "sphere" ? "0%" : "0",
       }}
     />
   );

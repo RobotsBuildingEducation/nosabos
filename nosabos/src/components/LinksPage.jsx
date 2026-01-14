@@ -87,7 +87,7 @@ function LinkCard({ title, description, href, visual }) {
 
 export default function LinksPage() {
   return (
-    <Box minH="100vh" py={{ base: 12, md: 16 }}>
+    <Box minH="100vh" py={{ base: 12, md: 16 }} bg="rgba(7,16,29)">
       <Container maxW="container.md">
         <VStack spacing={6} textAlign="center">
           <Heading size="2xl">Links</Heading>
