@@ -889,6 +889,17 @@ function TopBar({
                         translations[appLanguage].onboarding_support_es}
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
+                      <Box
+                        px={3}
+                        pt={2}
+                        pb={1}
+                        fontSize="xs"
+                        fontWeight="semibold"
+                        color="gray.400"
+                      >
+                        {translations[appLanguage].onboarding_support_menu_label ||
+                          "Support:"}
+                      </Box>
                       <MenuOptionGroup
                         type="radio"
                         value={supportLang}
