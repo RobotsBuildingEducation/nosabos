@@ -39,7 +39,7 @@ export function RoleCanvas({
   waterAmplitude = 0.01,
 
   transitionEase = 0.2,
-  backgroundColorX = "0,0,0",
+  backgroundColorX = "11,18,32",
 }) {
   const canvasRef = useRef(null);
   const roleRef = useRef(role);
@@ -55,9 +55,9 @@ export function RoleCanvas({
     roleRef.current = role;
   }, [role]);
 
-  const baseRgb = useColorModeValue(backgroundColorX, "0,0,37, 0");
+  const baseRgb = useColorModeValue(backgroundColorX, backgroundColorX);
   const fadeColor = `rgba(${baseRgb},${trailOpacity})`;
-  const bgColor = useColorModeValue("rgba(255,255,255,1)", "rgba(0,0,0,1)");
+  const bgColor = `rgb(${baseRgb})`;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -396,7 +396,7 @@ export function RoleCanvas({
       style={{
         width: `${200}px`,
         height: `${200}px`,
-        // backgroundColor: bgColor,
+        backgroundColor: bgColor,
         borderRadius: role === "sphere" ? "50%" : "0",
         display: "block",
       }}
