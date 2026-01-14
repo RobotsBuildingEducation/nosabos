@@ -253,6 +253,13 @@ export default function Onboarding({
       : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const secondsLabel = supportLang === "es" ? "segundos" : "seconds";
+  const supportOption =
+    supportLang === "es"
+      ? { flag: mexicanFlag(), label: ui.onboarding_support_es }
+      : { flag: usaFlag(), label: ui.onboarding_support_en };
+  const selectedPracticeOption =
+    practiceLanguageOptions.find((option) => option.value === targetLang) ||
+    practiceLanguageOptions[0];
 
   return (
     <Box
@@ -315,8 +322,10 @@ export default function Onboarding({
                       w="100%"
                       textAlign="left"
                     >
-                      {supportLang === "en" && ui.onboarding_support_en}
-                      {supportLang === "es" && ui.onboarding_support_es}
+                      <HStack spacing={2}>
+                        {supportOption.flag}
+                        <Text as="span">{supportOption.label}</Text>
+                      </HStack>
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
                       <Box
@@ -335,10 +344,16 @@ export default function Onboarding({
                         onChange={(value) => setSupportLang(value)}
                       >
                         <MenuItemOption value="en">
-                          {ui.onboarding_support_en}
+                          <HStack spacing={2}>
+                            {usaFlag()}
+                            <Text as="span">{ui.onboarding_support_en}</Text>
+                          </HStack>
                         </MenuItemOption>
                         <MenuItemOption value="es">
-                          {ui.onboarding_support_es}
+                          <HStack spacing={2}>
+                            {mexicanFlag()}
+                            <Text as="span">{ui.onboarding_support_es}</Text>
+                          </HStack>
                         </MenuItemOption>
                       </MenuOptionGroup>
                     </MenuList>
@@ -367,25 +382,36 @@ export default function Onboarding({
                       textAlign="left"
                       title={ui.onboarding_practice_label_title}
                     >
-                      {targetLang === "nl" && ui.onboarding_practice_nl}
-                      {targetLang === "en" && ui.onboarding_practice_en}
-                      {targetLang === "fr" && ui.onboarding_practice_fr}
-                      {targetLang === "it" && ui.onboarding_practice_it}
-                      {targetLang === "ja" && (
-                        <>{ui.onboarding_practice_ja} (beta)</>
-                      )}
-                      {targetLang === "nah" && ui.onboarding_practice_nah}
-                      {targetLang === "pt" && ui.onboarding_practice_pt}
-                      {targetLang === "es" && ui.onboarding_practice_es}
-                      {targetLang === "ru" && (
-                        <>{ui.onboarding_practice_ru} (beta)</>
-                      )}
-                      {targetLang === "de" && <>{ui.onboarding_practice_de}</>}
-                      {targetLang === "el" && (
-                        <>{ui.onboarding_practice_el} (beta)</>
-                      )}
+                      <HStack spacing={2}>
+                        {selectedPracticeOption?.flag}
+                        <Text as="span">
+                          {selectedPracticeOption?.label}
+                          {selectedPracticeOption?.beta ? " (beta)" : ""}
+                        </Text>
+                      </HStack>
                     </MenuButton>
-                    <MenuList borderColor="gray.700" bg="gray.900">
+                    <MenuList
+                      borderColor="gray.700"
+                      bg="gray.900"
+                      maxH="300px"
+                      overflowY="auto"
+                      sx={{
+                        "&::-webkit-scrollbar": {
+                          width: "8px",
+                        },
+                        "&::-webkit-scrollbar-track": {
+                          bg: "gray.800",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                          bg: "gray.600",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb:hover": {
+                          bg: "gray.500",
+                        },
+                      }}
+                    >
                       <Box
                         px={3}
                         pt={2}

@@ -127,6 +127,24 @@ export const TTS_LANG_TAG = {
 
 ---
 
+### 3.5. Flag Icon (`src/components/flagsIcons/flags.jsx`)
+
+Define the flag SVG for the new language in the shared flag icon file. For now, copy the USA flag SVG as a placeholder; it will be replaced later:
+
+```javascript
+export const newLanguageFlag = () => {
+  return (
+    <svg width={24} height={24} fill="none" viewBox="0 0 24 24">
+      {/* Copy the USA flag SVG here as a temporary placeholder. */}
+    </svg>
+  );
+};
+```
+
+Then reference `newLanguageFlag()` in the onboarding and settings language option lists alongside the new language code.
+
+---
+
 ### 4. App Settings (`src/App.jsx`)
 
 **TARGET_LANGUAGE_LABELS (~line 173-183):**
