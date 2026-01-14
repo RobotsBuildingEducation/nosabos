@@ -411,6 +411,8 @@ export function RoleCanvas({
       style={{
         width: `${200}px`,
         height: `${200}px`,
+        display: "block",
+        margin: "0 auto",
         backgroundColor: bgColor,
         borderRadius: role === "sphere" ? "0%" : "0",
       }}
