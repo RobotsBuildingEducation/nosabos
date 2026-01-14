@@ -10,9 +10,12 @@ import {
   useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
-import RobotBuddyPro from "./RobotBuddyPro";
-import { SunsetCanvas } from "./SunsetCanvas/SunsetCanvas";
+
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
+
+import RobotBuddyPro from "./RobotBuddyPro";
+
+import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 
 const links = [
   {
@@ -27,7 +30,7 @@ const links = [
     href: "https://robotsbuildingeducation.com",
     visual: (
       <Box display="flex" justifyContent="center" alignItems="center">
-        <SunsetCanvas hasInitialFade={false} hasAnimation={true} />
+        <CloudCanvas />
       </Box>
     ),
   },
@@ -35,7 +38,9 @@ const links = [
     title: "Patreon",
     description: "Support Notes And Other Stuff on Patreon.",
     href: "https://patreon.com/NotesAndOtherStuff",
-    visual: <RoleCanvas role="counselor" width={180} height={180} />,
+    visual: (
+      <RoleCanvas role={"sphere"} width={400} height={400} bg={"transparent"} />
+    ),
   },
 ];
 
@@ -50,7 +55,6 @@ function LinkCard({ title, description, href, visual }) {
       borderWidth="1px"
       borderColor={cardBorder}
       borderRadius="2xl"
-      bg={cardBg}
       boxShadow="lg"
       transition="transform 0.2s ease, box-shadow 0.2s ease"
       _hover={{ transform: "translateY(-2px)", boxShadow: "xl" }}
@@ -83,18 +87,12 @@ function LinkCard({ title, description, href, visual }) {
 
 export default function LinksPage() {
   return (
-    <Box
-      minH="100vh"
-      bgGradient={useColorModeValue(
-        "linear(to-br, gray.50, purple.50)",
-        "linear(to-br, gray.900, purple.900)"
-      )}
-      py={{ base: 12, md: 16 }}
-    >
+    <Box minH="100vh" py={{ base: 12, md: 16 }}>
       <Container maxW="container.md">
         <VStack spacing={6} textAlign="center">
           <Heading size="2xl">Links</Heading>
-          <Text color={useColorModeValue("gray.600", "gray.300")}
+          <Text
+            color={useColorModeValue("gray.600", "gray.300")}
             fontSize={{ base: "md", md: "lg" }}
           >
             A quick linktree for the No Sabos ecosystem.

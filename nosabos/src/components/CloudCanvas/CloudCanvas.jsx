@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 
-import { FadeInComponent } from "./RandomCharacter";
-import { StreamLoader } from "./StreamLoader";
 import { Noise } from "noisejs";
-import { Box } from "@chakra-ui/react";
-import { useThemeStore } from "../useThemeStore";
+
+import { FadeInComponent } from "../RandomCharacter";
+import { useThemeStore } from "../../useThemeStore";
 
 function hexToHSL(H) {
   let hex = H.replace(/^#/, "");
@@ -223,7 +222,6 @@ export const SunsetCanvas = ({
         {hasAnimation && (
           <canvas ref={canvasRef} style={{ borderRadius: "45%" }} />
         )}
-        {isLoader && <StreamLoader />}
       </div>
     </FadeInComponent>
   );
@@ -584,7 +582,6 @@ export const CloudCanvas = ({
             ></canvas>
           </div>
         )}
-        {isLoader && <StreamLoader />}
       </div>
     </FadeInComponent>
   );
