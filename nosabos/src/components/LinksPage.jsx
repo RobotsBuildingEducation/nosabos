@@ -21,14 +21,6 @@ import RobotBuddyPro from "./RobotBuddyPro";
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 
-// Color rotation for headers - cycles through neon colors every 4 seconds
-const colorRotate = keyframes`
-  0%, 100% { color: #ff00ff; }
-  25% { color: #00ffff; }
-  50% { color: #ff6ec7; }
-  75% { color: #39ff14; }
-`;
-
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
   0%, 100% { opacity: 1; }
@@ -217,7 +209,7 @@ function CarouselCard({ title, description, href, visual }) {
           size="xl"
           fontFamily="monospace"
           letterSpacing="wider"
-          animation={`${colorRotate} 4s ease-in-out infinite`}
+          color="white"
         >
           <Link
             href={href}
@@ -272,7 +264,7 @@ function ListCard({ title, description, href, visual }) {
           <Heading
             size="md"
             fontFamily="monospace"
-            animation={`${colorRotate} 4s ease-in-out infinite`}
+            color="white"
           >
             {title}
           </Heading>
@@ -356,7 +348,7 @@ export default function LinksPage() {
             size="2xl"
             fontFamily="monospace"
             letterSpacing="widest"
-            animation={`${colorRotate} 4s ease-in-out infinite`}
+            color="white"
           >
             LINKS
           </Heading>
