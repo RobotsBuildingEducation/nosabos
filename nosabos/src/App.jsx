@@ -870,159 +870,173 @@ function TopBar({
           <DrawerBody pb={2}>
             <Box maxW="600px" mx="auto" w="100%">
               <VStack align="stretch" spacing={3}>
-                <Wrap spacing={2}>
-                  <Menu autoSelect={false} isLazy>
-                    <MenuButton
-                      as={Button}
-                      rightIcon={<ChevronDownIcon />}
-                      variant="outline"
-                      size="sm"
-                      borderColor="gray.700"
-                      bg="gray.800"
-                      _hover={{ bg: "gray.750" }}
-                      _active={{ bg: "gray.750" }}
-                      px={4}
-                    >
-                      {supportLang === "en" &&
-                        translations[appLanguage].onboarding_support_en}
-                      {supportLang === "es" &&
-                        translations[appLanguage].onboarding_support_es}
-                    </MenuButton>
-                    <MenuList borderColor="gray.700" bg="gray.900">
-                      <Box
-                        px={3}
-                        pt={2}
-                        pb={1}
-                        fontSize="xs"
-                        fontWeight="semibold"
-                        color="gray.400"
+                <Wrap spacing={4}>
+                  <VStack align="flex-start" spacing={1}>
+                    <Text fontSize="xs" fontWeight="semibold" color="gray.400">
+                      {translations[appLanguage].onboarding_support_menu_label ||
+                        "Support:"}
+                    </Text>
+                    <Menu autoSelect={false} isLazy>
+                      <MenuButton
+                        as={Button}
+                        rightIcon={<ChevronDownIcon />}
+                        variant="outline"
+                        size="sm"
+                        borderColor="gray.700"
+                        bg="gray.800"
+                        _hover={{ bg: "gray.750" }}
+                        _active={{ bg: "gray.750" }}
+                        px={4}
                       >
-                        {translations[appLanguage].onboarding_support_menu_label ||
-                          "Support:"}
-                      </Box>
-                      <MenuOptionGroup
-                        type="radio"
-                        value={supportLang}
-                        onChange={(value) => {
-                          setSupportLang(value);
-                          persistSettings({ supportLang: value });
-                        }}
-                      >
-                        <MenuItemOption value="en">
-                          {translations[appLanguage].onboarding_support_en}
-                        </MenuItemOption>
-                        <MenuItemOption value="es">
-                          {translations[appLanguage].onboarding_support_es}
-                        </MenuItemOption>
-                      </MenuOptionGroup>
-                    </MenuList>
-                  </Menu>
-
-                  <Menu autoSelect={false} isLazy>
-                    <MenuButton
-                      as={Button}
-                      rightIcon={<ChevronDownIcon />}
-                      variant="outline"
-                      size="sm"
-                      borderColor="gray.700"
-                      bg="gray.800"
-                      _hover={{ bg: "gray.750" }}
-                      _active={{ bg: "gray.750" }}
-                      px={4}
-                      title={
-                        translations[appLanguage]
-                          .onboarding_practice_label_title
-                      }
-                    >
-                      {targetLang === "nl" &&
-                        translations[appLanguage].onboarding_practice_nl}
-                      {targetLang === "en" &&
-                        translations[appLanguage].onboarding_practice_en}
-                      {targetLang === "fr" &&
-                        translations[appLanguage].onboarding_practice_fr}
-                      {targetLang === "it" &&
-                        translations[appLanguage].onboarding_practice_it}
-                      {targetLang === "ja" && (
-                        <>
-                          {translations[appLanguage].onboarding_practice_ja}{" "}
-                          (beta)
-                        </>
-                      )}
-                      {targetLang === "nah" &&
-                        translations[appLanguage].onboarding_practice_nah}
-                      {targetLang === "pt" &&
-                        translations[appLanguage].onboarding_practice_pt}
-                      {targetLang === "ru" && (
-                        <>
-                          {translations[appLanguage].onboarding_practice_ru}{" "}
-                          (beta)
-                        </>
-                      )}
-                      {targetLang === "de" && (
-                        <>{translations[appLanguage].onboarding_practice_de} </>
-                      )}
-                      {targetLang === "el" && (
-                        <>
-                          {translations[appLanguage].onboarding_practice_el}{" "}
-                          (beta)
-                        </>
-                      )}
-                      {targetLang === "es" &&
-                        translations[appLanguage].onboarding_practice_es}
-                    </MenuButton>
-                    <MenuList
-                      borderColor="gray.700"
-                      bg="gray.900"
-                      maxH="300px"
-                      overflowY="auto"
-                      sx={{
-                        "&::-webkit-scrollbar": {
-                          width: "8px",
-                        },
-                        "&::-webkit-scrollbar-track": {
-                          bg: "gray.800",
-                          borderRadius: "4px",
-                        },
-                        "&::-webkit-scrollbar-thumb": {
-                          bg: "gray.600",
-                          borderRadius: "4px",
-                        },
-                        "&::-webkit-scrollbar-thumb:hover": {
-                          bg: "gray.500",
-                        },
-                      }}
-                    >
-                      <Box
-                        px={3}
-                        pt={2}
-                        pb={1}
-                        fontSize="xs"
-                        fontWeight="semibold"
-                        color="gray.400"
-                      >
-                        {translations[appLanguage].onboarding_practice_menu_label ||
-                          "Practice:"}
-                      </Box>
-                      <MenuOptionGroup
-                        type="radio"
-                        value={targetLang}
-                        onChange={(value) => {
-                          setTargetLang(value);
-                          persistSettings({ targetLang: value });
-                        }}
-                      >
-                        {practiceLanguageOptions.map((option) => (
-                          <MenuItemOption
-                            key={option.value}
-                            value={option.value}
-                          >
-                            {option.label}
-                            {option.beta ? " (beta)" : ""}
+                        {supportLang === "en" &&
+                          translations[appLanguage].onboarding_support_en}
+                        {supportLang === "es" &&
+                          translations[appLanguage].onboarding_support_es}
+                      </MenuButton>
+                      <MenuList borderColor="gray.700" bg="gray.900">
+                        <Box
+                          px={3}
+                          pt={2}
+                          pb={1}
+                          fontSize="xs"
+                          fontWeight="semibold"
+                          color="gray.400"
+                        >
+                          {translations[appLanguage]
+                            .onboarding_support_menu_label || "Support:"}
+                        </Box>
+                        <MenuOptionGroup
+                          type="radio"
+                          value={supportLang}
+                          onChange={(value) => {
+                            setSupportLang(value);
+                            persistSettings({ supportLang: value });
+                          }}
+                        >
+                          <MenuItemOption value="en">
+                            {translations[appLanguage].onboarding_support_en}
                           </MenuItemOption>
-                        ))}
-                      </MenuOptionGroup>
-                    </MenuList>
-                  </Menu>
+                          <MenuItemOption value="es">
+                            {translations[appLanguage].onboarding_support_es}
+                          </MenuItemOption>
+                        </MenuOptionGroup>
+                      </MenuList>
+                    </Menu>
+                  </VStack>
+
+                  <VStack align="flex-start" spacing={1}>
+                    <Text fontSize="xs" fontWeight="semibold" color="gray.400">
+                      {translations[appLanguage]
+                        .onboarding_practice_menu_label || "Practice:"}
+                    </Text>
+                    <Menu autoSelect={false} isLazy>
+                      <MenuButton
+                        as={Button}
+                        rightIcon={<ChevronDownIcon />}
+                        variant="outline"
+                        size="sm"
+                        borderColor="gray.700"
+                        bg="gray.800"
+                        _hover={{ bg: "gray.750" }}
+                        _active={{ bg: "gray.750" }}
+                        px={4}
+                        title={
+                          translations[appLanguage]
+                            .onboarding_practice_label_title
+                        }
+                      >
+                        {targetLang === "nl" &&
+                          translations[appLanguage].onboarding_practice_nl}
+                        {targetLang === "en" &&
+                          translations[appLanguage].onboarding_practice_en}
+                        {targetLang === "fr" &&
+                          translations[appLanguage].onboarding_practice_fr}
+                        {targetLang === "it" &&
+                          translations[appLanguage].onboarding_practice_it}
+                        {targetLang === "ja" && (
+                          <>
+                            {translations[appLanguage].onboarding_practice_ja}{" "}
+                            (beta)
+                          </>
+                        )}
+                        {targetLang === "nah" &&
+                          translations[appLanguage].onboarding_practice_nah}
+                        {targetLang === "pt" &&
+                          translations[appLanguage].onboarding_practice_pt}
+                        {targetLang === "ru" && (
+                          <>
+                            {translations[appLanguage].onboarding_practice_ru}{" "}
+                            (beta)
+                          </>
+                        )}
+                        {targetLang === "de" && (
+                          <>
+                            {translations[appLanguage].onboarding_practice_de}{" "}
+                          </>
+                        )}
+                        {targetLang === "el" && (
+                          <>
+                            {translations[appLanguage].onboarding_practice_el}{" "}
+                            (beta)
+                          </>
+                        )}
+                        {targetLang === "es" &&
+                          translations[appLanguage].onboarding_practice_es}
+                      </MenuButton>
+                      <MenuList
+                        borderColor="gray.700"
+                        bg="gray.900"
+                        maxH="300px"
+                        overflowY="auto"
+                        sx={{
+                          "&::-webkit-scrollbar": {
+                            width: "8px",
+                          },
+                          "&::-webkit-scrollbar-track": {
+                            bg: "gray.800",
+                            borderRadius: "4px",
+                          },
+                          "&::-webkit-scrollbar-thumb": {
+                            bg: "gray.600",
+                            borderRadius: "4px",
+                          },
+                          "&::-webkit-scrollbar-thumb:hover": {
+                            bg: "gray.500",
+                          },
+                        }}
+                      >
+                        <Box
+                          px={3}
+                          pt={2}
+                          pb={1}
+                          fontSize="xs"
+                          fontWeight="semibold"
+                          color="gray.400"
+                        >
+                          {translations[appLanguage]
+                            .onboarding_practice_menu_label || "Practice:"}
+                        </Box>
+                        <MenuOptionGroup
+                          type="radio"
+                          value={targetLang}
+                          onChange={(value) => {
+                            setTargetLang(value);
+                            persistSettings({ targetLang: value });
+                          }}
+                        >
+                          {practiceLanguageOptions.map((option) => (
+                            <MenuItemOption
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                              {option.beta ? " (beta)" : ""}
+                            </MenuItemOption>
+                          ))}
+                        </MenuOptionGroup>
+                      </MenuList>
+                    </Menu>
+                  </VStack>
                 </Wrap>
 
                 {/* Persona */}
