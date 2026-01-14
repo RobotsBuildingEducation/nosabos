@@ -66,16 +66,12 @@ export function RoleCanvas({
   }, [colorMode, backgroundColorX]);
 
   const resolvedBg = pageBackground || `rgb(${backgroundColorX})`;
-  const rgbMatch = resolvedBg.match(
-    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/
-  );
+  const rgbMatch = resolvedBg.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
   const baseRgb = rgbMatch
     ? `${rgbMatch[1]},${rgbMatch[2]},${rgbMatch[3]}`
     : backgroundColorX;
   const fadeColor = `rgba(${baseRgb},${trailOpacity})`;
-  const bgColor = resolvedBg.startsWith("rgb")
-    ? resolvedBg
-    : `rgb(${baseRgb})`;
+  const bgColor = resolvedBg.startsWith("rgb") ? resolvedBg : `rgb(${baseRgb})`;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -416,8 +412,7 @@ export function RoleCanvas({
         width: `${200}px`,
         height: `${200}px`,
         backgroundColor: bgColor,
-        borderRadius: role === "sphere" ? "50%" : "0",
-        display: "block",
+        borderRadius: role === "sphere" ? "0%" : "0",
       }}
     />
   );
