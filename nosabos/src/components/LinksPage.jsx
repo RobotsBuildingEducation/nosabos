@@ -1,10 +1,12 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
+  Badge,
   Box,
   Container,
   Heading,
   LinkBox,
   LinkOverlay,
+  Spinner,
   Stack,
   Text,
   useColorModeValue,
@@ -16,6 +18,7 @@ import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 import RobotBuddyPro from "./RobotBuddyPro";
 
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
+import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 
 const links = [
   {
@@ -86,6 +89,65 @@ function LinkCard({ title, description, href, visual }) {
 }
 
 export default function LinksPage() {
+  const { generateNostrKeys } = useDecentralizedIdentity();
+  const [nostrStatus, setNostrStatus] = useState("idle");
+  const [nostrPubKey, setNostrPubKey] = useState("");
+
+  const hasStoredKeys = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    return (
+      Boolean(localStorage.getItem("local_nsec")) &&
+      Boolean(localStorage.getItem("local_npub"))
+    );
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (hasStoredKeys) {
+      setNostrStatus("ready");
+      setNostrPubKey(localStorage.getItem("local_npub") || "");
+      return;
+    }
+
+    let isMounted = true;
+    const createInstantKeys = async () => {
+      setNostrStatus("creating");
+      try {
+        const displayName = "Nostr Link Explorer";
+        const did = await generateNostrKeys(displayName);
+        if (!isMounted) return;
+        localStorage.setItem("displayName", displayName);
+        setNostrPubKey(did?.npub || "");
+        setNostrStatus("ready");
+      } catch (error) {
+        console.error("Failed to generate instant Nostr keys:", error);
+        if (isMounted) {
+          setNostrStatus("error");
+        }
+      }
+    };
+
+    createInstantKeys();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [generateNostrKeys, hasStoredKeys]);
+
+  const statusCopy = {
+    idle: "Preparing your Nostr passport...",
+    creating: "Minting your instant Nostr passport...",
+    ready: "Passport ready. Welcome to the Nostr universe.",
+    error: "Could not mint your Nostr passport. Refresh to retry.",
+  };
+
+  const statusTone = {
+    idle: "purple",
+    creating: "blue",
+    ready: "green",
+    error: "red",
+  };
+
   return (
     <Box minH="100vh" py={{ base: 12, md: 16 }} bg="rgba(7,16,29)">
       <Container maxW="container.md">
@@ -98,6 +160,36 @@ export default function LinksPage() {
             A quick linktree for the No Sabos ecosystem.
           </Text>
         </VStack>
+        <Box
+          mt={10}
+          p={{ base: 5, md: 6 }}
+          borderRadius="2xl"
+          borderWidth="1px"
+          borderColor={useColorModeValue("purple.100", "purple.700")}
+          bg={useColorModeValue("white", "gray.900")}
+          boxShadow="lg"
+        >
+          <VStack spacing={3} align="start">
+            <Badge colorScheme={statusTone[nostrStatus]}>Nostr Passport</Badge>
+            <Heading size="md">Instant identity for your links</Heading>
+            <Text color={useColorModeValue("gray.600", "gray.300")}>
+              {statusCopy[nostrStatus]}
+            </Text>
+            {nostrStatus === "creating" && (
+              <Stack direction="row" spacing={2} align="center">
+                <Spinner size="sm" />
+                <Text fontSize="sm" color={useColorModeValue("gray.500", "gray.400")}>
+                  Generating keys in the background...
+                </Text>
+              </Stack>
+            )}
+            {nostrPubKey && (
+              <Text fontSize="sm" color={useColorModeValue("gray.500", "gray.400")}>
+                Your npub: {nostrPubKey.slice(0, 16)}...
+              </Text>
+            )}
+          </VStack>
+        </Box>
         <VStack spacing={6} mt={10} align="stretch">
           {links.map((link) => (
             <LinkCard key={link.title} {...link} />
