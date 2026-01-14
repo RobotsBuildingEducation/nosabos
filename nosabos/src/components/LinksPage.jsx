@@ -1,17 +1,19 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Badge,
   Box,
   Container,
   Heading,
+  HStack,
+  IconButton,
   LinkBox,
   LinkOverlay,
-  Spinner,
   Stack,
+  Switch,
   Text,
   useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
+import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 
@@ -90,11 +92,12 @@ function LinkCard({ title, description, href, visual }) {
 
 export default function LinksPage() {
   const { generateNostrKeys } = useDecentralizedIdentity();
-  const [nostrStatus, setNostrStatus] = useState("idle");
-  const [nostrPubKey, setNostrPubKey] = useState("");
+  const [isCarouselView, setIsCarouselView] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const hasTriggeredKeygen = useRef(false);
 
+  // Background Nostr key generation (no UI)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const hasStoredKeys =
@@ -102,8 +105,6 @@ export default function LinksPage() {
       Boolean(localStorage.getItem("local_npub"));
 
     if (hasStoredKeys) {
-      setNostrStatus("ready");
-      setNostrPubKey(localStorage.getItem("local_npub") || "");
       return;
     }
 
@@ -114,19 +115,13 @@ export default function LinksPage() {
     hasTriggeredKeygen.current = true;
     let isMounted = true;
     const createInstantKeys = async () => {
-      setNostrStatus("creating");
       try {
         const displayName = "Nostr Link Explorer";
         const did = await generateNostrKeys(displayName);
         if (!isMounted) return;
         localStorage.setItem("displayName", displayName);
-        setNostrPubKey(did?.npub || "");
-        setNostrStatus("ready");
       } catch (error) {
         console.error("Failed to generate instant Nostr keys:", error);
-        if (isMounted) {
-          setNostrStatus("error");
-        }
       }
     };
 
@@ -137,18 +132,16 @@ export default function LinksPage() {
     };
   }, [generateNostrKeys]);
 
-  const statusCopy = {
-    idle: "Preparing your Nostr passport...",
-    creating: "Minting your instant Nostr passport...",
-    ready: "Passport ready. Welcome to the Nostr universe.",
-    error: "Could not mint your Nostr passport. Refresh to retry.",
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev === 0 ? links.length - 1 : prev - 1));
   };
 
-  const statusTone = {
-    idle: "purple",
-    creating: "blue",
-    ready: "green",
-    error: "red",
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev === links.length - 1 ? 0 : prev + 1));
+  };
+
+  const goToSlide = (index) => {
+    setCurrentIndex(index);
   };
 
   return (
@@ -162,42 +155,103 @@ export default function LinksPage() {
           >
             A quick linktree for the No Sabos ecosystem.
           </Text>
-        </VStack>
-        <Box
-          mt={10}
-          p={{ base: 5, md: 6 }}
-          borderRadius="2xl"
-          borderWidth="1px"
-          borderColor={useColorModeValue("purple.100", "purple.700")}
-          bg={useColorModeValue("white", "gray.900")}
-          boxShadow="lg"
-        >
-          <VStack spacing={3} align="start">
-            <Badge colorScheme={statusTone[nostrStatus]}>Nostr Passport</Badge>
-            <Heading size="md">Instant identity for your links</Heading>
-            <Text color={useColorModeValue("gray.600", "gray.300")}>
-              {statusCopy[nostrStatus]}
+
+          {/* View Toggle */}
+          <HStack spacing={3} justify="center">
+            <Text
+              fontSize="sm"
+              color={useColorModeValue("gray.500", "gray.400")}
+              fontWeight={!isCarouselView ? "bold" : "normal"}
+            >
+              List
             </Text>
-            {nostrStatus === "creating" && (
-              <Stack direction="row" spacing={2} align="center">
-                <Spinner size="sm" />
-                <Text fontSize="sm" color={useColorModeValue("gray.500", "gray.400")}>
-                  Generating keys in the background...
-                </Text>
-              </Stack>
-            )}
-            {nostrPubKey && (
-              <Text fontSize="sm" color={useColorModeValue("gray.500", "gray.400")}>
-                Your npub: {nostrPubKey.slice(0, 16)}...
-              </Text>
-            )}
-          </VStack>
-        </Box>
-        <VStack spacing={6} mt={10} align="stretch">
-          {links.map((link) => (
-            <LinkCard key={link.title} {...link} />
-          ))}
+            <Switch
+              isChecked={isCarouselView}
+              onChange={() => setIsCarouselView(!isCarouselView)}
+              colorScheme="purple"
+              size="md"
+            />
+            <Text
+              fontSize="sm"
+              color={useColorModeValue("gray.500", "gray.400")}
+              fontWeight={isCarouselView ? "bold" : "normal"}
+            >
+              Carousel
+            </Text>
+          </HStack>
         </VStack>
+
+        {isCarouselView ? (
+          /* Carousel View */
+          <Box mt={10}>
+            <Box position="relative">
+              {/* Navigation Arrows */}
+              <IconButton
+                aria-label="Previous link"
+                icon={<ChevronLeftIcon boxSize={8} />}
+                position="absolute"
+                left={{ base: -2, md: -12 }}
+                top="50%"
+                transform="translateY(-50%)"
+                zIndex={2}
+                onClick={goToPrevious}
+                variant="ghost"
+                colorScheme="purple"
+                size="lg"
+                borderRadius="full"
+              />
+              <IconButton
+                aria-label="Next link"
+                icon={<ChevronRightIcon boxSize={8} />}
+                position="absolute"
+                right={{ base: -2, md: -12 }}
+                top="50%"
+                transform="translateY(-50%)"
+                zIndex={2}
+                onClick={goToNext}
+                variant="ghost"
+                colorScheme="purple"
+                size="lg"
+                borderRadius="full"
+              />
+
+              {/* Carousel Content */}
+              <Box overflow="hidden" borderRadius="2xl">
+                <LinkCard {...links[currentIndex]} />
+              </Box>
+            </Box>
+
+            {/* Dot Indicators */}
+            <HStack spacing={2} justify="center" mt={6}>
+              {links.map((_, index) => (
+                <Box
+                  key={index}
+                  as="button"
+                  w={3}
+                  h={3}
+                  borderRadius="full"
+                  bg={
+                    index === currentIndex
+                      ? "purple.500"
+                      : useColorModeValue("gray.300", "gray.600")
+                  }
+                  transition="background 0.2s ease"
+                  onClick={() => goToSlide(index)}
+                  _hover={{
+                    bg: index === currentIndex ? "purple.400" : "gray.400",
+                  }}
+                />
+              ))}
+            </HStack>
+          </Box>
+        ) : (
+          /* List View */
+          <VStack spacing={6} mt={10} align="stretch">
+            {links.map((link) => (
+              <LinkCard key={link.title} {...link} />
+            ))}
+          </VStack>
+        )}
       </Container>
     </Box>
   );
