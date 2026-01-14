@@ -67,7 +67,16 @@ const links = [
 ];
 
 // 8-bit pixel star with random direction movement
-function PixelStar({ size, startX, startY, delay, duration, color, dirX, dirY }) {
+function PixelStar({
+  size,
+  startX,
+  startY,
+  delay,
+  duration,
+  color,
+  dirX,
+  dirY,
+}) {
   // Create unique keyframes for each star's direction
   const starMove = keyframes`
     0% {
@@ -220,7 +229,12 @@ function CarouselCard({ title, description, href, visual }) {
             {title}
           </Link>
         </Heading>
-        <Text color="gray.400" fontSize="lg" maxW="400px" fontFamily="monospace">
+        <Text
+          color="gray.400"
+          fontSize="lg"
+          maxW="400px"
+          fontFamily="monospace"
+        >
           {description}
         </Text>
         <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
@@ -244,11 +258,6 @@ function ListCard({ title, description, href, visual }) {
       borderRadius="md"
       bg="rgba(7, 16, 29, 0.8)"
       transition="all 0.3s ease"
-      _hover={{
-        transform: "translateY(-2px)",
-        boxShadow: "0 0 20px rgba(255, 0, 255, 0.4), 0 0 40px rgba(0, 255, 255, 0.2)",
-        borderColor: "#ff00ff",
-      }}
       display="block"
       textDecoration="none"
     >
@@ -261,14 +270,12 @@ function ListCard({ title, description, href, visual }) {
           {visual}
         </Box>
         <VStack align="start" spacing={2} flex="1">
-          <Heading
-            size="md"
-            fontFamily="monospace"
-            color="white"
-          >
+          <Heading size="md" fontFamily="monospace" color="white">
             {title}
           </Heading>
-          <Text color="gray.400" fontFamily="monospace">{description}</Text>
+          <Text color="gray.400" fontFamily="monospace">
+            {description}
+          </Text>
           <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
             {href}
           </Text>
@@ -368,8 +375,6 @@ export default function LinksPage() {
             px={4}
             py={2}
             borderRadius="md"
-            borderWidth="1px"
-            borderColor="rgba(255, 0, 255, 0.3)"
           >
             <Text
               fontSize="sm"
@@ -449,7 +454,9 @@ export default function LinksPage() {
                   w={index === currentIndex ? 6 : 3}
                   h={3}
                   bg={index === currentIndex ? "#ff00ff" : "gray.600"}
-                  boxShadow={index === currentIndex ? "0 0 10px #ff00ff" : "none"}
+                  boxShadow={
+                    index === currentIndex ? "0 0 10px #ff00ff" : "none"
+                  }
                   transition="all 0.3s ease"
                   onClick={() => goToSlide(index)}
                   _hover={{
