@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 import WalletExperiment from "./components/WalletExperiment.jsx";
+import LinksPage from "./components/LinksPage.jsx";
 
 import "@coinbase/onchainkit/styles.css";
 import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
@@ -49,6 +50,7 @@ createRoot(document.getElementById("root")).render(
           <Route path="/" element={<AppContainer />} />
           <Route path="/onboarding/*" element={<AppContainer />} />
           <Route path="/subscribe" element={<AppContainer />} />
+          <Route path="/links" element={<LinksPage />} />
           <Route path="/experiments" element={<WalletExperiment />} />
         </Routes>
       </Router>
