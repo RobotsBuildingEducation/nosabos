@@ -257,6 +257,9 @@ export default function Onboarding({
     supportLang === "es"
       ? { flag: mexicanFlag(), label: ui.onboarding_support_es }
       : { flag: usaFlag(), label: ui.onboarding_support_en };
+  const selectedPracticeOption =
+    practiceLanguageOptions.find((option) => option.value === targetLang) ||
+    practiceLanguageOptions[0];
 
   return (
     <Box
@@ -379,23 +382,13 @@ export default function Onboarding({
                       textAlign="left"
                       title={ui.onboarding_practice_label_title}
                     >
-                      {targetLang === "nl" && ui.onboarding_practice_nl}
-                      {targetLang === "en" && ui.onboarding_practice_en}
-                      {targetLang === "fr" && ui.onboarding_practice_fr}
-                      {targetLang === "it" && ui.onboarding_practice_it}
-                      {targetLang === "ja" && (
-                        <>{ui.onboarding_practice_ja} (beta)</>
-                      )}
-                      {targetLang === "nah" && ui.onboarding_practice_nah}
-                      {targetLang === "pt" && ui.onboarding_practice_pt}
-                      {targetLang === "es" && ui.onboarding_practice_es}
-                      {targetLang === "ru" && (
-                        <>{ui.onboarding_practice_ru} (beta)</>
-                      )}
-                      {targetLang === "de" && <>{ui.onboarding_practice_de}</>}
-                      {targetLang === "el" && (
-                        <>{ui.onboarding_practice_el} (beta)</>
-                      )}
+                      <HStack spacing={2}>
+                        {selectedPracticeOption?.flag}
+                        <Text as="span">
+                          {selectedPracticeOption?.label}
+                          {selectedPracticeOption?.beta ? " (beta)" : ""}
+                        </Text>
+                      </HStack>
                     </MenuButton>
                     <MenuList
                       borderColor="gray.700"
