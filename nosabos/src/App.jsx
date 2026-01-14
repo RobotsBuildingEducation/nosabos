@@ -873,8 +873,8 @@ function TopBar({
                 <Wrap spacing={4}>
                   <VStack align="flex-start" spacing={1}>
                     <Text fontSize="xs" fontWeight="semibold" color="gray.400">
-                      {translations[appLanguage].onboarding_support_menu_label ||
-                        "Support:"}
+                      {translations[appLanguage]
+                        .onboarding_support_menu_label || "Support:"}
                     </Text>
                     <Menu autoSelect={false} isLazy>
                       <MenuButton
