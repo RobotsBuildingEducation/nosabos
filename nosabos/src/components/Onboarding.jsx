@@ -253,6 +253,10 @@ export default function Onboarding({
       : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
   const secondsLabel = supportLang === "es" ? "segundos" : "seconds";
+  const supportOption =
+    supportLang === "es"
+      ? { flag: mexicanFlag(), label: ui.onboarding_support_es }
+      : { flag: usaFlag(), label: ui.onboarding_support_en };
 
   return (
     <Box
@@ -315,8 +319,10 @@ export default function Onboarding({
                       w="100%"
                       textAlign="left"
                     >
-                      {supportLang === "en" && ui.onboarding_support_en}
-                      {supportLang === "es" && ui.onboarding_support_es}
+                      <HStack spacing={2}>
+                        {supportOption.flag}
+                        <Text as="span">{supportOption.label}</Text>
+                      </HStack>
                     </MenuButton>
                     <MenuList borderColor="gray.700" bg="gray.900">
                       <Box
@@ -335,10 +341,16 @@ export default function Onboarding({
                         onChange={(value) => setSupportLang(value)}
                       >
                         <MenuItemOption value="en">
-                          {ui.onboarding_support_en}
+                          <HStack spacing={2}>
+                            {usaFlag()}
+                            <Text as="span">{ui.onboarding_support_en}</Text>
+                          </HStack>
                         </MenuItemOption>
                         <MenuItemOption value="es">
-                          {ui.onboarding_support_es}
+                          <HStack spacing={2}>
+                            {mexicanFlag()}
+                            <Text as="span">{ui.onboarding_support_es}</Text>
+                          </HStack>
                         </MenuItemOption>
                       </MenuOptionGroup>
                     </MenuList>
@@ -385,7 +397,28 @@ export default function Onboarding({
                         <>{ui.onboarding_practice_el} (beta)</>
                       )}
                     </MenuButton>
-                    <MenuList borderColor="gray.700" bg="gray.900">
+                    <MenuList
+                      borderColor="gray.700"
+                      bg="gray.900"
+                      maxH="300px"
+                      overflowY="auto"
+                      sx={{
+                        "&::-webkit-scrollbar": {
+                          width: "8px",
+                        },
+                        "&::-webkit-scrollbar-track": {
+                          bg: "gray.800",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb": {
+                          bg: "gray.600",
+                          borderRadius: "4px",
+                        },
+                        "&::-webkit-scrollbar-thumb:hover": {
+                          bg: "gray.500",
+                        },
+                      }}
+                    >
                       <Box
                         px={3}
                         pt={2}

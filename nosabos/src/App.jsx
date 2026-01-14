@@ -155,6 +155,18 @@ import sparkleSound from "./assets/sparkle.mp3";
 import submitActionSound from "./assets/submitaction.mp3";
 import selectSound from "./assets/select.mp3";
 import dailyGoalSound from "./assets/dailygoal.mp3";
+import {
+  brazilianFlag,
+  frenchFlag,
+  germanFlag,
+  greekFlag,
+  italianFlag,
+  japaneseFlag,
+  mexicanFlag,
+  netherlandsFlag,
+  russianFlag,
+  usaFlag,
+} from "./components/flagsIcons/flags";
 
 /* ---------------------------
    Small helpers
@@ -494,25 +506,84 @@ function TopBar({
   // Japanese is visible for everyone (beta label applied in UI)
   const showJapanese = true;
 
+  const supportLanguageOptions = useMemo(
+    () => [
+      { value: "en", label: t.onboarding_support_en, flag: usaFlag() },
+      { value: "es", label: t.onboarding_support_es, flag: mexicanFlag() },
+    ],
+    [t]
+  );
+
   const practiceLanguageOptions = useMemo(() => {
     const collator = new Intl.Collator(appLanguage === "es" ? "es" : "en");
     const options = [
-      { value: "nl", label: t.onboarding_practice_nl, beta: false },
-      { value: "en", label: t.onboarding_practice_en, beta: false },
-      { value: "fr", label: t.onboarding_practice_fr, beta: false },
-      { value: "de", label: t.onboarding_practice_de, beta: false },
-      { value: "it", label: t.onboarding_practice_it, beta: false },
-      { value: "nah", label: t.onboarding_practice_nah, beta: false },
-      { value: "pt", label: t.onboarding_practice_pt, beta: false },
-      { value: "es", label: t.onboarding_practice_es, beta: false },
-      { value: "el", label: t.onboarding_practice_el, beta: true },
+      {
+        value: "nl",
+        label: t.onboarding_practice_nl,
+        beta: false,
+        flag: netherlandsFlag(),
+      },
+      {
+        value: "en",
+        label: t.onboarding_practice_en,
+        beta: false,
+        flag: usaFlag(),
+      },
+      {
+        value: "fr",
+        label: t.onboarding_practice_fr,
+        beta: false,
+        flag: frenchFlag(),
+      },
+      {
+        value: "de",
+        label: t.onboarding_practice_de,
+        beta: false,
+        flag: germanFlag(),
+      },
+      {
+        value: "it",
+        label: t.onboarding_practice_it,
+        beta: false,
+        flag: italianFlag(),
+      },
+      {
+        value: "nah",
+        label: t.onboarding_practice_nah,
+        beta: false,
+        flag: mexicanFlag(),
+      },
+      {
+        value: "pt",
+        label: t.onboarding_practice_pt,
+        beta: false,
+        flag: brazilianFlag(),
+      },
+      {
+        value: "es",
+        label: t.onboarding_practice_es,
+        beta: false,
+        flag: mexicanFlag(),
+      },
+      {
+        value: "el",
+        label: t.onboarding_practice_el,
+        beta: true,
+        flag: greekFlag(),
+      },
       {
         value: "ja",
         label: t.onboarding_practice_ja,
         beta: true,
         hidden: !showJapanese,
+        flag: japaneseFlag(),
       },
-      { value: "ru", label: t.onboarding_practice_ru, beta: true },
+      {
+        value: "ru",
+        label: t.onboarding_practice_ru,
+        beta: true,
+        flag: russianFlag(),
+      },
     ];
 
     const visible = options.filter((option) => !option.hidden);
@@ -525,6 +596,12 @@ function TopBar({
 
     return [...stable, ...beta];
   }, [appLanguage, showJapanese, t]);
+  const selectedSupportOption =
+    supportLanguageOptions.find((option) => option.value === supportLang) ||
+    supportLanguageOptions[0];
+  const selectedPracticeOption =
+    practiceLanguageOptions.find((option) => option.value === targetLang) ||
+    practiceLanguageOptions[0];
 
   // Refill draft when store changes
   useEffect(() => {
@@ -885,17 +962,17 @@ function TopBar({
                         borderColor="gray.700"
                         bg="gray.800"
                         _hover={{ bg: "gray.750" }}
-                        _active={{ bg: "gray.750" }}
-                        px={4}
-                      >
-                        {supportLang === "en" &&
-                          translations[appLanguage].onboarding_support_en}
-                        {supportLang === "es" &&
-                          translations[appLanguage].onboarding_support_es}
-                      </MenuButton>
-                      <MenuList borderColor="gray.700" bg="gray.900">
-                        <Box
-                          px={3}
+                      _active={{ bg: "gray.750" }}
+                      px={4}
+                    >
+                      <HStack spacing={2}>
+                        {selectedSupportOption?.flag}
+                        <Text as="span">{selectedSupportOption?.label}</Text>
+                      </HStack>
+                    </MenuButton>
+                    <MenuList borderColor="gray.700" bg="gray.900">
+                      <Box
+                        px={3}
                           pt={2}
                           pb={1}
                           fontSize="xs"
@@ -913,12 +990,17 @@ function TopBar({
                             persistSettings({ supportLang: value });
                           }}
                         >
-                          <MenuItemOption value="en">
-                            {translations[appLanguage].onboarding_support_en}
-                          </MenuItemOption>
-                          <MenuItemOption value="es">
-                            {translations[appLanguage].onboarding_support_es}
-                          </MenuItemOption>
+                          {supportLanguageOptions.map((option) => (
+                            <MenuItemOption
+                              key={option.value}
+                              value={option.value}
+                            >
+                              <HStack spacing={2}>
+                                {option.flag}
+                                <Text as="span">{option.label}</Text>
+                              </HStack>
+                            </MenuItemOption>
+                          ))}
                         </MenuOptionGroup>
                       </MenuList>
                     </Menu>
@@ -945,43 +1027,13 @@ function TopBar({
                             .onboarding_practice_label_title
                         }
                       >
-                        {targetLang === "nl" &&
-                          translations[appLanguage].onboarding_practice_nl}
-                        {targetLang === "en" &&
-                          translations[appLanguage].onboarding_practice_en}
-                        {targetLang === "fr" &&
-                          translations[appLanguage].onboarding_practice_fr}
-                        {targetLang === "it" &&
-                          translations[appLanguage].onboarding_practice_it}
-                        {targetLang === "ja" && (
-                          <>
-                            {translations[appLanguage].onboarding_practice_ja}{" "}
-                            (beta)
-                          </>
-                        )}
-                        {targetLang === "nah" &&
-                          translations[appLanguage].onboarding_practice_nah}
-                        {targetLang === "pt" &&
-                          translations[appLanguage].onboarding_practice_pt}
-                        {targetLang === "ru" && (
-                          <>
-                            {translations[appLanguage].onboarding_practice_ru}{" "}
-                            (beta)
-                          </>
-                        )}
-                        {targetLang === "de" && (
-                          <>
-                            {translations[appLanguage].onboarding_practice_de}{" "}
-                          </>
-                        )}
-                        {targetLang === "el" && (
-                          <>
-                            {translations[appLanguage].onboarding_practice_el}{" "}
-                            (beta)
-                          </>
-                        )}
-                        {targetLang === "es" &&
-                          translations[appLanguage].onboarding_practice_es}
+                        <HStack spacing={2}>
+                          {selectedPracticeOption?.flag}
+                          <Text as="span">
+                            {selectedPracticeOption?.label}
+                            {selectedPracticeOption?.beta ? " (beta)" : ""}
+                          </Text>
+                        </HStack>
                       </MenuButton>
                       <MenuList
                         borderColor="gray.700"
@@ -1029,8 +1081,13 @@ function TopBar({
                               key={option.value}
                               value={option.value}
                             >
-                              {option.label}
-                              {option.beta ? " (beta)" : ""}
+                              <HStack spacing={2}>
+                                {option.flag}
+                                <Text as="span">
+                                  {option.label}
+                                  {option.beta ? " (beta)" : ""}
+                                </Text>
+                              </HStack>
                             </MenuItemOption>
                           ))}
                         </MenuOptionGroup>
