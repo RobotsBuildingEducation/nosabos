@@ -962,17 +962,17 @@ function TopBar({
                         borderColor="gray.700"
                         bg="gray.800"
                         _hover={{ bg: "gray.750" }}
-                      _active={{ bg: "gray.750" }}
-                      px={4}
-                    >
-                      <HStack spacing={2}>
-                        {selectedSupportOption?.flag}
-                        <Text as="span">{selectedSupportOption?.label}</Text>
-                      </HStack>
-                    </MenuButton>
-                    <MenuList borderColor="gray.700" bg="gray.900">
-                      <Box
-                        px={3}
+                        _active={{ bg: "gray.750" }}
+                        px={4}
+                      >
+                        <HStack spacing={2}>
+                          {selectedSupportOption?.flag}
+                          <Text as="span">{selectedSupportOption?.label}</Text>
+                        </HStack>
+                      </MenuButton>
+                      <MenuList borderColor="gray.700" bg="gray.900">
+                        <Box
+                          px={3}
                           pt={2}
                           pb={1}
                           fontSize="xs"
