@@ -36,6 +36,9 @@ import RobotBuddyPro from "./RobotBuddyPro";
 
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
+import { NDKKind } from "@nostr-dev-kit/ndk";
+import { Buffer } from "buffer";
+import { bech32 } from "bech32";
 
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
@@ -302,7 +305,7 @@ function ListCard({ title, description, href, visual }) {
 }
 
 export default function LinksPage() {
-  const { generateNostrKeys, auth, postNostrContent } = useDecentralizedIdentity();
+  const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } = useDecentralizedIdentity();
   const [isCarouselView, setIsCarouselView] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [npub, setNpub] = useState("");
@@ -423,6 +426,48 @@ export default function LinksPage() {
     }
   };
 
+  // Fetch profile from Nostr for a given npub
+  const fetchNostrProfile = async (npubToFetch) => {
+    try {
+      const connection = await connectToNostr();
+      if (!connection) return null;
+
+      const { ndkInstance } = connection;
+
+      // Convert npub to hex
+      const { words: npubWords } = bech32.decode(npubToFetch);
+      const hexNpub = Buffer.from(bech32.fromWords(npubWords)).toString("hex");
+
+      const filter = {
+        kinds: [NDKKind.Metadata],
+        authors: [hexNpub],
+        limit: 1,
+      };
+
+      const subscription = ndkInstance.subscribe(filter, { closeOnEose: true });
+
+      return new Promise((resolve) => {
+        let profile = null;
+        subscription.on("event", (event) => {
+          try {
+            const metadata = JSON.parse(event.content);
+            profile = metadata;
+          } catch (e) {
+            console.error("Failed to parse profile metadata:", e);
+          }
+        });
+        subscription.on("eose", () => {
+          resolve(profile);
+        });
+        // Timeout after 5 seconds
+        setTimeout(() => resolve(profile), 5000);
+      });
+    } catch (error) {
+      console.error("Failed to fetch profile:", error);
+      return null;
+    }
+  };
+
   // Handle switch account
   const handleSwitchAccount = async () => {
     if (!nsecInput.trim() || !nsecInput.startsWith("nsec")) {
@@ -440,11 +485,21 @@ export default function LinksPage() {
     try {
       const result = await auth(nsecInput.trim());
       if (result) {
-        setNpub(result.user.npub);
+        const newNpub = result.user.npub;
+        setNpub(newNpub);
         setNsecInput("");
-        localStorage.setItem("displayName", "");
-        setDisplayName("");
-        setUsernameInput("");
+
+        // Fetch profile from Nostr to get username
+        const profile = await fetchNostrProfile(newNpub);
+        if (profile?.name) {
+          localStorage.setItem("displayName", profile.name);
+          setDisplayName(profile.name);
+          setUsernameInput(profile.name);
+        } else {
+          localStorage.setItem("displayName", "");
+          setDisplayName("");
+          setUsernameInput("");
+        }
 
         toast({
           title: "Account switched",
@@ -545,14 +600,10 @@ export default function LinksPage() {
           <Button
             onClick={onOpen}
             variant="outline"
-            colorScheme="pink"
             fontFamily="monospace"
-            borderColor="#ff00ff"
-            color="#ff00ff"
-            _hover={{
-              bg: "rgba(255, 0, 255, 0.1)",
-              boxShadow: "0 0 15px rgba(255, 0, 255, 0.5)",
-            }}
+            borderColor="#00ffff"
+            color="#00ffff"
+            _hover={{}}
           >
             Customize Profile
           </Button>
@@ -674,19 +725,19 @@ export default function LinksPage() {
           bg="rgba(7, 16, 29, 0.95)"
           color="gray.100"
           border="1px solid"
-          borderColor="#ff00ff"
+          borderColor="#00ffff"
           rounded="xl"
-          shadow="0 0 30px rgba(255, 0, 255, 0.3)"
+          shadow="0 0 30px rgba(0, 255, 255, 0.3)"
           fontFamily="monospace"
         >
           <ModalHeader
             borderBottom="1px solid"
-            borderColor="rgba(255, 0, 255, 0.3)"
+            borderColor="rgba(0, 255, 255, 0.3)"
             color="#00ffff"
           >
             Customize Profile
           </ModalHeader>
-          <ModalCloseButton color="#ff00ff" />
+          <ModalCloseButton color="#00ffff" />
           <ModalBody py={6}>
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
@@ -801,7 +852,7 @@ export default function LinksPage() {
               </Accordion>
             </VStack>
           </ModalBody>
-          <ModalFooter borderTop="1px solid" borderColor="rgba(255, 0, 255, 0.3)">
+          <ModalFooter borderTop="1px solid" borderColor="rgba(0, 255, 255, 0.3)">
             <Button
               onClick={onClose}
               variant="ghost"
