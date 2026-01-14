@@ -710,6 +710,7 @@ export const useDecentralizedIdentity = (initialNpub, initialNsec) => {
     getUserBadges,
     getLastNotesByNpub,
     getGlobalNotesWithProfilesByHashtag,
+    connectToNostr,
     ndk,
   };
 };
