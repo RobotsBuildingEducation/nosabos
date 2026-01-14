@@ -368,6 +368,9 @@ export default function LinksPage() {
 
     setIsSaving(true);
     try {
+      const trimmedProfilePicture = profilePictureInput.trim();
+      const isDataUrl = trimmedProfilePicture.startsWith("data:");
+
       // Build metadata object
       const metadata = {
         name: usernameInput.trim() || displayName || "",
@@ -375,8 +378,8 @@ export default function LinksPage() {
       };
 
       // Add picture if provided
-      if (profilePictureInput.trim()) {
-        metadata.picture = profilePictureInput.trim();
+      if (trimmedProfilePicture && !isDataUrl) {
+        metadata.picture = trimmedProfilePicture;
       }
 
       // Post kind 0 (metadata) event to update profile
@@ -388,9 +391,9 @@ export default function LinksPage() {
         setDisplayName(usernameInput.trim());
       }
 
-      if (profilePictureInput.trim()) {
-        localStorage.setItem("profilePicture", profilePictureInput.trim());
-        setProfilePicture(profilePictureInput.trim());
+      if (trimmedProfilePicture) {
+        localStorage.setItem("profilePicture", trimmedProfilePicture);
+        setProfilePicture(trimmedProfilePicture);
       }
 
       toast({
@@ -412,6 +415,19 @@ export default function LinksPage() {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleProfilePictureFileChange = (event) => {
+    const [file] = event.target.files || [];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setProfilePictureInput(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Handle copy secret key
@@ -838,7 +854,24 @@ export default function LinksPage() {
                   }}
                 />
                 <Text fontSize="xs" color="gray.500" mt={2}>
-                  Paste a URL to an image for your profile picture
+                  Paste a URL to sync your profile picture to Nostr.
+                </Text>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfilePictureFileChange}
+                  mt={4}
+                  bg="rgba(0, 0, 0, 0.3)"
+                  border="1px solid"
+                  borderColor="gray.600"
+                  _hover={{ borderColor: "#00ffff" }}
+                  _focus={{
+                    borderColor: "#00ffff",
+                    boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
+                  }}
+                />
+                <Text fontSize="xs" color="gray.500" mt={2}>
+                  Or pick a local image to store just on this device.
                 </Text>
               </Box>
 
