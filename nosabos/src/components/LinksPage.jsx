@@ -1,14 +1,30 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Box,
+  Button,
   Container,
   Heading,
   HStack,
   IconButton,
+  Input,
   Link,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Stack,
   Switch,
   Text,
+  useDisclosure,
+  useToast,
   VStack,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
@@ -286,11 +302,174 @@ function ListCard({ title, description, href, visual }) {
 }
 
 export default function LinksPage() {
-  const { generateNostrKeys } = useDecentralizedIdentity();
+  const { generateNostrKeys, auth, postNostrContent } = useDecentralizedIdentity();
   const [isCarouselView, setIsCarouselView] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [npub, setNpub] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [usernameInput, setUsernameInput] = useState("");
+  const [nsecInput, setNsecInput] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSwitching, setIsSwitching] = useState(false);
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const toast = useToast();
 
   const hasTriggeredKeygen = useRef(false);
+
+  // Load stored npub and displayName
+  useEffect(() => {
+    const storedNpub = localStorage.getItem("local_npub");
+    const storedDisplayName = localStorage.getItem("displayName");
+    if (storedNpub) {
+      setNpub(storedNpub);
+    }
+    if (storedDisplayName) {
+      setDisplayName(storedDisplayName);
+      setUsernameInput(storedDisplayName);
+    }
+  }, []);
+
+  // Get display text for welcome message
+  const getWelcomeText = () => {
+    if (displayName && displayName !== "Nostr Link Explorer") {
+      return displayName;
+    }
+    if (npub) {
+      return npub.substring(0, 7);
+    }
+    return "...";
+  };
+
+  // Handle username save
+  const handleSaveUsername = async () => {
+    if (!usernameInput.trim()) {
+      toast({
+        title: "Username required",
+        description: "Please enter a username",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Post kind 0 (metadata) event to update profile
+      await postNostrContent(
+        JSON.stringify({
+          name: usernameInput.trim(),
+          about: "A student onboarded with Robots Building Education",
+        }),
+        0 // Kind 0 is metadata
+      );
+
+      localStorage.setItem("displayName", usernameInput.trim());
+      setDisplayName(usernameInput.trim());
+
+      toast({
+        title: "Profile updated",
+        description: "Your username has been saved to Nostr",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Failed to save username:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle copy secret key
+  const handleCopySecretKey = async () => {
+    const nsec = localStorage.getItem("local_nsec");
+    if (!nsec || nsec === "nip07") {
+      toast({
+        title: "No secret key",
+        description: "You're using a browser extension for signing",
+        status: "info",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(nsec);
+      toast({
+        title: "Copied!",
+        description: "Secret key copied to clipboard",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  // Handle switch account
+  const handleSwitchAccount = async () => {
+    if (!nsecInput.trim() || !nsecInput.startsWith("nsec")) {
+      toast({
+        title: "Invalid key",
+        description: "Please enter a valid nsec key",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    setIsSwitching(true);
+    try {
+      const result = await auth(nsecInput.trim());
+      if (result) {
+        setNpub(result.user.npub);
+        setNsecInput("");
+        localStorage.setItem("displayName", "");
+        setDisplayName("");
+        setUsernameInput("");
+
+        toast({
+          title: "Account switched",
+          description: "Successfully logged in with new account",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+        onClose();
+      } else {
+        throw new Error("Failed to authenticate");
+      }
+    } catch (error) {
+      console.error("Failed to switch account:", error);
+      toast({
+        title: "Error",
+        description: "Invalid secret key or authentication failed",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } finally {
+      setIsSwitching(false);
+    }
+  };
 
   // Background Nostr key generation (no UI)
   useEffect(() => {
@@ -311,10 +490,13 @@ export default function LinksPage() {
     let isMounted = true;
     const createInstantKeys = async () => {
       try {
-        const displayName = "Nostr Link Explorer";
-        const did = await generateNostrKeys(displayName);
+        const defaultDisplayName = "Nostr Link Explorer";
+        const did = await generateNostrKeys(defaultDisplayName);
         if (!isMounted) return;
-        localStorage.setItem("displayName", displayName);
+        localStorage.setItem("displayName", defaultDisplayName);
+        if (did?.npub) {
+          setNpub(did.npub);
+        }
       } catch (error) {
         console.error("Failed to generate instant Nostr keys:", error);
       }
@@ -352,20 +534,28 @@ export default function LinksPage() {
       <Container maxW="container.md" position="relative" zIndex={1}>
         <VStack spacing={6} textAlign="center">
           <Heading
-            size="2xl"
+            size="xl"
             fontFamily="monospace"
-            letterSpacing="widest"
+            letterSpacing="wider"
             color="white"
           >
-            LINKS
+            Welcome, {getWelcomeText()}
           </Heading>
-          <Text
-            color="gray.400"
-            fontSize={{ base: "md", md: "lg" }}
+
+          <Button
+            onClick={onOpen}
+            variant="outline"
+            colorScheme="pink"
             fontFamily="monospace"
+            borderColor="#ff00ff"
+            color="#ff00ff"
+            _hover={{
+              bg: "rgba(255, 0, 255, 0.1)",
+              boxShadow: "0 0 15px rgba(255, 0, 255, 0.5)",
+            }}
           >
-            A quick linktree for the No Sabos ecosystem.
-          </Text>
+            Customize Profile
+          </Button>
 
           {/* View Toggle */}
           <HStack
@@ -476,6 +666,153 @@ export default function LinksPage() {
           </VStack>
         )}
       </Container>
+
+      {/* Profile Customization Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
+        <ModalOverlay bg="blackAlpha.800" />
+        <ModalContent
+          bg="rgba(7, 16, 29, 0.95)"
+          color="gray.100"
+          border="1px solid"
+          borderColor="#ff00ff"
+          rounded="xl"
+          shadow="0 0 30px rgba(255, 0, 255, 0.3)"
+          fontFamily="monospace"
+        >
+          <ModalHeader
+            borderBottom="1px solid"
+            borderColor="rgba(255, 0, 255, 0.3)"
+            color="#00ffff"
+          >
+            Customize Profile
+          </ModalHeader>
+          <ModalCloseButton color="#ff00ff" />
+          <ModalBody py={6}>
+            <VStack spacing={6} align="stretch">
+              {/* Username Section */}
+              <Box>
+                <Text fontSize="sm" color="gray.400" mb={2}>
+                  Username
+                </Text>
+                <HStack>
+                  <Input
+                    value={usernameInput}
+                    onChange={(e) => setUsernameInput(e.target.value)}
+                    placeholder="Enter your username"
+                    bg="rgba(0, 0, 0, 0.3)"
+                    border="1px solid"
+                    borderColor="gray.600"
+                    _hover={{ borderColor: "#00ffff" }}
+                    _focus={{
+                      borderColor: "#00ffff",
+                      boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
+                    }}
+                  />
+                  <Button
+                    onClick={handleSaveUsername}
+                    isLoading={isSaving}
+                    colorScheme="cyan"
+                    bg="#00ffff"
+                    color="black"
+                    _hover={{ bg: "#00cccc" }}
+                    minW="80px"
+                  >
+                    Save
+                  </Button>
+                </HStack>
+                <Text fontSize="xs" color="gray.500" mt={2}>
+                  This name will be saved to your Nostr profile
+                </Text>
+              </Box>
+
+              {/* Secret Key Section */}
+              <Box>
+                <Text fontSize="sm" color="gray.400" mb={2}>
+                  Secret Key
+                </Text>
+                <Button
+                  onClick={handleCopySecretKey}
+                  variant="outline"
+                  colorScheme="pink"
+                  borderColor="#ff00ff"
+                  color="#ff00ff"
+                  w="100%"
+                  _hover={{
+                    bg: "rgba(255, 0, 255, 0.1)",
+                  }}
+                >
+                  Copy Secret Key
+                </Button>
+                <Text fontSize="xs" color="gray.500" mt={2}>
+                  Your secret key is your password to access decentralized apps.
+                  Keep it safe and never share it with anyone.
+                </Text>
+              </Box>
+
+              {/* Switch Account Accordion */}
+              <Accordion allowToggle>
+                <AccordionItem border="none">
+                  <AccordionButton
+                    px={0}
+                    _hover={{ bg: "transparent" }}
+                  >
+                    <Box flex="1" textAlign="left">
+                      <Text fontSize="sm" color="gray.400">
+                        Switch Account
+                      </Text>
+                    </Box>
+                    <AccordionIcon color="#ff00ff" />
+                  </AccordionButton>
+                  <AccordionPanel px={0} pt={3}>
+                    <VStack spacing={3} align="stretch">
+                      <Input
+                        value={nsecInput}
+                        onChange={(e) => setNsecInput(e.target.value)}
+                        placeholder="Paste your nsec key here"
+                        bg="rgba(0, 0, 0, 0.3)"
+                        border="1px solid"
+                        borderColor="gray.600"
+                        type="password"
+                        _hover={{ borderColor: "#ff00ff" }}
+                        _focus={{
+                          borderColor: "#ff00ff",
+                          boxShadow: "0 0 10px rgba(255, 0, 255, 0.3)",
+                        }}
+                      />
+                      <Button
+                        onClick={handleSwitchAccount}
+                        isLoading={isSwitching}
+                        variant="outline"
+                        colorScheme="pink"
+                        borderColor="#ff00ff"
+                        color="#ff00ff"
+                        _hover={{
+                          bg: "rgba(255, 0, 255, 0.1)",
+                        }}
+                      >
+                        Switch Account
+                      </Button>
+                      <Text fontSize="xs" color="gray.500">
+                        Enter a different nsec to switch to another Nostr account
+                      </Text>
+                    </VStack>
+                  </AccordionPanel>
+                </AccordionItem>
+              </Accordion>
+            </VStack>
+          </ModalBody>
+          <ModalFooter borderTop="1px solid" borderColor="rgba(255, 0, 255, 0.3)">
+            <Button
+              onClick={onClose}
+              variant="ghost"
+              color="gray.400"
+              _hover={{ color: "white", bg: "rgba(255, 255, 255, 0.1)" }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 }
