@@ -39,6 +39,7 @@ import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 import { NDKKind } from "@nostr-dev-kit/ndk";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
+import RandomCharacter from "./RandomCharacter";
 
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
@@ -314,22 +315,30 @@ export default function LinksPage() {
   const [nsecInput, setNsecInput] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
+  const [profilePicture, setProfilePicture] = useState("");
+  const [profilePictureInput, setProfilePictureInput] = useState("");
+  const [randomCharacterKey] = useState(() => Math.floor(Math.random() * 21) + 20); // Random between 20-40
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
 
   const hasTriggeredKeygen = useRef(false);
 
-  // Load stored npub and displayName
+  // Load stored npub, displayName, and profilePicture
   useEffect(() => {
     const storedNpub = localStorage.getItem("local_npub");
     const storedDisplayName = localStorage.getItem("displayName");
+    const storedProfilePicture = localStorage.getItem("profilePicture");
     if (storedNpub) {
       setNpub(storedNpub);
     }
     if (storedDisplayName) {
       setDisplayName(storedDisplayName);
       setUsernameInput(storedDisplayName);
+    }
+    if (storedProfilePicture) {
+      setProfilePicture(storedProfilePicture);
+      setProfilePictureInput(storedProfilePicture);
     }
   }, []);
 
@@ -344,12 +353,12 @@ export default function LinksPage() {
     return "...";
   };
 
-  // Handle username save
-  const handleSaveUsername = async () => {
-    if (!usernameInput.trim()) {
+  // Handle profile save (username and picture)
+  const handleSaveProfile = async () => {
+    if (!usernameInput.trim() && !profilePictureInput.trim()) {
       toast({
-        title: "Username required",
-        description: "Please enter a username",
+        title: "No changes",
+        description: "Please enter a username or profile picture URL",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -359,27 +368,40 @@ export default function LinksPage() {
 
     setIsSaving(true);
     try {
-      // Post kind 0 (metadata) event to update profile
-      await postNostrContent(
-        JSON.stringify({
-          name: usernameInput.trim(),
-          about: "A student onboarded with Robots Building Education",
-        }),
-        0 // Kind 0 is metadata
-      );
+      // Build metadata object
+      const metadata = {
+        name: usernameInput.trim() || displayName || "",
+        about: "A student onboarded with Robots Building Education",
+      };
 
-      localStorage.setItem("displayName", usernameInput.trim());
-      setDisplayName(usernameInput.trim());
+      // Add picture if provided
+      if (profilePictureInput.trim()) {
+        metadata.picture = profilePictureInput.trim();
+      }
+
+      // Post kind 0 (metadata) event to update profile
+      await postNostrContent(JSON.stringify(metadata), 0);
+
+      // Save to localStorage
+      if (usernameInput.trim()) {
+        localStorage.setItem("displayName", usernameInput.trim());
+        setDisplayName(usernameInput.trim());
+      }
+
+      if (profilePictureInput.trim()) {
+        localStorage.setItem("profilePicture", profilePictureInput.trim());
+        setProfilePicture(profilePictureInput.trim());
+      }
 
       toast({
         title: "Profile updated",
-        description: "Your username has been saved to Nostr",
+        description: "Your profile has been saved to Nostr",
         status: "success",
         duration: 3000,
         isClosable: true,
       });
     } catch (error) {
-      console.error("Failed to save username:", error);
+      console.error("Failed to save profile:", error);
       toast({
         title: "Error",
         description: "Failed to update profile",
@@ -489,7 +511,7 @@ export default function LinksPage() {
         setNpub(newNpub);
         setNsecInput("");
 
-        // Fetch profile from Nostr to get username
+        // Fetch profile from Nostr to get username and picture
         const profile = await fetchNostrProfile(newNpub);
         if (profile?.name) {
           localStorage.setItem("displayName", profile.name);
@@ -499,6 +521,16 @@ export default function LinksPage() {
           localStorage.setItem("displayName", "");
           setDisplayName("");
           setUsernameInput("");
+        }
+
+        if (profile?.picture) {
+          localStorage.setItem("profilePicture", profile.picture);
+          setProfilePicture(profile.picture);
+          setProfilePictureInput(profile.picture);
+        } else {
+          localStorage.setItem("profilePicture", "");
+          setProfilePicture("");
+          setProfilePictureInput("");
         }
 
         toast({
@@ -588,6 +620,33 @@ export default function LinksPage() {
 
       <Container maxW="container.md" position="relative" zIndex={1}>
         <VStack spacing={6} textAlign="center">
+          {/* Profile Picture or Random Character */}
+          {profilePicture ? (
+            <Box
+              w="100px"
+              h="100px"
+              borderRadius="full"
+              overflow="hidden"
+              border="3px solid #00ffff"
+              boxShadow="0 0 20px rgba(0, 255, 255, 0.4)"
+            >
+              <img
+                src={profilePicture}
+                alt="Profile"
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            </Box>
+          ) : (
+            <RandomCharacter
+              notSoRandomCharacter={randomCharacterKey}
+              width="100px"
+            />
+          )}
+
           <Heading
             size="xl"
             fontFamily="monospace"
@@ -745,36 +804,56 @@ export default function LinksPage() {
                 <Text fontSize="sm" color="gray.400" mb={2}>
                   Username
                 </Text>
-                <HStack>
-                  <Input
-                    value={usernameInput}
-                    onChange={(e) => setUsernameInput(e.target.value)}
-                    placeholder="Enter your username"
-                    bg="rgba(0, 0, 0, 0.3)"
-                    border="1px solid"
-                    borderColor="gray.600"
-                    _hover={{ borderColor: "#00ffff" }}
-                    _focus={{
-                      borderColor: "#00ffff",
-                      boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
-                    }}
-                  />
-                  <Button
-                    onClick={handleSaveUsername}
-                    isLoading={isSaving}
-                    colorScheme="cyan"
-                    bg="#00ffff"
-                    color="black"
-                    _hover={{ bg: "#00cccc" }}
-                    minW="80px"
-                  >
-                    Save
-                  </Button>
-                </HStack>
+                <Input
+                  value={usernameInput}
+                  onChange={(e) => setUsernameInput(e.target.value)}
+                  placeholder="Enter your username"
+                  bg="rgba(0, 0, 0, 0.3)"
+                  border="1px solid"
+                  borderColor="gray.600"
+                  _hover={{ borderColor: "#00ffff" }}
+                  _focus={{
+                    borderColor: "#00ffff",
+                    boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
+                  }}
+                />
+              </Box>
+
+              {/* Profile Picture Section */}
+              <Box>
+                <Text fontSize="sm" color="gray.400" mb={2}>
+                  Profile Picture URL
+                </Text>
+                <Input
+                  value={profilePictureInput}
+                  onChange={(e) => setProfilePictureInput(e.target.value)}
+                  placeholder="https://example.com/your-image.jpg"
+                  bg="rgba(0, 0, 0, 0.3)"
+                  border="1px solid"
+                  borderColor="gray.600"
+                  _hover={{ borderColor: "#00ffff" }}
+                  _focus={{
+                    borderColor: "#00ffff",
+                    boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
+                  }}
+                />
                 <Text fontSize="xs" color="gray.500" mt={2}>
-                  This name will be saved to your Nostr profile
+                  Paste a URL to an image for your profile picture
                 </Text>
               </Box>
+
+              {/* Save Profile Button */}
+              <Button
+                onClick={handleSaveProfile}
+                isLoading={isSaving}
+                colorScheme="cyan"
+                bg="#00ffff"
+                color="black"
+                _hover={{ bg: "#00cccc" }}
+                w="100%"
+              >
+                Save Profile
+              </Button>
 
               {/* Secret Key Section */}
               <Box>
