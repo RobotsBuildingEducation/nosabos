@@ -25,6 +25,7 @@ export function RoleCanvas({
   height = 100,
   particleCount = 200,
   color = null, // null means use theme color
+  transparent = false, // when true, background is fully transparent
 
   // sphere params
   cycleSpeed = 0.0015,
@@ -211,9 +212,13 @@ export function RoleCanvas({
         progressRef.current = target;
       const prog = progressRef.current;
 
-      // draw fade for trails
-      ctx.fillStyle = fadeColor;
-      ctx.fillRect(0, 0, width, height);
+      // draw fade for trails (or clear if transparent)
+      if (transparent) {
+        ctx.clearRect(0, 0, width, height);
+      } else {
+        ctx.fillStyle = fadeColor;
+        ctx.fillRect(0, 0, width, height);
+      }
 
       // singular random-moving particle when chores
       if (roleRef.current === "chores") {
@@ -403,6 +408,7 @@ export function RoleCanvas({
     waterAmplitude,
     transitionEase,
     fadeColor,
+    transparent,
   ]);
 
   return (
@@ -413,7 +419,7 @@ export function RoleCanvas({
         height: `${200}px`,
         display: "block",
         margin: "0 auto",
-        backgroundColor: bgColor,
+        backgroundColor: transparent ? "transparent" : bgColor,
         borderRadius: role === "sphere" ? "0%" : "0",
       }}
     />

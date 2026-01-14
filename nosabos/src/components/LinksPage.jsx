@@ -9,7 +9,6 @@ import {
   Stack,
   Switch,
   Text,
-  useColorModeValue,
   VStack,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
@@ -22,26 +21,18 @@ import RobotBuddyPro from "./RobotBuddyPro";
 import { CloudCanvas } from "./CloudCanvas/CloudCanvas";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
 
-// Retro 80s star movement - diagonal scroll across screen
-const starScroll = keyframes`
-  0% {
-    transform: translateX(100vw) translateY(-100vh);
-    opacity: 0;
-  }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% {
-    transform: translateX(-100vw) translateY(100vh);
-    opacity: 0;
-  }
+// Color rotation for headers - cycles through neon colors every 4 seconds
+const colorRotate = keyframes`
+  0%, 100% { color: #ff00ff; }
+  25% { color: #00ffff; }
+  50% { color: #ff6ec7; }
+  75% { color: #39ff14; }
 `;
 
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-  75% { opacity: 1; }
-  90% { opacity: 0.5; }
+  50% { opacity: 0.8; }
 `;
 
 // Scanline animation
@@ -78,13 +69,27 @@ const links = [
     description: "Support Notes And Other Stuff on Patreon.",
     href: "https://patreon.com/NotesAndOtherStuff",
     visual: (
-      <RoleCanvas role={"sphere"} width={400} height={400} bg={"transparent"} />
+      <RoleCanvas role={"sphere"} width={400} height={400} transparent={true} />
     ),
   },
 ];
 
-// 8-bit pixel star - square shaped
-function PixelStar({ size, startX, startY, delay, duration, color }) {
+// 8-bit pixel star with random direction movement
+function PixelStar({ size, startX, startY, delay, duration, color, dirX, dirY }) {
+  // Create unique keyframes for each star's direction
+  const starMove = keyframes`
+    0% {
+      transform: translateX(0) translateY(0);
+      opacity: 0;
+    }
+    5% { opacity: 1; }
+    95% { opacity: 1; }
+    100% {
+      transform: translateX(${dirX}vw) translateY(${dirY}vh);
+      opacity: 0;
+    }
+  `;
+
   return (
     <Box
       position="absolute"
@@ -93,8 +98,8 @@ function PixelStar({ size, startX, startY, delay, duration, color }) {
       w={`${size}px`}
       h={`${size}px`}
       bg={color}
-      boxShadow={`0 0 ${size * 3}px ${color}, 0 0 ${size * 6}px ${color}`}
-      animation={`${starScroll} ${duration}s linear infinite, ${pixelFlicker} 0.5s steps(2) infinite`}
+      boxShadow={`0 0 ${size * 2}px ${color}`}
+      animation={`${starMove} ${duration}s linear infinite, ${pixelFlicker} 2s steps(2) infinite`}
       animationDelay={`${delay}s`}
       pointerEvents="none"
       sx={{
@@ -117,15 +122,21 @@ function RetroStarfield() {
       "#ffff00", // Yellow
     ];
 
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 30; i++) {
+      // Random direction for each star
+      const angle = Math.random() * Math.PI * 2;
+      const distance = 80 + Math.random() * 40; // How far it travels
+
       starArray.push({
         id: i,
         size: Math.random() < 0.3 ? 4 : Math.random() < 0.6 ? 3 : 2,
         startX: `${Math.random() * 100}%`,
         startY: `${Math.random() * 100}%`,
-        delay: Math.random() * 15,
-        duration: Math.random() * 8 + 12,
+        delay: Math.random() * 20,
+        duration: 25 + Math.random() * 20, // Slower: 25-45 seconds
         color: colors[Math.floor(Math.random() * colors.length)],
+        dirX: Math.cos(angle) * distance,
+        dirY: Math.sin(angle) * distance,
       });
     }
     return starArray;
@@ -204,15 +215,14 @@ function CarouselCard({ title, description, href, visual }) {
       <VStack spacing={3}>
         <Heading
           size="xl"
-          color="#ff00ff"
-          textShadow="0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff"
           fontFamily="monospace"
           letterSpacing="wider"
+          animation={`${colorRotate} 4s ease-in-out infinite`}
         >
           <Link
             href={href}
             isExternal
-            _hover={{ color: "#00ffff", textShadow: "0 0 10px #00ffff, 0 0 20px #00ffff", textDecoration: "none" }}
+            _hover={{ opacity: 0.8, textDecoration: "none" }}
             transition="all 0.3s ease"
           >
             {title}
@@ -261,9 +271,8 @@ function ListCard({ title, description, href, visual }) {
         <VStack align="start" spacing={2} flex="1">
           <Heading
             size="md"
-            color="#ff00ff"
             fontFamily="monospace"
-            textShadow="0 0 5px #ff00ff"
+            animation={`${colorRotate} 4s ease-in-out infinite`}
           >
             {title}
           </Heading>
@@ -345,18 +354,16 @@ export default function LinksPage() {
         <VStack spacing={6} textAlign="center">
           <Heading
             size="2xl"
-            color="#ff00ff"
             fontFamily="monospace"
             letterSpacing="widest"
-            textShadow="0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 80px #ff00ff"
+            animation={`${colorRotate} 4s ease-in-out infinite`}
           >
             LINKS
           </Heading>
           <Text
-            color="#00ffff"
+            color="gray.400"
             fontSize={{ base: "md", md: "lg" }}
             fontFamily="monospace"
-            textShadow="0 0 5px #00ffff"
           >
             A quick linktree for the No Sabos ecosystem.
           </Text>
@@ -378,7 +385,6 @@ export default function LinksPage() {
               fontWeight={!isCarouselView ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
-              textShadow={!isCarouselView ? "0 0 5px #ff00ff" : "none"}
             >
               LIST
             </Text>
@@ -394,7 +400,6 @@ export default function LinksPage() {
               fontWeight={isCarouselView ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
-              textShadow={isCarouselView ? "0 0 5px #00ffff" : "none"}
             >
               CAROUSEL
             </Text>
