@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Badge,
   Box,
@@ -93,22 +93,25 @@ export default function LinksPage() {
   const [nostrStatus, setNostrStatus] = useState("idle");
   const [nostrPubKey, setNostrPubKey] = useState("");
 
-  const hasStoredKeys = useMemo(() => {
-    if (typeof window === "undefined") return false;
-    return (
-      Boolean(localStorage.getItem("local_nsec")) &&
-      Boolean(localStorage.getItem("local_npub"))
-    );
-  }, []);
+  const hasTriggeredKeygen = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    const hasStoredKeys =
+      Boolean(localStorage.getItem("local_nsec")) &&
+      Boolean(localStorage.getItem("local_npub"));
+
     if (hasStoredKeys) {
       setNostrStatus("ready");
       setNostrPubKey(localStorage.getItem("local_npub") || "");
       return;
     }
 
+    if (hasTriggeredKeygen.current) {
+      return;
+    }
+
+    hasTriggeredKeygen.current = true;
     let isMounted = true;
     const createInstantKeys = async () => {
       setNostrStatus("creating");
@@ -132,7 +135,7 @@ export default function LinksPage() {
     return () => {
       isMounted = false;
     };
-  }, [generateNostrKeys, hasStoredKeys]);
+  }, [generateNostrKeys]);
 
   const statusCopy = {
     idle: "Preparing your Nostr passport...",
