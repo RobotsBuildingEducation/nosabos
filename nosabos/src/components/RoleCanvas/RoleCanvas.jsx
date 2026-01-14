@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { createNoise2D } from "simplex-noise";
-import { useColorModeValue } from "@chakra-ui/react";
+import { useColorMode } from "@chakra-ui/react";
 import { useThemeStore } from "../../useThemeStore";
 
 // Theme color hex values
@@ -46,6 +46,8 @@ export function RoleCanvas({
   const progressRef = useRef(0);
   const frameRef = useRef(0);
   const themeColor = useThemeStore((state) => state.themeColor);
+  const { colorMode } = useColorMode();
+  const [pageBackground, setPageBackground] = useState("");
 
   // Use provided color or fall back to theme color
   const particleColor =
@@ -55,9 +57,25 @@ export function RoleCanvas({
     roleRef.current = role;
   }, [role]);
 
-  const baseRgb = useColorModeValue(backgroundColorX, backgroundColorX);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const bodyBg = getComputedStyle(document.body).backgroundColor;
+    if (bodyBg) {
+      setPageBackground(bodyBg);
+    }
+  }, [colorMode, backgroundColorX]);
+
+  const resolvedBg = pageBackground || `rgb(${backgroundColorX})`;
+  const rgbMatch = resolvedBg.match(
+    /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/
+  );
+  const baseRgb = rgbMatch
+    ? `${rgbMatch[1]},${rgbMatch[2]},${rgbMatch[3]}`
+    : backgroundColorX;
   const fadeColor = `rgba(${baseRgb},${trailOpacity})`;
-  const bgColor = `rgb(${baseRgb})`;
+  const bgColor = resolvedBg.startsWith("rgb")
+    ? resolvedBg
+    : `rgb(${baseRgb})`;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -388,6 +406,7 @@ export function RoleCanvas({
     waterSpeed,
     waterAmplitude,
     transitionEase,
+    fadeColor,
   ]);
 
   return (
