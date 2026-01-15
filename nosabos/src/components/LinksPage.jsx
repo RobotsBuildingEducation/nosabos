@@ -318,6 +318,7 @@ export default function LinksPage() {
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureInput, setProfilePictureInput] = useState("");
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [randomCharacterKey] = useState(() => Math.floor(Math.random() * 21) + 20); // Random between 20-40
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -361,6 +362,33 @@ export default function LinksPage() {
     return "...";
   };
 
+  const uploadProfilePicture = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("https://nostr.build/api/v2/upload/files", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload failed (${response.status})`);
+    }
+
+    const payload = await response.json();
+    const uploadedUrl =
+      payload?.data?.[0]?.url ||
+      payload?.data?.url ||
+      payload?.url ||
+      payload?.files?.[0]?.url;
+
+    if (!uploadedUrl) {
+      throw new Error("Upload response did not include an image URL.");
+    }
+
+    return uploadedUrl;
+  };
+
   // Handle profile save (username and picture)
   const handleSaveProfile = async () => {
     if (
@@ -382,7 +410,12 @@ export default function LinksPage() {
     setIsSaving(true);
     try {
       const trimmedProfilePicture = profilePictureInput.trim();
-      const trimmedProfilePictureUrl = profilePictureUrlInput.trim();
+      let trimmedProfilePictureUrl = profilePictureUrlInput.trim();
+
+      if (!trimmedProfilePictureUrl && profilePictureFile) {
+        trimmedProfilePictureUrl = await uploadProfilePicture(profilePictureFile);
+        setProfilePictureUrlInput(trimmedProfilePictureUrl);
+      }
 
       // Build metadata object
       const metadata = {
@@ -416,6 +449,7 @@ export default function LinksPage() {
       if (trimmedProfilePicture || trimmedProfilePictureUrl) {
         setProfilePicture(trimmedProfilePicture || trimmedProfilePictureUrl);
       }
+      setProfilePictureFile(null);
 
       toast({
         title: "Profile updated",
@@ -428,7 +462,7 @@ export default function LinksPage() {
       console.error("Failed to save profile:", error);
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error.message || "Failed to update profile",
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -441,6 +475,7 @@ export default function LinksPage() {
   const handleProfilePictureFileChange = (event) => {
     const [file] = event.target.files || [];
     if (!file) return;
+    setProfilePictureFile(file);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -895,7 +930,7 @@ export default function LinksPage() {
                   }}
                 />
                 <Text fontSize="xs" color="gray.500" mt={2}>
-                  Or pick a local image to store just on this device.
+                  Or pick a local image to upload and sync to Nostr.
                 </Text>
               </Box>
 
