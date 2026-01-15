@@ -199,16 +199,34 @@ function RetroStarfield() {
   );
 }
 
-function CarouselCard({ title, description, href, visual }) {
+function CarouselCard({ title, description, href, visual, onClick }) {
+  const clickableProps = onClick
+    ? {
+        as: "div",
+        role: "button",
+        tabIndex: 0,
+        onClick,
+        onKeyDown: (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onClick();
+          }
+        },
+      }
+    : {
+        as: "a",
+        href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+      };
+
   return (
     <Box
-      as="a"
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...clickableProps}
       display="block"
       textDecoration="none"
       _hover={{ textDecoration: "none", opacity: 0.9 }}
+      cursor="pointer"
     >
       <VStack spacing={6} align="center" textAlign="center" py={4}>
         {/* Large Visual */}
@@ -242,22 +260,51 @@ function CarouselCard({ title, description, href, visual }) {
           >
             {description}
           </Text>
-          <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
-            {href}
-          </Text>
+          <Button
+            as={onClick ? "button" : "a"}
+            onClick={onClick ? onClick : undefined}
+            href={onClick ? undefined : href}
+            target={onClick ? undefined : "_blank"}
+            rel={onClick ? undefined : "noopener noreferrer"}
+            variant="outline"
+            borderColor="#00ffff"
+            color="#00ffff"
+            fontFamily="monospace"
+            size="sm"
+            _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
+          >
+            Launch app
+          </Button>
         </VStack>
       </VStack>
     </Box>
   );
 }
 
-function ListCard({ title, description, href, visual }) {
+function ListCard({ title, description, href, visual, onClick }) {
+  const clickableProps = onClick
+    ? {
+        as: "div",
+        role: "button",
+        tabIndex: 0,
+        onClick,
+        onKeyDown: (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onClick();
+          }
+        },
+      }
+    : {
+        as: "a",
+        href,
+        target: "_blank",
+        rel: "noopener noreferrer",
+      };
+
   return (
     <Box
-      as="a"
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
+      {...clickableProps}
       p={{ base: 5, md: 6 }}
       borderWidth="1px"
       borderColor="rgba(255, 0, 255, 0.3)"
@@ -266,6 +313,7 @@ function ListCard({ title, description, href, visual }) {
       transition="all 0.3s ease"
       display="block"
       textDecoration="none"
+      cursor="pointer"
     >
       <Stack
         direction={{ base: "column", md: "row" }}
@@ -282,9 +330,21 @@ function ListCard({ title, description, href, visual }) {
           <Text color="gray.400" fontFamily="monospace">
             {description}
           </Text>
-          <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
-            {href}
-          </Text>
+          <Button
+            as={onClick ? "button" : "a"}
+            onClick={onClick ? onClick : undefined}
+            href={onClick ? undefined : href}
+            target={onClick ? undefined : "_blank"}
+            rel={onClick ? undefined : "noopener noreferrer"}
+            variant="outline"
+            borderColor="#00ffff"
+            color="#00ffff"
+            fontFamily="monospace"
+            size="sm"
+            _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
+          >
+            Launch app
+          </Button>
         </VStack>
       </Stack>
     </Box>
@@ -307,6 +367,11 @@ export default function LinksPage() {
   const [roleIndex, setRoleIndex] = useState(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isRbeOpen,
+    onOpen: onRbeOpen,
+    onClose: onRbeClose,
+  } = useDisclosure();
   const toast = useToast();
 
   const hasTriggeredKeygen = useRef(false);
@@ -343,6 +408,8 @@ export default function LinksPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const rbeUrl = "https://robotsbuildingeducation.com";
+
   const links = [
     {
       title: "No Sabos",
@@ -353,7 +420,8 @@ export default function LinksPage() {
     {
       title: "Robots Building Education",
       description: "Hands-on robotics education and community programs.",
-      href: "https://robotsbuildingeducation.com",
+      href: rbeUrl,
+      onClick: onRbeOpen,
       visual: (
         <Box display="flex" justifyContent="center" alignItems="center">
           <CloudCanvas />
@@ -377,7 +445,7 @@ export default function LinksPage() {
 
   // Get display text for welcome message
   const getWelcomeText = () => {
-    if (displayName && displayName !== "Nostr Link Explorer") {
+    if (displayName) {
       return displayName;
     }
     if (npub) {
@@ -622,7 +690,7 @@ export default function LinksPage() {
     let isMounted = true;
     const createInstantKeys = async () => {
       try {
-        const defaultDisplayName = "Nostr Link Explorer";
+        const defaultDisplayName = "";
         const did = await generateNostrKeys(defaultDisplayName);
         if (!isMounted) return;
         localStorage.setItem("displayName", defaultDisplayName);
@@ -825,6 +893,61 @@ export default function LinksPage() {
           </VStack>
         )}
       </Container>
+
+      {/* Robots Building Education Modal */}
+      <Modal isOpen={isRbeOpen} onClose={onRbeClose} isCentered size="md">
+        <ModalOverlay bg="blackAlpha.800" />
+        <ModalContent
+          bg="rgba(7, 16, 29, 0.95)"
+          color="gray.100"
+          border="1px solid"
+          borderColor="#00ffff"
+          rounded="xl"
+          shadow="0 0 30px rgba(0, 255, 255, 0.3)"
+          fontFamily="monospace"
+        >
+          <ModalHeader
+            borderBottom="1px solid"
+            borderColor="rgba(0, 255, 255, 0.3)"
+            color="#00ffff"
+          >
+            Robots Building Education
+          </ModalHeader>
+          <ModalCloseButton color="#00ffff" />
+          <ModalBody py={6}>
+            <VStack spacing={4} align="stretch">
+              <Text fontSize="sm" color="gray.300">
+                You'll use your secret key to sign in to your account. If you
+                entered through social media, you only have to do this once.
+              </Text>
+              <Button
+                as="a"
+                href={rbeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                colorScheme="cyan"
+                bg="#00ffff"
+                color="black"
+                _hover={{ bg: "#00cccc" }}
+                w="100%"
+                onClick={onRbeClose}
+              >
+                Go to app
+              </Button>
+            </VStack>
+          </ModalBody>
+          <ModalFooter borderTop="1px solid" borderColor="rgba(0, 255, 255, 0.3)">
+            <Button
+              onClick={onRbeClose}
+              variant="ghost"
+              color="gray.400"
+              _hover={{ color: "white", bg: "rgba(255, 255, 255, 0.1)" }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Profile Customization Modal */}
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
