@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   Container,
+  Divider,
   Heading,
   HStack,
   IconButton,
@@ -34,6 +35,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import modeSwitcherSound from "../assets/modeswitcher.mp3";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
+import { BitcoinWalletSection } from "./IdentityDrawer";
 
 import RobotBuddyPro from "./RobotBuddyPro";
 
@@ -973,7 +975,7 @@ export default function LinksPage() {
       </Modal>
 
       {/* Profile Customization Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
+      <Modal isOpen={isOpen} onClose={onClose} isCentered size="md" scrollBehavior="inside">
         <ModalOverlay bg="blackAlpha.800" />
         <ModalContent
           bg="rgba(7, 16, 29, 0.95)"
@@ -983,6 +985,7 @@ export default function LinksPage() {
           rounded="xl"
           shadow="0 0 30px rgba(0, 255, 255, 0.3)"
           fontFamily="monospace"
+          maxH="85vh"
         >
           <ModalHeader
             borderBottom="1px solid"
@@ -992,7 +995,31 @@ export default function LinksPage() {
             Customize Profile
           </ModalHeader>
           <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
-          <ModalBody py={6}>
+          <ModalBody
+            py={6}
+            overflowY="auto"
+            sx={{
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "rgba(0, 0, 0, 0.3)",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "linear-gradient(180deg, #00ffff 0%, #ff00ff 100%)",
+                borderRadius: "4px",
+                border: "2px solid transparent",
+                backgroundClip: "padding-box",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "linear-gradient(180deg, #00cccc 0%, #cc00cc 100%)",
+                backgroundClip: "padding-box",
+              },
+              scrollbarWidth: "thin",
+              scrollbarColor: "#00ffff rgba(0, 0, 0, 0.3)",
+            }}
+          >
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
               <Box>
@@ -1048,8 +1075,17 @@ export default function LinksPage() {
                 Save Profile
               </Button>
 
+              <Divider borderColor="rgba(255, 0, 255, 0.3)" />
+
+              {/* Bitcoin Wallet Section */}
+              <Box>
+                <BitcoinWalletSection userLanguage="en" />
+              </Box>
+
+              <Divider borderColor="rgba(0, 255, 255, 0.3)" />
+
               {/* Secret Key Section */}
-              <Box mt={6}>
+              <Box>
                 <Text fontSize="sm" color="gray.400" mb={2}>
                   Secret Key
                 </Text>
