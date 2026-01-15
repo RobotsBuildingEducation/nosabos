@@ -53,7 +53,7 @@ import RandomCharacter from "./RandomCharacter";
 import { logEvent } from "firebase/analytics";
 import { analytics } from "../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../hooks/useNostrWalletStore";
-import IdentityCard from "./IdentityCard";
+import { IdentityCard } from "./IdentityCard";
 
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
@@ -580,13 +580,13 @@ export default function LinksPage() {
   const links = [
     {
       title: "No Sabos",
-      description: "Language learning adventures in the No Sabos universe.",
+      description: "Your personal language tutor.",
       href: "https://nosabos.app",
       visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
     },
     {
       title: "Robots Building Education",
-      description: "Hands-on robotics education and community programs.",
+      description: "Your personal coding tutor.",
       href: rbeUrl,
       onLaunch: onRbeOpen,
       visual: (
@@ -597,7 +597,7 @@ export default function LinksPage() {
     },
     {
       title: "Patreon",
-      description: "Support Notes And Other Stuff on Patreon.",
+      description: "Access premium engineering, financial and startup content.",
       href: "https://patreon.com/NotesAndOtherStuff",
       visual: (
         <RoleCanvas
@@ -1112,7 +1112,13 @@ export default function LinksPage() {
       </Modal>
 
       {/* Profile Customization Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered size="md" scrollBehavior="inside">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        isCentered
+        size="md"
+        scrollBehavior="inside"
+      >
         <ModalOverlay bg="blackAlpha.800" />
         <ModalContent
           bg="rgba(7, 16, 29, 0.95)"
@@ -1214,28 +1220,97 @@ export default function LinksPage() {
 
               <Divider borderColor="rgba(255, 0, 255, 0.3)" />
 
+              {/* Secret Key Section */}
+              <Box>
+                <Text fontSize="sm" color="gray.400" mb={2}>
+                  Secret Key
+                </Text>
+                <Button
+                  onClick={() => {
+                    handleSelectSound();
+                    handleCopySecretKey();
+                  }}
+                  variant="outline"
+                  colorScheme="pink"
+                  borderColor="#ff00ff"
+                  color="#ff00ff"
+                  w="100%"
+                >
+                  Copy Secret Key
+                </Button>
+                <Text fontSize="xs" color="gray.500" mt={2}>
+                  Your secret key is your password to access decentralized apps.
+                  Keep it safe and never share it with anyone.
+                </Text>
+              </Box>
+              {/* Switch Account Accordion */}
+              <Accordion allowToggle>
+                <AccordionItem border="none">
+                  <AccordionButton px={0} _hover={{ bg: "transparent" }}>
+                    <Box flex="1" textAlign="left">
+                      <Text fontSize="sm" color="gray.400">
+                        Switch Account
+                      </Text>
+                    </Box>
+                    <AccordionIcon color="#ff00ff" />
+                  </AccordionButton>
+                  <AccordionPanel px={0} pt={3}>
+                    <VStack spacing={3} align="stretch">
+                      <Input
+                        value={nsecInput}
+                        onChange={(e) => setNsecInput(e.target.value)}
+                        placeholder="Paste your nsec key here"
+                        bg="rgba(0, 0, 0, 0.3)"
+                        border="1px solid"
+                        borderColor="gray.600"
+                        type="password"
+                        _focus={{
+                          borderColor: "#ff00ff",
+                          boxShadow: "0 0 10px rgba(255, 0, 255, 0.3)",
+                        }}
+                      />
+                      <Button
+                        onClick={() => {
+                          handleSelectSound();
+                          handleSwitchAccount();
+                        }}
+                        isLoading={isSwitching}
+                        variant="outline"
+                        colorScheme="pink"
+                        borderColor="#ff00ff"
+                        color="#ff00ff"
+                      >
+                        Switch Account
+                      </Button>
+                      <Text fontSize="xs" color="gray.500">
+                        Enter a different nsec to switch to another Nostr
+                        account
+                      </Text>
+                    </VStack>
+                  </AccordionPanel>
+                </AccordionItem>
+              </Accordion>
+
+              <Divider borderColor="rgba(0, 255, 255, 0.3)" />
               {/* Bitcoin Wallet Section */}
               <Box
                 bg="rgba(0, 0, 0, 0.3)"
                 rounded="md"
                 p={4}
                 border="1px solid"
-                borderColor="rgba(255, 0, 255, 0.3)"
+                borderColor="#16b078"
               >
-                <Text fontSize="sm" color="#ff00ff" fontWeight="bold" mb={3}>
-                  Bitcoin Wallet (experimental)
+                <Text fontSize="sm" color="#16b078" fontWeight="bold" mb={3}>
+                  Bitcoin Wallet
                 </Text>
 
                 <Text fontSize="xs" color="gray.400" mb={4}>
-                  Your deposits help us create scholarships with learning at{" "}
-                  <Link
-                    href="https://robotsbuildingeducation.com"
-                    isExternal
-                    color="#00ffff"
-                    textDecoration="underline"
-                  >
-                    RobotsBuildingEducation.com
-                  </Link>
+                  Your deposits help us create scholarships with learning.
+                </Text>
+
+                <Text fontSize="xs" color="gray.400" mb={4}>
+                  When you answer questions in the apps, it sends it to
+                  recipients you choose.
                 </Text>
 
                 {/* Loading/hydration spinner */}
@@ -1263,14 +1338,18 @@ export default function LinksPage() {
                       >
                         <HStack mb={2}>
                           <FaKey color="#ff00ff" />
-                          <Text fontSize="sm" fontWeight="semibold" color="#ff00ff">
+                          <Text
+                            fontSize="sm"
+                            fontWeight="semibold"
+                            color="#ff00ff"
+                          >
                             Secret key required
                           </Text>
                         </HStack>
                         <Text fontSize="xs" color="gray.400" mb={3}>
-                          You signed in with a browser extension, so we don't have
-                          access to your private key. To create a wallet, enter your
-                          nsec below.
+                          You signed in with a browser extension, so we don't
+                          have access to your private key. To create a wallet,
+                          enter your nsec below.
                         </Text>
                         <Input
                           type="password"
@@ -1298,10 +1377,10 @@ export default function LinksPage() {
                       }}
                       isLoading={isCreatingWallet}
                       loadingText="Creating wallet..."
-                      bg="#ff00ff"
+                      bg="#16b078"
+                      boxShadow="0px 4px 0px teal"
                       color="white"
                       w="100%"
-                      _hover={{ bg: "#cc00cc" }}
                       isDisabled={
                         isNip07Mode && noWalletFound && !nsecForWallet.trim()
                       }
@@ -1314,17 +1393,6 @@ export default function LinksPage() {
                 {/* Wallet exists, balance > 0 → show card */}
                 {cashuWallet && totalBalance > 0 && (
                   <Box>
-                    <Text mb={2} fontSize="sm" color="gray.300">
-                      Your wallet is active. You can use it inside the app.{" "}
-                      <Link
-                        href="https://nutlife.lol"
-                        target="_blank"
-                        color="#00ffff"
-                        textDecoration="underline"
-                      >
-                        Learn more
-                      </Link>
-                    </Text>
                     <IdentityCard
                       number={cashuWallet.walletId}
                       name={
@@ -1370,9 +1438,9 @@ export default function LinksPage() {
                             handleInitiateDeposit();
                           }}
                           w="100%"
-                          bg="#00ffff"
-                          color="black"
-                          _hover={{ bg: "#00cccc" }}
+                          bg="#16b078"
+                          color="white"
+                          boxShadow={"0px 4px 0px teal"}
                         >
                           Deposit
                         </Button>
@@ -1441,80 +1509,6 @@ export default function LinksPage() {
                   </Box>
                 )}
               </Box>
-
-              <Divider borderColor="rgba(0, 255, 255, 0.3)" />
-
-              {/* Secret Key Section */}
-              <Box>
-                <Text fontSize="sm" color="gray.400" mb={2}>
-                  Secret Key
-                </Text>
-                <Button
-                  onClick={() => {
-                    handleSelectSound();
-                    handleCopySecretKey();
-                  }}
-                  variant="outline"
-                  colorScheme="pink"
-                  borderColor="#ff00ff"
-                  color="#ff00ff"
-                  w="100%"
-                >
-                  Copy Secret Key
-                </Button>
-                <Text fontSize="xs" color="gray.500" mt={2}>
-                  Your secret key is your password to access decentralized apps.
-                  Keep it safe and never share it with anyone.
-                </Text>
-              </Box>
-
-              {/* Switch Account Accordion */}
-              <Accordion allowToggle>
-                <AccordionItem border="none">
-                  <AccordionButton px={0} _hover={{ bg: "transparent" }}>
-                    <Box flex="1" textAlign="left">
-                      <Text fontSize="sm" color="gray.400">
-                        Switch Account
-                      </Text>
-                    </Box>
-                    <AccordionIcon color="#ff00ff" />
-                  </AccordionButton>
-                  <AccordionPanel px={0} pt={3}>
-                    <VStack spacing={3} align="stretch">
-                      <Input
-                        value={nsecInput}
-                        onChange={(e) => setNsecInput(e.target.value)}
-                        placeholder="Paste your nsec key here"
-                        bg="rgba(0, 0, 0, 0.3)"
-                        border="1px solid"
-                        borderColor="gray.600"
-                        type="password"
-                        _focus={{
-                          borderColor: "#ff00ff",
-                          boxShadow: "0 0 10px rgba(255, 0, 255, 0.3)",
-                        }}
-                      />
-                      <Button
-                        onClick={() => {
-                          handleSelectSound();
-                          handleSwitchAccount();
-                        }}
-                        isLoading={isSwitching}
-                        variant="outline"
-                        colorScheme="pink"
-                        borderColor="#ff00ff"
-                        color="#ff00ff"
-                      >
-                        Switch Account
-                      </Button>
-                      <Text fontSize="xs" color="gray.500">
-                        Enter a different nsec to switch to another Nostr
-                        account
-                      </Text>
-                    </VStack>
-                  </AccordionPanel>
-                </AccordionItem>
-              </Accordion>
             </VStack>
           </ModalBody>
           <ModalFooter
