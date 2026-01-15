@@ -317,6 +317,7 @@ export default function LinksPage() {
   const [isSwitching, setIsSwitching] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureInput, setProfilePictureInput] = useState("");
+  const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
   const [randomCharacterKey] = useState(() => Math.floor(Math.random() * 21) + 20); // Random between 20-40
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -329,6 +330,7 @@ export default function LinksPage() {
     const storedNpub = localStorage.getItem("local_npub");
     const storedDisplayName = localStorage.getItem("displayName");
     const storedProfilePicture = localStorage.getItem("profilePicture");
+    const storedProfilePictureUrl = localStorage.getItem("profilePictureUrl");
     if (storedNpub) {
       setNpub(storedNpub);
     }
@@ -339,6 +341,12 @@ export default function LinksPage() {
     if (storedProfilePicture) {
       setProfilePicture(storedProfilePicture);
       setProfilePictureInput(storedProfilePicture);
+    }
+    if (storedProfilePictureUrl) {
+      setProfilePictureUrlInput(storedProfilePictureUrl);
+      if (!storedProfilePicture) {
+        setProfilePicture(storedProfilePictureUrl);
+      }
     }
   }, []);
 
@@ -355,10 +363,15 @@ export default function LinksPage() {
 
   // Handle profile save (username and picture)
   const handleSaveProfile = async () => {
-    if (!usernameInput.trim() && !profilePictureInput.trim()) {
+    if (
+      !usernameInput.trim() &&
+      !profilePictureInput.trim() &&
+      !profilePictureUrlInput.trim()
+    ) {
       toast({
         title: "No changes",
-        description: "Please enter a username or profile picture URL",
+        description:
+          "Please enter a username, profile picture URL, or select a local image",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -369,7 +382,7 @@ export default function LinksPage() {
     setIsSaving(true);
     try {
       const trimmedProfilePicture = profilePictureInput.trim();
-      const isDataUrl = trimmedProfilePicture.startsWith("data:");
+      const trimmedProfilePictureUrl = profilePictureUrlInput.trim();
 
       // Build metadata object
       const metadata = {
@@ -378,8 +391,9 @@ export default function LinksPage() {
       };
 
       // Add picture if provided
-      if (trimmedProfilePicture && !isDataUrl) {
-        metadata.picture = trimmedProfilePicture;
+      if (trimmedProfilePictureUrl) {
+        metadata.picture = trimmedProfilePictureUrl;
+        metadata.profilePictureUrl = trimmedProfilePictureUrl;
       }
 
       // Post kind 0 (metadata) event to update profile
@@ -393,7 +407,14 @@ export default function LinksPage() {
 
       if (trimmedProfilePicture) {
         localStorage.setItem("profilePicture", trimmedProfilePicture);
-        setProfilePicture(trimmedProfilePicture);
+      }
+
+      if (trimmedProfilePictureUrl) {
+        localStorage.setItem("profilePictureUrl", trimmedProfilePictureUrl);
+      }
+
+      if (trimmedProfilePicture || trimmedProfilePictureUrl) {
+        setProfilePicture(trimmedProfilePicture || trimmedProfilePictureUrl);
       }
 
       toast({
@@ -541,12 +562,15 @@ export default function LinksPage() {
 
         if (profile?.picture) {
           localStorage.setItem("profilePicture", profile.picture);
+          localStorage.setItem("profilePictureUrl", profile.picture);
           setProfilePicture(profile.picture);
-          setProfilePictureInput(profile.picture);
+          setProfilePictureUrlInput(profile.picture);
         } else {
           localStorage.setItem("profilePicture", "");
+          localStorage.setItem("profilePictureUrl", "");
           setProfilePicture("");
           setProfilePictureInput("");
+          setProfilePictureUrlInput("");
         }
 
         toast({
@@ -838,11 +862,11 @@ export default function LinksPage() {
               {/* Profile Picture Section */}
               <Box>
                 <Text fontSize="sm" color="gray.400" mb={2}>
-                  Profile Picture URL
+                  Nostr Profile Picture URL
                 </Text>
                 <Input
-                  value={profilePictureInput}
-                  onChange={(e) => setProfilePictureInput(e.target.value)}
+                  value={profilePictureUrlInput}
+                  onChange={(e) => setProfilePictureUrlInput(e.target.value)}
                   placeholder="https://example.com/your-image.jpg"
                   bg="rgba(0, 0, 0, 0.3)"
                   border="1px solid"
