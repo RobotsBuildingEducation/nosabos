@@ -22,7 +22,6 @@ import {
   ModalHeader,
   ModalOverlay,
   Spinner,
-  Stack,
   Switch,
   Text,
   useDisclosure,
@@ -54,6 +53,8 @@ import { logEvent } from "firebase/analytics";
 import { analytics } from "../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
+import useLanguage from "../hooks/useLanguage";
+import { linksPageTranslations } from "../translations/linksPage";
 
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
@@ -223,6 +224,9 @@ function CarouselCard({
   onLaunchSound,
   onPrevious,
   onNext,
+  launchAppText,
+  previousLinkText,
+  nextLinkText,
 }) {
   return (
     <Box display="block" textDecoration="none">
@@ -239,7 +243,7 @@ function CarouselCard({
           animation={`${drift} 6s ease-in-out infinite`}
         >
           <IconButton
-            aria-label="Previous link"
+            aria-label={previousLinkText || "Previous link"}
             icon={<ChevronLeftIcon boxSize={8} />}
             position="absolute"
             left={{ base: -2, md: -16 }}
@@ -256,7 +260,7 @@ function CarouselCard({
             boxShadow="0 4px 0 teal"
           />
           <IconButton
-            aria-label="Next link"
+            aria-label={nextLinkText || "Next link"}
             icon={<ChevronRightIcon boxSize={8} />}
             position="absolute"
             right={{ base: -2, md: -16 }}
@@ -295,7 +299,7 @@ function CarouselCard({
             py={7}
             minH="56px"
           >
-            Launch app
+            {launchAppText || "Launch app"}
           </Button>
           <Heading
             size="md"
@@ -320,72 +324,14 @@ function CarouselCard({
   );
 }
 
-function ListCard({
-  title,
-  description,
-  href,
-  visual,
-  onLaunch,
-  onLaunchSound,
-}) {
-  return (
-    <Box
-      p={{ base: 5, md: 6 }}
-      borderWidth="1px"
-      borderColor="rgba(255, 0, 255, 0.4)"
-      borderRadius="md"
-      bg="rgba(7, 16, 29, 0.8)"
-      transition="all 0.3s ease"
-      display="block"
-      textDecoration="none"
-    >
-      <Stack
-        direction={{ base: "column", md: "row" }}
-        spacing={{ base: 4, md: 8 }}
-        align={{ base: "flex-start", md: "center" }}
-      >
-        <Box flexShrink={0} w={{ base: "100%", md: "220px" }}>
-          {visual}
-        </Box>
-        <VStack align="start" spacing={2} flex="1">
-          <Heading size="md" fontFamily="monospace" color="white">
-            {title}
-          </Heading>
-          <Text color="gray.400" fontFamily="monospace">
-            {description}
-          </Text>
-          <Button
-            as={onLaunch ? "button" : "a"}
-            onClick={() => {
-              onLaunchSound?.();
-              onLaunch?.();
-            }}
-            href={onLaunch ? undefined : href}
-            target={onLaunch ? undefined : "_blank"}
-            rel={onLaunch ? undefined : "noopener noreferrer"}
-            border="1px solid #ff00ff"
-            fontFamily="monospace"
-            size="md"
-            px={10}
-            py={7}
-            minH="56px"
-            bg="transparent"
-            boxShadow="0 4px 0 #ff00ff"
-            color="white"
-          >
-            Launch app
-          </Button>
-        </VStack>
-      </Stack>
-    </Box>
-  );
-}
-
 export default function LinksPage() {
   const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } =
     useDecentralizedIdentity();
-  const [isCarouselView, setIsCarouselView] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  // Language state
+  const { language, initLanguage, toggleLanguage, t } = useLanguage();
+  const translations = t(linksPageTranslations);
   const [npub, setNpub] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [usernameInput, setUsernameInput] = useState("");
@@ -459,6 +405,11 @@ export default function LinksPage() {
     };
   }, [walletInit, initWallet]);
 
+  // Initialize language based on timezone detection
+  useEffect(() => {
+    initLanguage();
+  }, [initLanguage]);
+
   // Load stored npub, displayName, and profilePicture
   useEffect(() => {
     const storedNpub = localStorage.getItem("local_npub");
@@ -501,8 +452,8 @@ export default function LinksPage() {
     // If NIP-07 mode and no nsec provided, show error
     if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
       toast({
-        title: "Secret key required",
-        description: "Enter your nsec to create the wallet.",
+        title: translations.secretKeyRequired,
+        description: translations.secretKeyRequiredToast,
         status: "warning",
         duration: 2500,
       });
@@ -512,8 +463,8 @@ export default function LinksPage() {
     // Validate nsec format if provided
     if (nsecForWallet.trim() && !nsecForWallet.trim().startsWith("nsec")) {
       toast({
-        title: "Invalid key",
-        description: "Key must start with 'nsec'.",
+        title: translations.invalidKey,
+        description: translations.keyMustStartNsec,
         status: "error",
         duration: 2500,
       });
@@ -531,16 +482,16 @@ export default function LinksPage() {
       setNoWalletFound(false);
 
       toast({
-        title: "Wallet created",
-        description: "Your Bitcoin wallet is now ready to use.",
+        title: translations.walletCreated,
+        description: translations.walletReady,
         status: "success",
         duration: 2500,
       });
     } catch (err) {
       console.error("Error creating wallet:", err);
       toast({
-        title: "Error",
-        description: "Failed to create wallet",
+        title: translations.error,
+        description: translations.failedCreateWallet,
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -554,8 +505,8 @@ export default function LinksPage() {
     } catch (err) {
       console.error("Error initiating deposit:", err);
       toast({
-        title: "Error",
-        description: "Failed to initiate deposit",
+        title: translations.error,
+        description: translations.failedDeposit,
         status: "error",
         duration: 2000,
         isClosable: true,
@@ -567,8 +518,8 @@ export default function LinksPage() {
     try {
       await navigator.clipboard.writeText(invoice || "");
       toast({
-        title: "Address copied",
-        description: "Lightning invoice copied to clipboard.",
+        title: translations.addressCopied,
+        description: translations.invoiceCopied,
         status: "success",
         duration: 1500,
         isClosable: true,
@@ -579,14 +530,14 @@ export default function LinksPage() {
 
   const links = [
     {
-      title: "No Sabos",
-      description: "Your personal language tutor.",
+      title: translations.noSabosTitle,
+      description: translations.noSabosDescription,
       href: "https://nosabos.app",
       visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
     },
     {
-      title: "Robots Building Education",
-      description: "Your personal coding tutor.",
+      title: translations.rbeTitle,
+      description: translations.rbeDescription,
       href: rbeUrl,
       onLaunch: onRbeOpen,
       visual: (
@@ -596,8 +547,8 @@ export default function LinksPage() {
       ),
     },
     {
-      title: "Patreon",
-      description: "Access premium engineering, financial and startup content.",
+      title: translations.patreonTitle,
+      description: translations.patreonDescription,
       href: "https://patreon.com/NotesAndOtherStuff",
       visual: (
         <RoleCanvas
@@ -625,8 +576,8 @@ export default function LinksPage() {
   const handleSaveProfile = async () => {
     if (!usernameInput.trim() && !profilePictureUrlInput.trim()) {
       toast({
-        title: "No changes",
-        description: "Please enter a username or profile picture URL",
+        title: translations.noChanges,
+        description: translations.enterUsernameOrPicture,
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -669,8 +620,8 @@ export default function LinksPage() {
       }
 
       toast({
-        title: "Profile updated",
-        description: "Your profile has been saved to Nostr",
+        title: translations.profileUpdated,
+        description: translations.profileSaved,
         status: "success",
         duration: 3000,
         isClosable: true,
@@ -678,8 +629,8 @@ export default function LinksPage() {
     } catch (error) {
       console.error("Failed to save profile:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to update profile",
+        title: translations.error,
+        description: error.message || translations.failedUpdateProfile,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -694,8 +645,8 @@ export default function LinksPage() {
     const nsec = localStorage.getItem("local_nsec");
     if (!nsec || nsec === "nip07") {
       toast({
-        title: "No secret key",
-        description: "You're using a browser extension for signing",
+        title: translations.noSecretKey,
+        description: translations.usingExtension,
         status: "info",
         duration: 3000,
         isClosable: true,
@@ -706,16 +657,16 @@ export default function LinksPage() {
     try {
       await navigator.clipboard.writeText(nsec);
       toast({
-        title: "Copied!",
-        description: "Secret key copied to clipboard",
+        title: translations.copied,
+        description: translations.secretKeyCopied,
         status: "success",
         duration: 2000,
         isClosable: true,
       });
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to copy to clipboard",
+        title: translations.error,
+        description: translations.failedCopy,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -769,8 +720,8 @@ export default function LinksPage() {
   const handleSwitchAccount = async () => {
     if (!nsecInput.trim() || !nsecInput.startsWith("nsec")) {
       toast({
-        title: "Invalid key",
-        description: "Please enter a valid nsec key",
+        title: translations.invalidKey,
+        description: translations.enterValidNsec,
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -811,8 +762,8 @@ export default function LinksPage() {
         }
 
         toast({
-          title: "Account switched",
-          description: "Successfully logged in with new account",
+          title: translations.accountSwitched,
+          description: translations.loginSuccess,
           status: "success",
           duration: 3000,
           isClosable: true,
@@ -824,8 +775,8 @@ export default function LinksPage() {
     } catch (error) {
       console.error("Failed to switch account:", error);
       toast({
-        title: "Error",
-        description: "Invalid secret key or authentication failed",
+        title: translations.error,
+        description: translations.authFailed,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -934,7 +885,7 @@ export default function LinksPage() {
             letterSpacing="wider"
             color="white"
           >
-            Welcome, {getWelcomeText()}
+            {translations.welcome}, {getWelcomeText()}
           </Heading>
 
           <Button
@@ -947,10 +898,10 @@ export default function LinksPage() {
             borderColor="#00ffff"
             color="#00ffff"
           >
-            Customize Profile
+            {translations.customizeProfile}
           </Button>
 
-          {/* View Toggle */}
+          {/* Language Toggle */}
           <HStack
             spacing={3}
             justify="center"
@@ -961,77 +912,65 @@ export default function LinksPage() {
           >
             <Text
               fontSize="sm"
-              color={!isCarouselView ? "#ff00ff" : "gray.500"}
-              fontWeight={!isCarouselView ? "bold" : "normal"}
+              color={language === "en" ? "#ff00ff" : "gray.500"}
+              fontWeight={language === "en" ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
             >
-              LIST
+              {translations.english}
             </Text>
             <Switch
-              isChecked={isCarouselView}
+              isChecked={language === "es"}
               onChange={() => {
                 handleSelectSound();
-                setIsCarouselView(!isCarouselView);
+                toggleLanguage();
               }}
               colorScheme="cyan"
               size="md"
             />
             <Text
               fontSize="sm"
-              color={isCarouselView ? "#00ffff" : "gray.500"}
-              fontWeight={isCarouselView ? "bold" : "normal"}
+              color={language === "es" ? "#00ffff" : "gray.500"}
+              fontWeight={language === "es" ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
             >
-              CAROUSEL
+              {translations.spanish}
             </Text>
           </HStack>
         </VStack>
 
-        {isCarouselView ? (
-          /* Carousel View */
-          <Box mt={10}>
-            {/* Carousel Content */}
-            <Box overflow="hidden" px={{ base: 8, md: 0 }}>
-              <CarouselCard
-                {...links[currentIndex]}
-                onLaunchSound={handleSubmitActionSound}
-                onPrevious={goToPrevious}
-                onNext={goToNext}
-              />
-            </Box>
-
-            {/* Dot Indicators - 8-bit style squares */}
-            <HStack spacing={3} justify="center" mt={4}>
-              {links.map((_, index) => (
-                <Box
-                  key={index}
-                  as="button"
-                  w={index === currentIndex ? 6 : 3}
-                  h={3}
-                  bg={index === currentIndex ? "#ff00ff" : "gray.600"}
-                  boxShadow={
-                    index === currentIndex ? "0 0 10px #ff00ff" : "none"
-                  }
-                  transition="all 0.3s ease"
-                  onClick={() => goToSlide(index)}
-                />
-              ))}
-            </HStack>
+        {/* Carousel View */}
+        <Box mt={10}>
+          {/* Carousel Content */}
+          <Box overflow="hidden" px={{ base: 8, md: 0 }}>
+            <CarouselCard
+              {...links[currentIndex]}
+              onLaunchSound={handleSubmitActionSound}
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+              launchAppText={translations.launchApp}
+              previousLinkText={translations.previousLink}
+              nextLinkText={translations.nextLink}
+            />
           </Box>
-        ) : (
-          /* List View */
-          <VStack spacing={6} mt={10} align="stretch">
-            {links.map((link) => (
-              <ListCard
-                key={link.title}
-                {...link}
-                onLaunchSound={handleSubmitActionSound}
+
+          {/* Dot Indicators - 8-bit style squares */}
+          <HStack spacing={3} justify="center" mt={4}>
+            {links.map((_, index) => (
+              <Box
+                key={index}
+                as="button"
+                w={index === currentIndex ? 6 : 3}
+                h={3}
+                bg={index === currentIndex ? "#ff00ff" : "gray.600"}
+                boxShadow={index === currentIndex ? "0 0 10px #ff00ff" : "none"}
+                transition="all 0.3s ease"
+                onClick={() => goToSlide(index)}
               />
             ))}
-          </VStack>
-        )}
+          </HStack>
+        </Box>
       </Container>
 
       {/* Robots Building Education Modal */}
@@ -1051,14 +990,13 @@ export default function LinksPage() {
             borderColor="rgba(0, 255, 255, 0.3)"
             color="#00ffff"
           >
-            Robots Building Education
+            {translations.rbeModalTitle}
           </ModalHeader>
           <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
           <ModalBody py={6}>
             <VStack spacing={4} align="stretch">
               <Text fontSize="sm" color="gray.300">
-                You'll use your secret key to sign in to your account. If you
-                entered through social media, you only have to do this once.
+                {translations.rbeModalDescription}
               </Text>
               <Button
                 onClick={() => {
@@ -1070,7 +1008,7 @@ export default function LinksPage() {
                 w="100%"
                 color="white"
               >
-                Copy Secret Key
+                {translations.copySecretKey}
               </Button>
               <Button
                 as="a"
@@ -1089,7 +1027,7 @@ export default function LinksPage() {
                   onRbeClose();
                 }}
               >
-                Go to app
+                {translations.goToApp}
               </Button>
             </VStack>
           </ModalBody>
@@ -1105,7 +1043,7 @@ export default function LinksPage() {
               variant="ghost"
               color="gray.400"
             >
-              Close
+              {translations.close}
             </Button>
           </ModalFooter>
         </ModalContent>
@@ -1135,7 +1073,7 @@ export default function LinksPage() {
             borderColor="rgba(0, 255, 255, 0.3)"
             color="#00ffff"
           >
-            Customize Profile
+            {translations.customizeProfileTitle}
           </ModalHeader>
           <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
           <ModalBody
@@ -1167,12 +1105,12 @@ export default function LinksPage() {
               {/* Username Section */}
               <Box>
                 <Text fontSize="sm" color="gray.400" mb={2}>
-                  Username
+                  {translations.username}
                 </Text>
                 <Input
                   value={usernameInput}
                   onChange={(e) => setUsernameInput(e.target.value)}
-                  placeholder="Enter your username"
+                  placeholder={translations.enterUsername}
                   bg="rgba(0, 0, 0, 0.3)"
                   border="1px solid"
                   borderColor="gray.600"
@@ -1186,12 +1124,12 @@ export default function LinksPage() {
               {/* Profile Picture Section */}
               <Box>
                 <Text fontSize="sm" color="gray.400" mb={2}>
-                  Profile Picture URL
+                  {translations.profilePictureUrl}
                 </Text>
                 <Input
                   value={profilePictureUrlInput}
                   onChange={(e) => setProfilePictureUrlInput(e.target.value)}
-                  placeholder="https://example.com/your-image.jpg"
+                  placeholder={translations.profilePicturePlaceholder}
                   bg="rgba(0, 0, 0, 0.3)"
                   border="1px solid"
                   borderColor="gray.600"
@@ -1215,7 +1153,7 @@ export default function LinksPage() {
                 color="black"
                 w="100%"
               >
-                Save Profile
+                {translations.saveProfile}
               </Button>
 
               <Divider borderColor="rgba(255, 0, 255, 0.3)" />
@@ -1223,7 +1161,7 @@ export default function LinksPage() {
               {/* Secret Key Section */}
               <Box>
                 <Text fontSize="sm" color="gray.400" mb={2}>
-                  Secret Key
+                  {translations.secretKey}
                 </Text>
                 <Button
                   onClick={() => {
@@ -1236,11 +1174,10 @@ export default function LinksPage() {
                   color="#ff00ff"
                   w="100%"
                 >
-                  Copy Secret Key
+                  {translations.copySecretKey}
                 </Button>
                 <Text fontSize="xs" color="gray.500" mt={2}>
-                  Your secret key is your password to access decentralized apps.
-                  Keep it safe and never share it with anyone.
+                  {translations.secretKeyWarning}
                 </Text>
               </Box>
               {/* Switch Account Accordion */}
@@ -1249,7 +1186,7 @@ export default function LinksPage() {
                   <AccordionButton px={0} _hover={{ bg: "transparent" }}>
                     <Box flex="1" textAlign="left">
                       <Text fontSize="sm" color="gray.400">
-                        Switch Account
+                        {translations.switchAccount}
                       </Text>
                     </Box>
                     <AccordionIcon color="#ff00ff" />
@@ -1259,7 +1196,7 @@ export default function LinksPage() {
                       <Input
                         value={nsecInput}
                         onChange={(e) => setNsecInput(e.target.value)}
-                        placeholder="Paste your nsec key here"
+                        placeholder={translations.pasteNsec}
                         bg="rgba(0, 0, 0, 0.3)"
                         border="1px solid"
                         borderColor="gray.600"
@@ -1280,11 +1217,10 @@ export default function LinksPage() {
                         borderColor="#ff00ff"
                         color="#ff00ff"
                       >
-                        Switch Account
+                        {translations.switchAccount}
                       </Button>
                       <Text fontSize="xs" color="gray.500">
-                        Enter a different nsec to switch to another Nostr
-                        account
+                        {translations.switchAccountHelp}
                       </Text>
                     </VStack>
                   </AccordionPanel>
@@ -1301,16 +1237,15 @@ export default function LinksPage() {
                 borderColor="#16b078"
               >
                 <Text fontSize="sm" color="#16b078" fontWeight="bold" mb={3}>
-                  Bitcoin Wallet
+                  {translations.bitcoinWallet}
                 </Text>
 
                 <Text fontSize="xs" color="gray.400" mb={4}>
-                  Your deposits help us create scholarships with learning.
+                  {translations.walletDescription1}
                 </Text>
 
                 <Text fontSize="xs" color="gray.400" mb={4}>
-                  When you answer questions in the apps, it sends it to
-                  recipients you choose.
+                  {translations.walletDescription2}
                 </Text>
 
                 {/* Loading/hydration spinner */}
@@ -1318,7 +1253,7 @@ export default function LinksPage() {
                   <HStack py={2}>
                     <Spinner size="sm" color="#00ffff" />
                     <Text fontSize="sm" color="gray.400">
-                      Loading wallet...
+                      {translations.loadingWallet}
                     </Text>
                   </HStack>
                 )}
@@ -1343,19 +1278,17 @@ export default function LinksPage() {
                             fontWeight="semibold"
                             color="#ff00ff"
                           >
-                            Secret key required
+                            {translations.secretKeyRequired}
                           </Text>
                         </HStack>
                         <Text fontSize="xs" color="gray.400" mb={3}>
-                          You signed in with a browser extension, so we don't
-                          have access to your private key. To create a wallet,
-                          enter your nsec below.
+                          {translations.nip07Warning}
                         </Text>
                         <Input
                           type="password"
                           value={nsecForWallet}
                           onChange={(e) => setNsecForWallet(e.target.value)}
-                          placeholder="Enter your nsec1..."
+                          placeholder={translations.enterNsec}
                           bg="rgba(0, 0, 0, 0.3)"
                           borderColor="gray.600"
                           _focus={{
@@ -1365,8 +1298,7 @@ export default function LinksPage() {
                           mb={2}
                         />
                         <Text fontSize="xs" color="orange.300">
-                          Your key is only used to create the wallet and is not
-                          stored.
+                          {translations.keyNotStored}
                         </Text>
                       </Box>
                     )}
@@ -1376,7 +1308,7 @@ export default function LinksPage() {
                         handleCreateWallet();
                       }}
                       isLoading={isCreatingWallet}
-                      loadingText="Creating wallet..."
+                      loadingText={translations.creatingWallet}
                       bg="#16b078"
                       boxShadow="0px 4px 0px teal"
                       color="white"
@@ -1385,7 +1317,7 @@ export default function LinksPage() {
                         isNip07Mode && noWalletFound && !nsecForWallet.trim()
                       }
                     >
-                      Create Wallet
+                      {translations.createWallet}
                     </Button>
                   </Box>
                 )}
@@ -1397,8 +1329,11 @@ export default function LinksPage() {
                       number={cashuWallet.walletId}
                       name={
                         <div>
-                          Wallet
-                          <div>Balance: {totalBalance || 0} sats</div>
+                          {translations.wallet}
+                          <div>
+                            {translations.balance}: {totalBalance || 0}{" "}
+                            {translations.sats}
+                          </div>
                         </div>
                       }
                       theme="nostr"
@@ -1422,8 +1357,11 @@ export default function LinksPage() {
                           number={cashuWallet.walletId}
                           name={
                             <div>
-                              Wallet
-                              <div>Balance: {totalBalance || 0} sats</div>
+                              {translations.wallet}
+                              <div>
+                                {translations.balance}: {totalBalance || 0}{" "}
+                                {translations.sats}
+                              </div>
                             </div>
                           }
                           theme="BTC"
@@ -1442,7 +1380,7 @@ export default function LinksPage() {
                           color="white"
                           boxShadow={"0px 4px 0px teal"}
                         >
-                          Deposit
+                          {translations.deposit}
                         </Button>
                       </Box>
                     )}
@@ -1460,7 +1398,7 @@ export default function LinksPage() {
                         </Box>
                         <HStack>
                           <Text fontSize="sm" color="gray.400">
-                            or
+                            {translations.or}
                           </Text>
                           <Button
                             onClick={() => {
@@ -1472,11 +1410,11 @@ export default function LinksPage() {
                             borderColor="#00ffff"
                             color="#00ffff"
                           >
-                            Copy address
+                            {translations.copyAddress}
                           </Button>
                         </HStack>
                         <Text fontSize="xs" color="gray.500" textAlign="center">
-                          Use a compatible Lightning wallet to pay the invoice.
+                          {translations.lightningInstructions}
                           <br />
                           <Link
                             href="https://click.cash.app/ui6m/home2022"
@@ -1488,7 +1426,7 @@ export default function LinksPage() {
                             textDecoration="underline"
                           >
                             <SiCashapp />
-                            <Text as="span">Cash App</Text>
+                            <Text as="span">{translations.cashApp}</Text>
                           </Link>
                         </Text>
                         <Button
@@ -1502,7 +1440,7 @@ export default function LinksPage() {
                           borderColor="#ff00ff"
                           color="#ff00ff"
                         >
-                          Generate New QR
+                          {translations.generateNewQR}
                         </Button>
                       </VStack>
                     )}
@@ -1523,7 +1461,7 @@ export default function LinksPage() {
               variant="ghost"
               color="gray.400"
             >
-              Close
+              {translations.close}
             </Button>
           </ModalFooter>
         </ModalContent>
