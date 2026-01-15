@@ -8,10 +8,12 @@ import {
   Box,
   Button,
   Container,
+  Divider,
   Heading,
   HStack,
   IconButton,
   Input,
+  Link,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -19,6 +21,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Spinner,
   Stack,
   Switch,
   Text,
@@ -28,6 +31,10 @@ import {
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import { QRCodeSVG } from "qrcode.react";
+import { BsQrCode } from "react-icons/bs";
+import { SiCashapp } from "react-icons/si";
+import { FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
@@ -45,6 +52,8 @@ import { bech32 } from "bech32";
 import RandomCharacter from "./RandomCharacter";
 import { logEvent } from "firebase/analytics";
 import { analytics } from "../firebaseResources/firebaseResources";
+import useNostrWalletStore from "../hooks/useNostrWalletStore";
+import { IdentityCard } from "./IdentityCard";
 
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
@@ -390,6 +399,21 @@ export default function LinksPage() {
   ); // Random between 20-40
   const [roleIndex, setRoleIndex] = useState(0);
 
+  // Wallet state
+  const [walletHydrating, setWalletHydrating] = useState(true);
+  const [noWalletFound, setNoWalletFound] = useState(false);
+  const [nsecForWallet, setNsecForWallet] = useState("");
+
+  // Wallet store selectors
+  const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
+  const walletBalance = useNostrWalletStore((s) => s.walletBalance);
+  const createNewWallet = useNostrWalletStore((s) => s.createNewWallet);
+  const initiateDeposit = useNostrWalletStore((s) => s.initiateDeposit);
+  const invoice = useNostrWalletStore((s) => s.invoice);
+  const isCreatingWallet = useNostrWalletStore((s) => s.isCreatingWallet);
+  const walletInit = useNostrWalletStore((s) => s.init);
+  const initWallet = useNostrWalletStore((s) => s.initWallet);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isRbeOpen,
@@ -400,6 +424,40 @@ export default function LinksPage() {
   const playSound = useSoundSettings((s) => s.playSound);
 
   const hasTriggeredKeygen = useRef(false);
+
+  // Detect if user is logged in via NIP-07 extension
+  const isNip07Mode =
+    typeof window !== "undefined" &&
+    localStorage.getItem("nip07_signer") === "true";
+
+  // Wallet balance computed
+  const totalBalance = useMemo(() => {
+    const numeric = Number(walletBalance);
+    return Number.isFinite(numeric) ? numeric : 0;
+  }, [walletBalance]);
+
+  // Hydrate wallet on mount
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const connected = await walletInit();
+        if (connected) {
+          const wallet = await initWallet();
+          if (alive && !wallet) {
+            setNoWalletFound(true);
+          }
+        }
+      } catch (e) {
+        console.warn("Wallet hydrate failed:", e);
+      } finally {
+        if (alive) setWalletHydrating(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [walletInit, initWallet]);
 
   // Load stored npub, displayName, and profilePicture
   useEffect(() => {
@@ -438,16 +496,97 @@ export default function LinksPage() {
   const handleSubmitActionSound = () => playSound(submitActionSound);
   const handleModeSwitcherSound = () => playSound(modeSwitcherSound);
 
+  // Wallet handlers
+  const handleCreateWallet = async () => {
+    // If NIP-07 mode and no nsec provided, show error
+    if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
+      toast({
+        title: "Secret key required",
+        description: "Enter your nsec to create the wallet.",
+        status: "warning",
+        duration: 2500,
+      });
+      return;
+    }
+
+    // Validate nsec format if provided
+    if (nsecForWallet.trim() && !nsecForWallet.trim().startsWith("nsec")) {
+      toast({
+        title: "Invalid key",
+        description: "Key must start with 'nsec'.",
+        status: "error",
+        duration: 2500,
+      });
+      return;
+    }
+
+    try {
+      // Pass the nsec to createNewWallet if we're in NIP-07 mode
+      const nsecToUse =
+        isNip07Mode && nsecForWallet.trim() ? nsecForWallet.trim() : null;
+      await createNewWallet(nsecToUse);
+
+      // Clear the nsec input after successful wallet creation
+      setNsecForWallet("");
+      setNoWalletFound(false);
+
+      toast({
+        title: "Wallet created",
+        description: "Your Bitcoin wallet is now ready to use.",
+        status: "success",
+        duration: 2500,
+      });
+    } catch (err) {
+      console.error("Error creating wallet:", err);
+      toast({
+        title: "Error",
+        description: "Failed to create wallet",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleInitiateDeposit = async () => {
+    try {
+      await initiateDeposit(100); // 100 sats minimum
+    } catch (err) {
+      console.error("Error initiating deposit:", err);
+      toast({
+        title: "Error",
+        description: "Failed to initiate deposit",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleCopyInvoice = async () => {
+    try {
+      await navigator.clipboard.writeText(invoice || "");
+      toast({
+        title: "Address copied",
+        description: "Lightning invoice copied to clipboard.",
+        status: "success",
+        duration: 1500,
+        isClosable: true,
+        position: "top",
+      });
+    } catch {}
+  };
+
   const links = [
     {
       title: "No Sabos",
-      description: "Language learning adventures in the No Sabos universe.",
+      description: "Your personal language tutor.",
       href: "https://nosabos.app",
       visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
     },
     {
       title: "Robots Building Education",
-      description: "Hands-on robotics education and community programs.",
+      description: "Your personal coding tutor.",
       href: rbeUrl,
       onLaunch: onRbeOpen,
       visual: (
@@ -458,7 +597,7 @@ export default function LinksPage() {
     },
     {
       title: "Patreon",
-      description: "Support Notes And Other Stuff on Patreon.",
+      description: "Access premium engineering, financial and startup content.",
       href: "https://patreon.com/NotesAndOtherStuff",
       visual: (
         <RoleCanvas
@@ -973,7 +1112,13 @@ export default function LinksPage() {
       </Modal>
 
       {/* Profile Customization Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        isCentered
+        size="md"
+        scrollBehavior="inside"
+      >
         <ModalOverlay bg="blackAlpha.800" />
         <ModalContent
           bg="rgba(7, 16, 29, 0.95)"
@@ -983,6 +1128,7 @@ export default function LinksPage() {
           rounded="xl"
           shadow="0 0 30px rgba(0, 255, 255, 0.3)"
           fontFamily="monospace"
+          maxH="85vh"
         >
           <ModalHeader
             borderBottom="1px solid"
@@ -992,7 +1138,31 @@ export default function LinksPage() {
             Customize Profile
           </ModalHeader>
           <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
-          <ModalBody py={6}>
+          <ModalBody
+            py={6}
+            overflowY="auto"
+            sx={{
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "rgba(0, 0, 0, 0.3)",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "linear-gradient(180deg, #00ffff 0%, #ff00ff 100%)",
+                borderRadius: "4px",
+                border: "2px solid transparent",
+                backgroundClip: "padding-box",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "linear-gradient(180deg, #00cccc 0%, #cc00cc 100%)",
+                backgroundClip: "padding-box",
+              },
+              scrollbarWidth: "thin",
+              scrollbarColor: "#00ffff rgba(0, 0, 0, 0.3)",
+            }}
+          >
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
               <Box>
@@ -1048,8 +1218,10 @@ export default function LinksPage() {
                 Save Profile
               </Button>
 
+              <Divider borderColor="rgba(255, 0, 255, 0.3)" />
+
               {/* Secret Key Section */}
-              <Box mt={6}>
+              <Box>
                 <Text fontSize="sm" color="gray.400" mb={2}>
                   Secret Key
                 </Text>
@@ -1071,7 +1243,6 @@ export default function LinksPage() {
                   Keep it safe and never share it with anyone.
                 </Text>
               </Box>
-
               {/* Switch Account Accordion */}
               <Accordion allowToggle>
                 <AccordionItem border="none">
@@ -1119,6 +1290,225 @@ export default function LinksPage() {
                   </AccordionPanel>
                 </AccordionItem>
               </Accordion>
+
+              <Divider borderColor="rgba(0, 255, 255, 0.3)" />
+              {/* Bitcoin Wallet Section */}
+              <Box
+                bg="rgba(0, 0, 0, 0.3)"
+                rounded="md"
+                p={4}
+                border="1px solid"
+                borderColor="#16b078"
+              >
+                <Text fontSize="sm" color="#16b078" fontWeight="bold" mb={3}>
+                  Bitcoin Wallet
+                </Text>
+
+                <Text fontSize="xs" color="gray.400" mb={4}>
+                  Your deposits help us create scholarships with learning.
+                </Text>
+
+                <Text fontSize="xs" color="gray.400" mb={4}>
+                  When you answer questions in the apps, it sends it to
+                  recipients you choose.
+                </Text>
+
+                {/* Loading/hydration spinner */}
+                {walletHydrating && !cashuWallet && (
+                  <HStack py={2}>
+                    <Spinner size="sm" color="#00ffff" />
+                    <Text fontSize="sm" color="gray.400">
+                      Loading wallet...
+                    </Text>
+                  </HStack>
+                )}
+
+                {/* No wallet yet → show create wallet UI */}
+                {!cashuWallet && !walletHydrating && (
+                  <Box>
+                    {/* NIP-07 users need to provide their nsec for wallet creation */}
+                    {isNip07Mode && noWalletFound && (
+                      <Box
+                        bg="rgba(255, 0, 255, 0.1)"
+                        p={3}
+                        rounded="md"
+                        mb={3}
+                        border="1px solid"
+                        borderColor="rgba(255, 0, 255, 0.3)"
+                      >
+                        <HStack mb={2}>
+                          <FaKey color="#ff00ff" />
+                          <Text
+                            fontSize="sm"
+                            fontWeight="semibold"
+                            color="#ff00ff"
+                          >
+                            Secret key required
+                          </Text>
+                        </HStack>
+                        <Text fontSize="xs" color="gray.400" mb={3}>
+                          You signed in with a browser extension, so we don't
+                          have access to your private key. To create a wallet,
+                          enter your nsec below.
+                        </Text>
+                        <Input
+                          type="password"
+                          value={nsecForWallet}
+                          onChange={(e) => setNsecForWallet(e.target.value)}
+                          placeholder="Enter your nsec1..."
+                          bg="rgba(0, 0, 0, 0.3)"
+                          borderColor="gray.600"
+                          _focus={{
+                            borderColor: "#ff00ff",
+                            boxShadow: "0 0 10px rgba(255, 0, 255, 0.3)",
+                          }}
+                          mb={2}
+                        />
+                        <Text fontSize="xs" color="orange.300">
+                          Your key is only used to create the wallet and is not
+                          stored.
+                        </Text>
+                      </Box>
+                    )}
+                    <Button
+                      onClick={() => {
+                        handleSelectSound();
+                        handleCreateWallet();
+                      }}
+                      isLoading={isCreatingWallet}
+                      loadingText="Creating wallet..."
+                      bg="#16b078"
+                      boxShadow="0px 4px 0px teal"
+                      color="white"
+                      w="100%"
+                      isDisabled={
+                        isNip07Mode && noWalletFound && !nsecForWallet.trim()
+                      }
+                    >
+                      Create Wallet
+                    </Button>
+                  </Box>
+                )}
+
+                {/* Wallet exists, balance > 0 → show card */}
+                {cashuWallet && totalBalance > 0 && (
+                  <Box>
+                    <IdentityCard
+                      number={cashuWallet.walletId}
+                      name={
+                        <div>
+                          Wallet
+                          <div>Balance: {totalBalance || 0} sats</div>
+                        </div>
+                      }
+                      theme="nostr"
+                      animateOnChange={false}
+                      realValue={cashuWallet.walletId}
+                      totalBalance={totalBalance || 0}
+                    />
+                  </Box>
+                )}
+
+                {/* Wallet exists, no balance yet */}
+                {cashuWallet && totalBalance <= 0 && (
+                  <Box>
+                    {!invoice && (
+                      <Box
+                        display="flex"
+                        flexDirection="column"
+                        alignItems="center"
+                      >
+                        <IdentityCard
+                          number={cashuWallet.walletId}
+                          name={
+                            <div>
+                              Wallet
+                              <div>Balance: {totalBalance || 0} sats</div>
+                            </div>
+                          }
+                          theme="BTC"
+                          animateOnChange={false}
+                          realValue={cashuWallet.walletId}
+                          totalBalance={totalBalance || 0}
+                        />
+                        <Button
+                          mt={3}
+                          onClick={() => {
+                            handleSelectSound();
+                            handleInitiateDeposit();
+                          }}
+                          w="100%"
+                          bg="#16b078"
+                          color="white"
+                          boxShadow={"0px 4px 0px teal"}
+                        >
+                          Deposit
+                        </Button>
+                      </Box>
+                    )}
+
+                    {invoice && (
+                      <VStack mt={2} spacing={3}>
+                        <Box
+                          p={3}
+                          bg="white"
+                          rounded="md"
+                          display="flex"
+                          justifyContent="center"
+                        >
+                          <QRCodeSVG value={invoice} size={200} />
+                        </Box>
+                        <HStack>
+                          <Text fontSize="sm" color="gray.400">
+                            or
+                          </Text>
+                          <Button
+                            onClick={() => {
+                              handleSelectSound();
+                              handleCopyInvoice();
+                            }}
+                            size="sm"
+                            variant="outline"
+                            borderColor="#00ffff"
+                            color="#00ffff"
+                          >
+                            Copy address
+                          </Button>
+                        </HStack>
+                        <Text fontSize="xs" color="gray.500" textAlign="center">
+                          Use a compatible Lightning wallet to pay the invoice.
+                          <br />
+                          <Link
+                            href="https://click.cash.app/ui6m/home2022"
+                            isExternal
+                            color="#00ffff"
+                            display="inline-flex"
+                            alignItems="center"
+                            gap="4px"
+                            textDecoration="underline"
+                          >
+                            <SiCashapp />
+                            <Text as="span">Cash App</Text>
+                          </Link>
+                        </Text>
+                        <Button
+                          onClick={() => {
+                            handleSelectSound();
+                            handleInitiateDeposit();
+                          }}
+                          leftIcon={<BsQrCode />}
+                          size="sm"
+                          variant="outline"
+                          borderColor="#ff00ff"
+                          color="#ff00ff"
+                        >
+                          Generate New QR
+                        </Button>
+                      </VStack>
+                    )}
+                  </Box>
+                )}
+              </Box>
             </VStack>
           </ModalBody>
           <ModalFooter
