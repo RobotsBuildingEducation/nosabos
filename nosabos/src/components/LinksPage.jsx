@@ -214,11 +214,7 @@ function CarouselCard({
   onNext,
 }) {
   return (
-    <Box
-      display="block"
-      textDecoration="none"
-      _hover={{ textDecoration: "none", opacity: 0.9 }}
-    >
+    <Box display="block" textDecoration="none">
       <VStack spacing={6} align="center" textAlign="center">
         {/* Large Visual */}
         <Box
@@ -237,16 +233,16 @@ function CarouselCard({
             position="absolute"
             left={{ base: -2, md: -16 }}
             top="50%"
-            transform="translateY(-50%)"
             zIndex={2}
             onClick={onPrevious}
-            variant="ghost"
+            // variant="ghost"
+            bg="transparent"
             color="#00ffff"
             border="1px solid"
             borderColor="#00ffff"
-            _hover={{}}
             size="lg"
             borderRadius="md"
+            boxShadow="0 4px 0 teal"
           />
           <IconButton
             aria-label="Next link"
@@ -254,16 +250,16 @@ function CarouselCard({
             position="absolute"
             right={{ base: -2, md: -16 }}
             top="50%"
-            transform="translateY(-50%)"
             zIndex={2}
             onClick={onNext}
-            variant="ghost"
+            // variant="ghost"
+            bg="transparent"
             color="#00ffff"
             border="1px solid"
             borderColor="#00ffff"
-            _hover={{}}
             size="lg"
             borderRadius="md"
+            boxShadow="0 4px 0 teal"
           />
           {visual}
         </Box>
@@ -287,15 +283,15 @@ function CarouselCard({
             px={10}
             py={7}
             minH="56px"
-            _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
           >
             Launch app
           </Button>
           <Heading
-            size="xl"
+            size="md"
             fontFamily="monospace"
             letterSpacing="wider"
             color="white"
+            mt={4}
           >
             {title}
           </Heading>
@@ -325,7 +321,7 @@ function ListCard({
     <Box
       p={{ base: 5, md: 6 }}
       borderWidth="1px"
-      borderColor="rgba(255, 0, 255, 0.3)"
+      borderColor="rgba(255, 0, 255, 0.4)"
       borderRadius="md"
       bg="rgba(7, 16, 29, 0.8)"
       transition="all 0.3s ease"
@@ -356,15 +352,15 @@ function ListCard({
             href={onLaunch ? undefined : href}
             target={onLaunch ? undefined : "_blank"}
             rel={onLaunch ? undefined : "noopener noreferrer"}
-            variant="outline"
-            borderColor="#00ffff"
-            color="#00ffff"
+            border="1px solid #ff00ff"
             fontFamily="monospace"
             size="md"
             px={10}
             py={7}
             minH="56px"
-            _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
+            bg="transparent"
+            boxShadow="0 4px 0 #ff00ff"
+            color="white"
           >
             Launch app
           </Button>
@@ -785,12 +781,12 @@ export default function LinksPage() {
           ) : (
             <RandomCharacter
               notSoRandomCharacter={randomCharacterKey}
-              width="100px"
+              width="50px"
             />
           )}
 
           <Heading
-            size="xl"
+            size="lg"
             fontFamily="monospace"
             letterSpacing="wider"
             color="white"
@@ -807,7 +803,6 @@ export default function LinksPage() {
             fontFamily="monospace"
             borderColor="#00ffff"
             color="#00ffff"
-            _hover={{}}
           >
             Customize Profile
           </Button>
@@ -836,7 +831,7 @@ export default function LinksPage() {
                 handleSelectSound();
                 setIsCarouselView(!isCarouselView);
               }}
-              colorScheme="pink"
+              colorScheme="cyan"
               size="md"
             />
             <Text
@@ -878,10 +873,6 @@ export default function LinksPage() {
                   }
                   transition="all 0.3s ease"
                   onClick={() => goToSlide(index)}
-                  _hover={{
-                    bg: index === currentIndex ? "#ff00ff" : "#00ffff",
-                    boxShadow: "0 0 10px currentColor",
-                  }}
                 />
               ))}
             </HStack>
@@ -932,10 +923,9 @@ export default function LinksPage() {
                   handleCopySecretKey();
                 }}
                 colorScheme="cyan"
-                bg="#00ffff"
-                color="black"
-                _hover={{ bg: "#00cccc" }}
+                bg="#00aaff"
                 w="100%"
+                color="white"
               >
                 Copy Secret Key
               </Button>
@@ -945,9 +935,8 @@ export default function LinksPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 colorScheme="cyan"
-                bg="#00ffff"
-                color="black"
-                _hover={{ bg: "#00cccc" }}
+                bg="#009c9c"
+                color="white"
                 w="100%"
                 onClick={() => {
                   handleSubmitActionSound();
@@ -969,7 +958,6 @@ export default function LinksPage() {
               }}
               variant="ghost"
               color="gray.400"
-              _hover={{ color: "white", bg: "rgba(255, 255, 255, 0.1)" }}
             >
               Close
             </Button>
@@ -1011,7 +999,6 @@ export default function LinksPage() {
                   bg="rgba(0, 0, 0, 0.3)"
                   border="1px solid"
                   borderColor="gray.600"
-                  _hover={{ borderColor: "#00ffff" }}
                   _focus={{
                     borderColor: "#00ffff",
                     boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
@@ -1022,7 +1009,7 @@ export default function LinksPage() {
               {/* Profile Picture Section */}
               <Box>
                 <Text fontSize="sm" color="gray.400" mb={2}>
-                  Nostr Profile Picture URL
+                  Profile Picture URL
                 </Text>
                 <Input
                   value={profilePictureUrlInput}
@@ -1031,15 +1018,11 @@ export default function LinksPage() {
                   bg="rgba(0, 0, 0, 0.3)"
                   border="1px solid"
                   borderColor="gray.600"
-                  _hover={{ borderColor: "#00ffff" }}
                   _focus={{
                     borderColor: "#00ffff",
                     boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
                   }}
                 />
-                <Text fontSize="xs" color="gray.500" mt={2}>
-                  Paste a URL to sync your profile picture to Nostr.
-                </Text>
               </Box>
 
               {/* Save Profile Button */}
@@ -1052,14 +1035,13 @@ export default function LinksPage() {
                 colorScheme="cyan"
                 bg="#00ffff"
                 color="black"
-                _hover={{ bg: "#00cccc" }}
                 w="100%"
               >
                 Save Profile
               </Button>
 
               {/* Secret Key Section */}
-              <Box>
+              <Box mt={6}>
                 <Text fontSize="sm" color="gray.400" mb={2}>
                   Secret Key
                 </Text>
@@ -1073,9 +1055,6 @@ export default function LinksPage() {
                   borderColor="#ff00ff"
                   color="#ff00ff"
                   w="100%"
-                  _hover={{
-                    bg: "rgba(255, 0, 255, 0.1)",
-                  }}
                 >
                   Copy Secret Key
                 </Button>
@@ -1106,7 +1085,6 @@ export default function LinksPage() {
                         border="1px solid"
                         borderColor="gray.600"
                         type="password"
-                        _hover={{ borderColor: "#ff00ff" }}
                         _focus={{
                           borderColor: "#ff00ff",
                           boxShadow: "0 0 10px rgba(255, 0, 255, 0.3)",
@@ -1122,9 +1100,6 @@ export default function LinksPage() {
                         colorScheme="pink"
                         borderColor="#ff00ff"
                         color="#ff00ff"
-                        _hover={{
-                          bg: "rgba(255, 0, 255, 0.1)",
-                        }}
                       >
                         Switch Account
                       </Button>
@@ -1149,7 +1124,6 @@ export default function LinksPage() {
               }}
               variant="ghost"
               color="gray.400"
-              _hover={{ color: "white", bg: "rgba(255, 255, 255, 0.1)" }}
             >
               Close
             </Button>

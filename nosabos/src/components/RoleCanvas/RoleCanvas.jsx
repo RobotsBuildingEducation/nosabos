@@ -51,8 +51,7 @@ export function RoleCanvas({
   const [pageBackground, setPageBackground] = useState("");
 
   // Use provided color or fall back to theme color
-  const particleColor =
-    color || themeColorHex[themeColor] || themeColorHex.orange;
+  const particleColor = themeColorHex.green;
 
   useEffect(() => {
     roleRef.current = role;
