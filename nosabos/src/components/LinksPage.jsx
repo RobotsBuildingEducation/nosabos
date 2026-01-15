@@ -43,6 +43,8 @@ import { NDKKind } from "@nostr-dev-kit/ndk";
 import { Buffer } from "buffer";
 import { bech32 } from "bech32";
 import RandomCharacter from "./RandomCharacter";
+import { logEvent } from "firebase/analytics";
+import { analytics } from "../firebaseResources/firebaseResources";
 
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
@@ -734,11 +736,13 @@ export default function LinksPage() {
 
   const goToPrevious = () => {
     handleModeSwitcherSound();
+    logEvent(analytics, "links_carousel_navigate", { direction: "previous" });
     setCurrentIndex((prev) => (prev === 0 ? links.length - 1 : prev - 1));
   };
 
   const goToNext = () => {
     handleModeSwitcherSound();
+    logEvent(analytics, "links_carousel_navigate", { direction: "next" });
     setCurrentIndex((prev) => (prev === links.length - 1 ? 0 : prev + 1));
   };
 
@@ -940,6 +944,9 @@ export default function LinksPage() {
                 w="100%"
                 onClick={() => {
                   handleSubmitActionSound();
+                  logEvent(analytics, "links_launch_app", {
+                    app: "robots_building_education",
+                  });
                   onRbeClose();
                 }}
               >
@@ -1029,6 +1036,7 @@ export default function LinksPage() {
               <Button
                 onClick={() => {
                   handleSubmitActionSound();
+                  logEvent(analytics, "links_save_profile");
                   handleSaveProfile();
                 }}
                 isLoading={isSaving}
