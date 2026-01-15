@@ -944,7 +944,9 @@ export default function LinksPage() {
                 w="100%"
                 onClick={() => {
                   handleSubmitActionSound();
-                  logEvent(analytics, "links_launch_app", { app: "robots_building_education" });
+                  logEvent(analytics, "links_launch_app", {
+                    app: "robots_building_education",
+                  });
                   onRbeClose();
                 }}
               >
