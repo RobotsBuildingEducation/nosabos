@@ -31,7 +31,7 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
+import modeSwitcherSound from "../assets/modeswitcher.mp3";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 
@@ -263,8 +263,9 @@ function CarouselCard({
             color="#00ffff"
             fontFamily="monospace"
             size="md"
-            px={6}
-            py={5}
+            px={10}
+            py={7}
+            minH="56px"
             _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
           >
             Launch app
@@ -323,8 +324,9 @@ function ListCard({
             color="#00ffff"
             fontFamily="monospace"
             size="md"
-            px={6}
-            py={5}
+            px={10}
+            py={7}
+            minH="56px"
             _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
           >
             Launch app
@@ -396,7 +398,7 @@ export default function LinksPage() {
   const rbeUrl = "https://robotsbuildingeducation.com";
   const handleSelectSound = () => playSound(selectSound);
   const handleSubmitActionSound = () => playSound(submitActionSound);
-  const handleNextButtonSound = () => playSound(nextButtonSound);
+  const handleModeSwitcherSound = () => playSound(modeSwitcherSound);
 
   const links = [
     {
@@ -698,12 +700,12 @@ export default function LinksPage() {
   }, [generateNostrKeys]);
 
   const goToPrevious = () => {
-    handleNextButtonSound();
+    handleModeSwitcherSound();
     setCurrentIndex((prev) => (prev === 0 ? links.length - 1 : prev - 1));
   };
 
   const goToNext = () => {
-    handleNextButtonSound();
+    handleModeSwitcherSound();
     setCurrentIndex((prev) => (prev === links.length - 1 ? 0 : prev + 1));
   };
 
@@ -830,7 +832,7 @@ export default function LinksPage() {
                 color="#00ffff"
                 border="1px solid"
                 borderColor="#00ffff"
-                _hover={{ bg: "rgba(0, 255, 255, 0.1)", color: "#ff00ff" }}
+                _hover={{}}
                 size="lg"
                 borderRadius="md"
               />
@@ -847,7 +849,7 @@ export default function LinksPage() {
                 color="#00ffff"
                 border="1px solid"
                 borderColor="#00ffff"
-                _hover={{ bg: "rgba(0, 255, 255, 0.1)", color: "#ff00ff" }}
+                _hover={{}}
                 size="lg"
                 borderRadius="md"
               />
@@ -927,6 +929,19 @@ export default function LinksPage() {
                 entered through social media, you only have to do this once.
               </Text>
               <Button
+                onClick={() => {
+                  handleSelectSound();
+                  handleCopySecretKey();
+                }}
+                colorScheme="cyan"
+                bg="#00ffff"
+                color="black"
+                _hover={{ bg: "#00cccc" }}
+                w="100%"
+              >
+                Copy Secret Key
+              </Button>
+              <Button
                 as="a"
                 href={rbeUrl}
                 target="_blank"
@@ -942,22 +957,6 @@ export default function LinksPage() {
                 }}
               >
                 Go to app
-              </Button>
-              <Button
-                onClick={() => {
-                  handleSelectSound();
-                  handleCopySecretKey();
-                }}
-                variant="outline"
-                colorScheme="pink"
-                borderColor="#ff00ff"
-                color="#ff00ff"
-                w="100%"
-                _hover={{
-                  bg: "rgba(255, 0, 255, 0.1)",
-                }}
-              >
-                Copy Secret Key
               </Button>
             </VStack>
           </ModalBody>
