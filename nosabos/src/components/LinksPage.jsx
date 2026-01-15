@@ -12,7 +12,6 @@ import {
   HStack,
   IconButton,
   Input,
-  Link,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -59,31 +58,15 @@ const drift = keyframes`
   100% { transform: translateY(0) translateX(0); }
 `;
 
-const links = [
-  {
-    title: "No Sabos",
-    description: "Language learning adventures in the No Sabos universe.",
-    href: "https://nosabos.app",
-    visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
-  },
-  {
-    title: "Robots Building Education",
-    description: "Hands-on robotics education and community programs.",
-    href: "https://robotsbuildingeducation.com",
-    visual: (
-      <Box display="flex" justifyContent="center" alignItems="center">
-        <CloudCanvas />
-      </Box>
-    ),
-  },
-  {
-    title: "Patreon",
-    description: "Support Notes And Other Stuff on Patreon.",
-    href: "https://patreon.com/NotesAndOtherStuff",
-    visual: (
-      <RoleCanvas role={"sphere"} width={400} height={400} transparent={true} />
-    ),
-  },
+const roleCycle = [
+  "sphere",
+  "plan",
+  "meals",
+  "finance",
+  "sleep",
+  "emotions",
+  "chores",
+  "counselor",
 ];
 
 // 8-bit pixel star with random direction movement
@@ -218,50 +201,53 @@ function RetroStarfield() {
 
 function CarouselCard({ title, description, href, visual }) {
   return (
-    <VStack spacing={6} align="center" textAlign="center" py={4}>
-      {/* Large Visual */}
-      <Box
-        w="100%"
-        maxW="400px"
-        h={{ base: "280px", md: "350px" }}
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        animation={`${drift} 6s ease-in-out infinite`}
-      >
-        {visual}
-      </Box>
-
-      {/* Title and Description */}
-      <VStack spacing={3}>
-        <Heading
-          size="xl"
-          fontFamily="monospace"
-          letterSpacing="wider"
-          color="white"
+    <Box
+      as="a"
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      display="block"
+      textDecoration="none"
+      _hover={{ textDecoration: "none", opacity: 0.9 }}
+    >
+      <VStack spacing={6} align="center" textAlign="center" py={4}>
+        {/* Large Visual */}
+        <Box
+          w="100%"
+          maxW="400px"
+          h={{ base: "280px", md: "350px" }}
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          animation={`${drift} 6s ease-in-out infinite`}
         >
-          <Link
-            href={href}
-            isExternal
-            _hover={{ opacity: 0.8, textDecoration: "none" }}
-            transition="all 0.3s ease"
+          {visual}
+        </Box>
+
+        {/* Title and Description */}
+        <VStack spacing={3}>
+          <Heading
+            size="xl"
+            fontFamily="monospace"
+            letterSpacing="wider"
+            color="white"
           >
             {title}
-          </Link>
-        </Heading>
-        <Text
-          color="gray.400"
-          fontSize="lg"
-          maxW="400px"
-          fontFamily="monospace"
-        >
-          {description}
-        </Text>
-        <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
-          {href}
-        </Text>
+          </Heading>
+          <Text
+            color="gray.400"
+            fontSize="lg"
+            maxW="400px"
+            fontFamily="monospace"
+          >
+            {description}
+          </Text>
+          <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
+            {href}
+          </Text>
+        </VStack>
       </VStack>
-    </VStack>
+    </Box>
   );
 }
 
@@ -316,10 +302,9 @@ export default function LinksPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
-  const [profilePictureInput, setProfilePictureInput] = useState("");
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
-  const [profilePictureFile, setProfilePictureFile] = useState(null);
   const [randomCharacterKey] = useState(() => Math.floor(Math.random() * 21) + 20); // Random between 20-40
+  const [roleIndex, setRoleIndex] = useState(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
@@ -341,7 +326,6 @@ export default function LinksPage() {
     }
     if (storedProfilePicture) {
       setProfilePicture(storedProfilePicture);
-      setProfilePictureInput(storedProfilePicture);
     }
     if (storedProfilePictureUrl) {
       setProfilePictureUrlInput(storedProfilePictureUrl);
@@ -350,6 +334,46 @@ export default function LinksPage() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRoleIndex((prev) => (prev + 1) % roleCycle.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const links = [
+    {
+      title: "No Sabos",
+      description: "Language learning adventures in the No Sabos universe.",
+      href: "https://nosabos.app",
+      visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
+    },
+    {
+      title: "Robots Building Education",
+      description: "Hands-on robotics education and community programs.",
+      href: "https://robotsbuildingeducation.com",
+      visual: (
+        <Box display="flex" justifyContent="center" alignItems="center">
+          <CloudCanvas />
+        </Box>
+      ),
+    },
+    {
+      title: "Patreon",
+      description: "Support Notes And Other Stuff on Patreon.",
+      href: "https://patreon.com/NotesAndOtherStuff",
+      visual: (
+        <RoleCanvas
+          role={roleCycle[roleIndex]}
+          width={400}
+          height={400}
+          transparent={true}
+        />
+      ),
+    },
+  ];
 
   // Get display text for welcome message
   const getWelcomeText = () => {
@@ -362,54 +386,15 @@ export default function LinksPage() {
     return "...";
   };
 
-  const uploadProfilePicture = async (file) => {
-    const blossomServer = "https://blossom.nostr.build";
-    const uploadEndpoint = `${blossomServer.replace(/\/$/, "")}/upload`;
-
-    const response = await fetch(uploadEndpoint, {
-      method: "PUT",
-      headers: {
-        "Content-Type": file.type || "application/octet-stream",
-      },
-      body: file,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Upload failed (${response.status})`);
-    }
-
-    let uploadedUrl = response.headers.get("location");
-    if (uploadedUrl && !uploadedUrl.startsWith("http")) {
-      uploadedUrl = `${blossomServer}${uploadedUrl}`;
-    }
-
-    if (!uploadedUrl) {
-      const payload = await response.json();
-      uploadedUrl =
-        payload?.url ||
-        payload?.data?.url ||
-        payload?.data?.[0]?.url ||
-        payload?.files?.[0]?.url;
-    }
-
-    if (!uploadedUrl) {
-      throw new Error("Upload response did not include an image URL.");
-    }
-
-    return uploadedUrl;
-  };
-
   // Handle profile save (username and picture)
   const handleSaveProfile = async () => {
     if (
       !usernameInput.trim() &&
-      !profilePictureInput.trim() &&
       !profilePictureUrlInput.trim()
     ) {
       toast({
         title: "No changes",
-        description:
-          "Please enter a username, profile picture URL, or select a local image",
+        description: "Please enter a username or profile picture URL",
         status: "warning",
         duration: 3000,
         isClosable: true,
@@ -419,13 +404,7 @@ export default function LinksPage() {
 
     setIsSaving(true);
     try {
-      const trimmedProfilePicture = profilePictureInput.trim();
-      let trimmedProfilePictureUrl = profilePictureUrlInput.trim();
-
-      if (!trimmedProfilePictureUrl && profilePictureFile) {
-        trimmedProfilePictureUrl = await uploadProfilePicture(profilePictureFile);
-        setProfilePictureUrlInput(trimmedProfilePictureUrl);
-      }
+      const trimmedProfilePictureUrl = profilePictureUrlInput.trim();
 
       // Build metadata object
       const metadata = {
@@ -448,18 +427,14 @@ export default function LinksPage() {
         setDisplayName(usernameInput.trim());
       }
 
-      if (trimmedProfilePicture) {
-        localStorage.setItem("profilePicture", trimmedProfilePicture);
-      }
-
       if (trimmedProfilePictureUrl) {
+        localStorage.setItem("profilePicture", trimmedProfilePictureUrl);
         localStorage.setItem("profilePictureUrl", trimmedProfilePictureUrl);
       }
 
-      if (trimmedProfilePicture || trimmedProfilePictureUrl) {
-        setProfilePicture(trimmedProfilePicture || trimmedProfilePictureUrl);
+      if (trimmedProfilePictureUrl) {
+        setProfilePicture(trimmedProfilePictureUrl);
       }
-      setProfilePictureFile(null);
 
       toast({
         title: "Profile updated",
@@ -480,20 +455,6 @@ export default function LinksPage() {
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const handleProfilePictureFileChange = (event) => {
-    const [file] = event.target.files || [];
-    if (!file) return;
-    setProfilePictureFile(file);
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setProfilePictureInput(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
   };
 
   // Handle copy secret key
@@ -614,7 +575,6 @@ export default function LinksPage() {
           localStorage.setItem("profilePicture", "");
           localStorage.setItem("profilePictureUrl", "");
           setProfilePicture("");
-          setProfilePictureInput("");
           setProfilePictureUrlInput("");
         }
 
@@ -804,6 +764,8 @@ export default function LinksPage() {
                 onClick={goToPrevious}
                 variant="ghost"
                 color="#00ffff"
+                border="1px solid"
+                borderColor="#00ffff"
                 _hover={{ bg: "rgba(0, 255, 255, 0.1)", color: "#ff00ff" }}
                 size="lg"
                 borderRadius="md"
@@ -819,6 +781,8 @@ export default function LinksPage() {
                 onClick={goToNext}
                 variant="ghost"
                 color="#00ffff"
+                border="1px solid"
+                borderColor="#00ffff"
                 _hover={{ bg: "rgba(0, 255, 255, 0.1)", color: "#ff00ff" }}
                 size="lg"
                 borderRadius="md"
@@ -924,23 +888,6 @@ export default function LinksPage() {
                 />
                 <Text fontSize="xs" color="gray.500" mt={2}>
                   Paste a URL to sync your profile picture to Nostr.
-                </Text>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfilePictureFileChange}
-                  mt={4}
-                  bg="rgba(0, 0, 0, 0.3)"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  _hover={{ borderColor: "#00ffff" }}
-                  _focus={{
-                    borderColor: "#00ffff",
-                    boxShadow: "0 0 10px rgba(0, 255, 255, 0.3)",
-                  }}
-                />
-                <Text fontSize="xs" color="gray.500" mt={2}>
-                  Or pick a local image to upload via Blossom and sync to Nostr.
                 </Text>
               </Box>
 
