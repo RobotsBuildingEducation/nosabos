@@ -532,7 +532,7 @@ export default function LinksPage() {
     {
       title: translations.noSabosTitle,
       description: translations.noSabosDescription,
-      href: "https://nosabos.app",
+      href: "http://localhost:5173",
       visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
     },
     {
@@ -912,7 +912,7 @@ export default function LinksPage() {
           >
             <Text
               fontSize="sm"
-              color={language === "en" ? "#39ff14" : "gray.500"}
+              color={language === "en" ? "#ff00ff" : "gray.500"}
               fontWeight={language === "en" ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
@@ -925,12 +925,12 @@ export default function LinksPage() {
                 handleSelectSound();
                 toggleLanguage();
               }}
-              colorScheme="green"
+              colorScheme="cyan"
               size="md"
             />
             <Text
               fontSize="sm"
-              color={language === "es" ? "#39ff14" : "gray.500"}
+              color={language === "es" ? "#00ffff" : "gray.500"}
               fontWeight={language === "es" ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
@@ -964,9 +964,7 @@ export default function LinksPage() {
                 w={index === currentIndex ? 6 : 3}
                 h={3}
                 bg={index === currentIndex ? "#ff00ff" : "gray.600"}
-                boxShadow={
-                  index === currentIndex ? "0 0 10px #ff00ff" : "none"
-                }
+                boxShadow={index === currentIndex ? "0 0 10px #ff00ff" : "none"}
                 transition="all 0.3s ease"
                 onClick={() => goToSlide(index)}
               />
@@ -1332,7 +1330,10 @@ export default function LinksPage() {
                       name={
                         <div>
                           {translations.wallet}
-                          <div>{translations.balance}: {totalBalance || 0} {translations.sats}</div>
+                          <div>
+                            {translations.balance}: {totalBalance || 0}{" "}
+                            {translations.sats}
+                          </div>
                         </div>
                       }
                       theme="nostr"
@@ -1357,7 +1358,10 @@ export default function LinksPage() {
                           name={
                             <div>
                               {translations.wallet}
-                              <div>{translations.balance}: {totalBalance || 0} {translations.sats}</div>
+                              <div>
+                                {translations.balance}: {totalBalance || 0}{" "}
+                                {translations.sats}
+                              </div>
                             </div>
                           }
                           theme="BTC"
