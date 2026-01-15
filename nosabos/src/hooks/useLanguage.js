@@ -54,6 +54,36 @@ const detectLanguageFromTimezone = () => {
   return "en";
 };
 
+// Custom storage to sync with App.jsx's appLanguage format
+// App.jsx stores directly as "en" or "es" string, not JSON
+const appLanguageStorage = {
+  getItem: (name) => {
+    try {
+      const value = localStorage.getItem(name);
+      if (value === "es" || value === "en") {
+        return JSON.stringify({ state: { language: value } });
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  },
+  setItem: (name, value) => {
+    try {
+      const parsed = JSON.parse(value);
+      const lang = parsed?.state?.language;
+      if (lang === "es" || lang === "en") {
+        localStorage.setItem(name, lang);
+      }
+    } catch {}
+  },
+  removeItem: (name) => {
+    try {
+      localStorage.removeItem(name);
+    } catch {}
+  },
+};
+
 // Create the language store
 const useLanguage = create(
   persist(
@@ -64,6 +94,13 @@ const useLanguage = create(
       initLanguage: () => {
         const currentLang = get().language;
         if (currentLang === null) {
+          // Check if appLanguage already exists in localStorage (set by App.jsx)
+          const stored = localStorage.getItem("appLanguage");
+          if (stored === "es" || stored === "en") {
+            set({ language: stored });
+            return stored;
+          }
+          // Otherwise detect from timezone
           const detectedLang = detectLanguageFromTimezone();
           set({ language: detectedLang });
           return detectedLang;
@@ -87,7 +124,8 @@ const useLanguage = create(
       },
     }),
     {
-      name: "language-preference",
+      name: "appLanguage", // Use same key as App.jsx
+      storage: appLanguageStorage,
       partialize: (state) => ({ language: state.language }),
     }
   )
