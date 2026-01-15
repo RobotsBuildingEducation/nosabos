@@ -363,24 +363,34 @@ export default function LinksPage() {
   };
 
   const uploadProfilePicture = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
+    const blossomServer = "https://blossom.nostr.build";
+    const uploadEndpoint = `${blossomServer.replace(/\/$/, "")}/upload`;
 
-    const response = await fetch("https://nostr.build/api/v2/upload/files", {
-      method: "POST",
-      body: formData,
+    const response = await fetch(uploadEndpoint, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type || "application/octet-stream",
+      },
+      body: file,
     });
 
     if (!response.ok) {
       throw new Error(`Upload failed (${response.status})`);
     }
 
-    const payload = await response.json();
-    const uploadedUrl =
-      payload?.data?.[0]?.url ||
-      payload?.data?.url ||
-      payload?.url ||
-      payload?.files?.[0]?.url;
+    let uploadedUrl = response.headers.get("location");
+    if (uploadedUrl && !uploadedUrl.startsWith("http")) {
+      uploadedUrl = `${blossomServer}${uploadedUrl}`;
+    }
+
+    if (!uploadedUrl) {
+      const payload = await response.json();
+      uploadedUrl =
+        payload?.url ||
+        payload?.data?.url ||
+        payload?.data?.[0]?.url ||
+        payload?.files?.[0]?.url;
+    }
 
     if (!uploadedUrl) {
       throw new Error("Upload response did not include an image URL.");
@@ -930,7 +940,7 @@ export default function LinksPage() {
                   }}
                 />
                 <Text fontSize="xs" color="gray.500" mt={2}>
-                  Or pick a local image to upload and sync to Nostr.
+                  Or pick a local image to upload via Blossom and sync to Nostr.
                 </Text>
               </Box>
 
