@@ -219,12 +219,12 @@ function CarouselCard({
       textDecoration="none"
       _hover={{ textDecoration: "none", opacity: 0.9 }}
     >
-      <VStack spacing={6} align="center" textAlign="center" py={4}>
+      <VStack spacing={6} align="center" textAlign="center">
         {/* Large Visual */}
         <Box
           w="100%"
           maxW="400px"
-          h={{ base: "280px", md: "350px" }}
+          h={{ base: "200px", md: "200px" }}
           position="relative"
           display="flex"
           justifyContent="center"
@@ -270,22 +270,6 @@ function CarouselCard({
 
         {/* Title and Description */}
         <VStack spacing={3}>
-          <Heading
-            size="xl"
-            fontFamily="monospace"
-            letterSpacing="wider"
-            color="white"
-          >
-            {title}
-          </Heading>
-          <Text
-            color="gray.400"
-            fontSize="lg"
-            maxW="400px"
-            fontFamily="monospace"
-          >
-            {description}
-          </Text>
           <Button
             as={onLaunch ? "button" : "a"}
             onClick={() => {
@@ -307,6 +291,22 @@ function CarouselCard({
           >
             Launch app
           </Button>
+          <Heading
+            size="xl"
+            fontFamily="monospace"
+            letterSpacing="wider"
+            color="white"
+          >
+            {title}
+          </Heading>
+          <Text
+            color="gray.400"
+            fontSize="lg"
+            maxW="400px"
+            fontFamily="monospace"
+          >
+            {description}
+          </Text>
         </VStack>
       </VStack>
     </Box>
@@ -375,7 +375,8 @@ function ListCard({
 }
 
 export default function LinksPage() {
-  const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } = useDecentralizedIdentity();
+  const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } =
+    useDecentralizedIdentity();
   const [isCarouselView, setIsCarouselView] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [npub, setNpub] = useState("");
@@ -386,7 +387,9 @@ export default function LinksPage() {
   const [isSwitching, setIsSwitching] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
-  const [randomCharacterKey] = useState(() => Math.floor(Math.random() * 21) + 20); // Random between 20-40
+  const [randomCharacterKey] = useState(
+    () => Math.floor(Math.random() * 21) + 20
+  ); // Random between 20-40
   const [roleIndex, setRoleIndex] = useState(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -462,8 +465,8 @@ export default function LinksPage() {
       visual: (
         <RoleCanvas
           role={roleCycle[roleIndex]}
-          width={400}
-          height={400}
+          width={200}
+          height={200}
           transparent={true}
         />
       ),
@@ -483,10 +486,7 @@ export default function LinksPage() {
 
   // Handle profile save (username and picture)
   const handleSaveProfile = async () => {
-    if (
-      !usernameInput.trim() &&
-      !profilePictureUrlInput.trim()
-    ) {
+    if (!usernameInput.trim() && !profilePictureUrlInput.trim()) {
       toast({
         title: "No changes",
         description: "Please enter a username or profile picture URL",
@@ -858,7 +858,7 @@ export default function LinksPage() {
             <Box overflow="hidden" px={{ base: 8, md: 0 }}>
               <CarouselCard
                 {...links[currentIndex]}
-                onLaunchSound={handleSelectSound}
+                onLaunchSound={handleSubmitActionSound}
                 onPrevious={goToPrevious}
                 onNext={goToNext}
               />
@@ -889,13 +889,13 @@ export default function LinksPage() {
         ) : (
           /* List View */
           <VStack spacing={6} mt={10} align="stretch">
-              {links.map((link) => (
-                <ListCard
-                  key={link.title}
-                  {...link}
-                  onLaunchSound={handleSelectSound}
-                />
-              ))}
+            {links.map((link) => (
+              <ListCard
+                key={link.title}
+                {...link}
+                onLaunchSound={handleSubmitActionSound}
+              />
+            ))}
           </VStack>
         )}
       </Container>
@@ -919,10 +919,7 @@ export default function LinksPage() {
           >
             Robots Building Education
           </ModalHeader>
-          <ModalCloseButton
-            color="#00ffff"
-            onClick={handleSelectSound}
-          />
+          <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
           <ModalBody py={6}>
             <VStack spacing={4} align="stretch">
               <Text fontSize="sm" color="gray.300">
@@ -961,7 +958,10 @@ export default function LinksPage() {
               </Button>
             </VStack>
           </ModalBody>
-          <ModalFooter borderTop="1px solid" borderColor="rgba(0, 255, 255, 0.3)">
+          <ModalFooter
+            borderTop="1px solid"
+            borderColor="rgba(0, 255, 255, 0.3)"
+          >
             <Button
               onClick={() => {
                 handleSelectSound();
@@ -996,10 +996,7 @@ export default function LinksPage() {
           >
             Customize Profile
           </ModalHeader>
-          <ModalCloseButton
-            color="#00ffff"
-            onClick={handleSelectSound}
-          />
+          <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
           <ModalBody py={6}>
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
@@ -1091,10 +1088,7 @@ export default function LinksPage() {
               {/* Switch Account Accordion */}
               <Accordion allowToggle>
                 <AccordionItem border="none">
-                  <AccordionButton
-                    px={0}
-                    _hover={{ bg: "transparent" }}
-                  >
+                  <AccordionButton px={0} _hover={{ bg: "transparent" }}>
                     <Box flex="1" textAlign="left">
                       <Text fontSize="sm" color="gray.400">
                         Switch Account
@@ -1135,7 +1129,8 @@ export default function LinksPage() {
                         Switch Account
                       </Button>
                       <Text fontSize="xs" color="gray.500">
-                        Enter a different nsec to switch to another Nostr account
+                        Enter a different nsec to switch to another Nostr
+                        account
                       </Text>
                     </VStack>
                   </AccordionPanel>
@@ -1143,7 +1138,10 @@ export default function LinksPage() {
               </Accordion>
             </VStack>
           </ModalBody>
-          <ModalFooter borderTop="1px solid" borderColor="rgba(0, 255, 255, 0.3)">
+          <ModalFooter
+            borderTop="1px solid"
+            borderColor="rgba(0, 255, 255, 0.3)"
+          >
             <Button
               onClick={() => {
                 handleSelectSound();
