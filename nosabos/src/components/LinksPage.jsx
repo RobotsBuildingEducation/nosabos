@@ -28,6 +28,10 @@ import {
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
+import nextButtonSound from "../assets/nextbutton.mp3";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 
@@ -199,34 +203,19 @@ function RetroStarfield() {
   );
 }
 
-function CarouselCard({ title, description, href, visual, onClick }) {
-  const clickableProps = onClick
-    ? {
-        as: "div",
-        role: "button",
-        tabIndex: 0,
-        onClick,
-        onKeyDown: (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onClick();
-          }
-        },
-      }
-    : {
-        as: "a",
-        href,
-        target: "_blank",
-        rel: "noopener noreferrer",
-      };
-
+function CarouselCard({
+  title,
+  description,
+  href,
+  visual,
+  onLaunch,
+  onLaunchSound,
+}) {
   return (
     <Box
-      {...clickableProps}
       display="block"
       textDecoration="none"
       _hover={{ textDecoration: "none", opacity: 0.9 }}
-      cursor="pointer"
     >
       <VStack spacing={6} align="center" textAlign="center" py={4}>
         {/* Large Visual */}
@@ -261,16 +250,21 @@ function CarouselCard({ title, description, href, visual, onClick }) {
             {description}
           </Text>
           <Button
-            as={onClick ? "button" : "a"}
-            onClick={onClick ? onClick : undefined}
-            href={onClick ? undefined : href}
-            target={onClick ? undefined : "_blank"}
-            rel={onClick ? undefined : "noopener noreferrer"}
+            as={onLaunch ? "button" : "a"}
+            onClick={() => {
+              onLaunchSound?.();
+              onLaunch?.();
+            }}
+            href={onLaunch ? undefined : href}
+            target={onLaunch ? undefined : "_blank"}
+            rel={onLaunch ? undefined : "noopener noreferrer"}
             variant="outline"
             borderColor="#00ffff"
             color="#00ffff"
             fontFamily="monospace"
-            size="sm"
+            size="md"
+            px={6}
+            py={5}
             _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
           >
             Launch app
@@ -281,30 +275,16 @@ function CarouselCard({ title, description, href, visual, onClick }) {
   );
 }
 
-function ListCard({ title, description, href, visual, onClick }) {
-  const clickableProps = onClick
-    ? {
-        as: "div",
-        role: "button",
-        tabIndex: 0,
-        onClick,
-        onKeyDown: (event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onClick();
-          }
-        },
-      }
-    : {
-        as: "a",
-        href,
-        target: "_blank",
-        rel: "noopener noreferrer",
-      };
-
+function ListCard({
+  title,
+  description,
+  href,
+  visual,
+  onLaunch,
+  onLaunchSound,
+}) {
   return (
     <Box
-      {...clickableProps}
       p={{ base: 5, md: 6 }}
       borderWidth="1px"
       borderColor="rgba(255, 0, 255, 0.3)"
@@ -313,7 +293,6 @@ function ListCard({ title, description, href, visual, onClick }) {
       transition="all 0.3s ease"
       display="block"
       textDecoration="none"
-      cursor="pointer"
     >
       <Stack
         direction={{ base: "column", md: "row" }}
@@ -331,16 +310,21 @@ function ListCard({ title, description, href, visual, onClick }) {
             {description}
           </Text>
           <Button
-            as={onClick ? "button" : "a"}
-            onClick={onClick ? onClick : undefined}
-            href={onClick ? undefined : href}
-            target={onClick ? undefined : "_blank"}
-            rel={onClick ? undefined : "noopener noreferrer"}
+            as={onLaunch ? "button" : "a"}
+            onClick={() => {
+              onLaunchSound?.();
+              onLaunch?.();
+            }}
+            href={onLaunch ? undefined : href}
+            target={onLaunch ? undefined : "_blank"}
+            rel={onLaunch ? undefined : "noopener noreferrer"}
             variant="outline"
             borderColor="#00ffff"
             color="#00ffff"
             fontFamily="monospace"
-            size="sm"
+            size="md"
+            px={6}
+            py={5}
             _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
           >
             Launch app
@@ -373,6 +357,7 @@ export default function LinksPage() {
     onClose: onRbeClose,
   } = useDisclosure();
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const hasTriggeredKeygen = useRef(false);
 
@@ -409,6 +394,9 @@ export default function LinksPage() {
   }, []);
 
   const rbeUrl = "https://robotsbuildingeducation.com";
+  const handleSelectSound = () => playSound(selectSound);
+  const handleSubmitActionSound = () => playSound(submitActionSound);
+  const handleNextButtonSound = () => playSound(nextButtonSound);
 
   const links = [
     {
@@ -421,7 +409,7 @@ export default function LinksPage() {
       title: "Robots Building Education",
       description: "Hands-on robotics education and community programs.",
       href: rbeUrl,
-      onClick: onRbeOpen,
+      onLaunch: onRbeOpen,
       visual: (
         <Box display="flex" justifyContent="center" alignItems="center">
           <CloudCanvas />
@@ -710,10 +698,12 @@ export default function LinksPage() {
   }, [generateNostrKeys]);
 
   const goToPrevious = () => {
+    handleNextButtonSound();
     setCurrentIndex((prev) => (prev === 0 ? links.length - 1 : prev - 1));
   };
 
   const goToNext = () => {
+    handleNextButtonSound();
     setCurrentIndex((prev) => (prev === links.length - 1 ? 0 : prev + 1));
   };
 
@@ -770,7 +760,10 @@ export default function LinksPage() {
           </Heading>
 
           <Button
-            onClick={onOpen}
+            onClick={() => {
+              handleSelectSound();
+              onOpen();
+            }}
             variant="outline"
             fontFamily="monospace"
             borderColor="#00ffff"
@@ -800,7 +793,10 @@ export default function LinksPage() {
             </Text>
             <Switch
               isChecked={isCarouselView}
-              onChange={() => setIsCarouselView(!isCarouselView)}
+              onChange={() => {
+                handleSelectSound();
+                setIsCarouselView(!isCarouselView);
+              }}
               colorScheme="pink"
               size="md"
             />
@@ -858,7 +854,10 @@ export default function LinksPage() {
 
               {/* Carousel Content */}
               <Box overflow="hidden" px={{ base: 8, md: 0 }}>
-                <CarouselCard {...links[currentIndex]} />
+                <CarouselCard
+                  {...links[currentIndex]}
+                  onLaunchSound={handleSelectSound}
+                />
               </Box>
             </Box>
 
@@ -887,9 +886,13 @@ export default function LinksPage() {
         ) : (
           /* List View */
           <VStack spacing={6} mt={10} align="stretch">
-            {links.map((link) => (
-              <ListCard key={link.title} {...link} />
-            ))}
+              {links.map((link) => (
+                <ListCard
+                  key={link.title}
+                  {...link}
+                  onLaunchSound={handleSelectSound}
+                />
+              ))}
           </VStack>
         )}
       </Container>
@@ -913,7 +916,10 @@ export default function LinksPage() {
           >
             Robots Building Education
           </ModalHeader>
-          <ModalCloseButton color="#00ffff" />
+          <ModalCloseButton
+            color="#00ffff"
+            onClick={handleSelectSound}
+          />
           <ModalBody py={6}>
             <VStack spacing={4} align="stretch">
               <Text fontSize="sm" color="gray.300">
@@ -930,15 +936,37 @@ export default function LinksPage() {
                 color="black"
                 _hover={{ bg: "#00cccc" }}
                 w="100%"
-                onClick={onRbeClose}
+                onClick={() => {
+                  handleSubmitActionSound();
+                  onRbeClose();
+                }}
               >
                 Go to app
+              </Button>
+              <Button
+                onClick={() => {
+                  handleSelectSound();
+                  handleCopySecretKey();
+                }}
+                variant="outline"
+                colorScheme="pink"
+                borderColor="#ff00ff"
+                color="#ff00ff"
+                w="100%"
+                _hover={{
+                  bg: "rgba(255, 0, 255, 0.1)",
+                }}
+              >
+                Copy Secret Key
               </Button>
             </VStack>
           </ModalBody>
           <ModalFooter borderTop="1px solid" borderColor="rgba(0, 255, 255, 0.3)">
             <Button
-              onClick={onRbeClose}
+              onClick={() => {
+                handleSelectSound();
+                onRbeClose();
+              }}
               variant="ghost"
               color="gray.400"
               _hover={{ color: "white", bg: "rgba(255, 255, 255, 0.1)" }}
@@ -968,7 +996,10 @@ export default function LinksPage() {
           >
             Customize Profile
           </ModalHeader>
-          <ModalCloseButton color="#00ffff" />
+          <ModalCloseButton
+            color="#00ffff"
+            onClick={handleSelectSound}
+          />
           <ModalBody py={6}>
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
@@ -1016,7 +1047,10 @@ export default function LinksPage() {
 
               {/* Save Profile Button */}
               <Button
-                onClick={handleSaveProfile}
+                onClick={() => {
+                  handleSubmitActionSound();
+                  handleSaveProfile();
+                }}
                 isLoading={isSaving}
                 colorScheme="cyan"
                 bg="#00ffff"
@@ -1033,7 +1067,10 @@ export default function LinksPage() {
                   Secret Key
                 </Text>
                 <Button
-                  onClick={handleCopySecretKey}
+                  onClick={() => {
+                    handleSelectSound();
+                    handleCopySecretKey();
+                  }}
                   variant="outline"
                   colorScheme="pink"
                   borderColor="#ff00ff"
@@ -1082,7 +1119,10 @@ export default function LinksPage() {
                         }}
                       />
                       <Button
-                        onClick={handleSwitchAccount}
+                        onClick={() => {
+                          handleSelectSound();
+                          handleSwitchAccount();
+                        }}
                         isLoading={isSwitching}
                         variant="outline"
                         colorScheme="pink"
@@ -1105,7 +1145,10 @@ export default function LinksPage() {
           </ModalBody>
           <ModalFooter borderTop="1px solid" borderColor="rgba(0, 255, 255, 0.3)">
             <Button
-              onClick={onClose}
+              onClick={() => {
+                handleSelectSound();
+                onClose();
+              }}
               variant="ghost"
               color="gray.400"
               _hover={{ color: "white", bg: "rgba(255, 255, 255, 0.1)" }}
