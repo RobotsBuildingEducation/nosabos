@@ -22,7 +22,6 @@ import {
   ModalHeader,
   ModalOverlay,
   Spinner,
-  Stack,
   Switch,
   Text,
   useDisclosure,
@@ -325,72 +324,9 @@ function CarouselCard({
   );
 }
 
-function ListCard({
-  title,
-  description,
-  href,
-  visual,
-  onLaunch,
-  onLaunchSound,
-  launchAppText,
-}) {
-  return (
-    <Box
-      p={{ base: 5, md: 6 }}
-      borderWidth="1px"
-      borderColor="rgba(255, 0, 255, 0.4)"
-      borderRadius="md"
-      bg="rgba(7, 16, 29, 0.8)"
-      transition="all 0.3s ease"
-      display="block"
-      textDecoration="none"
-    >
-      <Stack
-        direction={{ base: "column", md: "row" }}
-        spacing={{ base: 4, md: 8 }}
-        align={{ base: "flex-start", md: "center" }}
-      >
-        <Box flexShrink={0} w={{ base: "100%", md: "220px" }}>
-          {visual}
-        </Box>
-        <VStack align="start" spacing={2} flex="1">
-          <Heading size="md" fontFamily="monospace" color="white">
-            {title}
-          </Heading>
-          <Text color="gray.400" fontFamily="monospace">
-            {description}
-          </Text>
-          <Button
-            as={onLaunch ? "button" : "a"}
-            onClick={() => {
-              onLaunchSound?.();
-              onLaunch?.();
-            }}
-            href={onLaunch ? undefined : href}
-            target={onLaunch ? undefined : "_blank"}
-            rel={onLaunch ? undefined : "noopener noreferrer"}
-            border="1px solid #ff00ff"
-            fontFamily="monospace"
-            size="md"
-            px={10}
-            py={7}
-            minH="56px"
-            bg="transparent"
-            boxShadow="0 4px 0 #ff00ff"
-            color="white"
-          >
-            {launchAppText || "Launch app"}
-          </Button>
-        </VStack>
-      </Stack>
-    </Box>
-  );
-}
-
 export default function LinksPage() {
   const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } =
     useDecentralizedIdentity();
-  const [isCarouselView, setIsCarouselView] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Language state
@@ -1002,93 +938,41 @@ export default function LinksPage() {
               {translations.spanish}
             </Text>
           </HStack>
-
-          {/* View Toggle */}
-          <HStack
-            spacing={3}
-            justify="center"
-            bg="rgba(7, 16, 29, 0.8)"
-            px={4}
-            py={2}
-            borderRadius="md"
-          >
-            <Text
-              fontSize="sm"
-              color={!isCarouselView ? "#ff00ff" : "gray.500"}
-              fontWeight={!isCarouselView ? "bold" : "normal"}
-              fontFamily="monospace"
-              transition="color 0.2s ease"
-            >
-              {translations.list}
-            </Text>
-            <Switch
-              isChecked={isCarouselView}
-              onChange={() => {
-                handleSelectSound();
-                setIsCarouselView(!isCarouselView);
-              }}
-              colorScheme="cyan"
-              size="md"
-            />
-            <Text
-              fontSize="sm"
-              color={isCarouselView ? "#00ffff" : "gray.500"}
-              fontWeight={isCarouselView ? "bold" : "normal"}
-              fontFamily="monospace"
-              transition="color 0.2s ease"
-            >
-              {translations.carousel}
-            </Text>
-          </HStack>
         </VStack>
 
-        {isCarouselView ? (
-          /* Carousel View */
-          <Box mt={10}>
-            {/* Carousel Content */}
-            <Box overflow="hidden" px={{ base: 8, md: 0 }}>
-              <CarouselCard
-                {...links[currentIndex]}
-                onLaunchSound={handleSubmitActionSound}
-                onPrevious={goToPrevious}
-                onNext={goToNext}
-                launchAppText={translations.launchApp}
-                previousLinkText={translations.previousLink}
-                nextLinkText={translations.nextLink}
-              />
-            </Box>
-
-            {/* Dot Indicators - 8-bit style squares */}
-            <HStack spacing={3} justify="center" mt={4}>
-              {links.map((_, index) => (
-                <Box
-                  key={index}
-                  as="button"
-                  w={index === currentIndex ? 6 : 3}
-                  h={3}
-                  bg={index === currentIndex ? "#ff00ff" : "gray.600"}
-                  boxShadow={
-                    index === currentIndex ? "0 0 10px #ff00ff" : "none"
-                  }
-                  transition="all 0.3s ease"
-                  onClick={() => goToSlide(index)}
-                />
-              ))}
-            </HStack>
+        {/* Carousel View */}
+        <Box mt={10}>
+          {/* Carousel Content */}
+          <Box overflow="hidden" px={{ base: 8, md: 0 }}>
+            <CarouselCard
+              {...links[currentIndex]}
+              onLaunchSound={handleSubmitActionSound}
+              onPrevious={goToPrevious}
+              onNext={goToNext}
+              launchAppText={translations.launchApp}
+              previousLinkText={translations.previousLink}
+              nextLinkText={translations.nextLink}
+            />
           </Box>
-        ) : (
-          /* List View */
-          <VStack spacing={6} mt={10} align="stretch">
-            {links.map((link) => (
-              <ListCard
-                key={link.title}
-                {...link}
-                onLaunchSound={handleSubmitActionSound}
-                launchAppText={translations.launchApp}
+
+          {/* Dot Indicators - 8-bit style squares */}
+          <HStack spacing={3} justify="center" mt={4}>
+            {links.map((_, index) => (
+              <Box
+                key={index}
+                as="button"
+                w={index === currentIndex ? 6 : 3}
+                h={3}
+                bg={index === currentIndex ? "#ff00ff" : "gray.600"}
+                boxShadow={
+                  index === currentIndex ? "0 0 10px #ff00ff" : "none"
+                }
+                transition="all 0.3s ease"
+                onClick={() => goToSlide(index)}
               />
             ))}
-          </VStack>
-        )}
+          </HStack>
+        </Box>
       </Container>
 
       {/* Robots Building Education Modal */}
