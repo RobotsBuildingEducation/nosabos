@@ -415,8 +415,8 @@ export function RoleCanvas({
     <canvas
       ref={canvasRef}
       style={{
-        width: `${200}px`,
-        height: `${200}px`,
+        width: `${150}px`,
+        height: `${150}px`,
         display: "block",
         margin: "0 auto",
         backgroundColor: transparent ? "transparent" : bgColor,

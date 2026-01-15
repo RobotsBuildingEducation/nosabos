@@ -12,7 +12,6 @@ import {
   HStack,
   IconButton,
   Input,
-  Link,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -29,6 +28,10 @@ import {
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
+import modeSwitcherSound from "../assets/modeswitcher.mp3";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 
@@ -59,31 +62,15 @@ const drift = keyframes`
   100% { transform: translateY(0) translateX(0); }
 `;
 
-const links = [
-  {
-    title: "No Sabos",
-    description: "Language learning adventures in the No Sabos universe.",
-    href: "https://nosabos.app",
-    visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
-  },
-  {
-    title: "Robots Building Education",
-    description: "Hands-on robotics education and community programs.",
-    href: "https://robotsbuildingeducation.com",
-    visual: (
-      <Box display="flex" justifyContent="center" alignItems="center">
-        <CloudCanvas />
-      </Box>
-    ),
-  },
-  {
-    title: "Patreon",
-    description: "Support Notes And Other Stuff on Patreon.",
-    href: "https://patreon.com/NotesAndOtherStuff",
-    visual: (
-      <RoleCanvas role={"sphere"} width={400} height={400} transparent={true} />
-    ),
-  },
+const roleCycle = [
+  "sphere",
+  "plan",
+  "meals",
+  "finance",
+  "sleep",
+  "emotions",
+  "chores",
+  "counselor",
 ];
 
 // 8-bit pixel star with random direction movement
@@ -216,62 +203,126 @@ function RetroStarfield() {
   );
 }
 
-function CarouselCard({ title, description, href, visual }) {
+function CarouselCard({
+  title,
+  description,
+  href,
+  visual,
+  onLaunch,
+  onLaunchSound,
+  onPrevious,
+  onNext,
+}) {
   return (
-    <VStack spacing={6} align="center" textAlign="center" py={4}>
-      {/* Large Visual */}
-      <Box
-        w="100%"
-        maxW="400px"
-        h={{ base: "280px", md: "350px" }}
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        animation={`${drift} 6s ease-in-out infinite`}
-      >
-        {visual}
-      </Box>
-
-      {/* Title and Description */}
-      <VStack spacing={3}>
-        <Heading
-          size="xl"
-          fontFamily="monospace"
-          letterSpacing="wider"
-          color="white"
+    <Box
+      display="block"
+      textDecoration="none"
+      _hover={{ textDecoration: "none", opacity: 0.9 }}
+    >
+      <VStack spacing={6} align="center" textAlign="center">
+        {/* Large Visual */}
+        <Box
+          w="100%"
+          maxW="400px"
+          h={{ base: "200px", md: "200px" }}
+          position="relative"
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          animation={`${drift} 6s ease-in-out infinite`}
         >
-          <Link
-            href={href}
-            isExternal
-            _hover={{ opacity: 0.8, textDecoration: "none" }}
-            transition="all 0.3s ease"
+          <IconButton
+            aria-label="Previous link"
+            icon={<ChevronLeftIcon boxSize={8} />}
+            position="absolute"
+            left={{ base: -2, md: -16 }}
+            top="50%"
+            transform="translateY(-50%)"
+            zIndex={2}
+            onClick={onPrevious}
+            variant="ghost"
+            color="#00ffff"
+            border="1px solid"
+            borderColor="#00ffff"
+            _hover={{}}
+            size="lg"
+            borderRadius="md"
+          />
+          <IconButton
+            aria-label="Next link"
+            icon={<ChevronRightIcon boxSize={8} />}
+            position="absolute"
+            right={{ base: -2, md: -16 }}
+            top="50%"
+            transform="translateY(-50%)"
+            zIndex={2}
+            onClick={onNext}
+            variant="ghost"
+            color="#00ffff"
+            border="1px solid"
+            borderColor="#00ffff"
+            _hover={{}}
+            size="lg"
+            borderRadius="md"
+          />
+          {visual}
+        </Box>
+
+        {/* Title and Description */}
+        <VStack spacing={3}>
+          <Button
+            as={onLaunch ? "button" : "a"}
+            onClick={() => {
+              onLaunchSound?.();
+              onLaunch?.();
+            }}
+            href={onLaunch ? undefined : href}
+            target={onLaunch ? undefined : "_blank"}
+            rel={onLaunch ? undefined : "noopener noreferrer"}
+            variant="outline"
+            borderColor="#00ffff"
+            color="#00ffff"
+            fontFamily="monospace"
+            size="md"
+            px={10}
+            py={7}
+            minH="56px"
+            _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
+          >
+            Launch app
+          </Button>
+          <Heading
+            size="xl"
+            fontFamily="monospace"
+            letterSpacing="wider"
+            color="white"
           >
             {title}
-          </Link>
-        </Heading>
-        <Text
-          color="gray.400"
-          fontSize="lg"
-          maxW="400px"
-          fontFamily="monospace"
-        >
-          {description}
-        </Text>
-        <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
-          {href}
-        </Text>
+          </Heading>
+          <Text
+            color="gray.400"
+            fontSize="lg"
+            maxW="400px"
+            fontFamily="monospace"
+          >
+            {description}
+          </Text>
+        </VStack>
       </VStack>
-    </VStack>
+    </Box>
   );
 }
 
-function ListCard({ title, description, href, visual }) {
+function ListCard({
+  title,
+  description,
+  href,
+  visual,
+  onLaunch,
+  onLaunchSound,
+}) {
   return (
     <Box
-      as="a"
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
       p={{ base: 5, md: 6 }}
       borderWidth="1px"
       borderColor="rgba(255, 0, 255, 0.3)"
@@ -296,9 +347,27 @@ function ListCard({ title, description, href, visual }) {
           <Text color="gray.400" fontFamily="monospace">
             {description}
           </Text>
-          <Text fontSize="sm" color="#00ffff" fontFamily="monospace">
-            {href}
-          </Text>
+          <Button
+            as={onLaunch ? "button" : "a"}
+            onClick={() => {
+              onLaunchSound?.();
+              onLaunch?.();
+            }}
+            href={onLaunch ? undefined : href}
+            target={onLaunch ? undefined : "_blank"}
+            rel={onLaunch ? undefined : "noopener noreferrer"}
+            variant="outline"
+            borderColor="#00ffff"
+            color="#00ffff"
+            fontFamily="monospace"
+            size="md"
+            px={10}
+            py={7}
+            minH="56px"
+            _hover={{ bg: "rgba(0, 255, 255, 0.1)" }}
+          >
+            Launch app
+          </Button>
         </VStack>
       </Stack>
     </Box>
@@ -306,7 +375,8 @@ function ListCard({ title, description, href, visual }) {
 }
 
 export default function LinksPage() {
-  const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } = useDecentralizedIdentity();
+  const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } =
+    useDecentralizedIdentity();
   const [isCarouselView, setIsCarouselView] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [npub, setNpub] = useState("");
@@ -316,11 +386,20 @@ export default function LinksPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isSwitching, setIsSwitching] = useState(false);
   const [profilePicture, setProfilePicture] = useState("");
-  const [profilePictureInput, setProfilePictureInput] = useState("");
-  const [randomCharacterKey] = useState(() => Math.floor(Math.random() * 21) + 20); // Random between 20-40
+  const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
+  const [randomCharacterKey] = useState(
+    () => Math.floor(Math.random() * 21) + 20
+  ); // Random between 20-40
+  const [roleIndex, setRoleIndex] = useState(0);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: isRbeOpen,
+    onOpen: onRbeOpen,
+    onClose: onRbeClose,
+  } = useDisclosure();
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const hasTriggeredKeygen = useRef(false);
 
@@ -329,6 +408,7 @@ export default function LinksPage() {
     const storedNpub = localStorage.getItem("local_npub");
     const storedDisplayName = localStorage.getItem("displayName");
     const storedProfilePicture = localStorage.getItem("profilePicture");
+    const storedProfilePictureUrl = localStorage.getItem("profilePictureUrl");
     if (storedNpub) {
       setNpub(storedNpub);
     }
@@ -338,13 +418,64 @@ export default function LinksPage() {
     }
     if (storedProfilePicture) {
       setProfilePicture(storedProfilePicture);
-      setProfilePictureInput(storedProfilePicture);
+    }
+    if (storedProfilePictureUrl) {
+      setProfilePictureUrlInput(storedProfilePictureUrl);
+      if (!storedProfilePicture) {
+        setProfilePicture(storedProfilePictureUrl);
+      }
     }
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRoleIndex((prev) => (prev + 1) % roleCycle.length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const rbeUrl = "https://robotsbuildingeducation.com";
+  const handleSelectSound = () => playSound(selectSound);
+  const handleSubmitActionSound = () => playSound(submitActionSound);
+  const handleModeSwitcherSound = () => playSound(modeSwitcherSound);
+
+  const links = [
+    {
+      title: "No Sabos",
+      description: "Language learning adventures in the No Sabos universe.",
+      href: "https://nosabos.app",
+      visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
+    },
+    {
+      title: "Robots Building Education",
+      description: "Hands-on robotics education and community programs.",
+      href: rbeUrl,
+      onLaunch: onRbeOpen,
+      visual: (
+        <Box display="flex" justifyContent="center" alignItems="center">
+          <CloudCanvas />
+        </Box>
+      ),
+    },
+    {
+      title: "Patreon",
+      description: "Support Notes And Other Stuff on Patreon.",
+      href: "https://patreon.com/NotesAndOtherStuff",
+      visual: (
+        <RoleCanvas
+          role={roleCycle[roleIndex]}
+          width={200}
+          height={200}
+          transparent={true}
+        />
+      ),
+    },
+  ];
+
   // Get display text for welcome message
   const getWelcomeText = () => {
-    if (displayName && displayName !== "Nostr Link Explorer") {
+    if (displayName) {
       return displayName;
     }
     if (npub) {
@@ -355,7 +486,7 @@ export default function LinksPage() {
 
   // Handle profile save (username and picture)
   const handleSaveProfile = async () => {
-    if (!usernameInput.trim() && !profilePictureInput.trim()) {
+    if (!usernameInput.trim() && !profilePictureUrlInput.trim()) {
       toast({
         title: "No changes",
         description: "Please enter a username or profile picture URL",
@@ -368,6 +499,8 @@ export default function LinksPage() {
 
     setIsSaving(true);
     try {
+      const trimmedProfilePictureUrl = profilePictureUrlInput.trim();
+
       // Build metadata object
       const metadata = {
         name: usernameInput.trim() || displayName || "",
@@ -375,8 +508,9 @@ export default function LinksPage() {
       };
 
       // Add picture if provided
-      if (profilePictureInput.trim()) {
-        metadata.picture = profilePictureInput.trim();
+      if (trimmedProfilePictureUrl) {
+        metadata.picture = trimmedProfilePictureUrl;
+        metadata.profilePictureUrl = trimmedProfilePictureUrl;
       }
 
       // Post kind 0 (metadata) event to update profile
@@ -388,9 +522,13 @@ export default function LinksPage() {
         setDisplayName(usernameInput.trim());
       }
 
-      if (profilePictureInput.trim()) {
-        localStorage.setItem("profilePicture", profilePictureInput.trim());
-        setProfilePicture(profilePictureInput.trim());
+      if (trimmedProfilePictureUrl) {
+        localStorage.setItem("profilePicture", trimmedProfilePictureUrl);
+        localStorage.setItem("profilePictureUrl", trimmedProfilePictureUrl);
+      }
+
+      if (trimmedProfilePictureUrl) {
+        setProfilePicture(trimmedProfilePictureUrl);
       }
 
       toast({
@@ -404,7 +542,7 @@ export default function LinksPage() {
       console.error("Failed to save profile:", error);
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error.message || "Failed to update profile",
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -525,12 +663,14 @@ export default function LinksPage() {
 
         if (profile?.picture) {
           localStorage.setItem("profilePicture", profile.picture);
+          localStorage.setItem("profilePictureUrl", profile.picture);
           setProfilePicture(profile.picture);
-          setProfilePictureInput(profile.picture);
+          setProfilePictureUrlInput(profile.picture);
         } else {
           localStorage.setItem("profilePicture", "");
+          localStorage.setItem("profilePictureUrl", "");
           setProfilePicture("");
-          setProfilePictureInput("");
+          setProfilePictureUrlInput("");
         }
 
         toast({
@@ -577,7 +717,7 @@ export default function LinksPage() {
     let isMounted = true;
     const createInstantKeys = async () => {
       try {
-        const defaultDisplayName = "Nostr Link Explorer";
+        const defaultDisplayName = "";
         const did = await generateNostrKeys(defaultDisplayName);
         if (!isMounted) return;
         localStorage.setItem("displayName", defaultDisplayName);
@@ -597,10 +737,12 @@ export default function LinksPage() {
   }, [generateNostrKeys]);
 
   const goToPrevious = () => {
+    handleModeSwitcherSound();
     setCurrentIndex((prev) => (prev === 0 ? links.length - 1 : prev - 1));
   };
 
   const goToNext = () => {
+    handleModeSwitcherSound();
     setCurrentIndex((prev) => (prev === links.length - 1 ? 0 : prev + 1));
   };
 
@@ -657,7 +799,10 @@ export default function LinksPage() {
           </Heading>
 
           <Button
-            onClick={onOpen}
+            onClick={() => {
+              handleSelectSound();
+              onOpen();
+            }}
             variant="outline"
             fontFamily="monospace"
             borderColor="#00ffff"
@@ -687,7 +832,10 @@ export default function LinksPage() {
             </Text>
             <Switch
               isChecked={isCarouselView}
-              onChange={() => setIsCarouselView(!isCarouselView)}
+              onChange={() => {
+                handleSelectSound();
+                setIsCarouselView(!isCarouselView);
+              }}
               colorScheme="pink"
               size="md"
             />
@@ -706,43 +854,14 @@ export default function LinksPage() {
         {isCarouselView ? (
           /* Carousel View */
           <Box mt={10}>
-            <Box position="relative">
-              {/* Navigation Arrows */}
-              <IconButton
-                aria-label="Previous link"
-                icon={<ChevronLeftIcon boxSize={8} />}
-                position="absolute"
-                left={{ base: -2, md: -16 }}
-                top="50%"
-                transform="translateY(-50%)"
-                zIndex={2}
-                onClick={goToPrevious}
-                variant="ghost"
-                color="#00ffff"
-                _hover={{ bg: "rgba(0, 255, 255, 0.1)", color: "#ff00ff" }}
-                size="lg"
-                borderRadius="md"
+            {/* Carousel Content */}
+            <Box overflow="hidden" px={{ base: 8, md: 0 }}>
+              <CarouselCard
+                {...links[currentIndex]}
+                onLaunchSound={handleSubmitActionSound}
+                onPrevious={goToPrevious}
+                onNext={goToNext}
               />
-              <IconButton
-                aria-label="Next link"
-                icon={<ChevronRightIcon boxSize={8} />}
-                position="absolute"
-                right={{ base: -2, md: -16 }}
-                top="50%"
-                transform="translateY(-50%)"
-                zIndex={2}
-                onClick={goToNext}
-                variant="ghost"
-                color="#00ffff"
-                _hover={{ bg: "rgba(0, 255, 255, 0.1)", color: "#ff00ff" }}
-                size="lg"
-                borderRadius="md"
-              />
-
-              {/* Carousel Content */}
-              <Box overflow="hidden" px={{ base: 8, md: 0 }}>
-                <CarouselCard {...links[currentIndex]} />
-              </Box>
             </Box>
 
             {/* Dot Indicators - 8-bit style squares */}
@@ -771,11 +890,92 @@ export default function LinksPage() {
           /* List View */
           <VStack spacing={6} mt={10} align="stretch">
             {links.map((link) => (
-              <ListCard key={link.title} {...link} />
+              <ListCard
+                key={link.title}
+                {...link}
+                onLaunchSound={handleSubmitActionSound}
+              />
             ))}
           </VStack>
         )}
       </Container>
+
+      {/* Robots Building Education Modal */}
+      <Modal isOpen={isRbeOpen} onClose={onRbeClose} isCentered size="md">
+        <ModalOverlay bg="blackAlpha.800" />
+        <ModalContent
+          bg="rgba(7, 16, 29, 0.95)"
+          color="gray.100"
+          border="1px solid"
+          borderColor="#00ffff"
+          rounded="xl"
+          shadow="0 0 30px rgba(0, 255, 255, 0.3)"
+          fontFamily="monospace"
+        >
+          <ModalHeader
+            borderBottom="1px solid"
+            borderColor="rgba(0, 255, 255, 0.3)"
+            color="#00ffff"
+          >
+            Robots Building Education
+          </ModalHeader>
+          <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
+          <ModalBody py={6}>
+            <VStack spacing={4} align="stretch">
+              <Text fontSize="sm" color="gray.300">
+                You'll use your secret key to sign in to your account. If you
+                entered through social media, you only have to do this once.
+              </Text>
+              <Button
+                onClick={() => {
+                  handleSelectSound();
+                  handleCopySecretKey();
+                }}
+                colorScheme="cyan"
+                bg="#00ffff"
+                color="black"
+                _hover={{ bg: "#00cccc" }}
+                w="100%"
+              >
+                Copy Secret Key
+              </Button>
+              <Button
+                as="a"
+                href={rbeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                colorScheme="cyan"
+                bg="#00ffff"
+                color="black"
+                _hover={{ bg: "#00cccc" }}
+                w="100%"
+                onClick={() => {
+                  handleSubmitActionSound();
+                  onRbeClose();
+                }}
+              >
+                Go to app
+              </Button>
+            </VStack>
+          </ModalBody>
+          <ModalFooter
+            borderTop="1px solid"
+            borderColor="rgba(0, 255, 255, 0.3)"
+          >
+            <Button
+              onClick={() => {
+                handleSelectSound();
+                onRbeClose();
+              }}
+              variant="ghost"
+              color="gray.400"
+              _hover={{ color: "white", bg: "rgba(255, 255, 255, 0.1)" }}
+            >
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Profile Customization Modal */}
       <Modal isOpen={isOpen} onClose={onClose} isCentered size="md">
@@ -796,7 +996,7 @@ export default function LinksPage() {
           >
             Customize Profile
           </ModalHeader>
-          <ModalCloseButton color="#00ffff" />
+          <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
           <ModalBody py={6}>
             <VStack spacing={6} align="stretch">
               {/* Username Section */}
@@ -822,11 +1022,11 @@ export default function LinksPage() {
               {/* Profile Picture Section */}
               <Box>
                 <Text fontSize="sm" color="gray.400" mb={2}>
-                  Profile Picture URL
+                  Nostr Profile Picture URL
                 </Text>
                 <Input
-                  value={profilePictureInput}
-                  onChange={(e) => setProfilePictureInput(e.target.value)}
+                  value={profilePictureUrlInput}
+                  onChange={(e) => setProfilePictureUrlInput(e.target.value)}
                   placeholder="https://example.com/your-image.jpg"
                   bg="rgba(0, 0, 0, 0.3)"
                   border="1px solid"
@@ -838,13 +1038,16 @@ export default function LinksPage() {
                   }}
                 />
                 <Text fontSize="xs" color="gray.500" mt={2}>
-                  Paste a URL to an image for your profile picture
+                  Paste a URL to sync your profile picture to Nostr.
                 </Text>
               </Box>
 
               {/* Save Profile Button */}
               <Button
-                onClick={handleSaveProfile}
+                onClick={() => {
+                  handleSubmitActionSound();
+                  handleSaveProfile();
+                }}
                 isLoading={isSaving}
                 colorScheme="cyan"
                 bg="#00ffff"
@@ -861,7 +1064,10 @@ export default function LinksPage() {
                   Secret Key
                 </Text>
                 <Button
-                  onClick={handleCopySecretKey}
+                  onClick={() => {
+                    handleSelectSound();
+                    handleCopySecretKey();
+                  }}
                   variant="outline"
                   colorScheme="pink"
                   borderColor="#ff00ff"
@@ -882,10 +1088,7 @@ export default function LinksPage() {
               {/* Switch Account Accordion */}
               <Accordion allowToggle>
                 <AccordionItem border="none">
-                  <AccordionButton
-                    px={0}
-                    _hover={{ bg: "transparent" }}
-                  >
+                  <AccordionButton px={0} _hover={{ bg: "transparent" }}>
                     <Box flex="1" textAlign="left">
                       <Text fontSize="sm" color="gray.400">
                         Switch Account
@@ -910,7 +1113,10 @@ export default function LinksPage() {
                         }}
                       />
                       <Button
-                        onClick={handleSwitchAccount}
+                        onClick={() => {
+                          handleSelectSound();
+                          handleSwitchAccount();
+                        }}
                         isLoading={isSwitching}
                         variant="outline"
                         colorScheme="pink"
@@ -923,7 +1129,8 @@ export default function LinksPage() {
                         Switch Account
                       </Button>
                       <Text fontSize="xs" color="gray.500">
-                        Enter a different nsec to switch to another Nostr account
+                        Enter a different nsec to switch to another Nostr
+                        account
                       </Text>
                     </VStack>
                   </AccordionPanel>
@@ -931,9 +1138,15 @@ export default function LinksPage() {
               </Accordion>
             </VStack>
           </ModalBody>
-          <ModalFooter borderTop="1px solid" borderColor="rgba(0, 255, 255, 0.3)">
+          <ModalFooter
+            borderTop="1px solid"
+            borderColor="rgba(0, 255, 255, 0.3)"
+          >
             <Button
-              onClick={onClose}
+              onClick={() => {
+                handleSelectSound();
+                onClose();
+              }}
               variant="ghost"
               color="gray.400"
               _hover={{ color: "white", bg: "rgba(255, 255, 255, 0.1)" }}
