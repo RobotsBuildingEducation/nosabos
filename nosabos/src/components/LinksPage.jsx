@@ -532,7 +532,7 @@ export default function LinksPage() {
     {
       title: translations.noSabosTitle,
       description: translations.noSabosDescription,
-      href: "http://localhost:5173",
+      href: "https://nosabos.app",
       visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
     },
     {
