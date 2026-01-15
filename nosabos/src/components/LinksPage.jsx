@@ -210,6 +210,8 @@ function CarouselCard({
   visual,
   onLaunch,
   onLaunchSound,
+  onPrevious,
+  onNext,
 }) {
   return (
     <Box
@@ -223,11 +225,46 @@ function CarouselCard({
           w="100%"
           maxW="400px"
           h={{ base: "280px", md: "350px" }}
+          position="relative"
           display="flex"
           justifyContent="center"
           alignItems="center"
           animation={`${drift} 6s ease-in-out infinite`}
         >
+          <IconButton
+            aria-label="Previous link"
+            icon={<ChevronLeftIcon boxSize={8} />}
+            position="absolute"
+            left={{ base: -2, md: -16 }}
+            top="50%"
+            transform="translateY(-50%)"
+            zIndex={2}
+            onClick={onPrevious}
+            variant="ghost"
+            color="#00ffff"
+            border="1px solid"
+            borderColor="#00ffff"
+            _hover={{}}
+            size="lg"
+            borderRadius="md"
+          />
+          <IconButton
+            aria-label="Next link"
+            icon={<ChevronRightIcon boxSize={8} />}
+            position="absolute"
+            right={{ base: -2, md: -16 }}
+            top="50%"
+            transform="translateY(-50%)"
+            zIndex={2}
+            onClick={onNext}
+            variant="ghost"
+            color="#00ffff"
+            border="1px solid"
+            borderColor="#00ffff"
+            _hover={{}}
+            size="lg"
+            borderRadius="md"
+          />
           {visual}
         </Box>
 
@@ -817,50 +854,14 @@ export default function LinksPage() {
         {isCarouselView ? (
           /* Carousel View */
           <Box mt={10}>
-            <Box position="relative">
-              {/* Navigation Arrows */}
-              <IconButton
-                aria-label="Previous link"
-                icon={<ChevronLeftIcon boxSize={8} />}
-                position="absolute"
-                left={{ base: -2, md: -16 }}
-                top="50%"
-                transform="translateY(-50%)"
-                zIndex={2}
-                onClick={goToPrevious}
-                variant="ghost"
-                color="#00ffff"
-                border="1px solid"
-                borderColor="#00ffff"
-                _hover={{}}
-                size="lg"
-                borderRadius="md"
+            {/* Carousel Content */}
+            <Box overflow="hidden" px={{ base: 8, md: 0 }}>
+              <CarouselCard
+                {...links[currentIndex]}
+                onLaunchSound={handleSelectSound}
+                onPrevious={goToPrevious}
+                onNext={goToNext}
               />
-              <IconButton
-                aria-label="Next link"
-                icon={<ChevronRightIcon boxSize={8} />}
-                position="absolute"
-                right={{ base: -2, md: -16 }}
-                top="50%"
-                transform="translateY(-50%)"
-                zIndex={2}
-                onClick={goToNext}
-                variant="ghost"
-                color="#00ffff"
-                border="1px solid"
-                borderColor="#00ffff"
-                _hover={{}}
-                size="lg"
-                borderRadius="md"
-              />
-
-              {/* Carousel Content */}
-              <Box overflow="hidden" px={{ base: 8, md: 0 }}>
-                <CarouselCard
-                  {...links[currentIndex]}
-                  onLaunchSound={handleSelectSound}
-                />
-              </Box>
             </Box>
 
             {/* Dot Indicators - 8-bit style squares */}
