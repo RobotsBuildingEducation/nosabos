@@ -1,5 +1,6 @@
 // src/hooks/useSoundSettings.js
 import { create } from "zustand";
+import * as Tone from "tone";
 import { soundManager } from "../utils/SoundManager";
 
 // Legacy MP3 imports - kept for backward compatibility with existing import statements
@@ -93,6 +94,10 @@ const useSoundSettings = create((set, get) => ({
     const state = get();
     if (!state.soundEnabled) return;
 
+    // CRITICAL: Call Tone.start() SYNCHRONOUSLY before any await
+    // This must happen in the user gesture's call stack for mobile browsers
+    Tone.start();
+
     // Auto-initialize on first sound play attempt (user gesture)
     if (!state.isInitialized) {
       const success = await state.initAudio();
@@ -126,6 +131,9 @@ const useSoundSettings = create((set, get) => ({
     const state = get();
     if (!state.soundEnabled) return;
 
+    // CRITICAL: Call Tone.start() SYNCHRONOUSLY before any await
+    Tone.start();
+
     // Auto-initialize on first play attempt (user gesture from slider interaction)
     if (!state.isInitialized) {
       const success = await state.initAudio();
@@ -141,6 +149,9 @@ const useSoundSettings = create((set, get) => ({
   playRandomChord: async () => {
     const state = get();
     if (!state.soundEnabled) return;
+
+    // CRITICAL: Call Tone.start() SYNCHRONOUSLY before any await
+    Tone.start();
 
     // Auto-initialize on first play attempt
     if (!state.isInitialized) {
