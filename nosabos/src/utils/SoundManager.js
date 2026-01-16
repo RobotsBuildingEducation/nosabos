@@ -133,13 +133,13 @@ class SoundManager {
     const synth = this.getSynth({
       type: "sine",
       attack: 0.001,
-      decay: 0.04,
+      decay: 0.06,
       sustain: 0,
-      release: 0.03,
+      release: 0.05,
     });
-    synth.volume.value = VOL.QUIET;
-    synth.triggerAttackRelease(frequency, "64n");
-    this.releaseSynth(synth, 80);
+    synth.volume.value = VOL.SOFT;
+    synth.triggerAttackRelease(frequency, "32n");
+    this.releaseSynth(synth, 100);
   }
 
   /**
