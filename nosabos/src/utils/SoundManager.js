@@ -20,6 +20,7 @@ class SoundManager {
   initialized = false;
   enabled = true;
   volume = 0.7;
+  startPromise = null;
 
   synthPools = new Map([
     ["sine", []],
@@ -33,10 +34,30 @@ class SoundManager {
 
   async init() {
     if (this.initialized) return;
-    await Tone.start();
-    Tone.Destination.volume.value = Tone.gainToDb(this.volume);
-    this.initialized = true;
-    console.log("[SoundManager] Audio initialized");
+    if (!this.startPromise) {
+      this.startPromise = (async () => {
+        await Tone.start();
+        if (Tone.context?.state && Tone.context.state !== "running") {
+          await Tone.context.resume();
+        }
+        Tone.Destination.volume.value = Tone.gainToDb(this.volume);
+        this.initialized = true;
+        console.log("[SoundManager] Audio initialized");
+      })().catch((err) => {
+        this.startPromise = null;
+        throw err;
+      });
+    }
+    return this.startPromise;
+  }
+
+  async resume() {
+    if (!this.initialized) {
+      return this.init();
+    }
+    if (Tone.context?.state && Tone.context.state !== "running") {
+      await Tone.context.resume();
+    }
   }
 
   isReady() {
