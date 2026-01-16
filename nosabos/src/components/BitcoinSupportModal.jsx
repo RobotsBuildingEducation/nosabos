@@ -15,6 +15,7 @@ import {
 
 import { BitcoinWalletSection } from "./IdentityDrawer";
 import { translations } from "../utils/translation";
+import useSoundSettings from "../hooks/useSoundSettings";
 
 export default function BitcoinSupportModal({
   isOpen,
@@ -24,6 +25,7 @@ export default function BitcoinSupportModal({
   onSelectIdentity,
   isIdentitySaving = false,
 }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   const lang = userLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
 
@@ -99,10 +101,10 @@ export default function BitcoinSupportModal({
           </VStack>
         </ModalBody>
         <ModalFooter gap={3} px={{ base: 4, md: 6 }} py={4}>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={() => { playSound("select"); onClose(); }}>
             {skipLabel}
           </Button>
-          <Button colorScheme="teal" onClick={onClose}>
+          <Button colorScheme="teal" onClick={() => { playSound("select"); onClose(); }}>
             {closeLabel}
           </Button>
         </ModalFooter>

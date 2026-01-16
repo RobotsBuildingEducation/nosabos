@@ -17,6 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { shuffle } from "./utils";
 import translations from "../../utils/translation";
+import useSoundSettings from "../../hooks/useSoundSettings";
 
 /* ---------------------------
    Minimal i18n helper
@@ -44,6 +45,7 @@ function useT(uiLang = "en") {
  */
 export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
   const t = useT(uiLang);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const [value, setValue] = useState("");
   const [values, setValues] = useState([]);
@@ -69,6 +71,7 @@ export default function QuestionRenderer({ item, onSubmit, uiLang = "en" }) {
   }
 
   function check() {
+    playSound("submitAction");
     let correct = false,
       payload = null;
 

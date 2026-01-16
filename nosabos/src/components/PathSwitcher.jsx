@@ -3,6 +3,7 @@ import { HStack, Button, Box, Text } from "@chakra-ui/react";
 import { RiRoadMapLine, RiFileList3Line, RiChat3Line } from "react-icons/ri";
 import { motion } from "framer-motion";
 import { translations } from "../utils/translation";
+import useSoundSettings from "../hooks/useSoundSettings";
 
 const MotionButton = motion(Button);
 
@@ -22,6 +23,7 @@ const getTranslation = (key) => {
 };
 
 export default function PathSwitcher({ selectedMode, onModeChange }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   const modes = [
     {
       id: "path",
@@ -68,7 +70,10 @@ export default function PathSwitcher({ selectedMode, onModeChange }) {
           return (
             <MotionButton
               key={mode.id}
-              onClick={() => onModeChange(mode.id)}
+              onClick={() => {
+                playSound("select");
+                onModeChange(mode.id);
+              }}
               size="md"
               borderRadius="full"
               px={6}

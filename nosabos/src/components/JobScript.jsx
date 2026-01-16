@@ -35,6 +35,7 @@ import {
 } from "firebase/firestore";
 import { database, simplemodel } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
+import useSoundSettings from "../hooks/useSoundSettings";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
@@ -971,6 +972,7 @@ export default function JobScript({
 }) {
   const toast = useToast();
   const user = useUserStore((s) => s.user);
+  const playSound = useSoundSettings((s) => s.playSound);
 
   // Shared settings + XP
   const { xp, levelNumber, progressPct, progress, npub } = useSharedProgress();
@@ -2042,9 +2044,10 @@ export default function JobScript({
               variant="outline"
               borderColor="rgba(255,255,255,0.3)"
               color="white"
-              onClick={() =>
-                document.getElementById("script-upload-input")?.click()
-              }
+              onClick={() => {
+                playSound("select");
+                document.getElementById("script-upload-input")?.click();
+              }}
             >
               {uiText.upload}
             </Button>
@@ -2058,7 +2061,7 @@ export default function JobScript({
             <Spacer />
             <Button
               colorScheme="teal"
-              onClick={buildFromScript}
+              onClick={() => { playSound("submitAction"); buildFromScript(); }}
               isLoading={creatingScript}
             >
               {uiText.build}
@@ -2080,7 +2083,7 @@ export default function JobScript({
               maxW="360px"
             />
             <Button
-              onClick={saveCurrentScript}
+              onClick={() => { playSound("submitAction"); saveCurrentScript(); }}
               isLoading={saving}
               colorScheme="purple"
               variant="solid"
@@ -2124,7 +2127,7 @@ export default function JobScript({
                       variant="outline"
                       borderColor="rgba(255,255,255,0.3)"
                       color="white"
-                      onClick={() => loadSavedScript(it)}
+                      onClick={() => { playSound("select"); loadSavedScript(it); }}
                     >
                       {uiText.open}
                     </Button>
@@ -2222,6 +2225,7 @@ export default function JobScript({
                     <Center>
                       <Button
                         onClick={() => {
+                          playSound("select");
                           if (isRecording) return stopRecording();
                           return startRecording();
                         }}
@@ -2252,7 +2256,7 @@ export default function JobScript({
                     </Center>
                     <HStack spacing={3} justify="center">
                       <Button
-                        onClick={() => playTargetTTS(currentSentence?.tgt)}
+                        onClick={() => { playSound("select"); playTargetTTS(currentSentence?.tgt); }}
                         leftIcon={<FaVolumeUp />}
                         variant="outline"
                         borderColor="rgba(255, 255, 255, 0.3)"
@@ -2266,6 +2270,7 @@ export default function JobScript({
                       </Button>
                       <Button
                         onClick={() => {
+                          playSound("next");
                           const last =
                             currentSentenceIndex >=
                             storyData.sentences.length - 1;

@@ -45,6 +45,7 @@ import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { FiSend } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
+import useSoundSettings from "../hooks/useSoundSettings";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -185,6 +186,7 @@ const HelpChatFab = forwardRef(
     const onOpen = controlledOnOpen || disclosure.onOpen;
     const onClose = controlledOnClose || disclosure.onClose;
     const toast = useToast();
+    const playSound = useSoundSettings((s) => s.playSound);
 
     const ui = translations[appLanguage] || translations.en;
 
@@ -979,7 +981,7 @@ const HelpChatFab = forwardRef(
               bottom={{ base: "4", md: "4" }}
               right="20px"
               zIndex={50}
-              onClick={onOpen}
+              onClick={() => { playSound("select"); onOpen(); }}
             />
           </Tooltip>
         )}
@@ -1077,7 +1079,7 @@ const HelpChatFab = forwardRef(
                             size="sm"
                             variant="ghost"
                             colorScheme="purple"
-                            onClick={() => playAssistantTts(m)}
+                            onClick={() => { playSound("select"); playAssistantTts(m); }}
                             isDisabled={!m.text}
                             mt={1}
                           />
@@ -1127,7 +1129,7 @@ const HelpChatFab = forwardRef(
                       <FaMicrophone />
                     )
                   }
-                  onClick={toggleRealtime}
+                  onClick={() => { playSound("select"); toggleRealtime(); }}
                   isDisabled={realtimeStatus === "connecting" || sending}
                   colorScheme={
                     realtimeStatus === "connected" ? "red" : "purple"
@@ -1163,13 +1165,13 @@ const HelpChatFab = forwardRef(
                 />
                 {sending ? (
                   <IconButton
-                    onClick={handleStop}
+                    onClick={() => { playSound("select"); handleStop(); }}
                     colorScheme="red"
                     icon={<FaStop />}
                   />
                 ) : (
                   <IconButton
-                    onClick={handleSend}
+                    onClick={() => { playSound("submitAction"); handleSend(); }}
                     colorScheme="teal"
                     icon={<FiSend />}
                     isDisabled={!input.trim() || realtimeStatus === "connected"}

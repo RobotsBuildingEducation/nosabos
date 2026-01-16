@@ -29,6 +29,7 @@ import {
   subscribeToTeamInvites,
   subscribeToTeamUpdates,
 } from "../../utils/teams";
+import useSoundSettings from "../../hooks/useSoundSettings";
 
 const formatCountLabel = (count, singular, plural) => {
   if (count === 1) return `${count} ${singular}`;
@@ -37,6 +38,7 @@ const formatCountLabel = (count, singular, plural) => {
 
 export default function TeamView({ userLanguage, refreshTrigger, t }) {
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
   const [myTeams, setMyTeams] = useState([]);
   const [teamInvites, setTeamInvites] = useState([]);
   const [teamMemberProgress, setTeamMemberProgress] = useState({});
@@ -126,6 +128,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
   }, [myTeams, userNpub]);
 
   const handleAcceptInvite = async (inviteId) => {
+    playSound("submitAction");
     setProcessingInvite(inviteId);
     try {
       await acceptTeamInvite(userNpub, inviteId);
@@ -147,6 +150,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
   };
 
   const handleRejectInvite = async (inviteId) => {
+    playSound("select");
     setProcessingInvite(inviteId);
     try {
       await rejectTeamInvite(userNpub, inviteId);
@@ -167,6 +171,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
   };
 
   const handleDeleteTeam = async (team) => {
+    playSound("select");
     const confirmMessage =
       t?.teams_view_delete_confirm?.replace("{team}", team.teamName) ||
       `Delete ${team.teamName}?`;
@@ -194,6 +199,7 @@ export default function TeamView({ userLanguage, refreshTrigger, t }) {
   };
 
   const handleLeaveTeam = async (team) => {
+    playSound("select");
     const confirmMessage =
       t?.teams_view_leave_confirm?.replace("{team}", team.teamName) ||
       `Leave ${team.teamName}?`;
