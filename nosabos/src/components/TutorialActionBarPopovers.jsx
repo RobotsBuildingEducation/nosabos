@@ -21,6 +21,8 @@ import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaBitcoin, FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -131,20 +133,20 @@ export default function TutorialActionBarPopovers({
 
   const handlePrevious = () => {
     if (currentStep > 0) {
-      playSound("select");
+      playSound(selectSound);
       setCurrentStep((prev) => prev - 1);
     }
   };
 
   const handleNext = () => {
     if (currentStep < activeExplanations.length - 1) {
-      playSound("select");
+      playSound(selectSound);
       setCurrentStep((prev) => prev + 1);
     }
   };
 
   const handleFinish = () => {
-    playSound("submitAction");
+    playSound(submitActionSound);
     setIsVisible(false);
 
     onComplete();

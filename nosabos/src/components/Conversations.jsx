@@ -41,6 +41,8 @@ import {
   getRandomFallbackTopic,
 } from "../data/conversationTopics";
 import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -544,7 +546,7 @@ export default function Conversations({
     onClose: closeSettings,
   } = useDisclosure();
   const handleSettingsOpen = useCallback(() => {
-    playSound("select");
+    playSound(selectSound);
     openSettings();
   }, [openSettings, playSound]);
   const scrollConversationToTop = useCallback(() => {
@@ -1056,7 +1058,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
      WebRTC Start
   --------------------------- */
   async function start() {
-    playSound("submitAction");
+    playSound(submitActionSound);
     setErr("");
     setStatus("connecting");
     setUiState("thinking");

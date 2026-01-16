@@ -19,6 +19,7 @@ import FlashcardPractice from "./FlashcardPractice";
 import { translations } from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
 import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
 
 // Get app language from localStorage (UI language setting)
 const getAppLanguage = () => {
@@ -412,7 +413,7 @@ export default function FlashcardSkillTree({
 
   const handleCardClick = useCallback((card, status) => {
     if (status === "active") {
-      playSound("select");
+      playSound(selectSound);
       setPracticeCard(card);
       setIsPracticeOpen(true);
     }
