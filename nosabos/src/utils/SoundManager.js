@@ -33,22 +33,10 @@ class SoundManager {
 
   async init() {
     if (this.initialized) return;
-
-    // Check if Tone context is already running (may have been started by App.jsx)
-    // If not running, try to start it (though this may fail without user gesture)
-    if (Tone.context.state !== "running") {
-      try {
-        await Tone.start();
-      } catch (err) {
-        console.warn("[SoundManager] Tone.start() failed - audio context may need user gesture:", err);
-        // Don't return early - still mark as initialized so sounds can attempt to play
-        // once the context is eventually started
-      }
-    }
-
+    await Tone.start();
     Tone.Destination.volume.value = Tone.gainToDb(this.volume);
     this.initialized = true;
-    console.log("[SoundManager] Audio initialized, context state:", Tone.context.state);
+    console.log("[SoundManager] Audio initialized");
   }
 
   isReady() {
@@ -76,15 +64,6 @@ class SoundManager {
 
   play(name) {
     if (!this.initialized || !this.enabled) return;
-
-    // On mobile, audio context can get suspended after tab switching
-    // Try to resume it if needed (this is safe to call even if already running)
-    if (Tone.context.state === "suspended") {
-      Tone.context.resume().catch(() => {
-        // Ignore errors - context may need user gesture to resume
-      });
-    }
-
     const soundFn = this.sounds[name];
     if (soundFn) {
       soundFn();
@@ -498,13 +477,7 @@ class SoundManager {
       synth.triggerAttackRelease("A4", "32n");
       setTimeout(() => {
         const synth2 = this.createDisposableSynth(
-          {
-            type: "sine",
-            attack: 0.005,
-            decay: 0.08,
-            sustain: 0,
-            release: 0.06,
-          },
+          { type: "sine", attack: 0.005, decay: 0.08, sustain: 0, release: 0.06 },
           VOL.QUIET
         );
         synth2.triggerAttackRelease("E5", "64n");
