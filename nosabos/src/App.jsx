@@ -98,6 +98,7 @@ import {
 import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import * as Tone from "tone";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
 import { Navigate, useLocation } from "react-router-dom";
@@ -1550,6 +1551,9 @@ export default function App() {
   // Warm up audio on first user interaction to eliminate mobile audio delay
   useEffect(() => {
     const handleFirstInteraction = () => {
+      // CRITICAL: Call Tone.start() directly in the gesture handler
+      // Mobile browsers require this to be in the synchronous call stack
+      Tone.start();
       warmupAudio();
       // Remove listeners after first interaction
       document.removeEventListener("touchstart", handleFirstInteraction);
