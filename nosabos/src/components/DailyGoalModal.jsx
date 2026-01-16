@@ -33,8 +33,6 @@ import { WaveBar } from "./WaveBar.jsx";
 import GoalCalendar from "./GoalCalendar.jsx";
 import { FaCalendarAlt, FaCalendarCheck } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
 
 const MS_24H = 24 * 60 * 60 * 1000;
 const PRESETS = [75, 100, 150, 200, 300];
@@ -152,7 +150,7 @@ export default function DailyGoalModal({
       return;
     }
     try {
-      playSound(submitActionSound);
+      playSound("submitAction");
       const resetAt = new Date(Date.now() + MS_24H).toISOString();
       setDoc(
         doc(database, "users", npub),
@@ -171,7 +169,7 @@ export default function DailyGoalModal({
     }
   };
   const handleClose = useCallback(() => {
-    playSound(selectSound);
+    playSound("select");
     onClose?.();
   }, [onClose, playSound]);
 
@@ -246,7 +244,7 @@ export default function DailyGoalModal({
                       variant={active ? "solid" : "outline"}
                       colorScheme="teal"
                       onClick={() => {
-                        playSound(selectSound);
+                        playSound("select");
                         setGoal(String(v));
                       }}
                     >

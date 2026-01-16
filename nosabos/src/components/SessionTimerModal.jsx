@@ -18,8 +18,6 @@ import {
 } from "@chakra-ui/react";
 import { FiClock } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
 
 // Analog clock component that visualizes the selected duration
 function ClockVisual({ minutes, rotationMinutes = 120, maxMinutes = 240 }) {
@@ -260,11 +258,11 @@ export default function SessionTimerModal({
   const presets = [10, 15, 20, 30, 45, 60, 90, 120, 150, 180, 240];
   const playSound = useSoundSettings((s) => s.playSound);
   const handleClose = useCallback(() => {
-    playSound(selectSound);
+    playSound("select");
     onClose?.();
   }, [onClose, playSound]);
   const handleStart = useCallback(() => {
-    playSound(submitActionSound);
+    playSound("submitAction");
     onStart?.();
   }, [onStart, playSound]);
 
@@ -339,7 +337,7 @@ export default function SessionTimerModal({
                       variant={isActive ? "solid" : "outline"}
                       colorScheme="teal"
                       onClick={() => {
-                        playSound(selectSound);
+                        playSound("select");
                         onMinutesChange?.(String(preset));
                       }}
                     >
