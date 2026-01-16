@@ -64,10 +64,6 @@ import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import selectSound from "../assets/select.mp3";
-import submitSound from "../assets/submit.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1161,7 +1157,7 @@ export default function Vocabulary({
   async function handleAskAssistant(questionContext) {
     if (!questionContext || isLoadingAssistantSupport || assistantSupportText) return;
 
-    playSound(submitSound);
+    playSound("submit");
     setIsLoadingAssistantSupport(true);
     setAssistantSupportText("");
 
@@ -1285,7 +1281,7 @@ export default function Vocabulary({
   async function handleExplainAnswer() {
     if (!currentQuestionData || isLoadingExplanation || explanationText) return;
 
-    playSound(submitSound);
+    playSound("submit");
     setIsLoadingExplanation(true);
     setExplanationText(""); // Clear any previous text
 
@@ -1496,7 +1492,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function handleNext() {
-    playSound(nextButtonSound);
+    playSound("next");
     setLastOk(null);
     setRecentXp(0);
     setExplanationText("");
@@ -1622,7 +1618,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     // Skip button is disabled in quiz mode
     if (isFinalQuiz) return;
 
-    playSound(nextButtonSound);
+    playSound("next");
 
     if (isSpeakRecording) {
       try {
@@ -2254,7 +2250,7 @@ Return EXACTLY:
 
   async function submitFill() {
     if (!qFill || !ansFill.trim()) return;
-    playSound(submitActionSound);
+    playSound("submitAction");
     setLoadingGFill(true);
 
     // Clear previous explanation when attempting a new answer
@@ -2532,7 +2528,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MCQ (1 correct). Return JSON ONLY:
 
   async function submitMC() {
     if (!qMC || !pickMC) return;
-    playSound(submitActionSound);
+    playSound("submitAction");
     setLoadingGMC(true);
 
     // Clear previous explanation when attempting a new answer
@@ -2836,7 +2832,7 @@ Create ONE ${LANG_NAME(targetLang)} vocab MAQ (2–3 correct). Return JSON ONLY:
 
   async function submitMA() {
     if (!qMA || !picksMA.length) return;
-    playSound(submitActionSound);
+    playSound("submitAction");
     setLoadingGMA(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3565,7 +3561,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
 
   async function submitMatch() {
     if (!canSubmitMatch()) return;
-    playSound(submitActionSound);
+    playSound("submitAction");
     setLoadingMJ(true);
 
     // Clear previous explanation when attempting a new answer
@@ -4176,7 +4172,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
                         onClick={() => {
-                          playSound(selectSound);
+                          playSound("select");
                           // Move from slot back to bank
                           setMcBankOrder((prev) => [...prev, mcSlotIndex]);
                           setMcSlotIndex(null);
@@ -4286,7 +4282,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         {...dragProvided.draggableProps}
                         {...dragProvided.dragHandleProps}
                         onClick={() => {
-                          playSound(selectSound);
+                          playSound("select");
                           // Move from slot back to bank
                           setMaBankOrder((prev) => [...prev, choiceIdx]);
                           setMaSlots((prev) => {
@@ -4835,7 +4831,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 onClick={() => {
-                                  playSound(selectSound);
+                                  playSound("select");
                                   handleMcAnswerClick(idx, position);
                                 }}
                                 style={{
@@ -4919,7 +4915,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                       key={i}
                       onClick={() => {
                         if (!choicesMC.length) return;
-                        playSound(selectSound);
+                        playSound("select");
                         setPickMC(c);
                       }}
                       cursor={choicesMC.length ? "pointer" : "not-allowed"}
@@ -5105,7 +5101,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                 {...dragProvided.draggableProps}
                                 {...dragProvided.dragHandleProps}
                                 onClick={() => {
-                                  playSound(selectSound);
+                                  playSound("select");
                                   handleMaAnswerClick(idx, position);
                                 }}
                                 style={{
@@ -5191,7 +5187,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                         key={i}
                         onClick={() => {
                           if (!choicesMA.length) return;
-                          playSound(selectSound);
+                          playSound("select");
                           if (isSelected) {
                             setPicksMA(picksMA.filter((p) => p !== c));
                           } else {
@@ -5430,7 +5426,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                   setLastOk(null);
                   setSRecognized("");
                   setSEval(null);
-                  playSound(submitActionSound);
+                  playSound("submitAction");
                   try {
                     await startSpeakRecording();
                   } catch (err) {
@@ -5601,7 +5597,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
                                     onClick={() => {
-                                      playSound(selectSound);
+                                      playSound("select");
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
@@ -5613,7 +5609,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
-                                        playSound(selectSound);
+                                        playSound("select");
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5689,7 +5685,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
                                   onClick={() => {
-                                    playSound(selectSound);
+                                    playSound("select");
                                     handleMatchAutoMove(ri, "bank");
                                   }}
                                   onKeyDown={(event) => {
@@ -5698,7 +5694,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
-                                      playSound(selectSound);
+                                      playSound("select");
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}

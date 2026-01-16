@@ -44,8 +44,6 @@ import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -1008,7 +1006,7 @@ export default function RealTimeTest({
     } catch {}
   }
   async function start() {
-    playSound(submitActionSound);
+    playSound("submitAction");
     setErr("");
     setMessages([]);
     respToMsg.current.clear();
@@ -1763,7 +1761,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   }
 
   function skipGoal() {
-    playSound(nextButtonSound);
+    playSound("next");
     // If in lesson mode, call onSkip to switch to next random module type
     if (onSkip && typeof onSkip === "function") {
       console.log("[RealTimeTest] Skipping to next lesson module");
@@ -1786,7 +1784,7 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   function handleNextGoal() {
     if (goalBusyRef.current) return;
 
-    playSound(nextButtonSound);
+    playSound("next");
 
     // In lesson mode, move to the next module (same behavior as Skip)
     if (onSkip && typeof onSkip === "function") {

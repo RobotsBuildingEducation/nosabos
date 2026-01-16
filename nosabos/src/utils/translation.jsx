@@ -302,26 +302,6 @@ export const translations = {
           >
             View subscription platform
           </Button>
-          <br />
-          <br />
-          <Button
-            onMouseDown={() => {
-              window.open(
-                "https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share",
-                "_blank"
-              );
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                window.open(
-                  "https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share",
-                  "_blank"
-                );
-              }
-            }}
-          >
-            Subscribe or pay once
-          </Button>{" "}
         </div>
       </div>
     ),
@@ -930,20 +910,6 @@ export const translations = {
           >
             Ver plataforma de suscripción
           </a>
-          <br />
-          <br />
-          <a
-            style={{
-              fontSize: "1.15rem",
-              textDecoration: "underline",
-              color: "#63b3ed",
-              fontWeight: "bold",
-            }}
-            href="https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share"
-            target="_blank"
-          >
-            Suscribirse o pagar una sola vez
-          </a>{" "}
         </div>
       </div>
     ),

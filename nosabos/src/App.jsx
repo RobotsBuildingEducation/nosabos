@@ -151,11 +151,6 @@ import {
 } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { HiVolumeUp } from "react-icons/hi";
-import sparkleSound from "./assets/sparkle.mp3";
-import submitActionSound from "./assets/submitaction.mp3";
-import selectSound from "./assets/select.mp3";
-import modeSwitcherSound from "./assets/modeswitcher.mp3";
-import dailyGoalSound from "./assets/dailygoal.mp3";
 import {
   brazilianFlag,
   frenchFlag,
@@ -858,7 +853,7 @@ function TopBar({
             colorScheme="teal"
             icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
             onClick={() => {
-              playSound(selectSound);
+              playSound("select");
               onOpenDailyGoalModal?.();
             }}
             borderColor="teal.600"
@@ -899,7 +894,7 @@ function TopBar({
             variant={isTimerRunning ? "solid" : "outline"}
             size="sm"
             onClick={() => {
-              playSound(selectSound);
+              playSound("select");
               onOpenTimerModal?.();
             }}
           >
@@ -911,7 +906,7 @@ function TopBar({
               variant={timerPaused ? "outline" : "ghost"}
               size="sm"
               onClick={() => {
-                playSound(selectSound);
+                playSound("select");
                 onTogglePauseTimer?.();
               }}
             >
@@ -1672,7 +1667,7 @@ export default function App() {
   // Play sparkle sound when lesson completion modal opens
   useEffect(() => {
     if (showCompletionModal) {
-      playSound(sparkleSound);
+      playSound("sparkle");
     }
   }, [showCompletionModal, playSound]);
 
@@ -2023,7 +2018,7 @@ export default function App() {
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
     if (celebrateOpen) {
-      playSound(dailyGoalSound);
+      playSound("dailyGoal");
     }
   }, [celebrateOpen, playSound]);
 
@@ -4236,7 +4231,7 @@ export default function App() {
         onVolumeChange={handleVolumeChange}
         onVolumeSave={handleVolumeSave}
         playSound={playSound}
-        testSound={submitActionSound}
+        testSound={"submitAction"}
         isMobile={isMobile}
       />
 
@@ -5038,7 +5033,7 @@ function BottomActionBar({
     : undefined;
   const handleActionClick = (action) => {
     if (!action) return;
-    playSound?.(selectSound);
+    playSound?.("select");
     action();
   };
 
@@ -5172,7 +5167,7 @@ function BottomActionBar({
             aria-label={modeMenuLabel}
             rounded="xl"
             flexShrink={0}
-            onClick={() => playSound?.(modeSwitcherSound)}
+            onClick={() => playSound?.("randomChord")}
             // bg="rgba(0, 98, 189, 0.6)"
             colorScheme="teal"
             // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
@@ -5191,7 +5186,7 @@ function BottomActionBar({
                 <MenuItem
                   key={mode.id}
                   onClick={() => {
-                    playSound?.(modeSwitcherSound);
+                    playSound?.("randomChord");
                     // If clicking path when already in path mode, just scroll
                     if (mode.id === "path" && isSelected) {
                       onScrollToLatest?.();

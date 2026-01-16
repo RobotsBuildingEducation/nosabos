@@ -61,9 +61,6 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import RobotBuddyPro from "./RobotBuddyPro";
 import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import deliciousSound from "../assets/delicious.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1124,7 +1121,7 @@ export default function StoryMode({
 
   /* ----------------------------- Skip module ----------------------------- */
   const handleSkipModule = () => {
-    playSound(nextButtonSound);
+    playSound("next");
     // If in lesson mode, call onSkip to switch to next random module type
     if (onSkip && typeof onSkip === "function") {
       console.log("[StoryMode] Skipping to next lesson module");
@@ -1391,7 +1388,7 @@ export default function StoryMode({
       });
 
       // Play success sound
-      playSound(deliciousSound);
+      playSound("correct");
 
       // Mark sentence as completed, wait for user to click "Next"
       setSentenceCompleted(true);
@@ -1430,7 +1427,7 @@ export default function StoryMode({
     }
 
     setLastSuccessInfo(null);
-    playSound(submitActionSound);
+    playSound("submitAction");
 
     try {
       await startSpeakRecording();
@@ -1515,7 +1512,7 @@ export default function StoryMode({
 
   // Handle manual advancement to next sentence
   const handleNextSentence = async () => {
-    playSound(nextButtonSound);
+    playSound("next");
     const isLast =
       currentSentenceIndex >= (storyData?.sentences?.length || 0) - 1;
 
@@ -1730,7 +1727,7 @@ export default function StoryMode({
                   <Center>
                     <Button
                       onClick={() => {
-                        playSound(submitActionSound);
+                        playSound("submitAction");
                         stopAllAudio();
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);

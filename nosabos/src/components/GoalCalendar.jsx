@@ -2,7 +2,6 @@ import React, { useMemo } from "react";
 import { Box, Grid, Text, VStack, HStack, IconButton } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
 
 const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
@@ -131,7 +130,7 @@ export default function GoalCalendar({
 
   const handlePrevMonth = () => {
     if (!onMonthChange) return;
-    playSound(selectSound);
+    playSound("select");
     const newMonth = displayMonth === 0 ? 11 : displayMonth - 1;
     const newYear = displayMonth === 0 ? displayYear - 1 : displayYear;
     onMonthChange(newYear, newMonth);
@@ -139,7 +138,7 @@ export default function GoalCalendar({
 
   const handleNextMonth = () => {
     if (!onMonthChange) return;
-    playSound(selectSound);
+    playSound("select");
     const newMonth = displayMonth === 11 ? 0 : displayMonth + 1;
     const newYear = displayMonth === 11 ? displayYear + 1 : displayYear;
     onMonthChange(newYear, newMonth);

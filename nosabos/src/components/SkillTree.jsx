@@ -230,8 +230,6 @@ import { CEFR_LEVELS } from "../data/flashcards/common";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
-import selectSound from "../assets/select.mp3";
 
 const MotionBox = motion(Box);
 const MotionFlex = motion(Flex);
@@ -1807,7 +1805,7 @@ export default function SkillTree({
       status === SKILL_STATUS.IN_PROGRESS ||
       status === SKILL_STATUS.COMPLETED
     ) {
-      playSound(selectSound);
+      playSound("select");
       setSelectedLesson(lesson);
       setSelectedUnit(unit);
       onOpen();
@@ -1815,7 +1813,7 @@ export default function SkillTree({
   };
 
   const handleStartLesson = (lesson) => {
-    playSound(modeSwitcherSound);
+    playSound("randomChord");
     if (onStartLesson) {
       onStartLesson(lesson);
     }
