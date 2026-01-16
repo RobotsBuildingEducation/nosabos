@@ -60,6 +60,23 @@ class SoundManager {
     }
   }
 
+  async unlock() {
+    await this.init();
+    const ctx = Tone.getContext().rawContext;
+    if (ctx?.state && ctx.state !== "running") {
+      await ctx.resume();
+    }
+    if (!ctx) return;
+    const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    const source = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    source.buffer = buffer;
+    source.connect(gain).connect(ctx.destination);
+    source.start(0);
+    source.stop(0);
+  }
+
   isReady() {
     return this.initialized;
   }

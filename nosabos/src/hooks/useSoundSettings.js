@@ -30,7 +30,7 @@ const useSoundSettings = create((set, get) => ({
     if (get().isInitialized) return true;
     try {
       await soundManager.init();
-      await soundManager.resume();
+      await soundManager.unlock();
       // Sync current settings with soundManager
       soundManager.setEnabled(get().soundEnabled);
       soundManager.setVolume(get().volume / 100);
@@ -52,7 +52,7 @@ const useSoundSettings = create((set, get) => ({
       await state.initAudio();
       return;
     }
-    await soundManager.resume();
+    await soundManager.unlock();
   },
 
   /**
@@ -70,7 +70,7 @@ const useSoundSettings = create((set, get) => ({
       const success = await state.initAudio();
       if (!success) return;
     }
-    await soundManager.resume();
+    await soundManager.unlock();
 
     // Special handling for random chord
     if (soundName === "randomChord") {
@@ -102,7 +102,7 @@ const useSoundSettings = create((set, get) => ({
       if (!success) return;
     }
 
-    await soundManager.resume();
+    await soundManager.unlock();
     soundManager.playSliderTick(value, min, max);
   },
 
@@ -119,7 +119,7 @@ const useSoundSettings = create((set, get) => ({
       if (!success) return;
     }
 
-    await soundManager.resume();
+    await soundManager.unlock();
     soundManager.playRandomChord();
   },
 
