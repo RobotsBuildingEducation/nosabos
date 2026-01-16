@@ -154,6 +154,7 @@ import { HiVolumeUp } from "react-icons/hi";
 import sparkleSound from "./assets/sparkle.mp3";
 import submitActionSound from "./assets/submitaction.mp3";
 import selectSound from "./assets/select.mp3";
+import modeSwitcherSound from "./assets/modeswitcher.mp3";
 import dailyGoalSound from "./assets/dailygoal.mp3";
 import {
   brazilianFlag,
@@ -469,6 +470,7 @@ function TopBar({
   // 🆕 mobile detection prop
   isMobile,
 }) {
+  const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
 
@@ -1141,13 +1143,16 @@ function TopBar({
                     max={4000}
                     step={100}
                     value={pauseMs}
-                    onChange={setPauseMs}
+                    onChange={(val) => {
+                      setPauseMs(val);
+                      playSliderTick(val, 200, 4000);
+                    }}
                     onChangeEnd={(value) => persistSettings({ pauseMs: value })}
                   >
-                    <SliderTrack>
-                      <SliderFilledTrack />
+                    <SliderTrack bg="gray.700" h={3} borderRadius="full">
+                      <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
                     </SliderTrack>
-                    <SliderThumb />
+                    <SliderThumb boxSize={6} />
                   </Slider>
                   <Text fontSize="xs" opacity={0.6} mt={2}>
                     {vadHint}
@@ -1209,13 +1214,16 @@ function TopBar({
                           max={100}
                           step={5}
                           value={soundVolume}
-                          onChange={(val) => onVolumeChange(val)}
+                          onChange={(val) => {
+                            onVolumeChange(val);
+                            playSliderTick(val, 0, 100);
+                          }}
                           onChangeEnd={(val) => onVolumeSave(val)}
                         >
-                          <SliderTrack>
-                            <SliderFilledTrack />
+                          <SliderTrack bg="gray.700" h={3} borderRadius="full">
+                            <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
                           </SliderTrack>
-                          <SliderThumb />
+                          <SliderThumb boxSize={6} />
                         </Slider>
                       </Box>
                       <Button
@@ -1510,6 +1518,8 @@ export default function App() {
   const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
   const playSound = useSoundSettings((s) => s.playSound);
   const warmupAudio = useSoundSettings((s) => s.warmupAudio);
+
+  const playRandomChord = useSoundSettings((s) => s.playRandomChord);
 
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);
@@ -5162,7 +5172,7 @@ function BottomActionBar({
             aria-label={modeMenuLabel}
             rounded="xl"
             flexShrink={0}
-            onClick={() => playSound?.(selectSound)}
+            onClick={() => playSound?.(modeSwitcherSound)}
             // bg="rgba(0, 98, 189, 0.6)"
             colorScheme="teal"
             // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
@@ -5181,7 +5191,7 @@ function BottomActionBar({
                 <MenuItem
                   key={mode.id}
                   onClick={() => {
-                    playSound?.(selectSound);
+                    playSound?.(modeSwitcherSound);
                     // If clicking path when already in path mode, just scroll
                     if (mode.id === "path" && isSelected) {
                       onScrollToLatest?.();
