@@ -20,7 +20,6 @@ class SoundManager {
   initialized = false;
   enabled = true;
   volume = 0.7;
-  startPromise = null;
 
   synthPools = new Map([
     ["sine", []],
@@ -34,47 +33,10 @@ class SoundManager {
 
   async init() {
     if (this.initialized) return;
-    if (!this.startPromise) {
-      this.startPromise = (async () => {
-        await Tone.start();
-        if (Tone.context?.state && Tone.context.state !== "running") {
-          await Tone.context.resume();
-        }
-        Tone.Destination.volume.value = Tone.gainToDb(this.volume);
-        this.initialized = true;
-        console.log("[SoundManager] Audio initialized");
-      })().catch((err) => {
-        this.startPromise = null;
-        throw err;
-      });
-    }
-    return this.startPromise;
-  }
-
-  async resume() {
-    if (!this.initialized) {
-      return this.init();
-    }
-    if (Tone.context?.state && Tone.context.state !== "running") {
-      await Tone.context.resume();
-    }
-  }
-
-  async unlock() {
-    await this.init();
-    const ctx = Tone.getContext().rawContext;
-    if (ctx?.state && ctx.state !== "running") {
-      await ctx.resume();
-    }
-    if (!ctx) return;
-    const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
-    const source = ctx.createBufferSource();
-    const gain = ctx.createGain();
-    gain.gain.value = 0;
-    source.buffer = buffer;
-    source.connect(gain).connect(ctx.destination);
-    source.start(0);
-    source.stop(0);
+    await Tone.start();
+    Tone.Destination.volume.value = Tone.gainToDb(this.volume);
+    this.initialized = true;
+    console.log("[SoundManager] Audio initialized");
   }
 
   isReady() {
