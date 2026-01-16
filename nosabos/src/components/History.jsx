@@ -800,6 +800,10 @@ export default function History({
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
+  // TTS word highlighting state
+  const [highlightedWordIndex, setHighlightedWordIndex] = useState(-1);
+  const highlightIntervalRef = useRef(null);
+
   // Refs for audio
   const currentAudioRef = useRef(null);
 
@@ -1216,14 +1220,31 @@ export default function History({
         currentAudioRef.current = null;
       }
     } catch {}
+    // Clear highlight tracking
+    if (highlightIntervalRef.current) {
+      clearInterval(highlightIntervalRef.current);
+      highlightIntervalRef.current = null;
+    }
+    setHighlightedWordIndex(-1);
     setIsReadingTarget(false);
   };
 
-  async function speak({ text, langTag, setReading, setSynthesizing, onDone }) {
+  async function speak({
+    text,
+    langTag,
+    setReading,
+    setSynthesizing,
+    onDone,
+    enableHighlighting = false,
+  }) {
     stopSpeech();
     if (!text) return;
     setReading(true);
     setSynthesizing?.(true);
+
+    // Split text into words for highlighting
+    const words = text.split(/\s+/).filter(Boolean);
+    const totalWords = words.length;
 
     try {
       const player = await getTTSPlayer({
@@ -1231,11 +1252,30 @@ export default function History({
         langTag: langTag || TTS_LANG_TAG.es,
         voice: getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
+        // Callback for real-time transcript updates from the TTS API
+        onTranscriptDelta: enableHighlighting
+          ? (cumulativeTranscript) => {
+              // Count words in the spoken transcript so far
+              const spokenWords = cumulativeTranscript
+                .split(/\s+/)
+                .filter(Boolean).length;
+              // Highlight the word being spoken (subtract 1 since we want
+              // to highlight the word currently being uttered, not the next one)
+              const wordIndex = Math.max(0, Math.min(spokenWords - 1, totalWords - 1));
+              setHighlightedWordIndex(wordIndex);
+            }
+          : undefined,
       });
 
       currentAudioRef.current = player.audio;
 
       const cleanup = () => {
+        // Clear highlight tracking
+        if (highlightIntervalRef.current) {
+          clearInterval(highlightIntervalRef.current);
+          highlightIntervalRef.current = null;
+        }
+        setHighlightedWordIndex(-1);
         setReading(false);
         currentAudioRef.current = null;
         player.cleanup?.();
@@ -1248,11 +1288,18 @@ export default function History({
 
       await player.ready;
       setSynthesizing?.(false);
+
+      // Set initial highlight when audio starts
+      if (enableHighlighting && totalWords > 0) {
+        setHighlightedWordIndex(0);
+      }
+
       await player.audio.play();
       return;
     } catch {
       setSynthesizing?.(false);
       setReading(false);
+      setHighlightedWordIndex(-1);
       onDone?.();
     }
   }
@@ -1264,6 +1311,7 @@ export default function History({
       onDone: () => {},
       setReading: setIsReadingTarget,
       setSynthesizing: setIsSynthesizingTarget,
+      enableHighlighting: true,
     });
 
   const xpReasonText =
@@ -1419,7 +1467,25 @@ export default function History({
                 </Box>
 
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {viewLecture.target || ""}
+                  {isReadingTarget && highlightedWordIndex >= 0
+                    ? (viewLecture.target || "").split(/\s+/).map((word, idx) => (
+                        <Text
+                          as="span"
+                          key={idx}
+                          bg={
+                            idx === highlightedWordIndex
+                              ? "teal.500"
+                              : "transparent"
+                          }
+                          color={idx === highlightedWordIndex ? "white" : "inherit"}
+                          borderRadius="sm"
+                          px={idx === highlightedWordIndex ? "1" : "0"}
+                          transition="background 0.1s ease-in-out"
+                        >
+                          {word}{" "}
+                        </Text>
+                      ))
+                    : viewLecture.target || ""}
                 </Text>
 
                 {showTranslations && viewLecture.support ? (

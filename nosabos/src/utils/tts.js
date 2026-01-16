@@ -252,11 +252,16 @@ export async function fetchTTSBlob() {
   throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
 }
 
-export async function getTTSPlayer({ text, voice, langTag } = {}) {
-  return getRealtimePlayer({ text, voice, langTag });
+export async function getTTSPlayer({
+  text,
+  voice,
+  langTag,
+  onTranscriptDelta,
+} = {}) {
+  return getRealtimePlayer({ text, voice, langTag, onTranscriptDelta });
 }
 
-async function getRealtimePlayer({ text, voice, langTag }) {
+async function getRealtimePlayer({ text, voice, langTag, onTranscriptDelta }) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
@@ -342,10 +347,21 @@ async function getRealtimePlayer({ text, voice, langTag }) {
     // Stopping the tracks is sufficient cleanup
   });
 
+  // Track cumulative transcript for word highlighting
+  let cumulativeTranscript = "";
+
   // Listen for response.done to know when speech synthesis is complete
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
+
+      // Handle transcript delta events for word-level highlighting
+      if (msg.type === "response.audio_transcript.delta" && onTranscriptDelta) {
+        const delta = msg.delta || "";
+        cumulativeTranscript += delta;
+        onTranscriptDelta(cumulativeTranscript, delta);
+      }
+
       // Close connection when response is done (speech finished)
       if (msg.type === "response.done") {
         intentionalEnd = true;
