@@ -33,7 +33,11 @@ class SoundManager {
 
   async init() {
     if (this.initialized) return;
-    await Tone.start();
+    // Only call Tone.start() if context isn't already running
+    // (App.jsx may have already started it in the user gesture handler)
+    if (Tone.context.state !== "running") {
+      await Tone.start();
+    }
     Tone.Destination.volume.value = Tone.gainToDb(this.volume);
     this.initialized = true;
     console.log("[SoundManager] Audio initialized");
