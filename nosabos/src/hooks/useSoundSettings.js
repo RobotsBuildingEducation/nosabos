@@ -31,6 +31,36 @@ const SOUND_MAP = new Map([
   [dailyGoalSound, "dailyGoal"],
 ]);
 
+// Set of valid MP3 file paths for HTML5 Audio fallback
+const MP3_FILES = new Set([
+  clickSound,
+  selectSound,
+  submitSound,
+  submitActionSound,
+  nextButtonSound,
+  completeSound,
+  deliciousSound,
+  sparkleSound,
+  modeSwitcherSound,
+  dailyGoalSound,
+]);
+
+/**
+ * Play sound using HTML5 Audio API as fallback
+ * This tends to work better on some mobile browsers than WebAudio/Tone.js
+ */
+const playMP3Fallback = (mp3Path, volume) => {
+  try {
+    const audio = new Audio(mp3Path);
+    audio.volume = Math.max(0, Math.min(1, volume));
+    audio.play().catch(() => {
+      // Silently fail - user hasn't interacted yet or audio not allowed
+    });
+  } catch {
+    // Silently fail
+  }
+};
+
 /**
  * Global sound settings store.
  * Now uses Tone.js synthesized sounds instead of MP3 files.
@@ -100,14 +130,33 @@ const useSoundSettings = create((set, get) => ({
     const state = get();
     if (!state.soundEnabled) return;
 
-    // Check if Tone context is running - if not, try to resume it
-    // This handles cases where audio was suspended (mobile tab switching, etc.)
+    // Check if this is an MP3 file path that we can use as fallback
+    const isMP3File = MP3_FILES.has(soundFileOrName);
+
+    // Check if Tone.js audio context is ready
+    const toneReady = Tone.context.state === "running";
+
+    // If Tone.js isn't ready and we have an MP3 file, use HTML5 Audio fallback
+    // This is more reliable on mobile browsers that haven't initialized WebAudio yet
+    if (!toneReady && isMP3File) {
+      playMP3Fallback(soundFileOrName, state.volume / 100);
+      // Also try to initialize Tone.js for future sounds (without blocking)
+      if (!state.isInitialized) {
+        state.initAudio().catch(() => {});
+      }
+      return;
+    }
+
+    // Try to resume suspended context (happens after tab switching on mobile)
     if (Tone.context.state === "suspended") {
       try {
         await Tone.context.resume();
-        console.log("[useSoundSettings] Resumed suspended audio context");
-      } catch (err) {
-        console.warn("[useSoundSettings] Could not resume audio context:", err);
+      } catch {
+        // If resume fails and we have MP3, use fallback
+        if (isMP3File) {
+          playMP3Fallback(soundFileOrName, state.volume / 100);
+          return;
+        }
       }
     }
 
@@ -115,7 +164,10 @@ const useSoundSettings = create((set, get) => ({
     if (!state.isInitialized) {
       const success = await state.initAudio();
       if (!success) {
-        console.warn("[useSoundSettings] playSound: initAudio failed");
+        // Fallback to MP3 if Tone.js init failed
+        if (isMP3File) {
+          playMP3Fallback(soundFileOrName, state.volume / 100);
+        }
         return;
       }
     }
