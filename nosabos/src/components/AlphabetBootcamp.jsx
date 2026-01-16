@@ -883,7 +883,7 @@ function LetterCard({
               </Button>
 
               <Button
-                size="xs"
+                size="sm"
                 variant="ghost"
                 color="whiteAlpha.700"
                 onClick={handleFlipBack}
