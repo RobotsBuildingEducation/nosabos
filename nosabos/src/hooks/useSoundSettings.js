@@ -1,5 +1,6 @@
 // src/hooks/useSoundSettings.js
 import { create } from "zustand";
+import * as Tone from "tone";
 import { soundManager } from "../utils/SoundManager";
 
 // Legacy MP3 imports - kept for backward compatibility with existing import statements
@@ -63,6 +64,7 @@ const useSoundSettings = create((set, get) => ({
       soundManager.setEnabled(get().soundEnabled);
       soundManager.setVolume(get().volume / 100);
       set({ isInitialized: true });
+      console.log("[useSoundSettings] Audio initialized successfully");
       return true;
     } catch (err) {
       console.error("[useSoundSettings] Failed to initialize audio:", err);
@@ -72,12 +74,17 @@ const useSoundSettings = create((set, get) => ({
 
   /**
    * Warm up the audio system on first user interaction.
-   * Call this on a user gesture (click, touch) to initialize Tone.js.
+   * Call this SYNCHRONOUSLY from a user gesture - do NOT await this function.
+   * The init will happen in background after Tone.start() is called.
    */
-  warmupAudio: async () => {
+  warmupAudio: () => {
     const state = get();
     if (!state.isInitialized) {
-      await state.initAudio();
+      // Don't await - just kick off the init process
+      // Tone.start() should already be called by App.jsx in the same gesture
+      state.initAudio().catch((err) => {
+        console.error("[useSoundSettings] warmupAudio failed:", err);
+      });
     }
   },
 
@@ -93,10 +100,24 @@ const useSoundSettings = create((set, get) => ({
     const state = get();
     if (!state.soundEnabled) return;
 
+    // Check if Tone context is running - if not, try to resume it
+    // This handles cases where audio was suspended (mobile tab switching, etc.)
+    if (Tone.context.state === "suspended") {
+      try {
+        await Tone.context.resume();
+        console.log("[useSoundSettings] Resumed suspended audio context");
+      } catch (err) {
+        console.warn("[useSoundSettings] Could not resume audio context:", err);
+      }
+    }
+
     // Auto-initialize on first sound play attempt (user gesture)
     if (!state.isInitialized) {
       const success = await state.initAudio();
-      if (!success) return;
+      if (!success) {
+        console.warn("[useSoundSettings] playSound: initAudio failed");
+        return;
+      }
     }
 
     // Map legacy MP3 path to Tone.js sound name, or use direct name

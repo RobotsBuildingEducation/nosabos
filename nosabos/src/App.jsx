@@ -1549,33 +1549,41 @@ export default function App() {
   }, [user?.soundVolume, setSoundSettingsVolume]);
 
   // Warm up audio on first user interaction to eliminate mobile audio delay
-  // CRITICAL: Tone.start() MUST be called directly within user gesture handler
-  // Mobile browsers (especially iOS Safari) require this to be synchronous
+  // CRITICAL: Tone.start() MUST be called SYNCHRONOUSLY within user gesture handler
+  // iOS Safari breaks gesture context for async functions - do NOT use async/await here
   useEffect(() => {
-    const handleFirstInteraction = async () => {
-      // Remove listeners immediately to prevent multiple calls
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      document.removeEventListener("click", handleFirstInteraction);
+    const handleFirstInteraction = () => {
+      // Call Tone.start() SYNCHRONOUSLY - do NOT await
+      // The call just needs to happen within the gesture, completion can be async
+      Tone.start()
+        .then(() => {
+          console.log("[App] Tone.js audio context started successfully");
+        })
+        .catch((err) => {
+          console.error("[App] Failed to start Tone.js audio context:", err);
+        });
 
-      try {
-        // Call Tone.start() DIRECTLY in the gesture handler - this is critical for mobile
-        // Mobile browsers require audio context to be started within user gesture call stack
-        await Tone.start();
-        console.log("[App] Tone.js audio context started via user gesture");
-      } catch (err) {
-        console.error("[App] Failed to start Tone.js audio context:", err);
-      }
-
-      // Then warm up the rest of the audio system
+      // Warm up the rest of the audio system (also synchronous call)
       warmupAudio();
     };
+
+    // Use capture phase to ensure we get the event before anything else
     document.addEventListener("touchstart", handleFirstInteraction, {
       once: true,
+      capture: true,
     });
-    document.addEventListener("click", handleFirstInteraction, { once: true });
+    document.addEventListener("click", handleFirstInteraction, {
+      once: true,
+      capture: true,
+    });
+
     return () => {
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      document.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("touchstart", handleFirstInteraction, {
+        capture: true,
+      });
+      document.removeEventListener("click", handleFirstInteraction, {
+        capture: true,
+      });
     };
   }, [warmupAudio]);
 
