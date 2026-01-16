@@ -122,9 +122,16 @@ const useSoundSettings = create((set, get) => ({
   /**
    * Play slider tick sound with pitch based on value
    */
-  playSliderTick: (value, min = 0, max = 100) => {
+  playSliderTick: async (value, min = 0, max = 100) => {
     const state = get();
-    if (!state.soundEnabled || !state.isInitialized) return;
+    if (!state.soundEnabled) return;
+
+    // Auto-initialize on first play attempt (user gesture from slider interaction)
+    if (!state.isInitialized) {
+      const success = await state.initAudio();
+      if (!success) return;
+    }
+
     soundManager.playSliderTick(value, min, max);
   },
 
