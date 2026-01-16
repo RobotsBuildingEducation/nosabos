@@ -121,20 +121,35 @@ export default function SoundExperiment() {
   const navigate = useNavigate();
   const toast = useToast();
   const [isInitialized, setIsInitialized] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [volume, setVolume] = useState(70);
   const [hoverValue, setHoverValue] = useState(50);
   const [brushSize, setBrushSize] = useState(5);
   const [activeSound, setActiveSound] = useState(null);
 
-  // Initialize sound manager
-  useEffect(() => {
-    const init = async () => {
+  // Initialize sound manager - MUST be called from user gesture
+  const initializeAudio = useCallback(async () => {
+    if (isInitialized || isInitializing) return;
+
+    setIsInitializing(true);
+    try {
       await soundManager.init();
       setIsInitialized(true);
-    };
-    init();
-  }, []);
+      // Play intro sound to confirm it works
+      setTimeout(() => soundManager.play("intro"), 100);
+    } catch (err) {
+      console.error("Failed to initialize audio:", err);
+      toast({
+        title: "Audio initialization failed",
+        description: "Please try tapping again",
+        status: "error",
+        duration: 3000,
+      });
+    } finally {
+      setIsInitializing(false);
+    }
+  }, [isInitialized, isInitializing, toast]);
 
   // Sync volume with sound manager
   useEffect(() => {
@@ -187,6 +202,67 @@ export default function SoundExperiment() {
     },
     [isInitialized]
   );
+
+  // Show start screen if not initialized
+  if (!isInitialized) {
+    return (
+      <Box
+        minH="100dvh"
+        bg="linear-gradient(135deg, #0b1220 0%, #1a1a2e 50%, #16213e 100%)"
+        color="gray.100"
+        display="flex"
+        flexDirection="column"
+        alignItems="center"
+        justifyContent="center"
+        p={8}
+        textAlign="center"
+      >
+        <VStack spacing={8}>
+          <VStack spacing={2}>
+            <Heading size="2xl" fontWeight="bold">
+              Sound Laboratory
+            </Heading>
+            <Text color="gray.400" fontSize="lg">
+              Explore synthesized sounds with Tone.js
+            </Text>
+          </VStack>
+
+          <Button
+            onClick={initializeAudio}
+            isLoading={isInitializing}
+            loadingText="Starting..."
+            size="lg"
+            colorScheme="teal"
+            px={12}
+            py={8}
+            fontSize="xl"
+            borderRadius="2xl"
+            leftIcon={<PiSpeakerHighDuotone size={28} />}
+            _hover={{
+              transform: "scale(1.05)",
+              boxShadow: "0 0 30px rgba(56, 178, 172, 0.5)",
+            }}
+            transition="all 0.2s ease"
+          >
+            Tap to Start Audio
+          </Button>
+
+          <Text color="gray.500" fontSize="sm" maxW="300px">
+            Audio requires user interaction to start due to browser policies
+          </Text>
+
+          <Button
+            onClick={() => navigate("/")}
+            variant="ghost"
+            size="sm"
+            leftIcon={<PiArrowLeftBold />}
+          >
+            Back to Home
+          </Button>
+        </VStack>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -263,15 +339,13 @@ export default function SoundExperiment() {
       {/* Status Badge */}
       <Flex justify="center" mb={6}>
         <Badge
-          colorScheme={isInitialized ? "green" : "yellow"}
+          colorScheme="green"
           px={4}
           py={2}
           borderRadius="full"
           fontSize="sm"
         >
-          {isInitialized
-            ? "Audio Engine Ready"
-            : "Initializing Audio..."}
+          Audio Engine Ready
         </Badge>
       </Flex>
 
