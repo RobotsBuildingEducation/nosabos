@@ -366,11 +366,7 @@ export default function SoundExperiment() {
             const Icon = sound.icon;
             const isActive = activeSound === sound.id;
             return (
-              <Tooltip
-                key={sound.id}
-                label={sound.description}
-                placement="top"
-              >
+              <Tooltip key={sound.id} label={sound.description} placement="top">
                 <Button
                   onClick={() => playSound(sound.id)}
                   colorScheme={sound.color}
@@ -409,10 +405,7 @@ export default function SoundExperiment() {
         <Heading size="md" mb={4} color="gray.300">
           Interactive Controls
         </Heading>
-        <Grid
-          templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }}
-          gap={6}
-        >
+        <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
           {/* Hover Pitch Control */}
           <Box
             bg="whiteAlpha.50"
@@ -446,9 +439,7 @@ export default function SoundExperiment() {
               step={1}
             >
               <SliderTrack bg="gray.700" h={3} borderRadius="full">
-                <SliderFilledTrack
-                  bg="linear-gradient(90deg, #00CED1, #4169E1)"
-                />
+                <SliderFilledTrack bg="linear-gradient(90deg, #00CED1, #4169E1)" />
               </SliderTrack>
               <SliderThumb boxSize={6} bg="cyan.400" />
             </Slider>
@@ -487,9 +478,7 @@ export default function SoundExperiment() {
               step={1}
             >
               <SliderTrack bg="gray.700" h={3} borderRadius="full">
-                <SliderFilledTrack
-                  bg="linear-gradient(90deg, #3CB371, #90EE90)"
-                />
+                <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #90EE90)" />
               </SliderTrack>
               <SliderThumb boxSize={6} bg="green.400" />
             </Slider>
@@ -576,10 +565,10 @@ export default function SoundExperiment() {
           </Text>
         </HStack>
         <Text color="gray.400" fontSize="sm" maxW="600px" mx="auto">
-          All sounds are synthesized in real-time using Tone.js. No audio
-          files are loaded - everything is generated programmatically with
-          oscillators, envelopes, and effects. The system uses synth pooling
-          for performance optimization.
+          All sounds are synthesized in real-time using Tone.js. No audio files
+          are loaded - everything is generated programmatically with
+          oscillators, envelopes, and effects. The system uses synth pooling for
+          performance optimization.
         </Text>
       </Box>
     </Box>

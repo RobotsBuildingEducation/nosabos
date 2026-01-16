@@ -470,6 +470,7 @@ function TopBar({
   // 🆕 mobile detection prop
   isMobile,
 }) {
+  const playSliderTick = useSoundSettings((s) => s.playSliderTick);
   const toast = useToast();
   const t = translations[appLanguage] || translations.en;
 
@@ -1517,7 +1518,7 @@ export default function App() {
   const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
   const playSound = useSoundSettings((s) => s.playSound);
   const warmupAudio = useSoundSettings((s) => s.warmupAudio);
-  const playSliderTick = useSoundSettings((s) => s.playSliderTick);
+
   const playRandomChord = useSoundSettings((s) => s.playRandomChord);
 
   const [cefrResult, setCefrResult] = useState(null);
