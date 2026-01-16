@@ -2,6 +2,29 @@
 import { create } from "zustand";
 import { soundManager } from "../utils/SoundManager";
 
+const LEGACY_SOUND_MAP = new Map([
+  ["click", "incorrect"],
+  ["select", "select"],
+  ["submit", "submit"],
+  ["submitaction", "submitAction"],
+  ["nextbutton", "next"],
+  ["complete", "correct"],
+  ["delicious", "correct"],
+  ["sparkle", "sparkle"],
+  ["modeswitcher", "randomChord"],
+  ["dailygoal", "dailyGoal"],
+]);
+
+const resolveSoundName = (soundFileOrName) => {
+  if (typeof soundFileOrName !== "string") return soundFileOrName;
+  const direct = LEGACY_SOUND_MAP.get(soundFileOrName);
+  if (direct) return direct;
+  const match = soundFileOrName.match(/([^/]+)\\.mp3(\\?.*)?$/i);
+  if (!match) return soundFileOrName;
+  const base = match[1].toLowerCase();
+  return LEGACY_SOUND_MAP.get(base) || soundFileOrName;
+};
+
 /**
  * Global sound settings store.
  * Uses Tone.js synthesized sounds instead of MP3 files.
@@ -58,7 +81,7 @@ const useSoundSettings = create((set, get) => ({
    * @param {string} soundName - The sound name
    * @returns {Promise<void>}
    */
-  playSound: async (soundName) => {
+  playSound: async (soundFileOrName) => {
     const state = get();
     if (!state.soundEnabled) return;
 
@@ -68,6 +91,7 @@ const useSoundSettings = create((set, get) => ({
       if (!success) return;
     }
 
+    const soundName = resolveSoundName(soundFileOrName);
     // Special handling for random chord
     if (soundName === "randomChord") {
       soundManager.playRandomChord();

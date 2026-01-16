@@ -1547,16 +1547,20 @@ export default function App() {
     const handleFirstInteraction = () => {
       warmupAudio();
       // Remove listeners after first interaction
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      document.removeEventListener("click", handleFirstInteraction);
+      window.removeEventListener("pointerdown", handleFirstInteraction, true);
+      window.removeEventListener("touchstart", handleFirstInteraction, true);
+      window.removeEventListener("click", handleFirstInteraction, true);
+      window.removeEventListener("keydown", handleFirstInteraction, true);
     };
-    document.addEventListener("touchstart", handleFirstInteraction, {
-      once: true,
-    });
-    document.addEventListener("click", handleFirstInteraction, { once: true });
+    window.addEventListener("pointerdown", handleFirstInteraction, true);
+    window.addEventListener("touchstart", handleFirstInteraction, true);
+    window.addEventListener("click", handleFirstInteraction, true);
+    window.addEventListener("keydown", handleFirstInteraction, true);
     return () => {
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      document.removeEventListener("click", handleFirstInteraction);
+      window.removeEventListener("pointerdown", handleFirstInteraction, true);
+      window.removeEventListener("touchstart", handleFirstInteraction, true);
+      window.removeEventListener("click", handleFirstInteraction, true);
+      window.removeEventListener("keydown", handleFirstInteraction, true);
     };
   }, [warmupAudio]);
 
