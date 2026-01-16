@@ -98,7 +98,6 @@ import {
 import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
-import * as Tone from "tone";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
 import { Navigate, useLocation } from "react-router-dom";
@@ -1549,41 +1548,20 @@ export default function App() {
   }, [user?.soundVolume, setSoundSettingsVolume]);
 
   // Warm up audio on first user interaction to eliminate mobile audio delay
-  // CRITICAL: Tone.start() MUST be called SYNCHRONOUSLY within user gesture handler
-  // iOS Safari breaks gesture context for async functions - do NOT use async/await here
   useEffect(() => {
     const handleFirstInteraction = () => {
-      // Call Tone.start() SYNCHRONOUSLY - do NOT await
-      // The call just needs to happen within the gesture, completion can be async
-      Tone.start()
-        .then(() => {
-          console.log("[App] Tone.js audio context started successfully");
-        })
-        .catch((err) => {
-          console.error("[App] Failed to start Tone.js audio context:", err);
-        });
-
-      // Warm up the rest of the audio system (also synchronous call)
       warmupAudio();
+      // Remove listeners after first interaction
+      document.removeEventListener("touchstart", handleFirstInteraction);
+      document.removeEventListener("click", handleFirstInteraction);
     };
-
-    // Use capture phase to ensure we get the event before anything else
     document.addEventListener("touchstart", handleFirstInteraction, {
       once: true,
-      capture: true,
     });
-    document.addEventListener("click", handleFirstInteraction, {
-      once: true,
-      capture: true,
-    });
-
+    document.addEventListener("click", handleFirstInteraction, { once: true });
     return () => {
-      document.removeEventListener("touchstart", handleFirstInteraction, {
-        capture: true,
-      });
-      document.removeEventListener("click", handleFirstInteraction, {
-        capture: true,
-      });
+      document.removeEventListener("touchstart", handleFirstInteraction);
+      document.removeEventListener("click", handleFirstInteraction);
     };
   }, [warmupAudio]);
 
