@@ -154,6 +154,7 @@ import { HiVolumeUp } from "react-icons/hi";
 import sparkleSound from "./assets/sparkle.mp3";
 import submitActionSound from "./assets/submitaction.mp3";
 import selectSound from "./assets/select.mp3";
+import modeSwitcherSound from "./assets/modeswitcher.mp3";
 import dailyGoalSound from "./assets/dailygoal.mp3";
 import {
   brazilianFlag,
@@ -5170,7 +5171,7 @@ function BottomActionBar({
             aria-label={modeMenuLabel}
             rounded="xl"
             flexShrink={0}
-            onClick={() => playSound?.(selectSound)}
+            onClick={() => playSound?.(modeSwitcherSound)}
             // bg="rgba(0, 98, 189, 0.6)"
             colorScheme="teal"
             // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
@@ -5189,7 +5190,7 @@ function BottomActionBar({
                 <MenuItem
                   key={mode.id}
                   onClick={() => {
-                    playSound?.(selectSound);
+                    playSound?.(modeSwitcherSound);
                     // If clicking path when already in path mode, just scroll
                     if (mode.id === "path" && isSelected) {
                       onScrollToLatest?.();
