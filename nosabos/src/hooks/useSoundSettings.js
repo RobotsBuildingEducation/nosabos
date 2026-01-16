@@ -1,7 +1,9 @@
 // src/hooks/useSoundSettings.js
 import { create } from "zustand";
+import { soundManager } from "../utils/SoundManager";
 
-// Import all sound assets for preloading
+// Legacy MP3 imports - kept for backward compatibility with existing import statements
+// These are now just string identifiers that map to Tone.js sounds
 import clickSound from "../assets/click.mp3";
 import selectSound from "../assets/select.mp3";
 import submitSound from "../assets/submit.mp3";
@@ -13,123 +15,109 @@ import sparkleSound from "../assets/sparkle.mp3";
 import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import dailyGoalSound from "../assets/dailygoal.mp3";
 
-// Audio cache for preloaded sounds
-const audioCache = new Map();
-
-// List of all sounds to preload
-const allSounds = [
-  clickSound,
-  selectSound,
-  submitSound,
-  submitActionSound,
-  nextButtonSound,
-  completeSound,
-  deliciousSound,
-  sparkleSound,
-  modeSwitcherSound,
-  dailyGoalSound,
-];
-
-// Preload a single audio file into the cache
-const preloadAudio = (soundFile) => {
-  if (audioCache.has(soundFile)) return;
-  const audio = new Audio();
-  audio.preload = "auto";
-  audio.src = soundFile;
-  // Load the audio data
-  audio.load();
-  audioCache.set(soundFile, audio);
-};
-
-// Preload all sounds on module initialization
-allSounds.forEach(preloadAudio);
-
-// Track if audio has been "unlocked" on mobile
-let audioUnlocked = false;
-
-// Shared AudioContext for Web Audio API (more reliable on mobile)
-let audioContext = null;
-
-/**
- * Get or create a shared AudioContext
- */
-const getAudioContext = () => {
-  if (!audioContext) {
-    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-    if (AudioContextClass) {
-      audioContext = new AudioContextClass();
-    }
-  }
-  return audioContext;
-};
+// Map legacy MP3 file paths to new Tone.js sound names
+const SOUND_MAP = new Map([
+  [clickSound, "incorrect"], // click.mp3 was used for incorrect answers
+  [selectSound, "select"],
+  [submitSound, "submit"],
+  [submitActionSound, "submitAction"],
+  [nextButtonSound, "next"],
+  [completeSound, "correct"], // complete.mp3 -> correct (was unused, but map it anyway)
+  [deliciousSound, "correct"],
+  [sparkleSound, "sparkle"],
+  [modeSwitcherSound, "modeSwitch"],
+  [dailyGoalSound, "dailyGoal"],
+]);
 
 /**
  * Global sound settings store.
- * Manages sound enabled/disabled state, volume level, and provides a playSound utility.
+ * Now uses Tone.js synthesized sounds instead of MP3 files.
+ * Maintains backward compatibility with existing playSound(soundFile) calls.
  */
 const useSoundSettings = create((set, get) => ({
-  soundEnabled: true, // Default to enabled
+  soundEnabled: true,
   volume: 40, // Volume level 0-100, default to 40%
+  isInitialized: false,
 
-  setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
-  setVolume: (volume) => set({ volume: Math.max(0, Math.min(100, volume)) }),
+  setSoundEnabled: (enabled) => {
+    set({ soundEnabled: enabled });
+    soundManager.setEnabled(enabled);
+  },
+
+  setVolume: (volume) => {
+    const clampedVolume = Math.max(0, Math.min(100, volume));
+    set({ volume: clampedVolume });
+    soundManager.setVolume(clampedVolume / 100);
+  },
+
+  /**
+   * Initialize the audio system. Must be called from a user gesture (click/tap).
+   * This is required due to browser autoplay policies.
+   */
+  initAudio: async () => {
+    if (get().isInitialized) return true;
+    try {
+      await soundManager.init();
+      // Sync current settings with soundManager
+      soundManager.setEnabled(get().soundEnabled);
+      soundManager.setVolume(get().volume / 100);
+      set({ isInitialized: true });
+      return true;
+    } catch (err) {
+      console.error("[useSoundSettings] Failed to initialize audio:", err);
+      return false;
+    }
+  },
 
   /**
    * Warm up the audio system on first user interaction.
-   * Call this on a user gesture (click, touch) to eliminate mobile audio delay.
-   * Uses Web Audio API (AudioContext) for reliable, silent unlock.
+   * Call this on a user gesture (click, touch) to initialize Tone.js.
    */
-  warmupAudio: () => {
-    if (audioUnlocked) return;
-    audioUnlocked = true;
-
-    // Unlock Web Audio API context (reliable and silent)
-    const ctx = getAudioContext();
-    if (ctx) {
-      // Resume the context if it's suspended (required on iOS Safari)
-      if (ctx.state === "suspended") {
-        ctx.resume().catch(() => {});
-      }
-      // Play a tiny silent buffer to fully unlock audio
-      try {
-        const buffer = ctx.createBuffer(1, 1, 22050);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        source.start(0);
-      } catch (e) {
-        // Fallback if buffer creation fails
-      }
+  warmupAudio: async () => {
+    const state = get();
+    if (!state.isInitialized) {
+      await state.initAudio();
     }
   },
 
   /**
-   * Play a sound file if sounds are enabled.
-   * Uses preloaded/cached audio for instant playback on mobile.
-   * @param {string} soundFile - The imported sound file (mp3, wav, etc.)
+   * Play a sound. Accepts either:
+   * - Legacy MP3 file path (from imports) - automatically mapped to Tone.js sound
+   * - Direct sound name string (e.g., "select", "correct", "submitAction")
+   *
+   * @param {string} soundFileOrName - The imported sound file or direct sound name
    * @returns {Promise<void>}
    */
-  playSound: (soundFile) => {
-    if (!get().soundEnabled) return Promise.resolve();
+  playSound: async (soundFileOrName) => {
+    const state = get();
+    if (!state.soundEnabled) return;
 
-    // Ensure audio is preloaded
-    if (!audioCache.has(soundFile)) {
-      preloadAudio(soundFile);
+    // Auto-initialize on first sound play attempt (user gesture)
+    if (!state.isInitialized) {
+      const success = await state.initAudio();
+      if (!success) return;
     }
 
-    const cachedAudio = audioCache.get(soundFile);
-    if (cachedAudio) {
-      // Clone the cached audio for concurrent playback support
-      const audio = cachedAudio.cloneNode();
-      audio.volume = get().volume / 100;
-      return audio.play().catch(() => {});
-    }
+    // Map legacy MP3 path to Tone.js sound name, or use direct name
+    const soundName = SOUND_MAP.get(soundFileOrName) || soundFileOrName;
 
-    // Fallback to creating new audio (shouldn't happen with preloading)
-    const audio = new Audio(soundFile);
-    audio.volume = get().volume / 100;
-    return audio.play().catch(() => {});
+    // Play the sound
+    soundManager.play(soundName);
   },
+
+  /**
+   * Play a sound by direct name (for new code that doesn't use MP3 imports)
+   */
+  playSoundByName: (name) => {
+    const state = get();
+    if (!state.soundEnabled || !state.isInitialized) return;
+    soundManager.play(name);
+  },
+
+  /**
+   * Check if audio is ready
+   */
+  isReady: () => get().isInitialized && soundManager.isReady(),
 }));
 
 export default useSoundSettings;

@@ -1144,10 +1144,10 @@ function TopBar({
                     onChange={setPauseMs}
                     onChangeEnd={(value) => persistSettings({ pauseMs: value })}
                   >
-                    <SliderTrack>
-                      <SliderFilledTrack />
+                    <SliderTrack bg="gray.700" h={3} borderRadius="full">
+                      <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
                     </SliderTrack>
-                    <SliderThumb />
+                    <SliderThumb boxSize={6} />
                   </Slider>
                   <Text fontSize="xs" opacity={0.6} mt={2}>
                     {vadHint}
@@ -1212,10 +1212,10 @@ function TopBar({
                           onChange={(val) => onVolumeChange(val)}
                           onChangeEnd={(val) => onVolumeSave(val)}
                         >
-                          <SliderTrack>
-                            <SliderFilledTrack />
+                          <SliderTrack bg="gray.700" h={3} borderRadius="full">
+                            <SliderFilledTrack bg="linear-gradient(90deg, #5dade2, #9370DB)" />
                           </SliderTrack>
-                          <SliderThumb />
+                          <SliderThumb boxSize={6} />
                         </Slider>
                       </Box>
                       <Button
