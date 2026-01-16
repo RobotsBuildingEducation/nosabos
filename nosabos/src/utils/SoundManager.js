@@ -477,7 +477,13 @@ class SoundManager {
       synth.triggerAttackRelease("A4", "32n");
       setTimeout(() => {
         const synth2 = this.createDisposableSynth(
-          { type: "sine", attack: 0.005, decay: 0.08, sustain: 0, release: 0.06 },
+          {
+            type: "sine",
+            attack: 0.005,
+            decay: 0.08,
+            sustain: 0,
+            release: 0.06,
+          },
           VOL.QUIET
         );
         synth2.triggerAttackRelease("E5", "64n");
