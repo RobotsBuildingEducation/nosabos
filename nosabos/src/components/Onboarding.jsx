@@ -29,6 +29,7 @@ import {
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { HiVolumeUp } from "react-icons/hi";
+import submitActionSound from "../assets/submitaction.mp3";
 import useSoundSettings from "../hooks/useSoundSettings";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -220,7 +221,7 @@ export default function Onboarding({
     }
     setIsSaving(true);
     try {
-      playSound("submitAction");
+      playSound(submitActionSound);
       const payload = {
         level,
         supportLang,
@@ -545,7 +546,7 @@ export default function Onboarding({
                         leftIcon={<HiVolumeUp />}
                         size="sm"
                         variant="outline"
-                        onClick={() => playSound("submitAction")}
+                        onClick={() => playSound(submitActionSound)}
                       >
                         {ui.test_sound || "Test sound"}
                       </Button>

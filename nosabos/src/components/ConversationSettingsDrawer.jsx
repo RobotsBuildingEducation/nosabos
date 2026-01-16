@@ -24,6 +24,8 @@ import {
 } from "@chakra-ui/react";
 import { FiChevronDown } from "react-icons/fi";
 import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 // CEFR level information (matches CEFR_LEVEL_INFO from FlashcardSkillTree)
 const CEFR_LEVELS = [
@@ -98,12 +100,12 @@ export default function ConversationSettingsDrawer({
     CEFR_LEVELS[0];
 
   const handleLevelChange = (level) => {
-    playSound("select");
+    playSound(selectSound);
     onSettingsChange({ ...settings, proficiencyLevel: level });
   };
 
   const handlePronunciationChange = (checked) => {
-    playSound("select");
+    playSound(selectSound);
     onSettingsChange({ ...settings, practicePronunciation: checked });
   };
 
@@ -112,12 +114,12 @@ export default function ConversationSettingsDrawer({
   };
 
   const handleSave = useCallback(() => {
-    playSound("submitAction");
+    playSound(submitActionSound);
     onClose?.();
   }, [onClose, playSound]);
 
   const handleClose = useCallback(() => {
-    playSound("select");
+    playSound(selectSound);
     onClose?.();
   }, [onClose, playSound]);
 
@@ -197,7 +199,7 @@ export default function ConversationSettingsDrawer({
               <Text fontSize="xs" color="gray.400" mb={3}>
                 {t.proficiencyHint}
               </Text>
-              <Menu matchWidth onOpen={() => playSound("select")}>
+              <Menu matchWidth onOpen={() => playSound(selectSound)}>
                 <MenuButton
                   as={Button}
                   rightIcon={<FiChevronDown />}
@@ -211,7 +213,7 @@ export default function ConversationSettingsDrawer({
                   py={3}
                   px={3}
                   whiteSpace="normal"
-                  onClick={() => playSound("select")}
+                  onClick={() => playSound(selectSound)}
                 >
                   <HStack spacing={2} align="center" flex={1} minW={0}>
                     <Badge

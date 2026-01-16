@@ -31,6 +31,8 @@ import {
   TTS_LANG_TAG,
 } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
+import submitActionSound from "../assets/submitaction.mp3";
+import nextButtonSound from "../assets/nextbutton.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1272,7 +1274,7 @@ export default function History({
   // Award XP for current lecture and move to next module
   async function finishReadingAndNext() {
     if (!npub || !activeLecture || isGenerating || isFinishing) return;
-    playSound("submitAction");
+    playSound(submitActionSound);
     setIsFinishing(true);
     try {
       if (!activeLecture.awarded) {
@@ -1299,7 +1301,7 @@ export default function History({
 
   // Skip handler
   function handleSkip() {
-    playSound("next");
+    playSound(nextButtonSound);
     if (onSkip) {
       onSkip();
     }
