@@ -19,6 +19,7 @@ import {
 } from 'react-icons/ri';
 import SkillTree from './SkillTree';
 import { translations } from '../utils/translation';
+import useSoundSettings from '../hooks/useSoundSettings';
 
 const MotionBox = motion(Box);
 
@@ -36,6 +37,7 @@ export default function EmbeddedSkillTree({
   onStartLesson,
   appLanguage = 'en',
 }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   const [isExpanded, setIsExpanded] = useState(!activeLesson); // Collapsed when lesson active
   const totalXp = userProgress?.totalXp || 0;
 
@@ -54,7 +56,10 @@ export default function EmbeddedSkillTree({
         px={4}
         py={3}
         cursor="pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
+        onClick={() => {
+          playSound("select");
+          setIsExpanded(!isExpanded);
+        }}
         _hover={{ bg: 'gray.800' }}
         transition="background 0.2s"
       >

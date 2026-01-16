@@ -25,6 +25,7 @@ import {
 } from "@chakra-ui/react";
 import { RiDeleteBinLine, RiVolumeUpLine, RiStopLine } from "react-icons/ri";
 import useNotesStore from "../hooks/useNotesStore";
+import useSoundSettings from "../hooks/useSoundSettings";
 import { getTTSPlayer, TTS_LANG_TAG, getRandomVoice } from "../utils/tts";
 import translations from "../utils/translation";
 
@@ -55,6 +56,7 @@ export default function NotesDrawer({
   targetLang = "es",
 }) {
   const { notes, removeNote, clearNotesForLanguage } = useNotesStore();
+  const playSound = useSoundSettings((s) => s.playSound);
   const [playingNoteId, setPlayingNoteId] = useState(null);
   const [loadingTts, setLoadingTts] = useState(null);
   const audioRef = useRef(null);
@@ -256,6 +258,7 @@ export default function NotesDrawer({
                 colorScheme="blue"
                 onClick={(e) => {
                   e.stopPropagation();
+                  playSound("select");
                   playNoteTts(note);
                 }}
                 isDisabled={loadingTts === note.id}
@@ -266,7 +269,7 @@ export default function NotesDrawer({
                 size="sm"
                 variant="ghost"
                 colorScheme="red"
-                onClick={() => removeNote(note.id)}
+                onClick={() => { playSound("select"); removeNote(note.id); }}
               />
             </Flex>
           </VStack>
@@ -288,7 +291,7 @@ export default function NotesDrawer({
                 size="xs"
                 variant="ghost"
                 colorScheme="red"
-                onClick={() => clearNotesForLanguage(targetLang)}
+                onClick={() => { playSound("select"); clearNotesForLanguage(targetLang); }}
               >
                 {clearAllLabel}
               </Button>
@@ -392,7 +395,7 @@ export default function NotesDrawer({
           )}
         </DrawerBody>
         <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
-          <Button variant={"ghost"} onClick={onClose}>
+          <Button variant={"ghost"} onClick={() => { playSound("select"); onClose(); }}>
             {translations[appLanguage]["teams_drawer_close"] || "Close"}
           </Button>
         </DrawerFooter>

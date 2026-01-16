@@ -10,6 +10,7 @@ import {
   IconButton,
 } from "@chakra-ui/react";
 import { MdClose, MdBackspace, MdSpaceBar } from "react-icons/md";
+import useSoundSettings from "../hooks/useSoundSettings";
 
 // Japanese Hiragana keyboard layout
 const HIRAGANA = [
@@ -338,6 +339,7 @@ export default function VirtualKeyboard({
   onClose,
   userLanguage = "en",
 }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   const isJapanese = lang === "ja";
   const isRussian = lang === "ru";
   const isGreek = lang === "el";
@@ -349,14 +351,17 @@ export default function VirtualKeyboard({
   const [isUpperCase, setIsUpperCase] = useState(false);
 
   const handleKeyPress = (char) => {
+    playSound("click");
     onKeyPress?.(char);
   };
 
   const handleBackspace = () => {
+    playSound("select");
     onKeyPress?.("BACKSPACE");
   };
 
   const handleSpace = () => {
+    playSound("click");
     onKeyPress?.(" ");
   };
 
@@ -396,7 +401,7 @@ export default function VirtualKeyboard({
                 size="xs"
                 colorScheme={japaneseMode === "hiragana" ? "purple" : "gray"}
                 variant={japaneseMode === "hiragana" ? "solid" : "outline"}
-                onClick={() => setJapaneseMode("hiragana")}
+                onClick={() => { playSound("select"); setJapaneseMode("hiragana"); }}
               >
                 {userLanguage === "es" ? "Hiragana" : "Hiragana"}
               </Button>
@@ -404,7 +409,7 @@ export default function VirtualKeyboard({
                 size="xs"
                 colorScheme={japaneseMode === "katakana" ? "purple" : "gray"}
                 variant={japaneseMode === "katakana" ? "solid" : "outline"}
-                onClick={() => setJapaneseMode("katakana")}
+                onClick={() => { playSound("select"); setJapaneseMode("katakana"); }}
               >
                 {userLanguage === "es" ? "Katakana" : "Katakana"}
               </Button>
@@ -415,7 +420,7 @@ export default function VirtualKeyboard({
               size="xs"
               colorScheme={isUpperCase ? "purple" : "gray"}
               variant={isUpperCase ? "solid" : "outline"}
-              onClick={() => setIsUpperCase(!isUpperCase)}
+              onClick={() => { playSound("select"); setIsUpperCase(!isUpperCase); }}
             >
               {isUpperCase
                 ? userLanguage === "es"
@@ -434,7 +439,7 @@ export default function VirtualKeyboard({
           icon={<MdClose />}
           size="sm"
           variant="ghost"
-          onClick={onClose}
+          onClick={() => { playSound("select"); onClose(); }}
         />
       </HStack>
 

@@ -50,6 +50,7 @@ import {
 } from "../utils/tts";
 import { doc, onSnapshot } from "firebase/firestore";
 import { extractCEFRLevel, getCEFRPromptHint } from "../utils/cefrUtils";
+import useSoundSettings from "../hooks/useSoundSettings";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -154,6 +155,7 @@ export default function LessonGroupQuiz({
   onComplete = null,
 }) {
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
 
   // Extract CEFR level from lesson ID
   const cefrLevel = lessonId ? extractCEFRLevel(lessonId) : "A1";
@@ -1278,11 +1280,11 @@ YES or NO
           <ModalFooter>
             <HStack spacing={4} w="full" justify="center">
               {!passed && (
-                <Button colorScheme="teal" onClick={handleRetry}>
+                <Button colorScheme="teal" onClick={() => { playSound("select"); handleRetry(); }}>
                   {userLanguage === "es" ? "Reintentar" : "Retry Quiz"}
                 </Button>
               )}
-              <Button onClick={handleComplete}>
+              <Button onClick={() => { playSound("select"); handleComplete(); }}>
                 {userLanguage === "es" ? "Continuar" : "Continue"}
               </Button>
             </HStack>
@@ -1351,7 +1353,7 @@ YES or NO
                   size="sm"
                   fontSize="lg"
                   variant="ghost"
-                  onClick={() => handlePlayQuestionTTS(qFill)}
+                  onClick={() => { playSound("select"); handlePlayQuestionTTS(qFill); }}
                 />
                 <Text fontSize="lg" color="white" flex="1">
                   {qFill}
@@ -1391,7 +1393,7 @@ YES or NO
                   size="sm"
                   fontSize="lg"
                   variant="ghost"
-                  onClick={() => handlePlayQuestionTTS(qMC)}
+                  onClick={() => { playSound("select"); handlePlayQuestionTTS(qMC); }}
                 />
                 <Text fontSize="lg" color="white" flex="1">
                   {qMC}
@@ -1436,7 +1438,7 @@ YES or NO
                   size="sm"
                   fontSize="lg"
                   variant="ghost"
-                  onClick={() => handlePlayQuestionTTS(qMA)}
+                  onClick={() => { playSound("select"); handlePlayQuestionTTS(qMA); }}
                 />
                 <Text fontSize="lg" color="white" flex="1">
                   {qMA}
@@ -1484,7 +1486,7 @@ YES or NO
                   size="sm"
                   fontSize="lg"
                   variant="ghost"
-                  onClick={() => handlePlayQuestionTTS(sStimulus)}
+                  onClick={() => { playSound("select"); handlePlayQuestionTTS(sStimulus); }}
                 />
                 <Text fontSize="xl" fontWeight="bold" color="cyan.300" flex="1">
                   {sStimulus}
@@ -1502,7 +1504,7 @@ YES or NO
               )}
               <Button
                 colorScheme={isListening ? "red" : "teal"}
-                onClick={isListening ? stopListening : startListening}
+                onClick={() => { playSound("select"); isListening ? stopListening() : startListening(); }}
                 isDisabled={lastOk !== null}
                 size="lg"
               >
@@ -1563,6 +1565,7 @@ YES or NO
                       fontSize="sm"
                       cursor="pointer"
                       onClick={() => {
+                        playSound("select");
                         const firstEmpty = mSlots.findIndex((s) => s === null);
                         if (firstEmpty !== -1) {
                           const newSlots = [...mSlots];
@@ -1618,7 +1621,7 @@ YES or NO
               size="lg"
               w="full"
               mt={6}
-              onClick={handleSubmit}
+              onClick={() => { playSound("submitAction"); handleSubmit(); }}
               isLoading={isGrading}
               isDisabled={
                 (mode === "fill" && !ansFill.trim()) ||

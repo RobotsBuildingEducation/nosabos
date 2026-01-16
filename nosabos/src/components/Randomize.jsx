@@ -12,6 +12,7 @@ import {
 import { doc, onSnapshot } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
 import useUserStore from "../hooks/useUserStore";
+import useSoundSettings from "../hooks/useSoundSettings";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -64,6 +65,7 @@ function strongNsec() {
 
 export default function Randomize() {
   const user = useUserStore((s) => s.user);
+  const playSound = useSoundSettings((s) => s.playSound);
   const npub = strongNpub(user);
   const nsec = strongNsec();
   const uiLang = user?.appLanguage || "en";
@@ -195,6 +197,7 @@ export default function Randomize() {
   );
 
   const surpriseMe = () => {
+    playSound("select");
     const keys = MODES.map((m) => m.key).filter((k) => k !== currentModeKey);
     const pick = keys[Math.floor(Math.random() * keys.length)];
     setCurrentModeKey(pick);

@@ -21,9 +21,11 @@ import {
   inviteUserToTeam,
 } from "../../utils/teams";
 import useNOSTR from "../../hooks/useNOSTR";
+import useSoundSettings from "../../hooks/useSoundSettings";
 
 export default function TeamCreation({ userLanguage, onTeamCreated, t }) {
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
   const [teamName, setTeamName] = useState("");
   const [memberNpub, setMemberNpub] = useState("");
   const [membersToInvite, setMembersToInvite] = useState([]);
@@ -34,6 +36,7 @@ export default function TeamCreation({ userLanguage, onTeamCreated, t }) {
   );
 
   const handleAddMember = () => {
+    playSound("select");
     if (!memberNpub.trim()) {
       toast({
         title: t?.teams_create_error || "Error",
@@ -67,10 +70,12 @@ export default function TeamCreation({ userLanguage, onTeamCreated, t }) {
   };
 
   const handleRemoveMember = (npub) => {
+    playSound("select");
     setMembersToInvite((prev) => prev.filter((entry) => entry !== npub));
   };
 
   const handleCreateTeam = async () => {
+    playSound("submitAction");
     if (!teamName.trim()) {
       toast({
         title: t?.teams_create_error || "Error",

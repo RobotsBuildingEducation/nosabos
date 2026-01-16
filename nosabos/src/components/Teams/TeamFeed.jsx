@@ -17,6 +17,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import useNOSTR from "../../hooks/useNOSTR";
+import useSoundSettings from "../../hooks/useSoundSettings";
 
 const TOTAL_FEED_STEPS = 120;
 const HASHTAG = "LearnWithNostr";
@@ -93,6 +94,7 @@ export default function TeamFeed({
   onAllowPostsChange,
 }) {
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
   const [profiles, setProfiles] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -177,6 +179,7 @@ export default function TeamFeed({
   };
 
   const handleCopyKeys = async () => {
+    playSound("select");
     try {
       const key = localStorage.getItem("local_nsec");
       if (!key) throw new Error("No secret key available");
@@ -392,7 +395,7 @@ export default function TeamFeed({
           <Text fontSize="sm" color="red.200" mb={2}>
             {error}
           </Text>
-          <Button size="sm" onClick={fetchFeed}>
+          <Button size="sm" onClick={() => { playSound("select"); fetchFeed(); }}>
             {localeStrings.refresh}
           </Button>
         </Box>

@@ -18,6 +18,7 @@ import TeamFeed from "./TeamFeed";
 import TeamCreation from "./TeamCreation";
 import TeamView from "./TeamView";
 import { translations } from "../../utils/translation.jsx";
+import useSoundSettings from "../../hooks/useSoundSettings";
 
 export default function TeamsDrawer({
   isOpen,
@@ -28,6 +29,7 @@ export default function TeamsDrawer({
   allowPosts,
   onAllowPostsChange,
 }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   const [selectedTab, setSelectedTab] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const t = useMemo(
@@ -47,6 +49,7 @@ export default function TeamsDrawer({
   };
 
   const handleTabChange = (index) => {
+    playSound("select");
     setSelectedTab(index);
     if (index === 2) {
       setRefreshTrigger((prev) => prev + 1);
@@ -135,7 +138,7 @@ export default function TeamsDrawer({
           </Tabs>
         </DrawerBody>
         <DrawerFooter borderTopWidth="1px" borderColor="whiteAlpha.200">
-          <Button variant={"ghost"} onClick={onClose}>
+          <Button variant={"ghost"} onClick={() => { playSound("select"); onClose(); }}>
             {t?.teams_drawer_close || "Close"}
           </Button>
         </DrawerFooter>

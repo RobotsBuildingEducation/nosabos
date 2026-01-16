@@ -13,6 +13,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { LockIcon } from "@chakra-ui/icons";
+import useSoundSettings from "../hooks/useSoundSettings";
 
 export default function SubscriptionGate({
   appLanguage = "en",
@@ -21,6 +22,7 @@ export default function SubscriptionGate({
   isSubmitting = false,
   error = "",
 }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   const [value, setValue] = useState("");
   const [localError, setLocalError] = useState("");
 
@@ -41,6 +43,7 @@ export default function SubscriptionGate({
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
+    playSound("submitAction");
     setLocalError("");
     const normalized = (value || "").trim();
     if (!normalized) {

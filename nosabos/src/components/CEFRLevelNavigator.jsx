@@ -8,6 +8,7 @@ import {
 } from "react-icons/ri";
 import { motion } from "framer-motion";
 import { translations } from "../utils/translation";
+import useSoundSettings from "../hooks/useSoundSettings";
 
 const MotionBox = motion(Box);
 
@@ -94,6 +95,7 @@ export default function CEFRLevelNavigator({
   supportLang = "en",
   levelCompletionStatus = {},
 }) {
+  const playSound = useSoundSettings((s) => s.playSound);
   const currentLevelIndex = CEFR_LEVELS.indexOf(activeCEFRLevel);
   const hasPrevious = currentLevelIndex > 0;
   const hasNext = currentLevelIndex < CEFR_LEVELS.length - 1;
@@ -127,12 +129,14 @@ export default function CEFRLevelNavigator({
 
   const handlePrevious = () => {
     if (hasPrevious && previousLevel) {
+      playSound("select");
       onLevelChange(previousLevel);
     }
   };
 
   const handleNext = () => {
     if (hasNext && nextLevel && isNextLevelUnlocked) {
+      playSound("select");
       onLevelChange(nextLevel);
     }
   };

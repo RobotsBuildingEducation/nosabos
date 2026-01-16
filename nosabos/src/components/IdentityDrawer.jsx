@@ -39,6 +39,7 @@ import { doc, updateDoc } from "firebase/firestore";
 
 import { database } from "../firebaseResources/firebaseResources";
 import { useNostrWalletStore } from "../hooks/useNostrWalletStore";
+import useSoundSettings from "../hooks/useSoundSettings";
 import { IdentityCard } from "./IdentityCard";
 import { BITCOIN_RECIPIENTS } from "../constants/bitcoinRecipients";
 import { translations } from "../utils/translation";
@@ -62,6 +63,7 @@ export default function IdentityDrawer({
   isIdentitySaving = false,
 }) {
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const [isWalletOpen, setIsWalletOpen] = useState(false);
 
@@ -75,6 +77,7 @@ export default function IdentityDrawer({
   useEffect(() => setCurrentSecret(activeNsec || ""), [activeNsec]);
 
   const copy = async (text, msg = t?.toast_copied || "Copied") => {
+    playSound("select");
     try {
       await navigator.clipboard.writeText(text || "");
       toast({ title: msg, status: "success", duration: 1400 });
@@ -89,6 +92,7 @@ export default function IdentityDrawer({
 
   const handleSignOut = useCallback(() => {
     if (typeof window === "undefined") return;
+    playSound("select");
 
     try {
       localStorage.clear();
@@ -100,12 +104,13 @@ export default function IdentityDrawer({
     } finally {
       window.location.href = "/";
     }
-  }, []);
+  }, [playSound]);
 
   // Switch account
   const [switchNsec, setSwitchNsec] = useState("");
   const [isSwitching, setIsSwitching] = useState(false);
   const switchAccountWithNsec = async () => {
+    playSound("submitAction");
     const nsec = (switchNsec || "").trim();
     if (!nsec) {
       toast({
@@ -327,12 +332,13 @@ export default function IdentityDrawer({
                   size="sm"
                   bg="black"
                   boxShadow="0px 0px 4px gray"
-                  onClick={() =>
+                  onClick={() => {
+                    playSound("select");
                     window.open(
                       "https://www.patreon.com/NotesAndOtherStuff",
                       "_blank"
-                    )
-                  }
+                    );
+                  }}
                 >
                   {appLanguage === "es" ? "Unirse" : "Join"}
                 </Button>
@@ -505,6 +511,7 @@ export function BitcoinWalletSection({
   isIdentitySaving = false,
 }) {
   const toast = useToast();
+  const playSound = useSoundSettings((s) => s.playSound);
 
   // Select each field independently (avoid new-object snapshots)
   const cashuWallet = useNostrWalletStore((s) => s.cashuWallet);
@@ -614,6 +621,7 @@ export function BitcoinWalletSection({
   };
 
   const handleCreateWallet = async () => {
+    playSound("submitAction");
     // If NIP-07 mode and no nsec provided, show error
     if (isNip07Mode && noWalletFound && !nsecForWallet.trim()) {
       toast({
@@ -692,6 +700,7 @@ export function BitcoinWalletSection({
   };
 
   const handleInitiateDeposit = async () => {
+    playSound("select");
     if (!ensureIdentitySelected()) return;
     try {
       await initiateDeposit(100); // example amount
@@ -708,6 +717,7 @@ export function BitcoinWalletSection({
   };
 
   const generateNewQR = async () => {
+    playSound("select");
     if (!ensureIdentitySelected()) return;
     try {
       await initiateDeposit(100);
@@ -724,6 +734,7 @@ export function BitcoinWalletSection({
   };
 
   const handleCopyInvoice = async () => {
+    playSound("select");
     try {
       await navigator.clipboard.writeText(invoice || "");
       toast({
