@@ -33,10 +33,22 @@ class SoundManager {
 
   async init() {
     if (this.initialized) return;
-    await Tone.start();
+
+    // Check if Tone context is already running (may have been started by App.jsx)
+    // If not running, try to start it (though this may fail without user gesture)
+    if (Tone.context.state !== "running") {
+      try {
+        await Tone.start();
+      } catch (err) {
+        console.warn("[SoundManager] Tone.start() failed - audio context may need user gesture:", err);
+        // Don't return early - still mark as initialized so sounds can attempt to play
+        // once the context is eventually started
+      }
+    }
+
     Tone.Destination.volume.value = Tone.gainToDb(this.volume);
     this.initialized = true;
-    console.log("[SoundManager] Audio initialized");
+    console.log("[SoundManager] Audio initialized, context state:", Tone.context.state);
   }
 
   isReady() {
@@ -64,6 +76,15 @@ class SoundManager {
 
   play(name) {
     if (!this.initialized || !this.enabled) return;
+
+    // On mobile, audio context can get suspended after tab switching
+    // Try to resume it if needed (this is safe to call even if already running)
+    if (Tone.context.state === "suspended") {
+      Tone.context.resume().catch(() => {
+        // Ignore errors - context may need user gesture to resume
+      });
+    }
+
     const soundFn = this.sounds[name];
     if (soundFn) {
       soundFn();

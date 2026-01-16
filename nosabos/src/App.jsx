@@ -98,6 +98,7 @@ import {
 import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import * as Tone from "tone";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
 import { Navigate, useLocation } from "react-router-dom";
@@ -1548,12 +1549,25 @@ export default function App() {
   }, [user?.soundVolume, setSoundSettingsVolume]);
 
   // Warm up audio on first user interaction to eliminate mobile audio delay
+  // CRITICAL: Tone.start() MUST be called directly within user gesture handler
+  // Mobile browsers (especially iOS Safari) require this to be synchronous
   useEffect(() => {
-    const handleFirstInteraction = () => {
-      warmupAudio();
-      // Remove listeners after first interaction
+    const handleFirstInteraction = async () => {
+      // Remove listeners immediately to prevent multiple calls
       document.removeEventListener("touchstart", handleFirstInteraction);
       document.removeEventListener("click", handleFirstInteraction);
+
+      try {
+        // Call Tone.start() DIRECTLY in the gesture handler - this is critical for mobile
+        // Mobile browsers require audio context to be started within user gesture call stack
+        await Tone.start();
+        console.log("[App] Tone.js audio context started via user gesture");
+      } catch (err) {
+        console.error("[App] Failed to start Tone.js audio context:", err);
+      }
+
+      // Then warm up the rest of the audio system
+      warmupAudio();
     };
     document.addEventListener("touchstart", handleFirstInteraction, {
       once: true,
