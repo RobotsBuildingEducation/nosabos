@@ -102,6 +102,7 @@ export default function Onboarding({
   const [soundVolume, setSoundVolume] = useState(defaults.soundVolume);
   const playSound = useSoundSettings((s) => s.playSound);
   const setGlobalVolume = useSoundSettings((s) => s.setVolume);
+  const playSliderTick = useSoundSettings((s) => s.playSliderTick);
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -480,7 +481,10 @@ export default function Onboarding({
                     max={4000}
                     step={100}
                     value={pauseMs}
-                    onChange={(val) => setPauseMs(val)}
+                    onChange={(val) => {
+                      setPauseMs(val);
+                      playSliderTick(val, 200, 4000);
+                    }}
                   >
                     <SliderTrack bg="gray.700" h={3} borderRadius="full">
                       <SliderFilledTrack bg="linear-gradient(90deg, #3CB371, #5dade2)" />
@@ -529,6 +533,7 @@ export default function Onboarding({
                           onChange={(val) => {
                             setSoundVolume(val);
                             setGlobalVolume(val);
+                            playSliderTick(val, 0, 100);
                           }}
                         >
                           <SliderTrack bg="gray.700" h={3} borderRadius="full">

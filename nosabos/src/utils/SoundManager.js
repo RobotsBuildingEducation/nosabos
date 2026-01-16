@@ -118,6 +118,40 @@ class SoundManager {
   }
 
   /**
+   * Play slider tick sound with pitch based on value
+   * @param {number} value - Current slider value
+   * @param {number} min - Minimum slider value
+   * @param {number} max - Maximum slider value
+   */
+  playSliderTick(value, min = 0, max = 100) {
+    if (!this.initialized || !this.enabled) return;
+
+    const t = (value - min) / (max - min);
+    const midiNote = 60 + t * 12; // C4 to C5
+    const frequency = 440 * Math.pow(2, (midiNote - 69) / 12);
+
+    const synth = this.getSynth({
+      type: "sine",
+      attack: 0.001,
+      decay: 0.04,
+      sustain: 0,
+      release: 0.03,
+    });
+    synth.volume.value = VOL.QUIET;
+    synth.triggerAttackRelease(frequency, "64n");
+    this.releaseSynth(synth, 80);
+  }
+
+  /**
+   * Play a random chord from the color palette
+   */
+  playRandomChord() {
+    if (!this.initialized || !this.enabled) return;
+    const randomIndex = Math.floor(Math.random() * 10);
+    this.playColorSwitch(randomIndex, 10);
+  }
+
+  /**
    * Play color switch with a unique chord for each color
    * Each color has a chord that matches its emotional vibe
    */

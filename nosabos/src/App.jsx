@@ -1141,7 +1141,10 @@ function TopBar({
                     max={4000}
                     step={100}
                     value={pauseMs}
-                    onChange={setPauseMs}
+                    onChange={(val) => {
+                      setPauseMs(val);
+                      playSliderTick(val, 200, 4000);
+                    }}
                     onChangeEnd={(value) => persistSettings({ pauseMs: value })}
                   >
                     <SliderTrack bg="gray.700" h={3} borderRadius="full">
@@ -1209,7 +1212,10 @@ function TopBar({
                           max={100}
                           step={5}
                           value={soundVolume}
-                          onChange={(val) => onVolumeChange(val)}
+                          onChange={(val) => {
+                            onVolumeChange(val);
+                            playSliderTick(val, 0, 100);
+                          }}
                           onChangeEnd={(val) => onVolumeSave(val)}
                         >
                           <SliderTrack bg="gray.700" h={3} borderRadius="full">
@@ -1510,6 +1516,8 @@ export default function App() {
   const setSoundSettingsVolume = useSoundSettings((s) => s.setVolume);
   const playSound = useSoundSettings((s) => s.playSound);
   const warmupAudio = useSoundSettings((s) => s.warmupAudio);
+  const playSliderTick = useSoundSettings((s) => s.playSliderTick);
+  const playRandomChord = useSoundSettings((s) => s.playRandomChord);
 
   const [cefrResult, setCefrResult] = useState(null);
   const [cefrLoading, setCefrLoading] = useState(false);

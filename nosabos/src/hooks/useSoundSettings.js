@@ -16,6 +16,7 @@ import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import dailyGoalSound from "../assets/dailygoal.mp3";
 
 // Map legacy MP3 file paths to new Tone.js sound names
+// Special value "randomChord" triggers playRandomChord instead of play()
 const SOUND_MAP = new Map([
   [clickSound, "incorrect"], // click.mp3 was used for incorrect answers
   [selectSound, "select"],
@@ -25,7 +26,7 @@ const SOUND_MAP = new Map([
   [completeSound, "correct"], // complete.mp3 -> correct (was unused, but map it anyway)
   [deliciousSound, "correct"],
   [sparkleSound, "sparkle"],
-  [modeSwitcherSound, "modeSwitch"],
+  [modeSwitcherSound, "randomChord"], // Play random chord when switching modes
   [dailyGoalSound, "dailyGoal"],
 ]);
 
@@ -101,8 +102,12 @@ const useSoundSettings = create((set, get) => ({
     // Map legacy MP3 path to Tone.js sound name, or use direct name
     const soundName = SOUND_MAP.get(soundFileOrName) || soundFileOrName;
 
-    // Play the sound
-    soundManager.play(soundName);
+    // Special handling for random chord
+    if (soundName === "randomChord") {
+      soundManager.playRandomChord();
+    } else {
+      soundManager.play(soundName);
+    }
   },
 
   /**
@@ -112,6 +117,31 @@ const useSoundSettings = create((set, get) => ({
     const state = get();
     if (!state.soundEnabled || !state.isInitialized) return;
     soundManager.play(name);
+  },
+
+  /**
+   * Play slider tick sound with pitch based on value
+   */
+  playSliderTick: (value, min = 0, max = 100) => {
+    const state = get();
+    if (!state.soundEnabled || !state.isInitialized) return;
+    soundManager.playSliderTick(value, min, max);
+  },
+
+  /**
+   * Play a random chord (for mode switching)
+   */
+  playRandomChord: async () => {
+    const state = get();
+    if (!state.soundEnabled) return;
+
+    // Auto-initialize on first play attempt
+    if (!state.isInitialized) {
+      const success = await state.initAudio();
+      if (!success) return;
+    }
+
+    soundManager.playRandomChord();
   },
 
   /**
