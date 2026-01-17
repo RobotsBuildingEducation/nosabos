@@ -104,6 +104,7 @@ export default function NotesDrawer({
       const player = await getTTSPlayer({
         text: note.example,
         voice: getRandomVoice(),
+        langTag: TTS_LANG_TAG[ttsLang] || ttsLang,
       });
 
       audioRef.current = player.audio;
