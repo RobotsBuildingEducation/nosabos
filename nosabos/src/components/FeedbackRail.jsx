@@ -18,6 +18,7 @@ import RandomCharacter from "./RandomCharacter";
 import useSoundSettings from "../hooks/useSoundSettings";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
+import sparkleSound from "../assets/sparkle.mp3";
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -132,7 +133,10 @@ const FeedbackRail = React.memo(
                   aria-label={noteCreated ? noteSavedLabel : createNoteLabel}
                   colorScheme={noteCreated ? "green" : "gray"}
                   variant={noteCreated ? "solid" : "ghost"}
-                  onClick={onCreateNote}
+                  onClick={() => {
+                    playSound(sparkleSound);
+                    onCreateNote();
+                  }}
                   isDisabled={isCreatingNote || noteCreated}
                   size="sm"
                   flexShrink={0}
