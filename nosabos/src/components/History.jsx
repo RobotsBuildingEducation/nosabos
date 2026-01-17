@@ -809,6 +809,9 @@ export default function History({
   // Refs for audio
   const currentAudioRef = useRef(null);
 
+  // TTS transcript state - updated in real-time as words are spoken
+  const [spokenTranscript, setSpokenTranscript] = useState("");
+
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
 
@@ -848,10 +851,10 @@ export default function History({
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
 
-  // TTS word highlighting - tracks current word being spoken
+  // TTS word highlighting - tracks current word being spoken based on real-time transcript
   const { currentWordIndex, reset: resetHighlighting } = useTTSWordHighlighting({
     text: viewLecture?.target || "",
-    langCode: targetLang,
+    spokenTranscript,
     isPlaying: isReadingTarget && !isSynthesizingTarget,
   });
 
@@ -1229,6 +1232,7 @@ export default function History({
         currentAudioRef.current = null;
       }
     } catch {}
+    setSpokenTranscript("");
     setIsReadingTarget(false);
     resetHighlighting();
   };
@@ -1238,6 +1242,7 @@ export default function History({
     if (!text) return;
     setReading(true);
     setSynthesizing?.(true);
+    setSpokenTranscript("");
 
     try {
       const player = await getTTSPlayer({
@@ -1245,6 +1250,10 @@ export default function History({
         langTag: langTag || TTS_LANG_TAG.es,
         voice: getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
+        onTranscript: (transcript) => {
+          // Update transcript as words are spoken - this drives the highlighting
+          setSpokenTranscript(transcript);
+        },
       });
 
       currentAudioRef.current = player.audio;
@@ -1252,6 +1261,7 @@ export default function History({
       const cleanup = () => {
         setReading(false);
         currentAudioRef.current = null;
+        setSpokenTranscript("");
         player.cleanup?.();
         player.finalize?.catch?.(() => {});
         resetHighlighting();
@@ -1268,6 +1278,7 @@ export default function History({
     } catch {
       setSynthesizing?.(false);
       setReading(false);
+      setSpokenTranscript("");
       resetHighlighting();
       onDone?.();
     }
