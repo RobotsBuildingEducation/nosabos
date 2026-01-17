@@ -35,7 +35,11 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 
 const renderSpeakerIcon = (loading) =>
-  loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
+  loading ? (
+    <Spinner size="xs" />
+  ) : (
+    <PiSpeakerHighDuotone style={{ marginLeft: "12px" }} />
+  );
 
 /* ---------------------------
    Minimal i18n helper
@@ -1385,6 +1389,7 @@ export default function History({
                       isDisabled={
                         !viewLecture?.target || draftLecture || isGenerating
                       }
+                      mr={2}
                     />
                     {viewLecture.title}
                     {draftLecture ? (
