@@ -31,6 +31,14 @@ const SOUND_MAP = new Map([
   [dailyGoalSound, "dailyGoal"],
 ]);
 
+const triggerHapticSafely = () => {
+  try {
+    triggerHaptic();
+  } catch (error) {
+    console.warn("[useSoundSettings] Haptic feedback failed:", error);
+  }
+};
+
 /**
  * Global sound settings store.
  * Now uses Tone.js synthesized sounds instead of MP3 files.
@@ -111,7 +119,7 @@ const useSoundSettings = create((set, get) => ({
     }
 
     // Trigger haptic feedback alongside the sound
-    triggerHaptic();
+    triggerHapticSafely();
   },
 
   /**
@@ -121,7 +129,7 @@ const useSoundSettings = create((set, get) => ({
     const state = get();
     if (!state.soundEnabled || !state.isInitialized) return;
     soundManager.play(name);
-    triggerHaptic();
+    triggerHapticSafely();
   },
 
   /**
@@ -138,7 +146,7 @@ const useSoundSettings = create((set, get) => ({
     }
 
     soundManager.playSliderTick(value, min, max);
-    triggerHaptic();
+    triggerHapticSafely();
   },
 
   /**
@@ -155,7 +163,7 @@ const useSoundSettings = create((set, get) => ({
     }
 
     soundManager.playRandomChord();
-    triggerHaptic();
+    triggerHapticSafely();
   },
 
   /**

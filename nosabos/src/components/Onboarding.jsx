@@ -221,7 +221,7 @@ export default function Onboarding({
     }
     setIsSaving(true);
     try {
-      playSound(submitActionSound);
+      await playSound(submitActionSound);
       const payload = {
         level,
         supportLang,
