@@ -20,6 +20,7 @@ class SoundManager {
   initialized = false;
   enabled = true;
   volume = 0.7;
+  initPromise = null; // Track ongoing initialization to prevent race conditions
 
   synthPools = new Map([
     ["sine", []],
@@ -32,11 +33,37 @@ class SoundManager {
   MAX_POOL_SIZE = 5;
 
   async init() {
+    // If already initialized, return immediately
     if (this.initialized) return;
-    await Tone.start();
-    Tone.Destination.volume.value = Tone.gainToDb(this.volume);
-    this.initialized = true;
-    console.log("[SoundManager] Audio initialized");
+
+    // If initialization is in progress, wait for it
+    if (this.initPromise) {
+      await this.initPromise;
+      return;
+    }
+
+    // Start initialization and store the promise
+    this.initPromise = this._doInit();
+    await this.initPromise;
+  }
+
+  async _doInit() {
+    try {
+      await Tone.start();
+
+      // Resume AudioContext if suspended (required for iOS Safari)
+      if (Tone.context.state === "suspended") {
+        await Tone.context.resume();
+      }
+
+      Tone.Destination.volume.value = Tone.gainToDb(this.volume);
+      this.initialized = true;
+      console.log("[SoundManager] Audio initialized");
+    } catch (err) {
+      console.error("[SoundManager] Failed to initialize:", err);
+      this.initPromise = null; // Allow retry on failure
+      throw err;
+    }
   }
 
   isReady() {

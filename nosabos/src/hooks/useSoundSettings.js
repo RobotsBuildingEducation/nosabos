@@ -31,6 +31,9 @@ const SOUND_MAP = new Map([
   [dailyGoalSound, "dailyGoal"],
 ]);
 
+// Module-level promise to track initialization across all callers
+let initPromise = null;
+
 /**
  * Global sound settings store.
  * Now uses Tone.js synthesized sounds instead of MP3 files.
@@ -55,20 +58,35 @@ const useSoundSettings = create((set, get) => ({
   /**
    * Initialize the audio system. Must be called from a user gesture (click/tap).
    * This is required due to browser autoplay policies.
+   * Uses a shared promise to prevent race conditions when multiple calls happen
+   * simultaneously (e.g., warmupAudio + playSound on first click).
    */
   initAudio: async () => {
+    // Already initialized
     if (get().isInitialized) return true;
-    try {
-      await soundManager.init();
-      // Sync current settings with soundManager
-      soundManager.setEnabled(get().soundEnabled);
-      soundManager.setVolume(get().volume / 100);
-      set({ isInitialized: true });
-      return true;
-    } catch (err) {
-      console.error("[useSoundSettings] Failed to initialize audio:", err);
-      return false;
+
+    // If initialization is in progress, wait for it
+    if (initPromise) {
+      return initPromise;
     }
+
+    // Start initialization and store the promise
+    initPromise = (async () => {
+      try {
+        await soundManager.init();
+        // Sync current settings with soundManager
+        soundManager.setEnabled(get().soundEnabled);
+        soundManager.setVolume(get().volume / 100);
+        set({ isInitialized: true });
+        return true;
+      } catch (err) {
+        console.error("[useSoundSettings] Failed to initialize audio:", err);
+        initPromise = null; // Allow retry on failure
+        return false;
+      }
+    })();
+
+    return initPromise;
   },
 
   /**
