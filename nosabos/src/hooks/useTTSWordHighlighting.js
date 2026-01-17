@@ -20,80 +20,143 @@ function splitIntoWords(text) {
 }
 
 /**
- * Count words in text (simple whitespace split).
+ * Milliseconds per character for different languages.
+ * Based on typical TTS speaking rates (~150-180 words per minute).
  */
-function countWords(text) {
-  if (!text) return 0;
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
+const MS_PER_CHAR = {
+  en: 55,
+  es: 62,
+  pt: 62,
+  fr: 65,
+  it: 60,
+  nl: 58,
+  nah: 70,
+  ru: 65,
+  de: 60,
+  el: 68,
+  ja: 90,
+};
+const DEFAULT_MS_PER_CHAR = 62;
+
+// Delay before starting highlighting to account for audio buffer startup
+const AUDIO_STARTUP_DELAY_MS = 300;
 
 /**
- * Normalize text for comparison - lowercase, remove punctuation, collapse spaces.
- */
-function normalizeForMatch(text) {
-  if (!text) return "";
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s]/g, "") // remove punctuation
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Hook for TTS word highlighting based on real-time transcript from TTS API.
+ * Hook for TTS word highlighting that paces highlighting based on word durations.
  *
- * @param {Object} options
- * @param {string} options.text - The original text being displayed
- * @param {string} options.spokenTranscript - The transcript received from TTS (updates as words are spoken)
- * @param {boolean} options.isPlaying - Whether TTS is currently playing
- * @returns {Object} - { currentWordIndex, reset }
+ * The transcript from the API arrives ahead of the audio, so we can't use it directly.
+ * Instead, we use the transcript to know the total words, then pace through them
+ * based on estimated word durations once audio starts playing.
  */
 export function useTTSWordHighlighting({
   text,
   spokenTranscript = "",
   isPlaying,
+  langCode = "es",
 }) {
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
+  const animationFrameRef = useRef(null);
+  const startTimeRef = useRef(null);
+  const wordTimingsRef = useRef([]);
 
-  // Parse the original text into words
-  const originalWords = useMemo(() => splitIntoWords(text), [text]);
+  // Parse the original text into words with timing estimates
+  const originalWords = useMemo(() => {
+    const words = splitIntoWords(text);
+    const msPerChar = MS_PER_CHAR[langCode] || DEFAULT_MS_PER_CHAR;
+
+    let currentMs = 0;
+    return words.map((w, i) => {
+      const duration = w.word.length * msPerChar;
+      const pause = i > 0 ? 35 : 0; // Small pause between words
+      const startMs = currentMs + pause;
+      const endMs = startMs + duration;
+      currentMs = endMs;
+      return { ...w, startMs, endMs, index: i };
+    });
+  }, [text, langCode]);
+
+  // Store word timings in ref for animation callback
+  useEffect(() => {
+    wordTimingsRef.current = originalWords;
+  }, [originalWords]);
 
   // Reset function
   const reset = useCallback(() => {
     setCurrentWordIndex(-1);
+    startTimeRef.current = null;
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
   }, []);
 
-  // Update highlighting based on spoken transcript
+  // Main animation loop - paces through words based on timing
   useEffect(() => {
-    if (!isPlaying || !text) {
+    if (!isPlaying || !text || originalWords.length === 0) {
+      if (!isPlaying) {
+        reset();
+      }
       return;
     }
 
-    if (!spokenTranscript) {
+    // Start timing when playback begins
+    if (!startTimeRef.current) {
+      startTimeRef.current = performance.now();
       setCurrentWordIndex(0);
-      return;
     }
 
-    // Count how many words have been spoken
-    const spokenWordCount = countWords(spokenTranscript);
+    const animate = () => {
+      if (!startTimeRef.current) return;
 
-    // The current word being spoken is at index (spokenWordCount - 1)
-    // But we want to highlight the word currently being said, so use spokenWordCount - 1
-    // If the transcript has 3 words, we're on word index 2 (0-indexed)
-    const targetIndex = Math.max(0, spokenWordCount - 1);
+      // Subtract startup delay - audio takes time to actually start producing sound
+      const rawElapsed = performance.now() - startTimeRef.current;
+      const elapsed = rawElapsed - AUDIO_STARTUP_DELAY_MS;
+      const timings = wordTimingsRef.current;
 
-    // Make sure we don't exceed the original text's word count
-    const safeIndex = Math.min(targetIndex, originalWords.length - 1);
+      // Before startup delay completes, stay on first word
+      if (elapsed < 0) {
+        setCurrentWordIndex(0);
+        animationFrameRef.current = requestAnimationFrame(animate);
+        return;
+      }
 
-    setCurrentWordIndex(safeIndex);
-  }, [spokenTranscript, isPlaying, text, originalWords.length]);
+      // Find the word that should be highlighted at this time
+      let newIndex = 0;
+      for (let i = 0; i < timings.length; i++) {
+        if (elapsed >= timings[i].startMs) {
+          newIndex = i;
+        } else {
+          break;
+        }
+      }
 
-  // Reset when not playing
+      setCurrentWordIndex(newIndex);
+
+      // Continue animating if we haven't reached the end
+      const lastWord = timings[timings.length - 1];
+      if (lastWord && elapsed < lastWord.endMs + 1000) {
+        animationFrameRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    animationFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [isPlaying, text, originalWords.length, reset]);
+
+  // Cleanup on unmount
   useEffect(() => {
-    if (!isPlaying) {
-      reset();
-    }
-  }, [isPlaying, reset]);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   return {
     currentWordIndex,

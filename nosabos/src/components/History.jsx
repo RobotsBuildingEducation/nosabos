@@ -851,11 +851,12 @@ export default function History({
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
 
-  // TTS word highlighting - tracks current word being spoken based on real-time transcript
+  // TTS word highlighting - paces through words based on estimated timing
   const { currentWordIndex, reset: resetHighlighting } = useTTSWordHighlighting({
     text: viewLecture?.target || "",
     spokenTranscript,
     isPlaying: isReadingTarget && !isSynthesizingTarget,
+    langCode: targetLang,
   });
 
   // Reset reading when switching lecture or when draft toggles
