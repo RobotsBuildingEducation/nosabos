@@ -31,6 +31,9 @@ import AnimatedBackground from "./AnimatedBackground";
 import { MdSupportAgent } from "react-icons/md";
 import { detectUserLanguage } from "../utils/languageDetection";
 import { useDecentralizedIdentity } from "../hooks/useDecentralizedIdentity";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
 
 // Minimal hook stubs for standalone demo - replace with your actual implementations
 
@@ -782,9 +785,11 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
   const [secretKey, setSecretKey] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const handleSignIn = async () => {
     if (!secretKey.trim()) return;
+    playSound(submitActionSound);
     setLoading(true);
     setError("");
     try {
@@ -903,7 +908,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
                   }}
                 />
               </div>
-              <Button variant="secondary" onClick={onExtension} fullWidth>
+              <Button variant="secondary" onClick={() => { playSound(selectSound); onExtension(); }} fullWidth>
                 {copy.signin_extension}
               </Button>
             </>
@@ -911,7 +916,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
 
           <Button
             variant="ghost"
-            onClick={onBack}
+            onClick={() => { playSound(selectSound); onBack(); }}
             fullWidth
             style={{ marginTop: "8px" }}
           >
@@ -930,6 +935,7 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
 const LandingPage = ({ onAuthenticated }) => {
   const { generateNostrKeys, auth, authWithExtension, isNip07Available } =
     useDecentralizedIdentity();
+  const playSound = useSoundSettings((s) => s.playSound);
 
   const [lang, setLang] = useState(() => {
     const detected = detectUserLanguage();
@@ -965,6 +971,7 @@ const LandingPage = ({ onAuthenticated }) => {
 
   const handleCreate = useCallback(async () => {
     if (displayName.trim().length < 2 || isCreating) return;
+    playSound(submitActionSound);
     setIsCreating(true);
     try {
       await generateNostrKeys(displayName.trim());
@@ -975,7 +982,7 @@ const LandingPage = ({ onAuthenticated }) => {
     } finally {
       setIsCreating(false);
     }
-  }, [displayName, isCreating, generateNostrKeys, onAuthenticated]);
+  }, [displayName, isCreating, generateNostrKeys, onAuthenticated, playSound]);
 
   const handleSignIn = useCallback(
     async (key) => {
@@ -1239,7 +1246,7 @@ const LandingPage = ({ onAuthenticated }) => {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => setView("signIn")}
+              onClick={() => { playSound(selectSound); setView("signIn"); }}
               fullWidth
             >
               {copy.cta_signin}
@@ -1257,14 +1264,14 @@ const LandingPage = ({ onAuthenticated }) => {
               <Button
                 variant={lang === "en" ? "primary" : "ghost"}
                 size="sm"
-                onClick={() => setLang("en")}
+                onClick={() => { playSound(selectSound); setLang("en"); }}
               >
                 {copy.language_en}
               </Button>
               <Button
                 variant={lang === "es" ? "primary" : "ghost"}
                 size="sm"
-                onClick={() => setLang("es")}
+                onClick={() => { playSound(selectSound); setLang("es"); }}
               >
                 {copy.language_es}
               </Button>
@@ -1632,7 +1639,7 @@ const LandingPage = ({ onAuthenticated }) => {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => setView("signIn")}
+              onClick={() => { playSound(selectSound); setView("signIn"); }}
               fullWidth
             >
               {copy.cta_signin}
