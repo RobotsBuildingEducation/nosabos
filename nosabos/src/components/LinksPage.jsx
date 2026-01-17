@@ -843,14 +843,15 @@ export default function LinksPage() {
   return (
     <Box
       minH="100vh"
-      py={{ base: 12, md: 16 }}
+      // py={{ base: 12, md: 16 }}
+
       bg="rgba(7,16,29)"
       position="relative"
       overflow="hidden"
     >
       <RetroStarfield />
 
-      <Container maxW="container.md" position="relative" zIndex={1}>
+      <Container maxW="container.md" position="relative" zIndex={1} mt={2}>
         <VStack spacing={6} textAlign="center">
           {/* Profile Picture or Random Character */}
           {profilePicture ? (
@@ -880,7 +881,7 @@ export default function LinksPage() {
           )}
 
           <Heading
-            size="lg"
+            size="sm"
             fontFamily="monospace"
             letterSpacing="wider"
             color="white"
@@ -941,7 +942,7 @@ export default function LinksPage() {
         </VStack>
 
         {/* Carousel View */}
-        <Box mt={10}>
+        <Box>
           {/* Carousel Content */}
           <Box overflow="hidden" px={{ base: 8, md: 0 }}>
             <CarouselCard
