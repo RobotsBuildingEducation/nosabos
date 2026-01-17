@@ -808,6 +808,8 @@ export default function History({
 
   // Refs for audio
   const currentAudioRef = useRef(null);
+  // State to trigger re-render when audio element changes (for highlighting hook)
+  const [currentAudio, setCurrentAudio] = useState(null);
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -852,7 +854,7 @@ export default function History({
   const { currentWordIndex, reset: resetHighlighting } = useTTSWordHighlighting({
     text: viewLecture?.target || "",
     langCode: targetLang,
-    audioElement: currentAudioRef.current,
+    audioElement: currentAudio,
     isPlaying: isReadingTarget && !isSynthesizingTarget,
   });
 
@@ -1230,6 +1232,7 @@ export default function History({
         currentAudioRef.current = null;
       }
     } catch {}
+    setCurrentAudio(null);
     setIsReadingTarget(false);
     resetHighlighting();
   };
@@ -1249,10 +1252,12 @@ export default function History({
       });
 
       currentAudioRef.current = player.audio;
+      setCurrentAudio(player.audio);
 
       const cleanup = () => {
         setReading(false);
         currentAudioRef.current = null;
+        setCurrentAudio(null);
         player.cleanup?.();
         player.finalize?.catch?.(() => {});
         resetHighlighting();
@@ -1269,6 +1274,7 @@ export default function History({
     } catch {
       setSynthesizing?.(false);
       setReading(false);
+      setCurrentAudio(null);
       resetHighlighting();
       onDone?.();
     }

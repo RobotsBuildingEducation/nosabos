@@ -2,25 +2,29 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
 /**
- * Speech rate constants based on TTS analysis.
- * Average TTS speaking rate is ~12-15 characters per second.
- * We use ~65ms per character as baseline, adjusted per language.
+ * Speech rate constants - milliseconds per character.
+ * These are calibrated based on OpenAI Realtime TTS voices.
+ * The realtime API speaks at roughly 150-180 words per minute,
+ * which translates to about 55-70ms per character depending on language.
  */
-const CHARS_PER_MS_BY_LANG = {
-  en: 0.016, // ~16 chars/sec, faster for English
-  es: 0.014, // ~14 chars/sec
-  pt: 0.014,
-  fr: 0.013,
-  it: 0.014,
-  nl: 0.015,
-  nah: 0.012, // slower for Nahuatl
-  ru: 0.012,
-  de: 0.013,
-  el: 0.012,
-  ja: 0.008, // Japanese is syllable-timed, slower
+const MS_PER_CHAR_BY_LANG = {
+  en: 55,  // English is faster
+  es: 62,  // Spanish
+  pt: 62,  // Portuguese
+  fr: 65,  // French slightly slower
+  it: 60,  // Italian
+  nl: 58,  // Dutch
+  nah: 70, // Nahuatl (uses Spanish voice, slower)
+  ru: 65,  // Russian
+  de: 60,  // German
+  el: 68,  // Greek
+  ja: 90,  // Japanese is syllable-timed, much slower
 };
 
-const DEFAULT_CHARS_PER_MS = 0.014;
+const DEFAULT_MS_PER_CHAR = 62;
+
+// Pause between words in milliseconds
+const WORD_PAUSE_MS = 30;
 
 /**
  * Splits text into words while preserving punctuation attached to words.
@@ -31,7 +35,6 @@ function splitIntoWords(text) {
   if (!text) return [];
 
   const words = [];
-  // Match words including attached punctuation
   const regex = /\S+/g;
   let match;
 
@@ -50,21 +53,22 @@ function splitIntoWords(text) {
  * Calculates estimated timing for each word based on character count.
  * @param {Array<{word: string, start: number, end: number}>} words - Words array
  * @param {string} langCode - Language code for speech rate adjustment
- * @returns {Array<{word: string, startMs: number, endMs: number, charStart: number, charEnd: number}>}
+ * @returns {Array<{word: string, startMs: number, endMs: number, charStart: number, charEnd: number, index: number}>}
  */
 function calculateWordTimings(words, langCode = "es") {
-  const charsPerMs = CHARS_PER_MS_BY_LANG[langCode] || DEFAULT_CHARS_PER_MS;
+  const msPerChar = MS_PER_CHAR_BY_LANG[langCode] || DEFAULT_MS_PER_CHAR;
 
   let currentMs = 0;
   const timings = [];
 
   for (let i = 0; i < words.length; i++) {
     const { word, start, end } = words[i];
-    // Duration based on word length (characters)
-    const wordDurationMs = word.length / charsPerMs;
 
-    // Add small pause between words (natural speech rhythm)
-    const pauseMs = i > 0 ? 50 : 0;
+    // Duration based on word length (characters)
+    const wordDurationMs = word.length * msPerChar;
+
+    // Add pause between words
+    const pauseMs = i > 0 ? WORD_PAUSE_MS : 0;
 
     timings.push({
       word,
@@ -83,6 +87,7 @@ function calculateWordTimings(words, langCode = "es") {
 
 /**
  * Hook for TTS word highlighting that syncs with audio playback.
+ * Listens to the audio element's 'playing' event to start timing accurately.
  *
  * @param {Object} options
  * @param {string} options.text - The text being spoken
@@ -98,9 +103,11 @@ export function useTTSWordHighlighting({
   isPlaying,
 }) {
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
+  const [audioStarted, setAudioStarted] = useState(false);
   const wordTimingsRef = useRef([]);
   const startTimeRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const audioElementRef = useRef(null);
 
   // Calculate word timings when text changes
   useEffect(() => {
@@ -116,6 +123,7 @@ export function useTTSWordHighlighting({
   // Reset function
   const reset = useCallback(() => {
     setCurrentWordIndex(-1);
+    setAudioStarted(false);
     startTimeRef.current = null;
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -123,19 +131,62 @@ export function useTTSWordHighlighting({
     }
   }, []);
 
-  // Animation loop to update current word based on elapsed time
+  // Listen to audio element events
   useEffect(() => {
-    if (!isPlaying || !text) {
-      reset();
+    if (!isPlaying || !audioElement) {
       return;
     }
 
-    // Start tracking time when playback begins
-    startTimeRef.current = performance.now();
-    setCurrentWordIndex(0);
+    // Store ref to current audio element
+    audioElementRef.current = audioElement;
+
+    const handlePlaying = () => {
+      // Audio has actually started playing - start our timer now
+      startTimeRef.current = performance.now();
+      setAudioStarted(true);
+      setCurrentWordIndex(0);
+    };
+
+    const handleEnded = () => {
+      reset();
+    };
+
+    const handlePause = () => {
+      // Keep current position but stop animation
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+
+    // If audio is already playing, start immediately
+    if (!audioElement.paused && audioElement.currentTime > 0) {
+      handlePlaying();
+    }
+
+    audioElement.addEventListener("playing", handlePlaying);
+    audioElement.addEventListener("ended", handleEnded);
+    audioElement.addEventListener("pause", handlePause);
+
+    return () => {
+      audioElement.removeEventListener("playing", handlePlaying);
+      audioElement.removeEventListener("ended", handleEnded);
+      audioElement.removeEventListener("pause", handlePause);
+    };
+  }, [isPlaying, audioElement, reset]);
+
+  // Animation loop to update current word based on elapsed time
+  useEffect(() => {
+    if (!audioStarted || !text || !isPlaying) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      return;
+    }
 
     const updateHighlight = () => {
-      if (!startTimeRef.current) return;
+      if (!startTimeRef.current || !isPlaying) return;
 
       const elapsedMs = performance.now() - startTimeRef.current;
       const timings = wordTimingsRef.current;
@@ -156,11 +207,8 @@ export function useTTSWordHighlighting({
       setCurrentWordIndex(newIndex);
 
       // Continue animation if still playing and not past all words
-      if (
-        isPlaying &&
-        timings.length > 0 &&
-        elapsedMs < timings[timings.length - 1].endMs + 500
-      ) {
+      const lastWordEnd = timings.length > 0 ? timings[timings.length - 1].endMs : 0;
+      if (isPlaying && elapsedMs < lastWordEnd + 1000) {
         animationFrameRef.current = requestAnimationFrame(updateHighlight);
       }
     };
@@ -172,7 +220,14 @@ export function useTTSWordHighlighting({
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isPlaying, text, reset]);
+  }, [audioStarted, text, isPlaying]);
+
+  // Reset when isPlaying becomes false
+  useEffect(() => {
+    if (!isPlaying) {
+      reset();
+    }
+  }, [isPlaying, reset]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -188,6 +243,7 @@ export function useTTSWordHighlighting({
     wordTimings: wordTimingsRef.current,
     reset,
     totalWords: wordTimingsRef.current.length,
+    audioStarted,
   };
 }
 
