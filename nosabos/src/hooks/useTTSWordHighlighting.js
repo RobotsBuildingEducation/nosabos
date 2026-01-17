@@ -3,33 +3,30 @@ import { useState, useEffect, useRef, useCallback } from "react";
 
 /**
  * Speech rate constants - milliseconds per character.
- * These are calibrated based on OpenAI Realtime TTS voices.
- * The realtime API speaks at roughly 150-180 words per minute,
- * which translates to about 55-70ms per character depending on language.
+ * Calibrated for OpenAI Realtime TTS voices.
+ * Based on ~70ms per character estimate from tts.js
  */
 const MS_PER_CHAR_BY_LANG = {
-  en: 55,  // English is faster
-  es: 62,  // Spanish
-  pt: 62,  // Portuguese
-  fr: 65,  // French slightly slower
-  it: 60,  // Italian
-  nl: 58,  // Dutch
-  nah: 70, // Nahuatl (uses Spanish voice, slower)
-  ru: 65,  // Russian
-  de: 60,  // German
-  el: 68,  // Greek
-  ja: 90,  // Japanese is syllable-timed, much slower
+  en: 58,  // English is faster
+  es: 65,  // Spanish
+  pt: 65,  // Portuguese
+  fr: 68,  // French slightly slower
+  it: 63,  // Italian
+  nl: 60,  // Dutch
+  nah: 72, // Nahuatl (uses Spanish voice, slower)
+  ru: 68,  // Russian
+  de: 63,  // German
+  el: 70,  // Greek
+  ja: 95,  // Japanese is syllable-timed, much slower
 };
 
-const DEFAULT_MS_PER_CHAR = 62;
+const DEFAULT_MS_PER_CHAR = 65;
 
 // Pause between words in milliseconds
-const WORD_PAUSE_MS = 30;
+const WORD_PAUSE_MS = 40;
 
 /**
  * Splits text into words while preserving punctuation attached to words.
- * @param {string} text - The text to split
- * @returns {Array<{word: string, start: number, end: number}>} Words with their character positions
  */
 function splitIntoWords(text) {
   if (!text) return [];
@@ -51,9 +48,6 @@ function splitIntoWords(text) {
 
 /**
  * Calculates estimated timing for each word based on character count.
- * @param {Array<{word: string, start: number, end: number}>} words - Words array
- * @param {string} langCode - Language code for speech rate adjustment
- * @returns {Array<{word: string, startMs: number, endMs: number, charStart: number, charEnd: number, index: number}>}
  */
 function calculateWordTimings(words, langCode = "es") {
   const msPerChar = MS_PER_CHAR_BY_LANG[langCode] || DEFAULT_MS_PER_CHAR;
@@ -64,7 +58,7 @@ function calculateWordTimings(words, langCode = "es") {
   for (let i = 0; i < words.length; i++) {
     const { word, start, end } = words[i];
 
-    // Duration based on word length (characters)
+    // Duration based on word length
     const wordDurationMs = word.length * msPerChar;
 
     // Add pause between words
@@ -86,28 +80,19 @@ function calculateWordTimings(words, langCode = "es") {
 }
 
 /**
- * Hook for TTS word highlighting that syncs with audio playback.
- * Listens to the audio element's 'playing' event to start timing accurately.
- *
- * @param {Object} options
- * @param {string} options.text - The text being spoken
- * @param {string} options.langCode - Language code (e.g., 'es', 'en')
- * @param {HTMLAudioElement|null} options.audioElement - The audio element to sync with
- * @param {boolean} options.isPlaying - Whether TTS is currently playing
- * @returns {Object} - { currentWordIndex, wordTimings, reset }
+ * Hook for TTS word highlighting.
+ * Starts timing when isPlaying becomes true.
  */
 export function useTTSWordHighlighting({
   text,
   langCode = "es",
-  audioElement,
   isPlaying,
 }) {
   const [currentWordIndex, setCurrentWordIndex] = useState(-1);
-  const [audioStarted, setAudioStarted] = useState(false);
   const wordTimingsRef = useRef([]);
   const startTimeRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const audioElementRef = useRef(null);
+  const wasPlayingRef = useRef(false);
 
   // Calculate word timings when text changes
   useEffect(() => {
@@ -123,73 +108,38 @@ export function useTTSWordHighlighting({
   // Reset function
   const reset = useCallback(() => {
     setCurrentWordIndex(-1);
-    setAudioStarted(false);
     startTimeRef.current = null;
+    wasPlayingRef.current = false;
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
   }, []);
 
-  // Listen to audio element events
+  // Main effect - start/stop highlighting based on isPlaying
   useEffect(() => {
-    if (!isPlaying || !audioElement) {
+    // If not playing, reset everything
+    if (!isPlaying) {
+      if (wasPlayingRef.current) {
+        reset();
+      }
       return;
     }
 
-    // Store ref to current audio element
-    audioElementRef.current = audioElement;
-
-    const handlePlaying = () => {
-      // Audio has actually started playing - start our timer now
+    // Starting to play
+    if (!wasPlayingRef.current && isPlaying) {
+      wasPlayingRef.current = true;
       startTimeRef.current = performance.now();
-      setAudioStarted(true);
       setCurrentWordIndex(0);
-    };
-
-    const handleEnded = () => {
-      reset();
-    };
-
-    const handlePause = () => {
-      // Keep current position but stop animation
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-    };
-
-    // If audio is already playing, start immediately
-    if (!audioElement.paused && audioElement.currentTime > 0) {
-      handlePlaying();
     }
 
-    audioElement.addEventListener("playing", handlePlaying);
-    audioElement.addEventListener("ended", handleEnded);
-    audioElement.addEventListener("pause", handlePause);
-
-    return () => {
-      audioElement.removeEventListener("playing", handlePlaying);
-      audioElement.removeEventListener("ended", handleEnded);
-      audioElement.removeEventListener("pause", handlePause);
-    };
-  }, [isPlaying, audioElement, reset]);
-
-  // Animation loop to update current word based on elapsed time
-  useEffect(() => {
-    if (!audioStarted || !text || !isPlaying) {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      return;
-    }
+    const timings = wordTimingsRef.current;
+    if (!timings.length) return;
 
     const updateHighlight = () => {
       if (!startTimeRef.current || !isPlaying) return;
 
       const elapsedMs = performance.now() - startTimeRef.current;
-      const timings = wordTimingsRef.current;
 
       // Find current word based on elapsed time
       let newIndex = -1;
@@ -198,7 +148,6 @@ export function useTTSWordHighlighting({
           newIndex = i;
           break;
         }
-        // If we're past this word, keep it as fallback
         if (elapsedMs >= timings[i].startMs) {
           newIndex = i;
         }
@@ -206,9 +155,9 @@ export function useTTSWordHighlighting({
 
       setCurrentWordIndex(newIndex);
 
-      // Continue animation if still playing and not past all words
-      const lastWordEnd = timings.length > 0 ? timings[timings.length - 1].endMs : 0;
-      if (isPlaying && elapsedMs < lastWordEnd + 1000) {
+      // Continue animation if not past all words
+      const lastWordEnd = timings[timings.length - 1]?.endMs || 0;
+      if (elapsedMs < lastWordEnd + 2000) {
         animationFrameRef.current = requestAnimationFrame(updateHighlight);
       }
     };
@@ -218,15 +167,9 @@ export function useTTSWordHighlighting({
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
-  }, [audioStarted, text, isPlaying]);
-
-  // Reset when isPlaying becomes false
-  useEffect(() => {
-    if (!isPlaying) {
-      reset();
-    }
   }, [isPlaying, reset]);
 
   // Cleanup on unmount
@@ -243,22 +186,13 @@ export function useTTSWordHighlighting({
     wordTimings: wordTimingsRef.current,
     reset,
     totalWords: wordTimingsRef.current.length,
-    audioStarted,
   };
 }
 
 /**
  * Renders text with the specified word highlighted.
- * @param {string} text - Full text
- * @param {number} highlightIndex - Index of word to highlight (-1 for none)
- * @param {string} highlightColor - CSS color for highlight
- * @returns {Array<React.ReactNode>} Array of text nodes with highlight spans
  */
-export function getHighlightedTextParts(
-  text,
-  highlightIndex,
-  highlightColor = "rgba(56, 178, 172, 0.4)"
-) {
+export function getHighlightedTextParts(text, highlightIndex) {
   if (!text || highlightIndex < 0) {
     return [{ type: "text", content: text || "", isHighlighted: false }];
   }
@@ -272,7 +206,6 @@ export function getHighlightedTextParts(
   let lastEnd = 0;
 
   words.forEach((wordInfo, idx) => {
-    // Add text before this word
     if (wordInfo.start > lastEnd) {
       parts.push({
         type: "text",
@@ -281,7 +214,6 @@ export function getHighlightedTextParts(
       });
     }
 
-    // Add the word (highlighted or not)
     parts.push({
       type: "word",
       content: wordInfo.word,
@@ -292,7 +224,6 @@ export function getHighlightedTextParts(
     lastEnd = wordInfo.end;
   });
 
-  // Add remaining text after last word
   if (lastEnd < text.length) {
     parts.push({
       type: "text",
