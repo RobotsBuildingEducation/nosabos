@@ -807,7 +807,7 @@ export default function History({
 
   // Refs for audio
   const currentAudioRef = useRef(null);
-  const utteranceRef = useRef(null);
+  const transcriptRef = useRef("");
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -1277,16 +1277,13 @@ export default function History({
 
   const stopSpeech = () => {
     try {
-      if ("speechSynthesis" in window) speechSynthesis.cancel();
-    } catch {}
-    try {
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current.currentTime = 0;
         currentAudioRef.current = null;
       }
     } catch {}
-    utteranceRef.current = null;
+    transcriptRef.current = "";
     setIsReadingTarget(false);
     setActiveWordIndex(-1);
   };
@@ -1298,46 +1295,25 @@ export default function History({
     setSynthesizing?.(true);
 
     try {
-      if ("speechSynthesis" in window) {
-        const synth = window.speechSynthesis;
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = langTag || TTS_LANG_TAG.es;
-        const voices = synth.getVoices();
-        const matchedVoice = voices.find((voice) =>
-          voice.lang?.toLowerCase().startsWith(utterance.lang.toLowerCase())
-        );
-        if (matchedVoice) utterance.voice = matchedVoice;
-        utterance.onstart = () => {
-          setSynthesizing?.(false);
-        };
-        utterance.onboundary = (event) => {
-          if (event.name && event.name !== "word") return;
-          const charIndex = event.charIndex ?? 0;
-          const ranges = targetWordRangesRef.current || [];
-          const index = ranges.findIndex(
-            (range) => charIndex >= range.start && charIndex < range.end
-          );
-          if (index !== -1) {
-            setActiveWordIndex(index);
-          }
-        };
-        const cleanup = () => {
-          setReading(false);
-          setActiveWordIndex(-1);
-          utteranceRef.current = null;
-          onDone?.();
-        };
-        utterance.onend = cleanup;
-        utterance.onerror = cleanup;
-        utteranceRef.current = utterance;
-        synth.speak(utterance);
-        return;
-      }
+      transcriptRef.current = "";
       const player = await getTTSPlayer({
         text,
         langTag: langTag || TTS_LANG_TAG.es,
         voice: getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
+        onTranscriptDelta: (delta) => {
+          if (!delta) return;
+          transcriptRef.current += delta;
+          const words = transcriptRef.current
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+          const ranges = targetWordRangesRef.current || [];
+          if (!ranges.length || words.length === 0) return;
+          const nextIndex = Math.min(words.length - 1, ranges.length - 1);
+          setActiveWordIndex(nextIndex);
+        },
+        onTranscriptDone: () => {},
       });
 
       currentAudioRef.current = player.audio;
