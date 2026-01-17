@@ -20,9 +20,7 @@ import { RiBookmarkLine, RiRoadMapLine } from "react-icons/ri";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { LuKey, LuKeyRound } from "react-icons/lu";
 import { FaBitcoin, FaKey } from "react-icons/fa";
-import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -133,20 +131,20 @@ export default function TutorialActionBarPopovers({
 
   const handlePrevious = () => {
     if (currentStep > 0) {
-      playSound(selectSound);
+      playSound(SOUNDS.SELECT);
       setCurrentStep((prev) => prev - 1);
     }
   };
 
   const handleNext = () => {
     if (currentStep < activeExplanations.length - 1) {
-      playSound(selectSound);
+      playSound(SOUNDS.SELECT);
       setCurrentStep((prev) => prev + 1);
     }
   };
 
   const handleFinish = () => {
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
     setIsVisible(false);
 
     onComplete();

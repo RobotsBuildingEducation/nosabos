@@ -59,11 +59,7 @@ import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import VirtualKeyboard from "./VirtualKeyboard";
 import { MdKeyboard } from "react-icons/md";
-import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import selectSound from "../assets/select.mp3";
-import submitSound from "../assets/submit.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1085,7 +1081,7 @@ export default function GrammarBook({
   async function handleAskAssistant(questionContext) {
     if (!questionContext || isLoadingAssistantSupport || assistantSupportText) return;
 
-    playSound(submitSound);
+    playSound(SOUNDS.SUBMIT);
     setIsLoadingAssistantSupport(true);
     setAssistantSupportText("");
 
@@ -1195,7 +1191,7 @@ export default function GrammarBook({
   async function handleExplainAnswer() {
     if (!currentQuestionData || isLoadingExplanation || explanationText) return;
 
-    playSound(submitSound);
+    playSound(SOUNDS.SUBMIT);
     setIsLoadingExplanation(true);
     setExplanationText(""); // Clear any previous text
 
@@ -1406,7 +1402,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function handleNext() {
-    playSound(nextButtonSound);
+    playSound(SOUNDS.NEXT);
     setLastOk(null);
     setQuizCurrentQuestionAttempted(false);
     setRecentXp(0);
@@ -1482,7 +1478,7 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   }
 
   function handleSkip() {
-    playSound(nextButtonSound);
+    playSound(SOUNDS.NEXT);
     if (isSpeakRecording) {
       try {
         stopSpeakRecording();
@@ -3118,7 +3114,7 @@ Return JSON ONLY:
   --------------------------- */
   async function submitFill() {
     if (!question || !input.trim()) return;
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
     setLoadingG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3185,7 +3181,7 @@ Return JSON ONLY:
 
   async function submitMC() {
     if (!mcQ || !mcPick) return;
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
     setLoadingMCG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3255,7 +3251,7 @@ Return JSON ONLY:
 
   async function submitMA() {
     if (!maQ || !maPicks.length) return;
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
     setLoadingMAG(true);
 
     // Clear previous explanation when attempting a new answer
@@ -3335,7 +3331,7 @@ Return JSON ONLY:
   // ✅ Deterministic judge for Match using the returned map
   async function submitMatch() {
     if (!canSubmitMatch()) return;
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
     setLoadingMJ(true);
 
     // Clear previous explanation when attempting a new answer
@@ -4599,7 +4595,7 @@ Return JSON ONLY:
                       key={i}
                       onClick={() => {
                         if (!mcChoices.length) return;
-                        playSound(selectSound);
+                        playSound(SOUNDS.SELECT);
                         setMcPick(c);
                       }}
                       cursor={mcChoices.length ? "pointer" : "not-allowed"}
@@ -4880,7 +4876,7 @@ Return JSON ONLY:
                         key={i}
                         onClick={() => {
                           if (!maChoices.length) return;
-                          playSound(selectSound);
+                          playSound(SOUNDS.SELECT);
                           if (isSelected) {
                             setMaPicks(maPicks.filter((p) => p !== c));
                           } else {
@@ -5103,7 +5099,7 @@ Return JSON ONLY:
                   setLastOk(null);
                   setSRecognized("");
                   setSEval(null);
-                  playSound(submitActionSound);
+                  playSound(SOUNDS.SUBMIT_ACTION);
                   try {
                     await startSpeakRecording();
                   } catch (err) {
@@ -5282,7 +5278,7 @@ Return JSON ONLY:
                                     {...dragProvided.draggableProps}
                                     {...dragProvided.dragHandleProps}
                                     onClick={() => {
-                                      playSound(selectSound);
+                                      playSound(SOUNDS.SELECT);
                                       handleMatchAutoMove(
                                         mSlots[i],
                                         `slot-${i}`
@@ -5294,7 +5290,7 @@ Return JSON ONLY:
                                         event.key === " "
                                       ) {
                                         event.preventDefault();
-                                        playSound(selectSound);
+                                        playSound(SOUNDS.SELECT);
                                         handleMatchAutoMove(
                                           mSlots[i],
                                           `slot-${i}`
@@ -5370,7 +5366,7 @@ Return JSON ONLY:
                                   {...dragProvided.draggableProps}
                                   {...dragProvided.dragHandleProps}
                                   onClick={() => {
-                                    playSound(selectSound);
+                                    playSound(SOUNDS.SELECT);
                                     handleMatchAutoMove(ri, "bank");
                                   }}
                                   onKeyDown={(event) => {
@@ -5379,7 +5375,7 @@ Return JSON ONLY:
                                       event.key === " "
                                     ) {
                                       event.preventDefault();
-                                      playSound(selectSound);
+                                      playSound(SOUNDS.SELECT);
                                       handleMatchAutoMove(ri, "bank");
                                     }
                                   }}

@@ -23,9 +23,7 @@ import {
   Badge,
 } from "@chakra-ui/react";
 import { FiChevronDown } from "react-icons/fi";
-import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 
 // CEFR level information (matches CEFR_LEVEL_INFO from FlashcardSkillTree)
 const CEFR_LEVELS = [
@@ -100,12 +98,12 @@ export default function ConversationSettingsDrawer({
     CEFR_LEVELS[0];
 
   const handleLevelChange = (level) => {
-    playSound(selectSound);
+    playSound(SOUNDS.SELECT);
     onSettingsChange({ ...settings, proficiencyLevel: level });
   };
 
   const handlePronunciationChange = (checked) => {
-    playSound(selectSound);
+    playSound(SOUNDS.SELECT);
     onSettingsChange({ ...settings, practicePronunciation: checked });
   };
 
@@ -114,12 +112,12 @@ export default function ConversationSettingsDrawer({
   };
 
   const handleSave = useCallback(() => {
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
     onClose?.();
   }, [onClose, playSound]);
 
   const handleClose = useCallback(() => {
-    playSound(selectSound);
+    playSound(SOUNDS.SELECT);
     onClose?.();
   }, [onClose, playSound]);
 
@@ -199,7 +197,7 @@ export default function ConversationSettingsDrawer({
               <Text fontSize="xs" color="gray.400" mb={3}>
                 {t.proficiencyHint}
               </Text>
-              <Menu matchWidth onOpen={() => playSound(selectSound)}>
+              <Menu matchWidth onOpen={() => playSound(SOUNDS.SELECT)}>
                 <MenuButton
                   as={Button}
                   rightIcon={<FiChevronDown />}
@@ -213,7 +211,7 @@ export default function ConversationSettingsDrawer({
                   py={3}
                   px={3}
                   whiteSpace="normal"
-                  onClick={() => playSound(selectSound)}
+                  onClick={() => playSound(SOUNDS.SELECT)}
                 >
                   <HStack spacing={2} align="center" flex={1} minW={0}>
                     <Badge

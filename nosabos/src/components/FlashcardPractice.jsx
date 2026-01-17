@@ -45,11 +45,7 @@ import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
 import { RiBookmarkLine } from "react-icons/ri";
 import { FiHelpCircle } from "react-icons/fi";
-import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import deliciousSound from "../assets/delicious.mp3";
-import clickSound from "../assets/click.mp3";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 import RandomCharacter from "./RandomCharacter";
 
 const MotionBox = motion(Box);
@@ -235,7 +231,7 @@ export default function FlashcardPractice({
       setShowResult(true);
 
       // Play feedback sound
-      playSound(isYes ? deliciousSound : clickSound);
+      playSound(isYes ? SOUNDS.DELICIOUS : SOUNDS.CLICK);
 
       // If correct, award XP and mark complete after a delay
       if (isYes) {
@@ -259,7 +255,7 @@ export default function FlashcardPractice({
 
   const handleTextSubmit = () => {
     if (textAnswer.trim()) {
-      playSound(submitActionSound);
+      playSound(SOUNDS.SUBMIT_ACTION);
       setExplanationText("");
       checkAnswerWithAI(textAnswer);
     }
@@ -374,7 +370,7 @@ export default function FlashcardPractice({
     setXpAwarded(0);
     setExplanationText("");
     setIsLoadingExplanation(false);
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
 
     try {
       await startRecording();

@@ -17,10 +17,7 @@ import { PiSpeakerHighDuotone } from "react-icons/pi";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import ReactMarkdown from "react-markdown";
 import FeedbackRail from "./FeedbackRail";
-import useSoundSettings from "../hooks/useSoundSettings";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -199,7 +196,7 @@ export default function TranslateSentence({
 
   // Handle submit
   const handleSubmit = useCallback(() => {
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
     const userAnswer = getUserAnswer();
     onSubmit(userAnswer);
   }, [getUserAnswer, onSubmit, playSound]);
@@ -441,7 +438,7 @@ export default function TranslateSentence({
                         cursor={lastOk === true ? "default" : "pointer"}
                         onClick={() => {
                           if (lastOk !== true) {
-                            playSound(selectSound);
+                            playSound(SOUNDS.SELECT);
                             handleSelectedWordClick(position);
                           }
                         }}
@@ -519,7 +516,7 @@ export default function TranslateSentence({
                       cursor={lastOk === true ? "default" : "pointer"}
                       onClick={() => {
                         if (lastOk !== true) {
-                          playSound(selectSound);
+                          playSound(SOUNDS.SELECT);
                           handleWordClick(wordIndex, position);
                         }
                       }}

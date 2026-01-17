@@ -34,10 +34,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp } from "react-icons/si";
 import { FaKey } from "react-icons/fa";
-import useSoundSettings from "../hooks/useSoundSettings";
-import selectSound from "../assets/select.mp3";
-import submitActionSound from "../assets/submitaction.mp3";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 
@@ -443,9 +440,9 @@ export default function LinksPage() {
   }, []);
 
   const rbeUrl = "https://robotsbuildingeducation.com";
-  const handleSelectSound = () => playSound(selectSound);
-  const handleSubmitActionSound = () => playSound(submitActionSound);
-  const handleModeSwitcherSound = () => playSound(modeSwitcherSound);
+  const handleSelectSound = () => playSound(SOUNDS.SELECT);
+  const handleSubmitActionSound = () => playSound(SOUNDS.SUBMIT_ACTION);
+  const handleModeSwitcherSound = () => playSound(SOUNDS.MODE_SWITCH);
 
   // Wallet handlers
   const handleCreateWallet = async () => {

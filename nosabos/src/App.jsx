@@ -151,11 +151,7 @@ import {
 } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { HiVolumeUp } from "react-icons/hi";
-import sparkleSound from "./assets/sparkle.mp3";
-import submitActionSound from "./assets/submitaction.mp3";
-import selectSound from "./assets/select.mp3";
-import modeSwitcherSound from "./assets/modeswitcher.mp3";
-import dailyGoalSound from "./assets/dailygoal.mp3";
+import { SOUNDS } from "./hooks/useSoundSettings";
 import {
   brazilianFlag,
   frenchFlag,
@@ -858,7 +854,7 @@ function TopBar({
             colorScheme="teal"
             icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
             onClick={() => {
-              playSound(selectSound);
+              playSound(SOUNDS.SELECT);
               onOpenDailyGoalModal?.();
             }}
             borderColor="teal.600"
@@ -899,7 +895,7 @@ function TopBar({
             variant={isTimerRunning ? "solid" : "outline"}
             size="sm"
             onClick={() => {
-              playSound(selectSound);
+              playSound(SOUNDS.SELECT);
               onOpenTimerModal?.();
             }}
           >
@@ -911,7 +907,7 @@ function TopBar({
               variant={timerPaused ? "outline" : "ghost"}
               size="sm"
               onClick={() => {
-                playSound(selectSound);
+                playSound(SOUNDS.SELECT);
                 onTogglePauseTimer?.();
               }}
             >
@@ -1197,7 +1193,7 @@ function TopBar({
                       ? t.sound_effects_enabled || "Sound effects are enabled."
                       : t.sound_effects_disabled || "Sound effects are muted."}
                   </Text>
-                  {soundEnabled && !isMobile && (
+                  {soundEnabled && (
                     <HStack mt={3} spacing={3} align="center">
                       <Box w="50%">
                         <HStack justify="space-between" mb={2}>
@@ -1672,7 +1668,7 @@ export default function App() {
   // Play sparkle sound when lesson completion modal opens
   useEffect(() => {
     if (showCompletionModal) {
-      playSound(sparkleSound);
+      playSound(SOUNDS.SPARKLE);
     }
   }, [showCompletionModal, playSound]);
 
@@ -2023,7 +2019,7 @@ export default function App() {
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
     if (celebrateOpen) {
-      playSound(dailyGoalSound);
+      playSound(SOUNDS.DAILY_GOAL);
     }
   }, [celebrateOpen, playSound]);
 
@@ -4236,7 +4232,7 @@ export default function App() {
         onVolumeChange={handleVolumeChange}
         onVolumeSave={handleVolumeSave}
         playSound={playSound}
-        testSound={submitActionSound}
+        testSound={SOUNDS.SUBMIT_ACTION}
         isMobile={isMobile}
       />
 
@@ -5038,7 +5034,7 @@ function BottomActionBar({
     : undefined;
   const handleActionClick = (action) => {
     if (!action) return;
-    playSound?.(selectSound);
+    playSound?.(SOUNDS.SELECT);
     action();
   };
 
@@ -5172,7 +5168,7 @@ function BottomActionBar({
             aria-label={modeMenuLabel}
             rounded="xl"
             flexShrink={0}
-            onClick={() => playSound?.(modeSwitcherSound)}
+            onClick={() => playSound?.(SOUNDS.MODE_SWITCH)}
             // bg="rgba(0, 98, 189, 0.6)"
             colorScheme="teal"
             // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
@@ -5191,7 +5187,7 @@ function BottomActionBar({
                 <MenuItem
                   key={mode.id}
                   onClick={() => {
-                    playSound?.(modeSwitcherSound);
+                    playSound?.(SOUNDS.MODE_SWITCH);
                     // If clicking path when already in path mode, just scroll
                     if (mode.id === "path" && isSelected) {
                       onScrollToLatest?.();

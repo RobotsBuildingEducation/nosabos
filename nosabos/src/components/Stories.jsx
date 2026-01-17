@@ -60,10 +60,7 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import RobotBuddyPro from "./RobotBuddyPro";
 import RandomCharacter from "./RandomCharacter";
-import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
-import deliciousSound from "../assets/delicious.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 
 const renderSpeakerIcon = (loading) =>
   loading ? <Spinner size="xs" /> : <PiSpeakerHighDuotone />;
@@ -1124,7 +1121,7 @@ export default function StoryMode({
 
   /* ----------------------------- Skip module ----------------------------- */
   const handleSkipModule = () => {
-    playSound(nextButtonSound);
+    playSound(SOUNDS.NEXT);
     // If in lesson mode, call onSkip to switch to next random module type
     if (onSkip && typeof onSkip === "function") {
       console.log("[StoryMode] Skipping to next lesson module");
@@ -1391,7 +1388,7 @@ export default function StoryMode({
       });
 
       // Play success sound
-      playSound(deliciousSound);
+      playSound(SOUNDS.DELICIOUS);
 
       // Mark sentence as completed, wait for user to click "Next"
       setSentenceCompleted(true);
@@ -1430,7 +1427,7 @@ export default function StoryMode({
     }
 
     setLastSuccessInfo(null);
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
 
     try {
       await startSpeakRecording();
@@ -1515,7 +1512,7 @@ export default function StoryMode({
 
   // Handle manual advancement to next sentence
   const handleNextSentence = async () => {
-    playSound(nextButtonSound);
+    playSound(SOUNDS.NEXT);
     const isLast =
       currentSentenceIndex >= (storyData?.sentences?.length || 0) - 1;
 
@@ -1730,7 +1727,7 @@ export default function StoryMode({
                   <Center>
                     <Button
                       onClick={() => {
-                        playSound(submitActionSound);
+                        playSound(SOUNDS.SUBMIT_ACTION);
                         stopAllAudio();
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);

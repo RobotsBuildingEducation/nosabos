@@ -25,12 +25,10 @@ import {
   MenuList,
   MenuItemOption,
   MenuOptionGroup,
-  useBreakpointValue,
 } from "@chakra-ui/react";
 import { ChevronDownIcon } from "@chakra-ui/icons";
 import { HiVolumeUp } from "react-icons/hi";
-import submitActionSound from "../assets/submitaction.mp3";
-import useSoundSettings from "../hooks/useSoundSettings";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { translations } from "../utils/translation";
@@ -62,7 +60,6 @@ export default function Onboarding({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useBreakpointValue({ base: true, md: false });
 
   const normalizedUserLang = userLanguage === "es" ? "es" : "en";
   const initialSupportLang = initialDraft.supportLang || normalizedUserLang;
@@ -513,7 +510,7 @@ export default function Onboarding({
                       ? ui.sound_effects_enabled || "Sound effects are enabled."
                       : ui.sound_effects_disabled || "Sound effects are muted."}
                   </Text>
-                  {soundEnabled && !isMobile && (
+                  {soundEnabled && (
                     <HStack mt={3} spacing={3} align="center">
                       <Box w="50%">
                         <HStack justify="space-between" mb={2}>
@@ -546,7 +543,7 @@ export default function Onboarding({
                         leftIcon={<HiVolumeUp />}
                         size="sm"
                         variant="outline"
-                        onClick={() => playSound(submitActionSound)}
+                        onClick={() => playSound(SOUNDS.SUBMIT_ACTION)}
                       >
                         {ui.test_sound || "Test sound"}
                       </Button>

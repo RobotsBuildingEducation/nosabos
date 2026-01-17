@@ -57,9 +57,7 @@ import {
   where,
 } from "firebase/firestore";
 import { database } from "../firebaseResources/firebaseResources";
-import useSoundSettings from "../hooks/useSoundSettings";
-import submitActionSound from "../assets/submitaction.mp3";
-import nextButtonSound from "../assets/nextbutton.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 
 const MotionBox = motion(Box);
 
@@ -486,7 +484,7 @@ function LetterCard({
     // Clear previous results
     setShowResult(false);
     setIsCorrect(false);
-    playSound(submitActionSound);
+    playSound(SOUNDS.SUBMIT_ACTION);
 
     try {
       await startRecording();
@@ -563,7 +561,7 @@ function LetterCard({
   };
 
   const handleNextWord = async () => {
-    playSound(nextButtonSound);
+    playSound(SOUNDS.NEXT);
     const generated = await generateNewPracticeWord(practiceWord);
     if (!generated?.word) {
       toast({

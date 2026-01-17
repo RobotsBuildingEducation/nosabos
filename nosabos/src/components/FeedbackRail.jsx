@@ -15,9 +15,7 @@ import { RiBookmarkLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { WaveBar } from "./WaveBar";
 import RandomCharacter from "./RandomCharacter";
-import useSoundSettings from "../hooks/useSoundSettings";
-import deliciousSound from "../assets/delicious.mp3";
-import clickSound from "../assets/click.mp3";
+import useSoundSettings, { SOUNDS } from "../hooks/useSoundSettings";
 
 /**
  * Stable, memoized feedback rail used by GrammarBook and Vocabulary.
@@ -49,10 +47,10 @@ const FeedbackRail = React.memo(
     useEffect(() => {
       if (ok === true && !hasPlayedRef.current) {
         hasPlayedRef.current = true;
-        playSound(deliciousSound);
+        playSound(SOUNDS.DELICIOUS);
       } else if (ok === false && !hasPlayedRef.current) {
         hasPlayedRef.current = true;
-        playSound(clickSound);
+        playSound(SOUNDS.CLICK);
       }
       // Reset when ok changes to null (new question)
       if (ok === null) {
