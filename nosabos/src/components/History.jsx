@@ -33,6 +33,8 @@ import {
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
+import { useTTSWordHighlighting } from "../hooks/useTTSWordHighlighting";
+import HighlightedText from "./HighlightedText";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -624,7 +626,7 @@ async function computeAdaptiveXp({
 }
 
 /* ---------------------------
-   TTS (no highlighting)
+   TTS (with word highlighting)
 --------------------------- */
 const BCP47 = {
   es: { tts: "es-ES" },
@@ -845,6 +847,14 @@ export default function History({
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
+
+  // TTS word highlighting - tracks current word being spoken
+  const { currentWordIndex, reset: resetHighlighting } = useTTSWordHighlighting({
+    text: viewLecture?.target || "",
+    langCode: targetLang,
+    audioElement: currentAudioRef.current,
+    isPlaying: isReadingTarget && !isSynthesizingTarget,
+  });
 
   // Reset reading when switching lecture or when draft toggles
   useEffect(() => {
@@ -1221,6 +1231,7 @@ export default function History({
       }
     } catch {}
     setIsReadingTarget(false);
+    resetHighlighting();
   };
 
   async function speak({ text, langTag, setReading, setSynthesizing, onDone }) {
@@ -1244,6 +1255,7 @@ export default function History({
         currentAudioRef.current = null;
         player.cleanup?.();
         player.finalize?.catch?.(() => {});
+        resetHighlighting();
         onDone?.();
       };
 
@@ -1257,6 +1269,7 @@ export default function History({
     } catch {
       setSynthesizing?.(false);
       setReading(false);
+      resetHighlighting();
       onDone?.();
     }
   }
@@ -1423,9 +1436,12 @@ export default function History({
                   ) : null}
                 </Box>
 
-                <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {viewLecture.target || ""}
-                </Text>
+                <HighlightedText
+                  text={viewLecture.target || ""}
+                  currentWordIndex={currentWordIndex}
+                  isPlaying={isReadingTarget && !isSynthesizingTarget}
+                  highlightColor="rgba(56, 178, 172, 0.5)"
+                />
 
                 {showTranslations && viewLecture.support ? (
                   <>
