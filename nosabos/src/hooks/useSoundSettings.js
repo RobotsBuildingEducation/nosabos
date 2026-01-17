@@ -1,5 +1,6 @@
 // src/hooks/useSoundSettings.js
 import { create } from "zustand";
+import { triggerHaptic } from "tactus";
 import { soundManager } from "../utils/SoundManager";
 
 // Legacy MP3 imports - kept for backward compatibility with existing import statements
@@ -108,6 +109,9 @@ const useSoundSettings = create((set, get) => ({
     } else {
       soundManager.play(soundName);
     }
+
+    // Trigger haptic feedback alongside the sound
+    triggerHaptic();
   },
 
   /**
@@ -117,6 +121,7 @@ const useSoundSettings = create((set, get) => ({
     const state = get();
     if (!state.soundEnabled || !state.isInitialized) return;
     soundManager.play(name);
+    triggerHaptic();
   },
 
   /**
@@ -133,6 +138,7 @@ const useSoundSettings = create((set, get) => ({
     }
 
     soundManager.playSliderTick(value, min, max);
+    triggerHaptic();
   },
 
   /**
@@ -149,6 +155,7 @@ const useSoundSettings = create((set, get) => ({
     }
 
     soundManager.playRandomChord();
+    triggerHaptic();
   },
 
   /**
