@@ -665,12 +665,12 @@ function LetterCard({
           align="center"
           justify="center"
           spacing={4}
-          bg="whiteAlpha.100"
+          bgGradient="linear(to-br, rgba(56, 178, 172, 0.25), rgba(129, 140, 248, 0.2), rgba(236, 72, 153, 0.15))"
           border="1px solid"
-          borderColor="whiteAlpha.300"
+          borderColor="whiteAlpha.400"
           borderRadius="lg"
           p={4}
-          boxShadow="0 10px 30px rgba(0,0,0,0.35)"
+          boxShadow="0 10px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)"
           color="white"
           position="relative"
           sx={{ backfaceVisibility: "hidden" }}
@@ -751,12 +751,12 @@ function LetterCard({
           align="center"
           justify="center"
           spacing={3}
-          bg="whiteAlpha.100"
+          bgGradient="linear(to-br, rgba(56, 178, 172, 0.3), rgba(49, 151, 149, 0.25), rgba(44, 122, 123, 0.2))"
           border="1px solid"
           borderColor="teal.400"
           borderRadius="lg"
           p={4}
-          boxShadow="0 10px 30px rgba(0,0,0,0.35), 0 0 0 2px rgba(56, 178, 172, 0.3)"
+          boxShadow="0 10px 30px rgba(0,0,0,0.35), 0 0 0 2px rgba(56, 178, 172, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)"
           color="white"
           position="relative"
           sx={{
@@ -771,6 +771,20 @@ function LetterCard({
               {correctCount}
             </Text>
           </HStack>
+
+          {/* Close button */}
+          <IconButton
+            aria-label={appLanguage === "es" ? "Cerrar" : "Close"}
+            icon={<RiCloseLine size={18} />}
+            size="xs"
+            variant="ghost"
+            color="whiteAlpha.700"
+            position="absolute"
+            top={2}
+            right={2}
+            onClick={handleFlipBack}
+            _hover={{ bg: "whiteAlpha.200", color: "white" }}
+          />
 
           {/* Practice Word Display */}
           <Text fontSize="xs" color="whiteAlpha.700" fontWeight="medium">
@@ -880,16 +894,6 @@ function LetterCard({
                   : appLanguage === "es"
                   ? "Grabar"
                   : "Record"}
-              </Button>
-
-              <Button
-                size="sm"
-                variant="ghost"
-                color="whiteAlpha.700"
-                onClick={handleFlipBack}
-                _hover={{ bg: "whiteAlpha.200" }}
-              >
-                {appLanguage === "es" ? "Cancelar" : "Cancel"}
               </Button>
             </VStack>
           )}
