@@ -1,23 +1,29 @@
 // src/hooks/useSpeechPractice.js
+// Uses WebRTC + OpenAI Realtime API for cross-platform speech recognition
+// Works on in-app browsers (TikTok, Instagram, etc.) where Web Speech API is unavailable
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import {
-  computeAudioMetricsFromBlob,
-  evaluateAttemptStrict,
-} from "../utils/speechEvaluation";
+import { evaluateAttemptStrict } from "../utils/speechEvaluation";
 
-const BCP47 = {
-  es: "es-ES",
-  en: "en-US",
-  pt: "pt-BR",
-  fr: "fr-FR",
-  it: "it-IT",
-  nl: "nl-NL",
-  nah: "es-ES",
-  ru: "ru-RU",
-  de: "de-DE",
-  ja: "ja-JP",
-  el: "el-GR",
+const BCP47_TO_WHISPER = {
+  es: "es",
+  en: "en",
+  pt: "pt",
+  fr: "fr",
+  it: "it",
+  nl: "nl",
+  nah: "es", // Nahuatl fallback to Spanish
+  ru: "ru",
+  de: "de",
+  ja: "ja",
+  el: "el",
 };
+
+const REALTIME_MODEL = "gpt-realtime-mini";
+const REALTIME_URL = import.meta.env?.VITE_REALTIME_URL
+  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
+      REALTIME_MODEL
+    )}`
+  : "";
 
 function makeError(code, message) {
   const err = new Error(message || code);
@@ -31,45 +37,58 @@ export function useSpeechPractice({
   onResult,
   timeoutMs = 15000,
 } = {}) {
-  const recognitionRef = useRef(null);
-  const mediaRecorderRef = useRef(null);
-  const streamRef = useRef(null);
-  const evalRef = useRef({ inProgress: false, speechDone: false, timeoutId: null });
+  const pcRef = useRef(null);
+  const dcRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const evalRef = useRef({
+    inProgress: false,
+    speechDone: false,
+    timeoutId: null,
+    silenceTimeoutId: null,
+  });
+  const transcriptRef = useRef("");
   const [isRecording, setIsRecording] = useState(false);
 
+  // Check if we have the realtime URL configured
   const supportsSpeech = useMemo(() => {
     const hasWindow = typeof window !== "undefined";
-    const sr = hasWindow && (window.SpeechRecognition || window.webkitSpeechRecognition);
+    const hasRTC = hasWindow && typeof RTCPeerConnection !== "undefined";
     const hasMedia =
       typeof navigator !== "undefined" &&
-      !!navigator.mediaDevices?.getUserMedia &&
-      typeof MediaRecorder !== "undefined";
-    return !!sr && hasMedia;
+      !!navigator.mediaDevices?.getUserMedia;
+    const hasRealtimeUrl = !!REALTIME_URL;
+    return hasRTC && hasMedia && hasRealtimeUrl;
   }, []);
 
   const cleanup = useCallback(() => {
+    // Close data channel
     try {
-      recognitionRef.current?.stop?.();
+      dcRef.current?.close?.();
     } catch {}
+    dcRef.current = null;
+
+    // Close peer connection
     try {
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state === "recording"
-      ) {
-        mediaRecorderRef.current.stop();
-      }
+      pcRef.current?.close?.();
     } catch {}
+    pcRef.current = null;
+
+    // Stop local media stream
     try {
-      const tracks = streamRef.current?.getTracks?.();
+      const tracks = localStreamRef.current?.getTracks?.();
       tracks?.forEach((t) => t.stop());
     } catch {}
-    streamRef.current = null;
-    mediaRecorderRef.current = null;
-    recognitionRef.current = null;
+    localStreamRef.current = null;
+
+    // Clear timeouts
     if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
+    if (evalRef.current.silenceTimeoutId)
+      clearTimeout(evalRef.current.silenceTimeoutId);
     evalRef.current.timeoutId = null;
+    evalRef.current.silenceTimeoutId = null;
     evalRef.current.inProgress = false;
     evalRef.current.speechDone = false;
+    transcriptRef.current = "";
     setIsRecording(false);
   }, []);
 
@@ -99,191 +118,254 @@ export function useSpeechPractice({
   const startRecording = useCallback(async () => {
     if (!targetText) throw makeError("no-target", "target missing");
     if (evalRef.current.inProgress) return;
-
-    const hasWindow = typeof window !== "undefined";
-    const SR =
-      hasWindow && (window.SpeechRecognition || window.webkitSpeechRecognition);
-    if (!SR) throw makeError("no-speech-recognition");
+    if (!REALTIME_URL)
+      throw makeError("no-realtime-url", "Realtime URL not configured");
+    if (typeof RTCPeerConnection === "undefined")
+      throw makeError("no-webrtc", "WebRTC not supported");
     if (
       typeof navigator === "undefined" ||
       !navigator.mediaDevices?.getUserMedia
     )
-      throw makeError("no-media");
-    if (typeof MediaRecorder === "undefined")
-      throw makeError("no-mediarecorder");
+      throw makeError("no-media", "getUserMedia not supported");
 
     evalRef.current.inProgress = true;
     evalRef.current.speechDone = false;
+    transcriptRef.current = "";
 
-    let stream;
+    let localStream;
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      localStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
     } catch (err) {
       evalRef.current.inProgress = false;
       throw makeError("mic-denied", err?.message || "microphone access denied");
     }
 
-    streamRef.current = stream;
-    const mr = new MediaRecorder(stream);
-    mediaRecorderRef.current = mr;
-    const chunks = [];
-    mr.ondataavailable = (evt) => {
-      if (evt.data?.size) chunks.push(evt.data);
-    };
-    mr.onstop = async () => {
-      try {
-        stream.getTracks().forEach((t) => t.stop());
-      } catch {}
-      if (!evalRef.current.speechDone) {
-        // If we have a transcript from speech recognition, use it (manual stop case)
-        if (finalTranscript) {
-          evalRef.current.speechDone = true;
-          await report({
-            recognizedText: finalTranscript,
-            confidence: finalConfidence,
-            audioMetrics: null,
-            method: "manual-stop",
-          });
-        } else {
-          // Fall back to audio metrics only if no transcript
-          try {
-            const blob = new Blob(chunks, { type: "audio/webm" });
-            const metrics = await computeAudioMetricsFromBlob(blob);
-            await report({
-              recognizedText: "",
-              confidence: 0,
-              audioMetrics: metrics,
-              method: "audio-fallback",
-            });
-          } catch (err) {
-            onResult?.({
-              evaluation: null,
-              recognizedText: "",
-              confidence: 0,
+    localStreamRef.current = localStream;
+
+    try {
+      const pc = new RTCPeerConnection();
+      pcRef.current = pc;
+
+      // Add transceiver for receiving audio (required by the Realtime API)
+      pc.addTransceiver("audio", { direction: "recvonly" });
+
+      // Add local audio track
+      localStream
+        .getTracks()
+        .forEach((track) => pc.addTrack(track, localStream));
+
+      // Create data channel for events
+      const dc = pc.createDataChannel("oai-events");
+      dcRef.current = dc;
+
+      let hasReceivedSpeech = false;
+
+      const finishRecording = async () => {
+        if (!evalRef.current.inProgress || evalRef.current.speechDone) return;
+        evalRef.current.speechDone = true;
+
+        if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
+        if (evalRef.current.silenceTimeoutId)
+          clearTimeout(evalRef.current.silenceTimeoutId);
+
+        const finalTranscript = transcriptRef.current.trim();
+
+        // Report result
+        await report({
+          recognizedText: finalTranscript,
+          confidence: finalTranscript ? 0.9 : 0, // Whisper is generally high confidence
+          audioMetrics: null,
+          method: "realtime-whisper",
+        });
+
+        cleanup();
+      };
+
+      dc.onopen = () => {
+        // Configure session for transcription mode
+        const whisperLang = BCP47_TO_WHISPER[targetLang] || "es";
+
+        dc.send(
+          JSON.stringify({
+            type: "session.update",
+            session: {
+              instructions:
+                "Listen and transcribe the user's speech. Do not respond verbally.",
+              modalities: ["audio", "text"], // Need audio to process incoming speech
+              turn_detection: {
+                type: "server_vad",
+                silence_duration_ms: Math.min(timeoutMs, 2000), // End after silence
+                threshold: 0.35,
+                prefix_padding_ms: 120,
+              },
+              input_audio_transcription: {
+                model: "whisper-1",
+                language: whisperLang,
+              },
+            },
+          })
+        );
+      };
+
+      dc.onmessage = (evt) => {
+        try {
+          const msg = JSON.parse(evt.data);
+          const msgType = msg?.type || "";
+
+          // Handle input audio transcription completed (both event type variants)
+          if (
+            (msgType ===
+              "conversation.item.input_audio_transcription.completed" ||
+              msgType === "input_audio_transcription.completed") &&
+            msg.transcript
+          ) {
+            const transcript = (msg.transcript || "").trim();
+            if (transcript) {
+              hasReceivedSpeech = true;
+              transcriptRef.current = transcript;
+
+              // Reset silence timeout when we receive speech
+              if (evalRef.current.silenceTimeoutId) {
+                clearTimeout(evalRef.current.silenceTimeoutId);
+              }
+
+              // Start silence detection - wait for no more speech
+              evalRef.current.silenceTimeoutId = setTimeout(() => {
+                finishRecording();
+              }, timeoutMs);
+            }
+          }
+
+          // Handle speech started
+          if (msgType === "input_audio_buffer.speech_started") {
+            hasReceivedSpeech = true;
+            if (evalRef.current.silenceTimeoutId) {
+              clearTimeout(evalRef.current.silenceTimeoutId);
+              evalRef.current.silenceTimeoutId = null;
+            }
+          }
+
+          // Handle speech stopped - server detected end of speech
+          if (msgType === "input_audio_buffer.speech_stopped") {
+            if (hasReceivedSpeech) {
+              // Give a bit of time for the final transcription to come through
+              evalRef.current.silenceTimeoutId = setTimeout(() => {
+                finishRecording();
+              }, 1500);
+            }
+          }
+
+          // Handle response done (AI finished - means user turn is complete)
+          if (msgType === "response.done") {
+            // Wait a moment for final transcription
+            setTimeout(() => {
+              if (!evalRef.current.speechDone) {
+                finishRecording();
+              }
+            }, 500);
+          }
+
+          // Handle errors
+          if (msgType === "error") {
+            console.error("Realtime API error:", msg.error);
+            // Don't fail completely on errors, just report what we have
+            if (hasReceivedSpeech) {
+              finishRecording();
+            } else {
+              evalRef.current.speechDone = false;
+              cleanup();
+              onResult?.({
+                evaluation: null,
+                recognizedText: "",
+                confidence: 0,
+                audioMetrics: null,
+                method: "realtime-whisper",
+                error: new Error(msg.error?.message || "Realtime API error"),
+              });
+            }
+          }
+        } catch (e) {
+          console.warn("Failed to parse realtime message:", e);
+        }
+      };
+
+      dc.onerror = (err) => {
+        console.error("Data channel error:", err);
+      };
+
+      dc.onclose = () => {
+        if (evalRef.current.inProgress && !evalRef.current.speechDone) {
+          // Connection closed unexpectedly
+          const finalTranscript = transcriptRef.current.trim();
+          if (finalTranscript) {
+            evalRef.current.speechDone = true;
+            report({
+              recognizedText: finalTranscript,
+              confidence: 0.9,
               audioMetrics: null,
-              method: "audio-fallback",
-              error: err,
+              method: "realtime-whisper",
             });
           }
+          cleanup();
         }
-      }
-      if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
-      evalRef.current.timeoutId = null;
-      evalRef.current.inProgress = false;
-      setIsRecording(false);
-    };
+      };
 
-    const recog = new SR();
-    recognitionRef.current = recog;
-    recog.lang = BCP47[targetLang] || BCP47.es;
-    recog.continuous = true; // Enable continuous mode for manual silence detection
-    recog.interimResults = true; // Enable interim results to detect speech activity
-    recog.maxAlternatives = 5;
+      // Create and send offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
 
-    let finalTranscript = "";
-    let finalConfidence = 0;
-    let silenceTimeoutId = null;
-    let hasReceivedSpeech = false;
-
-    const finishRecording = async () => {
-      if (!evalRef.current.inProgress) return;
-      evalRef.current.speechDone = true;
-      if (evalRef.current.timeoutId) clearTimeout(evalRef.current.timeoutId);
-      evalRef.current.timeoutId = null;
-      if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
-
-      await report({
-        recognizedText: finalTranscript,
-        confidence: finalConfidence,
-        audioMetrics: null,
-        method: "live-speech-api",
+      const resp = await fetch(REALTIME_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/sdp" },
+        body: offer.sdp,
       });
 
-      try {
-        recog.stop();
-      } catch {}
-      try {
-        mr.stop();
-      } catch {}
-    };
-
-    recog.onresult = async (evt) => {
-      if (!evalRef.current.inProgress) return;
-
-      // Clear any existing silence timeout
-      if (silenceTimeoutId) {
-        clearTimeout(silenceTimeoutId);
-        silenceTimeoutId = null;
+      if (!resp.ok) {
+        throw new Error(`SDP exchange failed: HTTP ${resp.status}`);
       }
 
-      // Process results to build up the transcript
-      for (let i = 0; i < evt.results.length; i++) {
-        const result = evt.results[i];
-        if (result.isFinal) {
-          hasReceivedSpeech = true;
-          finalTranscript = result[0].transcript;
-          finalConfidence =
-            typeof result[0].confidence === "number" ? result[0].confidence : 0;
-        }
-      }
+      const answerSdp = await resp.text();
+      await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
 
-      // Start silence detection timer - wait for pauseMs of silence before finishing
-      if (hasReceivedSpeech) {
-        silenceTimeoutId = setTimeout(() => {
+      setIsRecording(true);
+
+      // Maximum timeout as safety (30 seconds)
+      evalRef.current.timeoutId = setTimeout(() => {
+        if (evalRef.current.inProgress && !evalRef.current.speechDone) {
           finishRecording();
-        }, timeoutMs);
-      }
-    };
-
-    recog.onerror = () => {
-      evalRef.current.speechDone = false;
-      if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
-      try {
-        mr.stop();
-      } catch {}
-    };
-
-    recog.onend = () => {
-      if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
-      if (evalRef.current.inProgress && !evalRef.current.speechDone) {
-        try {
-          mr.stop();
-        } catch {}
-      }
-    };
-
-    try {
-      recog.start();
+        }
+      }, 30000);
     } catch (err) {
-      evalRef.current.inProgress = false;
-      stream.getTracks().forEach((t) => t.stop());
-      throw makeError("recognition-start", err?.message || "speech start failed");
+      cleanup();
+      throw makeError(
+        "connection-failed",
+        err?.message || "Failed to connect to realtime API"
+      );
     }
-
-    mr.start();
-    setIsRecording(true);
-
-    // Maximum timeout as a safety measure (30 seconds)
-    evalRef.current.timeoutId = setTimeout(() => {
-      if (!evalRef.current.inProgress) return;
-      if (silenceTimeoutId) clearTimeout(silenceTimeoutId);
-      finishRecording();
-    }, 30000);
-  }, [report, targetLang, targetText, timeoutMs, onResult]);
+  }, [report, targetLang, targetText, timeoutMs, onResult, cleanup]);
 
   const stopRecording = useCallback(() => {
-    try {
-      recognitionRef.current?.stop?.();
-    } catch {}
-    try {
-      if (
-        mediaRecorderRef.current &&
-        mediaRecorderRef.current.state === "recording"
-      ) {
-        mediaRecorderRef.current.stop();
-      }
-    } catch {}
-  }, []);
+    if (!evalRef.current.inProgress) return;
+
+    const finalTranscript = transcriptRef.current.trim();
+    evalRef.current.speechDone = true;
+
+    // Report whatever we have
+    report({
+      recognizedText: finalTranscript,
+      confidence: finalTranscript ? 0.9 : 0,
+      audioMetrics: null,
+      method: "realtime-whisper",
+    });
+
+    cleanup();
+  }, [report, cleanup]);
 
   return { startRecording, stopRecording, isRecording, supportsSpeech };
 }
