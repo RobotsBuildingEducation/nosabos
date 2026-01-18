@@ -1,10 +1,8 @@
 import React, { useState, useRef } from "react";
-import ReactMarkdown from "react-markdown";
 import {
   Box,
   VStack,
   HStack,
-  Flex,
   Text,
   Input,
   Button,
@@ -17,11 +15,8 @@ import {
   Spinner,
   useToast,
 } from "@chakra-ui/react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
-  RiCheckLine,
-  RiCloseLine,
-  RiStarLine,
   RiMicLine,
   RiStopCircleLine,
   RiKeyboardLine,
@@ -40,17 +35,11 @@ import { useSpeechPractice } from "../hooks/useSpeechPractice";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "../utils/llm";
 import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
-import { WaveBar } from "./WaveBar";
 import useNotesStore from "../hooks/useNotesStore";
 import { generateNoteContent, buildNoteObject } from "../utils/noteGeneration";
-import { RiBookmarkLine } from "react-icons/ri";
-import { FiHelpCircle } from "react-icons/fi";
+import FeedbackRail from "./FeedbackRail";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
-import deliciousSound from "../assets/delicious.mp3";
-import clickSound from "../assets/click.mp3";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
-import RandomCharacter from "./RandomCharacter";
 
 const MotionBox = motion(Box);
 
@@ -143,11 +132,9 @@ export default function FlashcardPractice({
   targetLang = "es",
   supportLang = "en",
   pauseMs = 2000,
-  languageXp = 0,
 }) {
   const [textAnswer, setTextAnswer] = useState("");
-  const [showResult, setShowResult] = useState(false);
-  const [isCorrect, setIsCorrect] = useState(false);
+  const [lastOk, setLastOk] = useState(null); // null = no result, true = correct, false = incorrect
   const [recognizedText, setRecognizedText] = useState("");
   const [xpAwarded, setXpAwarded] = useState(0);
   const [isGrading, setIsGrading] = useState(false);
@@ -172,10 +159,6 @@ export default function FlashcardPractice({
   const triggerDoneAnimation = useNotesStore((s) => s.triggerDoneAnimation);
 
   const cefrColor = CEFR_COLORS[card.cefrLevel];
-  const currentLanguageXp = Number(languageXp) || 0;
-  const updatedTotalXp = currentLanguageXp + xpAwarded;
-  const xpLevelNumber = Math.floor(updatedTotalXp / 100) + 1;
-  const nextLevelProgressPct = updatedTotalXp % 100;
 
   // Speech practice hook
   const { startRecording, stopRecording, isRecording, supportsSpeech } =
@@ -230,20 +213,8 @@ export default function FlashcardPractice({
         }
       }
 
-      setIsCorrect(isYes);
+      setLastOk(isYes);
       setXpAwarded(xp);
-      setShowResult(true);
-
-      // Play feedback sound
-      playSound(isYes ? deliciousSound : clickSound);
-
-      // If correct, award XP and mark complete after a delay
-      if (isYes) {
-        setTimeout(() => {
-          onComplete({ ...card, xpReward: xp });
-          handleClose();
-        }, 2000);
-      }
     } catch (error) {
       console.error("AI grading error:", error);
       toast({
@@ -268,8 +239,7 @@ export default function FlashcardPractice({
   const handleTryAgain = () => {
     setTextAnswer("");
     setRecognizedText("");
-    setShowResult(false);
-    setIsCorrect(false);
+    setLastOk(null);
     setXpAwarded(0);
     setNoteCreated(false);
     explanationStreamingRef.current = false;
@@ -277,11 +247,22 @@ export default function FlashcardPractice({
     setIsLoadingExplanation(false);
   };
 
+  // Handle "Next" button click from FeedbackRail
+  const handleNext = () => {
+    if (lastOk === true) {
+      // Correct answer: complete the card and close
+      onComplete({ ...card, xpReward: xpAwarded });
+      handleClose();
+    } else {
+      // Incorrect answer: try again
+      handleTryAgain();
+    }
+  };
+
   const handleClose = () => {
     setTextAnswer("");
     setRecognizedText("");
-    setShowResult(false);
-    setIsCorrect(false);
+    setLastOk(null);
     setXpAwarded(0);
     setIsFlipped(false);
     setStreamedAnswer("");
@@ -320,7 +301,7 @@ export default function FlashcardPractice({
       const { example, summary } = await generateNoteContent({
         concept,
         userAnswer,
-        wasCorrect: isCorrect,
+        wasCorrect: lastOk === true,
         targetLang,
         supportLang,
         cefrLevel: card.cefrLevel,
@@ -335,7 +316,7 @@ export default function FlashcardPractice({
         targetLang,
         supportLang,
         moduleType: "flashcard",
-        wasCorrect: isCorrect,
+        wasCorrect: lastOk === true,
       });
 
       addNote(note);
@@ -356,7 +337,7 @@ export default function FlashcardPractice({
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter" && textAnswer.trim() && !showResult && !isGrading) {
+    if (e.key === "Enter" && textAnswer.trim() && lastOk === null && !isGrading) {
       handleTextSubmit();
     }
   };
@@ -368,9 +349,8 @@ export default function FlashcardPractice({
     }
 
     // Clear previous results
-    setShowResult(false);
+    setLastOk(null);
     setRecognizedText("");
-    setIsCorrect(false);
     setXpAwarded(0);
     setExplanationText("");
     setIsLoadingExplanation(false);
@@ -767,7 +747,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
             </Box>
 
             {/* Unified Input - Show both text and speech */}
-            {!showResult && (
+            {lastOk === null && (
               <VStack spacing={4}>
                 {/* Grading State */}
                 {isGrading ? (
@@ -883,188 +863,32 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
               </VStack>
             )}
 
-            {/* Result */}
-            {showResult && (
-              <AnimatePresence>
-                <MotionBox
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <VStack
-                    spacing={4}
-                    p={6}
-                    borderRadius="xl"
-                    bg={isCorrect ? "green.900" : "red.900"}
-                    border="2px solid"
-                    borderColor={isCorrect ? "green.500" : "red.500"}
-                  >
-                    <HStack spacing={3} w="100%">
-                      {isCorrect ? (
-                        <RiCheckLine size={32} color="#22C55E" />
-                      ) : (
-                        <RiCloseLine size={32} color="#EF4444" />
-                      )}
-                      <Text
-                        fontSize="2xl"
-                        fontWeight="bold"
-                        color="white"
-                        flex="1"
-                      >
-                        {isCorrect
-                          ? getTranslation("flashcard_correct")
-                          : getTranslation("flashcard_incorrect")}
-                      </Text>
-                      {/* Create Note Button - icon only */}
-                      <IconButton
-                        icon={
-                          isCreatingNote ? (
-                            <Spinner size="xs" />
-                          ) : (
-                            <RiBookmarkLine size={18} />
-                          )
-                        }
-                        aria-label={
-                          noteCreated
-                            ? getTranslation("flashcard_note_saved") ||
-                              "Note saved!"
-                            : getTranslation("flashcard_create_note") ||
-                              "Create note"
-                        }
-                        colorScheme={noteCreated ? "green" : "gray"}
-                        variant={noteCreated ? "solid" : "ghost"}
-                        onClick={handleCreateNote}
-                        isDisabled={isCreatingNote || noteCreated}
-                        size="sm"
-                        flexShrink={0}
-                      />
-                    </HStack>
-
-                    {isCorrect ? (
-                      <HStack spacing={2} color="yellow.400">
-                        <RiStarLine size={20} />
-                        <Text fontSize="lg" fontWeight="bold">
-                          +{xpAwarded} XP
-                        </Text>
-                      </HStack>
-                    ) : (
-                      <VStack w="100%" spacing={3} mt={2}>
-                        <Button
-                          size="lg"
-                          // colorScheme="teal"
-                          bg="teal"
-                          colorScheme="teal"
-                          onClick={handleTryAgain}
-                          w="100%"
-                        >
-                          {getTranslation("flashcard_try_again")}
-                        </Button>
-
-                        <Button
-                          size="lg"
-                          colorScheme="pink"
-                          variant="solid"
-                          onClick={handleExplainAnswer}
-                          isDisabled={
-                            isLoadingExplanation ||
-                            !!explanationText ||
-                            isGrading
-                          }
-                          leftIcon={
-                            isLoadingExplanation ? (
-                              <Spinner size="sm" />
-                            ) : (
-                              <FiHelpCircle />
-                            )
-                          }
-                          w="100%"
-                        >
-                          {getTranslation("flashcard_explain_answer") ||
-                            "Explain my answer"}
-                        </Button>
-                      </VStack>
-                    )}
-
-                    {!isCorrect && explanationText && (
-                      <Box
-                        w="100%"
-                        p={4}
-                        borderRadius="md"
-                        bg="rgba(244, 114, 182, 0.08)"
-                        border="1px solid"
-                        borderColor="pink.400"
-                        boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
-                      >
-                        <Text
-                          fontSize="sm"
-                          fontWeight="semibold"
-                          color="pink.200"
-                          mb={2}
-                          display="flex"
-                          alignItems="center"
-                          gap={2}
-                        >
-                          <RiEyeLine />
-                          {getTranslation("flashcard_explanation_heading") ||
-                            "Explanation"}
-                        </Text>
-                        <Box
-                          color="white"
-                          fontSize="sm"
-                          lineHeight="1.6"
-                          sx={{
-                            "& p": { mb: 2 },
-                            "& p:last-child": { mb: 0 },
-                            "& strong": {
-                              fontWeight: "bold",
-                              color: "pink.100",
-                            },
-                            "& em": { fontStyle: "italic" },
-                            "& ul, & ol": { pl: 4, mb: 2 },
-                            "& li": { mb: 1 },
-                            "& code": {
-                              bg: "rgba(0,0,0,0.3)",
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: "sm",
-                              fontFamily: "mono",
-                            },
-                          }}
-                        >
-                          <ReactMarkdown>{explanationText}</ReactMarkdown>
-                        </Box>
-                      </Box>
-                    )}
-
-                    {isCorrect && (
-                      <VStack align="stretch" spacing={3} w="100%" p={4}>
-                        <HStack justify="space-between" w="100%">
-                          <Badge
-                            colorScheme="cyan"
-                            variant="subtle"
-                            fontSize="10px"
-                          >
-                            Level {xpLevelNumber}
-                          </Badge>
-                          <Badge
-                            colorScheme="teal"
-                            variant="subtle"
-                            fontSize="10px"
-                          >
-                            Total XP {updatedTotalXp}
-                          </Badge>
-                        </HStack>
-
-                        <WaveBar value={nextLevelProgressPct} />
-                      </VStack>
-                    )}
-                  </VStack>
-                  <Box mt="-2" paddingBottom={6}>
-                    <RandomCharacter />
-                  </Box>
-                </MotionBox>
-              </AnimatePresence>
-            )}
+            {/* Result - Using FeedbackRail component */}
+            <FeedbackRail
+              ok={lastOk}
+              xp={xpAwarded}
+              showNext={lastOk !== null}
+              onNext={handleNext}
+              nextLabel={
+                lastOk === true
+                  ? getTranslation("flashcard_next") || "Next"
+                  : getTranslation("flashcard_try_again") || "Try Again"
+              }
+              t={(key) => {
+                // Map FeedbackRail translation keys to flashcard translations
+                if (key === "correct") return getTranslation("flashcard_correct");
+                if (key === "try_again") return getTranslation("flashcard_incorrect");
+                return getTranslation(key);
+              }}
+              userLanguage={getAppLanguage()}
+              onExplainAnswer={lastOk === false ? handleExplainAnswer : undefined}
+              explanationText={explanationText}
+              isLoadingExplanation={isLoadingExplanation}
+              lessonProgress={null}
+              onCreateNote={handleCreateNote}
+              isCreatingNote={isCreatingNote}
+              noteCreated={noteCreated}
+            />
           </VStack>
         </ModalBody>
       </ModalContent>
