@@ -691,12 +691,13 @@ function LetterCard({
             </Badge>
             {practiceWord && (
               <Button
-                size="xs"
-                variant="ghost"
+                size="sm"
+                background="transparent"
+                border="1px solid white"
+                boxShadow={"0px 2px 0px lightgray"}
                 color="white"
                 leftIcon={<RiMicLine size={12} />}
                 onClick={handlePracticeClick}
-                _hover={{ bg: "whiteAlpha.200" }}
                 fontSize="xs"
               >
                 {appLanguage === "es" ? "Practicar" : "Practice"}
@@ -777,13 +778,14 @@ function LetterCard({
             aria-label={appLanguage === "es" ? "Cerrar" : "Close"}
             icon={<RiCloseLine size={18} />}
             size="xs"
-            variant="ghost"
+            bg="transparent"
+            border="1px solid white"
+            boxShadow={"0px 2px 0px lightgray"}
             color="whiteAlpha.700"
             position="absolute"
             top={2}
             right={2}
             onClick={handleFlipBack}
-            _hover={{ bg: "whiteAlpha.200", color: "white" }}
           />
 
           {/* Practice Word Display */}
