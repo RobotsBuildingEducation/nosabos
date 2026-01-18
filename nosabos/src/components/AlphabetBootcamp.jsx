@@ -550,8 +550,52 @@ function LetterCard({
       setIsPlayingWord(true);
       await player.audio.play();
 
-      // Wait for the finalize promise which resolves when playback ends
-      await player.finalize;
+      // Poll audio currentTime to detect when playback actually stops
+      // (more accurate than finalize which uses estimated duration)
+      const audio = player.audio;
+      await new Promise((resolve) => {
+        let lastTime = 0;
+        let stableFrames = 0;
+        let hasStarted = false;
+
+        const checkEnded = () => {
+          // Check if audio was stopped externally
+          if (!wordPlayerRef.current || audio.paused) {
+            resolve();
+            return;
+          }
+
+          const currentTime = audio.currentTime;
+
+          // Wait for audio to actually start (currentTime > 0)
+          if (currentTime > 0) {
+            hasStarted = true;
+          }
+
+          // Once started, check if currentTime stopped advancing
+          if (hasStarted && currentTime === lastTime && currentTime > 0) {
+            stableFrames++;
+            // If no change for ~10 frames (~167ms at 60fps), audio has ended
+            if (stableFrames > 10) {
+              resolve();
+              return;
+            }
+          } else {
+            stableFrames = 0;
+            lastTime = currentTime;
+          }
+
+          requestAnimationFrame(checkEnded);
+        };
+
+        // Start polling after a brief delay to let audio initialize
+        setTimeout(() => requestAnimationFrame(checkEnded), 100);
+
+        // Fallback timeout in case polling fails (shorter than finalize)
+        const fallbackMs = Math.max(1500, practiceWord.length * 50 + 500);
+        setTimeout(resolve, fallbackMs);
+      });
+
       setIsPlayingWord(false);
       player.cleanup?.();
     } catch (err) {
