@@ -665,7 +665,7 @@ function LetterCard({
           align="center"
           justify="center"
           spacing={4}
-          bgGradient="linear(to-br, rgba(56, 178, 172, 0.25), rgba(129, 140, 248, 0.2), rgba(236, 72, 153, 0.15))"
+          bgGradient="linear(to-br, rgba(56, 178, 172, 0.08), rgba(129, 140, 248, 0.06), rgba(236, 72, 153, 0.04))"
           border="1px solid"
           borderColor="whiteAlpha.400"
           borderRadius="lg"
@@ -751,7 +751,7 @@ function LetterCard({
           align="center"
           justify="center"
           spacing={3}
-          bgGradient="linear(to-br, rgba(56, 178, 172, 0.3), rgba(49, 151, 149, 0.25), rgba(44, 122, 123, 0.2))"
+          bgGradient="linear(to-br, rgba(56, 178, 172, 0.1), rgba(49, 151, 149, 0.08), rgba(44, 122, 123, 0.06))"
           border="1px solid"
           borderColor="teal.400"
           borderRadius="lg"
