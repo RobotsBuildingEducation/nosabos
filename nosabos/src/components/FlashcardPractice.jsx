@@ -178,7 +178,7 @@ export default function FlashcardPractice({
   const nextLevelProgressPct = updatedTotalXp % 100;
 
   // Speech practice hook
-  const { startRecording, stopRecording, isRecording, supportsSpeech } =
+  const { startRecording, stopRecording, isRecording, isConnecting, supportsSpeech } =
     useSpeechPractice({
       targetText: "answer", // Placeholder - we use AI grading instead of strict matching
       targetLang: targetLang,
@@ -783,16 +783,18 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     <Button
                       w="100%"
                       size="lg"
-                      colorScheme={isRecording ? "red" : "teal"}
+                      colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
                       leftIcon={
-                        isRecording ? (
+                        isConnecting ? (
+                          <Spinner size="sm" />
+                        ) : isRecording ? (
                           <RiStopCircleLine size={20} />
                         ) : (
                           <RiMicLine size={20} />
                         )
                       }
                       onClick={handleRecord}
-                      isDisabled={!supportsSpeech}
+                      isDisabled={!supportsSpeech || isConnecting}
                       _hover={{
                         transform: "translateY(-2px)",
                         boxShadow: `0 8px 20px ${cefrColor.primary}40`,
@@ -800,7 +802,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       padding={9}
                       _active={{ transform: "translateY(0)" }}
                     >
-                      {isRecording
+                      {isConnecting
+                        ? getTranslation("flashcard_connecting") || "Connecting..."
+                        : isRecording
                         ? getTranslation("flashcard_stop_recording")
                         : getTranslation("flashcard_record_answer")}
                     </Button>

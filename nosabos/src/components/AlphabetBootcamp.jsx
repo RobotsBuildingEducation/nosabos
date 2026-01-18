@@ -294,6 +294,7 @@ function LetterCard({
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [isPlayingWord, setIsPlayingWord] = useState(false);
+  const [isLoadingTts, setIsLoadingTts] = useState(false);
   const [practiceWord, setPracticeWord] = useState(
     initialPracticeWord || letter.practiceWord || ""
   );
@@ -355,8 +356,8 @@ function LetterCard({
     [practiceMarker, practiceWord]
   );
 
-  // Speech practice hook - use hook's isRecording state
-  const { startRecording, stopRecording, isRecording, supportsSpeech } =
+  // Speech practice hook - use hook's isRecording and isConnecting states
+  const { startRecording, stopRecording, isRecording, isConnecting, supportsSpeech } =
     useSpeechPractice({
       targetText: practiceWord || "placeholder",
       targetLang: targetLang,
@@ -529,8 +530,12 @@ function LetterCard({
       } catch {}
       wordPlayerRef.current?.cleanup?.();
       setIsPlayingWord(false);
+      setIsLoadingTts(false);
       return;
     }
+
+    // Show loading spinner immediately
+    setIsLoadingTts(true);
 
     try {
       const player = await getTTSPlayer({
@@ -538,7 +543,6 @@ function LetterCard({
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
       });
       wordPlayerRef.current = player;
-      setIsPlayingWord(true);
 
       player.audio.onended = () => {
         setIsPlayingWord(false);
@@ -546,14 +550,19 @@ function LetterCard({
       };
       player.audio.onerror = () => {
         setIsPlayingWord(false);
+        setIsLoadingTts(false);
         player.cleanup?.();
       };
 
       await player.ready;
+      // TTS is ready - stop loading spinner, show playing state
+      setIsLoadingTts(false);
+      setIsPlayingWord(true);
       await player.audio.play();
     } catch (err) {
       console.error("TTS error:", err);
       setIsPlayingWord(false);
+      setIsLoadingTts(false);
     }
   };
 
@@ -807,11 +816,12 @@ function LetterCard({
             </Text>
             <IconButton
               aria-label="Play word"
-              icon={isPlayingWord ? <Spinner size="xs" /> : <FiVolume2 />}
+              icon={isLoadingTts || isPlayingWord ? <Spinner size="xs" /> : <FiVolume2 />}
               size="sm"
               variant="ghost"
-              color={isPlayingWord ? "teal.300" : "white"}
+              color={isLoadingTts || isPlayingWord ? "teal.300" : "white"}
               onClick={handlePlayWord}
+              isDisabled={isLoadingTts}
               _hover={{ bg: "whiteAlpha.200" }}
             />
           </HStack>
@@ -883,13 +893,25 @@ function LetterCard({
             <VStack spacing={2} py={2}>
               <Button
                 size="md"
-                colorScheme={isRecording ? "red" : "teal"}
-                leftIcon={isRecording ? <RiStopCircleLine /> : <RiMicLine />}
+                colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
+                leftIcon={
+                  isConnecting ? (
+                    <Spinner size="sm" />
+                  ) : isRecording ? (
+                    <RiStopCircleLine />
+                  ) : (
+                    <RiMicLine />
+                  )
+                }
                 onClick={handleRecord}
-                isDisabled={!supportsSpeech}
+                isDisabled={!supportsSpeech || isConnecting}
                 _hover={{ transform: "scale(1.02)" }}
               >
-                {isRecording
+                {isConnecting
+                  ? appLanguage === "es"
+                    ? "Conectando..."
+                    : "Connecting..."
+                  : isRecording
                   ? appLanguage === "es"
                     ? "Detener"
                     : "Stop"

@@ -48,6 +48,7 @@ export function useSpeechPractice({
   });
   const transcriptRef = useRef("");
   const [isRecording, setIsRecording] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
 
   // Check if we have the realtime URL configured
   const supportsSpeech = useMemo(() => {
@@ -90,6 +91,7 @@ export function useSpeechPractice({
     evalRef.current.speechDone = false;
     transcriptRef.current = "";
     setIsRecording(false);
+    setIsConnecting(false);
   }, []);
 
   useEffect(() => cleanup, [cleanup]);
@@ -128,6 +130,9 @@ export function useSpeechPractice({
     )
       throw makeError("no-media", "getUserMedia not supported");
 
+    // Show connecting spinner immediately
+    setIsConnecting(true);
+
     evalRef.current.inProgress = true;
     evalRef.current.speechDone = false;
     transcriptRef.current = "";
@@ -143,6 +148,7 @@ export function useSpeechPractice({
       });
     } catch (err) {
       evalRef.current.inProgress = false;
+      setIsConnecting(false);
       throw makeError("mic-denied", err?.message || "microphone access denied");
     }
 
@@ -333,6 +339,8 @@ export function useSpeechPractice({
       const answerSdp = await resp.text();
       await pc.setRemoteDescription({ type: "answer", sdp: answerSdp });
 
+      // Connection established - stop showing connecting spinner, start showing recording
+      setIsConnecting(false);
       setIsRecording(true);
 
       // Maximum timeout as safety (30 seconds)
@@ -367,5 +375,5 @@ export function useSpeechPractice({
     cleanup();
   }, [report, cleanup]);
 
-  return { startRecording, stopRecording, isRecording, supportsSpeech };
+  return { startRecording, stopRecording, isRecording, isConnecting, supportsSpeech };
 }
