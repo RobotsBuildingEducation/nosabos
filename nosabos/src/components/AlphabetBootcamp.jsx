@@ -277,6 +277,7 @@ function LetterCard({
   letter,
   onPlay,
   isPlaying,
+  isLoading = false,
   appLanguage,
   targetLang,
   npub,
@@ -775,10 +776,16 @@ function LetterCard({
                   borderRadius="full"
                   p={2}
                   _hover={{ bg: "whiteAlpha.300" }}
-                  color={isPlaying ? "teal.200" : "white"}
+                  color={isLoading || isPlaying ? "teal.200" : "white"}
                   onClick={() => onPlay(letter)}
                 >
-                  {isPlaying ? <Spinner size="sm" /> : <FiVolume2 />}
+                  {isLoading ? (
+                    <Spinner size="sm" />
+                  ) : isPlaying ? (
+                    <RiStopCircleLine size={18} />
+                  ) : (
+                    <FiVolume2 />
+                  )}
                 </Flex>
               )}
             </Flex>
@@ -1010,6 +1017,7 @@ export default function AlphabetBootcamp({
   const playerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
   const [playingId, setPlayingId] = useState(null);
+  const [loadingId, setLoadingId] = useState(null);
   const [currentXp, setCurrentXp] = useState(languageXp);
   const [savedPracticeWords, setSavedPracticeWords] = useState({});
   const [savedCorrectCounts, setSavedCorrectCounts] = useState({});
@@ -1261,22 +1269,27 @@ export default function AlphabetBootcamp({
                     onPracticeWordUpdated={handlePracticeWordUpdated}
                     onCardCollected={handleCardCollected}
                     isPlaying={playingId === deck[0].id}
+                    isLoading={loadingId === deck[0].id}
                     onPlay={async (data) => {
                       const text = (data?.tts || data?.letter || "")
                         .toString()
                         .trim();
                       if (!text) return;
 
-                      if (playingId === data.id) {
+                      // If already playing this card, stop it
+                      if (playingId === data.id || loadingId === data.id) {
                         try {
                           playerRef.current?.audio?.pause?.();
                         } catch {}
                         playerRef.current?.cleanup?.();
                         setPlayingId(null);
+                        setLoadingId(null);
                         return;
                       }
 
-                      setPlayingId(data.id);
+                      // Show loading spinner immediately
+                      setLoadingId(data.id);
+                      setPlayingId(null);
 
                       try {
                         playerRef.current?.audio?.pause?.();
@@ -1290,20 +1303,50 @@ export default function AlphabetBootcamp({
                         });
                         playerRef.current = player;
 
-                        const audio = player.audio;
-                        audio.onended = () => {
-                          setPlayingId(null);
-                          player.cleanup?.();
-                        };
-                        audio.onerror = () => {
-                          setPlayingId(null);
-                          player.cleanup?.();
-                        };
                         await player.ready;
+                        // Loading done - switch to playing state (stop icon)
+                        setLoadingId(null);
+                        setPlayingId(data.id);
+
+                        const audio = player.audio;
                         await audio.play();
+
+                        // Poll to detect when audio actually stops
+                        await new Promise((resolve) => {
+                          let lastTime = 0;
+                          let stableFrames = 0;
+                          let hasStarted = false;
+
+                          const checkEnded = () => {
+                            if (!playerRef.current || audio.paused) {
+                              resolve();
+                              return;
+                            }
+                            const currentTime = audio.currentTime;
+                            if (currentTime > 0) hasStarted = true;
+                            if (hasStarted && currentTime === lastTime && currentTime > 0) {
+                              stableFrames++;
+                              if (stableFrames > 10) {
+                                resolve();
+                                return;
+                              }
+                            } else {
+                              stableFrames = 0;
+                              lastTime = currentTime;
+                            }
+                            requestAnimationFrame(checkEnded);
+                          };
+                          setTimeout(() => requestAnimationFrame(checkEnded), 100);
+                          const fallbackMs = Math.max(1500, text.length * 50 + 500);
+                          setTimeout(resolve, fallbackMs);
+                        });
+
+                        setPlayingId(null);
+                        player.cleanup?.();
                       } catch (err) {
                         console.error("AlphabetBootcamp TTS failed", err);
                         setPlayingId(null);
+                        setLoadingId(null);
                       }
                     }}
                   />
@@ -1398,20 +1441,27 @@ export default function AlphabetBootcamp({
                     initialCorrectCount={savedCorrectCounts[item.id] || 0}
                     onPracticeWordUpdated={handlePracticeWordUpdated}
                     isPlaying={playingId === item.id}
+                    isLoading={loadingId === item.id}
                     onPlay={async (data) => {
                       const text = (data?.tts || data?.letter || "")
                         .toString()
                         .trim();
                       if (!text) return;
 
-                      if (playingId === data.id) {
+                      // If already playing this card, stop it
+                      if (playingId === data.id || loadingId === data.id) {
                         try {
                           playerRef.current?.audio?.pause?.();
                         } catch {}
                         playerRef.current?.cleanup?.();
                         setPlayingId(null);
+                        setLoadingId(null);
                         return;
                       }
+
+                      // Show loading spinner immediately
+                      setLoadingId(data.id);
+                      setPlayingId(null);
 
                       try {
                         playerRef.current?.audio?.pause?.();
@@ -1424,22 +1474,51 @@ export default function AlphabetBootcamp({
                           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
                         });
                         playerRef.current = player;
+
+                        await player.ready;
+                        // Loading done - switch to playing state (stop icon)
+                        setLoadingId(null);
                         setPlayingId(data.id);
 
                         const audio = player.audio;
-                        audio.onended = () => {
-                          setPlayingId(null);
-                          player.cleanup?.();
-                        };
-                        audio.onerror = () => {
-                          setPlayingId(null);
-                          player.cleanup?.();
-                        };
-                        await player.ready;
                         await audio.play();
+
+                        // Poll to detect when audio actually stops
+                        await new Promise((resolve) => {
+                          let lastTime = 0;
+                          let stableFrames = 0;
+                          let hasStarted = false;
+
+                          const checkEnded = () => {
+                            if (!playerRef.current || audio.paused) {
+                              resolve();
+                              return;
+                            }
+                            const currentTime = audio.currentTime;
+                            if (currentTime > 0) hasStarted = true;
+                            if (hasStarted && currentTime === lastTime && currentTime > 0) {
+                              stableFrames++;
+                              if (stableFrames > 10) {
+                                resolve();
+                                return;
+                              }
+                            } else {
+                              stableFrames = 0;
+                              lastTime = currentTime;
+                            }
+                            requestAnimationFrame(checkEnded);
+                          };
+                          setTimeout(() => requestAnimationFrame(checkEnded), 100);
+                          const fallbackMs = Math.max(1500, text.length * 50 + 500);
+                          setTimeout(resolve, fallbackMs);
+                        });
+
+                        setPlayingId(null);
+                        player.cleanup?.();
                       } catch (err) {
                         console.error("AlphabetBootcamp TTS failed", err);
                         setPlayingId(null);
+                        setLoadingId(null);
                       }
                     }}
                   />
