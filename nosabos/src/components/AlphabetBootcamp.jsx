@@ -855,7 +855,15 @@ function LetterCard({
             </Text>
             <IconButton
               aria-label="Play word"
-              icon={isLoadingTts || isPlayingWord ? <Spinner size="xs" /> : <FiVolume2 />}
+              icon={
+                isLoadingTts ? (
+                  <Spinner size="xs" />
+                ) : isPlayingWord ? (
+                  <RiStopCircleLine />
+                ) : (
+                  <FiVolume2 />
+                )
+              }
               size="sm"
               variant="ghost"
               color={isLoadingTts || isPlayingWord ? "teal.300" : "white"}
