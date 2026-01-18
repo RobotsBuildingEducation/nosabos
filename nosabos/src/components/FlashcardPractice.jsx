@@ -895,7 +895,7 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                     spacing={4}
                     p={6}
                     borderRadius="xl"
-                    bg={isCorrect ? "green.900" : "red.900"}
+                    bg={isCorrect ? "teal.500" : "red.900"}
                     border="2px solid"
                     borderColor={isCorrect ? "green.500" : "red.500"}
                   >
