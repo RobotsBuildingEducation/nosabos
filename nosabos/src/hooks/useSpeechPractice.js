@@ -18,9 +18,11 @@ const BCP47_TO_WHISPER = {
   el: "el",
 };
 
-const REALTIME_MODEL = "gpt-4o-mini-realtime-preview";
+const REALTIME_MODEL = "gpt-realtime-mini";
 const REALTIME_URL = import.meta.env?.VITE_REALTIME_URL
-  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(REALTIME_MODEL)}`
+  ? `${import.meta.env.VITE_REALTIME_URL}?model=${encodeURIComponent(
+      REALTIME_MODEL
+    )}`
   : "";
 
 function makeError(code, message) {
@@ -116,7 +118,8 @@ export function useSpeechPractice({
   const startRecording = useCallback(async () => {
     if (!targetText) throw makeError("no-target", "target missing");
     if (evalRef.current.inProgress) return;
-    if (!REALTIME_URL) throw makeError("no-realtime-url", "Realtime URL not configured");
+    if (!REALTIME_URL)
+      throw makeError("no-realtime-url", "Realtime URL not configured");
     if (typeof RTCPeerConnection === "undefined")
       throw makeError("no-webrtc", "WebRTC not supported");
     if (
@@ -153,7 +156,9 @@ export function useSpeechPractice({
       pc.addTransceiver("audio", { direction: "recvonly" });
 
       // Add local audio track
-      localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
+      localStream
+        .getTracks()
+        .forEach((track) => pc.addTrack(track, localStream));
 
       // Create data channel for events
       const dc = pc.createDataChannel("oai-events");
@@ -190,7 +195,8 @@ export function useSpeechPractice({
           JSON.stringify({
             type: "session.update",
             session: {
-              instructions: "Listen and transcribe the user's speech. Do not respond verbally.",
+              instructions:
+                "Listen and transcribe the user's speech. Do not respond verbally.",
               modalities: ["audio", "text"], // Need audio to process incoming speech
               turn_detection: {
                 type: "server_vad",
@@ -214,7 +220,8 @@ export function useSpeechPractice({
 
           // Handle input audio transcription completed (both event type variants)
           if (
-            (msgType === "conversation.item.input_audio_transcription.completed" ||
+            (msgType ===
+              "conversation.item.input_audio_transcription.completed" ||
               msgType === "input_audio_transcription.completed") &&
             msg.transcript
           ) {
@@ -334,10 +341,12 @@ export function useSpeechPractice({
           finishRecording();
         }
       }, 30000);
-
     } catch (err) {
       cleanup();
-      throw makeError("connection-failed", err?.message || "Failed to connect to realtime API");
+      throw makeError(
+        "connection-failed",
+        err?.message || "Failed to connect to realtime API"
+      );
     }
   }, [report, targetLang, targetText, timeoutMs, onResult, cleanup]);
 
