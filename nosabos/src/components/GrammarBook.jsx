@@ -3847,6 +3847,7 @@ Return JSON ONLY:
 
       const player = await getTTSPlayer({
         text,
+        langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
         responseFormat: LOW_LATENCY_TTS_FORMAT,
       });
       speakAudioUrlRef.current = player.audioUrl;
