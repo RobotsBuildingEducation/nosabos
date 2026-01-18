@@ -149,6 +149,9 @@ export function useSpeechPractice({
       const pc = new RTCPeerConnection();
       pcRef.current = pc;
 
+      // Add transceiver for receiving audio (required by the Realtime API)
+      pc.addTransceiver("audio", { direction: "recvonly" });
+
       // Add local audio track
       localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
@@ -180,20 +183,20 @@ export function useSpeechPractice({
       };
 
       dc.onopen = () => {
-        // Configure session for transcription-only mode
+        // Configure session for transcription mode
         const whisperLang = BCP47_TO_WHISPER[targetLang] || "es";
 
         dc.send(
           JSON.stringify({
             type: "session.update",
             session: {
-              instructions: "Listen and transcribe the user's speech. Do not respond or speak.",
-              modalities: ["text"], // Text only - we just need transcription
+              instructions: "Listen and transcribe the user's speech. Do not respond verbally.",
+              modalities: ["audio", "text"], // Need audio to process incoming speech
               turn_detection: {
                 type: "server_vad",
-                silence_duration_ms: Math.min(timeoutMs, 3000), // End after silence
-                threshold: 0.3,
-                prefix_padding_ms: 100,
+                silence_duration_ms: Math.min(timeoutMs, 2000), // End after silence
+                threshold: 0.35,
+                prefix_padding_ms: 120,
               },
               input_audio_transcription: {
                 model: "whisper-1",
@@ -207,10 +210,15 @@ export function useSpeechPractice({
       dc.onmessage = (evt) => {
         try {
           const msg = JSON.parse(evt.data);
+          const msgType = msg?.type || "";
 
-          // Handle input audio transcription completed
-          if (msg.type === "conversation.item.input_audio_transcription.completed") {
-            const transcript = msg.transcript || "";
+          // Handle input audio transcription completed (both event type variants)
+          if (
+            (msgType === "conversation.item.input_audio_transcription.completed" ||
+              msgType === "input_audio_transcription.completed") &&
+            msg.transcript
+          ) {
+            const transcript = (msg.transcript || "").trim();
             if (transcript) {
               hasReceivedSpeech = true;
               transcriptRef.current = transcript;
@@ -227,20 +235,8 @@ export function useSpeechPractice({
             }
           }
 
-          // Handle partial transcription (interim results)
-          if (msg.type === "conversation.item.input_audio_transcription.delta") {
-            hasReceivedSpeech = true;
-            // Reset silence timeout on any speech activity
-            if (evalRef.current.silenceTimeoutId) {
-              clearTimeout(evalRef.current.silenceTimeoutId);
-              evalRef.current.silenceTimeoutId = setTimeout(() => {
-                finishRecording();
-              }, timeoutMs);
-            }
-          }
-
           // Handle speech started
-          if (msg.type === "input_audio_buffer.speech_started") {
+          if (msgType === "input_audio_buffer.speech_started") {
             hasReceivedSpeech = true;
             if (evalRef.current.silenceTimeoutId) {
               clearTimeout(evalRef.current.silenceTimeoutId);
@@ -249,7 +245,7 @@ export function useSpeechPractice({
           }
 
           // Handle speech stopped - server detected end of speech
-          if (msg.type === "input_audio_buffer.speech_stopped") {
+          if (msgType === "input_audio_buffer.speech_stopped") {
             if (hasReceivedSpeech) {
               // Give a bit of time for the final transcription to come through
               evalRef.current.silenceTimeoutId = setTimeout(() => {
@@ -259,7 +255,7 @@ export function useSpeechPractice({
           }
 
           // Handle response done (AI finished - means user turn is complete)
-          if (msg.type === "response.done") {
+          if (msgType === "response.done") {
             // Wait a moment for final transcription
             setTimeout(() => {
               if (!evalRef.current.speechDone) {
@@ -269,7 +265,7 @@ export function useSpeechPractice({
           }
 
           // Handle errors
-          if (msg.type === "error") {
+          if (msgType === "error") {
             console.error("Realtime API error:", msg.error);
             // Don't fail completely on errors, just report what we have
             if (hasReceivedSpeech) {
