@@ -524,7 +524,7 @@ function LetterCard({
   const handlePlayWord = async () => {
     if (!practiceWord) return;
 
-    if (isPlayingWord) {
+    if (isPlayingWord || isLoadingTts) {
       try {
         wordPlayerRef.current?.audio?.pause?.();
       } catch {}
@@ -544,21 +544,16 @@ function LetterCard({
       });
       wordPlayerRef.current = player;
 
-      player.audio.onended = () => {
-        setIsPlayingWord(false);
-        player.cleanup?.();
-      };
-      player.audio.onerror = () => {
-        setIsPlayingWord(false);
-        setIsLoadingTts(false);
-        player.cleanup?.();
-      };
-
       await player.ready;
       // TTS is ready - stop loading spinner, show playing state
       setIsLoadingTts(false);
       setIsPlayingWord(true);
       await player.audio.play();
+
+      // Wait for the finalize promise which resolves when playback ends
+      await player.finalize;
+      setIsPlayingWord(false);
+      player.cleanup?.();
     } catch (err) {
       console.error("TTS error:", err);
       setIsPlayingWord(false);

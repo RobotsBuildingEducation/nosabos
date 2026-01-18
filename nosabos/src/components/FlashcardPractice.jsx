@@ -803,7 +803,9 @@ Provide a brief response in ${LANG_NAME(supportLang)} with two parts:
                       _active={{ transform: "translateY(0)" }}
                     >
                       {isConnecting
-                        ? getTranslation("flashcard_connecting") || "Connecting..."
+                        ? getAppLanguage() === "es"
+                          ? "Conectando..."
+                          : "Connecting..."
                         : isRecording
                         ? getTranslation("flashcard_stop_recording")
                         : getTranslation("flashcard_record_answer")}

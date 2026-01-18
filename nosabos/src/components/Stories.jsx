@@ -1070,16 +1070,8 @@ export default function StoryMode({
           })),
         };
         storyCacheRef.current = finalData;
-        setCurrentSentenceIndex(0);
-        setSessionXp(0);
-        setSessionComplete(false);
-        setSessionSummary({
-          passed: 0,
-          total: finalData?.sentences?.length || 0,
-        });
-        setPassedCount(0);
-        setShowFullStory(true);
-        setHighlightedWordIndex(-1);
+        // Note: Do NOT call other state setters inside setStoryData callback
+        // as it causes race conditions. State resets are handled separately.
         return finalData;
       });
     } catch (error) {
