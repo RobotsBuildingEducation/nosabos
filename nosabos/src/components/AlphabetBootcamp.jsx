@@ -277,6 +277,7 @@ function LetterCard({
   letter,
   onPlay,
   isPlaying,
+  isLoading = false,
   appLanguage,
   targetLang,
   npub,
@@ -294,6 +295,7 @@ function LetterCard({
   const [showResult, setShowResult] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [isPlayingWord, setIsPlayingWord] = useState(false);
+  const [isLoadingTts, setIsLoadingTts] = useState(false);
   const [practiceWord, setPracticeWord] = useState(
     initialPracticeWord || letter.practiceWord || ""
   );
@@ -355,33 +357,38 @@ function LetterCard({
     [practiceMarker, practiceWord]
   );
 
-  // Speech practice hook - use hook's isRecording state
-  const { startRecording, stopRecording, isRecording, supportsSpeech } =
-    useSpeechPractice({
-      targetText: practiceWord || "placeholder",
-      targetLang: targetLang,
-      onResult: ({ recognizedText: text, error }) => {
-        if (error) {
-          toast({
-            title:
-              appLanguage === "es" ? "Error de grabación" : "Recording error",
-            description:
-              appLanguage === "es"
-                ? "No se pudo grabar. Intenta de nuevo."
-                : "Could not record. Please try again.",
-            status: "error",
-            duration: 2500,
-          });
-          return;
-        }
+  // Speech practice hook - use hook's isRecording and isConnecting states
+  const {
+    startRecording,
+    stopRecording,
+    isRecording,
+    isConnecting,
+    supportsSpeech,
+  } = useSpeechPractice({
+    targetText: practiceWord || "placeholder",
+    targetLang: targetLang,
+    onResult: ({ recognizedText: text, error }) => {
+      if (error) {
+        toast({
+          title:
+            appLanguage === "es" ? "Error de grabación" : "Recording error",
+          description:
+            appLanguage === "es"
+              ? "No se pudo grabar. Intenta de nuevo."
+              : "Could not record. Please try again.",
+          status: "error",
+          duration: 2500,
+        });
+        return;
+      }
 
-        const recognized = text || "";
-        if (recognized.trim()) {
-          checkAnswerWithAI(recognized);
-        }
-      },
-      timeoutMs: pauseMs,
-    });
+      const recognized = text || "";
+      if (recognized.trim()) {
+        checkAnswerWithAI(recognized);
+      }
+    },
+    timeoutMs: pauseMs,
+  });
 
   const checkAnswerWithAI = async (answer) => {
     setIsGrading(true);
@@ -523,14 +530,18 @@ function LetterCard({
   const handlePlayWord = async () => {
     if (!practiceWord) return;
 
-    if (isPlayingWord) {
+    if (isPlayingWord || isLoadingTts) {
       try {
         wordPlayerRef.current?.audio?.pause?.();
       } catch {}
       wordPlayerRef.current?.cleanup?.();
       setIsPlayingWord(false);
+      setIsLoadingTts(false);
       return;
     }
+
+    // Show loading spinner immediately
+    setIsLoadingTts(true);
 
     try {
       const player = await getTTSPlayer({
@@ -538,22 +549,65 @@ function LetterCard({
         langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
       });
       wordPlayerRef.current = player;
-      setIsPlayingWord(true);
-
-      player.audio.onended = () => {
-        setIsPlayingWord(false);
-        player.cleanup?.();
-      };
-      player.audio.onerror = () => {
-        setIsPlayingWord(false);
-        player.cleanup?.();
-      };
 
       await player.ready;
+      // TTS is ready - stop loading spinner, show playing state
+      setIsLoadingTts(false);
+      setIsPlayingWord(true);
       await player.audio.play();
+
+      // Poll audio currentTime to detect when playback actually stops
+      // (more accurate than finalize which uses estimated duration)
+      const audio = player.audio;
+      await new Promise((resolve) => {
+        let lastTime = 0;
+        let stableFrames = 0;
+        let hasStarted = false;
+
+        const checkEnded = () => {
+          // Check if audio was stopped externally
+          if (!wordPlayerRef.current || audio.paused) {
+            resolve();
+            return;
+          }
+
+          const currentTime = audio.currentTime;
+
+          // Wait for audio to actually start (currentTime > 0)
+          if (currentTime > 0) {
+            hasStarted = true;
+          }
+
+          // Once started, check if currentTime stopped advancing
+          if (hasStarted && currentTime === lastTime && currentTime > 0) {
+            stableFrames++;
+            // If no change for ~10 frames (~167ms at 60fps), audio has ended
+            if (stableFrames > 10) {
+              resolve();
+              return;
+            }
+          } else {
+            stableFrames = 0;
+            lastTime = currentTime;
+          }
+
+          requestAnimationFrame(checkEnded);
+        };
+
+        // Start polling after a brief delay to let audio initialize
+        setTimeout(() => requestAnimationFrame(checkEnded), 100);
+
+        // Fallback timeout in case polling fails (shorter than finalize)
+        const fallbackMs = Math.max(1500, practiceWord.length * 50 + 500);
+        setTimeout(resolve, fallbackMs);
+      });
+
+      setIsPlayingWord(false);
+      player.cleanup?.();
     } catch (err) {
       console.error("TTS error:", err);
       setIsPlayingWord(false);
+      setIsLoadingTts(false);
     }
   };
 
@@ -674,6 +728,7 @@ function LetterCard({
           color="white"
           position="relative"
           sx={{ backfaceVisibility: "hidden" }}
+          minH={{ base: "260px", md: "230px" }}
         >
           {/* Star counter */}
           {correctCount === 0 ? null : (
@@ -727,10 +782,16 @@ function LetterCard({
                   borderRadius="full"
                   p={2}
                   _hover={{ bg: "whiteAlpha.300" }}
-                  color={isPlaying ? "teal.200" : "white"}
+                  color={isLoading || isPlaying ? "teal.200" : "white"}
                   onClick={() => onPlay(letter)}
                 >
-                  {isPlaying ? <Spinner size="sm" /> : <FiVolume2 />}
+                  {isLoading ? (
+                    <Spinner size="sm" />
+                  ) : isPlaying ? (
+                    <RiStopCircleLine size={18} />
+                  ) : (
+                    <FiVolume2 />
+                  )}
                 </Flex>
               )}
             </Flex>
@@ -738,7 +799,7 @@ function LetterCard({
             <Text color="whiteAlpha.900" fontSize="sm">
               {sound}
             </Text>
-            <Text fontSize="xs" color="whiteAlpha.800">
+            <Text fontSize="2xs" color="whiteAlpha.800">
               {tip}
             </Text>
           </VStack>
@@ -807,11 +868,20 @@ function LetterCard({
             </Text>
             <IconButton
               aria-label="Play word"
-              icon={isPlayingWord ? <Spinner size="xs" /> : <FiVolume2 />}
+              icon={
+                isLoadingTts ? (
+                  <Spinner size="xs" />
+                ) : isPlayingWord ? (
+                  <RiStopCircleLine />
+                ) : (
+                  <FiVolume2 />
+                )
+              }
               size="sm"
               variant="ghost"
-              color={isPlayingWord ? "teal.300" : "white"}
+              color={isLoadingTts || isPlayingWord ? "teal.300" : "white"}
               onClick={handlePlayWord}
+              isDisabled={isLoadingTts}
               _hover={{ bg: "whiteAlpha.200" }}
             />
           </HStack>
@@ -883,13 +953,27 @@ function LetterCard({
             <VStack spacing={2} py={2}>
               <Button
                 size="md"
-                colorScheme={isRecording ? "red" : "teal"}
-                leftIcon={isRecording ? <RiStopCircleLine /> : <RiMicLine />}
+                colorScheme={
+                  isRecording ? "red" : isConnecting ? "yellow" : "teal"
+                }
+                leftIcon={
+                  isConnecting ? (
+                    <Spinner size="sm" />
+                  ) : isRecording ? (
+                    <RiStopCircleLine />
+                  ) : (
+                    <RiMicLine />
+                  )
+                }
                 onClick={handleRecord}
-                isDisabled={!supportsSpeech}
+                isDisabled={!supportsSpeech || isConnecting}
                 _hover={{ transform: "scale(1.02)" }}
               >
-                {isRecording
+                {isConnecting
+                  ? appLanguage === "es"
+                    ? "Conectando..."
+                    : "Connecting..."
+                  : isRecording
                   ? appLanguage === "es"
                     ? "Detener"
                     : "Stop"
@@ -941,6 +1025,7 @@ export default function AlphabetBootcamp({
   const playerRef = useRef(null);
   const playSound = useSoundSettings((s) => s.playSound);
   const [playingId, setPlayingId] = useState(null);
+  const [loadingId, setLoadingId] = useState(null);
   const [currentXp, setCurrentXp] = useState(languageXp);
   const [savedPracticeWords, setSavedPracticeWords] = useState({});
   const [savedCorrectCounts, setSavedCorrectCounts] = useState({});
@@ -1192,22 +1277,27 @@ export default function AlphabetBootcamp({
                     onPracticeWordUpdated={handlePracticeWordUpdated}
                     onCardCollected={handleCardCollected}
                     isPlaying={playingId === deck[0].id}
+                    isLoading={loadingId === deck[0].id}
                     onPlay={async (data) => {
                       const text = (data?.tts || data?.letter || "")
                         .toString()
                         .trim();
                       if (!text) return;
 
-                      if (playingId === data.id) {
+                      // If already playing this card, stop it
+                      if (playingId === data.id || loadingId === data.id) {
                         try {
                           playerRef.current?.audio?.pause?.();
                         } catch {}
                         playerRef.current?.cleanup?.();
                         setPlayingId(null);
+                        setLoadingId(null);
                         return;
                       }
 
-                      setPlayingId(data.id);
+                      // Show loading spinner immediately
+                      setLoadingId(data.id);
+                      setPlayingId(null);
 
                       try {
                         playerRef.current?.audio?.pause?.();
@@ -1221,20 +1311,60 @@ export default function AlphabetBootcamp({
                         });
                         playerRef.current = player;
 
-                        const audio = player.audio;
-                        audio.onended = () => {
-                          setPlayingId(null);
-                          player.cleanup?.();
-                        };
-                        audio.onerror = () => {
-                          setPlayingId(null);
-                          player.cleanup?.();
-                        };
                         await player.ready;
+                        // Loading done - switch to playing state (stop icon)
+                        setLoadingId(null);
+                        setPlayingId(data.id);
+
+                        const audio = player.audio;
                         await audio.play();
+
+                        // Poll to detect when audio actually stops
+                        await new Promise((resolve) => {
+                          let lastTime = 0;
+                          let stableFrames = 0;
+                          let hasStarted = false;
+
+                          const checkEnded = () => {
+                            if (!playerRef.current || audio.paused) {
+                              resolve();
+                              return;
+                            }
+                            const currentTime = audio.currentTime;
+                            if (currentTime > 0) hasStarted = true;
+                            if (
+                              hasStarted &&
+                              currentTime === lastTime &&
+                              currentTime > 0
+                            ) {
+                              stableFrames++;
+                              if (stableFrames > 10) {
+                                resolve();
+                                return;
+                              }
+                            } else {
+                              stableFrames = 0;
+                              lastTime = currentTime;
+                            }
+                            requestAnimationFrame(checkEnded);
+                          };
+                          setTimeout(
+                            () => requestAnimationFrame(checkEnded),
+                            100
+                          );
+                          const fallbackMs = Math.max(
+                            1500,
+                            text.length * 50 + 500
+                          );
+                          setTimeout(resolve, fallbackMs);
+                        });
+
+                        setPlayingId(null);
+                        player.cleanup?.();
                       } catch (err) {
                         console.error("AlphabetBootcamp TTS failed", err);
                         setPlayingId(null);
+                        setLoadingId(null);
                       }
                     }}
                   />
@@ -1245,7 +1375,7 @@ export default function AlphabetBootcamp({
                   <Box
                     position="relative"
                     zIndex={1}
-                    mt={{ base: "-84px", md: "-102px" }}
+                    mt={{ base: "-60px", md: "-102px" }}
                     mx="1px"
                   >
                     {[...Array(Math.min(deck.length - 1, 8))].map((_, i) => (
@@ -1329,20 +1459,27 @@ export default function AlphabetBootcamp({
                     initialCorrectCount={savedCorrectCounts[item.id] || 0}
                     onPracticeWordUpdated={handlePracticeWordUpdated}
                     isPlaying={playingId === item.id}
+                    isLoading={loadingId === item.id}
                     onPlay={async (data) => {
                       const text = (data?.tts || data?.letter || "")
                         .toString()
                         .trim();
                       if (!text) return;
 
-                      if (playingId === data.id) {
+                      // If already playing this card, stop it
+                      if (playingId === data.id || loadingId === data.id) {
                         try {
                           playerRef.current?.audio?.pause?.();
                         } catch {}
                         playerRef.current?.cleanup?.();
                         setPlayingId(null);
+                        setLoadingId(null);
                         return;
                       }
+
+                      // Show loading spinner immediately
+                      setLoadingId(data.id);
+                      setPlayingId(null);
 
                       try {
                         playerRef.current?.audio?.pause?.();
@@ -1355,22 +1492,61 @@ export default function AlphabetBootcamp({
                           langTag: TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es,
                         });
                         playerRef.current = player;
+
+                        await player.ready;
+                        // Loading done - switch to playing state (stop icon)
+                        setLoadingId(null);
                         setPlayingId(data.id);
 
                         const audio = player.audio;
-                        audio.onended = () => {
-                          setPlayingId(null);
-                          player.cleanup?.();
-                        };
-                        audio.onerror = () => {
-                          setPlayingId(null);
-                          player.cleanup?.();
-                        };
-                        await player.ready;
                         await audio.play();
+
+                        // Poll to detect when audio actually stops
+                        await new Promise((resolve) => {
+                          let lastTime = 0;
+                          let stableFrames = 0;
+                          let hasStarted = false;
+
+                          const checkEnded = () => {
+                            if (!playerRef.current || audio.paused) {
+                              resolve();
+                              return;
+                            }
+                            const currentTime = audio.currentTime;
+                            if (currentTime > 0) hasStarted = true;
+                            if (
+                              hasStarted &&
+                              currentTime === lastTime &&
+                              currentTime > 0
+                            ) {
+                              stableFrames++;
+                              if (stableFrames > 10) {
+                                resolve();
+                                return;
+                              }
+                            } else {
+                              stableFrames = 0;
+                              lastTime = currentTime;
+                            }
+                            requestAnimationFrame(checkEnded);
+                          };
+                          setTimeout(
+                            () => requestAnimationFrame(checkEnded),
+                            100
+                          );
+                          const fallbackMs = Math.max(
+                            1500,
+                            text.length * 50 + 500
+                          );
+                          setTimeout(resolve, fallbackMs);
+                        });
+
+                        setPlayingId(null);
+                        player.cleanup?.();
                       } catch (err) {
                         console.error("AlphabetBootcamp TTS failed", err);
                         setPlayingId(null);
+                        setLoadingId(null);
                       }
                     }}
                   />

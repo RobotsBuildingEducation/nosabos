@@ -38,7 +38,8 @@ import { SpeakSuccessCard } from "./SpeakSuccessCard";
 import RobotBuddyPro from "./RobotBuddyPro";
 import translations from "../utils/translation";
 import { MdOutlineSupportAgent } from "react-icons/md";
-import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { PiSpeakerHighDuotone, PiMicrophoneStageDuotone } from "react-icons/pi";
+import { RiStopCircleLine } from "react-icons/ri";
 import ReactMarkdown from "react-markdown";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -3826,6 +3827,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
     startRecording: startSpeakRecording,
     stopRecording: stopSpeakRecording,
     isRecording: isSpeakRecording,
+    isConnecting: isSpeakConnecting,
     supportsSpeech: supportsSpeak,
   } = useSpeechPractice({
     targetText: sTarget,
@@ -5419,9 +5421,18 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 </Button>
               )}
               <Button
-                colorScheme={isSpeakRecording ? "red" : "teal"}
+                colorScheme={isSpeakRecording ? "red" : isSpeakConnecting ? "yellow" : "teal"}
                 px={{ base: 7, md: 12 }}
                 py={{ base: 3, md: 4 }}
+                leftIcon={
+                  isSpeakConnecting ? (
+                    <Spinner size="sm" />
+                  ) : isSpeakRecording ? (
+                    <RiStopCircleLine />
+                  ) : (
+                    <PiMicrophoneStageDuotone />
+                  )
+                }
                 onClick={async () => {
                   if (isSpeakRecording) {
                     stopSpeakRecording();
@@ -5479,9 +5490,13 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                     }
                   }
                 }}
-                isDisabled={!supportsSpeak || loadingQSpeak || !sTarget}
+                isDisabled={!supportsSpeak || loadingQSpeak || !sTarget || isSpeakConnecting}
               >
-                {isSpeakRecording
+                {isSpeakConnecting
+                  ? userLanguage === "es"
+                    ? "Conectando..."
+                    : "Connecting..."
+                  : isSpeakRecording
                   ? t("vocab_speak_stop") ||
                     (userLanguage === "es" ? "Detener" : "Stop")
                   : t("vocab_speak_record") ||

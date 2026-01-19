@@ -1070,16 +1070,8 @@ export default function StoryMode({
           })),
         };
         storyCacheRef.current = finalData;
-        setCurrentSentenceIndex(0);
-        setSessionXp(0);
-        setSessionComplete(false);
-        setSessionSummary({
-          passed: 0,
-          total: finalData?.sentences?.length || 0,
-        });
-        setPassedCount(0);
-        setShowFullStory(true);
-        setHighlightedWordIndex(-1);
+        // Note: Do NOT call other state setters inside setStoryData callback
+        // as it causes race conditions. State resets are handled separately.
         return finalData;
       });
     } catch (error) {
@@ -1412,6 +1404,7 @@ export default function StoryMode({
     startRecording: startSpeakRecording,
     stopRecording: stopSpeakRecording,
     isRecording: isSpeakRecording,
+    isConnecting: isSpeakConnecting,
     supportsSpeech: supportsSpeak,
   } = useSpeechPractice({
     targetText: currentSentence?.tgt || "",
@@ -1421,6 +1414,7 @@ export default function StoryMode({
   });
 
   const isRecording = isSpeakRecording;
+  const isConnecting = isSpeakConnecting;
 
   const handleRecordPress = useCallback(async () => {
     stopAllAudio();
@@ -1732,6 +1726,9 @@ export default function StoryMode({
                       onClick={() => {
                         playSound(submitActionSound);
                         stopAllAudio();
+                        // Reset all practice state before switching views
+                        setSentenceCompleted(false);
+                        setLastSuccessInfo(null);
                         setShowFullStory(false);
                         setCurrentSentenceIndex(0);
                         setSessionXp(0);
@@ -1743,7 +1740,10 @@ export default function StoryMode({
                         sessionAwardedRef.current = false;
                         setPassedCount(0);
                         setHighlightedWordIndex(-1);
-                        stopSpeakRecording();
+                        // Only stop recording if there's one in progress
+                        if (isSpeakRecording) {
+                          stopSpeakRecording();
+                        }
                       }}
                       size="lg"
                       px={8}
@@ -1964,23 +1964,39 @@ export default function StoryMode({
                           bg={
                             isRecording
                               ? "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                              : isConnecting
+                              ? "linear-gradient(135deg, #eab308 0%, #ca8a04 100%)"
                               : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)"
                           }
                           color="white"
                           fontWeight="600"
                           fontSize="lg"
-                          leftIcon={<PiMicrophoneStageDuotone />}
-                          isDisabled={!supportsSpeak || !currentSentence?.tgt}
+                          leftIcon={
+                            isConnecting ? (
+                              <Spinner size="sm" />
+                            ) : (
+                              <PiMicrophoneStageDuotone />
+                            )
+                          }
+                          isDisabled={!supportsSpeak || !currentSentence?.tgt || isConnecting}
                           _hover={{
                             bg: isRecording
                               ? "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)"
+                              : isConnecting
+                              ? "linear-gradient(135deg, #ca8a04 0%, #a16207 100%)"
                               : "linear-gradient(135deg,rgb(0, 157, 255) 0%,rgb(0, 101, 210) 100%)",
                             transform: "translateY(-2px)",
                           }}
                           _active={{ transform: "translateY(0)" }}
                           transition="all 0.2s ease"
                         >
-                          {isRecording ? uiText.stopRecording : uiText.record}
+                          {isConnecting
+                            ? uiLang === "es"
+                              ? "Conectando..."
+                              : "Connecting..."
+                            : isRecording
+                            ? uiText.stopRecording
+                            : uiText.record}
                         </Button>
                       </HStack>
                     </Center>
