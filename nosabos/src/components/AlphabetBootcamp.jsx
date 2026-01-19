@@ -358,32 +358,37 @@ function LetterCard({
   );
 
   // Speech practice hook - use hook's isRecording and isConnecting states
-  const { startRecording, stopRecording, isRecording, isConnecting, supportsSpeech } =
-    useSpeechPractice({
-      targetText: practiceWord || "placeholder",
-      targetLang: targetLang,
-      onResult: ({ recognizedText: text, error }) => {
-        if (error) {
-          toast({
-            title:
-              appLanguage === "es" ? "Error de grabación" : "Recording error",
-            description:
-              appLanguage === "es"
-                ? "No se pudo grabar. Intenta de nuevo."
-                : "Could not record. Please try again.",
-            status: "error",
-            duration: 2500,
-          });
-          return;
-        }
+  const {
+    startRecording,
+    stopRecording,
+    isRecording,
+    isConnecting,
+    supportsSpeech,
+  } = useSpeechPractice({
+    targetText: practiceWord || "placeholder",
+    targetLang: targetLang,
+    onResult: ({ recognizedText: text, error }) => {
+      if (error) {
+        toast({
+          title:
+            appLanguage === "es" ? "Error de grabación" : "Recording error",
+          description:
+            appLanguage === "es"
+              ? "No se pudo grabar. Intenta de nuevo."
+              : "Could not record. Please try again.",
+          status: "error",
+          duration: 2500,
+        });
+        return;
+      }
 
-        const recognized = text || "";
-        if (recognized.trim()) {
-          checkAnswerWithAI(recognized);
-        }
-      },
-      timeoutMs: pauseMs,
-    });
+      const recognized = text || "";
+      if (recognized.trim()) {
+        checkAnswerWithAI(recognized);
+      }
+    },
+    timeoutMs: pauseMs,
+  });
 
   const checkAnswerWithAI = async (answer) => {
     setIsGrading(true);
@@ -723,6 +728,7 @@ function LetterCard({
           color="white"
           position="relative"
           sx={{ backfaceVisibility: "hidden" }}
+          minH={{ base: "260px", md: "230px" }}
         >
           {/* Star counter */}
           {correctCount === 0 ? null : (
@@ -793,7 +799,7 @@ function LetterCard({
             <Text color="whiteAlpha.900" fontSize="sm">
               {sound}
             </Text>
-            <Text fontSize="xs" color="whiteAlpha.800">
+            <Text fontSize="2xs" color="whiteAlpha.800">
               {tip}
             </Text>
           </VStack>
@@ -947,7 +953,9 @@ function LetterCard({
             <VStack spacing={2} py={2}>
               <Button
                 size="md"
-                colorScheme={isRecording ? "red" : isConnecting ? "yellow" : "teal"}
+                colorScheme={
+                  isRecording ? "red" : isConnecting ? "yellow" : "teal"
+                }
                 leftIcon={
                   isConnecting ? (
                     <Spinner size="sm" />
@@ -1324,7 +1332,11 @@ export default function AlphabetBootcamp({
                             }
                             const currentTime = audio.currentTime;
                             if (currentTime > 0) hasStarted = true;
-                            if (hasStarted && currentTime === lastTime && currentTime > 0) {
+                            if (
+                              hasStarted &&
+                              currentTime === lastTime &&
+                              currentTime > 0
+                            ) {
                               stableFrames++;
                               if (stableFrames > 10) {
                                 resolve();
@@ -1336,8 +1348,14 @@ export default function AlphabetBootcamp({
                             }
                             requestAnimationFrame(checkEnded);
                           };
-                          setTimeout(() => requestAnimationFrame(checkEnded), 100);
-                          const fallbackMs = Math.max(1500, text.length * 50 + 500);
+                          setTimeout(
+                            () => requestAnimationFrame(checkEnded),
+                            100
+                          );
+                          const fallbackMs = Math.max(
+                            1500,
+                            text.length * 50 + 500
+                          );
                           setTimeout(resolve, fallbackMs);
                         });
 
@@ -1357,7 +1375,7 @@ export default function AlphabetBootcamp({
                   <Box
                     position="relative"
                     zIndex={1}
-                    mt={{ base: "-84px", md: "-102px" }}
+                    mt={{ base: "-60px", md: "-102px" }}
                     mx="1px"
                   >
                     {[...Array(Math.min(deck.length - 1, 8))].map((_, i) => (
@@ -1496,7 +1514,11 @@ export default function AlphabetBootcamp({
                             }
                             const currentTime = audio.currentTime;
                             if (currentTime > 0) hasStarted = true;
-                            if (hasStarted && currentTime === lastTime && currentTime > 0) {
+                            if (
+                              hasStarted &&
+                              currentTime === lastTime &&
+                              currentTime > 0
+                            ) {
                               stableFrames++;
                               if (stableFrames > 10) {
                                 resolve();
@@ -1508,8 +1530,14 @@ export default function AlphabetBootcamp({
                             }
                             requestAnimationFrame(checkEnded);
                           };
-                          setTimeout(() => requestAnimationFrame(checkEnded), 100);
-                          const fallbackMs = Math.max(1500, text.length * 50 + 500);
+                          setTimeout(
+                            () => requestAnimationFrame(checkEnded),
+                            100
+                          );
+                          const fallbackMs = Math.max(
+                            1500,
+                            text.length * 50 + 500
+                          );
                           setTimeout(resolve, fallbackMs);
                         });
 
