@@ -3,17 +3,126 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // This rule allows anyone with your Firestore database reference to view, edit,
-    // and delete all data in your Firestore database. It is useful for getting
-    // started, but it is configured to expire after 30 days because it
-    // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
+    // ============================================
+    // IMPORTANT: Firebase Authentication Required
+    // ============================================
+    // These rules require Firebase Authentication where:
+    // - request.auth.uid equals the user's Nostr npub
+    // - Use Firebase Custom Auth to sign in users with npub as UID
     //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
-    // your rules
+    // Example in your app:
+    //   import { signInWithCustomToken } from 'firebase/auth';
+    //   // Get custom token from your server (passing npub)
+    //   await signInWithCustomToken(auth, customToken);
+    // ============================================
+
+    // ============================================
+    // HELPER FUNCTIONS
+    // ============================================
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user matches the userId
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // ============================================
+    // USER DOCUMENTS
+    // ============================================
+
+    match /users/{userId} {
+      // Users can read any user document (needed for team progress tracking)
+      // If you want stricter reads, change to: isOwner(userId)
+      allow read: if isAuthenticated();
+
+      // Only the owner can write to their main document
+      allow write: if isOwner(userId);
+
+      // ============================================
+      // TEAMS SUBCOLLECTION
+      // Stored at: users/{creatorNpub}/teams/{teamId}
+      // ============================================
+
+      match /teams/{teamId} {
+        // Any authenticated user can read teams
+        // (needed for members to view team info and progress)
+        allow read: if isAuthenticated();
+
+        // Only the owner (team creator) can create teams
+        allow create: if isOwner(userId) &&
+          request.resource.data.createdBy == request.auth.uid;
+
+        // Team updates allowed for:
+        // 1. Owner (team creator) - can do anything
+        // 2. Authenticated users - can update members array
+        //    (for accepting/rejecting invites, leaving team)
+        allow update: if isOwner(userId) || isAuthenticated();
+
+        // Only the owner can delete their teams
+        allow delete: if isOwner(userId);
+      }
+
+      // ============================================
+      // TEAM INVITES SUBCOLLECTION
+      // Stored at: users/{inviteeNpub}/teamInvites/{inviteId}
+      // ============================================
+
+      match /teamInvites/{inviteId} {
+        // Only the owner (invitee) can read their invites
+        allow read: if isOwner(userId);
+
+        // Invites can be created by any authenticated user
+        // (team creators send invites to other users)
+        // Validates that the invite data includes proper creator info
+        allow create: if isAuthenticated() &&
+          request.resource.data.creatorNpub == request.auth.uid &&
+          request.resource.data.invitedBy == request.auth.uid &&
+          request.resource.data.status == 'pending';
+
+        // Only the invitee can update their own invites (accept/reject)
+        allow update: if isOwner(userId) &&
+          request.resource.data.status in ['accepted', 'rejected'];
+
+        // Invites can be deleted by:
+        // 1. The invitee (when leaving a team)
+        // 2. The original team creator (when deleting a team)
+        allow delete: if isOwner(userId) ||
+          (isAuthenticated() && resource.data.creatorNpub == request.auth.uid);
+      }
+
+      // ============================================
+      // OTHER SUBCOLLECTIONS (owner-only access)
+      // ============================================
+
+      match /alphabetPractice/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /storyTurns/{turnId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /goals/{goalId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /savedScripts/{scriptId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // Catch-all for future subcollections - owner only by default
+      match /{otherCollection}/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Deny all access to documents outside /users
     match /{document=**} {
-      allow read, write;
+      allow read, write: if false;
     }
   }
 }
