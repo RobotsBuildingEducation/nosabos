@@ -56,6 +56,12 @@ import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
 import { linksPageTranslations } from "../translations/linksPage";
 
+// Helper to check if running on localhost
+const isLocalhost = () =>
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1");
+
 // Pixel flicker effect for 8-bit feel
 const pixelFlicker = keyframes`
   0%, 100% { opacity: 1; }
@@ -826,13 +832,17 @@ export default function LinksPage() {
 
   const goToPrevious = () => {
     handleModeSwitcherSound();
-    logEvent(analytics, "links_carousel_navigate", { direction: "previous" });
+    if (!isLocalhost()) {
+      logEvent(analytics, "links_carousel_navigate", { direction: "previous" });
+    }
     setCurrentIndex((prev) => (prev === 0 ? links.length - 1 : prev - 1));
   };
 
   const goToNext = () => {
     handleModeSwitcherSound();
-    logEvent(analytics, "links_carousel_navigate", { direction: "next" });
+    if (!isLocalhost()) {
+      logEvent(analytics, "links_carousel_navigate", { direction: "next" });
+    }
     setCurrentIndex((prev) => (prev === links.length - 1 ? 0 : prev + 1));
   };
 
@@ -1022,9 +1032,11 @@ export default function LinksPage() {
                 w="100%"
                 onClick={() => {
                   handleSubmitActionSound();
-                  logEvent(analytics, "links_launch_app", {
-                    app: "robots_building_education",
-                  });
+                  if (!isLocalhost()) {
+                    logEvent(analytics, "links_launch_app", {
+                      app: "robots_building_education",
+                    });
+                  }
                   onRbeClose();
                 }}
               >
@@ -1145,7 +1157,9 @@ export default function LinksPage() {
               <Button
                 onClick={() => {
                   handleSubmitActionSound();
-                  logEvent(analytics, "links_save_profile");
+                  if (!isLocalhost()) {
+                    logEvent(analytics, "links_save_profile");
+                  }
                   handleSaveProfile();
                 }}
                 isLoading={isSaving}
