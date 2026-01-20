@@ -505,6 +505,7 @@ export default function LinksPage() {
       description: translations.noSabosDescription,
       href: "https://nosabos.app",
       visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
+      launchAppText: translations.launchApp,
     },
     {
       title: translations.rbeTitle,
@@ -516,6 +517,7 @@ export default function LinksPage() {
           <CloudCanvas />
         </Box>
       ),
+      launchAppText: translations.launchApp,
     },
     {
       title: translations.patreonTitle,
@@ -529,6 +531,7 @@ export default function LinksPage() {
           transparent={true}
         />
       ),
+      launchAppText: translations.subscribe,
     },
   ];
 
@@ -806,7 +809,13 @@ export default function LinksPage() {
     >
       <RetroStarfield />
 
-      <Container maxW="container.md" position="relative" zIndex={1} mt={2}>
+      <Container
+        maxW="container.md"
+        position="relative"
+        zIndex={1}
+        mt={2}
+        pb={{ base: 10, md: 14 }}
+      >
         <VStack spacing={6} textAlign="center">
           {/* Profile Picture or Random Character */}
           {profilePicture ? (
@@ -903,7 +912,7 @@ export default function LinksPage() {
               key={link.title}
               {...link}
               onLaunchSound={handleSubmitActionSound}
-              launchAppText={translations.launchApp}
+              launchAppText={link.launchAppText}
             />
           ))}
         </VStack>

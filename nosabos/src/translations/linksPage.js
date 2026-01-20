@@ -16,6 +16,7 @@ export const linksPageTranslations = {
     previousLink: "Previous link",
     nextLink: "Next link",
     launchApp: "Launch app",
+    subscribe: "Subscribe",
 
     // Link cards
     noSabosTitle: "No Sabos",
@@ -109,6 +110,7 @@ export const linksPageTranslations = {
     previousLink: "Enlace anterior",
     nextLink: "Siguiente enlace",
     launchApp: "Abrir app",
+    subscribe: "Suscribirse",
 
     // Link cards
     noSabosTitle: "No Sabos",
