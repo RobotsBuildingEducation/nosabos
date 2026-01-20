@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, Box } from "@chakra-ui/react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { theme } from "./theme";
 import LandingPage from "./components/LandingPage.jsx";
 
 import LinksPage from "./components/LinksPage.jsx";
 import SoundExperiment from "./components/SoundExperiment.jsx";
+import FinancialTool from "./components/FinancialTool";
 
 import "@coinbase/onchainkit/styles.css";
 import { MiniKitContextProvider } from "./provider/MinitKitProvider.jsx";
@@ -53,6 +54,14 @@ createRoot(document.getElementById("root")).render(
           <Route path="/subscribe" element={<AppContainer />} />
           <Route path="/links" element={<LinksPage />} />
           <Route path="/experiments" element={<SoundExperiment />} />
+          <Route
+            path="/financial"
+            element={
+              <Box minH="100vh" bg="gray.900" py={8}>
+                <FinancialTool />
+              </Box>
+            }
+          />
         </Routes>
       </Router>
     </MiniKitContextProvider>
