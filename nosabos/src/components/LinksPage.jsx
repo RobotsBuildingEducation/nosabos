@@ -53,6 +53,7 @@ import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
 import { linksPageTranslations } from "../translations/linksPage";
+import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 
 // Helper to check if running on localhost
 const isLocalhost = () =>
@@ -313,7 +314,7 @@ export default function LinksPage() {
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
   const [randomCharacterKey] = useState(
-    () => Math.floor(Math.random() * 21) + 20
+    () => Math.floor(Math.random() * 21) + 20,
   ); // Random between 20-40
   const [roleIndex, setRoleIndex] = useState(0);
 
@@ -517,6 +518,13 @@ export default function LinksPage() {
           <CloudCanvas />
         </Box>
       ),
+      launchAppText: translations.launchApp,
+    },
+    {
+      title: translations.roadmapCashTitle,
+      description: translations.roadmapCashDescription,
+      href: "https://roadmap.cash",
+      visual: <AnimatedLogo showWordmark={false} size={200} />,
       launchAppText: translations.launchApp,
     },
     {
