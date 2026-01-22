@@ -227,6 +227,7 @@ function LinkCard({
   visual,
   onLaunch,
   onLaunchSound,
+  onLaunchEvent,
   launchAppText,
 }) {
   return (
@@ -276,6 +277,7 @@ function LinkCard({
             as={onLaunch ? "button" : "a"}
             onClick={() => {
               onLaunchSound?.();
+              onLaunchEvent?.();
               onLaunch?.();
             }}
             href={onLaunch ? undefined : href}
@@ -505,6 +507,7 @@ export default function LinksPage() {
       title: translations.noSabosTitle,
       description: translations.noSabosDescription,
       href: "https://nosabos.app",
+      analyticsName: "nosabos_app",
       visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
       launchAppText: translations.launchApp,
     },
@@ -512,6 +515,7 @@ export default function LinksPage() {
       title: translations.rbeTitle,
       description: translations.rbeDescription,
       href: rbeUrl,
+      analyticsName: "robots_building_education",
       onLaunch: onRbeOpen,
       visual: (
         <Box display="flex" justifyContent="center" alignItems="center">
@@ -524,6 +528,7 @@ export default function LinksPage() {
       title: translations.roadmapCashTitle,
       description: translations.roadmapCashDescription,
       href: "https://roadmap.cash",
+      analyticsName: "roadmap_cash",
       visual: <AnimatedLogo showWordmark={false} size={200} />,
       launchAppText: translations.launchApp,
     },
@@ -531,6 +536,7 @@ export default function LinksPage() {
       title: translations.patreonTitle,
       description: translations.patreonDescription,
       href: "https://patreon.com/NotesAndOtherStuff",
+      analyticsName: "patreon",
       visual: (
         <RoleCanvas
           role={roleCycle[roleIndex]}
@@ -920,6 +926,13 @@ export default function LinksPage() {
               key={link.title}
               {...link}
               onLaunchSound={handleSubmitActionSound}
+              onLaunchEvent={() => {
+                if (!isLocalhost() && !link.onLaunch) {
+                  logEvent(analytics, "links_launch_app", {
+                    app: link.analyticsName,
+                  });
+                }
+              }}
               launchAppText={link.launchAppText}
             />
           ))}
