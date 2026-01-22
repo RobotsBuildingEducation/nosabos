@@ -11,7 +11,6 @@ import {
   Divider,
   Heading,
   HStack,
-  IconButton,
   Input,
   Link,
   Modal,
@@ -21,6 +20,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Stack,
   Spinner,
   Switch,
   Text,
@@ -29,7 +29,6 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { keyframes } from "@emotion/react";
-import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import { QRCodeSVG } from "qrcode.react";
 import { BsQrCode } from "react-icons/bs";
 import { SiCashapp } from "react-icons/si";
@@ -37,7 +36,6 @@ import { FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
-import modeSwitcherSound from "../assets/modeswitcher.mp3";
 
 import { RoleCanvas } from "./RoleCanvas/RoleCanvas";
 
@@ -55,6 +53,7 @@ import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
 import { linksPageTranslations } from "../translations/linksPage";
+import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
 
 // Helper to check if running on localhost
 const isLocalhost = () =>
@@ -221,72 +220,58 @@ function RetroStarfield() {
   );
 }
 
-function CarouselCard({
+function LinkCard({
   title,
   description,
   href,
   visual,
   onLaunch,
   onLaunchSound,
-  onPrevious,
-  onNext,
   launchAppText,
-  previousLinkText,
-  nextLinkText,
 }) {
   return (
-    <Box display="block" textDecoration="none">
-      <VStack spacing={6} align="center" textAlign="center">
-        {/* Large Visual */}
+    <Box
+      w="100%"
+      border="1px solid"
+      borderColor="rgba(0, 255, 255, 0.4)"
+      bg="rgba(7, 16, 29, 0.65)"
+      borderRadius="lg"
+      px={{ base: 5, md: 8 }}
+      py={{ base: 6, md: 8 }}
+      boxShadow="0 0 20px rgba(0, 255, 255, 0.15)"
+    >
+      <Stack
+        direction={{ base: "column", md: "row" }}
+        spacing={{ base: 6, md: 10 }}
+        align="center"
+        textAlign={{ base: "center", md: "left" }}
+      >
         <Box
-          w="100%"
-          maxW="400px"
-          h={{ base: "200px", md: "200px" }}
-          position="relative"
+          w={{ base: "100%", md: "220px" }}
           display="flex"
           justifyContent="center"
           alignItems="center"
           animation={`${drift} 6s ease-in-out infinite`}
         >
-          <IconButton
-            aria-label={previousLinkText || "Previous link"}
-            icon={<ChevronLeftIcon boxSize={8} />}
-            position="absolute"
-            left={{ base: -2, md: -16 }}
-            top="50%"
-            zIndex={2}
-            onClick={onPrevious}
-            // variant="ghost"
-            bg="transparent"
-            color="#00ffff"
-            border="1px solid"
-            borderColor="#00ffff"
-            size="lg"
-            borderRadius="md"
-            boxShadow="0 4px 0 teal"
-          />
-          <IconButton
-            aria-label={nextLinkText || "Next link"}
-            icon={<ChevronRightIcon boxSize={8} />}
-            position="absolute"
-            right={{ base: -2, md: -16 }}
-            top="50%"
-            zIndex={2}
-            onClick={onNext}
-            // variant="ghost"
-            bg="transparent"
-            color="#00ffff"
-            border="1px solid"
-            borderColor="#00ffff"
-            size="lg"
-            borderRadius="md"
-            boxShadow="0 4px 0 teal"
-          />
           {visual}
         </Box>
-
-        {/* Title and Description */}
-        <VStack spacing={3}>
+        <VStack spacing={3} align={{ base: "center", md: "flex-start" }}>
+          <Heading
+            size="md"
+            fontFamily="monospace"
+            letterSpacing="wider"
+            color="white"
+          >
+            {title}
+          </Heading>
+          <Text
+            color="gray.400"
+            fontSize="lg"
+            maxW="420px"
+            fontFamily="monospace"
+          >
+            {description}
+          </Text>
           <Button
             as={onLaunch ? "button" : "a"}
             onClick={() => {
@@ -307,25 +292,8 @@ function CarouselCard({
           >
             {launchAppText || "Launch app"}
           </Button>
-          <Heading
-            size="md"
-            fontFamily="monospace"
-            letterSpacing="wider"
-            color="white"
-            mt={4}
-          >
-            {title}
-          </Heading>
-          <Text
-            color="gray.400"
-            fontSize="lg"
-            maxW="400px"
-            fontFamily="monospace"
-          >
-            {description}
-          </Text>
         </VStack>
-      </VStack>
+      </Stack>
     </Box>
   );
 }
@@ -333,7 +301,6 @@ function CarouselCard({
 export default function LinksPage() {
   const { generateNostrKeys, auth, postNostrContent, ndk, connectToNostr } =
     useDecentralizedIdentity();
-  const [currentIndex, setCurrentIndex] = useState(0);
 
   // Language state
   const { language, initLanguage, toggleLanguage, t } = useLanguage();
@@ -347,7 +314,7 @@ export default function LinksPage() {
   const [profilePicture, setProfilePicture] = useState("");
   const [profilePictureUrlInput, setProfilePictureUrlInput] = useState("");
   const [randomCharacterKey] = useState(
-    () => Math.floor(Math.random() * 21) + 20
+    () => Math.floor(Math.random() * 21) + 20,
   ); // Random between 20-40
   const [roleIndex, setRoleIndex] = useState(0);
 
@@ -451,7 +418,6 @@ export default function LinksPage() {
   const rbeUrl = "https://robotsbuildingeducation.com";
   const handleSelectSound = () => playSound(selectSound);
   const handleSubmitActionSound = () => playSound(submitActionSound);
-  const handleModeSwitcherSound = () => playSound(modeSwitcherSound);
 
   // Wallet handlers
   const handleCreateWallet = async () => {
@@ -540,6 +506,7 @@ export default function LinksPage() {
       description: translations.noSabosDescription,
       href: "https://nosabos.app",
       visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
+      launchAppText: translations.launchApp,
     },
     {
       title: translations.rbeTitle,
@@ -551,6 +518,14 @@ export default function LinksPage() {
           <CloudCanvas />
         </Box>
       ),
+      launchAppText: translations.launchApp,
+    },
+    {
+      title: translations.roadmapCashTitle,
+      description: translations.roadmapCashDescription,
+      href: "https://roadmap.cash",
+      visual: <AnimatedLogo showWordmark={false} size={200} />,
+      launchAppText: translations.launchApp,
     },
     {
       title: translations.patreonTitle,
@@ -564,6 +539,7 @@ export default function LinksPage() {
           transparent={true}
         />
       ),
+      launchAppText: translations.subscribe,
     },
   ];
 
@@ -830,26 +806,6 @@ export default function LinksPage() {
     };
   }, [generateNostrKeys]);
 
-  const goToPrevious = () => {
-    handleModeSwitcherSound();
-    if (!isLocalhost()) {
-      logEvent(analytics, "links_carousel_navigate", { direction: "previous" });
-    }
-    setCurrentIndex((prev) => (prev === 0 ? links.length - 1 : prev - 1));
-  };
-
-  const goToNext = () => {
-    handleModeSwitcherSound();
-    if (!isLocalhost()) {
-      logEvent(analytics, "links_carousel_navigate", { direction: "next" });
-    }
-    setCurrentIndex((prev) => (prev === links.length - 1 ? 0 : prev + 1));
-  };
-
-  const goToSlide = (index) => {
-    setCurrentIndex(index);
-  };
-
   return (
     <Box
       minH="100vh"
@@ -861,7 +817,13 @@ export default function LinksPage() {
     >
       <RetroStarfield />
 
-      <Container maxW="container.md" position="relative" zIndex={1} mt={2}>
+      <Container
+        maxW="container.md"
+        position="relative"
+        zIndex={1}
+        mt={2}
+        pb={{ base: 10, md: 14 }}
+      >
         <VStack spacing={6} textAlign="center">
           {/* Profile Picture or Random Character */}
           {profilePicture ? (
@@ -951,37 +913,17 @@ export default function LinksPage() {
           </HStack>
         </VStack>
 
-        {/* Carousel View */}
-        <Box>
-          {/* Carousel Content */}
-          <Box overflow="hidden" px={{ base: 8, md: 0 }}>
-            <CarouselCard
-              {...links[currentIndex]}
+        {/* Links List */}
+        <VStack spacing={6} w="100%">
+          {links.map((link) => (
+            <LinkCard
+              key={link.title}
+              {...link}
               onLaunchSound={handleSubmitActionSound}
-              onPrevious={goToPrevious}
-              onNext={goToNext}
-              launchAppText={translations.launchApp}
-              previousLinkText={translations.previousLink}
-              nextLinkText={translations.nextLink}
+              launchAppText={link.launchAppText}
             />
-          </Box>
-
-          {/* Dot Indicators - 8-bit style squares */}
-          <HStack spacing={3} justify="center" mt={4}>
-            {links.map((_, index) => (
-              <Box
-                key={index}
-                as="button"
-                w={index === currentIndex ? 6 : 3}
-                h={3}
-                bg={index === currentIndex ? "#ff00ff" : "gray.600"}
-                boxShadow={index === currentIndex ? "0 0 10px #ff00ff" : "none"}
-                transition="all 0.3s ease"
-                onClick={() => goToSlide(index)}
-              />
-            ))}
-          </HStack>
-        </Box>
+          ))}
+        </VStack>
       </Container>
 
       {/* Robots Building Education Modal */}

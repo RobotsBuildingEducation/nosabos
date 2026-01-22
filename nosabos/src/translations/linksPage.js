@@ -16,6 +16,7 @@ export const linksPageTranslations = {
     previousLink: "Previous link",
     nextLink: "Next link",
     launchApp: "Launch app",
+    subscribe: "Subscribe",
 
     // Link cards
     noSabosTitle: "No Sabos",
@@ -23,11 +24,23 @@ export const linksPageTranslations = {
     rbeTitle: "Robots Building Education",
     rbeDescription: "Your personal coding tutor.",
     patreonTitle: "Patreon",
-    patreonDescription: "Access premium engineering, financial and startup content.",
+    patreonDescription:
+      "Access premium engineering, financial and startup content.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
-    rbeModalDescription: "You'll use your secret key to sign in to your account. If you entered through social media, you only have to do this once.",
+    rbeModalDescription:
+      "You'll use your secret key to sign in to your account. If you entered through social media, you only have to do this once.",
+    copySecretKey: "Copy Secret Key",
+    goToApp: "Go to app",
+    close: "Close",
+
+    // RoadmapCash Modal
+    roadmapCashTitle: "Roadmap.Cash (beta)",
+    roadmapCashDescription: "Your personal financial planner.",
+    roadmapCashModalTitle: "Roadmap.Cash",
+    roadmapCashModalDescription:
+      "You'll use your secret key to switch in to your account in the menu. If you entered through social media, you only have to do this once.",
     copySecretKey: "Copy Secret Key",
     goToApp: "Go to app",
     close: "Close",
@@ -40,26 +53,33 @@ export const linksPageTranslations = {
     profilePicturePlaceholder: "https://example.com/your-image.jpg",
     saveProfile: "Save Profile",
     secretKey: "Secret Key",
-    secretKeyWarning: "Your secret key is your password to access decentralized apps. Keep it safe and never share it with anyone.",
+    secretKeyWarning:
+      "Your secret key is your password to access decentralized apps. Keep it safe and never share it with anyone.",
     switchAccount: "Switch Account",
     pasteNsec: "Paste your nsec key here",
-    switchAccountHelp: "Enter a different nsec to switch to another Nostr account",
+    switchAccountHelp:
+      "Enter a different nsec to switch to another Nostr account",
 
     // Bitcoin Wallet
     bitcoinWallet: "Bitcoin Wallet",
-    walletDescription1: "Your deposits help us create scholarships with learning.",
-    walletDescription2: "When you answer questions in the apps, it sends it to recipients you choose.",
+    walletDescription1:
+      "Your deposits help us create scholarships with learning.",
+    walletDescription2:
+      "When you answer questions in the apps, it sends it to recipients you choose.",
     loadingWallet: "Loading wallet...",
     secretKeyRequired: "Secret key required",
-    nip07Warning: "You signed in with a browser extension, so we don't have access to your private key. To create a wallet, enter your nsec below.",
+    nip07Warning:
+      "You signed in with a browser extension, so we don't have access to your private key. To create a wallet, enter your nsec below.",
     enterNsec: "Enter your nsec1...",
-    keyNotStored: "Your key is only used to create the wallet and is not stored.",
+    keyNotStored:
+      "Your key is only used to create the wallet and is not stored.",
     createWallet: "Create Wallet",
     creatingWallet: "Creating wallet...",
     deposit: "Deposit",
     copyAddress: "Copy address",
     or: "or",
-    lightningInstructions: "Use a compatible Lightning wallet to pay the invoice.",
+    lightningInstructions:
+      "Use a compatible Lightning wallet to pay the invoice.",
     cashApp: "Cash App",
     generateNewQR: "Generate New QR",
     wallet: "Wallet",
@@ -93,6 +113,12 @@ export const linksPageTranslations = {
     invoiceCopied: "Lightning invoice copied to clipboard.",
   },
   es: {
+    roadmapCashTitle: "Roadmap.Cash",
+    roadmapCashDescription: "Tu planificador financiero personal.",
+    roadmapCashModalTitle: "Roadmap.Cash",
+    roadmapCashModalDescription:
+      "Usarás tu clave secreta para acceder a tu cuenta desde el menú. Si entraste a través de redes sociales, solo tendrás que hacerlo una vez.",
+
     // Welcome section
     welcome: "Bienvenido",
     customizeProfile: "Personalizar Perfil",
@@ -109,6 +135,7 @@ export const linksPageTranslations = {
     previousLink: "Enlace anterior",
     nextLink: "Siguiente enlace",
     launchApp: "Abrir app",
+    subscribe: "Suscribirse",
 
     // Link cards
     noSabosTitle: "No Sabos",
@@ -116,11 +143,13 @@ export const linksPageTranslations = {
     rbeTitle: "Robots Building Education",
     rbeDescription: "Tu tutor personal de programacion.",
     patreonTitle: "Patreon",
-    patreonDescription: "Accede a contenido premium de ingenieria, finanzas y startups.",
+    patreonDescription:
+      "Accede a contenido premium de ingenieria, finanzas y startups.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
-    rbeModalDescription: "Usaras tu clave secreta para iniciar sesion en tu cuenta. Si entraste por redes sociales, solo tienes que hacer esto una vez.",
+    rbeModalDescription:
+      "Usaras tu clave secreta para iniciar sesion en tu cuenta. Si entraste por redes sociales, solo tienes que hacer esto una vez.",
     copySecretKey: "Copiar Clave Secreta",
     goToApp: "Ir a la app",
     close: "Cerrar",
@@ -133,26 +162,33 @@ export const linksPageTranslations = {
     profilePicturePlaceholder: "https://ejemplo.com/tu-imagen.jpg",
     saveProfile: "Guardar Perfil",
     secretKey: "Clave Secreta",
-    secretKeyWarning: "Tu clave secreta es tu contrasena para acceder a apps descentralizadas. Guardala de forma segura y nunca la compartas con nadie.",
+    secretKeyWarning:
+      "Tu clave secreta es tu contrasena para acceder a apps descentralizadas. Guardala de forma segura y nunca la compartas con nadie.",
     switchAccount: "Cambiar Cuenta",
     pasteNsec: "Pega tu clave nsec aqui",
-    switchAccountHelp: "Ingresa un nsec diferente para cambiar a otra cuenta de Nostr",
+    switchAccountHelp:
+      "Ingresa un nsec diferente para cambiar a otra cuenta de Nostr",
 
     // Bitcoin Wallet
     bitcoinWallet: "Billetera Bitcoin",
-    walletDescription1: "Tus depositos nos ayudan a crear becas de aprendizaje.",
-    walletDescription2: "Cuando respondes preguntas en las apps, se envia a los destinatarios que elijas.",
+    walletDescription1:
+      "Tus depositos nos ayudan a crear becas de aprendizaje.",
+    walletDescription2:
+      "Cuando respondes preguntas en las apps, se envia a los destinatarios que elijas.",
     loadingWallet: "Cargando billetera...",
     secretKeyRequired: "Clave secreta requerida",
-    nip07Warning: "Iniciaste sesion con una extension del navegador, por lo que no tenemos acceso a tu clave privada. Para crear una billetera, ingresa tu nsec abajo.",
+    nip07Warning:
+      "Iniciaste sesion con una extension del navegador, por lo que no tenemos acceso a tu clave privada. Para crear una billetera, ingresa tu nsec abajo.",
     enterNsec: "Ingresa tu nsec1...",
-    keyNotStored: "Tu clave solo se usa para crear la billetera y no se almacena.",
+    keyNotStored:
+      "Tu clave solo se usa para crear la billetera y no se almacena.",
     createWallet: "Crear Billetera",
     creatingWallet: "Creando billetera...",
     deposit: "Depositar",
     copyAddress: "Copiar direccion",
     or: "o",
-    lightningInstructions: "Usa una billetera Lightning compatible para pagar la factura.",
+    lightningInstructions:
+      "Usa una billetera Lightning compatible para pagar la factura.",
     cashApp: "Cash App",
     generateNewQR: "Generar Nuevo QR",
     wallet: "Billetera",
@@ -161,7 +197,8 @@ export const linksPageTranslations = {
 
     // Toast messages
     noChanges: "Sin cambios",
-    enterUsernameOrPicture: "Por favor ingresa un nombre de usuario o URL de foto de perfil",
+    enterUsernameOrPicture:
+      "Por favor ingresa un nombre de usuario o URL de foto de perfil",
     profileUpdated: "Perfil actualizado",
     profileSaved: "Tu perfil ha sido guardado en Nostr",
     error: "Error",
