@@ -31,7 +31,7 @@ export const SKILL_TREE_A1 = [
         xpRequired: 0,
         xpReward: 50,
         isTutorial: true,
-        modes: ["vocabulary", "grammar", "reading", "stories", "realtime"],
+        modes: ["vocabulary", "grammar", "verbConjugator", "reading", "stories", "realtime"],
         content: {
           vocabulary: {
             topic: "tutorial",
@@ -47,6 +47,14 @@ export const SKILL_TREE_A1 = [
             tutorialDescription: {
               en: "Master grammar rules through exercises. Practice greeting patterns.",
               es: "Domina las reglas gramaticales mediante ejercicios. Practica patrones de saludo.",
+            },
+          },
+          verbConjugator: {
+            topic: "tutorial",
+            focusPoints: ["simple present", "ser", "estar"],
+            tutorialDescription: {
+              en: "Practice verb conjugations. Learn to conjugate 'to be' (ser/estar) in simple present.",
+              es: "Practica conjugaciones verbales. Aprende a conjugar 'ser/estar' en presente simple.",
             },
           },
           reading: {
