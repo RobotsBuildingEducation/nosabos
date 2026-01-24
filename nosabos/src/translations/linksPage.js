@@ -37,7 +37,7 @@ export const linksPageTranslations = {
 
     // RoadmapCash Modal
     roadmapCashTitle: "Roadmap.Cash (beta)",
-    roadmapCashDescription: "Your personal financial planner.",
+    roadmapCashDescription: "Your free personal financial planner.",
     roadmapCashModalTitle: "Roadmap.Cash",
     roadmapCashModalDescription:
       "You'll use your secret key to switch in to your account in the menu. If you entered through social media, you only have to do this once.",
@@ -114,7 +114,7 @@ export const linksPageTranslations = {
   },
   es: {
     roadmapCashTitle: "Roadmap.Cash",
-    roadmapCashDescription: "Tu planificador financiero personal.",
+    roadmapCashDescription: "Tu planificador financiero personal gratuito",
     roadmapCashModalTitle: "Roadmap.Cash",
     roadmapCashModalDescription:
       "Usarás tu clave secreta para acceder a tu cuenta desde el menú. Si entraste a través de redes sociales, solo tendrás que hacerlo una vez.",
