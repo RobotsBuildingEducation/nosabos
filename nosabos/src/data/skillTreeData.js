@@ -58,7 +58,7 @@ const baseLearningPath = {
           xpRequired: 0,
           xpReward: 50,
           isTutorial: true,
-          modes: ["vocabulary", "grammar", "reading", "stories", "realtime"],
+          modes: ["vocabulary", "grammar", "verbConjugator", "reading", "stories", "realtime"],
           content: {
             vocabulary: {
               topic: "tutorial",
@@ -74,6 +74,14 @@ const baseLearningPath = {
               tutorialDescription: {
                 en: "Master grammar rules through exercises.",
                 es: "Domina las reglas gramaticales mediante ejercicios.",
+              },
+            },
+            verbConjugator: {
+              topic: "tutorial",
+              focusPoints: ["simple present", "ser", "estar"],
+              tutorialDescription: {
+                en: "Practice verb conjugations. Learn to conjugate 'to be' (ser/estar) in simple present.",
+                es: "Practica conjugaciones verbales. Aprende a conjugar 'ser/estar' en presente simple.",
               },
             },
             reading: {
