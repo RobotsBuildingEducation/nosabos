@@ -229,6 +229,7 @@ import {
 import { CEFR_LEVELS } from "../data/flashcards/common";
 import { MdOutlineDescription } from "react-icons/md";
 import { FaMicrophone } from "react-icons/fa";
+import { TbLanguage } from "react-icons/tb";
 import useSoundSettings from "../hooks/useSoundSettings";
 import modeSwitcherSound from "../assets/modeswitcher.mp3";
 import selectSound from "../assets/select.mp3";
@@ -292,6 +293,7 @@ const CEFR_LEVEL_COLORS = {
 const MODE_ICONS = {
   vocabulary: RiBook2Line,
   grammar: RiPencilLine,
+  verbConjugator: TbLanguage,
   realtime: FaMicrophone,
   stories: MdOutlineDescription,
   reading: RiBookOpenLine,
