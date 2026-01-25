@@ -45,7 +45,7 @@ const MODULE_CONFIG = {
   verbConjugator: {
     icon: TbLanguage,
     color: "#F97316",
-    label: { en: "Conjugation", es: "Conjugación" },
+    label: { en: "Verbs", es: "Verbos" },
     shortLabel: { en: "Verbs", es: "Verbos" },
     description: {
       en: "Practice verb conjugations across different tenses.",
