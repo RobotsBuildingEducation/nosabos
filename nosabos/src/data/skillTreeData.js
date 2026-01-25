@@ -172,7 +172,7 @@ const baseLearningPath = {
           },
           xpRequired: 15,
           xpReward: 25,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "people and places",
@@ -288,7 +288,7 @@ const baseLearningPath = {
           },
           xpRequired: 110,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "greetings",
@@ -359,7 +359,7 @@ const baseLearningPath = {
           },
           xpRequired: 155,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -402,7 +402,7 @@ const baseLearningPath = {
           },
           xpRequired: 185,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "introductions",
@@ -473,7 +473,7 @@ const baseLearningPath = {
           },
           xpRequired: 230,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -516,7 +516,7 @@ const baseLearningPath = {
           },
           xpRequired: 260,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "numbers",
@@ -587,7 +587,7 @@ const baseLearningPath = {
           },
           xpRequired: 305,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -630,7 +630,7 @@ const baseLearningPath = {
           },
           xpRequired: 335,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "numbers",
@@ -701,7 +701,7 @@ const baseLearningPath = {
           },
           xpRequired: 380,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -744,7 +744,7 @@ const baseLearningPath = {
           },
           xpRequired: 410,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "days of week",
@@ -815,7 +815,7 @@ const baseLearningPath = {
           },
           xpRequired: 455,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -858,7 +858,7 @@ const baseLearningPath = {
           },
           xpRequired: 485,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -929,7 +929,7 @@ const baseLearningPath = {
           },
           xpRequired: 530,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -972,7 +972,7 @@ const baseLearningPath = {
           },
           xpRequired: 560,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time",
@@ -1043,7 +1043,7 @@ const baseLearningPath = {
           },
           xpRequired: 605,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1086,7 +1086,7 @@ const baseLearningPath = {
           },
           xpRequired: 635,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "family",
@@ -1157,7 +1157,7 @@ const baseLearningPath = {
           },
           xpRequired: 680,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1200,7 +1200,7 @@ const baseLearningPath = {
           },
           xpRequired: 710,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "colors",
@@ -1271,7 +1271,7 @@ const baseLearningPath = {
           },
           xpRequired: 755,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1314,7 +1314,7 @@ const baseLearningPath = {
           },
           xpRequired: 785,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "food and drinks",
@@ -1385,7 +1385,7 @@ const baseLearningPath = {
           },
           xpRequired: 830,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1428,7 +1428,7 @@ const baseLearningPath = {
           },
           xpRequired: 860,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "food and drinks",
@@ -1499,7 +1499,7 @@ const baseLearningPath = {
           },
           xpRequired: 905,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1542,7 +1542,7 @@ const baseLearningPath = {
           },
           xpRequired: 935,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "common objects",
@@ -1613,7 +1613,7 @@ const baseLearningPath = {
           },
           xpRequired: 980,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1656,7 +1656,7 @@ const baseLearningPath = {
           },
           xpRequired: 1010,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "house and rooms",
@@ -1727,7 +1727,7 @@ const baseLearningPath = {
           },
           xpRequired: 1055,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1770,7 +1770,7 @@ const baseLearningPath = {
           },
           xpRequired: 1085,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "clothing",
@@ -1841,7 +1841,7 @@ const baseLearningPath = {
           },
           xpRequired: 1130,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1884,7 +1884,7 @@ const baseLearningPath = {
           },
           xpRequired: 1160,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "daily activities",
@@ -1955,7 +1955,7 @@ const baseLearningPath = {
           },
           xpRequired: 1205,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1998,7 +1998,7 @@ const baseLearningPath = {
           },
           xpRequired: 1235,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "weather",
@@ -2069,7 +2069,7 @@ const baseLearningPath = {
           },
           xpRequired: 1280,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2112,7 +2112,7 @@ const baseLearningPath = {
           },
           xpRequired: 1310,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "preferences",
@@ -2183,7 +2183,7 @@ const baseLearningPath = {
           },
           xpRequired: 1355,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2226,7 +2226,7 @@ const baseLearningPath = {
           },
           xpRequired: 1385,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "question words",
@@ -2297,7 +2297,7 @@ const baseLearningPath = {
           },
           xpRequired: 1430,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2342,7 +2342,7 @@ const baseLearningPath = {
           },
           xpRequired: 1350,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "physical descriptions",
@@ -2415,7 +2415,7 @@ const baseLearningPath = {
           },
           xpRequired: 1410,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2458,7 +2458,7 @@ const baseLearningPath = {
           },
           xpRequired: 1450,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "places",
@@ -2529,7 +2529,7 @@ const baseLearningPath = {
           },
           xpRequired: 1510,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2572,7 +2572,7 @@ const baseLearningPath = {
           },
           xpRequired: 1550,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "shopping",
@@ -2643,7 +2643,7 @@ const baseLearningPath = {
           },
           xpRequired: 1610,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2686,7 +2686,7 @@ const baseLearningPath = {
           },
           xpRequired: 1650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "shopping",
@@ -2757,7 +2757,7 @@ const baseLearningPath = {
           },
           xpRequired: 1710,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2800,7 +2800,7 @@ const baseLearningPath = {
           },
           xpRequired: 1750,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "transportation",
@@ -2871,7 +2871,7 @@ const baseLearningPath = {
           },
           xpRequired: 1810,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2914,7 +2914,7 @@ const baseLearningPath = {
           },
           xpRequired: 1850,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "directions",
@@ -2985,7 +2985,7 @@ const baseLearningPath = {
           },
           xpRequired: 1910,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3028,7 +3028,7 @@ const baseLearningPath = {
           },
           xpRequired: 1950,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "invitations",
@@ -3099,7 +3099,7 @@ const baseLearningPath = {
           },
           xpRequired: 2010,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3142,7 +3142,7 @@ const baseLearningPath = {
           },
           xpRequired: 2050,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "arts and reading",
@@ -3213,7 +3213,7 @@ const baseLearningPath = {
           },
           xpRequired: 2110,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3256,7 +3256,7 @@ const baseLearningPath = {
           },
           xpRequired: 2150,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "sports",
@@ -3327,7 +3327,7 @@ const baseLearningPath = {
           },
           xpRequired: 2210,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3370,7 +3370,7 @@ const baseLearningPath = {
           },
           xpRequired: 2250,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -3441,7 +3441,7 @@ const baseLearningPath = {
           },
           xpRequired: 2310,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3484,7 +3484,7 @@ const baseLearningPath = {
           },
           xpRequired: 2350,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -3555,7 +3555,7 @@ const baseLearningPath = {
           },
           xpRequired: 2410,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3598,7 +3598,7 @@ const baseLearningPath = {
           },
           xpRequired: 2450,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "narrative and storytelling",
@@ -3671,7 +3671,7 @@ const baseLearningPath = {
           },
           xpRequired: 2510,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3714,7 +3714,7 @@ const baseLearningPath = {
           },
           xpRequired: 2550,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -3785,7 +3785,7 @@ const baseLearningPath = {
           },
           xpRequired: 2610,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3828,7 +3828,7 @@ const baseLearningPath = {
           },
           xpRequired: 2650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "body parts",
@@ -3899,7 +3899,7 @@ const baseLearningPath = {
           },
           xpRequired: 2710,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3942,7 +3942,7 @@ const baseLearningPath = {
           },
           xpRequired: 2750,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "health",
@@ -4013,7 +4013,7 @@ const baseLearningPath = {
           },
           xpRequired: 2810,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4056,7 +4056,7 @@ const baseLearningPath = {
           },
           xpRequired: 2850,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "careers",
@@ -4127,7 +4127,7 @@ const baseLearningPath = {
           },
           xpRequired: 2910,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4170,7 +4170,7 @@ const baseLearningPath = {
           },
           xpRequired: 2950,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "education",
@@ -4241,7 +4241,7 @@ const baseLearningPath = {
           },
           xpRequired: 3010,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4284,7 +4284,7 @@ const baseLearningPath = {
           },
           xpRequired: 3050,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "digital communication",
@@ -4357,7 +4357,7 @@ const baseLearningPath = {
           },
           xpRequired: 3110,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4402,7 +4402,7 @@ const baseLearningPath = {
           },
           xpRequired: 3150,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -4473,7 +4473,7 @@ const baseLearningPath = {
           },
           xpRequired: 3225,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4516,7 +4516,7 @@ const baseLearningPath = {
           },
           xpRequired: 3275,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -4587,7 +4587,7 @@ const baseLearningPath = {
           },
           xpRequired: 3350,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4630,7 +4630,7 @@ const baseLearningPath = {
           },
           xpRequired: 3400,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -4701,7 +4701,7 @@ const baseLearningPath = {
           },
           xpRequired: 3475,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4744,7 +4744,7 @@ const baseLearningPath = {
           },
           xpRequired: 3525,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "comparisons",
@@ -4815,7 +4815,7 @@ const baseLearningPath = {
           },
           xpRequired: 3600,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4858,7 +4858,7 @@ const baseLearningPath = {
           },
           xpRequired: 3650,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "advice and suggestions",
@@ -4931,7 +4931,7 @@ const baseLearningPath = {
           },
           xpRequired: 3725,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4974,7 +4974,7 @@ const baseLearningPath = {
           },
           xpRequired: 3775,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "advice and suggestions",
@@ -5047,7 +5047,7 @@ const baseLearningPath = {
           },
           xpRequired: 3850,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5090,7 +5090,7 @@ const baseLearningPath = {
           },
           xpRequired: 3900,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "conditional",
@@ -5161,7 +5161,7 @@ const baseLearningPath = {
           },
           xpRequired: 3975,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5204,7 +5204,7 @@ const baseLearningPath = {
           },
           xpRequired: 4025,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "travel",
@@ -5275,7 +5275,7 @@ const baseLearningPath = {
           },
           xpRequired: 4100,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5318,7 +5318,7 @@ const baseLearningPath = {
           },
           xpRequired: 4150,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "environment",
@@ -5389,7 +5389,7 @@ const baseLearningPath = {
           },
           xpRequired: 4225,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5432,7 +5432,7 @@ const baseLearningPath = {
           },
           xpRequired: 4275,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "culture",
@@ -5503,7 +5503,7 @@ const baseLearningPath = {
           },
           xpRequired: 4350,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5546,7 +5546,7 @@ const baseLearningPath = {
           },
           xpRequired: 4400,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "current events",
@@ -5617,7 +5617,7 @@ const baseLearningPath = {
           },
           xpRequired: 4475,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5660,7 +5660,7 @@ const baseLearningPath = {
           },
           xpRequired: 4525,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "opinions and debate",
@@ -5731,7 +5731,7 @@ const baseLearningPath = {
           },
           xpRequired: 4600,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5774,7 +5774,7 @@ const baseLearningPath = {
           },
           xpRequired: 4650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "complaints",
@@ -5845,7 +5845,7 @@ const baseLearningPath = {
           },
           xpRequired: 4725,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5888,7 +5888,7 @@ const baseLearningPath = {
           },
           xpRequired: 4775,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "experiences",
@@ -5959,7 +5959,7 @@ const baseLearningPath = {
           },
           xpRequired: 4850,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6002,7 +6002,7 @@ const baseLearningPath = {
           },
           xpRequired: 4900,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "probability",
@@ -6073,7 +6073,7 @@ const baseLearningPath = {
           },
           xpRequired: 4975,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6118,7 +6118,7 @@ const baseLearningPath = {
           },
           xpRequired: 5025,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -6189,7 +6189,7 @@ const baseLearningPath = {
           },
           xpRequired: 5115,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6232,7 +6232,7 @@ const baseLearningPath = {
           },
           xpRequired: 5175,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "passive",
@@ -6303,7 +6303,7 @@ const baseLearningPath = {
           },
           xpRequired: 5265,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6346,7 +6346,7 @@ const baseLearningPath = {
           },
           xpRequired: 5325,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "narrative and storytelling",
@@ -6419,7 +6419,7 @@ const baseLearningPath = {
           },
           xpRequired: 5415,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6462,7 +6462,7 @@ const baseLearningPath = {
           },
           xpRequired: 5475,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "relative clauses",
@@ -6533,7 +6533,7 @@ const baseLearningPath = {
           },
           xpRequired: 5565,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6576,7 +6576,7 @@ const baseLearningPath = {
           },
           xpRequired: 5625,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "register",
@@ -6647,7 +6647,7 @@ const baseLearningPath = {
           },
           xpRequired: 5715,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6690,7 +6690,7 @@ const baseLearningPath = {
           },
           xpRequired: 5775,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "professional",
@@ -6761,7 +6761,7 @@ const baseLearningPath = {
           },
           xpRequired: 5865,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6804,7 +6804,7 @@ const baseLearningPath = {
           },
           xpRequired: 5925,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "science",
@@ -6875,7 +6875,7 @@ const baseLearningPath = {
           },
           xpRequired: 6015,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6918,7 +6918,7 @@ const baseLearningPath = {
           },
           xpRequired: 6075,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "social justice",
@@ -6989,7 +6989,7 @@ const baseLearningPath = {
           },
           xpRequired: 6165,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7032,7 +7032,7 @@ const baseLearningPath = {
           },
           xpRequired: 6225,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "literature",
@@ -7103,7 +7103,7 @@ const baseLearningPath = {
           },
           xpRequired: 6315,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7146,7 +7146,7 @@ const baseLearningPath = {
           },
           xpRequired: 6375,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "politics",
@@ -7217,7 +7217,7 @@ const baseLearningPath = {
           },
           xpRequired: 6465,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7260,7 +7260,7 @@ const baseLearningPath = {
           },
           xpRequired: 6525,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "wellness",
@@ -7331,7 +7331,7 @@ const baseLearningPath = {
           },
           xpRequired: 6615,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7374,7 +7374,7 @@ const baseLearningPath = {
           },
           xpRequired: 6675,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "abstract",
@@ -7445,7 +7445,7 @@ const baseLearningPath = {
           },
           xpRequired: 6765,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7490,7 +7490,7 @@ const baseLearningPath = {
           },
           xpRequired: 6825,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "subjunctive",
@@ -7561,7 +7561,7 @@ const baseLearningPath = {
           },
           xpRequired: 6930,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -7604,7 +7604,7 @@ const baseLearningPath = {
           },
           xpRequired: 7000,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "subjunctive",
@@ -7675,7 +7675,7 @@ const baseLearningPath = {
           },
           xpRequired: 7105,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -7718,7 +7718,7 @@ const baseLearningPath = {
           },
           xpRequired: 7175,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "conditional",
@@ -7789,7 +7789,7 @@ const baseLearningPath = {
           },
           xpRequired: 7280,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -7832,7 +7832,7 @@ const baseLearningPath = {
           },
           xpRequired: 7350,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "idioms",
@@ -7903,7 +7903,7 @@ const baseLearningPath = {
           },
           xpRequired: 7455,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -7946,7 +7946,7 @@ const baseLearningPath = {
           },
           xpRequired: 7525,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "academic",
@@ -8017,7 +8017,7 @@ const baseLearningPath = {
           },
           xpRequired: 7630,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8060,7 +8060,7 @@ const baseLearningPath = {
           },
           xpRequired: 7700,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "professional",
@@ -8131,7 +8131,7 @@ const baseLearningPath = {
           },
           xpRequired: 7805,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8174,7 +8174,7 @@ const baseLearningPath = {
           },
           xpRequired: 7875,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "debate",
@@ -8245,7 +8245,7 @@ const baseLearningPath = {
           },
           xpRequired: 7980,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8288,7 +8288,7 @@ const baseLearningPath = {
           },
           xpRequired: 8050,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "culture",
@@ -8359,7 +8359,7 @@ const baseLearningPath = {
           },
           xpRequired: 8155,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8402,7 +8402,7 @@ const baseLearningPath = {
           },
           xpRequired: 8225,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "literature",
@@ -8473,7 +8473,7 @@ const baseLearningPath = {
           },
           xpRequired: 8330,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8516,7 +8516,7 @@ const baseLearningPath = {
           },
           xpRequired: 8400,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "discourse",
@@ -8587,7 +8587,7 @@ const baseLearningPath = {
           },
           xpRequired: 8505,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8632,7 +8632,7 @@ const baseLearningPath = {
           },
           xpRequired: 8575,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "idioms and colloquial expressions",
@@ -8706,7 +8706,7 @@ const baseLearningPath = {
           },
           xpRequired: 8695,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8749,7 +8749,7 @@ const baseLearningPath = {
           },
           xpRequired: 8775,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "regional language",
@@ -8820,7 +8820,7 @@ const baseLearningPath = {
           },
           xpRequired: 8895,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8863,7 +8863,7 @@ const baseLearningPath = {
           },
           xpRequired: 8975,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "style",
@@ -8934,7 +8934,7 @@ const baseLearningPath = {
           },
           xpRequired: 9095,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8977,7 +8977,7 @@ const baseLearningPath = {
           },
           xpRequired: 9175,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "rhetoric",
@@ -9048,7 +9048,7 @@ const baseLearningPath = {
           },
           xpRequired: 9295,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9091,7 +9091,7 @@ const baseLearningPath = {
           },
           xpRequired: 9375,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "specialized",
@@ -9162,7 +9162,7 @@ const baseLearningPath = {
           },
           xpRequired: 9495,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9205,7 +9205,7 @@ const baseLearningPath = {
           },
           xpRequired: 9575,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "advanced vocabulary and nuanced expressions",
@@ -9281,7 +9281,7 @@ const baseLearningPath = {
           },
           xpRequired: 9695,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9326,7 +9326,7 @@ const baseLearningPath = {
           },
           xpRequired: 9775,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "culture",
@@ -9397,7 +9397,7 @@ const baseLearningPath = {
           },
           xpRequired: 9895,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9440,7 +9440,7 @@ const baseLearningPath = {
           },
           xpRequired: 9975,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "fluency",
@@ -9511,7 +9511,7 @@ const baseLearningPath = {
           },
           xpRequired: 10095,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9683,7 +9683,7 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep,
       xpReward: 35,
-      modes: ["grammar", "vocabulary"],
+      modes: ["grammar", "vocabulary", "verbConjugator"],
       content: {
         grammar: {
           topic,

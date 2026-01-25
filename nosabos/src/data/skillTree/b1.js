@@ -28,7 +28,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3150,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -99,7 +99,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3225,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -142,7 +142,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3275,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -213,7 +213,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3350,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -256,7 +256,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3400,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -327,7 +327,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3475,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -370,7 +370,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3525,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "comparisons",
@@ -441,7 +441,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3600,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -484,7 +484,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3650,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "advice and suggestions",
@@ -557,7 +557,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3725,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -600,7 +600,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3775,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "advice and suggestions",
@@ -673,7 +673,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3850,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -716,7 +716,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3900,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "conditional",
@@ -787,7 +787,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 3975,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -830,7 +830,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4025,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "travel",
@@ -901,7 +901,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4100,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -944,7 +944,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4150,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "environment",
@@ -1015,7 +1015,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4225,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1058,7 +1058,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4275,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "culture",
@@ -1129,7 +1129,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4350,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1172,7 +1172,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4400,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "current events",
@@ -1243,7 +1243,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4475,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1286,7 +1286,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4525,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "opinions and debate",
@@ -1357,7 +1357,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4600,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1400,7 +1400,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "complaints",
@@ -1471,7 +1471,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4725,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1514,7 +1514,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4775,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "experiences",
@@ -1585,7 +1585,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4850,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1628,7 +1628,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4900,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "probability",
@@ -1699,7 +1699,7 @@ export const SKILL_TREE_B1 = [
           },
           xpRequired: 4975,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
