@@ -10706,23 +10706,7 @@ function normalizeLessonModes(unit, lesson) {
       modes = ["vocabulary", "realtime", "reading"];
     }
 
-    // Add verbConjugator whenever both vocabulary and grammar are present
-    const hasVocabAndGrammar =
-      modes.includes("vocabulary") && modes.includes("grammar");
-    if (hasVocabAndGrammar && !modes.includes("verbConjugator")) {
-      modes.push("verbConjugator");
-    }
-
-    const hasOnlyVocabGrammarVerb =
-      modes.length <= 3 &&
-      modes.includes("vocabulary") &&
-      modes.includes("grammar") &&
-      modes.includes("verbConjugator");
-
-    if (hasOnlyVocabGrammarVerb && modes.length === 3) {
-      modes.push("realtime");
-    }
-
+    // Fill in missing modes first (ensures grammar gets added before verbConjugator check)
     while (modes.length < 3) {
       const filler = [
         "vocabulary",
@@ -10733,6 +10717,13 @@ function normalizeLessonModes(unit, lesson) {
       ].find((mode) => !modes.includes(mode));
       if (!filler) break;
       modes.push(filler);
+    }
+
+    // Add verbConjugator whenever both vocabulary and grammar are present (after filling)
+    const hasVocabAndGrammar =
+      modes.includes("vocabulary") && modes.includes("grammar");
+    if (hasVocabAndGrammar && !modes.includes("verbConjugator")) {
+      modes.push("verbConjugator");
     }
 
     if (modes.length > 5) {
