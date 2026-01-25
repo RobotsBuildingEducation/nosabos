@@ -9630,6 +9630,7 @@ const ADVANCED_MODES = {
 const ALLOWED_MODULES = new Set([
   "vocabulary",
   "grammar",
+  "verbConjugator",
   "stories",
   "reading",
   "realtime",
@@ -10695,9 +10696,9 @@ function normalizeLessonModes(unit, lesson) {
   modes = Array.from(new Set(modes));
 
   if (isQuiz) {
-    modes = ["grammar", "vocabulary"];
+    modes = ["grammar", "vocabulary", "verbConjugator"];
   } else if (isSkillBuilder) {
-    modes = ["grammar", "vocabulary"];
+    modes = ["grammar", "vocabulary", "verbConjugator"];
   } else if (isIntegratedPractice) {
     modes = ["realtime", "reading", "stories"];
   } else {
@@ -10705,12 +10706,20 @@ function normalizeLessonModes(unit, lesson) {
       modes = ["vocabulary", "realtime", "reading"];
     }
 
-    const hasOnlyVocabGrammar =
-      modes.length === 2 &&
-      modes.includes("vocabulary") &&
-      modes.includes("grammar");
+    // Add verbConjugator whenever both vocabulary and grammar are present
+    const hasVocabAndGrammar =
+      modes.includes("vocabulary") && modes.includes("grammar");
+    if (hasVocabAndGrammar && !modes.includes("verbConjugator")) {
+      modes.push("verbConjugator");
+    }
 
-    if (hasOnlyVocabGrammar) {
+    const hasOnlyVocabGrammarVerb =
+      modes.length <= 3 &&
+      modes.includes("vocabulary") &&
+      modes.includes("grammar") &&
+      modes.includes("verbConjugator");
+
+    if (hasOnlyVocabGrammarVerb && modes.length === 3) {
       modes.push("realtime");
     }
 
@@ -10726,8 +10735,8 @@ function normalizeLessonModes(unit, lesson) {
       modes.push(filler);
     }
 
-    if (modes.length > 4) {
-      modes = modes.slice(0, 4);
+    if (modes.length > 5) {
+      modes = modes.slice(0, 5);
     }
   }
 
