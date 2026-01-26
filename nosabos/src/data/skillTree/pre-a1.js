@@ -6,6 +6,91 @@
  */
 
 export const SKILL_TREE_PRE_A1 = [
+  // Tutorial Unit - always at the very beginning
+  {
+    id: "unit-tutorial-pre-a1",
+    title: {
+      en: "Getting Started",
+      es: "Primeros Pasos",
+    },
+    description: {
+      en: "Learn how to use the app and explore all features",
+      es: "Aprende a usar la app y explora todas las funciones",
+    },
+    color: "#6366F1",
+    position: { row: -1, offset: 0 },
+    isTutorial: true,
+    lessons: [
+      {
+        id: "lesson-tutorial-1",
+        title: {
+          en: "Getting Started",
+          es: "Primeros Pasos",
+        },
+        description: {
+          en: "A guided tour of all learning modules",
+          es: "Un recorrido guiado por todos los módulos de aprendizaje",
+        },
+        xpRequired: 0,
+        xpReward: 50,
+        isTutorial: true,
+        modes: ["vocabulary", "grammar", "verbConjugator", "reading", "stories", "realtime"],
+        content: {
+          vocabulary: {
+            topic: "tutorial",
+            focusPoints: ["basic words", "greetings"],
+            tutorialDescription: {
+              en: "Learn new words with interactive questions.",
+              es: "Aprende nuevas palabras mediante preguntas interactivas.",
+            },
+          },
+          grammar: {
+            topic: "tutorial",
+            focusPoints: ["basic patterns"],
+            tutorialDescription: {
+              en: "Master grammar rules through exercises.",
+              es: "Domina las reglas gramaticales mediante ejercicios.",
+            },
+          },
+          verbConjugator: {
+            topic: "tutorial",
+            focusPoints: ["simple present", "ser", "estar"],
+            tutorialDescription: {
+              en: "Practice verb conjugations. Learn to conjugate 'to be' (ser/estar) in simple present.",
+              es: "Practica conjugaciones verbales. Aprende a conjugar 'ser/estar' en presente simple.",
+            },
+          },
+          reading: {
+            topic: "tutorial",
+            prompt: "Introduction to reading comprehension",
+            tutorialDescription: {
+              en: "Improve your reading skills by following along with passages.",
+              es: "Mejora tus habilidades de lectura siguiendo los textos.",
+            },
+          },
+          stories: {
+            topic: "tutorial",
+            prompt: "Introduction to interactive stories",
+            tutorialDescription: {
+              en: "Practice with interactive stories and roleplay by reading and speaking sentence by sentence.",
+              es: "Practica con historias interactivas y juegos de rol leyendo y hablando oración por oración.",
+            },
+          },
+          realtime: {
+            scenario: "Say hello",
+            prompt: "Practice saying hello in a live chat",
+            successCriteria: "The learner says hello.",
+            successCriteria_es: 'El estudiante dice "hola".',
+            tutorialDescription: {
+              en: "Practice speaking with realtime conversations and goal oriented chats.",
+              es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
+            },
+          },
+        },
+      },
+    ],
+  },
+
   // Unit 1: The Alphabet & Sounds
   {
     id: "unit-pre-a1-alphabet",
