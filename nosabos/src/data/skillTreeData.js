@@ -29,6 +29,518 @@ export const SKILL_STATUS = {
  * C2: Mastery - Near-native proficiency
  */
 const baseLearningPath = {
+  "Pre-A1": [
+    // Unit 1: The Alphabet & Sounds
+    {
+      id: "unit-pre-a1-alphabet",
+      title: {
+        en: "The Alphabet & Sounds",
+        es: "El Alfabeto y Sonidos",
+      },
+      description: {
+        en: "Learn the Spanish alphabet and basic pronunciation",
+        es: "Aprende el alfabeto español y la pronunciación básica",
+      },
+      color: "#8B5CF6",
+      position: { row: 0, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-1-1",
+          title: { en: "Vowels: A, E, I, O, U", es: "Vocales: A, E, I, O, U" },
+          description: { en: "Master the 5 Spanish vowels", es: "Domina las 5 vocales españolas" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "vowel sounds", focusPoints: ["a", "e", "i", "o", "u"] },
+            grammar: { topic: "vowel pronunciation", focusPoints: ["consistent vowel sounds"] },
+            verbConjugator: { topic: "vowel recognition", focusPoints: ["identifying vowels"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-1-2",
+          title: { en: "Consonants Part 1", es: "Consonantes Parte 1" },
+          description: { en: "Learn consonants B-L", es: "Aprende las consonantes B-L" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "consonants B-L", focusPoints: ["b/v", "c", "g", "h silent", "j", "ll"] },
+            grammar: { topic: "consonant rules", focusPoints: ["soft and hard sounds"] },
+            verbConjugator: { topic: "consonant patterns", focusPoints: ["recognizing sounds"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-1-3",
+          title: { en: "Consonants Part 2 & Special Letters", es: "Consonantes Parte 2 y Letras Especiales" },
+          description: { en: "Complete the alphabet with ñ, rr", es: "Completa el alfabeto con ñ, rr" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "consonants M-Z", focusPoints: ["ñ", "rr", "qu", "z", "x"] },
+            grammar: { topic: "special letters", focusPoints: ["ñ", "rolled r", "accents"] },
+            verbConjugator: { topic: "alphabet mastery", focusPoints: ["spelling words"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-1-quiz",
+          title: { en: "Alphabet Quiz", es: "Prueba del Alfabeto" },
+          description: { en: "Test your alphabet knowledge", es: "Prueba tu conocimiento del alfabeto" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "alphabet review", focusPoints: ["all letters"] },
+            grammar: { topic: "alphabet rules", focusPoints: ["letter sounds"] },
+            verbConjugator: { topic: "alphabet application", focusPoints: ["spelling"] },
+          },
+        },
+      ],
+    },
+    // Unit 2: Numbers 0-10
+    {
+      id: "unit-pre-a1-numbers",
+      title: { en: "Numbers 0-10", es: "Números 0-10" },
+      description: { en: "Count from zero to ten", es: "Cuenta del cero al diez" },
+      color: "#EC4899",
+      position: { row: 1, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-2-1",
+          title: { en: "Zero to Five", es: "Cero a Cinco" },
+          description: { en: "Learn numbers 0-5", es: "Aprende números 0-5" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "numbers 0-5", focusPoints: ["cero", "uno", "dos", "tres", "cuatro", "cinco"] },
+            grammar: { topic: "number usage", focusPoints: ["counting objects"] },
+            verbConjugator: { topic: "numbers in context", focusPoints: ["using numbers"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-2-2",
+          title: { en: "Six to Ten", es: "Seis a Diez" },
+          description: { en: "Complete counting to ten", es: "Completa el conteo hasta diez" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "numbers 6-10", focusPoints: ["seis", "siete", "ocho", "nueve", "diez"] },
+            grammar: { topic: "number patterns", focusPoints: ["counting sequences"] },
+            verbConjugator: { topic: "counting practice", focusPoints: ["forward/backward"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-2-3",
+          title: { en: "Counting Objects", es: "Contando Objetos" },
+          description: { en: "Use numbers to count things", es: "Usa números para contar cosas" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "counting objects", focusPoints: ["un/una", "dos libros", "tres mesas"] },
+            grammar: { topic: "number agreement", focusPoints: ["uno vs un/una"] },
+            verbConjugator: { topic: "quantity expressions", focusPoints: ["hay"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-2-quiz",
+          title: { en: "Numbers Quiz", es: "Prueba de Números" },
+          description: { en: "Test counting 0-10", es: "Prueba de contar 0-10" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "numbers review", focusPoints: ["0-10"] },
+            grammar: { topic: "number usage", focusPoints: ["quantities"] },
+            verbConjugator: { topic: "numbers application", focusPoints: ["counting"] },
+          },
+        },
+      ],
+    },
+    // Unit 3: Hello & Goodbye
+    {
+      id: "unit-pre-a1-greetings",
+      title: { en: "Hello & Goodbye", es: "Hola y Adiós" },
+      description: { en: "Basic greetings and farewells", es: "Saludos y despedidas básicas" },
+      color: "#10B981",
+      position: { row: 2, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-3-1",
+          title: { en: "Saying Hello", es: "Decir Hola" },
+          description: { en: "Different ways to greet people", es: "Diferentes formas de saludar" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "greetings", focusPoints: ["hola", "buenos días", "buenas tardes", "buenas noches"] },
+            grammar: { topic: "greeting usage", focusPoints: ["time-appropriate greetings"] },
+            verbConjugator: { topic: "greeting phrases", focusPoints: ["¿Qué tal?", "¿Cómo estás?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-3-2",
+          title: { en: "Saying Goodbye", es: "Decir Adiós" },
+          description: { en: "Farewell expressions", es: "Expresiones de despedida" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "farewells", focusPoints: ["adiós", "hasta luego", "hasta mañana", "chao"] },
+            grammar: { topic: "farewell usage", focusPoints: ["temporary vs permanent"] },
+            verbConjugator: { topic: "farewell phrases", focusPoints: ["hasta pronto"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-3-3",
+          title: { en: "Greetings in Context", es: "Saludos en Contexto" },
+          description: { en: "Practice in real situations", es: "Practica en situaciones reales" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "greeting conversations", focusPoints: ["greeting + response patterns"] },
+            grammar: { topic: "greeting exchanges", focusPoints: ["question and answer"] },
+            verbConjugator: { topic: "greeting verbs", focusPoints: ["saludar", "despedirse"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-3-quiz",
+          title: { en: "Greetings Quiz", es: "Prueba de Saludos" },
+          description: { en: "Test greeting skills", es: "Prueba de saludos" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "greetings review", focusPoints: ["all greetings/farewells"] },
+            grammar: { topic: "greeting rules", focusPoints: ["appropriate usage"] },
+            verbConjugator: { topic: "greeting application", focusPoints: ["real situations"] },
+          },
+        },
+      ],
+    },
+    // Unit 4: Yes, No & Basic Responses
+    {
+      id: "unit-pre-a1-responses",
+      title: { en: "Yes, No & Basic Responses", es: "Sí, No y Respuestas Básicas" },
+      description: { en: "Essential single-word responses", es: "Respuestas esenciales de una palabra" },
+      color: "#F59E0B",
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-4-1",
+          title: { en: "Yes and No", es: "Sí y No" },
+          description: { en: "The most important words", es: "Las palabras más importantes" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "affirmative/negative", focusPoints: ["sí", "no", "claro", "vale"] },
+            grammar: { topic: "response patterns", focusPoints: ["answering yes/no questions"] },
+            verbConjugator: { topic: "agreement expressions", focusPoints: ["ways to say yes/no"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-4-2",
+          title: { en: "Maybe and I Don't Know", es: "Quizás y No Sé" },
+          description: { en: "Express uncertainty", es: "Expresa incertidumbre" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "uncertainty", focusPoints: ["quizás", "tal vez", "no sé", "puede ser"] },
+            grammar: { topic: "expressing doubt", focusPoints: ["uncertainty words"] },
+            verbConjugator: { topic: "doubt expressions", focusPoints: ["no estoy seguro/a"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-4-3",
+          title: { en: "Quick Responses", es: "Respuestas Rápidas" },
+          description: { en: "React naturally", es: "Reacciona naturalmente" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "reactions", focusPoints: ["¡genial!", "¡perfecto!", "¿en serio?"] },
+            grammar: { topic: "exclamations", focusPoints: ["expressing emotions"] },
+            verbConjugator: { topic: "conversational responses", focusPoints: ["entiendo", "ya veo"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-4-quiz",
+          title: { en: "Responses Quiz", es: "Prueba de Respuestas" },
+          description: { en: "Test response skills", es: "Prueba de respuestas" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "responses review", focusPoints: ["yes/no", "uncertainty", "reactions"] },
+            grammar: { topic: "response usage", focusPoints: ["appropriate responses"] },
+            verbConjugator: { topic: "response application", focusPoints: ["natural conversation"] },
+          },
+        },
+      ],
+    },
+    // Unit 5: Please & Thank You
+    {
+      id: "unit-pre-a1-courtesy",
+      title: { en: "Please & Thank You", es: "Por Favor y Gracias" },
+      description: { en: "Essential courtesy expressions", es: "Expresiones de cortesía esenciales" },
+      color: "#EF4444",
+      position: { row: 4, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-5-1",
+          title: { en: "Please and Thank You", es: "Por Favor y Gracias" },
+          description: { en: "Magic words that open doors", es: "Palabras mágicas que abren puertas" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "basic courtesy", focusPoints: ["por favor", "gracias", "muchas gracias", "de nada"] },
+            grammar: { topic: "polite requests", focusPoints: ["adding por favor"] },
+            verbConjugator: { topic: "courtesy phrases", focusPoints: ["requesting politely"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-5-2",
+          title: { en: "Sorry and Excuse Me", es: "Perdón y Disculpe" },
+          description: { en: "Apologize politely", es: "Discúlpate educadamente" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "apologies", focusPoints: ["perdón", "lo siento", "disculpe", "con permiso"] },
+            grammar: { topic: "apologizing", focusPoints: ["formal vs informal"] },
+            verbConjugator: { topic: "apology expressions", focusPoints: ["levels of apology"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-5-3",
+          title: { en: "Polite Expressions", es: "Expresiones Corteses" },
+          description: { en: "Additional gracious phrases", es: "Frases corteses adicionales" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "polite phrases", focusPoints: ["muy amable", "no hay de qué", "con gusto"] },
+            grammar: { topic: "formal courtesy", focusPoints: ["polite responses"] },
+            verbConjugator: { topic: "courtesy in action", focusPoints: ["offering help"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-5-quiz",
+          title: { en: "Courtesy Quiz", es: "Prueba de Cortesía" },
+          description: { en: "Test polite expressions", es: "Prueba de expresiones corteses" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "courtesy review", focusPoints: ["please/thank you", "apologies"] },
+            grammar: { topic: "courtesy usage", focusPoints: ["appropriate situations"] },
+            verbConjugator: { topic: "courtesy application", focusPoints: ["polite communication"] },
+          },
+        },
+      ],
+    },
+    // Unit 6: Common Objects
+    {
+      id: "unit-pre-a1-objects",
+      title: { en: "Common Objects", es: "Objetos Comunes" },
+      description: { en: "Name everyday things", es: "Nombra las cosas cotidianas" },
+      color: "#06B6D4",
+      position: { row: 5, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-6-1",
+          title: { en: "Things at Home", es: "Cosas en Casa" },
+          description: { en: "Common household items", es: "Artículos comunes del hogar" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "household items", focusPoints: ["mesa", "silla", "puerta", "ventana", "cama"] },
+            grammar: { topic: "articles with objects", focusPoints: ["el/la"] },
+            verbConjugator: { topic: "identifying objects", focusPoints: ["¿Qué es esto?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-6-2",
+          title: { en: "Personal Items", es: "Artículos Personales" },
+          description: { en: "Things you carry daily", es: "Cosas que llevas cada día" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "personal items", focusPoints: ["teléfono", "libro", "bolsa", "llaves"] },
+            grammar: { topic: "possessive", focusPoints: ["mi/tu/su"] },
+            verbConjugator: { topic: "having things", focusPoints: ["tengo", "¿Tienes...?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-6-3",
+          title: { en: "Food and Drink", es: "Comida y Bebida" },
+          description: { en: "Basic food vocabulary", es: "Vocabulario básico de comida" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "food/drinks", focusPoints: ["agua", "café", "pan", "leche", "fruta"] },
+            grammar: { topic: "food articles", focusPoints: ["el agua exception"] },
+            verbConjugator: { topic: "wanting food", focusPoints: ["quiero", "¿Quieres...?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-6-quiz",
+          title: { en: "Objects Quiz", es: "Prueba de Objetos" },
+          description: { en: "Test object vocabulary", es: "Prueba de vocabulario de objetos" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "objects review", focusPoints: ["household", "personal", "food"] },
+            grammar: { topic: "object naming", focusPoints: ["articles", "gender"] },
+            verbConjugator: { topic: "objects application", focusPoints: ["identifying"] },
+          },
+        },
+      ],
+    },
+    // Unit 7: Colors
+    {
+      id: "unit-pre-a1-colors",
+      title: { en: "Colors", es: "Colores" },
+      description: { en: "Identify and name colors", es: "Identifica y nombra colores" },
+      color: "#F97316",
+      position: { row: 6, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-7-1",
+          title: { en: "Primary Colors", es: "Colores Primarios" },
+          description: { en: "Red, blue, yellow", es: "Rojo, azul, amarillo" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "primary colors", focusPoints: ["rojo", "azul", "amarillo"] },
+            grammar: { topic: "color as adjective", focusPoints: ["el libro rojo"] },
+            verbConjugator: { topic: "describing with colors", focusPoints: ["es rojo/a"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-7-2",
+          title: { en: "More Colors", es: "Más Colores" },
+          description: { en: "Expand your palette", es: "Amplía tu paleta" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "additional colors", focusPoints: ["verde", "naranja", "rosa", "morado"] },
+            grammar: { topic: "color agreement", focusPoints: ["colors that change vs don't"] },
+            verbConjugator: { topic: "color descriptions", focusPoints: ["¿De qué color es?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-7-3",
+          title: { en: "Black, White & Neutral", es: "Negro, Blanco y Neutros" },
+          description: { en: "Complete your palette", es: "Completa tu paleta" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "neutral colors", focusPoints: ["negro", "blanco", "gris"] },
+            grammar: { topic: "color combinations", focusPoints: ["blanco y negro", "azul oscuro"] },
+            verbConjugator: { topic: "color preferences", focusPoints: ["mi color favorito"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-7-quiz",
+          title: { en: "Colors Quiz", es: "Prueba de Colores" },
+          description: { en: "Test color knowledge", es: "Prueba de conocimiento de colores" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "colors review", focusPoints: ["all colors"] },
+            grammar: { topic: "color usage", focusPoints: ["agreement", "placement"] },
+            verbConjugator: { topic: "colors application", focusPoints: ["describing objects"] },
+          },
+        },
+      ],
+    },
+    // Unit 8: What's Your Name?
+    {
+      id: "unit-pre-a1-introductions",
+      title: { en: "What's Your Name?", es: "¿Cómo Te Llamas?" },
+      description: { en: "Introduce yourself", es: "Preséntate" },
+      color: "#6366F1",
+      position: { row: 7, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-8-1",
+          title: { en: "Saying Your Name", es: "Decir Tu Nombre" },
+          description: { en: "Learn to introduce yourself", es: "Aprende a presentarte" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "self introduction", focusPoints: ["me llamo", "soy", "mi nombre es"] },
+            grammar: { topic: "introduction patterns", focusPoints: ["Me llamo + name"] },
+            verbConjugator: { topic: "llamarse verb", focusPoints: ["me llamo"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-8-2",
+          title: { en: "Asking Names", es: "Preguntar Nombres" },
+          description: { en: "Ask others their name", es: "Pregunta a otros su nombre" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "asking for names", focusPoints: ["¿Cómo te llamas?", "¿Cómo se llama?"] },
+            grammar: { topic: "formal vs informal", focusPoints: ["tú vs usted"] },
+            verbConjugator: { topic: "llamarse forms", focusPoints: ["te llamas", "se llama"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-8-3",
+          title: { en: "Nice to Meet You", es: "Mucho Gusto" },
+          description: { en: "Complete the introduction", es: "Completa la presentación" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "meeting expressions", focusPoints: ["mucho gusto", "encantado/a", "igualmente"] },
+            grammar: { topic: "gender in expressions", focusPoints: ["encantado vs encantada"] },
+            verbConjugator: { topic: "meeting phrases", focusPoints: ["complete introduction"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-8-quiz",
+          title: { en: "Introductions Quiz", es: "Prueba de Presentaciones" },
+          description: { en: "Test introduction skills", es: "Prueba de presentaciones" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "introductions review", focusPoints: ["giving name", "asking name"] },
+            grammar: { topic: "introduction patterns", focusPoints: ["formal/informal"] },
+            verbConjugator: { topic: "introductions application", focusPoints: ["complete introduction"] },
+          },
+        },
+      ],
+    },
+  ],
   A1: [
     // Tutorial Unit - always at the very beginning
     {
@@ -9563,6 +10075,7 @@ function getLessonXpReward(lessonId = "") {
 }
 
 const SUB_LEVEL_SEGMENTS = {
+  "Pre-A1": ["Pre-A1.1", "Pre-A1.2"],
   A1: ["A1.1", "A1.2", "A1.3"],
   A2: ["A2.1", "A2.2", "A2.3"],
   B1: ["B1.1", "B1.2", "B1.3"],
@@ -9572,6 +10085,13 @@ const SUB_LEVEL_SEGMENTS = {
 };
 
 const CEFR_LEVEL_PROFILES = {
+  "Pre-A1": {
+    interaction: "recognize and respond to isolated words and phrases",
+    production: "produce single words and memorized chunks",
+    mediation: "point to or repeat key words when helping others",
+    accuracy: "use memorized single words with basic pronunciation",
+    discourseSkills: ["word recognition", "single-word responses"],
+  },
   A1: {
     interaction: "exchange short, formulaic turns",
     production: "share personal details and immediate needs",

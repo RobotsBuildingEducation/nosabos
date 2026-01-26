@@ -13,6 +13,7 @@ const skillTreeCache = new Map();
 
 // Dynamic imports for each CEFR level
 const levelLoaders = {
+  "Pre-A1": () => import("./pre-a1.js").then((m) => m.SKILL_TREE_PRE_A1),
   A1: () => import("./a1.js").then((m) => m.SKILL_TREE_A1),
   A2: () => import("./a2.js").then((m) => m.SKILL_TREE_A2),
   B1: () => import("./b1.js").then((m) => m.SKILL_TREE_B1),
@@ -67,7 +68,7 @@ export function getLevelsToLoad(userProgress = {}) {
   const lessons = userProgress.lessons || {};
 
   // Find the highest CEFR level the user has started
-  let highestStartedLevel = "A1";
+  let highestStartedLevel = "Pre-A1";
   for (const lessonId in lessons) {
     // Extract CEFR level from lesson ID (assumes format like "lesson-a1-1", "lesson-b2-3", etc.)
     const match = lessonId.match(/lesson-([a-z]\d+)/i);
