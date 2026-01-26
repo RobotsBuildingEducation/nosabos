@@ -9,6 +9,7 @@ import { CEFR_LEVELS, CEFR_LEVEL_COUNTS } from '../data/flashcards/common';
 
 // Total lesson counts per CEFR level (based on actual data files)
 export const LESSON_COUNTS = {
+  "Pre-A1": 32,
   A1: 77,
   A2: 72,
   B1: 60,
@@ -34,9 +35,16 @@ export function calculateLessonCompletion(userProgress, cefrLevel, targetLang = 
 
   // Count completed lessons for this CEFR level
   // Lesson IDs follow pattern: "lesson-a1-1", "lesson-pre-a1-1", etc.
-  const levelPrefix = cefrLevel.toLowerCase();
+  const levelPrefix = cefrLevel.toLowerCase().replace('-', '-');
   const completedCount = Object.keys(lessons).filter(lessonId => {
-    const isInLevel = lessonId.includes(`-${levelPrefix}-`) || lessonId.includes(`-pre-${levelPrefix}-`);
+    // For Pre-A1, match "lesson-pre-a1-" pattern
+    // For others (A1, A2, etc.), match "lesson-a1-" but not "lesson-pre-a1-"
+    let isInLevel = false;
+    if (cefrLevel === "Pre-A1") {
+      isInLevel = lessonId.includes('-pre-a1-');
+    } else {
+      isInLevel = lessonId.includes(`-${levelPrefix}-`) && !lessonId.includes('-pre-');
+    }
     const isCompleted = lessons[lessonId]?.status === 'completed';
     return isInLevel && isCompleted;
   }).length;
