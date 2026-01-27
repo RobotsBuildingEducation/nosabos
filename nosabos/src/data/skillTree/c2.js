@@ -28,7 +28,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8575,
         xpReward: 55,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
             topic: "idioms and colloquial expressions",
@@ -101,7 +101,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8695,
         xpReward: 50,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -144,7 +144,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8775,
         xpReward: 55,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
             topic: "regional language",
@@ -215,7 +215,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8895,
         xpReward: 40,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -258,7 +258,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8975,
         xpReward: 55,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
             topic: "style",
@@ -329,7 +329,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9095,
         xpReward: 40,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -372,7 +372,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9175,
         xpReward: 35,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
             topic: "rhetoric",
@@ -443,7 +443,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9295,
         xpReward: 40,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -486,7 +486,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9375,
         xpReward: 45,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
             topic: "specialized",
@@ -557,7 +557,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9495,
         xpReward: 60,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -600,7 +600,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9575,
         xpReward: 35,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
             topic: "advanced vocabulary and nuanced expressions",
@@ -676,7 +676,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9695,
         xpReward: 40,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -719,7 +719,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9775,
         xpReward: 35,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
             topic: "culture",
@@ -790,7 +790,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9895,
         xpReward: 50,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -833,7 +833,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9975,
         xpReward: 35,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
             topic: "fluency",
@@ -904,7 +904,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 10095,
         xpReward: 50,
-        modes: ["vocabulary", "grammar"],
+        modes: ["vocabulary", "grammar", "verbConjugator"],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -992,6 +992,7 @@ const ADVANCED_MODES = {
 const ALLOWED_MODULES = new Set([
   "vocabulary",
   "grammar",
+  "verbConjugator",
   "stories",
   "reading",
   "realtime",
@@ -1039,7 +1040,7 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep,
       xpReward: 35,
-      modes: ["grammar", "vocabulary"],
+      modes: ["grammar", "vocabulary", "verbConjugator"],
       content: {
         grammar: {
           topic,
@@ -1213,9 +1214,9 @@ function normalizeLessonModes(unit, lesson) {
   modes = Array.from(new Set(modes));
 
   if (isQuiz) {
-    modes = ["grammar", "vocabulary"];
+    modes = ["grammar", "vocabulary", "verbConjugator"];
   } else if (isSkillBuilder) {
-    modes = ["grammar", "vocabulary"];
+    modes = ["grammar", "vocabulary", "verbConjugator"];
   } else if (isIntegratedPractice) {
     modes = ["realtime", "reading", "stories"];
   } else {
@@ -1223,15 +1224,7 @@ function normalizeLessonModes(unit, lesson) {
       modes = ["vocabulary", "realtime", "reading"];
     }
 
-    const hasOnlyVocabGrammar =
-      modes.length === 2 &&
-      modes.includes("vocabulary") &&
-      modes.includes("grammar");
-
-    if (hasOnlyVocabGrammar) {
-      modes.push("realtime");
-    }
-
+    // Fill in missing modes first (ensures grammar gets added before verbConjugator check)
     while (modes.length < 3) {
       const filler = [
         "vocabulary",
@@ -1244,8 +1237,15 @@ function normalizeLessonModes(unit, lesson) {
       modes.push(filler);
     }
 
-    if (modes.length > 4) {
-      modes = modes.slice(0, 4);
+    // Add verbConjugator whenever both vocabulary and grammar are present (after filling)
+    const hasVocabAndGrammar =
+      modes.includes("vocabulary") && modes.includes("grammar");
+    if (hasVocabAndGrammar && !modes.includes("verbConjugator")) {
+      modes.push("verbConjugator");
+    }
+
+    if (modes.length > 5) {
+      modes = modes.slice(0, 5);
     }
   }
 

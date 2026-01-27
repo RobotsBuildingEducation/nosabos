@@ -29,10 +29,10 @@ export const SKILL_STATUS = {
  * C2: Mastery - Near-native proficiency
  */
 const baseLearningPath = {
-  A1: [
+  "Pre-A1": [
     // Tutorial Unit - always at the very beginning
     {
-      id: "unit-tutorial-a1",
+      id: "unit-tutorial-pre-a1",
       title: {
         en: "Getting Started",
         es: "Primeros Pasos",
@@ -42,7 +42,7 @@ const baseLearningPath = {
         es: "Aprende a usar la app y explora todas las funciones",
       },
       color: "#6366F1",
-      position: { row: -2, offset: 0 },
+      position: { row: -1, offset: 0 },
       isTutorial: true,
       lessons: [
         {
@@ -58,7 +58,7 @@ const baseLearningPath = {
           xpRequired: 0,
           xpReward: 50,
           isTutorial: true,
-          modes: ["vocabulary", "grammar", "reading", "stories", "realtime"],
+          modes: ["vocabulary", "grammar", "verbConjugator", "reading", "stories", "realtime"],
           content: {
             vocabulary: {
               topic: "tutorial",
@@ -74,6 +74,14 @@ const baseLearningPath = {
               tutorialDescription: {
                 en: "Master grammar rules through exercises.",
                 es: "Domina las reglas gramaticales mediante ejercicios.",
+              },
+            },
+            verbConjugator: {
+              topic: "tutorial",
+              focusPoints: ["simple present", "ser", "estar"],
+              tutorialDescription: {
+                en: "Practice verb conjugations. Learn to conjugate 'to be' (ser/estar) in simple present.",
+                es: "Practica conjugaciones verbales. Aprende a conjugar 'ser/estar' en presente simple.",
               },
             },
             reading: {
@@ -112,149 +120,517 @@ const baseLearningPath = {
         },
       ],
     },
+    // Unit 1: The Alphabet & Sounds
     {
-      id: "unit-pre-a1-1",
+      id: "unit-pre-a1-alphabet",
       title: {
-        en: "Pre-A1 Foundations",
-        es: "Fundamentos Pre-A1",
+        en: "The Alphabet & Sounds",
+        es: "El Alfabeto y Sonidos",
       },
       description: {
-        en: "100 must-know words and phrases to start fast",
-        es: "100 palabras y frases imprescindibles para empezar rápido",
+        en: "Learn the Spanish alphabet and basic pronunciation",
+        es: "Aprende el alfabeto español y la pronunciación básica",
       },
-      color: "#10B981",
-      position: { row: -1, offset: 0 },
+      color: "#8B5CF6",
+      position: { row: 0, offset: 0 },
       lessons: [
         {
-          id: "lesson-pre-a1-1",
-          title: {
-            en: "Everyday Starters",
-            es: "Arranques Cotidianos",
-          },
-          description: {
-            en: "Your first 20 high-frequency words for greetings and basics",
-            es: "Tus primeras 20 palabras de alta frecuencia para saludos y básicos",
-          },
+          id: "lesson-pre-a1-1-1",
+          title: { en: "Vowels: A, E, I, O, U", es: "Vocales: A, E, I, O, U" },
+          description: { en: "Master the 5 Spanish vowels", es: "Domina las 5 vocales españolas" },
           xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "vowel sounds", focusPoints: ["a", "e", "i", "o", "u"] },
+            grammar: { topic: "vowel pronunciation", focusPoints: ["consistent vowel sounds"] },
+            verbConjugator: { topic: "vowel recognition", focusPoints: ["identifying vowels"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-1-2",
+          title: { en: "Consonants Part 1", es: "Consonantes Parte 1" },
+          description: { en: "Learn consonants B-L", es: "Aprende las consonantes B-L" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "consonants B-L", focusPoints: ["b/v", "c", "g", "h silent", "j", "ll"] },
+            grammar: { topic: "consonant rules", focusPoints: ["soft and hard sounds"] },
+            verbConjugator: { topic: "consonant patterns", focusPoints: ["recognizing sounds"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-1-3",
+          title: { en: "Consonants Part 2 & Special Letters", es: "Consonantes Parte 2 y Letras Especiales" },
+          description: { en: "Complete the alphabet with ñ, rr", es: "Completa el alfabeto con ñ, rr" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "consonants M-Z", focusPoints: ["ñ", "rr", "qu", "z", "x"] },
+            grammar: { topic: "special letters", focusPoints: ["ñ", "rolled r", "accents"] },
+            verbConjugator: { topic: "alphabet mastery", focusPoints: ["spelling words"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-1-quiz",
+          title: { en: "Alphabet Quiz", es: "Prueba del Alfabeto" },
+          description: { en: "Test your alphabet knowledge", es: "Prueba tu conocimiento del alfabeto" },
+          xpRequired: 30,
           xpReward: 25,
-          modes: ["vocabulary", "listening"],
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
-            vocabulary: {
-              topic: "greetings and starters",
-              focusPoints: ["hello/bye variations", "thanks/please", "yes/no"],
-            },
-            listening: {
-              topic: "greetings and starters",
-              focusPoints: [
-                "recognizing common polite phrases",
-                "intonation for greetings",
-              ],
-            },
-          },
-        },
-        {
-          id: "lesson-pre-a1-2",
-          title: {
-            en: "People & Places",
-            es: "Personas y Lugares",
-          },
-          description: {
-            en: "Add 20 words for names, family, and moving around",
-            es: "Suma 20 palabras para nombres, familia y moverte por ahí",
-          },
-          xpRequired: 15,
-          xpReward: 25,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "people and places",
-              focusPoints: ["family", "locations", "getting attention"],
-            },
-            grammar: {
-              topic: "formula chunks",
-              focusPoints: ["I am/from", "This is", "Where is?"],
-            },
-          },
-        },
-        {
-          id: "lesson-pre-a1-3",
-          title: {
-            en: "Actions & Essentials",
-            es: "Acciones y Esenciales",
-          },
-          description: {
-            en: "20 everyday verbs and short requests to get things done",
-            es: "20 verbos cotidianos y peticiones cortas para lograr cosas",
-          },
-          xpRequired: 40,
-          xpReward: 30,
-          modes: ["vocabulary", "stories"],
-          content: {
-            vocabulary: {
-              topic: "actions and needs",
-              focusPoints: ["common verbs", "requests", "need/want"],
-            },
-            realtime: {
-              scenario: "quick requests",
-              prompt:
-                "Roleplay asking for help, ordering, or finding something",
-            },
-          },
-        },
-        {
-          id: "lesson-pre-a1-4",
-          title: {
-            en: "Time, Travel & Directions",
-            es: "Tiempo, Viajes y Direcciones",
-          },
-          description: {
-            en: "20 words for time, transport, and finding your way",
-            es: "20 palabras para tiempo, transporte y orientarte",
-          },
-          xpRequired: 65,
-          xpReward: 30,
-          modes: ["vocabulary", "reading"],
-          content: {
-            vocabulary: {
-              topic: "time and movement",
-              focusPoints: ["days and hours", "here/there", "left/right"],
-            },
-            reading: {
-              topic: "travel mini-notices",
-              prompt: "Read tiny signs and captions about time and direction",
-            },
-          },
-        },
-        {
-          id: "lesson-pre-a1-5",
-          title: {
-            en: "Social Glue & Questions",
-            es: "Conectores Sociales y Preguntas",
-          },
-          description: {
-            en: "Round out 100 words with connectors, feelings, and quick questions",
-            es: "Completa 100 palabras con conectores, emociones y preguntas rápidas",
-          },
-          xpRequired: 90,
-          xpReward: 35,
-          modes: ["vocabulary", "stories"],
-          content: {
-            vocabulary: {
-              topic: "connectors and questions",
-              focusPoints: [
-                "and/but/because",
-                "how/what/where",
-                "feeling words",
-              ],
-            },
-            stories: {
-              topic: "micro roleplays",
-              prompt: "Act out short meetups using your new question words",
-            },
+            vocabulary: { topic: "alphabet review", focusPoints: ["all letters"] },
+            grammar: { topic: "alphabet rules", focusPoints: ["letter sounds"] },
+            verbConjugator: { topic: "alphabet application", focusPoints: ["spelling"] },
           },
         },
       ],
     },
+    // Unit 2: Numbers 0-10
+    {
+      id: "unit-pre-a1-numbers",
+      title: { en: "Numbers 0-10", es: "Números 0-10" },
+      description: { en: "Count from zero to ten", es: "Cuenta del cero al diez" },
+      color: "#EC4899",
+      position: { row: 1, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-2-1",
+          title: { en: "Zero to Five", es: "Cero a Cinco" },
+          description: { en: "Learn numbers 0-5", es: "Aprende números 0-5" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "numbers 0-5", focusPoints: ["cero", "uno", "dos", "tres", "cuatro", "cinco"] },
+            grammar: { topic: "number usage", focusPoints: ["counting objects"] },
+            verbConjugator: { topic: "numbers in context", focusPoints: ["using numbers"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-2-2",
+          title: { en: "Six to Ten", es: "Seis a Diez" },
+          description: { en: "Complete counting to ten", es: "Completa el conteo hasta diez" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "numbers 6-10", focusPoints: ["seis", "siete", "ocho", "nueve", "diez"] },
+            grammar: { topic: "number patterns", focusPoints: ["counting sequences"] },
+            verbConjugator: { topic: "counting practice", focusPoints: ["forward/backward"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-2-3",
+          title: { en: "Counting Objects", es: "Contando Objetos" },
+          description: { en: "Use numbers to count things", es: "Usa números para contar cosas" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "counting objects", focusPoints: ["un/una", "dos libros", "tres mesas"] },
+            grammar: { topic: "number agreement", focusPoints: ["uno vs un/una"] },
+            verbConjugator: { topic: "quantity expressions", focusPoints: ["hay"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-2-quiz",
+          title: { en: "Numbers Quiz", es: "Prueba de Números" },
+          description: { en: "Test counting 0-10", es: "Prueba de contar 0-10" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "numbers review", focusPoints: ["0-10"] },
+            grammar: { topic: "number usage", focusPoints: ["quantities"] },
+            verbConjugator: { topic: "numbers application", focusPoints: ["counting"] },
+          },
+        },
+      ],
+    },
+    // Unit 3: Hello & Goodbye
+    {
+      id: "unit-pre-a1-greetings",
+      title: { en: "Hello & Goodbye", es: "Hola y Adiós" },
+      description: { en: "Basic greetings and farewells", es: "Saludos y despedidas básicas" },
+      color: "#10B981",
+      position: { row: 2, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-3-1",
+          title: { en: "Saying Hello", es: "Decir Hola" },
+          description: { en: "Different ways to greet people", es: "Diferentes formas de saludar" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "greetings", focusPoints: ["hola", "buenos días", "buenas tardes", "buenas noches"] },
+            grammar: { topic: "greeting usage", focusPoints: ["time-appropriate greetings"] },
+            verbConjugator: { topic: "greeting phrases", focusPoints: ["¿Qué tal?", "¿Cómo estás?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-3-2",
+          title: { en: "Saying Goodbye", es: "Decir Adiós" },
+          description: { en: "Farewell expressions", es: "Expresiones de despedida" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "farewells", focusPoints: ["adiós", "hasta luego", "hasta mañana", "chao"] },
+            grammar: { topic: "farewell usage", focusPoints: ["temporary vs permanent"] },
+            verbConjugator: { topic: "farewell phrases", focusPoints: ["hasta pronto"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-3-3",
+          title: { en: "Greetings in Context", es: "Saludos en Contexto" },
+          description: { en: "Practice in real situations", es: "Practica en situaciones reales" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "greeting conversations", focusPoints: ["greeting + response patterns"] },
+            grammar: { topic: "greeting exchanges", focusPoints: ["question and answer"] },
+            verbConjugator: { topic: "greeting verbs", focusPoints: ["saludar", "despedirse"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-3-quiz",
+          title: { en: "Greetings Quiz", es: "Prueba de Saludos" },
+          description: { en: "Test greeting skills", es: "Prueba de saludos" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "greetings review", focusPoints: ["all greetings/farewells"] },
+            grammar: { topic: "greeting rules", focusPoints: ["appropriate usage"] },
+            verbConjugator: { topic: "greeting application", focusPoints: ["real situations"] },
+          },
+        },
+      ],
+    },
+    // Unit 4: Yes, No & Basic Responses
+    {
+      id: "unit-pre-a1-responses",
+      title: { en: "Yes, No & Basic Responses", es: "Sí, No y Respuestas Básicas" },
+      description: { en: "Essential single-word responses", es: "Respuestas esenciales de una palabra" },
+      color: "#F59E0B",
+      position: { row: 3, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-4-1",
+          title: { en: "Yes and No", es: "Sí y No" },
+          description: { en: "The most important words", es: "Las palabras más importantes" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "affirmative/negative", focusPoints: ["sí", "no", "claro", "vale"] },
+            grammar: { topic: "response patterns", focusPoints: ["answering yes/no questions"] },
+            verbConjugator: { topic: "agreement expressions", focusPoints: ["ways to say yes/no"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-4-2",
+          title: { en: "Maybe and I Don't Know", es: "Quizás y No Sé" },
+          description: { en: "Express uncertainty", es: "Expresa incertidumbre" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "uncertainty", focusPoints: ["quizás", "tal vez", "no sé", "puede ser"] },
+            grammar: { topic: "expressing doubt", focusPoints: ["uncertainty words"] },
+            verbConjugator: { topic: "doubt expressions", focusPoints: ["no estoy seguro/a"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-4-3",
+          title: { en: "Quick Responses", es: "Respuestas Rápidas" },
+          description: { en: "React naturally", es: "Reacciona naturalmente" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "reactions", focusPoints: ["¡genial!", "¡perfecto!", "¿en serio?"] },
+            grammar: { topic: "exclamations", focusPoints: ["expressing emotions"] },
+            verbConjugator: { topic: "conversational responses", focusPoints: ["entiendo", "ya veo"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-4-quiz",
+          title: { en: "Responses Quiz", es: "Prueba de Respuestas" },
+          description: { en: "Test response skills", es: "Prueba de respuestas" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "responses review", focusPoints: ["yes/no", "uncertainty", "reactions"] },
+            grammar: { topic: "response usage", focusPoints: ["appropriate responses"] },
+            verbConjugator: { topic: "response application", focusPoints: ["natural conversation"] },
+          },
+        },
+      ],
+    },
+    // Unit 5: Please & Thank You
+    {
+      id: "unit-pre-a1-courtesy",
+      title: { en: "Please & Thank You", es: "Por Favor y Gracias" },
+      description: { en: "Essential courtesy expressions", es: "Expresiones de cortesía esenciales" },
+      color: "#EF4444",
+      position: { row: 4, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-5-1",
+          title: { en: "Please and Thank You", es: "Por Favor y Gracias" },
+          description: { en: "Magic words that open doors", es: "Palabras mágicas que abren puertas" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "basic courtesy", focusPoints: ["por favor", "gracias", "muchas gracias", "de nada"] },
+            grammar: { topic: "polite requests", focusPoints: ["adding por favor"] },
+            verbConjugator: { topic: "courtesy phrases", focusPoints: ["requesting politely"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-5-2",
+          title: { en: "Sorry and Excuse Me", es: "Perdón y Disculpe" },
+          description: { en: "Apologize politely", es: "Discúlpate educadamente" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "apologies", focusPoints: ["perdón", "lo siento", "disculpe", "con permiso"] },
+            grammar: { topic: "apologizing", focusPoints: ["formal vs informal"] },
+            verbConjugator: { topic: "apology expressions", focusPoints: ["levels of apology"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-5-3",
+          title: { en: "Polite Expressions", es: "Expresiones Corteses" },
+          description: { en: "Additional gracious phrases", es: "Frases corteses adicionales" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "polite phrases", focusPoints: ["muy amable", "no hay de qué", "con gusto"] },
+            grammar: { topic: "formal courtesy", focusPoints: ["polite responses"] },
+            verbConjugator: { topic: "courtesy in action", focusPoints: ["offering help"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-5-quiz",
+          title: { en: "Courtesy Quiz", es: "Prueba de Cortesía" },
+          description: { en: "Test polite expressions", es: "Prueba de expresiones corteses" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "courtesy review", focusPoints: ["please/thank you", "apologies"] },
+            grammar: { topic: "courtesy usage", focusPoints: ["appropriate situations"] },
+            verbConjugator: { topic: "courtesy application", focusPoints: ["polite communication"] },
+          },
+        },
+      ],
+    },
+    // Unit 6: Common Objects
+    {
+      id: "unit-pre-a1-objects",
+      title: { en: "Common Objects", es: "Objetos Comunes" },
+      description: { en: "Name everyday things", es: "Nombra las cosas cotidianas" },
+      color: "#06B6D4",
+      position: { row: 5, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-6-1",
+          title: { en: "Things at Home", es: "Cosas en Casa" },
+          description: { en: "Common household items", es: "Artículos comunes del hogar" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "household items", focusPoints: ["mesa", "silla", "puerta", "ventana", "cama"] },
+            grammar: { topic: "articles with objects", focusPoints: ["el/la"] },
+            verbConjugator: { topic: "identifying objects", focusPoints: ["¿Qué es esto?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-6-2",
+          title: { en: "Personal Items", es: "Artículos Personales" },
+          description: { en: "Things you carry daily", es: "Cosas que llevas cada día" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "personal items", focusPoints: ["teléfono", "libro", "bolsa", "llaves"] },
+            grammar: { topic: "possessive", focusPoints: ["mi/tu/su"] },
+            verbConjugator: { topic: "having things", focusPoints: ["tengo", "¿Tienes...?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-6-3",
+          title: { en: "Food and Drink", es: "Comida y Bebida" },
+          description: { en: "Basic food vocabulary", es: "Vocabulario básico de comida" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "food/drinks", focusPoints: ["agua", "café", "pan", "leche", "fruta"] },
+            grammar: { topic: "food articles", focusPoints: ["el agua exception"] },
+            verbConjugator: { topic: "wanting food", focusPoints: ["quiero", "¿Quieres...?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-6-quiz",
+          title: { en: "Objects Quiz", es: "Prueba de Objetos" },
+          description: { en: "Test object vocabulary", es: "Prueba de vocabulario de objetos" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "objects review", focusPoints: ["household", "personal", "food"] },
+            grammar: { topic: "object naming", focusPoints: ["articles", "gender"] },
+            verbConjugator: { topic: "objects application", focusPoints: ["identifying"] },
+          },
+        },
+      ],
+    },
+    // Unit 7: Colors
+    {
+      id: "unit-pre-a1-colors",
+      title: { en: "Colors", es: "Colores" },
+      description: { en: "Identify and name colors", es: "Identifica y nombra colores" },
+      color: "#F97316",
+      position: { row: 6, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-7-1",
+          title: { en: "Primary Colors", es: "Colores Primarios" },
+          description: { en: "Red, blue, yellow", es: "Rojo, azul, amarillo" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "primary colors", focusPoints: ["rojo", "azul", "amarillo"] },
+            grammar: { topic: "color as adjective", focusPoints: ["el libro rojo"] },
+            verbConjugator: { topic: "describing with colors", focusPoints: ["es rojo/a"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-7-2",
+          title: { en: "More Colors", es: "Más Colores" },
+          description: { en: "Expand your palette", es: "Amplía tu paleta" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "additional colors", focusPoints: ["verde", "naranja", "rosa", "morado"] },
+            grammar: { topic: "color agreement", focusPoints: ["colors that change vs don't"] },
+            verbConjugator: { topic: "color descriptions", focusPoints: ["¿De qué color es?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-7-3",
+          title: { en: "Black, White & Neutral", es: "Negro, Blanco y Neutros" },
+          description: { en: "Complete your palette", es: "Completa tu paleta" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "neutral colors", focusPoints: ["negro", "blanco", "gris"] },
+            grammar: { topic: "color combinations", focusPoints: ["blanco y negro", "azul oscuro"] },
+            verbConjugator: { topic: "color preferences", focusPoints: ["mi color favorito"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-7-quiz",
+          title: { en: "Colors Quiz", es: "Prueba de Colores" },
+          description: { en: "Test color knowledge", es: "Prueba de conocimiento de colores" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "colors review", focusPoints: ["all colors"] },
+            grammar: { topic: "color usage", focusPoints: ["agreement", "placement"] },
+            verbConjugator: { topic: "colors application", focusPoints: ["describing objects"] },
+          },
+        },
+      ],
+    },
+    // Unit 8: What's Your Name?
+    {
+      id: "unit-pre-a1-introductions",
+      title: { en: "What's Your Name?", es: "¿Cómo Te Llamas?" },
+      description: { en: "Introduce yourself", es: "Preséntate" },
+      color: "#6366F1",
+      position: { row: 7, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-8-1",
+          title: { en: "Saying Your Name", es: "Decir Tu Nombre" },
+          description: { en: "Learn to introduce yourself", es: "Aprende a presentarte" },
+          xpRequired: 0,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "self introduction", focusPoints: ["me llamo", "soy", "mi nombre es"] },
+            grammar: { topic: "introduction patterns", focusPoints: ["Me llamo + name"] },
+            verbConjugator: { topic: "llamarse verb", focusPoints: ["me llamo"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-8-2",
+          title: { en: "Asking Names", es: "Preguntar Nombres" },
+          description: { en: "Ask others their name", es: "Pregunta a otros su nombre" },
+          xpRequired: 10,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "asking for names", focusPoints: ["¿Cómo te llamas?", "¿Cómo se llama?"] },
+            grammar: { topic: "formal vs informal", focusPoints: ["tú vs usted"] },
+            verbConjugator: { topic: "llamarse forms", focusPoints: ["te llamas", "se llama"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-8-3",
+          title: { en: "Nice to Meet You", es: "Mucho Gusto" },
+          description: { en: "Complete the introduction", es: "Completa la presentación" },
+          xpRequired: 20,
+          xpReward: 15,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "meeting expressions", focusPoints: ["mucho gusto", "encantado/a", "igualmente"] },
+            grammar: { topic: "gender in expressions", focusPoints: ["encantado vs encantada"] },
+            verbConjugator: { topic: "meeting phrases", focusPoints: ["complete introduction"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-8-quiz",
+          title: { en: "Introductions Quiz", es: "Prueba de Presentaciones" },
+          description: { en: "Test introduction skills", es: "Prueba de presentaciones" },
+          xpRequired: 30,
+          xpReward: 25,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "introductions review", focusPoints: ["giving name", "asking name"] },
+            grammar: { topic: "introduction patterns", focusPoints: ["formal/informal"] },
+            verbConjugator: { topic: "introductions application", focusPoints: ["complete introduction"] },
+          },
+        },
+      ],
+    },
+    // Unit: First Words (moved from A1)
     {
       id: "unit-a1-1",
       title: {
@@ -266,223 +642,61 @@ const baseLearningPath = {
         es: "Tus primeras palabras",
       },
       color: "#22C55E",
-      position: { row: 0, offset: 0 },
+      position: { row: 8, offset: 0 },
       lessons: [
         {
           id: "lesson-a1-1-1",
-          title: {
-            en: "Hello and Goodbye",
-            es: "Hola y Adiós",
-          },
-          description: {
-            en: "Learn essential greetings and farewells",
-            es: "Aprende saludos y despedidas esenciales",
-          },
-          xpRequired: 110,
+          title: { en: "Hello and Goodbye", es: "Hola y Adiós" },
+          description: { en: "Learn essential greetings and farewells", es: "Aprende saludos y despedidas esenciales" },
+          xpRequired: 0,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
-            vocabulary: {
-              topic: "greetings",
-            },
-            grammar: {
-              topic: "greetings structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
+            vocabulary: { topic: "greetings" },
+            grammar: { topic: "greetings structures", focusPoints: ["basic patterns", "common phrases"] },
           },
         },
         {
           id: "lesson-a1-1-2",
-          title: {
-            en: "Meeting Someone New",
-            es: "Conocer a Alguien Nuevo",
-          },
-          description: {
-            en: "Practice greetings in real conversations",
-            es: "Practica saludos en conversaciones reales",
-          },
-          xpRequired: 125,
+          title: { en: "Meeting Someone New", es: "Conocer a Alguien Nuevo" },
+          description: { en: "Practice greetings in real conversations", es: "Practica saludos en conversaciones reales" },
+          xpRequired: 10,
           xpReward: 40,
           modes: ["realtime", "stories"],
           content: {
-            realtime: {
-              scenario: "greetings conversation",
-              prompt: "Practice using greetings in real conversation",
-            },
-            stories: {
-              topic: "greetings",
-              prompt: "Read and discuss greetings",
-            },
+            realtime: { scenario: "greetings conversation", prompt: "Practice using greetings in real conversation" },
+            stories: { topic: "greetings", prompt: "Read and discuss greetings" },
           },
         },
         {
           id: "lesson-a1-1-3",
-          title: {
-            en: "Polite Conversations",
-            es: "Conversaciones Corteses",
-          },
-          description: {
-            en: "Master greeting etiquette and social niceties",
-            es: "Domina la etiqueta de saludos y cortesías sociales",
-          },
-          xpRequired: 140,
-          xpReward: 55,
+          title: { en: "Advanced Greetings", es: "Saludos Avanzados" },
+          description: { en: "Master formal and informal greetings", es: "Domina saludos formales e informales" },
+          xpRequired: 20,
+          xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
-            reading: {
-              topic: "greetings",
-              prompt: "Advanced greetings content and comprehension",
-            },
-            realtime: {
-              scenario: "greetings mastery",
-              prompt: "Demonstrate mastery of greetings",
-            },
+            reading: { topic: "greetings", prompt: "Advanced greetings content and comprehension" },
+            realtime: { scenario: "greetings mastery", prompt: "Demonstrate mastery of greetings" },
           },
         },
         {
           id: "lesson-a1-1-quiz",
-          title: {
-            en: "First Words Quiz",
-            es: "Prueba de Primeras Palabras",
-          },
-          description: {
-            en: "Test your knowledge of first words",
-            es: "Prueba tus conocimientos de primeras palabras",
-          },
-          xpRequired: 155,
+          title: { en: "First Words Quiz", es: "Prueba de Primeras Palabras" },
+          description: { en: "Test your knowledge of first words", es: "Prueba tus conocimientos de primeras palabras" },
+          xpRequired: 30,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
+          quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
-            vocabulary: {
-              topic: "greetings",
-            },
-            grammar: {
-              topics: ["greetings structures"],
-              focusPoints: ["comprehensive review"],
-            },
+            vocabulary: { topic: "greetings" },
+            grammar: { topics: ["greetings structures"], focusPoints: ["comprehensive review"] },
           },
         },
       ],
     },
-    {
-      id: "unit-a1-2",
-      title: {
-        en: "Introducing Yourself",
-        es: "Presentándote",
-      },
-      description: {
-        en: "Say your name and origin",
-        es: "Di tu nombre y origen",
-      },
-      color: "#3B82F6",
-      position: { row: 0, offset: 1 },
-      lessons: [
-        {
-          id: "lesson-a1-2-1",
-          title: {
-            en: "What's Your Name?",
-            es: "¿Cómo Te Llamas?",
-          },
-          description: {
-            en: "Learn to introduce yourself and ask others' names",
-            es: "Aprende a presentarte y preguntar nombres",
-          },
-          xpRequired: 185,
-          xpReward: 45,
-          modes: ["vocabulary", "grammar"],
-          content: {
-            vocabulary: {
-              topic: "introductions",
-            },
-            grammar: {
-              topic: "introductions structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
-          },
-        },
-        {
-          id: "lesson-a1-2-2",
-          title: {
-            en: "Nice to Meet You",
-            es: "Mucho Gusto",
-          },
-          description: {
-            en: "Practice introductions in real conversations",
-            es: "Practica presentaciones en conversaciones reales",
-          },
-          xpRequired: 200,
-          xpReward: 50,
-          modes: ["realtime", "stories"],
-          content: {
-            realtime: {
-              scenario: "introductions conversation",
-              prompt: "Practice using introductions in real conversation",
-            },
-            stories: {
-              topic: "introductions",
-              prompt: "Read and discuss introductions",
-            },
-          },
-        },
-        {
-          id: "lesson-a1-2-3",
-          title: {
-            en: "Tell Me About Yourself",
-            es: "Cuéntame Sobre Ti",
-          },
-          description: {
-            en: "Share personal information and ask about others",
-            es: "Comparte información personal y pregunta sobre otros",
-          },
-          xpRequired: 215,
-          xpReward: 45,
-          modes: ["reading", "realtime"],
-          content: {
-            reading: {
-              topic: "introductions",
-              prompt: "Advanced introductions content and comprehension",
-            },
-            realtime: {
-              scenario: "introductions mastery",
-              prompt: "Demonstrate mastery of introductions",
-            },
-          },
-        },
-        {
-          id: "lesson-a1-2-quiz",
-          title: {
-            en: "Introducing Yourself Quiz",
-            es: "Prueba de Presentándote",
-          },
-          description: {
-            en: "Test your knowledge of introducing yourself",
-            es: "Prueba tus conocimientos de presentándote",
-          },
-          xpRequired: 230,
-          xpReward: 60,
-          modes: ["vocabulary", "grammar"],
-          isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
-          content: {
-            vocabulary: {
-              topic: "introductions",
-            },
-            grammar: {
-              topics: ["introductions structures"],
-              focusPoints: ["comprehensive review"],
-            },
-          },
-        },
-      ],
-    },
+    // Unit: Numbers 0-20 (moved from A1)
     {
       id: "unit-a1-3",
       title: {
@@ -494,109 +708,61 @@ const baseLearningPath = {
         es: "Cuenta hasta veinte",
       },
       color: "#F59E0B",
-      position: { row: 1, offset: 0 },
+      position: { row: 9, offset: 0 },
       lessons: [
         {
           id: "lesson-a1-3-1",
-          title: {
-            en: "Counting to Twenty",
-            es: "Contando hasta Veinte",
-          },
-          description: {
-            en: "Learn to count from zero to twenty",
-            es: "Aprende a contar desde cero hasta veinte",
-          },
-          xpRequired: 260,
+          title: { en: "Counting to Twenty", es: "Contando hasta Veinte" },
+          description: { en: "Learn to count from zero to twenty", es: "Aprende a contar desde cero hasta veinte" },
+          xpRequired: 0,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
-            vocabulary: {
-              topic: "numbers",
-            },
-            grammar: {
-              topic: "numbers structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
+            vocabulary: { topic: "numbers" },
+            grammar: { topic: "numbers structures", focusPoints: ["basic patterns", "common phrases"] },
           },
         },
         {
           id: "lesson-a1-3-2",
-          title: {
-            en: "Using Numbers Daily",
-            es: "Usando Números Diariamente",
-          },
-          description: {
-            en: "Practice numbers in everyday situations",
-            es: "Practica números en situaciones cotidianas",
-          },
-          xpRequired: 275,
+          title: { en: "Using Numbers Daily", es: "Usando Números Diariamente" },
+          description: { en: "Practice numbers in everyday situations", es: "Practica números en situaciones cotidianas" },
+          xpRequired: 10,
           xpReward: 60,
           modes: ["realtime", "stories"],
           content: {
-            realtime: {
-              scenario: "numbers conversation",
-              prompt: "Practice using numbers in real conversation",
-            },
-            stories: {
-              topic: "numbers",
-              prompt: "Read and discuss numbers",
-            },
+            realtime: { scenario: "numbers conversation", prompt: "Practice using numbers in real conversation" },
+            stories: { topic: "numbers", prompt: "Read and discuss numbers" },
           },
         },
         {
           id: "lesson-a1-3-3",
-          title: {
-            en: "Phone Numbers and Ages",
-            es: "Números de Teléfono y Edades",
-          },
-          description: {
-            en: "Apply numbers to phone numbers and ages",
-            es: "Aplica números a teléfonos y edades",
-          },
-          xpRequired: 290,
+          title: { en: "Phone Numbers and Ages", es: "Números de Teléfono y Edades" },
+          description: { en: "Apply numbers to phone numbers and ages", es: "Aplica números a teléfonos y edades" },
+          xpRequired: 20,
           xpReward: 45,
           modes: ["reading", "realtime"],
           content: {
-            reading: {
-              topic: "numbers",
-              prompt: "Advanced numbers content and comprehension",
-            },
-            realtime: {
-              scenario: "numbers mastery",
-              prompt: "Demonstrate mastery of numbers",
-            },
+            reading: { topic: "numbers", prompt: "Advanced numbers content and comprehension" },
+            realtime: { scenario: "numbers mastery", prompt: "Demonstrate mastery of numbers" },
           },
         },
         {
           id: "lesson-a1-3-quiz",
-          title: {
-            en: "Numbers 0-20 Quiz",
-            es: "Prueba de Números 0-20",
-          },
-          description: {
-            en: "Test your knowledge of numbers 0-20",
-            es: "Prueba tus conocimientos de números 0-20",
-          },
-          xpRequired: 305,
+          title: { en: "Numbers 0-20 Quiz", es: "Prueba de Números 0-20" },
+          description: { en: "Test your knowledge of numbers 0-20", es: "Prueba tus conocimientos de números 0-20" },
+          xpRequired: 30,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
+          quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
-            vocabulary: {
-              topic: "numbers",
-            },
-            grammar: {
-              topics: ["numbers structures"],
-              focusPoints: ["comprehensive review"],
-            },
+            vocabulary: { topic: "numbers" },
+            grammar: { topics: ["numbers structures"], focusPoints: ["comprehensive review"] },
           },
         },
       ],
     },
+    // Unit: Numbers 21-100 (moved from A1)
     {
       id: "unit-a1-4",
       title: {
@@ -608,109 +774,139 @@ const baseLearningPath = {
         es: "Números más grandes",
       },
       color: "#8B5CF6",
-      position: { row: 1, offset: 1 },
+      position: { row: 10, offset: 0 },
       lessons: [
         {
           id: "lesson-a1-4-1",
-          title: {
-            en: "Counting to One Hundred",
-            es: "Contando hasta Cien",
-          },
-          description: {
-            en: "Learn to count from twenty-one to one hundred",
-            es: "Aprende a contar desde veintiuno hasta cien",
-          },
-          xpRequired: 335,
+          title: { en: "Counting to One Hundred", es: "Contando hasta Cien" },
+          description: { en: "Learn to count from twenty-one to one hundred", es: "Aprende a contar desde veintiuno hasta cien" },
+          xpRequired: 0,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
-            vocabulary: {
-              topic: "numbers",
-            },
-            grammar: {
-              topic: "numbers structures",
-              focusPoints: ["basic patterns", "common phrases"],
-            },
+            vocabulary: { topic: "numbers" },
+            grammar: { topic: "numbers structures", focusPoints: ["basic patterns", "common phrases"] },
           },
         },
         {
           id: "lesson-a1-4-2",
-          title: {
-            en: "Prices and Money",
-            es: "Precios y Dinero",
-          },
-          description: {
-            en: "Practice using larger numbers with prices and money",
-            es: "Practica usando números grandes con precios y dinero",
-          },
-          xpRequired: 350,
+          title: { en: "Prices and Money", es: "Precios y Dinero" },
+          description: { en: "Practice using larger numbers with prices and money", es: "Practica usando números grandes con precios y dinero" },
+          xpRequired: 10,
           xpReward: 50,
           modes: ["realtime", "stories"],
           content: {
-            realtime: {
-              scenario: "numbers conversation",
-              prompt: "Practice using numbers in real conversation",
-            },
-            stories: {
-              topic: "numbers",
-              prompt: "Read and discuss numbers",
-            },
+            realtime: { scenario: "numbers conversation", prompt: "Practice using numbers in real conversation" },
+            stories: { topic: "numbers", prompt: "Read and discuss numbers" },
           },
         },
         {
           id: "lesson-a1-4-3",
-          title: {
-            en: "Big Numbers in Context",
-            es: "Números Grandes en Contexto",
-          },
-          description: {
-            en: "Apply larger numbers in real-life contexts",
-            es: "Aplica números grandes en contextos de la vida real",
-          },
-          xpRequired: 365,
+          title: { en: "Big Numbers in Context", es: "Números Grandes en Contexto" },
+          description: { en: "Apply larger numbers in real-life contexts", es: "Aplica números grandes en contextos de la vida real" },
+          xpRequired: 20,
           xpReward: 35,
           modes: ["reading", "realtime"],
           content: {
-            reading: {
-              topic: "numbers",
-              prompt: "Advanced numbers content and comprehension",
-            },
-            realtime: {
-              scenario: "numbers mastery",
-              prompt: "Demonstrate mastery of numbers",
-            },
+            reading: { topic: "numbers", prompt: "Advanced numbers content and comprehension" },
+            realtime: { scenario: "numbers mastery", prompt: "Demonstrate mastery of numbers" },
           },
         },
         {
           id: "lesson-a1-4-quiz",
-          title: {
-            en: "Numbers 21-100 Quiz",
-            es: "Prueba de Números 21-100",
-          },
-          description: {
-            en: "Test your knowledge of numbers 21-100",
-            es: "Prueba tus conocimientos de números 21-100",
-          },
-          xpRequired: 380,
+          title: { en: "Numbers 21-100 Quiz", es: "Prueba de Números 21-100" },
+          description: { en: "Test your knowledge of numbers 21-100", es: "Prueba tus conocimientos de números 21-100" },
+          xpRequired: 30,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
-          quizConfig: {
-            questionsRequired: 10,
-            passingScore: 8,
-          },
+          quizConfig: { questionsRequired: 10, passingScore: 8 },
           content: {
-            vocabulary: {
-              topic: "numbers",
-            },
-            grammar: {
-              topics: ["numbers structures"],
-              focusPoints: ["comprehensive review"],
-            },
+            vocabulary: { topic: "numbers" },
+            grammar: { topics: ["numbers structures"], focusPoints: ["comprehensive review"] },
           },
         },
       ],
     },
+    // Unit: Pre-A1 Foundations (moved from A1 - now last in Pre-A1)
+    {
+      id: "unit-pre-a1-foundations",
+      title: {
+        en: "Pre-A1 Foundations",
+        es: "Fundamentos Pre-A1",
+      },
+      description: {
+        en: "100 must-know words and phrases to start fast",
+        es: "100 palabras y frases imprescindibles para empezar rápido",
+      },
+      color: "#10B981",
+      position: { row: 11, offset: 0 },
+      lessons: [
+        {
+          id: "lesson-pre-a1-f-1",
+          title: { en: "Everyday Starters", es: "Arranques Cotidianos" },
+          description: { en: "Your first 20 high-frequency words for greetings and basics", es: "Tus primeras 20 palabras de alta frecuencia para saludos y básicos" },
+          xpRequired: 0,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "greetings and starters", focusPoints: ["hello/bye variations", "thanks/please", "yes/no"] },
+            grammar: { topic: "formula chunks", focusPoints: ["basic greeting patterns"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-f-2",
+          title: { en: "People & Places", es: "Personas y Lugares" },
+          description: { en: "Add 20 words for names, family, and moving around", es: "Suma 20 palabras para nombres, familia y moverte por ahí" },
+          xpRequired: 10,
+          xpReward: 25,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "people and places", focusPoints: ["family", "locations", "getting attention"] },
+            grammar: { topic: "formula chunks", focusPoints: ["I am/from", "This is", "Where is?"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-f-3",
+          title: { en: "Actions & Essentials", es: "Acciones y Esenciales" },
+          description: { en: "20 everyday verbs and short requests to get things done", es: "20 verbos cotidianos y peticiones cortas para lograr cosas" },
+          xpRequired: 20,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "actions and needs", focusPoints: ["common verbs", "requests", "need/want"] },
+            grammar: { topic: "action phrases", focusPoints: ["basic verb usage"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-f-4",
+          title: { en: "Time, Travel & Directions", es: "Tiempo, Viajes y Direcciones" },
+          description: { en: "20 words for time, transport, and finding your way", es: "20 palabras para tiempo, transporte y orientarte" },
+          xpRequired: 30,
+          xpReward: 30,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "time and movement", focusPoints: ["days and hours", "here/there", "left/right"] },
+            grammar: { topic: "direction phrases", focusPoints: ["basic direction patterns"] },
+          },
+        },
+        {
+          id: "lesson-pre-a1-f-quiz",
+          title: { en: "Foundations Quiz", es: "Prueba de Fundamentos" },
+          description: { en: "Round out 100 words with connectors, feelings, and quick questions", es: "Completa 100 palabras con conectores, emociones y preguntas rápidas" },
+          xpRequired: 40,
+          xpReward: 35,
+          isFinalQuiz: true,
+          modes: ["vocabulary", "grammar", "verbConjugator"],
+          content: {
+            vocabulary: { topic: "connectors and questions", focusPoints: ["and/but/because", "how/what/where", "feeling words"] },
+            grammar: { topic: "foundation review", focusPoints: ["all patterns"] },
+          },
+        },
+      ],
+    },
+  ],
+  A1: [
     {
       id: "unit-a1-5",
       title: {
@@ -736,7 +932,7 @@ const baseLearningPath = {
           },
           xpRequired: 410,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "days of week",
@@ -807,7 +1003,7 @@ const baseLearningPath = {
           },
           xpRequired: 455,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -850,7 +1046,7 @@ const baseLearningPath = {
           },
           xpRequired: 485,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -921,7 +1117,7 @@ const baseLearningPath = {
           },
           xpRequired: 530,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -964,7 +1160,7 @@ const baseLearningPath = {
           },
           xpRequired: 560,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time",
@@ -1035,7 +1231,7 @@ const baseLearningPath = {
           },
           xpRequired: 605,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1078,7 +1274,7 @@ const baseLearningPath = {
           },
           xpRequired: 635,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "family",
@@ -1149,7 +1345,7 @@ const baseLearningPath = {
           },
           xpRequired: 680,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1192,7 +1388,7 @@ const baseLearningPath = {
           },
           xpRequired: 710,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "colors",
@@ -1263,7 +1459,7 @@ const baseLearningPath = {
           },
           xpRequired: 755,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1306,7 +1502,7 @@ const baseLearningPath = {
           },
           xpRequired: 785,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "food and drinks",
@@ -1377,7 +1573,7 @@ const baseLearningPath = {
           },
           xpRequired: 830,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1420,7 +1616,7 @@ const baseLearningPath = {
           },
           xpRequired: 860,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "food and drinks",
@@ -1491,7 +1687,7 @@ const baseLearningPath = {
           },
           xpRequired: 905,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1534,7 +1730,7 @@ const baseLearningPath = {
           },
           xpRequired: 935,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "common objects",
@@ -1605,7 +1801,7 @@ const baseLearningPath = {
           },
           xpRequired: 980,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1648,7 +1844,7 @@ const baseLearningPath = {
           },
           xpRequired: 1010,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "house and rooms",
@@ -1719,7 +1915,7 @@ const baseLearningPath = {
           },
           xpRequired: 1055,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1762,7 +1958,7 @@ const baseLearningPath = {
           },
           xpRequired: 1085,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "clothing",
@@ -1833,7 +2029,7 @@ const baseLearningPath = {
           },
           xpRequired: 1130,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1876,7 +2072,7 @@ const baseLearningPath = {
           },
           xpRequired: 1160,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "daily activities",
@@ -1947,7 +2143,7 @@ const baseLearningPath = {
           },
           xpRequired: 1205,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1990,7 +2186,7 @@ const baseLearningPath = {
           },
           xpRequired: 1235,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "weather",
@@ -2061,7 +2257,7 @@ const baseLearningPath = {
           },
           xpRequired: 1280,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2104,7 +2300,7 @@ const baseLearningPath = {
           },
           xpRequired: 1310,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "preferences",
@@ -2175,7 +2371,7 @@ const baseLearningPath = {
           },
           xpRequired: 1355,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2218,7 +2414,7 @@ const baseLearningPath = {
           },
           xpRequired: 1385,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "question words",
@@ -2289,7 +2485,7 @@ const baseLearningPath = {
           },
           xpRequired: 1430,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2334,7 +2530,7 @@ const baseLearningPath = {
           },
           xpRequired: 1350,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "physical descriptions",
@@ -2407,7 +2603,7 @@ const baseLearningPath = {
           },
           xpRequired: 1410,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2450,7 +2646,7 @@ const baseLearningPath = {
           },
           xpRequired: 1450,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "places",
@@ -2521,7 +2717,7 @@ const baseLearningPath = {
           },
           xpRequired: 1510,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2564,7 +2760,7 @@ const baseLearningPath = {
           },
           xpRequired: 1550,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "shopping",
@@ -2635,7 +2831,7 @@ const baseLearningPath = {
           },
           xpRequired: 1610,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2678,7 +2874,7 @@ const baseLearningPath = {
           },
           xpRequired: 1650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "shopping",
@@ -2749,7 +2945,7 @@ const baseLearningPath = {
           },
           xpRequired: 1710,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2792,7 +2988,7 @@ const baseLearningPath = {
           },
           xpRequired: 1750,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "transportation",
@@ -2863,7 +3059,7 @@ const baseLearningPath = {
           },
           xpRequired: 1810,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2906,7 +3102,7 @@ const baseLearningPath = {
           },
           xpRequired: 1850,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "directions",
@@ -2977,7 +3173,7 @@ const baseLearningPath = {
           },
           xpRequired: 1910,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3020,7 +3216,7 @@ const baseLearningPath = {
           },
           xpRequired: 1950,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "invitations",
@@ -3091,7 +3287,7 @@ const baseLearningPath = {
           },
           xpRequired: 2010,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3134,7 +3330,7 @@ const baseLearningPath = {
           },
           xpRequired: 2050,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "arts and reading",
@@ -3205,7 +3401,7 @@ const baseLearningPath = {
           },
           xpRequired: 2110,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3248,7 +3444,7 @@ const baseLearningPath = {
           },
           xpRequired: 2150,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "sports",
@@ -3319,7 +3515,7 @@ const baseLearningPath = {
           },
           xpRequired: 2210,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3362,7 +3558,7 @@ const baseLearningPath = {
           },
           xpRequired: 2250,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -3433,7 +3629,7 @@ const baseLearningPath = {
           },
           xpRequired: 2310,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3476,7 +3672,7 @@ const baseLearningPath = {
           },
           xpRequired: 2350,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -3547,7 +3743,7 @@ const baseLearningPath = {
           },
           xpRequired: 2410,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3590,7 +3786,7 @@ const baseLearningPath = {
           },
           xpRequired: 2450,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "narrative and storytelling",
@@ -3663,7 +3859,7 @@ const baseLearningPath = {
           },
           xpRequired: 2510,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3706,7 +3902,7 @@ const baseLearningPath = {
           },
           xpRequired: 2550,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -3777,7 +3973,7 @@ const baseLearningPath = {
           },
           xpRequired: 2610,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3820,7 +4016,7 @@ const baseLearningPath = {
           },
           xpRequired: 2650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "body parts",
@@ -3891,7 +4087,7 @@ const baseLearningPath = {
           },
           xpRequired: 2710,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -3934,7 +4130,7 @@ const baseLearningPath = {
           },
           xpRequired: 2750,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "health",
@@ -4005,7 +4201,7 @@ const baseLearningPath = {
           },
           xpRequired: 2810,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4048,7 +4244,7 @@ const baseLearningPath = {
           },
           xpRequired: 2850,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "careers",
@@ -4119,7 +4315,7 @@ const baseLearningPath = {
           },
           xpRequired: 2910,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4162,7 +4358,7 @@ const baseLearningPath = {
           },
           xpRequired: 2950,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "education",
@@ -4233,7 +4429,7 @@ const baseLearningPath = {
           },
           xpRequired: 3010,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4276,7 +4472,7 @@ const baseLearningPath = {
           },
           xpRequired: 3050,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "digital communication",
@@ -4349,7 +4545,7 @@ const baseLearningPath = {
           },
           xpRequired: 3110,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4394,7 +4590,7 @@ const baseLearningPath = {
           },
           xpRequired: 3150,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -4465,7 +4661,7 @@ const baseLearningPath = {
           },
           xpRequired: 3225,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4508,7 +4704,7 @@ const baseLearningPath = {
           },
           xpRequired: 3275,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -4579,7 +4775,7 @@ const baseLearningPath = {
           },
           xpRequired: 3350,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4622,7 +4818,7 @@ const baseLearningPath = {
           },
           xpRequired: 3400,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -4693,7 +4889,7 @@ const baseLearningPath = {
           },
           xpRequired: 3475,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4736,7 +4932,7 @@ const baseLearningPath = {
           },
           xpRequired: 3525,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "comparisons",
@@ -4807,7 +5003,7 @@ const baseLearningPath = {
           },
           xpRequired: 3600,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4850,7 +5046,7 @@ const baseLearningPath = {
           },
           xpRequired: 3650,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "advice and suggestions",
@@ -4923,7 +5119,7 @@ const baseLearningPath = {
           },
           xpRequired: 3725,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -4966,7 +5162,7 @@ const baseLearningPath = {
           },
           xpRequired: 3775,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "advice and suggestions",
@@ -5039,7 +5235,7 @@ const baseLearningPath = {
           },
           xpRequired: 3850,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5082,7 +5278,7 @@ const baseLearningPath = {
           },
           xpRequired: 3900,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "conditional",
@@ -5153,7 +5349,7 @@ const baseLearningPath = {
           },
           xpRequired: 3975,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5196,7 +5392,7 @@ const baseLearningPath = {
           },
           xpRequired: 4025,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "travel",
@@ -5267,7 +5463,7 @@ const baseLearningPath = {
           },
           xpRequired: 4100,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5310,7 +5506,7 @@ const baseLearningPath = {
           },
           xpRequired: 4150,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "environment",
@@ -5381,7 +5577,7 @@ const baseLearningPath = {
           },
           xpRequired: 4225,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5424,7 +5620,7 @@ const baseLearningPath = {
           },
           xpRequired: 4275,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "culture",
@@ -5495,7 +5691,7 @@ const baseLearningPath = {
           },
           xpRequired: 4350,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5538,7 +5734,7 @@ const baseLearningPath = {
           },
           xpRequired: 4400,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "current events",
@@ -5609,7 +5805,7 @@ const baseLearningPath = {
           },
           xpRequired: 4475,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5652,7 +5848,7 @@ const baseLearningPath = {
           },
           xpRequired: 4525,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "opinions and debate",
@@ -5723,7 +5919,7 @@ const baseLearningPath = {
           },
           xpRequired: 4600,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5766,7 +5962,7 @@ const baseLearningPath = {
           },
           xpRequired: 4650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "complaints",
@@ -5837,7 +6033,7 @@ const baseLearningPath = {
           },
           xpRequired: 4725,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5880,7 +6076,7 @@ const baseLearningPath = {
           },
           xpRequired: 4775,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "experiences",
@@ -5951,7 +6147,7 @@ const baseLearningPath = {
           },
           xpRequired: 4850,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -5994,7 +6190,7 @@ const baseLearningPath = {
           },
           xpRequired: 4900,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "probability",
@@ -6065,7 +6261,7 @@ const baseLearningPath = {
           },
           xpRequired: 4975,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6110,7 +6306,7 @@ const baseLearningPath = {
           },
           xpRequired: 5025,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -6181,7 +6377,7 @@ const baseLearningPath = {
           },
           xpRequired: 5115,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6224,7 +6420,7 @@ const baseLearningPath = {
           },
           xpRequired: 5175,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "passive",
@@ -6295,7 +6491,7 @@ const baseLearningPath = {
           },
           xpRequired: 5265,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6338,7 +6534,7 @@ const baseLearningPath = {
           },
           xpRequired: 5325,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "narrative and storytelling",
@@ -6411,7 +6607,7 @@ const baseLearningPath = {
           },
           xpRequired: 5415,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6454,7 +6650,7 @@ const baseLearningPath = {
           },
           xpRequired: 5475,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "relative clauses",
@@ -6525,7 +6721,7 @@ const baseLearningPath = {
           },
           xpRequired: 5565,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6568,7 +6764,7 @@ const baseLearningPath = {
           },
           xpRequired: 5625,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "register",
@@ -6639,7 +6835,7 @@ const baseLearningPath = {
           },
           xpRequired: 5715,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6682,7 +6878,7 @@ const baseLearningPath = {
           },
           xpRequired: 5775,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "professional",
@@ -6753,7 +6949,7 @@ const baseLearningPath = {
           },
           xpRequired: 5865,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6796,7 +6992,7 @@ const baseLearningPath = {
           },
           xpRequired: 5925,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "science",
@@ -6867,7 +7063,7 @@ const baseLearningPath = {
           },
           xpRequired: 6015,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -6910,7 +7106,7 @@ const baseLearningPath = {
           },
           xpRequired: 6075,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "social justice",
@@ -6981,7 +7177,7 @@ const baseLearningPath = {
           },
           xpRequired: 6165,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7024,7 +7220,7 @@ const baseLearningPath = {
           },
           xpRequired: 6225,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "literature",
@@ -7095,7 +7291,7 @@ const baseLearningPath = {
           },
           xpRequired: 6315,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7138,7 +7334,7 @@ const baseLearningPath = {
           },
           xpRequired: 6375,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "politics",
@@ -7209,7 +7405,7 @@ const baseLearningPath = {
           },
           xpRequired: 6465,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7252,7 +7448,7 @@ const baseLearningPath = {
           },
           xpRequired: 6525,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "wellness",
@@ -7323,7 +7519,7 @@ const baseLearningPath = {
           },
           xpRequired: 6615,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7366,7 +7562,7 @@ const baseLearningPath = {
           },
           xpRequired: 6675,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "abstract",
@@ -7437,7 +7633,7 @@ const baseLearningPath = {
           },
           xpRequired: 6765,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -7482,7 +7678,7 @@ const baseLearningPath = {
           },
           xpRequired: 6825,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "subjunctive",
@@ -7553,7 +7749,7 @@ const baseLearningPath = {
           },
           xpRequired: 6930,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -7596,7 +7792,7 @@ const baseLearningPath = {
           },
           xpRequired: 7000,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "subjunctive",
@@ -7667,7 +7863,7 @@ const baseLearningPath = {
           },
           xpRequired: 7105,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -7710,7 +7906,7 @@ const baseLearningPath = {
           },
           xpRequired: 7175,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "conditional",
@@ -7781,7 +7977,7 @@ const baseLearningPath = {
           },
           xpRequired: 7280,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -7824,7 +8020,7 @@ const baseLearningPath = {
           },
           xpRequired: 7350,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "idioms",
@@ -7895,7 +8091,7 @@ const baseLearningPath = {
           },
           xpRequired: 7455,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -7938,7 +8134,7 @@ const baseLearningPath = {
           },
           xpRequired: 7525,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "academic",
@@ -8009,7 +8205,7 @@ const baseLearningPath = {
           },
           xpRequired: 7630,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8052,7 +8248,7 @@ const baseLearningPath = {
           },
           xpRequired: 7700,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "professional",
@@ -8123,7 +8319,7 @@ const baseLearningPath = {
           },
           xpRequired: 7805,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8166,7 +8362,7 @@ const baseLearningPath = {
           },
           xpRequired: 7875,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "debate",
@@ -8237,7 +8433,7 @@ const baseLearningPath = {
           },
           xpRequired: 7980,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8280,7 +8476,7 @@ const baseLearningPath = {
           },
           xpRequired: 8050,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "culture",
@@ -8351,7 +8547,7 @@ const baseLearningPath = {
           },
           xpRequired: 8155,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8394,7 +8590,7 @@ const baseLearningPath = {
           },
           xpRequired: 8225,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "literature",
@@ -8465,7 +8661,7 @@ const baseLearningPath = {
           },
           xpRequired: 8330,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8508,7 +8704,7 @@ const baseLearningPath = {
           },
           xpRequired: 8400,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "discourse",
@@ -8579,7 +8775,7 @@ const baseLearningPath = {
           },
           xpRequired: 8505,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8624,7 +8820,7 @@ const baseLearningPath = {
           },
           xpRequired: 8575,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "idioms and colloquial expressions",
@@ -8698,7 +8894,7 @@ const baseLearningPath = {
           },
           xpRequired: 8695,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8741,7 +8937,7 @@ const baseLearningPath = {
           },
           xpRequired: 8775,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "regional language",
@@ -8812,7 +9008,7 @@ const baseLearningPath = {
           },
           xpRequired: 8895,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8855,7 +9051,7 @@ const baseLearningPath = {
           },
           xpRequired: 8975,
           xpReward: 55,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "style",
@@ -8926,7 +9122,7 @@ const baseLearningPath = {
           },
           xpRequired: 9095,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -8969,7 +9165,7 @@ const baseLearningPath = {
           },
           xpRequired: 9175,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "rhetoric",
@@ -9040,7 +9236,7 @@ const baseLearningPath = {
           },
           xpRequired: 9295,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9083,7 +9279,7 @@ const baseLearningPath = {
           },
           xpRequired: 9375,
           xpReward: 45,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "specialized",
@@ -9154,7 +9350,7 @@ const baseLearningPath = {
           },
           xpRequired: 9495,
           xpReward: 60,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9197,7 +9393,7 @@ const baseLearningPath = {
           },
           xpRequired: 9575,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "advanced vocabulary and nuanced expressions",
@@ -9273,7 +9469,7 @@ const baseLearningPath = {
           },
           xpRequired: 9695,
           xpReward: 40,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9318,7 +9514,7 @@ const baseLearningPath = {
           },
           xpRequired: 9775,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "culture",
@@ -9389,7 +9585,7 @@ const baseLearningPath = {
           },
           xpRequired: 9895,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9432,7 +9628,7 @@ const baseLearningPath = {
           },
           xpRequired: 9975,
           xpReward: 35,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           content: {
             vocabulary: {
               topic: "fluency",
@@ -9503,7 +9699,7 @@ const baseLearningPath = {
           },
           xpRequired: 10095,
           xpReward: 50,
-          modes: ["vocabulary", "grammar"],
+          modes: ["vocabulary", "grammar", "verbConjugator"],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 12,
@@ -9555,6 +9751,7 @@ function getLessonXpReward(lessonId = "") {
 }
 
 const SUB_LEVEL_SEGMENTS = {
+  "Pre-A1": ["Pre-A1.1", "Pre-A1.2"],
   A1: ["A1.1", "A1.2", "A1.3"],
   A2: ["A2.1", "A2.2", "A2.3"],
   B1: ["B1.1", "B1.2", "B1.3"],
@@ -9564,6 +9761,13 @@ const SUB_LEVEL_SEGMENTS = {
 };
 
 const CEFR_LEVEL_PROFILES = {
+  "Pre-A1": {
+    interaction: "recognize and respond to isolated words and phrases",
+    production: "produce single words and memorized chunks",
+    mediation: "point to or repeat key words when helping others",
+    accuracy: "use memorized single words with basic pronunciation",
+    discourseSkills: ["word recognition", "single-word responses"],
+  },
   A1: {
     interaction: "exchange short, formulaic turns",
     production: "share personal details and immediate needs",
@@ -9622,6 +9826,7 @@ const ADVANCED_MODES = {
 const ALLOWED_MODULES = new Set([
   "vocabulary",
   "grammar",
+  "verbConjugator",
   "stories",
   "reading",
   "realtime",
@@ -9675,7 +9880,7 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep,
       xpReward: 35,
-      modes: ["grammar", "vocabulary"],
+      modes: ["grammar", "vocabulary", "verbConjugator"],
       content: {
         grammar: {
           topic,
@@ -10687,9 +10892,9 @@ function normalizeLessonModes(unit, lesson) {
   modes = Array.from(new Set(modes));
 
   if (isQuiz) {
-    modes = ["grammar", "vocabulary"];
+    modes = ["grammar", "vocabulary", "verbConjugator"];
   } else if (isSkillBuilder) {
-    modes = ["grammar", "vocabulary"];
+    modes = ["grammar", "vocabulary", "verbConjugator"];
   } else if (isIntegratedPractice) {
     modes = ["realtime", "reading", "stories"];
   } else {
@@ -10697,15 +10902,7 @@ function normalizeLessonModes(unit, lesson) {
       modes = ["vocabulary", "realtime", "reading"];
     }
 
-    const hasOnlyVocabGrammar =
-      modes.length === 2 &&
-      modes.includes("vocabulary") &&
-      modes.includes("grammar");
-
-    if (hasOnlyVocabGrammar) {
-      modes.push("realtime");
-    }
-
+    // Fill in missing modes first (ensures grammar gets added before verbConjugator check)
     while (modes.length < 3) {
       const filler = [
         "vocabulary",
@@ -10718,8 +10915,15 @@ function normalizeLessonModes(unit, lesson) {
       modes.push(filler);
     }
 
-    if (modes.length > 4) {
-      modes = modes.slice(0, 4);
+    // Add verbConjugator whenever both vocabulary and grammar are present (after filling)
+    const hasVocabAndGrammar =
+      modes.includes("vocabulary") && modes.includes("grammar");
+    if (hasVocabAndGrammar && !modes.includes("verbConjugator")) {
+      modes.push("verbConjugator");
+    }
+
+    if (modes.length > 5) {
+      modes = modes.slice(0, 5);
     }
   }
 

@@ -8,16 +8,22 @@
  * @returns {string} - CEFR level in uppercase (e.g., "A1", "B2", "C1")
  */
 export function extractCEFRLevel(id) {
-  if (!id || typeof id !== "string") return "A1"; // Default fallback
+  if (!id || typeof id !== "string") return "Pre-A1"; // Default fallback
 
-  // Match pattern like "lesson-a1-" or "unit-b2-" or "lesson-pre-a1-"
-  const match = id.match(/(?:lesson|unit)-(?:pre-)?(a1|a2|b1|b2|c1|c2)/i);
+  // Match Pre-A1 pattern first (lesson-pre-a1- or unit-pre-a1-)
+  const preA1Match = id.match(/(?:lesson|unit)-pre-a1/i);
+  if (preA1Match) {
+    return "Pre-A1";
+  }
+
+  // Match pattern like "lesson-a1-" or "unit-b2-"
+  const match = id.match(/(?:lesson|unit)-(a1|a2|b1|b2|c1|c2)/i);
   if (match) {
     return match[1].toUpperCase();
   }
 
-  // If no match found, default to A1
-  return "A1";
+  // If no match found, default to Pre-A1
+  return "Pre-A1";
 }
 
 /**

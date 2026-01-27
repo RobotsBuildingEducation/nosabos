@@ -18,6 +18,7 @@ import {
 } from "react-icons/fa";
 import { RiBook2Line, RiPencilLine } from "react-icons/ri";
 import { MdOutlineDescription } from "react-icons/md";
+import { TbLanguage } from "react-icons/tb";
 
 // Module configuration with icons, colors, and descriptions
 const MODULE_CONFIG = {
@@ -39,6 +40,16 @@ const MODULE_CONFIG = {
     description: {
       en: "Master grammar rules through exercises.",
       es: "Domina las reglas gramaticales mediante ejercicios.",
+    },
+  },
+  verbConjugator: {
+    icon: TbLanguage,
+    color: "#F97316",
+    label: { en: "Verbs", es: "Verbos" },
+    shortLabel: { en: "Verbs", es: "Verbos" },
+    description: {
+      en: "Practice verb conjugations across different tenses.",
+      es: "Practica conjugaciones verbales en diferentes tiempos.",
     },
   },
   reading: {

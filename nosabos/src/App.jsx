@@ -114,6 +114,7 @@ import RealTimeTest from "./components/RealTimeTest";
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
+import VerbConjugator from "./components/VerbConjugator";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
@@ -151,6 +152,7 @@ import {
 } from "react-icons/fa";
 import { BsCalendar2DateFill } from "react-icons/bs";
 import { HiVolumeUp } from "react-icons/hi";
+import { TbLanguage } from "react-icons/tb";
 import sparkleSound from "./assets/sparkle.mp3";
 import submitActionSound from "./assets/submitaction.mp3";
 import selectSound from "./assets/select.mp3";
@@ -1752,6 +1754,7 @@ export default function App() {
     "stories",
     "reading",
     "grammar",
+    "verbConjugator",
     "vocabulary",
     "random",
   ];
@@ -1830,6 +1833,7 @@ export default function App() {
     stories: t?.tabs_stories ?? "Stories",
     reading: t?.tabs_reading ?? "Reading",
     grammar: t?.tabs_grammar ?? "Grammar",
+    verbConjugator: t?.tabs_verbs ?? "Conjugation",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
     random: t?.tabs_random ?? "Random",
   };
@@ -1838,6 +1842,7 @@ export default function App() {
     stories: <RiSpeakLine />,
     reading: <LuBookOpen />,
     grammar: <CiEdit />,
+    verbConjugator: <TbLanguage />,
     vocabulary: <RiBook2Line />,
     random: <LuShuffle />,
   };
@@ -4463,6 +4468,29 @@ export default function App() {
                           pauseMs={user?.progress?.pauseMs}
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.grammar}
+                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
+                          quizConfig={
+                            activeLesson?.quizConfig || {
+                              questionsRequired: 10,
+                              passingScore: 8,
+                            }
+                          }
+                          onSkip={switchToRandomLessonMode}
+                          onSendHelpRequest={handleSendToHelpChat}
+                          lessonStartXp={lessonStartXp}
+                        />
+                      </TabPanel>
+                    );
+                  case "verbConjugator":
+                    return (
+                      <TabPanel key="verbConjugator" px={0}>
+                        <VerbConjugator
+                          userLanguage={appLanguage}
+                          activeNpub={activeNpub}
+                          activeNsec={activeNsec}
+                          pauseMs={user?.progress?.pauseMs}
+                          lesson={activeLesson}
+                          lessonContent={activeLesson?.content?.verbConjugator}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
                           quizConfig={
                             activeLesson?.quizConfig || {

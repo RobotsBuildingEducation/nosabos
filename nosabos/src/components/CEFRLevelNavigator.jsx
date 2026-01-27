@@ -30,9 +30,19 @@ const getTranslation = (key, params = {}) => {
   );
 };
 
-const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
 const CEFR_LEVEL_INFO = {
+  "Pre-A1": {
+    name: { en: "Ultimate Beginner", es: "Principiante Total" },
+    displayLabel: "A0",
+    color: "#8B5CF6",
+    gradient: "linear(135deg, #A78BFA, #8B5CF6)",
+    description: {
+      en: "First words and recognition",
+      es: "Primeras palabras y reconocimiento",
+    },
+  },
   A1: {
     name: { en: "Beginner", es: "Principiante" },
     color: "#3B82F6",
@@ -175,7 +185,7 @@ export default function CEFRLevelNavigator({
               fontWeight="black"
               boxShadow={`0 4px 14px ${levelInfo.color}40`}
             >
-              {activeCEFRLevel}
+              {levelInfo.displayLabel || activeCEFRLevel}
             </Badge>
             <Text
               fontSize="lg"
@@ -201,7 +211,7 @@ export default function CEFRLevelNavigator({
               onClick={handlePrevious}
               {...navButtonStyles}
             >
-              {previousLevel}
+              {CEFR_LEVEL_INFO[previousLevel]?.displayLabel || previousLevel}
             </Button>
           ) : (
             <Box />
@@ -217,7 +227,7 @@ export default function CEFRLevelNavigator({
               opacity={isNextLevelUnlocked ? 1 : 0.6}
               cursor={isNextLevelUnlocked ? "pointer" : "not-allowed"}
             >
-              {nextLevel}
+              {CEFR_LEVEL_INFO[nextLevel]?.displayLabel || nextLevel}
             </Button>
           ) : (
             <Box />
