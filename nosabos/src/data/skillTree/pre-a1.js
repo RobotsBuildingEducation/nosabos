@@ -91,16 +91,16 @@ export const SKILL_TREE_PRE_A1 = [
     ],
   },
 
-  // Unit 1: The Alphabet & Sounds
+  // Unit 1: People & Family
   {
-    id: "unit-pre-a1-alphabet",
+    id: "unit-pre-a1-people",
     title: {
-      en: "The Alphabet & Sounds",
-      es: "El Alfabeto y Sonidos",
+      en: "People & Family",
+      es: "Personas y Familia",
     },
     description: {
-      en: "Learn the Spanish alphabet and basic pronunciation",
-      es: "Aprende el alfabeto español y la pronunciación básica",
+      en: "Learn words for the people in your life",
+      es: "Aprende palabras para las personas en tu vida",
     },
     color: "#8B5CF6",
     position: { row: 0, offset: 0 },
@@ -108,96 +108,96 @@ export const SKILL_TREE_PRE_A1 = [
       {
         id: "lesson-pre-a1-1-1",
         title: {
-          en: "Vowels: A, E, I, O, U",
-          es: "Vocales: A, E, I, O, U",
+          en: "My Family",
+          es: "Mi Familia",
         },
         description: {
-          en: "Master the 5 Spanish vowels - the foundation of pronunciation",
-          es: "Domina las 5 vocales españolas - la base de la pronunciación",
+          en: "Learn the words for close family members",
+          es: "Aprende las palabras para familiares cercanos",
         },
         xpRequired: 0,
         xpReward: 15,
         modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
-            topic: "vowel sounds",
-            focusPoints: ["a as in 'father'", "e as in 'bed'", "i as in 'machine'", "o as in 'go'", "u as in 'flute'"],
+            topic: "close family members",
+            focusPoints: ["mamá", "papá", "hermano", "hermana", "familia"],
           },
           grammar: {
-            topic: "vowel pronunciation",
-            focusPoints: ["consistent vowel sounds", "no silent vowels", "pure vowel sounds"],
+            topic: "family with articles",
+            focusPoints: ["el/la with family nouns", "mi mamá, mi papá"],
           },
           verbConjugator: {
-            topic: "vowel recognition",
-            focusPoints: ["identifying vowels in words", "vowel sounds in verbs"],
+            topic: "ser with family",
+            focusPoints: ["es mi mamá", "es mi hermano"],
           },
         },
       },
       {
         id: "lesson-pre-a1-1-2",
         title: {
-          en: "Consonants Part 1",
-          es: "Consonantes Parte 1",
+          en: "More Family",
+          es: "Más Familia",
         },
         description: {
-          en: "Learn consonants B-L and their sounds",
-          es: "Aprende las consonantes B-L y sus sonidos",
+          en: "Grandparents, babies, and extended family",
+          es: "Abuelos, bebés y familia extendida",
         },
         xpRequired: 10,
         xpReward: 15,
         modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
-            topic: "consonant sounds B-L",
-            focusPoints: ["b/v same sound", "c before a/o/u vs e/i", "g before a/o/u vs e/i", "h is silent", "j sound", "ll sound"],
+            topic: "extended family",
+            focusPoints: ["abuelo", "abuela", "bebé", "hijo", "hija", "tío", "tía"],
           },
           grammar: {
-            topic: "consonant rules",
-            focusPoints: ["soft and hard c", "soft and hard g", "silent h"],
+            topic: "masculine and feminine",
+            focusPoints: ["abuelo/abuela", "hijo/hija", "tío/tía"],
           },
           verbConjugator: {
-            topic: "consonant patterns",
-            focusPoints: ["recognizing consonant sounds"],
+            topic: "tener with family",
+            focusPoints: ["tengo un hermano", "tiene una hija"],
           },
         },
       },
       {
         id: "lesson-pre-a1-1-3",
         title: {
-          en: "Consonants Part 2 & Special Letters",
-          es: "Consonantes Parte 2 y Letras Especiales",
+          en: "People Around Me",
+          es: "Personas a Mi Alrededor",
         },
         description: {
-          en: "Complete the alphabet with ñ, rr, and remaining letters",
-          es: "Completa el alfabeto con ñ, rr y las letras restantes",
+          en: "Words for friends, children, and people you see every day",
+          es: "Palabras para amigos, niños y personas que ves todos los días",
         },
         xpRequired: 20,
         xpReward: 15,
         modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
-            topic: "consonants M-Z and special letters",
-            focusPoints: ["ñ sound", "single r vs rr", "qu before e/i", "z sound", "x sound"],
+            topic: "people in daily life",
+            focusPoints: ["amigo", "amiga", "niño", "niña", "hombre", "mujer", "persona"],
           },
           grammar: {
-            topic: "special letter rules",
-            focusPoints: ["ñ unique to Spanish", "rolled r", "accent marks"],
+            topic: "gender of people nouns",
+            focusPoints: ["amigo/amiga", "niño/niña", "hombre/mujer"],
           },
           verbConjugator: {
-            topic: "alphabet mastery",
-            focusPoints: ["spelling out words", "letter recognition"],
+            topic: "describing people",
+            focusPoints: ["es un niño", "es mi amiga", "son personas"],
           },
         },
       },
       {
         id: "lesson-pre-a1-1-quiz",
         title: {
-          en: "Alphabet Quiz",
-          es: "Prueba del Alfabeto",
+          en: "People & Family Quiz",
+          es: "Prueba de Personas y Familia",
         },
         description: {
-          en: "Test your knowledge of the Spanish alphabet",
-          es: "Pon a prueba tu conocimiento del alfabeto español",
+          en: "Test your knowledge of people and family words",
+          es: "Pon a prueba tu conocimiento de palabras de personas y familia",
         },
         xpRequired: 30,
         xpReward: 25,
@@ -205,16 +205,16 @@ export const SKILL_TREE_PRE_A1 = [
         modes: ["vocabulary", "grammar", "verbConjugator"],
         content: {
           vocabulary: {
-            topic: "alphabet review",
-            focusPoints: ["all letters", "pronunciation"],
+            topic: "people and family review",
+            focusPoints: ["family members", "friends", "people"],
           },
           grammar: {
-            topic: "alphabet rules",
-            focusPoints: ["letter sounds", "special characters"],
+            topic: "people vocabulary usage",
+            focusPoints: ["gender", "articles", "possessives"],
           },
           verbConjugator: {
-            topic: "alphabet application",
-            focusPoints: ["spelling", "sound recognition"],
+            topic: "people vocabulary application",
+            focusPoints: ["ser with people", "tener with family"],
           },
         },
       },
