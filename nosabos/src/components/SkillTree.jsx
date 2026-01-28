@@ -403,7 +403,7 @@ const getIconFromTopic = (topic) => {
 // Direct mapping of all unique lesson titles to contextual icons
 const LESSON_TITLE_ICONS = {
   // Pre-A1 - Foundations
-  "Alphabet & Sounds": RiFileTextLine,
+  "People & Family": RiTeamLine,
   "Pronunciation Building Blocks": RiVoiceprintLine,
   "Survival Phrases": RiFirstAidKitLine,
 
