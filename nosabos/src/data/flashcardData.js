@@ -7824,6 +7824,10 @@ export const FLASHCARD_DATA = [
 
 // CEFR level colors - A1 uses beautiful holographic blue
 export const CEFR_COLORS = {
+  "Pre-A1": {
+    primary: "#8B5CF6",
+    gradient: "linear(135deg, #A78BFA, #8B5CF6, #7C3AED, #6D28D9)",
+  },
   A1: {
     primary: "#3B82F6",
     gradient: "linear(135deg, #60A5FA, #3B82F6, #2563EB, #1D4ED8)",
