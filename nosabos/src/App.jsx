@@ -2422,6 +2422,8 @@ export default function App() {
         "ru",
         "de",
         "el",
+        "pl",
+        "ga",
       ].includes(partial.targetLang ?? prev.targetLang)
         ? (partial.targetLang ?? prev.targetLang)
         : "es",
@@ -2548,6 +2550,8 @@ export default function App() {
           "ru",
           "de",
           "el",
+          "pl",
+          "ga",
         ].includes(payload.targetLang)
           ? payload.targetLang
           : "es",
