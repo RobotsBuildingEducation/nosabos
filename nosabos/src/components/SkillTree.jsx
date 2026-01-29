@@ -281,6 +281,7 @@ const getTranslation = (key, params = {}) => {
 };
 
 const CEFR_LEVEL_COLORS = {
+  "Pre-A1": "violet",
   A1: "green",
   A2: "blue",
   B1: "purple",
@@ -1702,19 +1703,19 @@ export default function SkillTree({
   onRandomPracticeFlashcard, // Callback for random practice (awards XP, resets card)
   pauseMs = 2000,
   showMultipleLevels = true, // New prop to show multiple levels
-  levels = ["A1", "A2", "B1", "B2", "C1", "C2"], // Default to showing all CEFR levels A1 through C2
+  levels = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"], // Default to showing all CEFR levels
   // Mode-specific level props
-  activeLessonLevel = "A1", // Currently active/visible level in lesson mode
-  activeFlashcardLevel = "A1", // Currently active/visible level in flashcard mode
-  currentLessonLevel = "A1", // User's current progress level in lesson mode
-  currentFlashcardLevel = "A1", // User's current progress level in flashcard mode
+  activeLessonLevel = "Pre-A1", // Currently active/visible level in lesson mode
+  activeFlashcardLevel = "Pre-A1", // Currently active/visible level in flashcard mode
+  currentLessonLevel = "Pre-A1", // User's current progress level in lesson mode
+  currentFlashcardLevel = "Pre-A1", // User's current progress level in flashcard mode
   onLessonLevelChange, // Callback when user navigates to different level in lesson mode
   onFlashcardLevelChange, // Callback when user navigates to different level in flashcard mode
   lessonLevelCompletionStatus = {}, // Status of all levels in lesson mode
   flashcardLevelCompletionStatus = {}, // Status of all levels in flashcard mode
   // Legacy props (for backwards compatibility)
-  activeCEFRLevel = "A1", // Currently active/visible CEFR level
-  currentCEFRLevel = "A1", // User's current progress level
+  activeCEFRLevel = "Pre-A1", // Currently active/visible CEFR level
+  currentCEFRLevel = "Pre-A1", // User's current progress level
   onLevelChange, // Callback when user navigates to different level
   levelCompletionStatus = {}, // Status of all levels (unlocked/locked, progress, etc.)
   // Conversations props
