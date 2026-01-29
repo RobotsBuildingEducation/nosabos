@@ -1613,6 +1613,8 @@ export default function App() {
     "de",
     "nah",
     "el",
+    "pl",
+    "ga",
   ];
 
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
@@ -5021,6 +5023,8 @@ function BottomActionBar({
     "de",
     "nah",
     "el",
+    "pl",
+    "ga",
   ];
   const PATH_MODES = [
     ...(ALPHABET_LANGS.includes(targetLang)
