@@ -16,7 +16,7 @@ import { getLearningPath } from "./skillTreeData";
  * @returns {string[]} - Array of topic strings
  */
 export function getSkillTreeTopics(level = "A1", targetLang = "es") {
-  const levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
+  const levels = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
   const levelIndex = levels.indexOf(level);
   const effectiveIndex = levelIndex === -1 ? 0 : levelIndex;
 
@@ -83,6 +83,13 @@ export function getRandomSkillTreeTopics(
  * Simple prompts appropriate for each level
  */
 export const fallbackTopics = {
+  "Pre-A1": [
+    { en: "Say hello", es: "Di hola" },
+    { en: "Count to ten", es: "Cuenta hasta diez" },
+    { en: "Name a color", es: "Nombra un color" },
+    { en: "Say your name", es: "Di tu nombre" },
+    { en: "Say thank you", es: "Di gracias" },
+  ],
   A1: [
     { en: "Introduce yourself", es: "Preséntate" },
     { en: "Talk about your family", es: "Habla sobre tu familia" },

@@ -30,6 +30,15 @@ import submitActionSound from "../assets/submitaction.mp3";
 // CEFR level information (matches CEFR_LEVEL_INFO from FlashcardSkillTree)
 const CEFR_LEVELS = [
   {
+    level: "Pre-A1",
+    name: { en: "Foundations", es: "Fundamentos" },
+    description: {
+      en: "First words and phrases",
+      es: "Primeras palabras y frases",
+    },
+    color: "#8B5CF6",
+  },
+  {
     level: "A1",
     name: { en: "Beginner", es: "Principiante" },
     description: {
@@ -226,7 +235,7 @@ export default function ConversationSettingsDrawer({
                       fontWeight="bold"
                       flexShrink={0}
                     >
-                      {currentLevel.level}
+                      {currentLevel.level === "Pre-A1" ? "A0" : currentLevel.level}
                     </Badge>
                     <Box minW={0} flex={1}>
                       <Text fontSize="sm" fontWeight="medium" noOfLines={1}>
@@ -267,7 +276,7 @@ export default function ConversationSettingsDrawer({
                           fontWeight="bold"
                           flexShrink={0}
                         >
-                          {level.level}
+                          {level.level === "Pre-A1" ? "A0" : level.level}
                         </Badge>
                         <Box minW={0} flex={1}>
                           <Text fontSize="sm" fontWeight="medium">
