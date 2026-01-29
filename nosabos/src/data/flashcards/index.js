@@ -13,6 +13,7 @@ const flashcardCache = new Map();
 
 // Dynamic imports for each CEFR level
 const levelLoaders = {
+  "Pre-A1": () => import('./pre-a1.js').then(m => m.FLASHCARDS_PRE_A1),
   A1: () => import('./a1.js').then(m => m.FLASHCARDS_A1),
   A2: () => import('./a2.js').then(m => m.FLASHCARDS_A2),
   B1: () => import('./b1.js').then(m => m.FLASHCARDS_B1),
@@ -23,7 +24,7 @@ const levelLoaders = {
 
 /**
  * Load flashcards for a specific CEFR level
- * @param {string} level - CEFR level (A1, A2, B1, B2, C1, C2)
+ * @param {string} level - CEFR level (Pre-A1, A1, A2, B1, B2, C1, C2)
  * @returns {Promise<Array>} Flashcards for the specified level
  */
 export async function loadFlashcardsForLevel(level) {
@@ -70,7 +71,7 @@ export function getUserProgressLevel(userProgress = {}) {
   );
 
   let cumulativeCount = 0;
-  let currentLevel = 'A1';
+  let currentLevel = 'Pre-A1';
   let completedInCurrentLevel = 0;
 
   for (const level of CEFR_LEVELS) {
