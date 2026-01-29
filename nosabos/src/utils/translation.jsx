@@ -526,7 +526,6 @@ export const translations = {
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulary",
     mode_grammar: "Grammar",
-    mode_verbConjugator: "Verbs",
     mode_reading: "Reading",
     mode_realtime: "Chat",
     mode_stories: "Stories",
@@ -1143,7 +1142,6 @@ export const translations = {
     // Mode names for lesson modal
     mode_vocabulary: "Vocabulario",
     mode_grammar: "Gramática",
-    mode_verbConjugator: "Verbos",
     mode_reading: "Lectura",
     mode_realtime: "Chat",
     mode_stories: "Narrativos",

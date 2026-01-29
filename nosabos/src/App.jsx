@@ -114,7 +114,6 @@ import RealTimeTest from "./components/RealTimeTest";
 import { translations } from "./utils/translation";
 import { callResponses, DEFAULT_RESPONSES_MODEL } from "./utils/llm";
 import Vocabulary from "./components/Vocabulary";
-import VerbConjugator from "./components/VerbConjugator";
 import StoryMode from "./components/Stories";
 import History from "./components/History";
 import HelpChatFab from "./components/HelpChatFab";
@@ -176,7 +175,7 @@ import {
 --------------------------- */
 const isTrue = (v) => v === true || v === "true" || v === 1 || v === "1";
 
-const CEFR_LEVELS = new Set(["A1", "A2", "B1", "B2", "C1", "C2"]);
+const CEFR_LEVELS = new Set(["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"]);
 const ONBOARDING_TOTAL_STEPS = 1;
 const TEST_UNLOCK_NSEC =
   "nsec1akcvuhtemz3kw58gvvfg38uucu30zfsahyt6ulqapx44lype6a9q42qevv";
@@ -189,15 +188,15 @@ const personaDefaultFor = (lang) =>
 
 /**
  * Migrate old level values to CEFR levels
- * beginner -> A1, intermediate -> B1, advanced -> C1
+ * beginner -> Pre-A1, intermediate -> B1, advanced -> C1
  */
 function migrateToCEFRLevel(level) {
   const migrations = {
-    beginner: "A1",
+    beginner: "Pre-A1",
     intermediate: "B1",
     advanced: "C1",
   };
-  return migrations[level] || level || "A1";
+  return migrations[level] || level || "Pre-A1";
 }
 const TARGET_LANGUAGE_LABELS = {
   en: "English",
@@ -478,7 +477,7 @@ function TopBar({
 
   // ---- Local draft state (no autosave) ----
   const p = user?.progress || {};
-  const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "A1");
+  const [level, setLevel] = useState(migrateToCEFRLevel(p.level) || "Pre-A1");
   const [supportLang, setSupportLang] = useState(p.supportLang || "en");
   const [voice, setVoice] = useState(p.voice || "alloy");
   const defaultPersona =
@@ -610,7 +609,7 @@ function TopBar({
   // Refill draft when store changes
   useEffect(() => {
     const q = user?.progress || {};
-    setLevel(migrateToCEFRLevel(q.level) || "A1");
+    setLevel(migrateToCEFRLevel(q.level) || "Pre-A1");
     setSupportLang(q.supportLang || "en");
     setVoice(q.voice || "alloy");
     setVoicePersona(
@@ -1358,7 +1357,7 @@ export default function App() {
   const resolvedSupportLang =
     normalizeSupportLang(user?.progress?.supportLang) ||
     (storedUiLang === "es" ? "es" : "en");
-  const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "A1";
+  const resolvedLevel = migrateToCEFRLevel(user?.progress?.level) || "Pre-A1";
 
   useEffect(() => {
     const nextLang = resolvedSupportLang === "es" ? "es" : "en";
@@ -1754,7 +1753,6 @@ export default function App() {
     "stories",
     "reading",
     "grammar",
-    "verbConjugator",
     "vocabulary",
     "random",
   ];
@@ -1833,7 +1831,6 @@ export default function App() {
     stories: t?.tabs_stories ?? "Stories",
     reading: t?.tabs_reading ?? "Reading",
     grammar: t?.tabs_grammar ?? "Grammar",
-    verbConjugator: t?.tabs_verbs ?? "Conjugation",
     vocabulary: t?.tabs_vocab ?? "Vocabulary",
     random: t?.tabs_random ?? "Random",
   };
@@ -1842,7 +1839,6 @@ export default function App() {
     stories: <RiSpeakLine />,
     reading: <LuBookOpen />,
     grammar: <CiEdit />,
-    verbConjugator: <TbLanguage />,
     vocabulary: <RiBook2Line />,
     random: <LuShuffle />,
   };
@@ -1883,7 +1879,7 @@ export default function App() {
 
   // Default progress (mirrors onboarding)
   const DEFAULT_PROGRESS = {
-    level: "A1",
+    level: "Pre-A1",
     supportLang: appLanguage, // Use detected/selected app language
     voice: "alloy",
     voicePersona:
@@ -2374,7 +2370,7 @@ export default function App() {
     };
 
     const prev = user?.progress || {
-      level: "A1",
+      level: "Pre-A1",
       supportLang: "en",
       voice: "alloy",
       voicePersona: translations?.en?.onboarding_persona_default_example || "",
@@ -2387,7 +2383,7 @@ export default function App() {
 
     const next = {
       ...prev, // Preserve all existing progress data including XP
-      level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "A1",
+      level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
       supportLang: ["en", "es"].includes(
         partial.supportLang ?? prev.supportLang
       )
@@ -2515,7 +2511,7 @@ export default function App() {
 
       // Simplified onboarding - only language settings, voice persona, and pause
       const normalized = {
-        level: migrateToCEFRLevel(safe(payload.level, "A1")),
+        level: migrateToCEFRLevel(safe(payload.level, "Pre-A1")),
         supportLang: ["en", "es"].includes(payload.supportLang)
           ? payload.supportLang
           : "en",
@@ -3575,8 +3571,9 @@ export default function App() {
   }, [user?.progress, resolvedTargetLang]);
 
   // CEFR level configuration (shared across modes)
-  const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+  const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
   const CEFR_LEVEL_COUNTS = {
+    "Pre-A1": { flashcards: 100, lessons: 33 }, // 1 tutorial (1) + 8 units (4 each) = 1 + 32
     A1: { flashcards: 300, lessons: 110 }, // 1 pre-unit (7) + 17 units (6 each) = 7 + 102
     A2: { flashcards: 250, lessons: 108 }, // 18 units × 6 lessons per unit
     B1: { flashcards: 200, lessons: 90 }, // 15 units × 6 lessons per unit
@@ -3586,6 +3583,15 @@ export default function App() {
   };
 
   const CEFR_LEVEL_INFO = {
+    "Pre-A1": {
+      name: { en: "Ultimate Beginner", es: "Principiante Total" },
+      color: "#8B5CF6",
+      gradient: "linear(135deg, #A78BFA, #8B5CF6)",
+      description: {
+        en: "First words and recognition",
+        es: "Primeras palabras y reconocimiento",
+      },
+    },
     A1: {
       name: { en: "Beginner", es: "Principiante" },
       color: "#3B82F6",
@@ -3640,12 +3646,13 @@ export default function App() {
   };
 
   const getLessonLevelFromId = (lessonId = "") => {
-    const match = lessonId.match(/lesson-(?:pre-)?(?:tutorial-)?([a-z]\d+)/i);
-    if (match) return match[1].toUpperCase();
+    // Pre-A1 lessons: "lesson-pre-a1-..." or tutorial "lesson-tutorial-..."
+    if (lessonId.includes("lesson-pre-a1") || lessonId.includes("lesson-tutorial")) {
+      return "Pre-A1";
+    }
 
-    // Tutorial lessons like "lesson-tutorial-1" don't encode the CEFR level
-    // in their ID, but they belong to A1 for progression unlocking.
-    if (lessonId.includes("lesson-tutorial")) return "A1";
+    const match = lessonId.match(/lesson-([a-z]\d+)/i);
+    if (match) return match[1].toUpperCase();
 
     return null;
   };
@@ -3772,7 +3779,7 @@ export default function App() {
   const currentLessonLevel = useMemo(() => {
     // Find the highest level that's unlocked for lessons
     // A level is unlocked if the previous level is complete
-    let unlockedLevel = "A1"; // A1 is always unlocked
+    let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
@@ -3792,7 +3799,7 @@ export default function App() {
   const currentFlashcardLevel = useMemo(() => {
     // Find the highest level that's unlocked for flashcards
     // A level is unlocked if the previous level is complete
-    let unlockedLevel = "A1"; // A1 is always unlocked
+    let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
@@ -3812,7 +3819,7 @@ export default function App() {
   const currentCEFRLevel = useMemo(() => {
     // Find the highest level that's unlocked in both modes
     // A level is unlocked if the previous level is complete in BOTH modes
-    let unlockedLevel = "A1"; // A1 is always unlocked
+    let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
@@ -3830,8 +3837,8 @@ export default function App() {
 
   // State for which CEFR level is currently being viewed (separate for each mode)
   // Initialize with default, will be synced from user document when loaded
-  const [activeLessonLevel, setActiveLessonLevel] = useState("A1");
-  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState("A1");
+  const [activeLessonLevel, setActiveLessonLevel] = useState("Pre-A1");
+  const [activeFlashcardLevel, setActiveFlashcardLevel] = useState("Pre-A1");
   const [hasInitializedLevels, setHasInitializedLevels] = useState(false);
 
   // Sync active levels from user document when it loads
@@ -3845,7 +3852,7 @@ export default function App() {
     ) {
       // Validate the saved level is actually unlocked
       const savedLevelIndex = CEFR_LEVELS.indexOf(user.activeLessonLevel);
-      let isUnlocked = user.activeLessonLevel === "A1";
+      let isUnlocked = user.activeLessonLevel === "Pre-A1";
 
       if (!isUnlocked) {
         isUnlocked = true;
@@ -3871,7 +3878,7 @@ export default function App() {
     ) {
       // Validate the saved level is actually unlocked
       const savedLevelIndex = CEFR_LEVELS.indexOf(user.activeFlashcardLevel);
-      let isUnlocked = user.activeFlashcardLevel === "A1";
+      let isUnlocked = user.activeFlashcardLevel === "Pre-A1";
 
       if (!isUnlocked) {
         isUnlocked = true;
@@ -4029,7 +4036,7 @@ export default function App() {
       const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
 
       // Check if this level is unlocked in lesson mode
-      let isUnlocked = newLevel === "A1";
+      let isUnlocked = newLevel === "Pre-A1";
 
       if (!isUnlocked) {
         // Check all levels before this one are complete in lesson mode
@@ -4061,7 +4068,7 @@ export default function App() {
       const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
 
       // Check if this level is unlocked in flashcard mode
-      let isUnlocked = newLevel === "A1";
+      let isUnlocked = newLevel === "Pre-A1";
 
       if (!isUnlocked) {
         // Check all levels before this one are complete in flashcard mode
@@ -4093,7 +4100,7 @@ export default function App() {
       const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
 
       // Check if this level is unlocked
-      let isUnlocked = newLevel === "A1";
+      let isUnlocked = newLevel === "Pre-A1";
 
       if (!isUnlocked) {
         // Check all levels before this one are complete
@@ -4468,29 +4475,6 @@ export default function App() {
                           pauseMs={user?.progress?.pauseMs}
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.grammar}
-                          isFinalQuiz={activeLesson?.isFinalQuiz || false}
-                          quizConfig={
-                            activeLesson?.quizConfig || {
-                              questionsRequired: 10,
-                              passingScore: 8,
-                            }
-                          }
-                          onSkip={switchToRandomLessonMode}
-                          onSendHelpRequest={handleSendToHelpChat}
-                          lessonStartXp={lessonStartXp}
-                        />
-                      </TabPanel>
-                    );
-                  case "verbConjugator":
-                    return (
-                      <TabPanel key="verbConjugator" px={0}>
-                        <VerbConjugator
-                          userLanguage={appLanguage}
-                          activeNpub={activeNpub}
-                          activeNsec={activeNsec}
-                          pauseMs={user?.progress?.pauseMs}
-                          lesson={activeLesson}
-                          lessonContent={activeLesson?.content?.verbConjugator}
                           isFinalQuiz={activeLesson?.isFinalQuiz || false}
                           quizConfig={
                             activeLesson?.quizConfig || {

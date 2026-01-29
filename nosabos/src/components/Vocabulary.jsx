@@ -423,10 +423,10 @@ function buildMAVocabStreamPrompt({
     `Create ONE ${TARGET} vocabulary fill-in-the-blanks question with EXACTLY ${numBlanks} blanks. Difficulty: ${
       isTutorial ? "absolute beginner, very easy" : diff
     }`,
-    `- Create a sentence in ${SUPPORT} with EXACTLY ${numBlanks} blanks written as "___" where ${TARGET} vocabulary words should be inserted.`,
+    `- Create a sentence in ${TARGET} with EXACTLY ${numBlanks} blanks written as "___" where ${TARGET} vocabulary words should be inserted.`,
     `- The sentence should test vocabulary knowledge by having the learner fill in ${TARGET} words.`,
     `- Each blank has EXACTLY ONE correct answer. The "answers" array MUST have EXACTLY ${numBlanks} items, one for each blank IN ORDER.`,
-    `- Example: "The ___ is on the ___ in my room" with answers ["libro", "mesa"] means blank 1 = libro (book), blank 2 = mesa (table).`,
+    `- Example: A ${TARGET} sentence like "El ___ está en la ___" with answers ["libro", "mesa"] means blank 1 = libro, blank 2 = mesa.`,
     `- 5–6 distinct single-word choices in ${TARGET}. Include the ${numBlanks} correct answers plus 2-4 distractors.`,
     `- CRITICAL: Each choice MUST be a single ${TARGET} word. NEVER combine words with "/" or "or".`,
     `- Hint in ${SUPPORT} (≤8 words).`,
@@ -436,7 +436,7 @@ function buildMAVocabStreamPrompt({
     topicDirective,
     "",
     "Stream as NDJSON:",
-    `{"type":"vocab_ma","phase":"q","question":"<${SUPPORT} sentence with EXACTLY ${numBlanks} ___ blanks for ${TARGET} words>"}  // first`,
+    `{"type":"vocab_ma","phase":"q","question":"<${TARGET} sentence with EXACTLY ${numBlanks} ___ blanks for ${TARGET} words>"}  // first`,
     `{"type":"vocab_ma","phase":"choices","choices":["<${TARGET} word1>","<${TARGET} word2>","..."]}  // second, 5-6 single words`,
     `{"type":"vocab_ma","phase":"meta","hint":"<${SUPPORT} hint>","answers":["<answer for blank 1>","<answer for blank 2>"${
       numBlanks === 3 ? ',"<answer for blank 3>"' : ""

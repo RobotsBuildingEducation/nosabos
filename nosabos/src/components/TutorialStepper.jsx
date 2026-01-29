@@ -42,16 +42,6 @@ const MODULE_CONFIG = {
       es: "Domina las reglas gramaticales mediante ejercicios.",
     },
   },
-  verbConjugator: {
-    icon: TbLanguage,
-    color: "#F97316",
-    label: { en: "Verbs", es: "Verbos" },
-    shortLabel: { en: "Verbs", es: "Verbos" },
-    description: {
-      en: "Practice verb conjugations across different tenses.",
-      es: "Practica conjugaciones verbales en diferentes tiempos.",
-    },
-  },
   reading: {
     icon: FaBookOpen,
     color: "#F59E0B",

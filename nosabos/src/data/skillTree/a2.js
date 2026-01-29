@@ -28,7 +28,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1350,
           xpReward: 45,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "physical descriptions",
@@ -101,7 +101,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1410,
           xpReward: 50,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -116,7 +116,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -144,7 +144,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1450,
           xpReward: 55,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "places",
@@ -215,7 +215,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1510,
           xpReward: 40,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -230,7 +230,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -258,7 +258,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1550,
           xpReward: 45,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "shopping",
@@ -329,7 +329,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1610,
           xpReward: 40,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -344,7 +344,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -372,7 +372,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "shopping",
@@ -443,7 +443,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1710,
           xpReward: 60,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -458,7 +458,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -486,7 +486,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1750,
           xpReward: 35,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "transportation",
@@ -557,7 +557,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1810,
           xpReward: 40,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -572,7 +572,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -600,7 +600,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1850,
           xpReward: 35,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "directions",
@@ -671,7 +671,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1910,
           xpReward: 50,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -686,7 +686,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -714,7 +714,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 1950,
           xpReward: 45,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "invitations",
@@ -785,7 +785,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2010,
           xpReward: 40,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -800,7 +800,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -828,7 +828,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2050,
           xpReward: 45,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "arts and reading",
@@ -899,7 +899,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2110,
           xpReward: 50,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -914,7 +914,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -942,7 +942,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2150,
           xpReward: 55,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "sports",
@@ -1013,7 +1013,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2210,
           xpReward: 60,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1028,7 +1028,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1056,7 +1056,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2250,
           xpReward: 35,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -1127,7 +1127,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2310,
           xpReward: 40,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1142,7 +1142,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1170,7 +1170,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2350,
           xpReward: 55,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -1241,7 +1241,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2410,
           xpReward: 40,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1256,7 +1256,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1284,7 +1284,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2450,
           xpReward: 35,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "narrative and storytelling",
@@ -1357,7 +1357,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2510,
           xpReward: 40,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1372,7 +1372,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1400,7 +1400,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2550,
           xpReward: 45,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "time expressions",
@@ -1471,7 +1471,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2610,
           xpReward: 40,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1486,7 +1486,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1514,7 +1514,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2650,
           xpReward: 55,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "body parts",
@@ -1585,7 +1585,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2710,
           xpReward: 60,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1600,7 +1600,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1628,7 +1628,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2750,
           xpReward: 45,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "health",
@@ -1699,7 +1699,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2810,
           xpReward: 60,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1714,7 +1714,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1742,7 +1742,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2850,
           xpReward: 35,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "careers",
@@ -1813,7 +1813,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2910,
           xpReward: 60,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1828,7 +1828,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1856,7 +1856,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 2950,
           xpReward: 55,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "education",
@@ -1927,7 +1927,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 3010,
           xpReward: 50,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -1942,7 +1942,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
     },
     {
@@ -1970,7 +1970,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 3050,
           xpReward: 55,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           content: {
             vocabulary: {
               topic: "digital communication",
@@ -2043,7 +2043,7 @@ export const SKILL_TREE_A2 = [
           },
           xpRequired: 3110,
           xpReward: 60,
-          modes: ["vocabulary", "grammar", "verbConjugator"],
+          modes: ["vocabulary", "grammar" ],
           isFinalQuiz: true,
           quizConfig: {
             questionsRequired: 10,
@@ -2058,7 +2058,7 @@ export const SKILL_TREE_A2 = [
               focusPoints: ["comprehensive review"],
             },
           },
-        },
+        }
       ],
-    },
+    }
 ];
