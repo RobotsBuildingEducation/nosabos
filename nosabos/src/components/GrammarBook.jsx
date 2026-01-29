@@ -218,6 +218,8 @@ function useSharedProgress() {
         "ru",
         "de",
         "el",
+        "pl",
+        "ga",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
@@ -971,6 +973,8 @@ export default function GrammarBook({
     "ru",
     "de",
     "el",
+    "pl",
+    "ga",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";

@@ -190,6 +190,8 @@ export default function LessonGroupQuiz({
         "ru",
         "de",
         "el",
+        "pl",
+        "ga",
       ].includes(prog.targetLang)
         ? prog.targetLang
         : "es";
