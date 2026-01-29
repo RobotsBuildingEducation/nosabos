@@ -76,6 +76,8 @@ const LANGUAGE_NAMES = {
   de: "German",
   nah: "Nahuatl",
   el: "Greek",
+  pl: "Polish",
+  ga: "Irish",
 };
 
 const LANGUAGE_NAMES_EN = {
@@ -90,6 +92,8 @@ const LANGUAGE_NAMES_EN = {
   de: "German",
   nah: "Nahuatl",
   el: "Greek",
+  pl: "Polish",
+  ga: "Irish",
 };
 
 const LANGUAGE_NAMES_ES = {
@@ -104,6 +108,8 @@ const LANGUAGE_NAMES_ES = {
   de: "Alemán",
   nah: "Náhuatl",
   el: "Griego",
+  pl: "Polaco",
+  ga: "Irlandés",
 };
 
 const LANGUAGE_SCRIPTS = {
@@ -118,6 +124,8 @@ const LANGUAGE_SCRIPTS = {
   de: "Latin alphabet",
   nah: "Latin alphabet",
   el: "Greek alphabet",
+  pl: "Latin alphabet",
+  ga: "Latin alphabet",
 };
 
 const normalizeMeaning = (meaning) => {

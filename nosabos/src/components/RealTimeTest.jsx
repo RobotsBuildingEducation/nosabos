@@ -966,7 +966,7 @@ export default function RealTimeTest({
       setVoicePersona(p.voicePersona);
     }
     if (
-      ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de", "el"].includes(
+      ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de", "el", "pl", "ga"].includes(
         p.targetLang
       )
     ) {
@@ -1283,6 +1283,8 @@ export default function RealTimeTest({
       ru: "Russian",
       de: "German",
       el: "Greek",
+      pl: "Polish",
+      ga: "Irish",
     }[goalLangCode] || "English";
 
     // Check if this is an integrated practice lesson
@@ -1493,6 +1495,8 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       ru: "Russian",
       de: "German",
       el: "Greek",
+      pl: "Polish",
+      ga: "Irish",
     }[goalLangCode] || "English";
 
     // Get current goal for context
@@ -1966,6 +1970,12 @@ Return ONLY JSON:
     } else if (tLang === "el") {
       strict =
         "Απαντήστε ΜΟΝΟ στα ελληνικά. Μην χρησιμοποιείτε αγγλικά ή ισπανικά. Respond ONLY in Greek.";
+    } else if (tLang === "pl") {
+      strict =
+        "Odpowiadaj TYLKO po polsku. Nie używaj angielskiego ani hiszpańskiego. Respond ONLY in Polish.";
+    } else if (tLang === "ga") {
+      strict =
+        "Freagair i nGaeilge AMHÁIN. Ná húsáid Béarla ná Spáinnis. Respond ONLY in Irish.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
@@ -2130,6 +2140,10 @@ Return ONLY JSON:
           ? "Stimme aktualisiert."
           : targetLangRef.current === "el"
           ? "Η φωνή ενημερώθηκε."
+          : targetLangRef.current === "pl"
+          ? "Głos zaktualizowany."
+          : targetLangRef.current === "ga"
+          ? "Guth nuashonraithe."
           : "Voice updated.";
       try {
         dcRef.current.send(

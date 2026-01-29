@@ -19,6 +19,8 @@ export const TTS_LANG_TAG = {
   ja: "ja-JP",
   de: "de-DE",
   el: "el-GR",
+  pl: "pl-PL",
+  ga: "ga-IE",
 };
 
 export const DEFAULT_TTS_VOICE = "alloy";

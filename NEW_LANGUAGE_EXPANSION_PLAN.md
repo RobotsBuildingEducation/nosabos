@@ -17,6 +17,10 @@ When adding a new language, choose an ISO 639-1 (2-letter) or ISO 639-3 (3-lette
 - `ja` - Japanese
 - `nah` - Huastec Nahuatl (ISO 639-3)
 - `ru` - Russian
+- `de` - German
+- `el` - Greek
+- `pl` - Polish
+- `ga` - Irish
 - **[NEW]** - Your new language code
 
 ---
@@ -29,7 +33,8 @@ When adding a new language, you must determine the **initial learning mode** bas
 Languages that do **not** use the Latin alphabet start in **Alphabet Bootcamp** mode first:
 - `ja` - Japanese (Hiragana/Katakana/Kanji)
 - `ru` - Russian (Cyrillic)
-- **Future examples**: Arabic, Korean, Greek, Hebrew, Thai, Chinese, etc.
+- `el` - Greek (Greek alphabet)
+- **Future examples**: Arabic, Korean, Hebrew, Thai, Chinese, etc.
 
 **Why?** Learners need to master the target language's writing system before they can effectively engage with vocabulary and grammar content in the skill tree.
 
@@ -41,7 +46,10 @@ Languages that use the Latin alphabet start directly in the **Skill Tree** mode:
 - `fr` - French
 - `it` - Italian
 - `nl` - Dutch
+- `de` - German
 - `nah` - Huastec Nahuatl
+- `pl` - Polish (has special diacritics: ą, ć, ę, ł, ń, ó, ś, ź, ż)
+- `ga` - Irish (has fada accents: á, é, í, ó, ú)
 
 **Why?** Learners can immediately read and recognize words, so they can jump straight into vocabulary and grammar lessons.
 
@@ -416,7 +424,56 @@ const BCP47 = {
 
 ---
 
-### 14. toLangKey Functions
+### 14. Virtual Keyboard (`src/components/VirtualKeyboard.jsx`)
+
+For languages with special characters or non-Latin scripts, add a virtual keyboard layout. The VirtualKeyboard component provides on-screen character input for languages that have characters not easily accessible on standard keyboards.
+
+**Currently supported languages:**
+- `ja` - Japanese (Hiragana/Katakana with mode toggle)
+- `ru` - Russian (Cyrillic with uppercase toggle)
+- `el` - Greek (Greek alphabet with uppercase toggle)
+- `pl` - Polish (special diacritics: ą, ć, ę, ł, ń, ó, ś, ź, ż)
+- `ga` - Irish (fada vowels: á, é, í, ó, ú)
+
+**To add a new virtual keyboard:**
+
+1. **Define the character arrays (~line 15-294):**
+```javascript
+// Polish special characters keyboard layout
+const POLISH = [["ą", "ć", "ę", "ł", "ń", "ó", "ś", "ź", "ż"]];
+
+const POLISH_UPPER = [["Ą", "Ć", "Ę", "Ł", "Ń", "Ó", "Ś", "Ź", "Ż"]];
+```
+
+2. **Add language detection flag (~line 351-355):**
+```javascript
+const isPolish = lang === "pl";
+```
+
+3. **Update the null return check (~line 375):**
+```javascript
+if (!isJapanese && !isRussian && !isGreek && !isPolish && !isIrish) return null;
+```
+
+4. **Add to getKeyboardLayout function (~line 378-395):**
+```javascript
+if (isPolish) {
+  return isUpperCase ? POLISH_UPPER : POLISH;
+}
+```
+
+5. **Update the uppercase toggle condition (~line 431):**
+```javascript
+{(isRussian || isGreek || isPolish || isIrish) && (
+  // ... toggle button
+)}
+```
+
+**Note:** Languages using the standard Latin alphabet without special characters (English, etc.) don't need virtual keyboard support.
+
+---
+
+### 15. toLangKey Functions
 
 Add language variants to `toLangKey` functions for input normalization:
 
@@ -491,6 +548,7 @@ After adding a new language, test these scenarios:
 - [ ] **RealTime lessons**: Conversation practice works in the new language
 - [ ] **TTS**: Text-to-speech pronounces the new language correctly
 - [ ] **Speech recognition**: Understands spoken input in the new language
+- [ ] **Virtual keyboard**: Special characters keyboard works (if applicable)
 - [ ] **UI labels**: Language name displays correctly in English and Spanish UI
 
 ---
@@ -502,13 +560,15 @@ After adding a new language, test these scenarios:
 | Translations | 1 |
 | TTS Config | 1 |
 | UI Components | 3 (Onboarding, App, HelpChatFab) |
+| Flag Icons | 1 (flags.jsx) |
 | Skill Tree Data | 3 (skillTreeData, c2, a1) |
-| Module Components | 7 (LessonGroupQuiz, RealTimeTest, History, GrammarBook, Vocabulary, Stories, JobScript) |
+| Module Components | 8 (LessonGroupQuiz, RealTimeTest, History, GrammarBook, Vocabulary, Stories, JobScript, AlphabetBootcamp) |
 | Utility Files | 2 (tts, noteGeneration) |
 | Hooks | 1 (useSpeechPractice) |
 | Conversations | 1 |
 | Randomize | 1 |
-| **Total** | **~20 files** |
+| Virtual Keyboard | 1 (if special characters needed) |
+| **Total** | **~22 files** |
 
 ---
 

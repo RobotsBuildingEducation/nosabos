@@ -162,10 +162,12 @@ import {
   frenchFlag,
   germanFlag,
   greekFlag,
+  irishFlag,
   italianFlag,
   japaneseFlag,
   mexicanFlag,
   netherlandsFlag,
+  polishFlag,
   russianFlag,
   usaFlag,
 } from "./components/flagsIcons/flags";
@@ -210,6 +212,8 @@ const TARGET_LANGUAGE_LABELS = {
   ru: "Russian",
   de: "German",
   el: "Greek",
+  pl: "Polish",
+  ga: "Irish",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -586,6 +590,18 @@ function TopBar({
         label: t.onboarding_practice_ru,
         beta: true,
         flag: russianFlag(),
+      },
+      {
+        value: "pl",
+        label: t.onboarding_practice_pl,
+        beta: true,
+        flag: polishFlag(),
+      },
+      {
+        value: "ga",
+        label: t.onboarding_practice_ga,
+        beta: true,
+        flag: irishFlag(),
       },
     ];
 

@@ -850,6 +850,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     if (code === "ru") return translations[uiLang].language_ru || "Russian";
     if (code === "de") return translations[uiLang].language_de || "German";
     if (code === "el") return translations[uiLang].language_el || "Greek";
+    if (code === "pl") return translations[uiLang].language_pl || "Polish";
+    if (code === "ga") return translations[uiLang].language_ga || "Irish";
     return code;
   };
 
@@ -1255,6 +1257,12 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } else if (tLang === "el") {
       strict =
         "Απαντήστε ΜΟΝΟ στα ελληνικά. Μην χρησιμοποιείτε αγγλικά ή ισπανικά. Respond ONLY in Greek.";
+    } else if (tLang === "pl") {
+      strict =
+        "Odpowiadaj TYLKO po polsku. Nie używaj angielskiego ani hiszpańskiego. Respond ONLY in Polish.";
+    } else if (tLang === "ga") {
+      strict =
+        "Freagair i nGaeilge AMHÁIN. Ná húsáid Béarla ná Spáinnis. Respond ONLY in Irish.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
@@ -1369,6 +1377,10 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           ? "German"
           : tLang === "el"
           ? "Greek"
+          : tLang === "pl"
+          ? "Polish"
+          : tLang === "ga"
+          ? "Irish"
           : "English";
       const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 

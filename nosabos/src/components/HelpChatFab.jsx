@@ -284,6 +284,8 @@ const HelpChatFab = forwardRef(
           ru: "Russian (русский)",
           de: "German (Deutsch)",
           el: "Greek (Ελληνικά)",
+          pl: "Polish (polski)",
+          ga: "Irish (Gaeilge)",
         }[code] || code);
 
       const strict =
@@ -589,6 +591,8 @@ const HelpChatFab = forwardRef(
           ru: "Russian",
           de: "German",
           el: "Greek",
+          pl: "Polish",
+          ga: "Irish",
         }[code] || code);
 
       const levelHint =

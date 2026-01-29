@@ -39,10 +39,12 @@ import {
   frenchFlag,
   germanFlag,
   greekFlag,
+  irishFlag,
   italianFlag,
   japaneseFlag,
   mexicanFlag,
   netherlandsFlag,
+  polishFlag,
   russianFlag,
   usaFlag,
 } from "./flagsIcons/flags";
@@ -178,6 +180,18 @@ export default function Onboarding({
         label: ui.onboarding_practice_ru,
         beta: true,
         flag: russianFlag(),
+      },
+      {
+        value: "pl",
+        label: ui.onboarding_practice_pl,
+        beta: true,
+        flag: polishFlag(),
+      },
+      {
+        value: "ga",
+        label: ui.onboarding_practice_ga,
+        beta: true,
+        flag: irishFlag(),
       },
     ];
 

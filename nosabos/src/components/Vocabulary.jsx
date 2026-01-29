@@ -174,6 +174,8 @@ const LANG_NAME = (code) =>
     ru: "Russian",
     de: "German",
     el: "Greek",
+    pl: "Polish",
+    ga: "Irish",
   }[code] || code);
 
 const strongNpub = (user) =>
