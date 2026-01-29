@@ -232,7 +232,12 @@ export default function FlashcardSkillTree({
   const [isPracticeOpen, setIsPracticeOpen] = useState(false);
   const [isRandomPractice, setIsRandomPractice] = useState(false);
   const [localCompletedCards, setLocalCompletedCards] = useState(new Set());
-  const [flashcardData, setFlashcardData] = useState(FLASHCARD_DATA);
+  // Initialize with filtered data to prevent flicker
+  const [flashcardData, setFlashcardData] = useState(() =>
+    activeCEFRLevel
+      ? FLASHCARD_DATA.filter((card) => card.cefrLevel === activeCEFRLevel)
+      : FLASHCARD_DATA
+  );
   const [isLoadingFlashcards, setIsLoadingFlashcards] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   const [isReady, setIsReady] = useState(false);
