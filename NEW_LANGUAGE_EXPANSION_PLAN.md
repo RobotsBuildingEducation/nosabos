@@ -473,7 +473,128 @@ if (isPolish) {
 
 ---
 
-### 15. toLangKey Functions
+### 15. ALPHABET_LANGS Arrays in App.jsx
+
+**CRITICAL:** There are **TWO** `ALPHABET_LANGS` arrays in App.jsx that control whether the Alphabet Bootcamp navigation option appears for a language. Both must be updated!
+
+**First location (~line 1604-1616):**
+```javascript
+const ALPHABET_LANGS = [
+  "ru",
+  "ja",
+  "en",
+  "es",
+  "pt",
+  "fr",
+  "it",
+  "nl",
+  "de",
+  "nah",
+  "el",
+  "[NEW]",  // Add your new language
+];
+```
+
+**Second location (~line 5012-5024):**
+```javascript
+const ALPHABET_LANGS = [
+  "ru",
+  "ja",
+  "en",
+  "es",
+  "pt",
+  "fr",
+  "it",
+  "nl",
+  "de",
+  "nah",
+  "el",
+  "[NEW]",  // Add your new language
+];
+```
+
+**What these control:**
+- Whether the "Alphabet" tab appears in the path mode selector
+- Whether users can navigate to the Alphabet Bootcamp for that language
+- The initial path mode when a user selects the language
+
+**Note:** Even Latin alphabet languages should be added here if they have an alphabet bootcamp (for learning special characters, diacritics, or pronunciation).
+
+---
+
+### 16. Alphabet Data Files (`src/data/`)
+
+For each language, create an alphabet data file that the AlphabetBootcamp component uses:
+
+**Create new file:** `src/data/[language]Alphabet.js`
+
+```javascript
+export const [LANGUAGE]_ALPHABET = [
+  {
+    id: "a",
+    letter: "A a",
+    name: "A",
+    sound: "Description of sound in English",
+    soundEs: "Description of sound in Spanish",
+    type: "vowel",  // or "consonant" or "phrase"
+    tip: "Pronunciation tip in English",
+    tipEs: "Pronunciation tip in Spanish",
+    practiceWord: "example",
+    practiceWordMeaning: { en: "meaning", es: "significado" },
+    tts: "example",
+  },
+  // ... more letters
+];
+```
+
+**Example files:**
+- `polishAlphabet.js` - Polish alphabet with special characters (ą, ć, ę, ł, ń, ó, ś, ź, ż)
+- `irishAlphabet.js` - Irish alphabet with fada vowels (á, é, í, ó, ú)
+- `russianAlphabet.js` - Cyrillic alphabet
+- `japaneseAlphabet.js` - Hiragana/Katakana
+- `greekAlphabet.js` - Greek alphabet
+
+---
+
+### 17. AlphabetBootcamp Component (`src/components/AlphabetBootcamp.jsx`)
+
+After creating the alphabet data file, update AlphabetBootcamp.jsx:
+
+**Add import (~line 25-35):**
+```javascript
+import { [LANGUAGE]_ALPHABET } from "../data/[language]Alphabet";
+```
+
+**Add to LANGUAGE_ALPHABETS object (~line 1000-1012):**
+```javascript
+const LANGUAGE_ALPHABETS = {
+  ru: RUSSIAN_ALPHABET,
+  ja: JAPANESE_ALPHABET,
+  en: ENGLISH_ALPHABET,
+  es: SPANISH_ALPHABET,
+  pt: PORTUGUESE_ALPHABET,
+  fr: FRENCH_ALPHABET,
+  it: ITALIAN_ALPHABET,
+  nl: DUTCH_ALPHABET,
+  de: GERMAN_ALPHABET,
+  nah: NAHUATL_ALPHABET,
+  el: GREEK_ALPHABET,
+  [NEW]: [LANGUAGE]_ALPHABET,  // Add your new language
+};
+```
+
+**LANGUAGE_SCRIPTS object (~line 118-128):**
+This is already documented, but ensure your language is added:
+```javascript
+const LANGUAGE_SCRIPTS = {
+  // ... other languages ...
+  [NEW]: "Latin alphabet",  // or "Cyrillic", "Greek alphabet", etc.
+};
+```
+
+---
+
+### 18. toLangKey Functions
 
 Add language variants to `toLangKey` functions for input normalization:
 
@@ -491,7 +612,7 @@ if (["[NEW]", "[language name]", "[native name]"].includes(raw)) return "[NEW]";
 
 ---
 
-### 15. resolveSupportLang Functions
+### 19. resolveSupportLang Functions
 
 If the language can be used as a support language, add to `resolveSupportLang`:
 
@@ -562,13 +683,27 @@ After adding a new language, test these scenarios:
 | UI Components | 3 (Onboarding, App, HelpChatFab) |
 | Flag Icons | 1 (flags.jsx) |
 | Skill Tree Data | 3 (skillTreeData, c2, a1) |
-| Module Components | 8 (LessonGroupQuiz, RealTimeTest, History, GrammarBook, Vocabulary, Stories, JobScript, AlphabetBootcamp) |
+| Module Components | 8 (LessonGroupQuiz, RealTimeTest, History, GrammarBook, Vocabulary, Stories, JobScript, Randomize) |
 | Utility Files | 2 (tts, noteGeneration) |
 | Hooks | 1 (useSpeechPractice) |
 | Conversations | 1 |
-| Randomize | 1 |
 | Virtual Keyboard | 1 (if special characters needed) |
-| **Total** | **~22 files** |
+| Alphabet Bootcamp | 1 (AlphabetBootcamp.jsx) |
+| Alphabet Data | 1 (new [language]Alphabet.js file) |
+| **Total** | **~24 files** |
+
+### Critical App.jsx Locations Summary
+
+App.jsx has **multiple validation arrays** that must ALL be updated:
+
+| Location | Line(s) | Purpose |
+|----------|---------|---------|
+| `targetLang` validation #1 | ~2413-2427 | Settings persistence validation |
+| `targetLang` validation #2 | ~2539-2555 | New user progress initialization |
+| `ALPHABET_LANGS` #1 | ~1604-1616 | Alphabet bootcamp path mode |
+| `ALPHABET_LANGS` #2 | ~5012-5024 | PATH_MODES configuration |
+| `TARGET_LANGUAGE_LABELS` | ~203-217 | Language display names |
+| `practiceLanguageOptions` | ~524-617 | Settings menu options |
 
 ---
 
