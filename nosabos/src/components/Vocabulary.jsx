@@ -174,6 +174,8 @@ const LANG_NAME = (code) =>
     ru: "Russian",
     de: "German",
     el: "Greek",
+    pl: "Polish",
+    ga: "Irish",
   }[code] || code);
 
 const strongNpub = (user) =>
@@ -218,6 +220,8 @@ function useSharedProgress() {
         "ru",
         "de",
         "el",
+        "pl",
+        "ga",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
@@ -1049,6 +1053,8 @@ export default function Vocabulary({
     "ru",
     "de",
     "el",
+    "pl",
+    "ga",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";

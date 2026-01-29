@@ -1424,7 +1424,9 @@ const SUPPORTED_TARGET_LANGS = new Set([
   "ja",
   "ru",
   "de",
-  "el"
+  "el",
+  "pl",
+  "ga",
 ]);
 const DEFAULT_TARGET_LANG = "es";
 
@@ -1443,4 +1445,6 @@ export const LEARNING_PATHS = {
   ru: cloneLearningPath(), // Russian
   de: cloneLearningPath(), // German
   el: cloneLearningPath(), // Greek
+  pl: cloneLearningPath(), // Polish
+  ga: cloneLearningPath(), // Irish
 };

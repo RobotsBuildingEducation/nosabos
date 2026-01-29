@@ -33,6 +33,8 @@ import { DUTCH_ALPHABET } from "../data/dutchAlphabet";
 import { GERMAN_ALPHABET } from "../data/germanAlphabet";
 import { NAHUATL_ALPHABET } from "../data/nahuatlAlphabet";
 import { GREEK_ALPHABET } from "../data/greekAlphabet";
+import { POLISH_ALPHABET } from "../data/polishAlphabet";
+import { IRISH_ALPHABET } from "../data/irishAlphabet";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -76,6 +78,8 @@ const LANGUAGE_NAMES = {
   de: "German",
   nah: "Nahuatl",
   el: "Greek",
+  pl: "Polish",
+  ga: "Irish",
 };
 
 const LANGUAGE_NAMES_EN = {
@@ -90,6 +94,8 @@ const LANGUAGE_NAMES_EN = {
   de: "German",
   nah: "Nahuatl",
   el: "Greek",
+  pl: "Polish",
+  ga: "Irish",
 };
 
 const LANGUAGE_NAMES_ES = {
@@ -104,6 +110,8 @@ const LANGUAGE_NAMES_ES = {
   de: "Alemán",
   nah: "Náhuatl",
   el: "Griego",
+  pl: "Polaco",
+  ga: "Irlandés",
 };
 
 const LANGUAGE_SCRIPTS = {
@@ -118,6 +126,8 @@ const LANGUAGE_SCRIPTS = {
   de: "Latin alphabet",
   nah: "Latin alphabet",
   el: "Greek alphabet",
+  pl: "Latin alphabet",
+  ga: "Latin alphabet",
 };
 
 const normalizeMeaning = (meaning) => {
@@ -1001,6 +1011,8 @@ const LANGUAGE_ALPHABETS = {
   de: GERMAN_ALPHABET,
   nah: NAHUATL_ALPHABET,
   el: GREEK_ALPHABET,
+  pl: POLISH_ALPHABET,
+  ga: IRISH_ALPHABET,
 };
 
 // Fisher-Yates shuffle

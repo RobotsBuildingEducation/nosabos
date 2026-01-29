@@ -173,6 +173,8 @@ const LANG_NAME = (code) =>
     ru: "Russian",
     de: "German",
     el: "Greek",
+    pl: "Polish",
+    ga: "Irish",
   }[code] || code);
 
 const LANGUAGE_LABELS = {
@@ -191,6 +193,8 @@ const LANGUAGE_LABELS = {
   el: ["Greek", "Griego", "Ελληνικά"],
   ru: ["Russian", "Ruso"],
   de: ["German", "Alemán", "Deutsch"],
+  pl: ["Polish", "Polaco", "Polski"],
+  ga: ["Irish", "Irlandés", "Gaeilge"],
 };
 
 const GENERIC_LANGUAGE_PREFIXES = [
@@ -330,6 +334,8 @@ function useSharedProgress() {
         "ru",
         "de",
         "el",
+        "pl",
+        "ga",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
@@ -747,6 +753,8 @@ export default function History({
     "ru",
     "de",
     "el",
+    "pl",
+    "ga",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "es";

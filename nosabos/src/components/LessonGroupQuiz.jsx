@@ -115,13 +115,15 @@ function LANG_NAME(code) {
     ru: "Russian",
     de: "German",
     el: "Greek",
+    pl: "Polish",
+    ga: "Irish",
   };
   return map[code] || code;
 }
 
 function resolveSupportLang(support, appUILang) {
   if (!support || support === "auto") return appUILang === "es" ? "es" : "en";
-  return ["en", "es", "pt", "fr", "it", "nl", "nah", "ru", "de", "el"].includes(
+  return ["en", "es", "pt", "fr", "it", "nl", "nah", "ru", "de", "el", "pl", "ga"].includes(
     support
   )
     ? support
@@ -188,6 +190,8 @@ export default function LessonGroupQuiz({
         "ru",
         "de",
         "el",
+        "pl",
+        "ga",
       ].includes(prog.targetLang)
         ? prog.targetLang
         : "es";

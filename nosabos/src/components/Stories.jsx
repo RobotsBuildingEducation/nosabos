@@ -104,6 +104,8 @@ const LLM_LANG_NAME = (code) =>
     ru: "Russian",
     de: "German",
     el: "Greek",
+    pl: "Polish",
+    ga: "Irish",
   }[code] || code);
 
 const BCP47 = {
@@ -117,6 +119,8 @@ const BCP47 = {
   ru: { stt: "ru-RU", tts: "ru-RU" },
   de: { stt: "de-DE", tts: "de-DE" },
   el: { stt: "el-GR", tts: "el-GR" },
+  pl: { stt: "pl-PL", tts: "pl-PL" },
+  ga: { stt: "ga-IE", tts: "ga-IE" },
 };
 
 const toLangKey = (value) => {
@@ -147,6 +151,9 @@ const toLangKey = (value) => {
     return "de";
   if (["el", "greek", "griego", "ελληνικά", "ελληνικα"].includes(raw))
     return "el";
+  if (["pl", "polish", "polaco", "polski"].includes(raw)) return "pl";
+  if (["ga", "irish", "irlandés", "irlandes", "gaeilge"].includes(raw))
+    return "ga";
   return null;
 };
 
@@ -226,6 +233,8 @@ function useSharedProgress() {
         "ru",
         "de",
         "el",
+        "pl",
+        "ga",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";

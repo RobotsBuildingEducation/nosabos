@@ -17,6 +17,10 @@ When adding a new language, choose an ISO 639-1 (2-letter) or ISO 639-3 (3-lette
 - `ja` - Japanese
 - `nah` - Huastec Nahuatl (ISO 639-3)
 - `ru` - Russian
+- `de` - German
+- `el` - Greek
+- `pl` - Polish
+- `ga` - Irish
 - **[NEW]** - Your new language code
 
 ---
@@ -29,7 +33,8 @@ When adding a new language, you must determine the **initial learning mode** bas
 Languages that do **not** use the Latin alphabet start in **Alphabet Bootcamp** mode first:
 - `ja` - Japanese (Hiragana/Katakana/Kanji)
 - `ru` - Russian (Cyrillic)
-- **Future examples**: Arabic, Korean, Greek, Hebrew, Thai, Chinese, etc.
+- `el` - Greek (Greek alphabet)
+- **Future examples**: Arabic, Korean, Hebrew, Thai, Chinese, etc.
 
 **Why?** Learners need to master the target language's writing system before they can effectively engage with vocabulary and grammar content in the skill tree.
 
@@ -41,7 +46,10 @@ Languages that use the Latin alphabet start directly in the **Skill Tree** mode:
 - `fr` - French
 - `it` - Italian
 - `nl` - Dutch
+- `de` - German
 - `nah` - Huastec Nahuatl
+- `pl` - Polish (has special diacritics: ą, ć, ę, ł, ń, ó, ś, ź, ż)
+- `ga` - Irish (has fada accents: á, é, í, ó, ú)
 
 **Why?** Learners can immediately read and recognize words, so they can jump straight into vocabulary and grammar lessons.
 
@@ -416,7 +424,177 @@ const BCP47 = {
 
 ---
 
-### 14. toLangKey Functions
+### 14. Virtual Keyboard (`src/components/VirtualKeyboard.jsx`)
+
+For languages with special characters or non-Latin scripts, add a virtual keyboard layout. The VirtualKeyboard component provides on-screen character input for languages that have characters not easily accessible on standard keyboards.
+
+**Currently supported languages:**
+- `ja` - Japanese (Hiragana/Katakana with mode toggle)
+- `ru` - Russian (Cyrillic with uppercase toggle)
+- `el` - Greek (Greek alphabet with uppercase toggle)
+- `pl` - Polish (special diacritics: ą, ć, ę, ł, ń, ó, ś, ź, ż)
+- `ga` - Irish (fada vowels: á, é, í, ó, ú)
+
+**To add a new virtual keyboard:**
+
+1. **Define the character arrays (~line 15-294):**
+```javascript
+// Polish special characters keyboard layout
+const POLISH = [["ą", "ć", "ę", "ł", "ń", "ó", "ś", "ź", "ż"]];
+
+const POLISH_UPPER = [["Ą", "Ć", "Ę", "Ł", "Ń", "Ó", "Ś", "Ź", "Ż"]];
+```
+
+2. **Add language detection flag (~line 351-355):**
+```javascript
+const isPolish = lang === "pl";
+```
+
+3. **Update the null return check (~line 375):**
+```javascript
+if (!isJapanese && !isRussian && !isGreek && !isPolish && !isIrish) return null;
+```
+
+4. **Add to getKeyboardLayout function (~line 378-395):**
+```javascript
+if (isPolish) {
+  return isUpperCase ? POLISH_UPPER : POLISH;
+}
+```
+
+5. **Update the uppercase toggle condition (~line 431):**
+```javascript
+{(isRussian || isGreek || isPolish || isIrish) && (
+  // ... toggle button
+)}
+```
+
+**Note:** Languages using the standard Latin alphabet without special characters (English, etc.) don't need virtual keyboard support.
+
+---
+
+### 15. ALPHABET_LANGS Arrays in App.jsx
+
+**CRITICAL:** There are **TWO** `ALPHABET_LANGS` arrays in App.jsx that control whether the Alphabet Bootcamp navigation option appears for a language. Both must be updated!
+
+**First location (~line 1604-1616):**
+```javascript
+const ALPHABET_LANGS = [
+  "ru",
+  "ja",
+  "en",
+  "es",
+  "pt",
+  "fr",
+  "it",
+  "nl",
+  "de",
+  "nah",
+  "el",
+  "[NEW]",  // Add your new language
+];
+```
+
+**Second location (~line 5012-5024):**
+```javascript
+const ALPHABET_LANGS = [
+  "ru",
+  "ja",
+  "en",
+  "es",
+  "pt",
+  "fr",
+  "it",
+  "nl",
+  "de",
+  "nah",
+  "el",
+  "[NEW]",  // Add your new language
+];
+```
+
+**What these control:**
+- Whether the "Alphabet" tab appears in the path mode selector
+- Whether users can navigate to the Alphabet Bootcamp for that language
+- The initial path mode when a user selects the language
+
+**Note:** Even Latin alphabet languages should be added here if they have an alphabet bootcamp (for learning special characters, diacritics, or pronunciation).
+
+---
+
+### 16. Alphabet Data Files (`src/data/`)
+
+For each language, create an alphabet data file that the AlphabetBootcamp component uses:
+
+**Create new file:** `src/data/[language]Alphabet.js`
+
+```javascript
+export const [LANGUAGE]_ALPHABET = [
+  {
+    id: "a",
+    letter: "A a",
+    name: "A",
+    sound: "Description of sound in English",
+    soundEs: "Description of sound in Spanish",
+    type: "vowel",  // or "consonant" or "phrase"
+    tip: "Pronunciation tip in English",
+    tipEs: "Pronunciation tip in Spanish",
+    practiceWord: "example",
+    practiceWordMeaning: { en: "meaning", es: "significado" },
+    tts: "example",
+  },
+  // ... more letters
+];
+```
+
+**Example files:**
+- `polishAlphabet.js` - Polish alphabet with special characters (ą, ć, ę, ł, ń, ó, ś, ź, ż)
+- `irishAlphabet.js` - Irish alphabet with fada vowels (á, é, í, ó, ú)
+- `russianAlphabet.js` - Cyrillic alphabet
+- `japaneseAlphabet.js` - Hiragana/Katakana
+- `greekAlphabet.js` - Greek alphabet
+
+---
+
+### 17. AlphabetBootcamp Component (`src/components/AlphabetBootcamp.jsx`)
+
+After creating the alphabet data file, update AlphabetBootcamp.jsx:
+
+**Add import (~line 25-35):**
+```javascript
+import { [LANGUAGE]_ALPHABET } from "../data/[language]Alphabet";
+```
+
+**Add to LANGUAGE_ALPHABETS object (~line 1000-1012):**
+```javascript
+const LANGUAGE_ALPHABETS = {
+  ru: RUSSIAN_ALPHABET,
+  ja: JAPANESE_ALPHABET,
+  en: ENGLISH_ALPHABET,
+  es: SPANISH_ALPHABET,
+  pt: PORTUGUESE_ALPHABET,
+  fr: FRENCH_ALPHABET,
+  it: ITALIAN_ALPHABET,
+  nl: DUTCH_ALPHABET,
+  de: GERMAN_ALPHABET,
+  nah: NAHUATL_ALPHABET,
+  el: GREEK_ALPHABET,
+  [NEW]: [LANGUAGE]_ALPHABET,  // Add your new language
+};
+```
+
+**LANGUAGE_SCRIPTS object (~line 118-128):**
+This is already documented, but ensure your language is added:
+```javascript
+const LANGUAGE_SCRIPTS = {
+  // ... other languages ...
+  [NEW]: "Latin alphabet",  // or "Cyrillic", "Greek alphabet", etc.
+};
+```
+
+---
+
+### 18. toLangKey Functions
 
 Add language variants to `toLangKey` functions for input normalization:
 
@@ -434,7 +612,7 @@ if (["[NEW]", "[language name]", "[native name]"].includes(raw)) return "[NEW]";
 
 ---
 
-### 15. resolveSupportLang Functions
+### 19. resolveSupportLang Functions
 
 If the language can be used as a support language, add to `resolveSupportLang`:
 
@@ -491,6 +669,7 @@ After adding a new language, test these scenarios:
 - [ ] **RealTime lessons**: Conversation practice works in the new language
 - [ ] **TTS**: Text-to-speech pronounces the new language correctly
 - [ ] **Speech recognition**: Understands spoken input in the new language
+- [ ] **Virtual keyboard**: Special characters keyboard works (if applicable)
 - [ ] **UI labels**: Language name displays correctly in English and Spanish UI
 
 ---
@@ -502,13 +681,29 @@ After adding a new language, test these scenarios:
 | Translations | 1 |
 | TTS Config | 1 |
 | UI Components | 3 (Onboarding, App, HelpChatFab) |
+| Flag Icons | 1 (flags.jsx) |
 | Skill Tree Data | 3 (skillTreeData, c2, a1) |
-| Module Components | 7 (LessonGroupQuiz, RealTimeTest, History, GrammarBook, Vocabulary, Stories, JobScript) |
+| Module Components | 8 (LessonGroupQuiz, RealTimeTest, History, GrammarBook, Vocabulary, Stories, JobScript, Randomize) |
 | Utility Files | 2 (tts, noteGeneration) |
 | Hooks | 1 (useSpeechPractice) |
 | Conversations | 1 |
-| Randomize | 1 |
-| **Total** | **~20 files** |
+| Virtual Keyboard | 1 (if special characters needed) |
+| Alphabet Bootcamp | 1 (AlphabetBootcamp.jsx) |
+| Alphabet Data | 1 (new [language]Alphabet.js file) |
+| **Total** | **~24 files** |
+
+### Critical App.jsx Locations Summary
+
+App.jsx has **multiple validation arrays** that must ALL be updated:
+
+| Location | Line(s) | Purpose |
+|----------|---------|---------|
+| `targetLang` validation #1 | ~2413-2427 | Settings persistence validation |
+| `targetLang` validation #2 | ~2539-2555 | New user progress initialization |
+| `ALPHABET_LANGS` #1 | ~1604-1616 | Alphabet bootcamp path mode |
+| `ALPHABET_LANGS` #2 | ~5012-5024 | PATH_MODES configuration |
+| `TARGET_LANGUAGE_LABELS` | ~203-217 | Language display names |
+| `practiceLanguageOptions` | ~524-617 | Settings menu options |
 
 ---
 

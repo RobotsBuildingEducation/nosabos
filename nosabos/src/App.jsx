@@ -162,10 +162,12 @@ import {
   frenchFlag,
   germanFlag,
   greekFlag,
+  irishFlag,
   italianFlag,
   japaneseFlag,
   mexicanFlag,
   netherlandsFlag,
+  polishFlag,
   russianFlag,
   usaFlag,
 } from "./components/flagsIcons/flags";
@@ -210,6 +212,8 @@ const TARGET_LANGUAGE_LABELS = {
   ru: "Russian",
   de: "German",
   el: "Greek",
+  pl: "Polish",
+  ga: "Irish",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -586,6 +590,18 @@ function TopBar({
         label: t.onboarding_practice_ru,
         beta: true,
         flag: russianFlag(),
+      },
+      {
+        value: "pl",
+        label: t.onboarding_practice_pl,
+        beta: true,
+        flag: polishFlag(),
+      },
+      {
+        value: "ga",
+        label: t.onboarding_practice_ga,
+        beta: true,
+        flag: irishFlag(),
       },
     ];
 
@@ -1597,6 +1613,8 @@ export default function App() {
     "de",
     "nah",
     "el",
+    "pl",
+    "ga",
   ];
 
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
@@ -2406,6 +2424,8 @@ export default function App() {
         "ru",
         "de",
         "el",
+        "pl",
+        "ga",
       ].includes(partial.targetLang ?? prev.targetLang)
         ? (partial.targetLang ?? prev.targetLang)
         : "es",
@@ -2532,6 +2552,8 @@ export default function App() {
           "ru",
           "de",
           "el",
+          "pl",
+          "ga",
         ].includes(payload.targetLang)
           ? payload.targetLang
           : "es",
@@ -5001,6 +5023,8 @@ function BottomActionBar({
     "de",
     "nah",
     "el",
+    "pl",
+    "ga",
   ];
   const PATH_MODES = [
     ...(ALPHABET_LANGS.includes(targetLang)

@@ -332,6 +332,16 @@ const GREEK_UPPER = [
   ],
 ];
 
+// Polish special characters keyboard layout
+const POLISH = [["ą", "ć", "ę", "ł", "ń", "ó", "ś", "ź", "ż"]];
+
+const POLISH_UPPER = [["Ą", "Ć", "Ę", "Ł", "Ń", "Ó", "Ś", "Ź", "Ż"]];
+
+// Irish (Gaeilge) special characters keyboard layout - vowels with fada
+const IRISH = [["á", "é", "í", "ó", "ú"]];
+
+const IRISH_UPPER = [["Á", "É", "Í", "Ó", "Ú"]];
+
 export default function VirtualKeyboard({
   lang,
   onKeyPress,
@@ -341,11 +351,13 @@ export default function VirtualKeyboard({
   const isJapanese = lang === "ja";
   const isRussian = lang === "ru";
   const isGreek = lang === "el";
+  const isPolish = lang === "pl";
+  const isIrish = lang === "ga";
 
   // Japanese keyboard state
   const [japaneseMode, setJapaneseMode] = useState("hiragana"); // "hiragana" | "katakana"
 
-  // Russian/Greek keyboard state
+  // Russian/Greek/Polish/Irish keyboard state
   const [isUpperCase, setIsUpperCase] = useState(false);
 
   const handleKeyPress = (char) => {
@@ -360,7 +372,7 @@ export default function VirtualKeyboard({
     onKeyPress?.(" ");
   };
 
-  if (!isJapanese && !isRussian && !isGreek) return null;
+  if (!isJapanese && !isRussian && !isGreek && !isPolish && !isIrish) return null;
 
   // Get keyboard layout based on language and mode
   const getKeyboardLayout = () => {
@@ -372,6 +384,12 @@ export default function VirtualKeyboard({
     }
     if (isGreek) {
       return isUpperCase ? GREEK_UPPER : GREEK;
+    }
+    if (isPolish) {
+      return isUpperCase ? POLISH_UPPER : POLISH;
+    }
+    if (isIrish) {
+      return isUpperCase ? IRISH_UPPER : IRISH;
     }
     return [];
   };
@@ -410,7 +428,7 @@ export default function VirtualKeyboard({
               </Button>
             </>
           )}
-          {(isRussian || isGreek) && (
+          {(isRussian || isGreek || isPolish || isIrish) && (
             <Button
               size="xs"
               colorScheme={isUpperCase ? "purple" : "gray"}
