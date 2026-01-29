@@ -677,7 +677,9 @@ export default function Conversations({
       );
 
       const levelDescription =
-        selectedLevel === "A1"
+        selectedLevel === "Pre-A1"
+          ? "foundations - use only the most basic words and single-word responses"
+          : selectedLevel === "A1"
           ? "absolute beginner - use very simple vocabulary and short sentences"
           : selectedLevel === "A2"
           ? "elementary - use simple everyday topics and basic sentences"
@@ -1270,6 +1272,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
 
     // Proficiency level guidance
     const levelGuidance = {
+      "Pre-A1": "CRITICAL: User is at foundations level (Pre-A1). Use ONLY the most basic words (hello, goodbye, yes, no, thank you, numbers 1-10, basic colors). Use 1-3 word phrases ONLY. Speak extremely slowly. Use single words when possible. Examples: 'Hola.' 'Sí.' 'No.' 'Uno, dos, tres.' 'Rojo.' 'Gracias.'",
       A1: "CRITICAL: User is a complete beginner (A1). Use ONLY very simple vocabulary (greetings, numbers, colors, family). Use short 3-5 word sentences. Use ONLY present tense. Speak as if to a child learning their first words. Examples: 'Hola. ¿Cómo estás?' 'Tengo un gato.' 'Me gusta pizza.'",
       A2: "CRITICAL: User is elementary level (A2). Use simple everyday vocabulary (food, shopping, directions). Use 5-8 word sentences. Use present, past, and simple future tenses only. Avoid complex grammar. Examples: 'Ayer fui al mercado.' '¿Qué vas a hacer mañana?'",
       B1: "CRITICAL: User is intermediate (B1). Use conversational vocabulary about familiar topics (work, travel, hobbies). Can use 8-12 word sentences. Use various tenses but keep grammar structures moderate. Can express opinions simply.",
@@ -1504,7 +1507,9 @@ Previous goal was: "${currentGoal.text.en}"${customSubjectsHint}
 
 Generate the NEXT natural conversation goal that follows the flow of the conversation.
 The goal should be appropriate for ${selectedLevel} level (${
-        selectedLevel === "A1"
+        selectedLevel === "Pre-A1"
+          ? "foundations - single words and basic phrases only"
+          : selectedLevel === "A1"
           ? "beginner - simple tasks"
           : selectedLevel === "A2"
           ? "elementary - everyday topics"

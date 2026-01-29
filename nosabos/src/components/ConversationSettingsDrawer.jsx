@@ -30,6 +30,15 @@ import submitActionSound from "../assets/submitaction.mp3";
 // CEFR level information (matches CEFR_LEVEL_INFO from FlashcardSkillTree)
 const CEFR_LEVELS = [
   {
+    level: "Pre-A1",
+    name: { en: "Foundations", es: "Fundamentos" },
+    description: {
+      en: "First words and phrases",
+      es: "Primeras palabras y frases",
+    },
+    color: "#8B5CF6",
+  },
+  {
     level: "A1",
     name: { en: "Beginner", es: "Principiante" },
     description: {
