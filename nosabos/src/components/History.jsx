@@ -811,9 +811,11 @@ export default function History({
   const [isReadingTarget, setIsReadingTarget] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
 
   // Refs for audio
   const currentAudioRef = useRef(null);
+  const transcriptRef = useRef("");
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -853,11 +855,75 @@ export default function History({
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
+  const targetText = viewLecture?.target || "";
+  const targetWordRanges = useMemo(() => {
+    if (!targetText) return [];
+    const ranges = [];
+    const regex = /\S+/g;
+    let match;
+    while ((match = regex.exec(targetText))) {
+      ranges.push({
+        start: match.index,
+        end: match.index + match[0].length,
+      });
+    }
+    return ranges;
+  }, [targetText]);
+  const targetWordRangesRef = useRef(targetWordRanges);
+  const highlightedTargetText = useMemo(() => {
+    if (!targetText) return "";
+    if (!targetWordRanges.length) return targetText;
+    const parts = [];
+    let cursor = 0;
+    targetWordRanges.forEach((range, index) => {
+      if (cursor < range.start) {
+        const slice = targetText.slice(cursor, range.start);
+        if (slice) {
+          parts.push(
+            <Box as="span" key={`text-${cursor}`}>
+              {slice}
+            </Box>
+          );
+        }
+      }
+      const word = targetText.slice(range.start, range.end);
+      parts.push(
+        <Box
+          as="span"
+          key={`word-${range.start}`}
+          bg={index === activeWordIndex ? "yellow.300" : "transparent"}
+          color={index === activeWordIndex ? "gray.900" : "inherit"}
+          borderRadius="md"
+          px={index === activeWordIndex ? 1 : 0}
+          transition="background-color 120ms ease"
+        >
+          {word}
+        </Box>
+      );
+      cursor = range.end;
+    });
+    if (cursor < targetText.length) {
+      parts.push(
+        <Box as="span" key={`text-${cursor}`}>
+          {targetText.slice(cursor)}
+        </Box>
+      );
+    }
+    return parts;
+  }, [targetText, targetWordRanges, activeWordIndex]);
+
+  useEffect(() => {
+    targetWordRangesRef.current = targetWordRanges;
+  }, [targetWordRanges]);
 
   // Reset reading when switching lecture or when draft toggles
   useEffect(() => {
     stopSpeech();
   }, [activeId, draftLecture]); // eslint-disable-line
+
+  useEffect(() => {
+    setActiveWordIndex(-1);
+  }, [targetText]);
 
   // quick duplicate detector against the most recent saved lecture (same title+target within 15s)
   const isDuplicateOfLast = (titleStr, targetStr) => {
@@ -1219,16 +1285,15 @@ export default function History({
 
   const stopSpeech = () => {
     try {
-      if ("speechSynthesis" in window) speechSynthesis.cancel();
-    } catch {}
-    try {
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current.currentTime = 0;
         currentAudioRef.current = null;
       }
     } catch {}
+    transcriptRef.current = "";
     setIsReadingTarget(false);
+    setActiveWordIndex(-1);
   };
 
   async function speak({ text, langTag, setReading, setSynthesizing, onDone }) {
@@ -1238,11 +1303,25 @@ export default function History({
     setSynthesizing?.(true);
 
     try {
+      transcriptRef.current = "";
       const player = await getTTSPlayer({
         text,
         langTag: langTag || TTS_LANG_TAG.es,
         voice: getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
+        onTranscriptDelta: (delta) => {
+          if (!delta) return;
+          transcriptRef.current += delta;
+          const words = transcriptRef.current
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+          const ranges = targetWordRangesRef.current || [];
+          if (!ranges.length || words.length === 0) return;
+          const nextIndex = Math.min(words.length - 1, ranges.length - 1);
+          setActiveWordIndex(nextIndex);
+        },
+        onTranscriptDone: () => {},
       });
 
       currentAudioRef.current = player.audio;
@@ -1265,6 +1344,7 @@ export default function History({
     } catch {
       setSynthesizing?.(false);
       setReading(false);
+      setActiveWordIndex(-1);
       onDone?.();
     }
   }
@@ -1432,7 +1512,7 @@ export default function History({
                 </Box>
 
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {viewLecture.target || ""}
+                  {highlightedTargetText}
                 </Text>
 
                 {showTranslations && viewLecture.support ? (
