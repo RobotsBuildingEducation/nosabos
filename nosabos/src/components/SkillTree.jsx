@@ -293,7 +293,6 @@ const CEFR_LEVEL_COLORS = {
 const MODE_ICONS = {
   vocabulary: RiBook2Line,
   grammar: RiPencilLine,
-  verbConjugator: TbLanguage,
   realtime: FaMicrophone,
   stories: MdOutlineDescription,
   reading: RiBookOpenLine,

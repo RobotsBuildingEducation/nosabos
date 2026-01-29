@@ -28,7 +28,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8575,
         xpReward: 55,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "idioms and colloquial expressions",
@@ -101,7 +101,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8695,
         xpReward: 50,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -116,7 +116,7 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      },
+      }
     ],
   },
   {
@@ -144,7 +144,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8775,
         xpReward: 55,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "regional language",
@@ -215,7 +215,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8895,
         xpReward: 40,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -230,7 +230,7 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      },
+      }
     ],
   },
   {
@@ -258,7 +258,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 8975,
         xpReward: 55,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "style",
@@ -329,7 +329,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9095,
         xpReward: 40,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -344,7 +344,7 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      },
+      }
     ],
   },
   {
@@ -372,7 +372,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9175,
         xpReward: 35,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "rhetoric",
@@ -443,7 +443,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9295,
         xpReward: 40,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -458,7 +458,7 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      },
+      }
     ],
   },
   {
@@ -486,7 +486,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9375,
         xpReward: 45,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "specialized",
@@ -557,7 +557,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9495,
         xpReward: 60,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -572,7 +572,7 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      },
+      }
     ],
   },
   {
@@ -600,7 +600,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9575,
         xpReward: 35,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "advanced vocabulary and nuanced expressions",
@@ -676,7 +676,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9695,
         xpReward: 40,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -691,7 +691,7 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      },
+      }
     ],
   },
   {
@@ -719,7 +719,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9775,
         xpReward: 35,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "culture",
@@ -790,7 +790,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9895,
         xpReward: 50,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -805,7 +805,7 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      },
+      }
     ],
   },
   {
@@ -833,7 +833,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 9975,
         xpReward: 35,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "fluency",
@@ -904,7 +904,7 @@ export const SKILL_TREE_C2 = [
         },
         xpRequired: 10095,
         xpReward: 50,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         isFinalQuiz: true,
         quizConfig: {
           questionsRequired: 12,
@@ -919,9 +919,9 @@ export const SKILL_TREE_C2 = [
             focusPoints: ["comprehensive review"],
           },
         },
-      },
+      }
     ],
-  },
+  }
 ];
 
 const SUB_LEVEL_SEGMENTS = {
@@ -977,7 +977,7 @@ const CEFR_LEVEL_PROFILES = {
     discourseSkills: [
       "stylistic control",
       "idiomatic range",
-      "critical response",
+      "critical response"
     ],
   },
 };
@@ -992,10 +992,9 @@ const ADVANCED_MODES = {
 const ALLOWED_MODULES = new Set([
   "vocabulary",
   "grammar",
-  "verbConjugator",
   "stories",
   "reading",
-  "realtime",
+  "realtime"
 ]);
 
 const FUNCTIONAL_PROMPTS = {
@@ -1040,7 +1039,7 @@ function addSupplementalLessons(level, unit) {
       },
       xpRequired: maxNonQuizXp + xpStep,
       xpReward: 35,
-      modes: ["grammar", "vocabulary", "verbConjugator"],
+      modes: ["grammar", "vocabulary" ],
       content: {
         grammar: {
           topic,
@@ -1085,7 +1084,7 @@ function addSupplementalLessons(level, unit) {
       },
       cefrStage: level,
       pathway: "granularity",
-    },
+    }
   ];
 
   const quizIndex = lessons.findIndex((lesson) => lesson.isFinalQuiz);
@@ -1108,7 +1107,7 @@ function addSupplementalLessons(level, unit) {
     ...coreLessons,
     ...supplementalLessons,
     updatedQuiz,
-    ...trailingLessons,
+    ...trailingLessons
   ];
 }
 
@@ -1130,14 +1129,14 @@ function buildLessonObjectives(level, unit, lesson) {
       `Can ${
         profile.production
       } while keeping conversation aligned to ${unit.title?.en?.toLowerCase()}.`,
-      `Can ${profile.mediation} related to ${topic} when peers need support.`,
+      `Can ${profile.mediation} related to ${topic} when peers need support.`
     ],
     successCriteria: [
       `Uses lesson language to ${profile.interaction} with ${profile.accuracy}.`,
       `Shows ${
         profile.discourseSkills.join(", ") || "connected speech"
       } across ${lesson.modes?.length || 1} activity modes.`,
-      baseAssessment,
+      baseAssessment
     ],
   };
 }
@@ -1214,9 +1213,9 @@ function normalizeLessonModes(unit, lesson) {
   modes = Array.from(new Set(modes));
 
   if (isQuiz) {
-    modes = ["grammar", "vocabulary", "verbConjugator"];
+    modes = ["grammar", "vocabulary" ];
   } else if (isSkillBuilder) {
-    modes = ["grammar", "vocabulary", "verbConjugator"];
+    modes = ["grammar", "vocabulary" ];
   } else if (isIntegratedPractice) {
     modes = ["realtime", "reading", "stories"];
   } else {
@@ -1224,24 +1223,17 @@ function normalizeLessonModes(unit, lesson) {
       modes = ["vocabulary", "realtime", "reading"];
     }
 
-    // Fill in missing modes first (ensures grammar gets added before verbConjugator check)
+    // Fill in missing modes
     while (modes.length < 3) {
       const filler = [
         "vocabulary",
         "grammar",
         "reading",
         "stories",
-        "realtime",
+        "realtime"
       ].find((mode) => !modes.includes(mode));
       if (!filler) break;
       modes.push(filler);
-    }
-
-    // Add verbConjugator whenever both vocabulary and grammar are present (after filling)
-    const hasVocabAndGrammar =
-      modes.includes("vocabulary") && modes.includes("grammar");
-    if (hasVocabAndGrammar && !modes.includes("verbConjugator")) {
-      modes.push("verbConjugator");
     }
 
     if (modes.length > 5) {
@@ -1372,7 +1364,7 @@ function assignSubLevels(unitsByLevel) {
                 } using the themes from this segment.`,
                 `Demonstrates ${
                   CEFR_LEVEL_PROFILES[level]?.accuracy || "steady control"
-                } across ${subLevel} topics.`,
+                } across ${subLevel} topics.`
               ],
             }
           : undefined,
@@ -1409,7 +1401,7 @@ function applyCEFRScaffolding(path) {
           }.`,
           `Discourse skills: ${(
             CEFR_LEVEL_PROFILES[level]?.discourseSkills || []
-          ).join(", ")}.`,
+          ).join(", ")}.`
         ],
         lessons: balancedLessons,
       };
@@ -1432,7 +1424,7 @@ const SUPPORTED_TARGET_LANGS = new Set([
   "ja",
   "ru",
   "de",
-  "el",
+  "el"
 ]);
 const DEFAULT_TARGET_LANG = "es";
 

@@ -34,7 +34,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 0,
         xpReward: 50,
         isTutorial: true,
-        modes: ["vocabulary", "grammar", "verbConjugator", "reading", "stories", "realtime"],
+        modes: ["vocabulary", "grammar", "reading", "stories", "realtime"],
         content: {
           vocabulary: {
             topic: "tutorial",
@@ -52,13 +52,6 @@ export const SKILL_TREE_PRE_A1 = [
               es: "Domina las reglas gramaticales mediante ejercicios.",
             },
           },
-          verbConjugator: {
-            topic: "tutorial",
-            focusPoints: ["simple present", "ser", "estar"],
-            tutorialDescription: {
-              en: "Practice verb conjugations. Learn to conjugate 'to be' (ser/estar) in simple present.",
-              es: "Practica conjugaciones verbales. Aprende a conjugar 'ser/estar' en presente simple.",
-            },
           },
           reading: {
             topic: "tutorial",
@@ -87,7 +80,7 @@ export const SKILL_TREE_PRE_A1 = [
             },
           },
         },
-      },
+      }
     ],
   },
 
@@ -117,7 +110,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "close family members",
@@ -126,10 +119,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "family with articles",
             focusPoints: ["el/la with family nouns", "mi mamá, mi papá"],
-          },
-          verbConjugator: {
-            topic: "ser with family",
-            focusPoints: ["es mi mamá", "es mi hermano"],
           },
         },
       },
@@ -145,7 +134,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "extended family",
@@ -154,10 +143,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "masculine and feminine",
             focusPoints: ["abuelo/abuela", "hijo/hija", "tío/tía"],
-          },
-          verbConjugator: {
-            topic: "tener with family",
-            focusPoints: ["tengo un hermano", "tiene una hija"],
           },
         },
       },
@@ -173,7 +158,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "people in daily life",
@@ -182,10 +167,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "gender of people nouns",
             focusPoints: ["amigo/amiga", "niño/niña", "hombre/mujer"],
-          },
-          verbConjugator: {
-            topic: "describing people",
-            focusPoints: ["es un niño", "es mi amiga", "son personas"],
           },
         },
       },
@@ -202,7 +183,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 30,
         xpReward: 25,
         isFinalQuiz: true,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "people and family review",
@@ -212,12 +193,8 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "people vocabulary usage",
             focusPoints: ["gender", "articles", "possessives"],
           },
-          verbConjugator: {
-            topic: "people vocabulary application",
-            focusPoints: ["ser with people", "tener with family"],
-          },
         },
-      },
+      }
     ],
   },
 
@@ -247,7 +224,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "numbers 0-5",
@@ -256,10 +233,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "number usage",
             focusPoints: ["counting objects", "number pronunciation"],
-          },
-          verbConjugator: {
-            topic: "numbers in context",
-            focusPoints: ["using numbers with nouns"],
           },
         },
       },
@@ -275,7 +248,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "numbers 6-10",
@@ -284,10 +257,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "number patterns",
             focusPoints: ["counting sequences", "number recognition"],
-          },
-          verbConjugator: {
-            topic: "counting practice",
-            focusPoints: ["forward counting", "backward counting"],
           },
         },
       },
@@ -303,7 +272,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "counting with objects",
@@ -312,10 +281,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "number agreement",
             focusPoints: ["uno vs un/una", "numbers with nouns"],
-          },
-          verbConjugator: {
-            topic: "quantity expressions",
-            focusPoints: ["hay (there is/are)", "counting phrases"],
           },
         },
       },
@@ -332,7 +297,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 30,
         xpReward: 25,
         isFinalQuiz: true,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "numbers review",
@@ -342,12 +307,8 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "number usage",
             focusPoints: ["quantities", "counting objects"],
           },
-          verbConjugator: {
-            topic: "numbers application",
-            focusPoints: ["practical counting"],
-          },
         },
-      },
+      }
     ],
   },
 
@@ -377,7 +338,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "greetings",
@@ -386,10 +347,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "greeting usage",
             focusPoints: ["time-appropriate greetings", "formal vs informal"],
-          },
-          verbConjugator: {
-            topic: "greeting phrases",
-            focusPoints: ["¿Qué tal?", "¿Cómo estás?"],
           },
         },
       },
@@ -405,7 +362,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "farewells",
@@ -414,10 +371,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "farewell usage",
             focusPoints: ["temporary vs permanent goodbye", "casual vs formal"],
-          },
-          verbConjugator: {
-            topic: "farewell phrases",
-            focusPoints: ["hasta pronto", "que te vaya bien"],
           },
         },
       },
@@ -433,7 +386,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator", "realtime"],
+        modes: ["vocabulary", "grammar", "realtime"],
         content: {
           vocabulary: {
             topic: "greeting conversations",
@@ -442,10 +395,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "greeting exchanges",
             focusPoints: ["question and answer patterns", "social norms"],
-          },
-          verbConjugator: {
-            topic: "greeting verbs",
-            focusPoints: ["saludar", "despedirse"],
           },
           realtime: {
             scenario: "Meeting someone",
@@ -467,7 +416,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 30,
         xpReward: 25,
         isFinalQuiz: true,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "greetings review",
@@ -477,12 +426,8 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "greeting rules",
             focusPoints: ["appropriate usage", "context"],
           },
-          verbConjugator: {
-            topic: "greeting application",
-            focusPoints: ["real situations"],
-          },
         },
-      },
+      }
     ],
   },
 
@@ -512,7 +457,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "affirmative and negative",
@@ -521,10 +466,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "response patterns",
             focusPoints: ["answering yes/no questions", "emphasis with sí/no"],
-          },
-          verbConjugator: {
-            topic: "agreement expressions",
-            focusPoints: ["ways to say yes", "ways to say no"],
           },
         },
       },
@@ -540,7 +481,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "uncertainty expressions",
@@ -549,10 +490,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "expressing doubt",
             focusPoints: ["uncertainty words", "hesitation phrases"],
-          },
-          verbConjugator: {
-            topic: "doubt expressions",
-            focusPoints: ["no estoy seguro/a", "creo que sí/no"],
           },
         },
       },
@@ -568,7 +505,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "reaction words",
@@ -577,10 +514,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "exclamations",
             focusPoints: ["expressing emotions", "showing interest"],
-          },
-          verbConjugator: {
-            topic: "conversational responses",
-            focusPoints: ["entiendo", "ya veo", "claro que sí"],
           },
         },
       },
@@ -597,7 +530,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 30,
         xpReward: 25,
         isFinalQuiz: true,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "responses review",
@@ -607,12 +540,8 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "response usage",
             focusPoints: ["appropriate responses"],
           },
-          verbConjugator: {
-            topic: "response application",
-            focusPoints: ["natural conversation"],
-          },
         },
-      },
+      }
     ],
   },
 
@@ -642,7 +571,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "basic courtesy",
@@ -651,10 +580,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "polite requests",
             focusPoints: ["adding por favor", "thanking appropriately"],
-          },
-          verbConjugator: {
-            topic: "courtesy phrases",
-            focusPoints: ["requesting politely", "expressing gratitude"],
           },
         },
       },
@@ -670,7 +595,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "apologies and attention",
@@ -679,10 +604,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "apologizing",
             focusPoints: ["formal vs informal apologies", "getting attention"],
-          },
-          verbConjugator: {
-            topic: "apology expressions",
-            focusPoints: ["levels of apology", "excusing yourself"],
           },
         },
       },
@@ -698,7 +619,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "polite phrases",
@@ -707,10 +628,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "formal courtesy",
             focusPoints: ["polite responses", "gracious expressions"],
-          },
-          verbConjugator: {
-            topic: "courtesy in action",
-            focusPoints: ["offering help", "accepting thanks"],
           },
         },
       },
@@ -727,7 +644,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 30,
         xpReward: 25,
         isFinalQuiz: true,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "courtesy review",
@@ -737,12 +654,8 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "courtesy usage",
             focusPoints: ["appropriate situations"],
           },
-          verbConjugator: {
-            topic: "courtesy application",
-            focusPoints: ["polite communication"],
-          },
         },
-      },
+      }
     ],
   },
 
@@ -772,7 +685,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "household items",
@@ -781,10 +694,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "articles with objects",
             focusPoints: ["el/la with objects", "masculine vs feminine nouns"],
-          },
-          verbConjugator: {
-            topic: "identifying objects",
-            focusPoints: ["¿Qué es esto?", "Es un/una..."],
           },
         },
       },
@@ -800,7 +709,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "personal items",
@@ -809,10 +718,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "possessive with objects",
             focusPoints: ["mi/tu/su", "ownership expressions"],
-          },
-          verbConjugator: {
-            topic: "having things",
-            focusPoints: ["tengo", "¿Tienes...?"],
           },
         },
       },
@@ -828,7 +733,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "food and drinks",
@@ -837,10 +742,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "food articles",
             focusPoints: ["el agua (feminine exception)", "uncountable nouns"],
-          },
-          verbConjugator: {
-            topic: "wanting food",
-            focusPoints: ["quiero", "¿Quieres...?"],
           },
         },
       },
@@ -857,7 +758,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 30,
         xpReward: 25,
         isFinalQuiz: true,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "objects review",
@@ -867,12 +768,8 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "object naming",
             focusPoints: ["articles", "gender"],
           },
-          verbConjugator: {
-            topic: "objects application",
-            focusPoints: ["identifying", "possessing"],
-          },
         },
-      },
+      }
     ],
   },
 
@@ -902,7 +799,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "primary colors",
@@ -911,10 +808,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "color as adjective",
             focusPoints: ["color placement after noun", "el libro rojo"],
-          },
-          verbConjugator: {
-            topic: "describing with colors",
-            focusPoints: ["es rojo/a", "son rojos/as"],
           },
         },
       },
@@ -930,7 +823,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "additional colors",
@@ -939,10 +832,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "color agreement",
             focusPoints: ["colors that change (rojo/roja)", "colors that don't (naranja, rosa)"],
-          },
-          verbConjugator: {
-            topic: "color descriptions",
-            focusPoints: ["¿De qué color es?", "Es..."],
           },
         },
       },
@@ -958,7 +847,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "neutral colors",
@@ -967,10 +856,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "color combinations",
             focusPoints: ["blanco y negro", "azul oscuro", "verde claro"],
-          },
-          verbConjugator: {
-            topic: "color preferences",
-            focusPoints: ["mi color favorito es...", "me gusta el..."],
           },
         },
       },
@@ -987,7 +872,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 30,
         xpReward: 25,
         isFinalQuiz: true,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "colors review",
@@ -997,12 +882,8 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "color usage",
             focusPoints: ["agreement", "placement"],
           },
-          verbConjugator: {
-            topic: "colors application",
-            focusPoints: ["describing objects"],
-          },
         },
-      },
+      }
     ],
   },
 
@@ -1032,7 +913,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 0,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "self introduction",
@@ -1041,10 +922,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "introduction patterns",
             focusPoints: ["Me llamo + name", "Soy + name"],
-          },
-          verbConjugator: {
-            topic: "llamarse verb",
-            focusPoints: ["me llamo", "reflexive introduction"],
           },
         },
       },
@@ -1060,7 +937,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 10,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "asking for names",
@@ -1069,10 +946,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "formal vs informal",
             focusPoints: ["tú vs usted", "te llamas vs se llama"],
-          },
-          verbConjugator: {
-            topic: "llamarse forms",
-            focusPoints: ["te llamas", "se llama"],
           },
         },
       },
@@ -1088,7 +961,7 @@ export const SKILL_TREE_PRE_A1 = [
         },
         xpRequired: 20,
         xpReward: 15,
-        modes: ["vocabulary", "grammar", "verbConjugator", "realtime"],
+        modes: ["vocabulary", "grammar", "realtime"],
         content: {
           vocabulary: {
             topic: "meeting expressions",
@@ -1097,10 +970,6 @@ export const SKILL_TREE_PRE_A1 = [
           grammar: {
             topic: "gender in expressions",
             focusPoints: ["encantado (male) vs encantada (female)"],
-          },
-          verbConjugator: {
-            topic: "meeting phrases",
-            focusPoints: ["complete introduction sequence"],
           },
           realtime: {
             scenario: "Meeting someone new",
@@ -1122,7 +991,7 @@ export const SKILL_TREE_PRE_A1 = [
         xpRequired: 30,
         xpReward: 25,
         isFinalQuiz: true,
-        modes: ["vocabulary", "grammar", "verbConjugator"],
+        modes: ["vocabulary", "grammar" ],
         content: {
           vocabulary: {
             topic: "introductions review",
@@ -1132,12 +1001,8 @@ export const SKILL_TREE_PRE_A1 = [
             topic: "introduction patterns",
             focusPoints: ["formal/informal", "gender agreement"],
           },
-          verbConjugator: {
-            topic: "introductions application",
-            focusPoints: ["complete introduction"],
-          },
         },
-      },
+      }
     ],
-  },
+  }
 ];
