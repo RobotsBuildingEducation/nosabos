@@ -234,7 +234,7 @@ function parseCefrResponse(raw = "") {
       .toUpperCase();
     if (!CEFR_LEVELS.has(level)) return null;
     const explanation = String(
-      payload.explanation || payload.reason || payload.summary || ""
+      payload.explanation || payload.reason || payload.summary || "",
     ).trim();
     if (!explanation) return null;
     return { level, explanation };
@@ -370,7 +370,7 @@ async function ensureOnboardingField(db, id, data) {
     Object.prototype.hasOwnProperty.call(data.onboarding, "completed");
   const hasLegacyTopLevel = Object.prototype.hasOwnProperty.call(
     data || {},
-    "onboardingCompleted"
+    "onboardingCompleted",
   );
   const hasStep =
     hasNested && Number.isFinite(Number(data.onboarding?.currentStep));
@@ -395,7 +395,7 @@ async function ensureOnboardingField(db, id, data) {
     await setDoc(
       doc(db, "users", id),
       { onboarding: onboardingPayload },
-      { merge: true }
+      { merge: true },
     );
     const snap = await getDoc(doc(db, "users", id));
     return snap.exists() ? { id: snap.id, ...snap.data() } : data;
@@ -487,16 +487,16 @@ function TopBar({
   const [voicePersona, setVoicePersona] = useState(defaultPersona);
   const [targetLang, setTargetLang] = useState(p.targetLang || "es");
   const [showTranslations, setShowTranslations] = useState(
-    typeof p.showTranslations === "boolean" ? p.showTranslations : true
+    typeof p.showTranslations === "boolean" ? p.showTranslations : true,
   );
   const [pauseMs, setPauseMs] = useState(
-    Number.isFinite(p.pauseMs) ? p.pauseMs : 1200
+    Number.isFinite(p.pauseMs) ? p.pauseMs : 1200,
   );
   const [helpRequest, setHelpRequest] = useState(
-    (p.helpRequest || user?.helpRequest || "").trim()
+    (p.helpRequest || user?.helpRequest || "").trim(),
   );
   const [practicePronunciation, setPracticePronunciation] = useState(
-    !!p.practicePronunciation
+    !!p.practicePronunciation,
   );
   const vadSecondsLabel = appLanguage === "es" ? "segundos" : "seconds";
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
@@ -514,7 +514,7 @@ function TopBar({
       { value: "en", label: t.onboarding_support_en, flag: usaFlag() },
       { value: "es", label: t.onboarding_support_es, flag: mexicanFlag() },
     ],
-    [t]
+    [t],
   );
 
   const practiceLanguageOptions = useMemo(() => {
@@ -615,11 +615,11 @@ function TopBar({
     setVoicePersona(
       q.voicePersona ??
         personaDefaultFor(q.supportLang || supportLang || appLanguage) ??
-        translations.en.onboarding_persona_default_example
+        translations.en.onboarding_persona_default_example,
     );
     setTargetLang(q.targetLang || "es");
     setShowTranslations(
-      typeof q.showTranslations === "boolean" ? q.showTranslations : true
+      typeof q.showTranslations === "boolean" ? q.showTranslations : true,
     );
     setPauseMs(Number.isFinite(q.pauseMs) ? q.pauseMs : 1200);
     setHelpRequest((q.helpRequest || user?.helpRequest || "").trim());
@@ -663,7 +663,7 @@ function TopBar({
         });
       }
     },
-    [onPatchSettings, toast, appLanguage]
+    [onPatchSettings, toast, appLanguage],
   );
 
   // Debounced persist for text inputs (voicePersona, helpRequest)
@@ -675,7 +675,7 @@ function TopBar({
         persistSettings(partial);
       }, delay);
     },
-    [persistSettings]
+    [persistSettings],
   );
 
   useEffect(() => setCurrentId(activeNpub || ""), [activeNpub]);
@@ -769,7 +769,7 @@ function TopBar({
         await setDoc(
           doc(database, "users", activeNpub),
           { dailyGoalXp: parsed },
-          { merge: true }
+          { merge: true },
         );
       } catch (e) {
         toast({
@@ -779,7 +779,7 @@ function TopBar({
         });
       }
     },
-    [activeNpub, appLanguage, toast]
+    [activeNpub, appLanguage, toast],
   );
 
   useEffect(() => {
@@ -801,7 +801,7 @@ function TopBar({
         await setDoc(
           ref,
           { dailyXp: 0, dailyHasCelebrated: false, dailyResetAt: next },
-          { merge: true }
+          { merge: true },
         );
         dxp = 0;
         resetISO = next;
@@ -825,7 +825,7 @@ function TopBar({
   const cefrTimestamp =
     cefrResult?.updatedAt &&
     new Date(cefrResult.updatedAt).toLocaleString(
-      appLanguage === "es" ? "es" : "en-US"
+      appLanguage === "es" ? "es" : "en-US",
     );
 
   return (
@@ -1117,7 +1117,7 @@ function TopBar({
                         t.ra_persona_placeholder.replace(
                           "{example}",
                           translations[appLanguage]
-                            .onboarding_persona_default_example
+                            .onboarding_persona_default_example,
                         )) ||
                       `e.g., ${translations[appLanguage].onboarding_persona_default_example}`
                     }
@@ -1310,7 +1310,7 @@ export default function App() {
       helpChatDisclosure.onOpen();
       helpChatRef.current?.openAndSend(payload);
     },
-    [helpChatDisclosure]
+    [helpChatDisclosure],
   );
   const [teamsOpen, setTeamsOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
@@ -1334,7 +1334,7 @@ export default function App() {
   const [storedPasscode, setStoredPasscode] = useState(() =>
     typeof window !== "undefined"
       ? localStorage.getItem(SUBSCRIPTION_PASSCODE_KEY) || ""
-      : ""
+      : "",
   );
   const [passcodeError, setPasscodeError] = useState("");
   const [isSavingPasscode, setIsSavingPasscode] = useState(false);
@@ -1350,7 +1350,7 @@ export default function App() {
 
   const normalizeSupportLang = useCallback(
     (raw) => (raw === "es" ? "es" : raw === "en" ? "en" : undefined),
-    []
+    [],
   );
 
   const resolvedTargetLang = user?.progress?.targetLang || "es";
@@ -1414,19 +1414,19 @@ export default function App() {
   const { generateNostrKeys, auth, postNostrContent } =
     useDecentralizedIdentity(
       typeof window !== "undefined" ? localStorage.getItem("local_npub") : "",
-      typeof window !== "undefined" ? localStorage.getItem("local_nsec") : ""
+      typeof window !== "undefined" ? localStorage.getItem("local_nsec") : "",
     );
 
   // Active identity (npub/nsec)
   const [activeNpub, setActiveNpub] = useState(
     typeof window !== "undefined"
       ? (localStorage.getItem("local_npub") || "").trim()
-      : ""
+      : "",
   );
   const [activeNsec, setActiveNsec] = useState(
     typeof window !== "undefined"
       ? (localStorage.getItem("local_nsec") || "").trim()
-      : ""
+      : "",
   );
 
   const isTestUnlockActive = useMemo(() => {
@@ -1446,7 +1446,7 @@ export default function App() {
     }
     const unsubscribe = subscribeToTeamInvites(activeNpub, (invites = []) => {
       const pendingCount = invites.filter(
-        (invite) => invite.status === "pending"
+        (invite) => invite.status === "pending",
       ).length;
       setPendingTeamInviteCount(pendingCount);
     });
@@ -1570,7 +1570,7 @@ export default function App() {
   const [currentTab, setCurrentTab] = useState(
     typeof window !== "undefined"
       ? localStorage.getItem("currentTab") || "realtime"
-      : "realtime"
+      : "realtime",
   );
 
   // Active lesson tracking and view mode
@@ -1627,7 +1627,7 @@ export default function App() {
     const validModes = ["alphabet", "path", "flashcards", "conversations"];
     if (!validModes.includes(pathMode)) {
       setPathMode(
-        ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path"
+        ALPHABET_LANGS.includes(resolvedTargetLang) ? "alphabet" : "path",
       );
       if (user) {
         lastPathTargetRef.current = resolvedTargetLang;
@@ -1703,7 +1703,7 @@ export default function App() {
             shownProficiencyCelebrations: updated,
             updatedAt: new Date().toISOString(),
           },
-          { merge: true }
+          { merge: true },
         );
         // Update local state
         patchUser?.({ shownProficiencyCelebrations: updated });
@@ -1711,14 +1711,14 @@ export default function App() {
         console.error("Failed to save celebration state:", e);
       }
     },
-    [activeNpub, user?.shownProficiencyCelebrations, patchUser]
+    [activeNpub, user?.shownProficiencyCelebrations, patchUser],
   );
   const wasCelebrationShown = useCallback(
     (level, mode) => {
       const shown = getShownCelebrations();
       return shown[getCelebrationKey(level, mode)] === true;
     },
-    [getShownCelebrations]
+    [getShownCelebrations],
   );
 
   // Check if skill tree tutorial was completed
@@ -1739,7 +1739,7 @@ export default function App() {
           skillTreeTutorialCompleted: true,
           updatedAt: new Date().toISOString(),
         },
-        { merge: true }
+        { merge: true },
       );
       patchUser?.({ skillTreeTutorialCompleted: true });
     } catch (e) {
@@ -1815,7 +1815,7 @@ export default function App() {
             level: cefrResult.level,
             explanation: cefrResult.explanation,
             updatedAt: cefrResult.updatedAt,
-          })
+          }),
         );
       } catch {}
     } else {
@@ -1903,13 +1903,13 @@ export default function App() {
       console.log("[CONNECT_DID] Read local_npub from localStorage:", id);
       console.log(
         "[CONNECT_DID] Read local_nsec from localStorage:",
-        localStorage.getItem("local_nsec")?.substring(0, 20) + "..."
+        localStorage.getItem("local_nsec")?.substring(0, 20) + "...",
       );
       let userDoc = null;
 
       if (id) {
         console.log(
-          "[CONNECT_DID] Found existing npub, loading user from DB..."
+          "[CONNECT_DID] Found existing npub, loading user from DB...",
         );
         userDoc = await loadUserObjectFromDB(database, id);
         if (!userDoc) {
@@ -1953,8 +1953,8 @@ export default function App() {
           userDoc?.progress?.supportLang === "es"
             ? "es"
             : userDoc.appLanguage === "es"
-            ? "es"
-            : "en";
+              ? "es"
+              : "en";
         setAppLanguage(uiLang);
         localStorage.setItem("appLanguage", uiLang);
         setUser?.(userDoc);
@@ -2074,7 +2074,7 @@ export default function App() {
 
   const needsSubscriptionPasscode = useMemo(
     () => subscriptionXp >= 400 && !subscriptionVerified,
-    [subscriptionXp, subscriptionVerified]
+    [subscriptionXp, subscriptionVerified],
   );
 
   const handleResetTimer = useCallback(() => {
@@ -2207,7 +2207,7 @@ export default function App() {
               subscriptionPasscodeVerified: true,
               subscriptionPasscodeUpdatedAt: new Date().toISOString(),
             },
-            { merge: true }
+            { merge: true },
           );
         }
 
@@ -2237,7 +2237,7 @@ export default function App() {
       t.invalid,
       t.passcode?.invalid,
       toast,
-    ]
+    ],
   );
 
   /* -----------------------------------
@@ -2255,7 +2255,7 @@ export default function App() {
         typeof v === "string" &&
         v.trim() &&
         v.trim() !== "null" &&
-        v.trim() !== "undefined"
+        v.trim() !== "undefined",
     );
     return (pick || "").trim();
   }, [activeNpub, user]);
@@ -2287,7 +2287,7 @@ export default function App() {
         throw error;
       }
     },
-    [allowPosts, resolveNpub, appLanguage, user, setUser]
+    [allowPosts, resolveNpub, appLanguage, user, setUser],
   );
 
   const handleSoundEnabledChange = useCallback(
@@ -2329,7 +2329,7 @@ export default function App() {
       user,
       setUser,
       setSoundSettingsEnabled,
-    ]
+    ],
   );
 
   const handleVolumeChange = useCallback(
@@ -2338,7 +2338,7 @@ export default function App() {
       setSoundVolume(normalized);
       setSoundSettingsVolume(normalized);
     },
-    [setSoundSettingsVolume]
+    [setSoundSettingsVolume],
   );
 
   const handleVolumeSave = useCallback(
@@ -2357,7 +2357,7 @@ export default function App() {
         // Silently fail - local state is already updated
       }
     },
-    [resolveNpub, user, setUser]
+    [resolveNpub, user, setUser],
   );
 
   const saveGlobalSettings = async (partial = {}) => {
@@ -2385,14 +2385,14 @@ export default function App() {
       ...prev, // Preserve all existing progress data including XP
       level: migrateToCEFRLevel(partial.level ?? prev.level) ?? "Pre-A1",
       supportLang: ["en", "es"].includes(
-        partial.supportLang ?? prev.supportLang
+        partial.supportLang ?? prev.supportLang,
       )
-        ? partial.supportLang ?? prev.supportLang
+        ? (partial.supportLang ?? prev.supportLang)
         : "en",
       voice: partial.voice ?? prev.voice ?? "alloy",
       voicePersona: (partial.voicePersona ?? prev.voicePersona ?? "").slice(
         0,
-        240
+        240,
       ),
       targetLang: [
         "nah",
@@ -2407,21 +2407,21 @@ export default function App() {
         "de",
         "el",
       ].includes(partial.targetLang ?? prev.targetLang)
-        ? partial.targetLang ?? prev.targetLang
+        ? (partial.targetLang ?? prev.targetLang)
         : "es",
       showTranslations:
         typeof (partial.showTranslations ?? prev.showTranslations) === "boolean"
-          ? partial.showTranslations ?? prev.showTranslations
+          ? (partial.showTranslations ?? prev.showTranslations)
           : true,
       pauseMs: clampPause(partial.pauseMs ?? prev.pauseMs),
       helpRequest: String(partial.helpRequest ?? prev.helpRequest ?? "").slice(
         0,
-        600
+        600,
       ),
       practicePronunciation:
         typeof (partial.practicePronunciation ?? prev.practicePronunciation) ===
         "boolean"
-          ? partial.practicePronunciation ?? prev.practicePronunciation
+          ? (partial.practicePronunciation ?? prev.practicePronunciation)
           : false,
     };
 
@@ -2452,11 +2452,11 @@ export default function App() {
         practicePronunciation: next.practicePronunciation,
         appLanguage: derivedAppLanguage,
       },
-      { merge: true }
+      { merge: true },
     );
 
     window.dispatchEvent(
-      new CustomEvent("app:globalSettingsUpdated", { detail: next })
+      new CustomEvent("app:globalSettingsUpdated", { detail: next }),
     );
   };
 
@@ -2481,7 +2481,7 @@ export default function App() {
               draft: mergedDraft,
             },
           },
-          { merge: true }
+          { merge: true },
         );
 
         setUser?.({
@@ -2498,7 +2498,7 @@ export default function App() {
         console.error("Failed to save onboarding draft:", error);
       }
     },
-    [resolveNpub, setUser, user]
+    [resolveNpub, setUser, user],
   );
 
   const handleOnboardingComplete = async (payload = {}) => {
@@ -2518,7 +2518,7 @@ export default function App() {
         voicePersona: safe(
           payload.voicePersona,
           translations[appLanguage]?.onboarding_persona_default_example ||
-            translations.en.onboarding_persona_default_example
+            translations.en.onboarding_persona_default_example,
         ),
         targetLang: [
           "nah",
@@ -2567,7 +2567,7 @@ export default function App() {
           soundVolume:
             typeof payload.soundVolume === "number" ? payload.soundVolume : 40,
         },
-        { merge: true }
+        { merge: true },
       );
 
       const fresh = await loadUserObjectFromDB(database, id);
@@ -2629,7 +2629,7 @@ export default function App() {
         "[Lesson Start] Lesson modes:",
         lesson.modes,
         "First mode:",
-        firstMode
+        firstMode,
       );
       if (firstMode) {
         setCurrentTab(firstMode);
@@ -2698,7 +2698,7 @@ export default function App() {
         "[FlashcardComplete] Awarded",
         xpAmount,
         "XP for flashcard:",
-        card.id
+        card.id,
       );
     } catch (error) {
       console.error("Failed to complete flashcard:", error);
@@ -2741,7 +2741,7 @@ export default function App() {
         "[RandomPractice] Awarded",
         xpAmount,
         "XP and reset flashcard:",
-        card.id
+        card.id,
       );
     } catch (error) {
       console.error("Failed to complete random practice:", error);
@@ -2796,7 +2796,7 @@ export default function App() {
           npub,
           activeLesson.id,
           activeLesson.xpReward,
-          lessonLang
+          lessonLang,
         );
 
         // awardXp handles all XP awarding with proper daily goal checking and celebration events
@@ -2840,7 +2840,7 @@ export default function App() {
       resolveNpub,
       resolvedTargetLang,
       setUser,
-    ]
+    ],
   );
 
   // Random mode switcher for lessons (sequential for tutorial mode)
@@ -2855,7 +2855,7 @@ export default function App() {
 
     if (viewMode !== "lesson" || !activeLesson?.modes?.length) {
       console.log(
-        "[switchToRandomLessonMode] Exiting early - conditions not met"
+        "[switchToRandomLessonMode] Exiting early - conditions not met",
       );
       return;
     }
@@ -2874,7 +2874,7 @@ export default function App() {
       // Check if this is the last module
       if (currentIndex >= availableModes.length - 1) {
         console.log(
-          "[Tutorial Mode] All modules completed, triggering lesson completion"
+          "[Tutorial Mode] All modules completed, triggering lesson completion",
         );
         triggerLessonCompletion("tutorial_sequence");
         return;
@@ -2899,7 +2899,7 @@ export default function App() {
     // NORMAL MODE: Random switching
     if (availableModes.length <= 1) {
       console.log(
-        "[switchToRandomLessonMode] Only one mode available, not switching"
+        "[switchToRandomLessonMode] Only one mode available, not switching",
       );
       return;
     }
@@ -2994,14 +2994,14 @@ export default function App() {
         "[Tab Validation] Current tab:",
         currentTab,
         "Lesson modes:",
-        activeLesson.modes
+        activeLesson.modes,
       );
       // If current tab is not in lesson modes, switch to first available mode
       if (!activeLesson.modes.includes(currentTab)) {
         const firstMode = activeLesson.modes[0];
         console.log(
           "[Tab Validation] Current tab not in lesson modes, switching to:",
-          firstMode
+          firstMode,
         );
         setCurrentTab(firstMode);
         if (typeof window !== "undefined") {
@@ -3135,7 +3135,7 @@ export default function App() {
         setCefrLoading(false);
       }
     },
-    [activeNpub, appLanguage, t, toast, user]
+    [activeNpub, appLanguage, t, toast, user],
   );
 
   /* -----------------------------------
@@ -3144,7 +3144,7 @@ export default function App() {
   const RANDOM_POOL = useMemo(
     // ⬅️ keep JobScript out of this list
     () => ["realtime", "stories", "grammar", "vocabulary", "history"],
-    []
+    [],
   );
   const [randomPick, setRandomPick] = useState(null);
   const prevXpRef = useRef(null);
@@ -3175,7 +3175,7 @@ export default function App() {
         setIsIdentitySaving(false);
       }
     },
-    [activeNpub, patchUser, user?.identity]
+    [activeNpub, patchUser, user?.identity],
   );
 
   const handleDailyGoalClose = useCallback(() => {
@@ -3218,7 +3218,7 @@ export default function App() {
         ? Math.min(100, Math.round((earnedToday / goalTarget) * 100))
         : null;
       const langCode = String(
-        (user?.progress?.targetLang || user?.targetLang || "es").toLowerCase()
+        (user?.progress?.targetLang || user?.targetLang || "es").toLowerCase(),
       );
       const labelKey = `language_${langCode}`;
       const langLabel =
@@ -3250,7 +3250,7 @@ export default function App() {
           undefined,
           activeNpub,
           privateKey,
-          tags
+          tags,
         );
       } catch (error) {
         console.error("Failed to share XP update on Nostr", error);
@@ -3266,7 +3266,7 @@ export default function App() {
       activeNpub,
       dailyGoalTarget,
       dailyXpToday,
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -3404,7 +3404,7 @@ export default function App() {
             !lessonCompletionTriggeredRef.current
           ) {
             console.log(
-              "[Lesson Completion] XP goal reached! Completing lesson..."
+              "[Lesson Completion] XP goal reached! Completing lesson...",
             );
             triggerLessonCompletion("xp_goal");
           }
@@ -3647,7 +3647,10 @@ export default function App() {
 
   const getLessonLevelFromId = (lessonId = "") => {
     // Pre-A1 lessons: "lesson-pre-a1-..." or tutorial "lesson-tutorial-..."
-    if (lessonId.includes("lesson-pre-a1") || lessonId.includes("lesson-tutorial")) {
+    if (
+      lessonId.includes("lesson-pre-a1") ||
+      lessonId.includes("lesson-tutorial")
+    ) {
       return "Pre-A1";
     }
 
@@ -3866,7 +3869,7 @@ export default function App() {
 
       // Use saved level if unlocked, otherwise use the highest unlocked level
       setActiveLessonLevel(
-        isUnlocked ? user.activeLessonLevel : currentLessonLevel
+        isUnlocked ? user.activeLessonLevel : currentLessonLevel,
       );
     } else {
       setActiveLessonLevel(currentLessonLevel);
@@ -3892,7 +3895,7 @@ export default function App() {
 
       // Use saved level if unlocked, otherwise use the highest unlocked level
       setActiveFlashcardLevel(
-        isUnlocked ? user.activeFlashcardLevel : currentFlashcardLevel
+        isUnlocked ? user.activeFlashcardLevel : currentFlashcardLevel,
       );
     } else {
       setActiveFlashcardLevel(currentFlashcardLevel);
@@ -3923,7 +3926,7 @@ export default function App() {
     setDoc(
       doc(database, "users", activeNpub),
       { activeLessonLevel, updatedAt: new Date().toISOString() },
-      { merge: true }
+      { merge: true },
     ).catch((e) => console.error("Failed to save activeLessonLevel:", e));
   }, [activeLessonLevel, activeNpub, hasInitializedLevels]);
 
@@ -3939,7 +3942,7 @@ export default function App() {
     setDoc(
       doc(database, "users", activeNpub),
       { activeFlashcardLevel, updatedAt: new Date().toISOString() },
-      { merge: true }
+      { merge: true },
     ).catch((e) => console.error("Failed to save activeFlashcardLevel:", e));
   }, [activeFlashcardLevel, activeNpub, hasInitializedLevels]);
 
@@ -4055,11 +4058,11 @@ export default function App() {
         setActiveLessonLevel(newLevel);
       } else {
         console.log(
-          `Lesson level ${newLevel} is locked. Complete previous levels first.`
+          `Lesson level ${newLevel} is locked. Complete previous levels first.`,
         );
       }
     },
-    [lessonLevelCompletionStatus]
+    [lessonLevelCompletionStatus],
   );
 
   // Handler for flashcard level navigation with lock checking
@@ -4087,11 +4090,11 @@ export default function App() {
         setActiveFlashcardLevel(newLevel);
       } else {
         console.log(
-          `Flashcard level ${newLevel} is locked. Complete previous levels first.`
+          `Flashcard level ${newLevel} is locked. Complete previous levels first.`,
         );
       }
     },
-    [flashcardLevelCompletionStatus]
+    [flashcardLevelCompletionStatus],
   );
 
   // Legacy: Combined handler for level navigation
@@ -4119,11 +4122,11 @@ export default function App() {
         setActiveCEFRLevel(newLevel);
       } else {
         console.log(
-          `Level ${newLevel} is locked. Complete previous levels first.`
+          `Level ${newLevel} is locked. Complete previous levels first.`,
         );
       }
     },
-    [levelCompletionStatus]
+    [levelCompletionStatus],
   );
 
   // Load only the active levels (include both lesson and flashcard levels for mode switching)
@@ -4431,10 +4434,10 @@ export default function App() {
                               localStorage.setItem("local_nsec", sec);
                             await connectDID();
                             setActiveNpub(
-                              localStorage.getItem("local_npub") || ""
+                              localStorage.getItem("local_npub") || "",
                             );
                             setActiveNsec(
-                              localStorage.getItem("local_nsec") || ""
+                              localStorage.getItem("local_nsec") || "",
                             );
                           }}
                         />
@@ -4595,7 +4598,7 @@ export default function App() {
                         "You stayed on task for {minutes} minutes."
                       ).replace(
                         "{minutes}",
-                        String(Math.round(timerDurationSeconds / 60))
+                        String(Math.round(timerDurationSeconds / 60)),
                       )
                     : t.timer_times_up_no_duration ||
                       "Nice work wrapping up your timer."}
@@ -4723,10 +4726,10 @@ export default function App() {
                         // Include today's date in the completed dates for the celebration
                         const today = new Date();
                         const todayKey = `${today.getFullYear()}-${String(
-                          today.getMonth() + 1
+                          today.getMonth() + 1,
                         ).padStart(2, "0")}-${String(today.getDate()).padStart(
                           2,
-                          "0"
+                          "0",
                         )}`;
                         const existingDates = user?.completedGoalDates || [];
                         return existingDates.includes(todayKey)
@@ -4911,8 +4914,8 @@ export default function App() {
                         ? `Has desbloqueado el nivel ${completedProficiencyData.nextLevel}`
                         : `You've unlocked level ${completedProficiencyData.nextLevel}`
                       : appLanguage === "es"
-                      ? "¡Has completado todos los niveles!"
-                      : "You've completed all levels!"}
+                        ? "¡Has completado todos los niveles!"
+                        : "You've completed all levels!"}
                   </Text>
                 </VStack>
               </Box>
@@ -4940,8 +4943,8 @@ export default function App() {
                     ? "Ir al Siguiente Nivel"
                     : "Go to Next Level"
                   : appLanguage === "es"
-                  ? "Continuar"
-                  : "Continue"}
+                    ? "Continuar"
+                    : "Continue"}
               </Button>
             </VStack>
           </ModalBody>
@@ -5036,18 +5039,18 @@ function BottomActionBar({
   const notesBorderColor = notesIsLoading
     ? "cyan.400"
     : notesIsDone
-    ? "green.400"
-    : "gray.600";
+      ? "green.400"
+      : "gray.600";
   const notesBoxShadow = notesIsLoading
     ? "0 0 0 2px rgba(34,211,238,0.35), 0 0 14px rgba(34,211,238,0.65)"
     : notesIsDone
-    ? "0 0 0 2px rgba(74,222,128,0.35), 0 0 14px rgba(74,222,128,0.65)"
-    : undefined;
+      ? "0 0 0 2px rgba(74,222,128,0.35), 0 0 14px rgba(74,222,128,0.65)"
+      : undefined;
   const notesAnimation = notesIsLoading
     ? "notesPulse 1.5s ease-in-out infinite"
     : notesIsDone
-    ? "notesDone 1.5s ease-out"
-    : undefined;
+      ? "notesDone 1.5s ease-out"
+      : undefined;
   const handleActionClick = (action) => {
     if (!action) return;
     playSound?.(selectSound);
