@@ -341,6 +341,11 @@ export default function LinksPage() {
     onOpen: onRbeOpen,
     onClose: onRbeClose,
   } = useDisclosure();
+  const {
+    isOpen: isAboutOpen,
+    onOpen: onAboutOpen,
+    onClose: onAboutClose,
+  } = useDisclosure();
   const toast = useToast();
   const playSound = useSoundSettings((s) => s.playSound);
 
@@ -867,18 +872,32 @@ export default function LinksPage() {
             {translations.welcome}, {getWelcomeText()}
           </Heading>
 
-          <Button
-            onClick={() => {
-              handleSelectSound();
-              onOpen();
-            }}
-            variant="outline"
-            fontFamily="monospace"
-            borderColor="#00ffff"
-            color="#00ffff"
-          >
-            {translations.customizeProfile}
-          </Button>
+          <HStack spacing={3}>
+            <Button
+              onClick={() => {
+                handleSelectSound();
+                onOpen();
+              }}
+              variant="outline"
+              fontFamily="monospace"
+              borderColor="#00ffff"
+              color="#00ffff"
+            >
+              {translations.profile}
+            </Button>
+            <Button
+              onClick={() => {
+                handleSelectSound();
+                onAboutOpen();
+              }}
+              variant="outline"
+              fontFamily="monospace"
+              borderColor="#00ffff"
+              color="#00ffff"
+            >
+              {translations.about}
+            </Button>
+          </HStack>
 
           {/* Language Toggle */}
           <HStack
@@ -1427,6 +1446,82 @@ export default function LinksPage() {
               onClick={() => {
                 handleSelectSound();
                 onClose();
+              }}
+              variant="ghost"
+              color="gray.400"
+            >
+              {translations.close}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* About Modal */}
+      <Modal
+        isOpen={isAboutOpen}
+        onClose={onAboutClose}
+        isCentered
+        size="md"
+        scrollBehavior="inside"
+      >
+        <ModalOverlay bg="blackAlpha.800" />
+        <ModalContent
+          bg="rgba(7, 16, 29, 0.95)"
+          color="gray.100"
+          border="1px solid"
+          borderColor="#00ffff"
+          rounded="xl"
+          shadow="0 0 30px rgba(0, 255, 255, 0.3)"
+          fontFamily="monospace"
+          maxH="85vh"
+        >
+          <ModalHeader
+            borderBottom="1px solid"
+            borderColor="rgba(0, 255, 255, 0.3)"
+            color="#00ffff"
+          >
+            {translations.aboutTitle}
+          </ModalHeader>
+          <ModalCloseButton color="#00ffff" onClick={handleSelectSound} />
+          <ModalBody
+            py={6}
+            overflowY="auto"
+            sx={{
+              "&::-webkit-scrollbar": {
+                width: "8px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "rgba(0, 0, 0, 0.3)",
+                borderRadius: "4px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: "linear-gradient(180deg, #00ffff 0%, #ff00ff 100%)",
+                borderRadius: "4px",
+                border: "2px solid transparent",
+                backgroundClip: "padding-box",
+              },
+              "&::-webkit-scrollbar-thumb:hover": {
+                background: "linear-gradient(180deg, #00cccc 0%, #cc00cc 100%)",
+                backgroundClip: "padding-box",
+              },
+              scrollbarWidth: "thin",
+              scrollbarColor: "#00ffff rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            <VStack spacing={4} align="stretch">
+              <Text color="gray.300" fontSize="sm" lineHeight="tall">
+                {translations.aboutContent}
+              </Text>
+            </VStack>
+          </ModalBody>
+          <ModalFooter
+            borderTop="1px solid"
+            borderColor="rgba(0, 255, 255, 0.3)"
+          >
+            <Button
+              onClick={() => {
+                handleSelectSound();
+                onAboutClose();
               }}
               variant="ghost"
               color="gray.400"

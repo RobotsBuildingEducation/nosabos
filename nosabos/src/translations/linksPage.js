@@ -3,6 +3,11 @@ export const linksPageTranslations = {
     // Welcome section
     welcome: "Welcome",
     customizeProfile: "Customize Profile",
+    profile: "Profile",
+    about: "About",
+    aboutTitle: "About",
+    aboutContent:
+      "Welcome to my links page! This is a hub for all my projects and platforms. I'm passionate about education, technology, and building tools that help people learn and grow. Feel free to explore the apps and connect with me on any of the platforms below.",
 
     // Language toggle
     english: "ENGLISH",
@@ -122,6 +127,11 @@ export const linksPageTranslations = {
     // Welcome section
     welcome: "Bienvenido",
     customizeProfile: "Personalizar Perfil",
+    profile: "Perfil",
+    about: "Acerca de",
+    aboutTitle: "Acerca de",
+    aboutContent:
+      "¡Bienvenido a mi página de enlaces! Este es un centro para todos mis proyectos y plataformas. Me apasiona la educación, la tecnología y crear herramientas que ayuden a las personas a aprender y crecer. Siéntete libre de explorar las apps y conectarte conmigo en cualquiera de las plataformas a continuación.",
 
     // Language toggle
     english: "INGLES",
