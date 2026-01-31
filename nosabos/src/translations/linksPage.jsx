@@ -3,6 +3,72 @@ export const linksPageTranslations = {
     // Welcome section
     welcome: "Welcome",
     customizeProfile: "Customize Profile",
+    profile: "Profile",
+    about: "About",
+    aboutTitle: "About",
+    aboutContent: (
+      <div>
+        <p style={{ marginBottom: 12 }}>Thanks for checking out my work!</p>
+
+        <p style={{ marginBottom: 12 }}>
+          My name is Sheilfer. I studied computer science and always intended to
+          learn software engineering to build education technology. In general,
+          I have a love for learning, teaching and education and believe that’s
+          where my skills are best put to use.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          <span style={{ color: "cyan" }}>
+            I started this idea called Robots Building Education back in 2015
+            because I felt that education technology was always behind on what
+            the internet was capable of.
+          </span>{" "}
+          Online video games and internet forums really captured people’s
+          attention because it was fun, engaging and even addictive.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          And back then, as a college student, I felt somewhat frustrated that I
+          would pour hours into my studies but it never really reflected until I
+          essentially graduated college, which can take upwards 20 years! It
+          felt like something was missing.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          <span style={{ color: "gold" }}>
+            Robots Building Education is this idea that your learning has real
+            impact at the moment of learning and progressing.{" "}
+          </span>
+          For now, I say it’s “creating scholarships with learning” because it’s
+          a little easier to imagine what the technology is actually doing
+          under-the-hood, but the long-term vision is to have education
+          technology work in a way that can meaningfully support schools,
+          teachers and students in a borderless way.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          Think of it as a way that makes internet properties fund schools
+          similar to housing properties do.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          So you may see some things work on my platform in ways you’ve never
+          seen before. Some stuff is pretty smooth and frictionless for what’s
+          actually happening and that’s partially because I’ve been relentless
+          in creating this idea and making it a real experience for people.{" "}
+          <span style={{ color: "hotpink" }}>
+            I genuinely believe this is how the world ought to work, because it
+            doesn’t make sense to me that billions of hours of work in online
+            education goes unnoticed.
+          </span>
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          So again, thank you for checking out my work! It sincerely means a lot
+          to me.
+        </p>
+      </div>
+    ),
 
     // Language toggle
     english: "ENGLISH",
@@ -122,6 +188,75 @@ export const linksPageTranslations = {
     // Welcome section
     welcome: "Bienvenido",
     customizeProfile: "Personalizar Perfil",
+    profile: "Perfil",
+    about: "Acerca de",
+    aboutTitle: "Acerca de",
+    aboutContent: (
+      <div>
+        <p style={{ marginBottom: 12 }}>¡Gracias por revisar mi trabajo!</p>
+
+        <p style={{ marginBottom: 12 }}>
+          Me llamo Sheilfer. Estudié informática y siempre tuve la intención de
+          aprender ingeniería de software para construir tecnología educativa.
+          En general, amo aprender, enseñar y la educación, y creo que ahí es
+          donde mejor se aprovechan mis habilidades.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          <span style={{ color: "cyan" }}>
+            Empecé esta idea llamada Robots Building Education en 2015 porque
+            sentía que la tecnología educativa siempre iba por detrás de lo que
+            Internet era capaz de hacer.
+          </span>{" "}
+          Los videojuegos en línea y los foros de Internet realmente captaban la
+          atención de la gente porque eran divertidos, envolventes e incluso
+          adictivos.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          Y en aquel entonces, como estudiante universitario, me frustraba
+          dedicar horas a mis estudios y que eso realmente no se viera reflejado
+          hasta prácticamente graduarme de la universidad, ¡lo cual puede tardar
+          hasta 20 años! Sentía que faltaba algo.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          <span style={{ color: "gold" }}>
+            Robots Building Education es la idea de que tu aprendizaje tenga un
+            impacto real en el mismo momento de aprender y progresar.{" "}
+          </span>
+          Por ahora digo que es “crear becas con el aprendizaje” porque así es
+          más fácil imaginar lo que la tecnología está haciendo por debajo del
+          capó, pero la visión a largo plazo es que la tecnología educativa
+          funcione de una manera que pueda apoyar de forma significativa a
+          escuelas, docentes y estudiantes sin fronteras.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          Piénsalo como una manera en la que las propiedades de Internet
+          financian a las escuelas de forma similar a como lo hacen las
+          propiedades inmobiliarias.
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          Así que quizá veas cosas en mi plataforma que funcionan de formas que
+          nunca habías visto. Algunas partes son muy fluidas y sin fricción para
+          lo que realmente está ocurriendo, y eso se debe en parte a que he sido
+          incansable al crear esta idea y convertirla en una experiencia real
+          para las personas.{" "}
+          <span style={{ color: "hotpink" }}>
+            Sinceramente creo que así debería funcionar el mundo, porque no
+            tiene sentido que miles de millones de horas de trabajo en educación
+            en línea pasen desapercibidas.
+          </span>
+        </p>
+
+        <p style={{ marginBottom: 12 }}>
+          Así que, de nuevo, ¡gracias por revisar mi trabajo! De verdad
+          significa mucho para mí.
+        </p>
+      </div>
+    ),
 
     // Language toggle
     english: "INGLES",
