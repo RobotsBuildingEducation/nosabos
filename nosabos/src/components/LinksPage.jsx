@@ -52,8 +52,9 @@ import { analytics } from "../firebaseResources/firebaseResources";
 import useNostrWalletStore from "../hooks/useNostrWalletStore";
 import { IdentityCard } from "./IdentityCard";
 import useLanguage from "../hooks/useLanguage";
-import { linksPageTranslations } from "../translations/linksPage";
+
 import AnimatedLogo from "./AnimatedLogo/AnimatedLogo";
+import { linksPageTranslations } from "../translations/linksPage";
 
 // Helper to check if running on localhost
 const isLocalhost = () =>
@@ -459,13 +460,6 @@ export default function LinksPage() {
       // Clear the nsec input after successful wallet creation
       setNsecForWallet("");
       setNoWalletFound(false);
-
-      toast({
-        title: translations.walletCreated,
-        description: translations.walletReady,
-        status: "success",
-        duration: 2500,
-      });
     } catch (err) {
       console.error("Error creating wallet:", err);
       toast({
@@ -613,6 +607,7 @@ export default function LinksPage() {
       }
 
       toast({
+        position: "top",
         title: translations.profileUpdated,
         description: translations.profileSaved,
         status: "success",
@@ -638,6 +633,7 @@ export default function LinksPage() {
     const nsec = localStorage.getItem("local_nsec");
     if (!nsec || nsec === "nip07") {
       toast({
+        position: "top",
         title: translations.noSecretKey,
         description: translations.usingExtension,
         status: "info",
@@ -650,6 +646,7 @@ export default function LinksPage() {
     try {
       await navigator.clipboard.writeText(nsec);
       toast({
+        position: "top",
         title: translations.copied,
         description: translations.secretKeyCopied,
         status: "success",
@@ -755,6 +752,7 @@ export default function LinksPage() {
         }
 
         toast({
+          position: "top",
           title: translations.accountSwitched,
           description: translations.loginSuccess,
           status: "success",
@@ -910,10 +908,11 @@ export default function LinksPage() {
           >
             <Text
               fontSize="sm"
-              color={language === "en" ? "#ff00ff" : "gray.500"}
+              color={language === "en" ? "#00ffff" : "gray.500"}
               fontWeight={language === "en" ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
+              mb={4}
             >
               {translations.english}
             </Text>
@@ -925,6 +924,7 @@ export default function LinksPage() {
               }}
               colorScheme="cyan"
               size="md"
+              mb={4}
             />
             <Text
               fontSize="sm"
@@ -932,6 +932,7 @@ export default function LinksPage() {
               fontWeight={language === "es" ? "bold" : "normal"}
               fontFamily="monospace"
               transition="color 0.2s ease"
+              mb={4}
             >
               {translations.spanish}
             </Text>
@@ -1509,7 +1510,12 @@ export default function LinksPage() {
             }}
           >
             <VStack spacing={4} align="stretch">
-              <Text color="gray.300" fontSize="sm" lineHeight="tall">
+              <Box mt={"-6"}>
+                {" "}
+                <RandomCharacter notSoRandomCharacter={"38"} />
+              </Box>
+
+              <Text color="gray.300" fontSize="sm" lineHeight="tall" mt={"-6"}>
                 {translations.aboutContent}
               </Text>
             </VStack>
