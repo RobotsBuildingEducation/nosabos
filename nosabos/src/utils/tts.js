@@ -254,11 +254,29 @@ export async function fetchTTSBlob() {
   throw new Error("Legacy REST TTS is disabled in favor of realtime playback");
 }
 
-export async function getTTSPlayer({ text, voice, langTag } = {}) {
-  return getRealtimePlayer({ text, voice, langTag });
+export async function getTTSPlayer({
+  text,
+  voice,
+  langTag,
+  onTranscriptDelta,
+  onTranscriptDone,
+} = {}) {
+  return getRealtimePlayer({
+    text,
+    voice,
+    langTag,
+    onTranscriptDelta,
+    onTranscriptDone,
+  });
 }
 
-async function getRealtimePlayer({ text, voice, langTag }) {
+async function getRealtimePlayer({
+  text,
+  voice,
+  langTag,
+  onTranscriptDelta,
+  onTranscriptDone,
+}) {
   if (!REALTIME_URL) throw new Error("Realtime URL not configured");
 
   const sanitizedVoice = voice ? sanitizeVoice(voice) : getRandomVoice();
@@ -348,6 +366,23 @@ async function getRealtimePlayer({ text, voice, langTag }) {
   dc.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
+      if (
+        msg.type === "response.audio_transcript.delta" ||
+        msg.type === "response.output_text.delta" ||
+        msg.type === "response.text.delta"
+      ) {
+        const delta = msg.delta || msg.text || "";
+        if (delta) {
+          onTranscriptDelta?.(delta);
+        }
+      }
+      if (
+        msg.type === "response.audio_transcript.done" ||
+        msg.type === "response.output_text.done" ||
+        msg.type === "response.text.done"
+      ) {
+        onTranscriptDone?.();
+      }
       // Close connection when response is done (speech finished)
       if (msg.type === "response.done") {
         intentionalEnd = true;
