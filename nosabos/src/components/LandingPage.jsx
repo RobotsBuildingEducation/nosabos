@@ -910,7 +910,14 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
                   }}
                 />
               </div>
-              <Button variant="secondary" onClick={() => { playSound(selectSound); onExtension(); }} fullWidth>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  playSound(selectSound);
+                  onExtension();
+                }}
+                fullWidth
+              >
                 {copy.signin_extension}
               </Button>
             </>
@@ -918,7 +925,10 @@ const SignInView = ({ copy, onBack, onSignIn, onExtension, hasExtension }) => {
 
           <Button
             variant="ghost"
-            onClick={() => { playSound(selectSound); onBack(); }}
+            onClick={() => {
+              playSound(selectSound);
+              onBack();
+            }}
             fullWidth
             style={{ marginTop: "8px" }}
           >
@@ -992,7 +1002,7 @@ const LandingPage = ({ onAuthenticated }) => {
       if (!result) throw new Error("Invalid key");
       onAuthenticated?.();
     },
-    [auth, onAuthenticated]
+    [auth, onAuthenticated],
   );
 
   const handleExtension = useCallback(async () => {
@@ -1248,7 +1258,10 @@ const LandingPage = ({ onAuthenticated }) => {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => { playSound(selectSound); setView("signIn"); }}
+              onClick={() => {
+                playSound(selectSound);
+                setView("signIn");
+              }}
               fullWidth
             >
               {copy.cta_signin}
@@ -1266,14 +1279,20 @@ const LandingPage = ({ onAuthenticated }) => {
               <Button
                 variant={lang === "en" ? "primary" : "ghost"}
                 size="sm"
-                onClick={() => { playSound(selectSound); setLang("en"); }}
+                onClick={() => {
+                  playSound(selectSound);
+                  setLang("en");
+                }}
               >
                 {copy.language_en}
               </Button>
               <Button
                 variant={lang === "es" ? "primary" : "ghost"}
                 size="sm"
-                onClick={() => { playSound(selectSound); setLang("es"); }}
+                onClick={() => {
+                  playSound(selectSound);
+                  setLang("es");
+                }}
               >
                 {copy.language_es}
               </Button>
@@ -1641,7 +1660,10 @@ const LandingPage = ({ onAuthenticated }) => {
             </Button>
             <Button
               variant="secondary"
-              onClick={() => { playSound(selectSound); setView("signIn"); }}
+              onClick={() => {
+                playSound(selectSound);
+                setView("signIn");
+              }}
               fullWidth
             >
               {copy.cta_signin}
