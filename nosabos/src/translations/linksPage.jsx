@@ -48,7 +48,7 @@ export const linksPageTranslations = {
 
         <p style={{ marginBottom: 12 }}>
           Think of it as a way that makes internet properties fund schools
-          similar to housing properties do.
+          similar to how housing properties do.
         </p>
 
         <p style={{ marginBottom: 12 }}>
@@ -58,8 +58,8 @@ export const linksPageTranslations = {
           in creating this idea and making it a real experience for people.{" "}
           <span style={{ color: "hotpink" }}>
             I genuinely believe this is how the world ought to work, because it
-            doesn’t make sense to me that billions of hours of work in online
-            education goes unnoticed.
+            doesn’t make sense to me that billions of hours of work in daily
+            online education goes unnoticed and unrecorded publicly.
           </span>
         </p>
 
