@@ -556,7 +556,7 @@ function TopBar({
       },
       {
         value: "nah",
-        label: t.onboarding_practice_nah,
+        label: `${t.onboarding_practice_nah} (alpha)`,
         beta: false,
         flag: mexicanFlag(),
       },

@@ -146,7 +146,7 @@ export default function Onboarding({
       },
       {
         value: "nah",
-        label: ui.onboarding_practice_nah,
+        label: `${ui.onboarding_practice_nah} (alpha)`,
         beta: false,
         flag: mexicanFlag(),
       },
