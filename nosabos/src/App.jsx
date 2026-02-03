@@ -559,12 +559,14 @@ function TopBar({
         value: "nah",
         label: `${t.onboarding_practice_nah} (alpha)`,
         beta: false,
+        alpha: true,
         flag: mexicanFlag(),
       },
       {
         value: "yua",
         label: `${t.onboarding_practice_yua} (alpha)`,
         beta: false,
+        alpha: true,
         flag: mexicanFlag(),
       },
       {
@@ -614,13 +616,16 @@ function TopBar({
 
     const visible = options.filter((option) => !option.hidden);
     const stable = visible
-      .filter((option) => !option.beta)
+      .filter((option) => !option.beta && !option.alpha)
+      .sort((a, b) => collator.compare(a.label, b.label));
+    const alpha = visible
+      .filter((option) => option.alpha)
       .sort((a, b) => collator.compare(a.label, b.label));
     const beta = visible
       .filter((option) => option.beta)
       .sort((a, b) => collator.compare(a.label, b.label));
 
-    return [...stable, ...beta];
+    return [...stable, ...alpha, ...beta];
   }, [appLanguage, showJapanese, t]);
   const selectedSupportOption =
     supportLanguageOptions.find((option) => option.value === supportLang) ||

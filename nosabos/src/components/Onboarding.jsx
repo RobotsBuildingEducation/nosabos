@@ -148,12 +148,14 @@ export default function Onboarding({
         value: "nah",
         label: `${ui.onboarding_practice_nah} (alpha)`,
         beta: false,
+        alpha: true,
         flag: mexicanFlag(),
       },
       {
         value: "yua",
         label: `${ui.onboarding_practice_yua} (alpha)`,
         beta: false,
+        alpha: true,
         flag: mexicanFlag(),
       },
       {
@@ -203,13 +205,16 @@ export default function Onboarding({
 
     const visible = options.filter((option) => !option.hidden);
     const stable = visible
-      .filter((option) => !option.beta)
+      .filter((option) => !option.beta && !option.alpha)
+      .sort((a, b) => collator.compare(a.label, b.label));
+    const alpha = visible
+      .filter((option) => option.alpha)
       .sort((a, b) => collator.compare(a.label, b.label));
     const beta = visible
       .filter((option) => option.beta)
       .sort((a, b) => collator.compare(a.label, b.label));
 
-    return [...stable, ...beta];
+    return [...stable, ...alpha, ...beta];
   }, [supportLang, ui, showJapanese]);
 
   useEffect(() => {
