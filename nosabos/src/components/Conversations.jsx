@@ -847,7 +847,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     if (code === "it") return translations[uiLang].language_it || "Italian";
     if (code === "nl") return translations[uiLang].language_nl || "Dutch";
     if (code === "nah")
-      return translations[uiLang].language_nah || "Huastec Nahuatl";
+      return translations[uiLang].language_nah || "Eastern Huasteca Nahuatl";
     if (code === "ja") return translations[uiLang].language_ja || "Japanese";
     if (code === "ru") return translations[uiLang].language_ru || "Russian";
     if (code === "de") return translations[uiLang].language_de || "German";
@@ -1233,7 +1233,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     let strict;
     if (tLang === "nah") {
       strict =
-        "Respond ONLY in Huastec Nahuatl (Náhuatl Huasteco). Do not use Spanish or English.";
+        "Respond ONLY in Eastern Huasteca Nahuatl (Náhuatl Huasteco Oriental). Do not use Spanish or English.";
     } else if (tLang === "es") {
       strict = "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl.";
     } else if (tLang === "pt") {
@@ -1267,7 +1267,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
         "Freagair i nGaeilge AMHÁIN. Ná húsáid Béarla ná Spáinnis. Respond ONLY in Irish.";
     } else {
       strict =
-        "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
+        "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
     }
 
     // Proficiency level guidance
@@ -1371,7 +1371,7 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           : tLang === "nl"
           ? "Dutch"
           : tLang === "nah"
-          ? "Huastec Nahuatl"
+          ? "Eastern Huasteca Nahuatl"
           : tLang === "ja"
           ? "Japanese"
           : tLang === "ru"

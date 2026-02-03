@@ -168,7 +168,7 @@ const LANG_NAME = (code) =>
     fr: "French",
     it: "Italian",
     nl: "Dutch",
-    nah: "Huastec Nahuatl",
+    nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
     de: "German",
     el: "Greek",

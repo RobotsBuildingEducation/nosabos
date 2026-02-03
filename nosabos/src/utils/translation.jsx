@@ -127,7 +127,7 @@ export const translations = {
     language_fr: "French",
     language_it: "Italian",
     language_nl: "Dutch",
-    language_nah: "Huastec Nahuatl",
+    language_nah: "Eastern Huasteca Nahuatl",
     language_ja: "Japanese",
     language_ru: "Russian",
     language_de: "German",
