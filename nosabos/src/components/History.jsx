@@ -196,6 +196,7 @@ const LANGUAGE_LABELS = {
   de: ["German", "Alemán", "Deutsch"],
   pl: ["Polish", "Polaco", "Polski"],
   ga: ["Irish", "Irlandés", "Gaeilge"],
+  yua: ["Yucatec Maya", "Maya yucateco", "Maaya t'aan"],
 };
 
 const GENERIC_LANGUAGE_PREFIXES = [
@@ -758,6 +759,7 @@ export default function History({
     "el",
     "pl",
     "ga",
+    "yua",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "es";

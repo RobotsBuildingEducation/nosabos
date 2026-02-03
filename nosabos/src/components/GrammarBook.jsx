@@ -977,6 +977,7 @@ export default function GrammarBook({
     "el",
     "pl",
     "ga",
+    "yua",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";

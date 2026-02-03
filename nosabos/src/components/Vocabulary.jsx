@@ -1057,6 +1057,7 @@ export default function Vocabulary({
     "el",
     "pl",
     "ga",
+    "yua",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
