@@ -994,7 +994,7 @@ export const translations = {
     onboarding_support_es: "Español",
     onboarding_practice_label_title: "Idioma de práctica",
     onboarding_practice_menu_label: "Práctica:",
-    onboarding_practice_nah: "Náhuatl de la Huasteca Oriental",
+    onboarding_practice_nah: "Náhuatl Huasteca Oriental",
     onboarding_practice_es: "Español",
     onboarding_practice_pt: "Portugués",
     onboarding_practice_fr: "Francés",
