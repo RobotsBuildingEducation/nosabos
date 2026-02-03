@@ -116,6 +116,7 @@ export default function Randomize() {
         "el",
         "pl",
         "ga",
+        "yua",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";

@@ -966,9 +966,22 @@ export default function RealTimeTest({
       setVoicePersona(p.voicePersona);
     }
     if (
-      ["nah", "es", "pt", "en", "fr", "it", "nl", "ja", "ru", "de", "el", "pl", "ga"].includes(
-        p.targetLang
-      )
+      [
+        "nah",
+        "es",
+        "pt",
+        "en",
+        "fr",
+        "it",
+        "nl",
+        "ja",
+        "ru",
+        "de",
+        "el",
+        "pl",
+        "ga",
+        "yua",
+      ].includes(p.targetLang)
     ) {
       targetLangRef.current = p.targetLang;
       setTargetLang(p.targetLang);
@@ -1285,6 +1298,7 @@ export default function RealTimeTest({
       el: "Greek",
       pl: "Polish",
       ga: "Irish",
+      yua: "Yucatec Maya",
     }[goalLangCode] || "English";
 
     // Check if this is an integrated practice lesson
@@ -1497,6 +1511,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       el: "Greek",
       pl: "Polish",
       ga: "Irish",
+      yua: "Yucatec Maya",
     }[goalLangCode] || "English";
 
     // Get current goal for context
@@ -1976,6 +1991,9 @@ Return ONLY JSON:
     } else if (tLang === "ga") {
       strict =
         "Freagair i nGaeilge AMHÁIN. Ná húsáid Béarla ná Spáinnis. Respond ONLY in Irish.";
+    } else if (tLang === "yua") {
+      strict =
+        "T'aanen tu'ux maaya t'aan. Ma' a ts'íibaj inglés wa español. Respond ONLY in Yucatec Maya.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
@@ -2144,6 +2162,8 @@ Return ONLY JSON:
           ? "Głos zaktualizowany."
           : targetLangRef.current === "ga"
           ? "Guth nuashonraithe."
+          : targetLangRef.current === "yua"
+          ? "T'aan ts'áaj."
           : "Voice updated.";
       try {
         dcRef.current.send(

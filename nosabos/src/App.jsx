@@ -214,6 +214,7 @@ const TARGET_LANGUAGE_LABELS = {
   el: "Greek",
   pl: "Polish",
   ga: "Irish",
+  yua: "Yucatec Maya",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -558,6 +559,14 @@ function TopBar({
         value: "nah",
         label: `${t.onboarding_practice_nah} (alpha)`,
         beta: false,
+        alpha: true,
+        flag: mexicanFlag(),
+      },
+      {
+        value: "yua",
+        label: `${t.onboarding_practice_yua} (alpha)`,
+        beta: false,
+        alpha: true,
         flag: mexicanFlag(),
       },
       {
@@ -607,13 +616,16 @@ function TopBar({
 
     const visible = options.filter((option) => !option.hidden);
     const stable = visible
-      .filter((option) => !option.beta)
+      .filter((option) => !option.beta && !option.alpha)
+      .sort((a, b) => collator.compare(a.label, b.label));
+    const alpha = visible
+      .filter((option) => option.alpha)
       .sort((a, b) => collator.compare(a.label, b.label));
     const beta = visible
       .filter((option) => option.beta)
       .sort((a, b) => collator.compare(a.label, b.label));
 
-    return [...stable, ...beta];
+    return [...stable, ...alpha, ...beta];
   }, [appLanguage, showJapanese, t]);
   const selectedSupportOption =
     supportLanguageOptions.find((option) => option.value === supportLang) ||
@@ -1615,6 +1627,7 @@ export default function App() {
     "el",
     "pl",
     "ga",
+    "yua",
   ];
 
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
@@ -2426,6 +2439,7 @@ export default function App() {
         "el",
         "pl",
         "ga",
+        "yua",
       ].includes(partial.targetLang ?? prev.targetLang)
         ? (partial.targetLang ?? prev.targetLang)
         : "es",
@@ -2554,6 +2568,7 @@ export default function App() {
           "el",
           "pl",
           "ga",
+          "yua",
         ].includes(payload.targetLang)
           ? payload.targetLang
           : "es",
@@ -5025,6 +5040,7 @@ function BottomActionBar({
     "el",
     "pl",
     "ga",
+    "yua",
   ];
   const PATH_MODES = [
     ...(ALPHABET_LANGS.includes(targetLang)

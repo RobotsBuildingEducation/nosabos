@@ -854,6 +854,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     if (code === "el") return translations[uiLang].language_el || "Greek";
     if (code === "pl") return translations[uiLang].language_pl || "Polish";
     if (code === "ga") return translations[uiLang].language_ga || "Irish";
+    if (code === "yua")
+      return translations[uiLang].language_yua || "Yucatec Maya";
     return code;
   };
 
@@ -1265,6 +1267,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } else if (tLang === "ga") {
       strict =
         "Freagair i nGaeilge AMHÁIN. Ná húsáid Béarla ná Spáinnis. Respond ONLY in Irish.";
+    } else if (tLang === "yua") {
+      strict =
+        "T'aanen tu'ux maaya t'aan. Ma' a ts'íibaj inglés wa español. Respond ONLY in Yucatec Maya.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
@@ -1384,6 +1389,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           ? "Polish"
           : tLang === "ga"
           ? "Irish"
+          : tLang === "yua"
+          ? "Yucatec Maya"
           : "English";
       const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 

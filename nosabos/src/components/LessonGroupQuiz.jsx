@@ -117,15 +117,28 @@ function LANG_NAME(code) {
     el: "Greek",
     pl: "Polish",
     ga: "Irish",
+    yua: "Yucatec Maya",
   };
   return map[code] || code;
 }
 
 function resolveSupportLang(support, appUILang) {
   if (!support || support === "auto") return appUILang === "es" ? "es" : "en";
-  return ["en", "es", "pt", "fr", "it", "nl", "nah", "ru", "de", "el", "pl", "ga"].includes(
-    support
-  )
+  return [
+    "en",
+    "es",
+    "pt",
+    "fr",
+    "it",
+    "nl",
+    "nah",
+    "ru",
+    "de",
+    "el",
+    "pl",
+    "ga",
+    "yua",
+  ].includes(support)
     ? support
     : "en";
 }
@@ -192,6 +205,7 @@ export default function LessonGroupQuiz({
         "el",
         "pl",
         "ga",
+        "yua",
       ].includes(prog.targetLang)
         ? prog.targetLang
         : "es";
