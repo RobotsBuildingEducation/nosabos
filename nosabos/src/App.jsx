@@ -170,7 +170,6 @@ import {
   polishFlag,
   russianFlag,
   usaFlag,
-  yucatecMayaFlag,
 } from "./components/flagsIcons/flags";
 
 /* ---------------------------
@@ -564,9 +563,9 @@ function TopBar({
       },
       {
         value: "yua",
-        label: t.onboarding_practice_yua,
-        beta: true,
-        flag: yucatecMayaFlag(),
+        label: `${t.onboarding_practice_yua} (alpha)`,
+        beta: false,
+        flag: mexicanFlag(),
       },
       {
         value: "pt",

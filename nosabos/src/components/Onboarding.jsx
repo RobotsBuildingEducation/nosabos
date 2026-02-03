@@ -47,7 +47,6 @@ import {
   polishFlag,
   russianFlag,
   usaFlag,
-  yucatecMayaFlag,
 } from "./flagsIcons/flags";
 
 const BASE_PATH = "/onboarding";
@@ -153,9 +152,9 @@ export default function Onboarding({
       },
       {
         value: "yua",
-        label: ui.onboarding_practice_yua,
-        beta: true,
-        flag: yucatecMayaFlag(),
+        label: `${ui.onboarding_practice_yua} (alpha)`,
+        beta: false,
+        flag: mexicanFlag(),
       },
       {
         value: "pt",
