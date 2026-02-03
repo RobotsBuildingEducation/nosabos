@@ -16,6 +16,7 @@ const LANG_NAME = (code) =>
     el: "Greek",
     pl: "Polish",
     ga: "Irish",
+    yua: "Yucatec Maya",
   }[code] || code);
 
 /**

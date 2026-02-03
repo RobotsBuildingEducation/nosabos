@@ -94,6 +94,13 @@ const LLM_LANG_NAME = (codeOrName) => {
     return "Polish";
   if (m === "ga" || m === "irish" || m === "irlandés" || m === "gaeilge")
     return "Irish";
+  if (
+    m === "yua" ||
+    m === "yucatec maya" ||
+    m === "maya yucateco" ||
+    m === "maaya t'aan"
+  )
+    return "Yucatec Maya";
   return capName(m);
 };
 
@@ -118,6 +125,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "el") return "el-GR";
   if (m === "pl") return "pl-PL";
   if (m === "ga") return "ga-IE";
+  if (m === "yua") return "es-MX";
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
   return fallback;
@@ -136,8 +144,20 @@ const toLangKey = (value) => {
   if (["it", "italian", "italiano"].includes(raw)) return "it";
   if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
     return "nl";
-  if (["nah", "nahuatl", "náhuatl", "eastern huasteca nahuatl", "náhuatl huasteco oriental"].includes(raw))
+  if (
+    [
+      "nah",
+      "nahuatl",
+      "náhuatl",
+      "eastern huasteca nahuatl",
+      "náhuatl huasteco oriental",
+    ].includes(raw)
+  )
     return "nah";
+  if (
+    ["yua", "yucatec maya", "maya yucateco", "maaya t'aan"].includes(raw)
+  )
+    return "yua";
   if (["ru", "russian", "ruso", "русский"].includes(raw)) return "ru";
   if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw)) return "de";
   if (["el", "greek", "griego", "ελληνικά", "ελληνικα"].includes(raw))
@@ -201,6 +221,7 @@ function useSharedProgress() {
         "el",
         "pl",
         "ga",
+        "yua",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";

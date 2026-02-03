@@ -1427,6 +1427,7 @@ const SUPPORTED_TARGET_LANGS = new Set([
   "el",
   "pl",
   "ga",
+  "yua",
 ]);
 const DEFAULT_TARGET_LANG = "es";
 
@@ -1447,4 +1448,5 @@ export const LEARNING_PATHS = {
   el: cloneLearningPath(), // Greek
   pl: cloneLearningPath(), // Polish
   ga: cloneLearningPath(), // Irish
+  yua: cloneLearningPath(), // Yucatec Maya
 };

@@ -170,6 +170,7 @@ import {
   polishFlag,
   russianFlag,
   usaFlag,
+  yucatecMayaFlag,
 } from "./components/flagsIcons/flags";
 
 /* ---------------------------
@@ -214,6 +215,7 @@ const TARGET_LANGUAGE_LABELS = {
   el: "Greek",
   pl: "Polish",
   ga: "Irish",
+  yua: "Yucatec Maya",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -559,6 +561,12 @@ function TopBar({
         label: `${t.onboarding_practice_nah} (alpha)`,
         beta: false,
         flag: mexicanFlag(),
+      },
+      {
+        value: "yua",
+        label: t.onboarding_practice_yua,
+        beta: true,
+        flag: yucatecMayaFlag(),
       },
       {
         value: "pt",
@@ -1615,6 +1623,7 @@ export default function App() {
     "el",
     "pl",
     "ga",
+    "yua",
   ];
 
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
@@ -2426,6 +2435,7 @@ export default function App() {
         "el",
         "pl",
         "ga",
+        "yua",
       ].includes(partial.targetLang ?? prev.targetLang)
         ? (partial.targetLang ?? prev.targetLang)
         : "es",
@@ -2554,6 +2564,7 @@ export default function App() {
           "el",
           "pl",
           "ga",
+          "yua",
         ].includes(payload.targetLang)
           ? payload.targetLang
           : "es",
@@ -5025,6 +5036,7 @@ function BottomActionBar({
     "el",
     "pl",
     "ga",
+    "yua",
   ];
   const PATH_MODES = [
     ...(ALPHABET_LANGS.includes(targetLang)

@@ -176,6 +176,7 @@ const LANG_NAME = (code) =>
     el: "Greek",
     pl: "Polish",
     ga: "Irish",
+    yua: "Yucatec Maya",
   }[code] || code);
 
 const strongNpub = (user) =>
@@ -222,6 +223,7 @@ function useSharedProgress() {
         "el",
         "pl",
         "ga",
+        "yua",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
@@ -1082,6 +1084,9 @@ export default function Vocabulary({
       ru: t("language_ru"),
       de: t("language_de"),
       el: t("language_el"),
+      pl: t("language_pl"),
+      ga: t("language_ga"),
+      yua: t("language_yua"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);

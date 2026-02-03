@@ -83,6 +83,7 @@ export const SKILL_TREE_A1 = [
           successCriteria_el: 'The learner says "γεια σου" to you.',
           successCriteria_pl: 'The learner says "cześć" to you.',
           successCriteria_ga: 'The learner says "Dia duit" to you.',
+          successCriteria_yua: 'The learner says "ma\'alob k\'iin" to you.',
           tutorialDescription: {
             en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
             es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
