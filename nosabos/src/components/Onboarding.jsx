@@ -266,7 +266,7 @@ export default function Onboarding({
     ui.onboarding_persona_input_placeholder || 'e.g., "{example}"'
   ).replace(
     "{example}",
-    ui.onboarding_persona_default_example || "patient, encouraging, playful"
+    ui.onboarding_persona_default_example || "patient, encouraging, playful",
   );
 
   const VAD_LABEL =

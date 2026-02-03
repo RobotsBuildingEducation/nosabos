@@ -169,7 +169,7 @@ export const translations = {
     onboarding_support_es: "Spanish",
     onboarding_practice_label_title: "Practice language",
     onboarding_practice_menu_label: "Practice:",
-    onboarding_practice_nah: "Eastern Huasteca Nahuatl",
+    onboarding_practice_nah: "East Huasteca Nahuatl",
     onboarding_practice_es: "Spanish",
     onboarding_practice_pt: "Portuguese",
     onboarding_practice_fr: "French",
