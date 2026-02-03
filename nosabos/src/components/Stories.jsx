@@ -100,7 +100,7 @@ const LLM_LANG_NAME = (code) =>
     fr: "French",
     it: "Italian",
     nl: "Dutch",
-    nah: "Huastec Nahuatl",
+    nah: "Eastern Huasteca Nahuatl",
     ru: "Russian",
     de: "German",
     el: "Greek",
@@ -115,7 +115,7 @@ const BCP47 = {
   fr: { stt: "fr-FR", tts: "fr-FR" },
   it: { stt: "it-IT", tts: "it-IT" },
   nl: { stt: "nl-NL", tts: "nl-NL" },
-  nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Huastec Nahuatl is unsupported by engines
+  nah: { stt: "es-ES", tts: "es-ES" }, // fallback if Eastern Huasteca Nahuatl is unsupported by engines
   ru: { stt: "ru-RU", tts: "ru-RU" },
   de: { stt: "de-DE", tts: "de-DE" },
   el: { stt: "el-GR", tts: "el-GR" },
@@ -141,7 +141,7 @@ const toLangKey = (value) => {
       "nah",
       "nahuatl",
       "náhuatl",
-      "huastec nahuatl",
+      "eastern huasteca nahuatl",
       "náhuatl huasteco",
     ].includes(raw)
   )

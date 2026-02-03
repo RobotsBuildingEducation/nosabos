@@ -207,7 +207,7 @@ const TARGET_LANGUAGE_LABELS = {
   fr: "French",
   it: "Italian",
   nl: "Dutch",
-  nah: "Huastec Nahuatl",
+  nah: "Eastern Huasteca Nahuatl",
   ja: "Japanese",
   ru: "Russian",
   de: "German",

@@ -10,7 +10,7 @@ export function t(lang = "en", key, vars = {}) {
     key;
   if (typeof raw !== "string") return raw;
   return raw.replace(/\{(\w+)\}/g, (_, k) =>
-    vars[k] != null ? String(vars[k]) : `{${k}}`
+    vars[k] != null ? String(vars[k]) : `{${k}}`,
   );
 }
 
@@ -127,7 +127,7 @@ export const translations = {
     language_fr: "French",
     language_it: "Italian",
     language_nl: "Dutch",
-    language_nah: "Huastec Nahuatl",
+    language_nah: "Eastern Huasteca Nahuatl",
     language_ja: "Japanese",
     language_ru: "Russian",
     language_de: "German",
@@ -168,7 +168,7 @@ export const translations = {
     onboarding_support_es: "Spanish",
     onboarding_practice_label_title: "Practice language",
     onboarding_practice_menu_label: "Practice:",
-    onboarding_practice_nah: "Nahuatl",
+    onboarding_practice_nah: "Eastern Huasteca Nahuatl",
     onboarding_practice_es: "Spanish",
     onboarding_practice_pt: "Portuguese",
     onboarding_practice_fr: "French",
@@ -291,14 +291,14 @@ export const translations = {
             onMouseDown={() => {
               window.open(
                 "https://www.patreon.com/NotesAndOtherStuff",
-                "_blank"
+                "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
                   "https://www.patreon.com/NotesAndOtherStuff",
-                  "_blank"
+                  "_blank",
                 );
               }
             }}
@@ -312,14 +312,14 @@ export const translations = {
             onMouseDown={() => {
               window.open(
                 "https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share",
-                "_blank"
+                "_blank",
               );
             }}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 window.open(
                   "https://www.patreon.com/posts/start-learning-146522893?utm_medium=clipboard_copy&utm_source=copyLink&utm_campaign=postshare_fan&utm_content=web_share",
-                  "_blank"
+                  "_blank",
                 );
               }
             }}
@@ -994,7 +994,7 @@ export const translations = {
     onboarding_support_es: "Español",
     onboarding_practice_label_title: "Idioma de práctica",
     onboarding_practice_menu_label: "Práctica:",
-    onboarding_practice_nah: "Náhuatl",
+    onboarding_practice_nah: "Náhuatl Huasteca Oriental",
     onboarding_practice_es: "Español",
     onboarding_practice_pt: "Portugués",
     onboarding_practice_fr: "Francés",

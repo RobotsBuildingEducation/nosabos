@@ -85,8 +85,8 @@ const LLM_LANG_NAME = (codeOrName) => {
   if (m === "it" || m === "italian" || m === "italiano") return "Italian";
   if (m === "nl" || m === "dutch" || m === "nederlands" || m === "holandés")
     return "Dutch";
-  if (m === "nah" || m === "nahuatl" || m === "huastec nahuatl")
-    return "Huastec Nahuatl";
+  if (m === "nah" || m === "nahuatl" || m === "eastern huasteca nahuatl")
+    return "Eastern Huasteca Nahuatl";
   if (m === "ru" || m === "russian" || m === "русский") return "Russian";
   if (m === "el" || m === "greek" || m === "griego" || m === "ελληνικά")
     return "Greek";
@@ -136,7 +136,7 @@ const toLangKey = (value) => {
   if (["it", "italian", "italiano"].includes(raw)) return "it";
   if (["nl", "dutch", "nederlands", "holandés", "holandes"].includes(raw))
     return "nl";
-  if (["nah", "nahuatl", "náhuatl", "huastec nahuatl", "náhuatl huasteco"].includes(raw))
+  if (["nah", "nahuatl", "náhuatl", "eastern huasteca nahuatl", "náhuatl huasteco oriental"].includes(raw))
     return "nah";
   if (["ru", "russian", "ruso", "русский"].includes(raw)) return "ru";
   if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw)) return "de";

@@ -1278,7 +1278,7 @@ export default function RealTimeTest({
       fr: "French",
       it: "Italian",
       nl: "Dutch",
-      nah: "Huastec Nahuatl",
+      nah: "Eastern Huasteca Nahuatl",
       ja: "Japanese",
       ru: "Russian",
       de: "German",
@@ -1490,7 +1490,7 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
       fr: "French",
       it: "Italian",
       nl: "Dutch",
-      nah: "Huastec Nahuatl",
+      nah: "Eastern Huasteca Nahuatl",
       ja: "Japanese",
       ru: "Russian",
       de: "German",
@@ -1944,7 +1944,7 @@ Return ONLY JSON:
     let strict;
     if (tLang === "nah") {
       strict =
-        "Respond ONLY in Huastec Nahuatl (Náhuatl Huasteco). Do not use Spanish or English.";
+        "Respond ONLY in Eastern Huasteca Nahuatl (Náhuatl Huasteco Oriental). Do not use Spanish or English.";
     } else if (tLang === "es") {
       strict = "Responde ÚNICAMENTE en español. No uses inglés ni náhuatl.";
     } else if (tLang === "pt") {
@@ -1978,7 +1978,7 @@ Return ONLY JSON:
         "Freagair i nGaeilge AMHÁIN. Ná húsáid Béarla ná Spáinnis. Respond ONLY in Irish.";
     } else {
       strict =
-        "Respond ONLY in English. Do not use Spanish or Huastec Nahuatl.";
+        "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
     }
 
     const levelHint = getCEFRPromptHint(currentCefrLevel);
