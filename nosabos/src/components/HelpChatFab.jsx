@@ -323,10 +323,12 @@ const HelpChatFab = forwardRef(
       const lines = String(text || "").split("\n");
       const i = lines.findIndex((l) => l.trim().startsWith("// "));
       if (i === -1) return { main: text, gloss: "" };
-      return {
-        main: lines.slice(0, i).join("\n").trim(),
-        gloss: lines[i].replace(/^\/\/\s?/, "").trim(),
-      };
+      const gloss = lines[i].replace(/^\/\/\s?/, "").trim();
+      const main = lines
+        .filter((_, idx) => idx !== i)
+        .join("\n")
+        .trim();
+      return { main, gloss };
     };
 
     // -- Saved chats & morpheme mode functions ----------------------------------
