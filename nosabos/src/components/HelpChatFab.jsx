@@ -54,6 +54,23 @@ import { TTS_LANG_TAG, getRandomVoice, getTTSPlayer } from "../utils/tts";
 const SAVED_CHATS_KEY = "nosabos_helpchat_saved_chats";
 const MORPHEME_MODE_KEY = "nosabos_helpchat_morpheme_mode";
 
+// Language colors for saved chat badges
+const LANG_COLORS = {
+  es: { bg: "red.600", label: "ES" },
+  en: { bg: "blue.600", label: "EN" },
+  pt: { bg: "green.600", label: "PT" },
+  fr: { bg: "purple.600", label: "FR" },
+  it: { bg: "orange.600", label: "IT" },
+  nl: { bg: "orange.400", label: "NL" },
+  nah: { bg: "teal.600", label: "NAH" },
+  ru: { bg: "cyan.600", label: "RU" },
+  de: { bg: "yellow.600", label: "DE" },
+  el: { bg: "blue.400", label: "EL" },
+  pl: { bg: "pink.600", label: "PL" },
+  ga: { bg: "green.500", label: "GA" },
+  yua: { bg: "purple.500", label: "YUA" },
+};
+
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -457,13 +474,28 @@ const HelpChatFab = forwardRef(
 
       // Morpheme mode instructions
       const morphemeInstructions = morphemeMode
-        ? `MORPHEME MODE ENABLED: After your main response, add a morpheme breakdown section.
-Format it as:
+        ? `
+
+MORPHEME MODE ENABLED - IMPORTANT:
+After your main response (and any translation line), you MUST add a detailed morpheme breakdown section.
+
+Format exactly like this:
+
 ---MORPHEMES---
-For each word/phrase in ${nameFor(targetLang)} you used, break it into morphemes like:
-• **word** → [prefix-]root[-suffix] | meaning of each part
-Example: "hablamos" → habl- (speak) + -a- (theme vowel) + -mos (1st person plural) = "we speak"
-Be thorough but concise. This helps learners understand word construction.`
+
+Break down EVERY ${nameFor(targetLang)} word you used in your response into its morphemes:
+
+• **word** → morpheme breakdown | English meaning
+  - prefix/root/suffix analysis
+
+Examples:
+• **hablamos** → habl- (root: speak) + -a- (theme vowel) + -mos (1st person plural) = "we speak"
+• **desafortunadamente** → des- (un-) + fortuna (fortune) + -da (adj) + -mente (adverb) = "unfortunately"
+• **書きました** → 書き (kak-i, write stem) + -ま- (polite) + -した (-shita, past) = "wrote"
+
+Include ALL content words (nouns, verbs, adjectives, adverbs) from your response.
+For each word, show: the original word, its morphemes with meanings, and the full English translation.
+This helps learners deeply understand word construction and patterns.`
         : "";
 
       return [
@@ -1166,34 +1198,50 @@ Be thorough but concise. This helps learners understand word construction.`
                   : "No saved chats"}
               </Text>
             ) : (
-              savedChats.map((chat) => (
-                <Box
-                  key={chat.id}
-                  px={2}
-                  py={2}
-                  rounded="md"
-                  cursor="pointer"
-                  _hover={{ bg: "gray.800" }}
-                  onClick={() => loadSavedChat(chat)}
-                  fontSize="sm"
-                >
-                  <HStack justify="space-between">
-                    <Text noOfLines={1} flex="1">
-                      {chat.title}
-                    </Text>
-                    <IconButton
-                      aria-label={appLanguage === "es" ? "Eliminar" : "Delete"}
-                      icon={<FaTrash size={10} />}
-                      size="xs"
-                      variant="ghost"
-                      colorScheme="red"
-                      opacity={0.5}
-                      _hover={{ opacity: 1 }}
-                      onClick={(e) => deleteSavedChat(chat.id, e)}
-                    />
-                  </HStack>
-                </Box>
-              ))
+              savedChats.map((chat) => {
+                const langColor = LANG_COLORS[chat.targetLang] || LANG_COLORS.es;
+                return (
+                  <Box
+                    key={chat.id}
+                    px={2}
+                    py={2}
+                    rounded="md"
+                    cursor="pointer"
+                    _hover={{ bg: "gray.800" }}
+                    onClick={() => loadSavedChat(chat)}
+                    fontSize="sm"
+                  >
+                    <HStack justify="space-between" spacing={2}>
+                      <HStack flex="1" spacing={2} minW={0}>
+                        <Badge
+                          bg={langColor.bg}
+                          color="white"
+                          fontSize="9px"
+                          px={1.5}
+                          py={0.5}
+                          rounded="sm"
+                          flexShrink={0}
+                        >
+                          {langColor.label}
+                        </Badge>
+                        <Text noOfLines={1} flex="1">
+                          {chat.title}
+                        </Text>
+                      </HStack>
+                      <IconButton
+                        aria-label={appLanguage === "es" ? "Eliminar" : "Delete"}
+                        icon={<FaTrash size={10} />}
+                        size="xs"
+                        variant="ghost"
+                        colorScheme="red"
+                        opacity={0.5}
+                        _hover={{ opacity: 1 }}
+                        onClick={(e) => deleteSavedChat(chat.id, e)}
+                      />
+                    </HStack>
+                  </Box>
+                );
+              })
             )}
           </VStack>
         </Box>
