@@ -175,6 +175,7 @@ const LANG_NAME = (code) =>
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
+    nv: "Navajo",
   }[code] || code);
 
 const strongNpub = (user) =>
@@ -222,6 +223,7 @@ function useSharedProgress() {
         "pl",
         "ga",
         "yua",
+        "nv",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
@@ -978,6 +980,7 @@ export default function GrammarBook({
     "pl",
     "ga",
     "yua",
+    "nv",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "en";
@@ -1008,6 +1011,7 @@ export default function GrammarBook({
       pl: t("language_pl"),
       ga: t("language_ga"),
       yua: t("language_yua"),
+      nv: t("language_nv"),
     }[code] || code);
   const supportName = localizedLangName(supportCode);
   const targetName = localizedLangName(targetLang);

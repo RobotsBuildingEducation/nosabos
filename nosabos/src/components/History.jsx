@@ -176,6 +176,7 @@ const LANG_NAME = (code) =>
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
+    nv: "Navajo",
   }[code] || code);
 
 const LANGUAGE_LABELS = {
@@ -197,6 +198,7 @@ const LANGUAGE_LABELS = {
   pl: ["Polish", "Polaco", "Polski"],
   ga: ["Irish", "Irlandés", "Gaeilge"],
   yua: ["Yucatec Maya", "Maya yucateco", "Maaya t'aan"],
+  nv: ["Navajo", "Navajo", "Diné bizaad"],
 };
 
 const GENERIC_LANGUAGE_PREFIXES = [
@@ -339,6 +341,7 @@ function useSharedProgress() {
         "pl",
         "ga",
         "yua",
+        "nv",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
@@ -647,6 +650,7 @@ const BCP47 = {
   de: { tts: "de-DE" },
   el: { tts: "el-GR" },
   yua: { tts: "es-MX" },
+  nv: { tts: "en-US" },
 };
 
 /* ---------------------------
@@ -760,6 +764,7 @@ export default function History({
     "pl",
     "ga",
     "yua",
+    "nv",
   ].includes(progress.targetLang)
     ? progress.targetLang
     : "es";
@@ -803,6 +808,7 @@ export default function History({
       pl: t("language_pl"),
       ga: t("language_ga"),
       yua: t("language_yua"),
+      nv: t("language_nv"),
     }[code] || code);
 
   const targetDisplay = localizedLangName(targetLang);

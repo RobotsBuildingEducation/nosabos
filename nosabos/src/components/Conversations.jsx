@@ -856,6 +856,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     if (code === "ga") return translations[uiLang].language_ga || "Irish";
     if (code === "yua")
       return translations[uiLang].language_yua || "Yucatec Maya";
+    if (code === "nv")
+      return translations[uiLang].language_nv || "Navajo";
     return code;
   };
 
@@ -1270,6 +1272,9 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
     } else if (tLang === "yua") {
       strict =
         "T'aanen tu'ux maaya t'aan. Ma' a ts'íibaj inglés wa español. Respond ONLY in Yucatec Maya.";
+    } else if (tLang === "nv") {
+      strict =
+        "T'áá Diné bizaad AMHÁIN. Doo bilagáana bizaad dóó Naakaii bizaad ádaat'éego. Respond ONLY in Navajo.";
     } else {
       strict =
         "Respond ONLY in English. Do not use Spanish or Eastern Huasteca Nahuatl.";
@@ -1391,6 +1396,8 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
           ? "Irish"
           : tLang === "yua"
           ? "Yucatec Maya"
+          : tLang === "nv"
+          ? "Navajo"
           : "English";
       const feedbackLanguage = sLang === "es" ? "Spanish" : "English";
 

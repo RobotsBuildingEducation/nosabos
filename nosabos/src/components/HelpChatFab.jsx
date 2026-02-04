@@ -287,6 +287,7 @@ const HelpChatFab = forwardRef(
           pl: "Polish (polski)",
           ga: "Irish (Gaeilge)",
           yua: "Yucatec Maya (maaya t'aan)",
+          nv: "Navajo (Diné bizaad)",
         }[code] || code);
 
       const strict =
@@ -595,6 +596,7 @@ const HelpChatFab = forwardRef(
           pl: "Polish",
           ga: "Irish",
           yua: "Yucatec Maya",
+          nv: "Navajo",
         }[code] || code);
 
       const levelHint =

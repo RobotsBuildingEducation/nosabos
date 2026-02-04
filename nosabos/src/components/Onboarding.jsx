@@ -43,6 +43,7 @@ import {
   italianFlag,
   japaneseFlag,
   mexicanFlag,
+  navajoFlag,
   netherlandsFlag,
   polishFlag,
   russianFlag,
@@ -200,6 +201,13 @@ export default function Onboarding({
         label: ui.onboarding_practice_ga,
         beta: true,
         flag: irishFlag(),
+      },
+      {
+        value: "nv",
+        label: `${ui.onboarding_practice_nv} (${supportLang === "es" ? "alfa" : "alpha"})`,
+        beta: false,
+        alpha: true,
+        flag: navajoFlag(),
       },
     ];
 

@@ -19,6 +19,7 @@ const BCP47_TO_WHISPER = {
   pl: "pl",
   ga: "ga",
   yua: "es",
+  nv: "en",
 };
 
 const REALTIME_MODEL = "gpt-realtime-mini";
