@@ -238,6 +238,7 @@ const HelpChatFab = forwardRef(
     const ttsPcRef = useRef(null);
     const [replayingId, setReplayingId] = useState(null);
     const [replayLoadingId, setReplayLoadingId] = useState(null);
+    const inputRef = useRef(null);
 
     // Drawer and saved chats state
     const drawerDisclosure = useDisclosure();
@@ -296,7 +297,7 @@ const HelpChatFab = forwardRef(
       });
 
     const hasMorphemeSection = (text) =>
-      /---\s*MORPHEMES\s*---/i.test(String(text || ""));
+      /(^|\n)\s*\*\*[^*\n]+\*\*\s*=\s*.+\+/m.test(String(text || ""));
 
     const nameForLanguage = useCallback((code) => {
       return (
@@ -316,6 +317,16 @@ const HelpChatFab = forwardRef(
           yua: "Yucatec Maya (maaya t'aan)",
         }[code] || code
       );
+    }, []);
+
+    const resizeTextarea = useCallback(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      const maxHeight = 140;
+      el.style.height = "auto";
+      const nextHeight = Math.min(el.scrollHeight, maxHeight);
+      el.style.height = `${nextHeight}px`;
+      el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
     }, []);
 
     // Split assistant text into main + gloss (lines starting with "// ")
@@ -489,10 +500,7 @@ const HelpChatFab = forwardRef(
         ? `🔬 MORPHEME MODE IS ON - YOU MUST INCLUDE A MORPHEME BREAKDOWN SECTION.
 
 You MUST include a short ${nameForLanguage(targetLang)} example sentence (1 sentence max) in your reply.
-Immediately after your reply, ADD this exact section:
-
----MORPHEMES---
-[Break down EVERY ${nameForLanguage(targetLang)} word from your example sentence like this:]
+Immediately after your reply, add the morpheme breakdown with NO heading, using this exact format for each word:
 
 **word** = part1 + part2 + part3
 - part1: meaning
@@ -505,9 +513,7 @@ Example: **hablaremos** = habl + ar + emos
 - -emos: future 1st person plural
 → "we will speak"
 
-DO NOT SKIP THE MORPHEME SECTION.
-
----
+DO NOT SKIP THE MORPHEME BREAKDOWN.
 
 `
         : "";
@@ -536,6 +542,10 @@ DO NOT SKIP THE MORPHEME SECTION.
         .filter(Boolean)
         .join(" ");
     }, [progress, appLanguage, morphemeMode, nameForLanguage]);
+
+    useEffect(() => {
+      resizeTextarea();
+    }, [input, resizeTextarea]);
 
     // Build a simple text history block (last ~6 messages) so we still have some context
     const buildHistoryBlock = useCallback(() => {
@@ -645,8 +655,7 @@ DO NOT SKIP THE MORPHEME SECTION.
             const fallbackPrompt = [
               "You missed the morpheme breakdown section.",
               `Target language: ${targetLangName}.`,
-              "Return ONLY the morpheme breakdown section in this exact format:",
-              "---MORPHEMES---",
+              "Return ONLY the morpheme breakdown in this exact format (no heading):",
               "**word** = part1 + part2 + part3",
               "- part1: meaning",
               "- part2: meaning",
@@ -1470,6 +1479,7 @@ DO NOT SKIP THE MORPHEME SECTION.
                               rounded="full"
                             />
                             <Textarea
+                              ref={inputRef}
                               placeholder={
                                 realtimeStatus === "connected"
                                   ? appLanguage === "es"
@@ -1496,11 +1506,26 @@ DO NOT SKIP THE MORPHEME SECTION.
                               _focus={{ boxShadow: "none", border: "none" }}
                               resize="none"
                               minH="40px"
-                              maxH="120px"
+                              maxH="140px"
                               rows={1}
                               flex="1"
+                              overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
                               fontSize="sm"
+                              sx={{
+                                scrollbarWidth: "thin",
+                                scrollbarColor: "gray.600 transparent",
+                                "&::-webkit-scrollbar": {
+                                  width: "6px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  background: "gray.600",
+                                  borderRadius: "8px",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  background: "transparent",
+                                },
+                              }}
                             />
                             {sending ? (
                               <IconButton
@@ -1672,6 +1697,7 @@ DO NOT SKIP THE MORPHEME SECTION.
                               rounded="full"
                             />
                             <Textarea
+                              ref={inputRef}
                               placeholder={
                                 realtimeStatus === "connected"
                                   ? appLanguage === "es"
@@ -1698,11 +1724,26 @@ DO NOT SKIP THE MORPHEME SECTION.
                               _focus={{ boxShadow: "none", border: "none" }}
                               resize="none"
                               minH="40px"
-                              maxH="120px"
+                              maxH="140px"
                               rows={1}
                               flex="1"
+                              overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
                               fontSize="sm"
+                              sx={{
+                                scrollbarWidth: "thin",
+                                scrollbarColor: "gray.600 transparent",
+                                "&::-webkit-scrollbar": {
+                                  width: "6px",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  background: "gray.600",
+                                  borderRadius: "8px",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  background: "transparent",
+                                },
+                              }}
                             />
                             {sending ? (
                               <IconButton
