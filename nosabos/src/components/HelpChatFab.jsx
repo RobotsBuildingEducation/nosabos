@@ -33,10 +33,23 @@ import {
   OrderedList,
   ListItem,
   Code as ChakraCode,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
+  DrawerCloseButton,
+  Switch,
+  FormControl,
+  FormLabel,
+  Divider,
 } from "@chakra-ui/react";
-import { FaPaperPlane, FaStop, FaMicrophone } from "react-icons/fa";
+import { FaPaperPlane, FaStop, FaMicrophone, FaSave, FaTrash, FaBars } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { TTS_LANG_TAG, getRandomVoice, getTTSPlayer } from "../utils/tts";
+
+const SAVED_CHATS_KEY = "nosabos_helpchat_saved_chats";
+const MORPHEME_MODE_KEY = "nosabos_helpchat_morpheme_mode";
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -198,6 +211,25 @@ const HelpChatFab = forwardRef(
     const [replayingId, setReplayingId] = useState(null);
     const [replayLoadingId, setReplayLoadingId] = useState(null);
 
+    // Drawer and saved chats state
+    const drawerDisclosure = useDisclosure();
+    const [savedChats, setSavedChats] = useState(() => {
+      try {
+        const stored = localStorage.getItem(SAVED_CHATS_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch {
+        return [];
+      }
+    });
+    const [morphemeMode, setMorphemeMode] = useState(() => {
+      try {
+        const stored = localStorage.getItem(MORPHEME_MODE_KEY);
+        return stored === "true";
+      } catch {
+        return false;
+      }
+    });
+
     // Realtime voice chat state
     const [realtimeStatus, setRealtimeStatus] = useState("disconnected"); // disconnected | connecting | connected
     const audioRef = useRef(null);
@@ -245,6 +277,94 @@ const HelpChatFab = forwardRef(
         gloss: lines[i].replace(/^\/\/\s?/, "").trim(),
       };
     };
+
+    // -- Saved chats & morpheme mode functions ----------------------------------
+
+    const saveCurrentChat = useCallback(() => {
+      if (messages.length === 0) {
+        toast({
+          status: "warning",
+          title: appLanguage === "es" ? "Sin mensajes" : "No messages",
+          description:
+            appLanguage === "es"
+              ? "No hay mensajes para guardar."
+              : "No messages to save.",
+        });
+        return;
+      }
+
+      const newChat = {
+        id: crypto.randomUUID?.() || String(Date.now()),
+        title:
+          messages.find((m) => m.role === "user")?.text?.slice(0, 50) ||
+          (appLanguage === "es" ? "Chat guardado" : "Saved chat"),
+        messages: [...messages],
+        savedAt: Date.now(),
+        targetLang: progress?.targetLang || "es",
+      };
+
+      const updated = [newChat, ...savedChats].slice(0, 20); // Keep max 20 chats
+      setSavedChats(updated);
+      try {
+        localStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn("Could not save to localStorage:", e);
+      }
+
+      toast({
+        status: "success",
+        title: appLanguage === "es" ? "Chat guardado" : "Chat saved",
+        duration: 2000,
+      });
+    }, [messages, savedChats, appLanguage, progress?.targetLang, toast]);
+
+    const loadSavedChat = useCallback(
+      (chat) => {
+        setMessages(chat.messages);
+        drawerDisclosure.onClose();
+        toast({
+          status: "info",
+          title: appLanguage === "es" ? "Chat cargado" : "Chat loaded",
+          duration: 2000,
+        });
+      },
+      [appLanguage, drawerDisclosure, toast]
+    );
+
+    const deleteSavedChat = useCallback(
+      (chatId, e) => {
+        e.stopPropagation();
+        const updated = savedChats.filter((c) => c.id !== chatId);
+        setSavedChats(updated);
+        try {
+          localStorage.setItem(SAVED_CHATS_KEY, JSON.stringify(updated));
+        } catch (err) {
+          console.warn("Could not update localStorage:", err);
+        }
+        toast({
+          status: "info",
+          title: appLanguage === "es" ? "Chat eliminado" : "Chat deleted",
+          duration: 2000,
+        });
+      },
+      [savedChats, appLanguage, toast]
+    );
+
+    const startNewChat = useCallback(() => {
+      setMessages([]);
+      setInput("");
+      drawerDisclosure.onClose();
+    }, [drawerDisclosure]);
+
+    const toggleMorphemeMode = useCallback((e) => {
+      const newValue = e.target.checked;
+      setMorphemeMode(newValue);
+      try {
+        localStorage.setItem(MORPHEME_MODE_KEY, String(newValue));
+      } catch (err) {
+        console.warn("Could not save morpheme mode:", err);
+      }
+    }, []);
 
     // Build system instruction — PRIMARY ANSWER IS IN THE PRACTICE/TARGET LANGUAGE
     const buildInstruction = useCallback(() => {
@@ -336,6 +456,18 @@ const HelpChatFab = forwardRef(
       const glossLine = glossLang
         ? `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
         : "No añadas traducciones adicionales.";
+
+      // Morpheme mode instructions
+      const morphemeInstructions = morphemeMode
+        ? `MORPHEME MODE ENABLED: After your main response, add a morpheme breakdown section.
+Format it as:
+---MORPHEMES---
+For each word/phrase in ${nameFor(targetLang)} you used, break it into morphemes like:
+• **word** → [prefix-]root[-suffix] | meaning of each part
+Example: "hablamos" → habl- (speak) + -a- (theme vowel) + -mos (1st person plural) = "we speak"
+Be thorough but concise. This helps learners understand word construction.`
+        : "";
+
       return [
         "You are a helpful language study buddy for quick questions.",
         strict,
@@ -346,13 +478,14 @@ const HelpChatFab = forwardRef(
         persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
         supportNote,
-        "Keep replies ≤ 60 words.",
+        morphemeMode ? "Keep main reply ≤ 80 words (excluding morpheme breakdown)." : "Keep replies ≤ 60 words.",
         glossLine,
         "Use concise Markdown when helpful (bullets, **bold**, code, tables).",
+        morphemeInstructions,
       ]
         .filter(Boolean)
         .join(" ");
-    }, [progress, appLanguage]);
+    }, [progress, appLanguage, morphemeMode]);
 
     // Build a simple text history block (last ~6 messages) so we still have some context
     const buildHistoryBlock = useCallback(() => {
@@ -990,28 +1123,67 @@ const HelpChatFab = forwardRef(
           </Tooltip>
         )}
 
-        {/* Modal chat */}
+        {/* Full screen modal chat */}
         <Modal
           isOpen={isOpen}
           onClose={onClose}
-          size="lg"
+          size="full"
           scrollBehavior="inside"
         >
           <ModalOverlay />
           <ModalContent
             bg="gray.900"
             color="gray.100"
-            borderRadius="2xl"
-            border="1px solid"
-            borderColor="gray.700"
-            h="75vh"
+            borderRadius="0"
+            h="100vh"
+            maxH="100vh"
+            m={0}
             display="flex"
             flexDirection="column"
           >
-            <ModalHeader>
-              {appLanguage === "es" ? "Ayuda rápida" : "Quick Help"}
+            <ModalHeader
+              borderBottom="1px solid"
+              borderColor="gray.700"
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+              py={3}
+            >
+              <HStack spacing={3}>
+                <IconButton
+                  aria-label={appLanguage === "es" ? "Menú" : "Menu"}
+                  icon={<FaBars />}
+                  variant="ghost"
+                  colorScheme="gray"
+                  onClick={drawerDisclosure.onOpen}
+                  size="md"
+                />
+                <Text fontSize="lg" fontWeight="bold">
+                  {appLanguage === "es" ? "Ayuda rápida" : "Quick Help"}
+                </Text>
+                {morphemeMode && (
+                  <Badge colorScheme="purple" fontSize="xs">
+                    {appLanguage === "es" ? "Morfemas" : "Morphemes"}
+                  </Badge>
+                )}
+              </HStack>
+              <HStack spacing={2}>
+                <Tooltip
+                  label={appLanguage === "es" ? "Guardar chat" : "Save chat"}
+                >
+                  <IconButton
+                    aria-label={appLanguage === "es" ? "Guardar" : "Save"}
+                    icon={<FaSave />}
+                    variant="ghost"
+                    colorScheme="teal"
+                    onClick={saveCurrentChat}
+                    size="md"
+                    isDisabled={messages.length === 0}
+                  />
+                </Tooltip>
+                <ModalCloseButton position="static" />
+              </HStack>
             </ModalHeader>
-            <ModalCloseButton />
 
             <ModalBody
               flex="1"
@@ -1185,6 +1357,132 @@ const HelpChatFab = forwardRef(
             </ModalFooter>
           </ModalContent>
         </Modal>
+
+        {/* Inner Drawer Menu */}
+        <Drawer
+          isOpen={drawerDisclosure.isOpen}
+          placement="left"
+          onClose={drawerDisclosure.onClose}
+        >
+          <DrawerOverlay />
+          <DrawerContent bg="gray.900" color="gray.100" maxW="300px">
+            <DrawerCloseButton />
+            <DrawerHeader borderBottomWidth="1px" borderColor="gray.700">
+              {appLanguage === "es" ? "Menú" : "Menu"}
+            </DrawerHeader>
+
+            <DrawerBody p={4}>
+              <VStack spacing={4} align="stretch">
+                {/* Morpheme Mode Toggle */}
+                <Box
+                  bg="gray.800"
+                  p={4}
+                  rounded="lg"
+                  border="1px solid"
+                  borderColor="gray.700"
+                >
+                  <FormControl display="flex" alignItems="center">
+                    <FormLabel htmlFor="morpheme-mode" mb={0} flex="1">
+                      <VStack align="start" spacing={0}>
+                        <Text fontWeight="medium">
+                          {appLanguage === "es"
+                            ? "Modo morfemas"
+                            : "Morpheme mode"}
+                        </Text>
+                        <Text fontSize="xs" color="gray.400">
+                          {appLanguage === "es"
+                            ? "Desglosa palabras en sus partes"
+                            : "Break words into their parts"}
+                        </Text>
+                      </VStack>
+                    </FormLabel>
+                    <Switch
+                      id="morpheme-mode"
+                      colorScheme="purple"
+                      isChecked={morphemeMode}
+                      onChange={toggleMorphemeMode}
+                    />
+                  </FormControl>
+                </Box>
+
+                <Divider borderColor="gray.700" />
+
+                {/* New Chat Button */}
+                <Button
+                  variant="outline"
+                  colorScheme="teal"
+                  size="sm"
+                  onClick={startNewChat}
+                  w="100%"
+                >
+                  {appLanguage === "es" ? "Nuevo chat" : "New chat"}
+                </Button>
+
+                {/* Saved Chats */}
+                <Box>
+                  <Text
+                    fontWeight="bold"
+                    mb={2}
+                    fontSize="sm"
+                    color="gray.400"
+                  >
+                    {appLanguage === "es"
+                      ? "Chats guardados"
+                      : "Saved chats"}
+                  </Text>
+                  <VStack spacing={2} align="stretch" maxH="50vh" overflowY="auto">
+                    {savedChats.length === 0 ? (
+                      <Text fontSize="sm" color="gray.500" textAlign="center">
+                        {appLanguage === "es"
+                          ? "No hay chats guardados"
+                          : "No saved chats"}
+                      </Text>
+                    ) : (
+                      savedChats.map((chat) => (
+                        <Box
+                          key={chat.id}
+                          bg="gray.800"
+                          p={3}
+                          rounded="md"
+                          cursor="pointer"
+                          _hover={{ bg: "gray.700" }}
+                          onClick={() => loadSavedChat(chat)}
+                          border="1px solid"
+                          borderColor="gray.700"
+                        >
+                          <HStack justify="space-between">
+                            <VStack align="start" spacing={0} flex="1">
+                              <Text
+                                fontSize="sm"
+                                fontWeight="medium"
+                                noOfLines={1}
+                              >
+                                {chat.title}
+                              </Text>
+                              <Text fontSize="xs" color="gray.500">
+                                {new Date(chat.savedAt).toLocaleDateString()}
+                              </Text>
+                            </VStack>
+                            <IconButton
+                              aria-label={
+                                appLanguage === "es" ? "Eliminar" : "Delete"
+                              }
+                              icon={<FaTrash />}
+                              size="xs"
+                              variant="ghost"
+                              colorScheme="red"
+                              onClick={(e) => deleteSavedChat(chat.id, e)}
+                            />
+                          </HStack>
+                        </Box>
+                      ))
+                    )}
+                  </VStack>
+                </Box>
+              </VStack>
+            </DrawerBody>
+          </DrawerContent>
+        </Drawer>
       </>
     );
   }
