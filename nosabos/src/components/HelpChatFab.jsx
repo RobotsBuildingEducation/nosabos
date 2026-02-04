@@ -1512,7 +1512,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               flex="1"
                               overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
-                              fontSize="sm"
+                              fontSize="16px"
                               sx={{
                                 scrollbarWidth: "thin",
                                 scrollbarColor: "#60a5fa #0b1220",
@@ -1736,7 +1736,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               flex="1"
                               overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
-                              fontSize="sm"
+                              fontSize="16px"
                               sx={{
                                 scrollbarWidth: "thin",
                                 scrollbarColor: "#60a5fa #0b1220",
