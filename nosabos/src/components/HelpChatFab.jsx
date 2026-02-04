@@ -1385,19 +1385,16 @@ Be thorough but concise. This helps learners understand word construction.`
                     )}
                   </HStack>
                   <HStack spacing={2}>
-                    <Tooltip
-                      label={appLanguage === "es" ? "Guardar chat" : "Save chat"}
+                    <Button
+                      leftIcon={<FaSave />}
+                      variant="ghost"
+                      colorScheme="gray"
+                      onClick={saveCurrentChat}
+                      size="sm"
+                      isDisabled={messages.length === 0}
                     >
-                      <IconButton
-                        aria-label={appLanguage === "es" ? "Guardar" : "Save"}
-                        icon={<FaSave />}
-                        variant="ghost"
-                        colorScheme="gray"
-                        onClick={saveCurrentChat}
-                        size="sm"
-                        isDisabled={messages.length === 0}
-                      />
-                    </Tooltip>
+                      {appLanguage === "es" ? "Guardar" : "Save chat"}
+                    </Button>
                     <ModalCloseButton position="static" />
                   </HStack>
                 </HStack>
