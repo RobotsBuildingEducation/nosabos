@@ -1514,16 +1514,19 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               fontSize="sm"
                               sx={{
                                 scrollbarWidth: "thin",
-                                scrollbarColor: "gray.600 transparent",
+                                scrollbarColor: "blue.400 #0b1220",
                                 "&::-webkit-scrollbar": {
                                   width: "6px",
                                 },
+                                "&::-webkit-scrollbar-corner": {
+                                  background: "#0b1220",
+                                },
                                 "&::-webkit-scrollbar-thumb": {
-                                  background: "gray.600",
+                                  background: "linear-gradient(180deg, #60a5fa, #2563eb)",
                                   borderRadius: "8px",
                                 },
                                 "&::-webkit-scrollbar-track": {
-                                  background: "transparent",
+                                  background: "#0b1220",
                                 },
                               }}
                             />
@@ -1732,16 +1735,19 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               fontSize="sm"
                               sx={{
                                 scrollbarWidth: "thin",
-                                scrollbarColor: "gray.600 transparent",
+                                scrollbarColor: "blue.400 #0b1220",
                                 "&::-webkit-scrollbar": {
                                   width: "6px",
                                 },
+                                "&::-webkit-scrollbar-corner": {
+                                  background: "#0b1220",
+                                },
                                 "&::-webkit-scrollbar-thumb": {
-                                  background: "gray.600",
+                                  background: "linear-gradient(180deg, #60a5fa, #2563eb)",
                                   borderRadius: "8px",
                                 },
                                 "&::-webkit-scrollbar-track": {
-                                  background: "transparent",
+                                  background: "#0b1220",
                                 },
                               }}
                             />
