@@ -391,3 +391,37 @@ export const irishFlag = () => {
     </svg>
   );
 };
+
+export const navajoFlag = () => {
+  return (
+    <svg
+      width="24"
+      height="24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+    >
+      <g clipPath="url(#NV_svg__a)">
+        {/* Tan/beige background representing Navajo Nation flag */}
+        <path
+          d="M12 24c6.627 0 12-5.373 12-12S18.627 0 12 0 0 5.373 0 12s5.373 12 12 12Z"
+          fill="#FAEBD7"
+        />
+        {/* Red stripe at top */}
+        <path
+          d="M12 0C6.84 0 2.442 3.256.746 7.826h22.507C21.558 3.256 17.16 0 12 0Z"
+          fill="#A52A2A"
+        />
+        {/* Turquoise center circle representing the four sacred mountains */}
+        <circle cx="12" cy="12" r="4" fill="#40E0D0" />
+        {/* Yellow/gold inner elements */}
+        <circle cx="12" cy="12" r="2" fill="#FFD700" />
+      </g>
+      <defs>
+        <clipPath id="NV_svg__a">
+          <path fill="#fff" d="M0 0h24v24H0z" />
+        </clipPath>
+      </defs>
+    </svg>
+  );
+};

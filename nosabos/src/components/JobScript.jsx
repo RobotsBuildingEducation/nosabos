@@ -101,6 +101,13 @@ const LLM_LANG_NAME = (codeOrName) => {
     m === "maaya t'aan"
   )
     return "Yucatec Maya";
+  if (
+    m === "nv" ||
+    m === "navajo" ||
+    m === "navaho" ||
+    m === "diné bizaad"
+  )
+    return "Navajo";
   return capName(m);
 };
 
@@ -126,6 +133,7 @@ const toBCP47 = (v, fallback = "en-US") => {
   if (m === "pl") return "pl-PL";
   if (m === "ga") return "ga-IE";
   if (m === "yua") return "es-MX";
+  if (m === "nv") return "en-US";
   if (/^[a-z]{2}$/.test(m)) return `${m}-${m.toUpperCase()}`;
   if (/^[a-z]{2,3}-[A-Za-z]{2,4}$/.test(m)) return m;
   return fallback;
@@ -158,6 +166,8 @@ const toLangKey = (value) => {
     ["yua", "yucatec maya", "maya yucateco", "maaya t'aan"].includes(raw)
   )
     return "yua";
+  if (["nv", "navajo", "navaho", "diné bizaad", "dine bizaad"].includes(raw))
+    return "nv";
   if (["ru", "russian", "ruso", "русский"].includes(raw)) return "ru";
   if (["de", "german", "alemán", "aleman", "deutsch"].includes(raw)) return "de";
   if (["el", "greek", "griego", "ελληνικά", "ελληνικα"].includes(raw))
@@ -222,6 +232,7 @@ function useSharedProgress() {
         "pl",
         "ga",
         "yua",
+        "nv",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";

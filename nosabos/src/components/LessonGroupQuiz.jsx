@@ -118,6 +118,7 @@ function LANG_NAME(code) {
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
+    nv: "Navajo",
   };
   return map[code] || code;
 }
@@ -138,6 +139,7 @@ function resolveSupportLang(support, appUILang) {
     "pl",
     "ga",
     "yua",
+    "nv",
   ].includes(support)
     ? support
     : "en";
@@ -206,6 +208,7 @@ export default function LessonGroupQuiz({
         "pl",
         "ga",
         "yua",
+        "nv",
       ].includes(prog.targetLang)
         ? prog.targetLang
         : "es";

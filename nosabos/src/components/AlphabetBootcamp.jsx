@@ -36,6 +36,7 @@ import { GREEK_ALPHABET } from "../data/greekAlphabet";
 import { POLISH_ALPHABET } from "../data/polishAlphabet";
 import { IRISH_ALPHABET } from "../data/irishAlphabet";
 import { YUCATEC_MAYA_ALPHABET } from "../data/yucatecMayaAlphabet";
+import { NAVAJO_ALPHABET } from "../data/navajoAlphabet";
 import { FiVolume2 } from "react-icons/fi";
 import {
   RiMicLine,
@@ -82,6 +83,7 @@ const LANGUAGE_NAMES = {
   pl: "Polish",
   ga: "Irish",
   yua: "Yucatec Maya",
+  nv: "Navajo",
 };
 
 const LANGUAGE_NAMES_EN = {
@@ -99,6 +101,7 @@ const LANGUAGE_NAMES_EN = {
   pl: "Polish",
   ga: "Irish",
   yua: "Yucatec Maya",
+  nv: "Navajo",
 };
 
 const LANGUAGE_NAMES_ES = {
@@ -116,6 +119,7 @@ const LANGUAGE_NAMES_ES = {
   pl: "Polaco",
   ga: "Irlandés",
   yua: "Maya yucateco",
+  nv: "Navajo",
 };
 
 const LANGUAGE_SCRIPTS = {
@@ -133,6 +137,7 @@ const LANGUAGE_SCRIPTS = {
   pl: "Latin alphabet",
   ga: "Latin alphabet",
   yua: "Latin alphabet",
+  nv: "Latin alphabet",
 };
 
 const normalizeMeaning = (meaning) => {
@@ -1019,6 +1024,7 @@ const LANGUAGE_ALPHABETS = {
   pl: POLISH_ALPHABET,
   ga: IRISH_ALPHABET,
   yua: YUCATEC_MAYA_ALPHABET,
+  nv: NAVAJO_ALPHABET,
 };
 
 // Fisher-Yates shuffle

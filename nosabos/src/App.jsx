@@ -166,6 +166,7 @@ import {
   italianFlag,
   japaneseFlag,
   mexicanFlag,
+  navajoFlag,
   netherlandsFlag,
   polishFlag,
   russianFlag,
@@ -215,6 +216,7 @@ const TARGET_LANGUAGE_LABELS = {
   pl: "Polish",
   ga: "Irish",
   yua: "Yucatec Maya",
+  nv: "Navajo",
 };
 const NOSTR_PROGRESS_HASHTAG = "#LearnWithNostr";
 
@@ -611,6 +613,13 @@ function TopBar({
         label: t.onboarding_practice_ga,
         beta: true,
         flag: irishFlag(),
+      },
+      {
+        value: "nv",
+        label: `${t.onboarding_practice_nv} (${appLanguage === "es" ? "alfa" : "alpha"})`,
+        beta: false,
+        alpha: true,
+        flag: navajoFlag(),
       },
     ];
 
@@ -1628,6 +1637,7 @@ export default function App() {
     "pl",
     "ga",
     "yua",
+    "nv",
   ];
 
   // Path mode state (path, flashcards, conversations, alphabet bootcamp)
@@ -2440,6 +2450,7 @@ export default function App() {
         "pl",
         "ga",
         "yua",
+        "nv",
       ].includes(partial.targetLang ?? prev.targetLang)
         ? (partial.targetLang ?? prev.targetLang)
         : "es",
@@ -5041,6 +5052,7 @@ function BottomActionBar({
     "pl",
     "ga",
     "yua",
+    "nv",
   ];
   const PATH_MODES = [
     ...(ALPHABET_LANGS.includes(targetLang)

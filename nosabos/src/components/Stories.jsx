@@ -107,6 +107,7 @@ const LLM_LANG_NAME = (code) =>
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
+    nv: "Navajo",
   }[code] || code);
 
 const BCP47 = {
@@ -123,6 +124,7 @@ const BCP47 = {
   pl: { stt: "pl-PL", tts: "pl-PL" },
   ga: { stt: "ga-IE", tts: "ga-IE" },
   yua: { stt: "es-MX", tts: "es-MX" },
+  nv: { stt: "en-US", tts: "en-US" },
 };
 
 const toLangKey = (value) => {
@@ -160,6 +162,8 @@ const toLangKey = (value) => {
     ["yua", "yucatec maya", "maya yucateco", "maaya t'aan"].includes(raw)
   )
     return "yua";
+  if (["nv", "navajo", "navaho", "diné bizaad", "dine bizaad"].includes(raw))
+    return "nv";
   return null;
 };
 
@@ -242,6 +246,7 @@ function useSharedProgress() {
         "pl",
         "ga",
         "yua",
+        "nv",
       ].includes(p.targetLang)
         ? p.targetLang
         : "es";
