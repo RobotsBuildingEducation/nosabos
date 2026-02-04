@@ -238,6 +238,7 @@ const HelpChatFab = forwardRef(
     const ttsPcRef = useRef(null);
     const [replayingId, setReplayingId] = useState(null);
     const [replayLoadingId, setReplayLoadingId] = useState(null);
+    const inputRef = useRef(null);
 
     // Drawer and saved chats state
     const drawerDisclosure = useDisclosure();
@@ -295,15 +296,50 @@ const HelpChatFab = forwardRef(
         return next;
       });
 
+    const hasMorphemeSection = (text) =>
+      /(^|\n)\s*\*\*[^*\n]+\*\*\s*=\s*.+\+/m.test(String(text || ""));
+
+    const nameForLanguage = useCallback((code) => {
+      return (
+        {
+          es: "Spanish (español)",
+          en: "English",
+          pt: "Portuguese (português brasileiro)",
+          fr: "French (français)",
+          it: "Italian (italiano)",
+          nl: "Dutch (Nederlands)",
+          nah: "Eastern Huasteca Nahuatl (náhuatl huasteco oriental)",
+          ru: "Russian (русский)",
+          de: "German (Deutsch)",
+          el: "Greek (Ελληνικά)",
+          pl: "Polish (polski)",
+          ga: "Irish (Gaeilge)",
+          yua: "Yucatec Maya (maaya t'aan)",
+        }[code] || code
+      );
+    }, []);
+
+    const resizeTextarea = useCallback(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      const maxHeight = 140;
+      el.style.height = "auto";
+      const nextHeight = Math.min(el.scrollHeight, maxHeight);
+      el.style.height = `${nextHeight}px`;
+      el.style.overflowY = el.scrollHeight > maxHeight ? "auto" : "hidden";
+    }, []);
+
     // Split assistant text into main + gloss (lines starting with "// ")
     const splitMainAndGloss = (text) => {
       const lines = String(text || "").split("\n");
       const i = lines.findIndex((l) => l.trim().startsWith("// "));
       if (i === -1) return { main: text, gloss: "" };
-      return {
-        main: lines.slice(0, i).join("\n").trim(),
-        gloss: lines[i].replace(/^\/\/\s?/, "").trim(),
-      };
+      const gloss = lines[i].replace(/^\/\/\s?/, "").trim();
+      const main = lines
+        .filter((_, idx) => idx !== i)
+        .join("\n")
+        .trim();
+      return { main, gloss };
     };
 
     // -- Saved chats & morpheme mode functions ----------------------------------
@@ -415,29 +451,12 @@ const HelpChatFab = forwardRef(
           ? progress.showTranslations
           : true;
 
-      const nameFor = (code) =>
-        ({
-          es: "Spanish (español)",
-          en: "English",
-          pt: "Portuguese (português brasileiro)",
-          fr: "French (français)",
-          it: "Italian (italiano)",
-          nl: "Dutch (Nederlands)",
-          nah: "Eastern Huasteca Nahuatl (náhuatl huasteco oriental)",
-          ru: "Russian (русский)",
-          de: "German (Deutsch)",
-          el: "Greek (Ελληνικά)",
-          pl: "Polish (polski)",
-          ga: "Irish (Gaeilge)",
-          yua: "Yucatec Maya (maaya t'aan)",
-        })[code] || code;
-
       const strict =
         primaryLang === "es"
           ? "Responde totalmente en español (idioma de apoyo/soporte), aunque el usuario escriba en otro idioma."
           : primaryLang === "en"
             ? "Respond entirely in English (the support language), even if the user writes in another language."
-            : `Respond entirely in ${nameFor(
+            : `Respond entirely in ${nameForLanguage(
                 primaryLang,
               )} (support language), even if the user writes in another language.`;
 
@@ -467,12 +486,12 @@ const HelpChatFab = forwardRef(
       const glossLang =
         showTranslations && targetLang !== primaryLang ? targetLang : null;
 
-      const glossHuman = glossLang ? nameFor(glossLang) : "";
-      const supportNote = `Explica y guía en ${nameFor(
+      const glossHuman = glossLang ? nameForLanguage(glossLang) : "";
+      const supportNote = `Explica y guía en ${nameForLanguage(
         primaryLang,
-      )}. Incluye ejemplos o frases en ${nameFor(
+      )}. Incluye ejemplos o frases en ${nameForLanguage(
         targetLang,
-      )} solo cuando ayuden, pero mantén la explicación en ${nameFor(
+      )} solo cuando ayuden, pero mantén la explicación en ${nameForLanguage(
         primaryLang,
       )}.`;
 
@@ -480,10 +499,8 @@ const HelpChatFab = forwardRef(
       const morphemePrefix = morphemeMode
         ? `🔬 MORPHEME MODE IS ON - YOU MUST INCLUDE A MORPHEME BREAKDOWN SECTION.
 
-After answering, ADD this section:
-
----MORPHEMES---
-[Break down each ${nameFor(targetLang)} word like this:]
+You MUST include a short ${nameForLanguage(targetLang)} example sentence (1 sentence max) in your reply.
+Immediately after your reply, add the morpheme breakdown with NO heading, using this exact format for each word:
 
 **word** = part1 + part2 + part3
 - part1: meaning
@@ -496,9 +513,7 @@ Example: **hablaremos** = habl + ar + emos
 - -emos: future 1st person plural
 → "we will speak"
 
-DO NOT SKIP THE MORPHEME SECTION.
-
----
+DO NOT SKIP THE MORPHEME BREAKDOWN.
 
 `
         : "";
@@ -511,22 +526,26 @@ DO NOT SKIP THE MORPHEME SECTION.
         morphemePrefix,
         "You are a helpful language study buddy for quick questions.",
         strict,
-        `The learner practices ${nameFor(
+        `The learner practices ${nameForLanguage(
           targetLang,
-        )}; their support/UI language is ${nameFor(primaryLang)}.`,
+        )}; their support/UI language is ${nameForLanguage(primaryLang)}.`,
         levelHint,
         persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
         supportNote,
         morphemeMode
-          ? "Keep main reply ≤ 80 words, then ADD the morpheme breakdown."
+          ? "Keep main reply ≤ 80 words, include exactly one target-language example sentence, then ADD the morpheme breakdown."
           : "Keep replies ≤ 60 words.",
         glossLine,
         "Use concise Markdown when helpful (bullets, **bold**, code, tables).",
       ]
         .filter(Boolean)
         .join(" ");
-    }, [progress, appLanguage, morphemeMode]);
+    }, [progress, appLanguage, morphemeMode, nameForLanguage]);
+
+    useEffect(() => {
+      resizeTextarea();
+    }, [input, resizeTextarea]);
 
     // Build a simple text history block (last ~6 messages) so we still have some context
     const buildHistoryBlock = useCallback(() => {
@@ -628,6 +647,41 @@ DO NOT SKIP THE MORPHEME SECTION.
             patchLastAssistant((m) => ({ ...m, text: current }));
           }
 
+          let finalText = fullText;
+
+          if (morphemeMode && !hasMorphemeSection(finalText)) {
+            const targetLang = progress?.targetLang || "es";
+            const targetLangName = nameForLanguage(targetLang);
+            const fallbackPrompt = [
+              "You missed the morpheme breakdown section.",
+              `Target language: ${targetLangName}.`,
+              "Return ONLY the morpheme breakdown in this exact format (no heading):",
+              "**word** = part1 + part2 + part3",
+              "- part1: meaning",
+              "- part2: meaning",
+              '→ "English translation"',
+              "",
+              "If the answer below includes a target-language example sentence, use it.",
+              `Otherwise, create ONE short ${targetLangName} sentence related to the question.`,
+              "",
+              `User question: ${question}`,
+              "Assistant answer:",
+              finalText,
+            ].join("\n");
+
+            const fallbackResp =
+              await simplemodel.generateContent(fallbackPrompt);
+            const fallbackText =
+              (typeof fallbackResp?.response?.text === "function"
+                ? fallbackResp.response.text()
+                : fallbackResp?.response?.text) || "";
+
+            if (fallbackText.trim()) {
+              finalText = `${finalText.trim()}\n\n${fallbackText.trim()}`;
+              patchLastAssistant((m) => ({ ...m, text: finalText }));
+            }
+          }
+
           // Mark as done (don't overwrite text; we've already streamed it)
           patchLastAssistant((m) => ({ ...m, done: true }));
         } catch (e) {
@@ -655,8 +709,11 @@ DO NOT SKIP THE MORPHEME SECTION.
         buildHistoryBlock,
         buildInstruction,
         normalizeQuestion,
+        nameForLanguage,
         patchLastAssistant,
         pushMessage,
+        morphemeMode,
+        progress?.targetLang,
         sending,
         input,
         toast,
@@ -1256,6 +1313,8 @@ DO NOT SKIP THE MORPHEME SECTION.
           w="100%"
           borderColor="gray.600"
           _hover={{ bg: "gray.800" }}
+          marginBottom={6}
+          padding={8}
         >
           {appLanguage === "es" ? "Nuevo chat" : "New chat"}
         </Button>
@@ -1421,6 +1480,7 @@ DO NOT SKIP THE MORPHEME SECTION.
                               rounded="full"
                             />
                             <Textarea
+                              ref={inputRef}
                               placeholder={
                                 realtimeStatus === "connected"
                                   ? appLanguage === "es"
@@ -1447,11 +1507,32 @@ DO NOT SKIP THE MORPHEME SECTION.
                               _focus={{ boxShadow: "none", border: "none" }}
                               resize="none"
                               minH="40px"
-                              maxH="120px"
+                              maxH="140px"
                               rows={1}
                               flex="1"
+                              overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
                               fontSize="sm"
+                              sx={{
+                                scrollbarWidth: "thin",
+                                scrollbarColor: "#60a5fa #0b1220",
+                                "&::-webkit-scrollbar": {
+                                  width: "8px",
+                                },
+                                "&::-webkit-scrollbar-corner": {
+                                  background: "#0b1220",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  background:
+                                    "linear-gradient(180deg, #60a5fa, #2563eb)",
+                                  borderRadius: "8px",
+                                  border: "2px solid #0b1220",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  background: "#0b1220",
+                                  borderRadius: "8px",
+                                },
+                              }}
                             />
                             {sending ? (
                               <IconButton
@@ -1623,6 +1704,7 @@ DO NOT SKIP THE MORPHEME SECTION.
                               rounded="full"
                             />
                             <Textarea
+                              ref={inputRef}
                               placeholder={
                                 realtimeStatus === "connected"
                                   ? appLanguage === "es"
@@ -1649,11 +1731,32 @@ DO NOT SKIP THE MORPHEME SECTION.
                               _focus={{ boxShadow: "none", border: "none" }}
                               resize="none"
                               minH="40px"
-                              maxH="120px"
+                              maxH="140px"
                               rows={1}
                               flex="1"
+                              overflowY="hidden"
                               isDisabled={realtimeStatus === "connected"}
                               fontSize="sm"
+                              sx={{
+                                scrollbarWidth: "thin",
+                                scrollbarColor: "#60a5fa #0b1220",
+                                "&::-webkit-scrollbar": {
+                                  width: "8px",
+                                },
+                                "&::-webkit-scrollbar-corner": {
+                                  background: "#0b1220",
+                                },
+                                "&::-webkit-scrollbar-thumb": {
+                                  background:
+                                    "linear-gradient(180deg, #60a5fa, #2563eb)",
+                                  borderRadius: "8px",
+                                  border: "2px solid #0b1220",
+                                },
+                                "&::-webkit-scrollbar-track": {
+                                  background: "#0b1220",
+                                  borderRadius: "8px",
+                                },
+                              }}
                             />
                             {sending ? (
                               <IconButton
