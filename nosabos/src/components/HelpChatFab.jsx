@@ -47,7 +47,15 @@ import {
   Flex,
   Textarea,
 } from "@chakra-ui/react";
-import { FaPaperPlane, FaStop, FaMicrophone, FaSave, FaTrash, FaBars, FaPlus } from "react-icons/fa";
+import {
+  FaPaperPlane,
+  FaStop,
+  FaMicrophone,
+  FaSave,
+  FaTrash,
+  FaBars,
+  FaPlus,
+} from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { TTS_LANG_TAG, getRandomVoice, getTTSPlayer } from "../utils/tts";
 
@@ -85,7 +93,7 @@ const REALTIME_MODEL =
 const REALTIME_URL = `${
   import.meta.env.VITE_REALTIME_URL
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
-  REALTIME_MODEL
+  REALTIME_MODEL,
 )}`;
 
 /**
@@ -210,7 +218,7 @@ const HelpChatFab = forwardRef(
       onClose: controlledOnClose,
       showFloatingTrigger = true,
     },
-    ref
+    ref,
   ) => {
     const disclosure = useDisclosure();
     const isControlled = typeof controlledIsOpen === "boolean";
@@ -343,7 +351,7 @@ const HelpChatFab = forwardRef(
         setMessages(chat.messages);
         drawerDisclosure.onClose();
       },
-      [drawerDisclosure]
+      [drawerDisclosure],
     );
 
     const deleteSavedChat = useCallback(
@@ -362,7 +370,7 @@ const HelpChatFab = forwardRef(
           duration: 2000,
         });
       },
-      [savedChats, appLanguage, toast]
+      [savedChats, appLanguage, toast],
     );
 
     const startNewChat = useCallback(() => {
@@ -422,37 +430,37 @@ const HelpChatFab = forwardRef(
           pl: "Polish (polski)",
           ga: "Irish (Gaeilge)",
           yua: "Yucatec Maya (maaya t'aan)",
-        }[code] || code);
+        })[code] || code;
 
       const strict =
         primaryLang === "es"
           ? "Responde totalmente en español (idioma de apoyo/soporte), aunque el usuario escriba en otro idioma."
           : primaryLang === "en"
-          ? "Respond entirely in English (the support language), even if the user writes in another language."
-          : `Respond entirely in ${nameFor(
-              primaryLang
-            )} (support language), even if the user writes in another language.`;
+            ? "Respond entirely in English (the support language), even if the user writes in another language."
+            : `Respond entirely in ${nameFor(
+                primaryLang,
+              )} (support language), even if the user writes in another language.`;
 
       const levelHint = (() => {
         if (primaryLang === "es") {
           return lvl === "beginner"
             ? "Usa oraciones cortas y simples."
             : lvl === "intermediate"
-            ? "Sé conciso y natural."
-            : "Sé muy breve y con tono nativo.";
+              ? "Sé conciso y natural."
+              : "Sé muy breve y con tono nativo.";
         }
         if (primaryLang === "en") {
           return lvl === "beginner"
             ? "Use short, simple sentences."
             : lvl === "intermediate"
-            ? "Be concise and natural."
-            : "Be very succinct and native-like.";
+              ? "Be concise and natural."
+              : "Be very succinct and native-like.";
         }
         return lvl === "beginner"
           ? "Use short, simple sentences."
           : lvl === "intermediate"
-          ? "Be concise and natural."
-          : "Be succinct and native-like.";
+            ? "Be concise and natural."
+            : "Be succinct and native-like.";
       })();
 
       // Gloss (secondary) language: translate to the practice language when different
@@ -461,11 +469,11 @@ const HelpChatFab = forwardRef(
 
       const glossHuman = glossLang ? nameFor(glossLang) : "";
       const supportNote = `Explica y guía en ${nameFor(
-        primaryLang
+        primaryLang,
       )}. Incluye ejemplos o frases en ${nameFor(
-        targetLang
+        targetLang,
       )} solo cuando ayuden, pero mantén la explicación en ${nameFor(
-        primaryLang
+        primaryLang,
       )}.`;
 
       // Morpheme mode instructions - placed at START for priority
@@ -504,13 +512,15 @@ DO NOT SKIP THE MORPHEME SECTION.
         "You are a helpful language study buddy for quick questions.",
         strict,
         `The learner practices ${nameFor(
-          targetLang
+          targetLang,
         )}; their support/UI language is ${nameFor(primaryLang)}.`,
         levelHint,
         persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
         supportNote,
-        morphemeMode ? "Keep main reply ≤ 80 words, then ADD the morpheme breakdown." : "Keep replies ≤ 60 words.",
+        morphemeMode
+          ? "Keep main reply ≤ 80 words, then ADD the morpheme breakdown."
+          : "Keep replies ≤ 60 words.",
         glossLine,
         "Use concise Markdown when helpful (bullets, **bold**, code, tables).",
       ]
@@ -523,7 +533,7 @@ DO NOT SKIP THE MORPHEME SECTION.
       const last = messages.slice(-6);
       if (!last.length) return "";
       const lines = last.map((m) =>
-        m.role === "user" ? `User: ${m.text}` : `Assistant: ${m.text}`
+        m.role === "user" ? `User: ${m.text}` : `Assistant: ${m.text}`,
       );
       return lines.join("\n");
     }, [messages]);
@@ -650,7 +660,7 @@ DO NOT SKIP THE MORPHEME SECTION.
         sending,
         input,
         toast,
-      ]
+      ],
     );
 
     const handleStop = () => {
@@ -732,7 +742,7 @@ DO NOT SKIP THE MORPHEME SECTION.
           clearLoading();
         }
       },
-      [progress?.targetLang, replayingId, stopTtsPlayback]
+      [progress?.targetLang, replayingId, stopTtsPlayback],
     );
 
     // -- Realtime voice chat functions -------------------------------------------
@@ -759,14 +769,14 @@ DO NOT SKIP THE MORPHEME SECTION.
           pl: "Polish",
           ga: "Irish",
           yua: "Yucatec Maya",
-        }[code] || code);
+        })[code] || code;
 
       const levelHint =
         lvl === "beginner"
           ? "Speak slowly, clearly, and keep sentences simple."
           : lvl === "intermediate"
-          ? "Be concise and natural in the support language."
-          : "Be succinct, natural, and keep it mostly in the support language.";
+            ? "Be concise and natural in the support language."
+            : "Be succinct, natural, and keep it mostly in the support language.";
 
       return [
         "You are a helpful language study buddy for quick voice conversations.",
@@ -778,11 +788,11 @@ DO NOT SKIP THE MORPHEME SECTION.
         "Keep responses brief (under 30 seconds of speech).",
         "Be encouraging and helpful. Correct mistakes gently.",
         `Speak and explain mainly in ${nameFor(
-          supportLang
+          supportLang,
         )} (support language). Include ${nameFor(
-          targetLang
+          targetLang,
         )} examples or phrases when they help, but keep guidance in ${nameFor(
-          supportLang
+          supportLang,
         )}.`,
       ]
         .filter(Boolean)
@@ -821,7 +831,7 @@ DO NOT SKIP THE MORPHEME SECTION.
 
               if (candidateAssistantId) {
                 const assistantIdx = prev.findIndex(
-                  (m) => m.id === candidateAssistantId
+                  (m) => m.id === candidateAssistantId,
                 );
                 if (assistantIdx >= 0) {
                   const updated = [...prev];
@@ -865,7 +875,7 @@ DO NOT SKIP THE MORPHEME SECTION.
             // (even if user messages were inserted after it)
             if (currentAssistantIdRef.current) {
               const idx = prev.findIndex(
-                (m) => m.id === currentAssistantIdRef.current
+                (m) => m.id === currentAssistantIdRef.current,
               );
               if (idx >= 0 && !prev[idx].done) {
                 const updated = [...prev];
@@ -900,7 +910,7 @@ DO NOT SKIP THE MORPHEME SECTION.
             // Mark the current assistant message as done
             if (currentAssistantIdRef.current) {
               const idx = prev.findIndex(
-                (m) => m.id === currentAssistantIdRef.current
+                (m) => m.id === currentAssistantIdRef.current,
               );
               if (idx >= 0) {
                 const updated = [...prev];
@@ -969,7 +979,7 @@ DO NOT SKIP THE MORPHEME SECTION.
                 input_audio_transcription: { model: "whisper-1" },
                 output_audio_format: "pcm16",
               },
-            })
+            }),
           );
         };
 
@@ -1089,7 +1099,7 @@ DO NOT SKIP THE MORPHEME SECTION.
         setInput(payload);
         setTimeout(() => handleSend(payload), 0);
       },
-      [handleSend, normalizeQuestion, onOpen]
+      [handleSend, normalizeQuestion, onOpen],
     );
 
     useImperativeHandle(
@@ -1098,7 +1108,7 @@ DO NOT SKIP THE MORPHEME SECTION.
         open: onOpen,
         openAndSend,
       }),
-      [openAndSend, onOpen]
+      [openAndSend, onOpen],
     );
 
     const scrollToBottom = useCallback(() => {
@@ -1153,7 +1163,8 @@ DO NOT SKIP THE MORPHEME SECTION.
               </Text>
             ) : (
               savedChats.map((chat) => {
-                const langColor = LANG_COLORS[chat.targetLang] || LANG_COLORS.es;
+                const langColor =
+                  LANG_COLORS[chat.targetLang] || LANG_COLORS.es;
                 return (
                   <Box
                     key={chat.id}
@@ -1183,7 +1194,9 @@ DO NOT SKIP THE MORPHEME SECTION.
                         </Text>
                       </HStack>
                       <IconButton
-                        aria-label={appLanguage === "es" ? "Eliminar" : "Delete"}
+                        aria-label={
+                          appLanguage === "es" ? "Eliminar" : "Delete"
+                        }
                         icon={<FaTrash size={10} />}
                         size="xs"
                         variant="ghost"
@@ -1380,8 +1393,8 @@ DO NOT SKIP THE MORPHEME SECTION.
                                     ? "Detener chat de voz"
                                     : "Stop voice chat"
                                   : appLanguage === "es"
-                                  ? "Iniciar chat de voz"
-                                  : "Start voice chat"
+                                    ? "Iniciar chat de voz"
+                                    : "Start voice chat"
                               }
                               icon={
                                 realtimeStatus === "connected" ? (
@@ -1393,9 +1406,17 @@ DO NOT SKIP THE MORPHEME SECTION.
                                 )
                               }
                               onClick={toggleRealtime}
-                              isDisabled={realtimeStatus === "connecting" || sending}
-                              colorScheme={realtimeStatus === "connected" ? "red" : "gray"}
-                              variant={realtimeStatus === "connected" ? "solid" : "ghost"}
+                              isDisabled={
+                                realtimeStatus === "connecting" || sending
+                              }
+                              colorScheme={
+                                realtimeStatus === "connected" ? "red" : "gray"
+                              }
+                              variant={
+                                realtimeStatus === "connected"
+                                  ? "solid"
+                                  : "ghost"
+                              }
                               size="sm"
                               rounded="full"
                             />
@@ -1406,15 +1427,19 @@ DO NOT SKIP THE MORPHEME SECTION.
                                     ? "Chat de voz activo…"
                                     : "Voice chat active…"
                                   : appLanguage === "es"
-                                  ? "Pregunta lo que quieras…"
-                                  : "Ask anything…"
+                                    ? "Pregunta lo que quieras…"
+                                    : "Ask anything…"
                               }
                               value={input}
                               onChange={(e) => setInput(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" && !e.shiftKey) {
                                   e.preventDefault();
-                                  if (!sending && realtimeStatus !== "connected") handleSend();
+                                  if (
+                                    !sending &&
+                                    realtimeStatus !== "connected"
+                                  )
+                                    handleSend();
                                 }
                               }}
                               bg="transparent"
@@ -1444,7 +1469,10 @@ DO NOT SKIP THE MORPHEME SECTION.
                                 icon={<FiSend />}
                                 size="sm"
                                 rounded="full"
-                                isDisabled={!input.trim() || realtimeStatus === "connected"}
+                                isDisabled={
+                                  !input.trim() ||
+                                  realtimeStatus === "connected"
+                                }
                                 _hover={{ bg: "gray.200" }}
                               />
                             )}
@@ -1546,7 +1574,12 @@ DO NOT SKIP THE MORPHEME SECTION.
 
                     {/* Bottom input bar */}
                     <Box py={4} borderTop="1px solid" borderColor="gray.800">
-                      <Box w="100%" maxW="768px" mx="auto" px={{ base: 4, md: 8 }}>
+                      <Box
+                        w="100%"
+                        maxW="768px"
+                        mx="auto"
+                        px={{ base: 4, md: 8 }}
+                      >
                         <Box
                           bg="gray.800"
                           border="1px solid"
@@ -1562,8 +1595,8 @@ DO NOT SKIP THE MORPHEME SECTION.
                                     ? "Detener chat de voz"
                                     : "Stop voice chat"
                                   : appLanguage === "es"
-                                  ? "Iniciar chat de voz"
-                                  : "Start voice chat"
+                                    ? "Iniciar chat de voz"
+                                    : "Start voice chat"
                               }
                               icon={
                                 realtimeStatus === "connected" ? (
@@ -1575,9 +1608,17 @@ DO NOT SKIP THE MORPHEME SECTION.
                                 )
                               }
                               onClick={toggleRealtime}
-                              isDisabled={realtimeStatus === "connecting" || sending}
-                              colorScheme={realtimeStatus === "connected" ? "red" : "gray"}
-                              variant={realtimeStatus === "connected" ? "solid" : "ghost"}
+                              isDisabled={
+                                realtimeStatus === "connecting" || sending
+                              }
+                              colorScheme={
+                                realtimeStatus === "connected" ? "red" : "gray"
+                              }
+                              variant={
+                                realtimeStatus === "connected"
+                                  ? "solid"
+                                  : "ghost"
+                              }
                               size="sm"
                               rounded="full"
                             />
@@ -1588,15 +1629,19 @@ DO NOT SKIP THE MORPHEME SECTION.
                                     ? "Chat de voz activo…"
                                     : "Voice chat active…"
                                   : appLanguage === "es"
-                                  ? "Pregunta lo que quieras…"
-                                  : "Ask anything…"
+                                    ? "Pregunta lo que quieras…"
+                                    : "Ask anything…"
                               }
                               value={input}
                               onChange={(e) => setInput(e.target.value)}
                               onKeyDown={(e) => {
                                 if (e.key === "Enter" && !e.shiftKey) {
                                   e.preventDefault();
-                                  if (!sending && realtimeStatus !== "connected") handleSend();
+                                  if (
+                                    !sending &&
+                                    realtimeStatus !== "connected"
+                                  )
+                                    handleSend();
                                 }
                               }}
                               bg="transparent"
@@ -1626,7 +1671,10 @@ DO NOT SKIP THE MORPHEME SECTION.
                                 icon={<FiSend />}
                                 size="sm"
                                 rounded="full"
-                                isDisabled={!input.trim() || realtimeStatus === "connected"}
+                                isDisabled={
+                                  !input.trim() ||
+                                  realtimeStatus === "connected"
+                                }
                                 _hover={{ bg: "gray.200" }}
                               />
                             )}
@@ -1654,7 +1702,11 @@ DO NOT SKIP THE MORPHEME SECTION.
             <DrawerOverlay />
             <DrawerContent bg="gray.900" color="gray.100" maxW="280px">
               <DrawerCloseButton />
-              <DrawerHeader borderBottomWidth="1px" borderColor="gray.800" py={3}>
+              <DrawerHeader
+                borderBottomWidth="1px"
+                borderColor="gray.800"
+                py={3}
+              >
                 <Text fontSize="sm">
                   {appLanguage === "es" ? "Menú" : "Menu"}
                 </Text>
@@ -1665,7 +1717,7 @@ DO NOT SKIP THE MORPHEME SECTION.
         )}
       </>
     );
-  }
+  },
 );
 
 export default HelpChatFab;
