@@ -1514,9 +1514,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               fontSize="sm"
                               sx={{
                                 scrollbarWidth: "thin",
-                                scrollbarColor: "blue.400 #0b1220",
+                                scrollbarColor: "#60a5fa #0b1220",
                                 "&::-webkit-scrollbar": {
-                                  width: "6px",
+                                  width: "8px",
                                 },
                                 "&::-webkit-scrollbar-corner": {
                                   background: "#0b1220",
@@ -1524,9 +1524,11 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 "&::-webkit-scrollbar-thumb": {
                                   background: "linear-gradient(180deg, #60a5fa, #2563eb)",
                                   borderRadius: "8px",
+                                  border: "2px solid #0b1220",
                                 },
                                 "&::-webkit-scrollbar-track": {
                                   background: "#0b1220",
+                                  borderRadius: "8px",
                                 },
                               }}
                             />
@@ -1735,9 +1737,9 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               fontSize="sm"
                               sx={{
                                 scrollbarWidth: "thin",
-                                scrollbarColor: "blue.400 #0b1220",
+                                scrollbarColor: "#60a5fa #0b1220",
                                 "&::-webkit-scrollbar": {
-                                  width: "6px",
+                                  width: "8px",
                                 },
                                 "&::-webkit-scrollbar-corner": {
                                   background: "#0b1220",
@@ -1745,9 +1747,11 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                 "&::-webkit-scrollbar-thumb": {
                                   background: "linear-gradient(180deg, #60a5fa, #2563eb)",
                                   borderRadius: "8px",
+                                  border: "2px solid #0b1220",
                                 },
                                 "&::-webkit-scrollbar-track": {
                                   background: "#0b1220",
+                                  borderRadius: "8px",
                                 },
                               }}
                             />
