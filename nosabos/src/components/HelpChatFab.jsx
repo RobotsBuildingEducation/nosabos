@@ -56,7 +56,7 @@ const MORPHEME_MODE_KEY = "nosabos_helpchat_morpheme_mode";
 
 // Language colors for saved chat badges
 const LANG_COLORS = {
-  es: { bg: "red.600", label: "ES" },
+  es: { bg: "yellow.500", label: "ES" },
   en: { bg: "blue.600", label: "EN" },
   pt: { bg: "green.600", label: "PT" },
   fr: { bg: "purple.600", label: "FR" },
@@ -64,7 +64,7 @@ const LANG_COLORS = {
   nl: { bg: "orange.400", label: "NL" },
   nah: { bg: "teal.600", label: "NAH" },
   ru: { bg: "cyan.600", label: "RU" },
-  de: { bg: "yellow.600", label: "DE" },
+  de: { bg: "gray.500", label: "DE" },
   el: { bg: "blue.400", label: "EL" },
   pl: { bg: "pink.600", label: "PL" },
   ga: { bg: "green.500", label: "GA" },
@@ -476,26 +476,38 @@ const HelpChatFab = forwardRef(
       const morphemeInstructions = morphemeMode
         ? `
 
-MORPHEME MODE ENABLED - IMPORTANT:
-After your main response (and any translation line), you MUST add a detailed morpheme breakdown section.
+MORPHEME MODE ENABLED - CRITICAL REQUIREMENT:
+After your main response, you MUST add a DETAILED morpheme breakdown section.
 
-Format exactly like this:
+Format EXACTLY like this:
 
 ---MORPHEMES---
 
-Break down EVERY ${nameFor(targetLang)} word you used in your response into its morphemes:
+For EACH ${nameFor(targetLang)} word in your response, break it into its smallest meaningful parts:
 
-• **word** → morpheme breakdown | English meaning
-  - prefix/root/suffix analysis
+**word** = part1 + part2 + part3...
+- part1: meaning/function
+- part2: meaning/function
+- part3: meaning/function
+→ Combined meaning: "translation"
 
-Examples:
-• **hablamos** → habl- (root: speak) + -a- (theme vowel) + -mos (1st person plural) = "we speak"
-• **desafortunadamente** → des- (un-) + fortuna (fortune) + -da (adj) + -mente (adverb) = "unfortunately"
-• **書きました** → 書き (kak-i, write stem) + -ま- (polite) + -した (-shita, past) = "wrote"
+EXAMPLE for Spanish:
+**hablábamos** = habl + á + ba + mos
+- habl-: root meaning "speak/talk"
+- -á-: theme vowel (1st conjugation -ar verb)
+- -ba-: imperfect tense marker (past habitual/ongoing)
+- -mos: 1st person plural "we"
+→ Combined meaning: "we were speaking" / "we used to speak"
 
-Include ALL content words (nouns, verbs, adjectives, adverbs) from your response.
-For each word, show: the original word, its morphemes with meanings, and the full English translation.
-This helps learners deeply understand word construction and patterns.`
+**desafortunadamente** = des + afortuna + da + mente
+- des-: prefix meaning "un-/without"
+- afortuna: from "fortuna" (fortune/luck)
+- -da: past participle/adjective ending
+- -mente: adverb suffix (like English "-ly")
+→ Combined meaning: "unfortunately"
+
+You MUST break down EVERY content word (nouns, verbs, adjectives, adverbs) from your response this way.
+Show the internal structure so learners understand HOW words are built.`
         : "";
 
       return [
@@ -1138,53 +1150,6 @@ This helps learners deeply understand word construction and patterns.`
     // Sidebar content - shared between desktop sidebar and mobile drawer
     const SidebarContent = (
       <VStack spacing={4} align="stretch" h="100%">
-        {/* New Chat Button */}
-        <Button
-          leftIcon={<FaPlus />}
-          variant="outline"
-          colorScheme="gray"
-          size="sm"
-          onClick={startNewChat}
-          w="100%"
-          borderColor="gray.600"
-          _hover={{ bg: "gray.800" }}
-        >
-          {appLanguage === "es" ? "Nuevo chat" : "New chat"}
-        </Button>
-
-        {/* Morpheme Mode Toggle */}
-        <Box
-          bg="gray.800"
-          p={3}
-          rounded="lg"
-          border="1px solid"
-          borderColor="gray.700"
-        >
-          <FormControl display="flex" alignItems="center">
-            <FormLabel htmlFor="morpheme-mode-sidebar" mb={0} flex="1">
-              <VStack align="start" spacing={0}>
-                <Text fontWeight="medium" fontSize="sm">
-                  {appLanguage === "es" ? "Modo morfemas" : "Morpheme mode"}
-                </Text>
-                <Text fontSize="xs" color="gray.500">
-                  {appLanguage === "es"
-                    ? "Desglosa palabras"
-                    : "Break down words"}
-                </Text>
-              </VStack>
-            </FormLabel>
-            <Switch
-              id="morpheme-mode-sidebar"
-              colorScheme="purple"
-              size="sm"
-              isChecked={morphemeMode}
-              onChange={toggleMorphemeMode}
-            />
-          </FormControl>
-        </Box>
-
-        <Divider borderColor="gray.700" />
-
         {/* Saved Chats */}
         <Box flex="1" overflowY="auto">
           <Text fontWeight="bold" mb={2} fontSize="xs" color="gray.500">
@@ -1245,6 +1210,53 @@ This helps learners deeply understand word construction and patterns.`
             )}
           </VStack>
         </Box>
+
+        <Divider borderColor="gray.700" />
+
+        {/* Morpheme Mode Toggle - at bottom */}
+        <Box
+          bg="gray.800"
+          p={3}
+          rounded="lg"
+          border="1px solid"
+          borderColor="gray.700"
+        >
+          <FormControl display="flex" alignItems="center">
+            <FormLabel htmlFor="morpheme-mode-sidebar" mb={0} flex="1">
+              <VStack align="start" spacing={0}>
+                <Text fontWeight="medium" fontSize="sm">
+                  {appLanguage === "es" ? "Modo morfemas" : "Morpheme mode"}
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  {appLanguage === "es"
+                    ? "Desglosa palabras"
+                    : "Break down words"}
+                </Text>
+              </VStack>
+            </FormLabel>
+            <Switch
+              id="morpheme-mode-sidebar"
+              colorScheme="purple"
+              size="sm"
+              isChecked={morphemeMode}
+              onChange={toggleMorphemeMode}
+            />
+          </FormControl>
+        </Box>
+
+        {/* New Chat Button - at bottom */}
+        <Button
+          leftIcon={<FaPlus />}
+          variant="outline"
+          colorScheme="gray"
+          size="sm"
+          onClick={startNewChat}
+          w="100%"
+          borderColor="gray.600"
+          _hover={{ bg: "gray.800" }}
+        >
+          {appLanguage === "es" ? "Nuevo chat" : "New chat"}
+        </Button>
       </VStack>
     );
 
@@ -1321,9 +1333,6 @@ This helps learners deeply understand word construction and patterns.`
                         size="sm"
                       />
                     )}
-                    <Text fontSize="md" fontWeight="medium">
-                      {appLanguage === "es" ? "Ayuda rápida" : "Quick Help"}
-                    </Text>
                     {morphemeMode && (
                       <Badge colorScheme="purple" fontSize="xs">
                         {appLanguage === "es" ? "Morfemas" : "Morphemes"}
