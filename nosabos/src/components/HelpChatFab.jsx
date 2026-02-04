@@ -43,8 +43,11 @@ import {
   FormControl,
   FormLabel,
   Divider,
+  useBreakpointValue,
+  Flex,
+  Textarea,
 } from "@chakra-ui/react";
-import { FaPaperPlane, FaStop, FaMicrophone, FaSave, FaTrash, FaBars } from "react-icons/fa";
+import { FaPaperPlane, FaStop, FaMicrophone, FaSave, FaTrash, FaBars, FaPlus } from "react-icons/fa";
 import { MdOutlineSupportAgent } from "react-icons/md";
 import { TTS_LANG_TAG, getRandomVoice, getTTSPlayer } from "../utils/tts";
 
@@ -1101,6 +1104,204 @@ Be thorough but concise. This helps learners understand word construction.`
 
     // -- UI --------------------------------------------------------------------
 
+    // Responsive: detect if desktop (md and up)
+    const isDesktop = useBreakpointValue({ base: false, md: true });
+    const hasMessages = messages.length > 0;
+
+    // Sidebar content - shared between desktop sidebar and mobile drawer
+    const SidebarContent = (
+      <VStack spacing={4} align="stretch" h="100%">
+        {/* New Chat Button */}
+        <Button
+          leftIcon={<FaPlus />}
+          variant="outline"
+          colorScheme="gray"
+          size="sm"
+          onClick={startNewChat}
+          w="100%"
+          borderColor="gray.600"
+          _hover={{ bg: "gray.800" }}
+        >
+          {appLanguage === "es" ? "Nuevo chat" : "New chat"}
+        </Button>
+
+        {/* Morpheme Mode Toggle */}
+        <Box
+          bg="gray.800"
+          p={3}
+          rounded="lg"
+          border="1px solid"
+          borderColor="gray.700"
+        >
+          <FormControl display="flex" alignItems="center">
+            <FormLabel htmlFor="morpheme-mode-sidebar" mb={0} flex="1">
+              <VStack align="start" spacing={0}>
+                <Text fontWeight="medium" fontSize="sm">
+                  {appLanguage === "es" ? "Modo morfemas" : "Morpheme mode"}
+                </Text>
+                <Text fontSize="xs" color="gray.500">
+                  {appLanguage === "es"
+                    ? "Desglosa palabras"
+                    : "Break down words"}
+                </Text>
+              </VStack>
+            </FormLabel>
+            <Switch
+              id="morpheme-mode-sidebar"
+              colorScheme="purple"
+              size="sm"
+              isChecked={morphemeMode}
+              onChange={toggleMorphemeMode}
+            />
+          </FormControl>
+        </Box>
+
+        <Divider borderColor="gray.700" />
+
+        {/* Saved Chats */}
+        <Box flex="1" overflowY="auto">
+          <Text fontWeight="bold" mb={2} fontSize="xs" color="gray.500">
+            {appLanguage === "es" ? "Tus chats" : "Your chats"}
+          </Text>
+          <VStack spacing={1} align="stretch">
+            {savedChats.length === 0 ? (
+              <Text fontSize="xs" color="gray.600" textAlign="center" py={4}>
+                {appLanguage === "es"
+                  ? "No hay chats guardados"
+                  : "No saved chats"}
+              </Text>
+            ) : (
+              savedChats.map((chat) => (
+                <Box
+                  key={chat.id}
+                  px={2}
+                  py={2}
+                  rounded="md"
+                  cursor="pointer"
+                  _hover={{ bg: "gray.800" }}
+                  onClick={() => loadSavedChat(chat)}
+                  fontSize="sm"
+                >
+                  <HStack justify="space-between">
+                    <Text noOfLines={1} flex="1">
+                      {chat.title}
+                    </Text>
+                    <IconButton
+                      aria-label={appLanguage === "es" ? "Eliminar" : "Delete"}
+                      icon={<FaTrash size={10} />}
+                      size="xs"
+                      variant="ghost"
+                      colorScheme="red"
+                      opacity={0.5}
+                      _hover={{ opacity: 1 }}
+                      onClick={(e) => deleteSavedChat(chat.id, e)}
+                    />
+                  </HStack>
+                </Box>
+              ))
+            )}
+          </VStack>
+        </Box>
+      </VStack>
+    );
+
+    // Input bar component - used in both centered and bottom positions
+    const InputBar = ({ centered = false }) => (
+      <Box
+        w="100%"
+        maxW={centered ? "600px" : "768px"}
+        mx="auto"
+        px={centered ? 4 : { base: 4, md: 8 }}
+      >
+        <Box
+          bg="gray.800"
+          border="1px solid"
+          borderColor="gray.700"
+          rounded="2xl"
+          p={2}
+        >
+          <HStack spacing={2} align="flex-end">
+            {/* Microphone button */}
+            <IconButton
+              aria-label={
+                realtimeStatus === "connected"
+                  ? appLanguage === "es"
+                    ? "Detener chat de voz"
+                    : "Stop voice chat"
+                  : appLanguage === "es"
+                  ? "Iniciar chat de voz"
+                  : "Start voice chat"
+              }
+              icon={
+                realtimeStatus === "connected" ? (
+                  <FaStop />
+                ) : realtimeStatus === "connecting" ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <FaMicrophone />
+                )
+              }
+              onClick={toggleRealtime}
+              isDisabled={realtimeStatus === "connecting" || sending}
+              colorScheme={realtimeStatus === "connected" ? "red" : "gray"}
+              variant={realtimeStatus === "connected" ? "solid" : "ghost"}
+              size="sm"
+              rounded="full"
+            />
+            <Textarea
+              placeholder={
+                realtimeStatus === "connected"
+                  ? appLanguage === "es"
+                    ? "Chat de voz activo…"
+                    : "Voice chat active…"
+                  : appLanguage === "es"
+                  ? "Pregunta lo que quieras…"
+                  : "Ask anything…"
+              }
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (!sending && realtimeStatus !== "connected") handleSend();
+                }
+              }}
+              bg="transparent"
+              border="none"
+              _focus={{ boxShadow: "none", border: "none" }}
+              resize="none"
+              minH="40px"
+              maxH="120px"
+              rows={1}
+              flex="1"
+              isDisabled={realtimeStatus === "connected"}
+              fontSize="sm"
+            />
+            {sending ? (
+              <IconButton
+                onClick={handleStop}
+                colorScheme="red"
+                icon={<FaStop />}
+                size="sm"
+                rounded="full"
+              />
+            ) : (
+              <IconButton
+                onClick={handleSend}
+                bg="white"
+                color="gray.900"
+                icon={<FiSend />}
+                size="sm"
+                rounded="full"
+                isDisabled={!input.trim() || realtimeStatus === "connected"}
+                _hover={{ bg: "gray.200" }}
+              />
+            )}
+          </HStack>
+        </Box>
+      </Box>
+    );
+
     return (
       <>
         {/* Floating button */}
@@ -1124,12 +1325,7 @@ Be thorough but concise. This helps learners understand word construction.`
         )}
 
         {/* Full screen modal chat */}
-        <Modal
-          isOpen={isOpen}
-          onClose={onClose}
-          size="full"
-          scrollBehavior="inside"
-        >
+        <Modal isOpen={isOpen} onClose={onClose} size="full">
           <ModalOverlay />
           <ModalContent
             bg="gray.900"
@@ -1138,351 +1334,221 @@ Be thorough but concise. This helps learners understand word construction.`
             h="100vh"
             maxH="100vh"
             m={0}
-            display="flex"
-            flexDirection="column"
+            overflow="hidden"
           >
-            <ModalHeader
-              borderBottom="1px solid"
-              borderColor="gray.700"
-              display="flex"
-              alignItems="center"
-              justifyContent="space-between"
-              py={3}
-            >
-              <HStack spacing={3}>
-                <IconButton
-                  aria-label={appLanguage === "es" ? "Menú" : "Menu"}
-                  icon={<FaBars />}
-                  variant="ghost"
-                  colorScheme="gray"
-                  onClick={drawerDisclosure.onOpen}
-                  size="md"
-                />
-                <Text fontSize="lg" fontWeight="bold">
-                  {appLanguage === "es" ? "Ayuda rápida" : "Quick Help"}
-                </Text>
-                {morphemeMode && (
-                  <Badge colorScheme="purple" fontSize="xs">
-                    {appLanguage === "es" ? "Morfemas" : "Morphemes"}
-                  </Badge>
-                )}
-              </HStack>
-              <HStack spacing={2}>
-                <Tooltip
-                  label={appLanguage === "es" ? "Guardar chat" : "Save chat"}
-                >
-                  <IconButton
-                    aria-label={appLanguage === "es" ? "Guardar" : "Save"}
-                    icon={<FaSave />}
-                    variant="ghost"
-                    colorScheme="teal"
-                    onClick={saveCurrentChat}
-                    size="md"
-                    isDisabled={messages.length === 0}
-                  />
-                </Tooltip>
-                <ModalCloseButton position="static" />
-              </HStack>
-            </ModalHeader>
-
-            <ModalBody
-              flex="1"
-              overflowY="auto"
-              ref={scrollRef}
-              sx={{
-                scrollbarWidth: "none",
-                msOverflowStyle: "none",
-                "::-webkit-scrollbar": { display: "none", width: 0, height: 0 },
-              }}
-            >
-              <VStack align="stretch" spacing={3}>
-                {messages.length === 0 && (
-                  <Box
-                    fontSize="sm"
-                    opacity={0.85}
-                    bg="gray.800"
-                    p={3}
-                    rounded="lg"
-                    border="1px solid"
-                    borderColor="gray.700"
-                  >
-                    {appLanguage === "es"
-                      ? "Haz una pregunta rápida. Te daré una breve explicación en tu idioma de apoyo y luego responderé en tu idioma de práctica; si está activado, también incluiré una traducción corta a tu idioma de apoyo."
-                      : "Ask a quick question. I’ll give a short explanation in your support language and then answer in your practice language; if enabled, I’ll also include a brief translation into your support language."}
-                  </Box>
-                )}
-
-                {messages.map((m) => {
-                  const { main, gloss } = splitMainAndGloss(m.text);
-                  return m.role === "user" ? (
-                    <HStack key={m.id} justify="flex-end">
-                      <Box
-                        bg="blue.500"
-                        color="white"
-                        p={3}
-                        rounded="xl"
-                        maxW="85%"
-                        boxShadow="0 6px 20px rgba(0,0,0,0.25)"
-                      >
-                        <Markdown>{m.text}</Markdown>
-                      </Box>
-                    </HStack>
-                  ) : (
-                    <HStack key={m.id} justify="flex-start" align="flex-start">
-                      <Box
-                        bg="gray.800"
-                        border="1px solid"
-                        borderColor="gray.700"
-                        p={3}
-                        rounded="xl"
-                        maxW="85%"
-                        w="fit-content"
-                      >
-                        <HStack align="flex-start" spacing={3}>
-                          <IconButton
-                            aria-label={
-                              appLanguage === "es"
-                                ? "Reproducir respuesta"
-                                : "Replay response"
-                            }
-                            icon={
-                              replayLoadingId === m.id ? (
-                                <Spinner size="sm" />
-                              ) : (
-                                <RiVolumeUpLine />
-                              )
-                            }
-                            size="sm"
-                            variant="ghost"
-                            colorScheme="purple"
-                            onClick={() => playAssistantTts(m)}
-                            isDisabled={!m.text}
-                            mt={1}
-                          />
-                          <Box flex="1">
-                            <HStack mb={1} justify="space-between">
-                              {!m.done && <Spinner size="xs" speed="0.6s" />}
-                            </HStack>
-
-                            <Markdown>{main}</Markdown>
-
-                            {!!gloss && (
-                              <Box opacity={0.8} fontSize="sm" mt={1}>
-                                <Markdown>{gloss}</Markdown>
-                              </Box>
-                            )}
-                          </Box>
-                        </HStack>
-                      </Box>
-                    </HStack>
-                  );
-                })}
-              </VStack>
-            </ModalBody>
-
-            {/* Hidden audio element for realtime playback */}
-            <audio ref={audioRef} style={{ display: "none" }} />
-
-            <ModalFooter>
-              <HStack w="100%" spacing={2}>
-                {/* Microphone button for realtime voice chat */}
-                <IconButton
-                  aria-label={
-                    realtimeStatus === "connected"
-                      ? appLanguage === "es"
-                        ? "Detener chat de voz"
-                        : "Stop voice chat"
-                      : appLanguage === "es"
-                      ? "Iniciar chat de voz"
-                      : "Start voice chat"
-                  }
-                  icon={
-                    realtimeStatus === "connected" ? (
-                      <FaStop />
-                    ) : realtimeStatus === "connecting" ? (
-                      <Spinner size="sm" />
-                    ) : (
-                      <FaMicrophone />
-                    )
-                  }
-                  onClick={toggleRealtime}
-                  isDisabled={realtimeStatus === "connecting" || sending}
-                  colorScheme={
-                    realtimeStatus === "connected" ? "red" : "purple"
-                  }
-                  variant={realtimeStatus === "connected" ? "solid" : "outline"}
-                  size="md"
+            {/* Main layout: Sidebar + Chat Area */}
+            <Flex h="100vh">
+              {/* Desktop Sidebar - always visible on md+ */}
+              {isDesktop && (
+                <Box
+                  w="260px"
+                  h="100%"
+                  bg="gray.900"
+                  borderRight="1px solid"
+                  borderColor="gray.800"
+                  p={3}
                   flexShrink={0}
-                />
-                <Input
-                  placeholder={
-                    realtimeStatus === "connected"
-                      ? appLanguage === "es"
-                        ? "Chat de voz activo…"
-                        : "Voice chat active…"
-                      : appLanguage === "es"
-                      ? "Escribe tu pregunta…"
-                      : "Type your question…"
-                  }
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      if (!sending && realtimeStatus !== "connected")
-                        handleSend();
-                    }
-                  }}
-                  bg="gray.800"
-                  borderColor={
-                    realtimeStatus === "connected" ? "purple.500" : "gray.700"
-                  }
-                  isDisabled={realtimeStatus === "connected"}
-                />
-                {sending ? (
-                  <IconButton
-                    onClick={handleStop}
-                    colorScheme="red"
-                    icon={<FaStop />}
-                  />
+                >
+                  {SidebarContent}
+                </Box>
+              )}
+
+              {/* Chat Area */}
+              <Flex flex="1" direction="column" h="100%" overflow="hidden">
+                {/* Header */}
+                <HStack
+                  px={4}
+                  py={3}
+                  borderBottom="1px solid"
+                  borderColor="gray.800"
+                  justify="space-between"
+                >
+                  <HStack spacing={3}>
+                    {/* Mobile menu button */}
+                    {!isDesktop && (
+                      <IconButton
+                        aria-label={appLanguage === "es" ? "Menú" : "Menu"}
+                        icon={<FaBars />}
+                        variant="ghost"
+                        colorScheme="gray"
+                        onClick={drawerDisclosure.onOpen}
+                        size="sm"
+                      />
+                    )}
+                    <Text fontSize="md" fontWeight="medium">
+                      {appLanguage === "es" ? "Ayuda rápida" : "Quick Help"}
+                    </Text>
+                    {morphemeMode && (
+                      <Badge colorScheme="purple" fontSize="xs">
+                        {appLanguage === "es" ? "Morfemas" : "Morphemes"}
+                      </Badge>
+                    )}
+                  </HStack>
+                  <HStack spacing={2}>
+                    <Tooltip
+                      label={appLanguage === "es" ? "Guardar chat" : "Save chat"}
+                    >
+                      <IconButton
+                        aria-label={appLanguage === "es" ? "Guardar" : "Save"}
+                        icon={<FaSave />}
+                        variant="ghost"
+                        colorScheme="gray"
+                        onClick={saveCurrentChat}
+                        size="sm"
+                        isDisabled={messages.length === 0}
+                      />
+                    </Tooltip>
+                    <ModalCloseButton position="static" />
+                  </HStack>
+                </HStack>
+
+                {/* Chat content area */}
+                {!hasMessages ? (
+                  /* Empty state - centered input */
+                  <Flex
+                    flex="1"
+                    direction="column"
+                    align="center"
+                    justify="center"
+                    px={4}
+                  >
+                    <VStack spacing={6} w="100%" maxW="600px">
+                      <Text
+                        fontSize={{ base: "xl", md: "2xl" }}
+                        fontWeight="medium"
+                        textAlign="center"
+                      >
+                        {appLanguage === "es"
+                          ? "¿Qué quieres aprender hoy?"
+                          : "What do you want to learn today?"}
+                      </Text>
+                      <InputBar centered />
+                    </VStack>
+                  </Flex>
                 ) : (
-                  <IconButton
-                    onClick={handleSend}
-                    colorScheme="teal"
-                    icon={<FiSend />}
-                    isDisabled={!input.trim() || realtimeStatus === "connected"}
-                  />
+                  /* Chat active - messages + bottom input */
+                  <>
+                    {/* Messages area */}
+                    <Box
+                      flex="1"
+                      overflowY="auto"
+                      ref={scrollRef}
+                      px={{ base: 4, md: 8 }}
+                      py={4}
+                      sx={{
+                        scrollbarWidth: "thin",
+                        scrollbarColor: "gray.700 transparent",
+                      }}
+                    >
+                      <VStack
+                        spacing={6}
+                        align="stretch"
+                        maxW="768px"
+                        mx="auto"
+                      >
+                        {messages.map((m) => {
+                          const { main, gloss } = splitMainAndGloss(m.text);
+                          return m.role === "user" ? (
+                            <Flex key={m.id} justify="flex-end">
+                              <Box
+                                bg="gray.700"
+                                color="white"
+                                px={4}
+                                py={3}
+                                rounded="2xl"
+                                roundedBottomRight="md"
+                                maxW="80%"
+                              >
+                                <Markdown>{m.text}</Markdown>
+                              </Box>
+                            </Flex>
+                          ) : (
+                            <Flex
+                              key={m.id}
+                              justify="flex-start"
+                              align="flex-start"
+                            >
+                              <Box maxW="100%" w="100%">
+                                <HStack align="flex-start" spacing={3}>
+                                  <IconButton
+                                    aria-label={
+                                      appLanguage === "es"
+                                        ? "Reproducir"
+                                        : "Play"
+                                    }
+                                    icon={
+                                      replayLoadingId === m.id ? (
+                                        <Spinner size="xs" />
+                                      ) : (
+                                        <RiVolumeUpLine size={14} />
+                                      )
+                                    }
+                                    size="xs"
+                                    variant="ghost"
+                                    colorScheme="gray"
+                                    onClick={() => playAssistantTts(m)}
+                                    isDisabled={!m.text}
+                                    mt={1}
+                                  />
+                                  <Box flex="1">
+                                    {!m.done && (
+                                      <Spinner size="xs" speed="0.6s" mb={2} />
+                                    )}
+                                    <Markdown>{main}</Markdown>
+                                    {!!gloss && (
+                                      <Box
+                                        opacity={0.7}
+                                        fontSize="sm"
+                                        mt={2}
+                                        pl={3}
+                                        borderLeft="2px solid"
+                                        borderColor="gray.700"
+                                      >
+                                        <Markdown>{gloss}</Markdown>
+                                      </Box>
+                                    )}
+                                  </Box>
+                                </HStack>
+                              </Box>
+                            </Flex>
+                          );
+                        })}
+                      </VStack>
+                    </Box>
+
+                    {/* Bottom input bar */}
+                    <Box py={4} borderTop="1px solid" borderColor="gray.800">
+                      <InputBar />
+                    </Box>
+                  </>
                 )}
-              </HStack>
-            </ModalFooter>
+
+                {/* Hidden audio element for realtime playback */}
+                <audio ref={audioRef} style={{ display: "none" }} />
+              </Flex>
+            </Flex>
           </ModalContent>
         </Modal>
 
-        {/* Inner Drawer Menu */}
-        <Drawer
-          isOpen={drawerDisclosure.isOpen}
-          placement="left"
-          onClose={drawerDisclosure.onClose}
-        >
-          <DrawerOverlay />
-          <DrawerContent bg="gray.900" color="gray.100" maxW="300px">
-            <DrawerCloseButton />
-            <DrawerHeader borderBottomWidth="1px" borderColor="gray.700">
-              {appLanguage === "es" ? "Menú" : "Menu"}
-            </DrawerHeader>
-
-            <DrawerBody p={4}>
-              <VStack spacing={4} align="stretch">
-                {/* Morpheme Mode Toggle */}
-                <Box
-                  bg="gray.800"
-                  p={4}
-                  rounded="lg"
-                  border="1px solid"
-                  borderColor="gray.700"
-                >
-                  <FormControl display="flex" alignItems="center">
-                    <FormLabel htmlFor="morpheme-mode" mb={0} flex="1">
-                      <VStack align="start" spacing={0}>
-                        <Text fontWeight="medium">
-                          {appLanguage === "es"
-                            ? "Modo morfemas"
-                            : "Morpheme mode"}
-                        </Text>
-                        <Text fontSize="xs" color="gray.400">
-                          {appLanguage === "es"
-                            ? "Desglosa palabras en sus partes"
-                            : "Break words into their parts"}
-                        </Text>
-                      </VStack>
-                    </FormLabel>
-                    <Switch
-                      id="morpheme-mode"
-                      colorScheme="purple"
-                      isChecked={morphemeMode}
-                      onChange={toggleMorphemeMode}
-                    />
-                  </FormControl>
-                </Box>
-
-                <Divider borderColor="gray.700" />
-
-                {/* New Chat Button */}
-                <Button
-                  variant="outline"
-                  colorScheme="teal"
-                  size="sm"
-                  onClick={startNewChat}
-                  w="100%"
-                >
-                  {appLanguage === "es" ? "Nuevo chat" : "New chat"}
-                </Button>
-
-                {/* Saved Chats */}
-                <Box>
-                  <Text
-                    fontWeight="bold"
-                    mb={2}
-                    fontSize="sm"
-                    color="gray.400"
-                  >
-                    {appLanguage === "es"
-                      ? "Chats guardados"
-                      : "Saved chats"}
-                  </Text>
-                  <VStack spacing={2} align="stretch" maxH="50vh" overflowY="auto">
-                    {savedChats.length === 0 ? (
-                      <Text fontSize="sm" color="gray.500" textAlign="center">
-                        {appLanguage === "es"
-                          ? "No hay chats guardados"
-                          : "No saved chats"}
-                      </Text>
-                    ) : (
-                      savedChats.map((chat) => (
-                        <Box
-                          key={chat.id}
-                          bg="gray.800"
-                          p={3}
-                          rounded="md"
-                          cursor="pointer"
-                          _hover={{ bg: "gray.700" }}
-                          onClick={() => loadSavedChat(chat)}
-                          border="1px solid"
-                          borderColor="gray.700"
-                        >
-                          <HStack justify="space-between">
-                            <VStack align="start" spacing={0} flex="1">
-                              <Text
-                                fontSize="sm"
-                                fontWeight="medium"
-                                noOfLines={1}
-                              >
-                                {chat.title}
-                              </Text>
-                              <Text fontSize="xs" color="gray.500">
-                                {new Date(chat.savedAt).toLocaleDateString()}
-                              </Text>
-                            </VStack>
-                            <IconButton
-                              aria-label={
-                                appLanguage === "es" ? "Eliminar" : "Delete"
-                              }
-                              icon={<FaTrash />}
-                              size="xs"
-                              variant="ghost"
-                              colorScheme="red"
-                              onClick={(e) => deleteSavedChat(chat.id, e)}
-                            />
-                          </HStack>
-                        </Box>
-                      ))
-                    )}
-                  </VStack>
-                </Box>
-              </VStack>
-            </DrawerBody>
-          </DrawerContent>
-        </Drawer>
+        {/* Mobile Drawer Menu */}
+        {!isDesktop && (
+          <Drawer
+            isOpen={drawerDisclosure.isOpen}
+            placement="left"
+            onClose={drawerDisclosure.onClose}
+          >
+            <DrawerOverlay />
+            <DrawerContent bg="gray.900" color="gray.100" maxW="280px">
+              <DrawerCloseButton />
+              <DrawerHeader borderBottomWidth="1px" borderColor="gray.800" py={3}>
+                <Text fontSize="sm">
+                  {appLanguage === "es" ? "Menú" : "Menu"}
+                </Text>
+              </DrawerHeader>
+              <DrawerBody p={3}>{SidebarContent}</DrawerBody>
+            </DrawerContent>
+          </Drawer>
+        )}
       </>
     );
   }
