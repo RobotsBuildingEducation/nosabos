@@ -325,13 +325,8 @@ const HelpChatFab = forwardRef(
       (chat) => {
         setMessages(chat.messages);
         drawerDisclosure.onClose();
-        toast({
-          status: "info",
-          title: appLanguage === "es" ? "Chat cargado" : "Chat loaded",
-          duration: 2000,
-        });
       },
-      [appLanguage, drawerDisclosure, toast]
+      [drawerDisclosure]
     );
 
     const deleteSavedChat = useCallback(
@@ -1205,103 +1200,6 @@ Be thorough but concise. This helps learners understand word construction.`
       </VStack>
     );
 
-    // Input bar component - used in both centered and bottom positions
-    const InputBar = ({ centered = false }) => (
-      <Box
-        w="100%"
-        maxW={centered ? "600px" : "768px"}
-        mx="auto"
-        px={centered ? 4 : { base: 4, md: 8 }}
-      >
-        <Box
-          bg="gray.800"
-          border="1px solid"
-          borderColor="gray.700"
-          rounded="2xl"
-          p={2}
-        >
-          <HStack spacing={2} align="flex-end">
-            {/* Microphone button */}
-            <IconButton
-              aria-label={
-                realtimeStatus === "connected"
-                  ? appLanguage === "es"
-                    ? "Detener chat de voz"
-                    : "Stop voice chat"
-                  : appLanguage === "es"
-                  ? "Iniciar chat de voz"
-                  : "Start voice chat"
-              }
-              icon={
-                realtimeStatus === "connected" ? (
-                  <FaStop />
-                ) : realtimeStatus === "connecting" ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <FaMicrophone />
-                )
-              }
-              onClick={toggleRealtime}
-              isDisabled={realtimeStatus === "connecting" || sending}
-              colorScheme={realtimeStatus === "connected" ? "red" : "gray"}
-              variant={realtimeStatus === "connected" ? "solid" : "ghost"}
-              size="sm"
-              rounded="full"
-            />
-            <Textarea
-              placeholder={
-                realtimeStatus === "connected"
-                  ? appLanguage === "es"
-                    ? "Chat de voz activo…"
-                    : "Voice chat active…"
-                  : appLanguage === "es"
-                  ? "Pregunta lo que quieras…"
-                  : "Ask anything…"
-              }
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  if (!sending && realtimeStatus !== "connected") handleSend();
-                }
-              }}
-              bg="transparent"
-              border="none"
-              _focus={{ boxShadow: "none", border: "none" }}
-              resize="none"
-              minH="40px"
-              maxH="120px"
-              rows={1}
-              flex="1"
-              isDisabled={realtimeStatus === "connected"}
-              fontSize="sm"
-            />
-            {sending ? (
-              <IconButton
-                onClick={handleStop}
-                colorScheme="red"
-                icon={<FaStop />}
-                size="sm"
-                rounded="full"
-              />
-            ) : (
-              <IconButton
-                onClick={handleSend}
-                bg="white"
-                color="gray.900"
-                icon={<FiSend />}
-                size="sm"
-                rounded="full"
-                isDisabled={!input.trim() || realtimeStatus === "connected"}
-                _hover={{ bg: "gray.200" }}
-              />
-            )}
-          </HStack>
-        </Box>
-      </Box>
-    );
-
     return (
       <>
         {/* Floating button */}
@@ -1419,7 +1317,94 @@ Be thorough but concise. This helps learners understand word construction.`
                           ? "¿Qué quieres aprender hoy?"
                           : "What do you want to learn today?"}
                       </Text>
-                      <InputBar centered />
+                      {/* Centered input bar */}
+                      <Box w="100%" maxW="600px" mx="auto" px={4}>
+                        <Box
+                          bg="gray.800"
+                          border="1px solid"
+                          borderColor="gray.700"
+                          rounded="2xl"
+                          p={2}
+                        >
+                          <HStack spacing={2} align="flex-end">
+                            <IconButton
+                              aria-label={
+                                realtimeStatus === "connected"
+                                  ? appLanguage === "es"
+                                    ? "Detener chat de voz"
+                                    : "Stop voice chat"
+                                  : appLanguage === "es"
+                                  ? "Iniciar chat de voz"
+                                  : "Start voice chat"
+                              }
+                              icon={
+                                realtimeStatus === "connected" ? (
+                                  <FaStop />
+                                ) : realtimeStatus === "connecting" ? (
+                                  <Spinner size="sm" />
+                                ) : (
+                                  <FaMicrophone />
+                                )
+                              }
+                              onClick={toggleRealtime}
+                              isDisabled={realtimeStatus === "connecting" || sending}
+                              colorScheme={realtimeStatus === "connected" ? "red" : "gray"}
+                              variant={realtimeStatus === "connected" ? "solid" : "ghost"}
+                              size="sm"
+                              rounded="full"
+                            />
+                            <Textarea
+                              placeholder={
+                                realtimeStatus === "connected"
+                                  ? appLanguage === "es"
+                                    ? "Chat de voz activo…"
+                                    : "Voice chat active…"
+                                  : appLanguage === "es"
+                                  ? "Pregunta lo que quieras…"
+                                  : "Ask anything…"
+                              }
+                              value={input}
+                              onChange={(e) => setInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  if (!sending && realtimeStatus !== "connected") handleSend();
+                                }
+                              }}
+                              bg="transparent"
+                              border="none"
+                              _focus={{ boxShadow: "none", border: "none" }}
+                              resize="none"
+                              minH="40px"
+                              maxH="120px"
+                              rows={1}
+                              flex="1"
+                              isDisabled={realtimeStatus === "connected"}
+                              fontSize="sm"
+                            />
+                            {sending ? (
+                              <IconButton
+                                onClick={handleStop}
+                                colorScheme="red"
+                                icon={<FaStop />}
+                                size="sm"
+                                rounded="full"
+                              />
+                            ) : (
+                              <IconButton
+                                onClick={handleSend}
+                                bg="white"
+                                color="gray.900"
+                                icon={<FiSend />}
+                                size="sm"
+                                rounded="full"
+                                isDisabled={!input.trim() || realtimeStatus === "connected"}
+                                _hover={{ bg: "gray.200" }}
+                              />
+                            )}
+                          </HStack>
+                        </Box>
+                      </Box>
                     </VStack>
                   </Flex>
                 ) : (
@@ -1515,7 +1500,93 @@ Be thorough but concise. This helps learners understand word construction.`
 
                     {/* Bottom input bar */}
                     <Box py={4} borderTop="1px solid" borderColor="gray.800">
-                      <InputBar />
+                      <Box w="100%" maxW="768px" mx="auto" px={{ base: 4, md: 8 }}>
+                        <Box
+                          bg="gray.800"
+                          border="1px solid"
+                          borderColor="gray.700"
+                          rounded="2xl"
+                          p={2}
+                        >
+                          <HStack spacing={2} align="flex-end">
+                            <IconButton
+                              aria-label={
+                                realtimeStatus === "connected"
+                                  ? appLanguage === "es"
+                                    ? "Detener chat de voz"
+                                    : "Stop voice chat"
+                                  : appLanguage === "es"
+                                  ? "Iniciar chat de voz"
+                                  : "Start voice chat"
+                              }
+                              icon={
+                                realtimeStatus === "connected" ? (
+                                  <FaStop />
+                                ) : realtimeStatus === "connecting" ? (
+                                  <Spinner size="sm" />
+                                ) : (
+                                  <FaMicrophone />
+                                )
+                              }
+                              onClick={toggleRealtime}
+                              isDisabled={realtimeStatus === "connecting" || sending}
+                              colorScheme={realtimeStatus === "connected" ? "red" : "gray"}
+                              variant={realtimeStatus === "connected" ? "solid" : "ghost"}
+                              size="sm"
+                              rounded="full"
+                            />
+                            <Textarea
+                              placeholder={
+                                realtimeStatus === "connected"
+                                  ? appLanguage === "es"
+                                    ? "Chat de voz activo…"
+                                    : "Voice chat active…"
+                                  : appLanguage === "es"
+                                  ? "Pregunta lo que quieras…"
+                                  : "Ask anything…"
+                              }
+                              value={input}
+                              onChange={(e) => setInput(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  if (!sending && realtimeStatus !== "connected") handleSend();
+                                }
+                              }}
+                              bg="transparent"
+                              border="none"
+                              _focus={{ boxShadow: "none", border: "none" }}
+                              resize="none"
+                              minH="40px"
+                              maxH="120px"
+                              rows={1}
+                              flex="1"
+                              isDisabled={realtimeStatus === "connected"}
+                              fontSize="sm"
+                            />
+                            {sending ? (
+                              <IconButton
+                                onClick={handleStop}
+                                colorScheme="red"
+                                icon={<FaStop />}
+                                size="sm"
+                                rounded="full"
+                              />
+                            ) : (
+                              <IconButton
+                                onClick={handleSend}
+                                bg="white"
+                                color="gray.900"
+                                icon={<FiSend />}
+                                size="sm"
+                                rounded="full"
+                                isDisabled={!input.trim() || realtimeStatus === "connected"}
+                                _hover={{ bg: "gray.200" }}
+                              />
+                            )}
+                          </HStack>
+                        </Box>
+                      </Box>
                     </Box>
                   </>
                 )}
