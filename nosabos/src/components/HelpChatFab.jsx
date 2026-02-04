@@ -408,7 +408,7 @@ const HelpChatFab = forwardRef(
         toast({
           status: "info",
           title: appLanguage === "es" ? "Chat eliminado" : "Chat deleted",
-          duration: 2000,
+          duration: 1000,
         });
       },
       [savedChats, appLanguage, toast],
@@ -1310,7 +1310,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
               size="sm"
               isChecked={morphemeMode}
               onChange={(e) => {
-                playSound(clickSound);
+                playSound(submitActionSound);
                 toggleMorphemeMode(e);
               }}
             />
@@ -1429,7 +1429,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                       variant="ghost"
                       colorScheme="gray"
                       onClick={() => {
-                        playSound(clickSound);
+                        playSound(submitActionSound);
                         saveCurrentChat();
                       }}
                       size="sm"
