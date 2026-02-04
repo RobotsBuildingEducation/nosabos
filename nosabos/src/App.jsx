@@ -557,14 +557,14 @@ function TopBar({
       },
       {
         value: "nah",
-        label: `${t.onboarding_practice_nah} (alpha)`,
+        label: `${t.onboarding_practice_nah} (${appLanguage === "es" ? "alfa" : "alpha"})`,
         beta: false,
         alpha: true,
         flag: mexicanFlag(),
       },
       {
         value: "yua",
-        label: `${t.onboarding_practice_yua} (alpha)`,
+        label: `${t.onboarding_practice_yua} (${appLanguage === "es" ? "alfa" : "alpha"})`,
         beta: false,
         alpha: true,
         flag: mexicanFlag(),

@@ -146,14 +146,14 @@ export default function Onboarding({
       },
       {
         value: "nah",
-        label: `${ui.onboarding_practice_nah} (alpha)`,
+        label: `${ui.onboarding_practice_nah} (${supportLang === "es" ? "alfa" : "alpha"})`,
         beta: false,
         alpha: true,
         flag: mexicanFlag(),
       },
       {
         value: "yua",
-        label: `${ui.onboarding_practice_yua} (alpha)`,
+        label: `${ui.onboarding_practice_yua} (${supportLang === "es" ? "alfa" : "alpha"})`,
         beta: false,
         alpha: true,
         flag: mexicanFlag(),
