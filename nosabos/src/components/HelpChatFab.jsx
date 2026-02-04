@@ -468,49 +468,39 @@ const HelpChatFab = forwardRef(
         primaryLang
       )}.`;
 
+      // Morpheme mode instructions - placed at START for priority
+      const morphemePrefix = morphemeMode
+        ? `🔬 MORPHEME MODE IS ON - YOU MUST INCLUDE A MORPHEME BREAKDOWN SECTION.
+
+After answering, ADD this section:
+
+---MORPHEMES---
+[Break down each ${nameFor(targetLang)} word like this:]
+
+**word** = part1 + part2 + part3
+- part1: meaning
+- part2: meaning
+→ "English translation"
+
+Example: **hablaremos** = habl + ar + emos
+- habl-: root "speak"
+- -ar-: infinitive marker
+- -emos: future 1st person plural
+→ "we will speak"
+
+DO NOT SKIP THE MORPHEME SECTION.
+
+---
+
+`
+        : "";
+
       const glossLine = glossLang
         ? `Después de la explicación, añade una sola línea de ejemplo o traducción en ${glossHuman}. Ponla en una nueva línea que comience con "// ".`
         : "No añadas traducciones adicionales.";
 
-      // Morpheme mode instructions
-      const morphemeInstructions = morphemeMode
-        ? `
-
-MORPHEME MODE ENABLED - CRITICAL REQUIREMENT:
-After your main response, you MUST add a DETAILED morpheme breakdown section.
-
-Format EXACTLY like this:
-
----MORPHEMES---
-
-For EACH ${nameFor(targetLang)} word in your response, break it into its smallest meaningful parts:
-
-**word** = part1 + part2 + part3...
-- part1: meaning/function
-- part2: meaning/function
-- part3: meaning/function
-→ Combined meaning: "translation"
-
-EXAMPLE for Spanish:
-**hablábamos** = habl + á + ba + mos
-- habl-: root meaning "speak/talk"
-- -á-: theme vowel (1st conjugation -ar verb)
-- -ba-: imperfect tense marker (past habitual/ongoing)
-- -mos: 1st person plural "we"
-→ Combined meaning: "we were speaking" / "we used to speak"
-
-**desafortunadamente** = des + afortuna + da + mente
-- des-: prefix meaning "un-/without"
-- afortuna: from "fortuna" (fortune/luck)
-- -da: past participle/adjective ending
-- -mente: adverb suffix (like English "-ly")
-→ Combined meaning: "unfortunately"
-
-You MUST break down EVERY content word (nouns, verbs, adjectives, adverbs) from your response this way.
-Show the internal structure so learners understand HOW words are built.`
-        : "";
-
       return [
+        morphemePrefix,
         "You are a helpful language study buddy for quick questions.",
         strict,
         `The learner practices ${nameFor(
@@ -520,10 +510,9 @@ Show the internal structure so learners understand HOW words are built.`
         persona ? `Persona: ${persona}.` : "",
         focus ? `Focus area: ${focus}.` : "",
         supportNote,
-        morphemeMode ? "Keep main reply ≤ 80 words (excluding morpheme breakdown)." : "Keep replies ≤ 60 words.",
+        morphemeMode ? "Keep main reply ≤ 80 words, then ADD the morpheme breakdown." : "Keep replies ≤ 60 words.",
         glossLine,
         "Use concise Markdown when helpful (bullets, **bold**, code, tables).",
-        morphemeInstructions,
       ]
         .filter(Boolean)
         .join(" ");
