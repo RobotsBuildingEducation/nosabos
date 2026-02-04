@@ -86,6 +86,10 @@ import { simplemodel } from "../firebaseResources/firebaseResources";
 import { translations } from "../utils/translation";
 import { FiSend } from "react-icons/fi";
 import { RiVolumeUpLine } from "react-icons/ri";
+import useSoundSettings from "../hooks/useSoundSettings";
+import selectSound from "../assets/select.mp3";
+import submitActionSound from "../assets/submitaction.mp3";
+import clickSound from "../assets/click.mp3";
 
 const REALTIME_MODEL =
   (import.meta.env.VITE_REALTIME_MODEL || "gpt-realtime-mini") + "";
@@ -226,6 +230,7 @@ const HelpChatFab = forwardRef(
     const onOpen = controlledOnOpen || disclosure.onOpen;
     const onClose = controlledOnClose || disclosure.onClose;
     const toast = useToast();
+    const playSound = useSoundSettings((s) => s.playSound);
 
     const ui = translations[appLanguage] || translations.en;
 
@@ -1230,7 +1235,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                     rounded="md"
                     cursor="pointer"
                     _hover={{ bg: "gray.800" }}
-                    onClick={() => loadSavedChat(chat)}
+                    onClick={() => {
+                      playSound(selectSound);
+                      loadSavedChat(chat);
+                    }}
                     fontSize="sm"
                   >
                     <HStack justify="space-between" spacing={2}>
@@ -1260,7 +1268,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                         colorScheme="red"
                         opacity={0.5}
                         _hover={{ opacity: 1 }}
-                        onClick={(e) => deleteSavedChat(chat.id, e)}
+                        onClick={(e) => {
+                          playSound(clickSound);
+                          deleteSavedChat(chat.id, e);
+                        }}
                       />
                     </HStack>
                   </Box>
@@ -1298,7 +1309,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
               colorScheme="purple"
               size="sm"
               isChecked={morphemeMode}
-              onChange={toggleMorphemeMode}
+              onChange={(e) => {
+                playSound(clickSound);
+                toggleMorphemeMode(e);
+              }}
             />
           </FormControl>
         </Box>
@@ -1309,7 +1323,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           variant="outline"
           colorScheme="gray"
           size="sm"
-          onClick={startNewChat}
+          onClick={() => {
+            playSound(selectSound);
+            startNewChat();
+          }}
           w="100%"
           borderColor="gray.600"
           _hover={{ bg: "gray.800" }}
@@ -1338,7 +1355,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
               bottom={{ base: "4", md: "4" }}
               right="20px"
               zIndex={50}
-              onClick={onOpen}
+              onClick={() => {
+                playSound(selectSound);
+                onOpen();
+              }}
             />
           </Tooltip>
         )}
@@ -1390,7 +1410,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                         icon={<FaBars />}
                         variant="ghost"
                         colorScheme="gray"
-                        onClick={drawerDisclosure.onOpen}
+                        onClick={() => {
+                          playSound(clickSound);
+                          drawerDisclosure.onOpen();
+                        }}
                         size="sm"
                       />
                     )}
@@ -1405,7 +1428,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                       leftIcon={<FaSave />}
                       variant="ghost"
                       colorScheme="gray"
-                      onClick={saveCurrentChat}
+                      onClick={() => {
+                        playSound(clickSound);
+                        saveCurrentChat();
+                      }}
                       size="sm"
                       isDisabled={messages.length === 0}
                     >
@@ -1464,7 +1490,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   <FaMicrophone />
                                 )
                               }
-                              onClick={toggleRealtime}
+                              onClick={() => {
+                                playSound(clickSound);
+                                toggleRealtime();
+                              }}
                               isDisabled={
                                 realtimeStatus === "connecting" || sending
                               }
@@ -1498,8 +1527,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   if (
                                     !sending &&
                                     realtimeStatus !== "connected"
-                                  )
+                                  ) {
+                                    playSound(submitActionSound);
                                     handleSend();
+                                  }
                                 }
                               }}
                               bg="transparent"
@@ -1536,7 +1567,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             />
                             {sending ? (
                               <IconButton
-                                onClick={handleStop}
+                                onClick={() => {
+                                  playSound(clickSound);
+                                  handleStop();
+                                }}
                                 colorScheme="red"
                                 icon={<FaStop />}
                                 size="sm"
@@ -1544,7 +1578,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               />
                             ) : (
                               <IconButton
-                                onClick={handleSend}
+                                onClick={() => {
+                                  playSound(submitActionSound);
+                                  handleSend();
+                                }}
                                 bg="white"
                                 color="gray.900"
                                 icon={<FiSend />}
@@ -1623,7 +1660,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                     size="xs"
                                     variant="ghost"
                                     colorScheme="gray"
-                                    onClick={() => playAssistantTts(m)}
+                                    onClick={() => {
+                                      playSound(clickSound);
+                                      playAssistantTts(m);
+                                    }}
                                     isDisabled={!m.text}
                                     mt={1}
                                   />
@@ -1688,7 +1728,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   <FaMicrophone />
                                 )
                               }
-                              onClick={toggleRealtime}
+                              onClick={() => {
+                                playSound(clickSound);
+                                toggleRealtime();
+                              }}
                               isDisabled={
                                 realtimeStatus === "connecting" || sending
                               }
@@ -1722,8 +1765,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   if (
                                     !sending &&
                                     realtimeStatus !== "connected"
-                                  )
+                                  ) {
+                                    playSound(submitActionSound);
                                     handleSend();
+                                  }
                                 }
                               }}
                               bg="transparent"
@@ -1760,7 +1805,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             />
                             {sending ? (
                               <IconButton
-                                onClick={handleStop}
+                                onClick={() => {
+                                  playSound(clickSound);
+                                  handleStop();
+                                }}
                                 colorScheme="red"
                                 icon={<FaStop />}
                                 size="sm"
@@ -1768,7 +1816,10 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                               />
                             ) : (
                               <IconButton
-                                onClick={handleSend}
+                                onClick={() => {
+                                  playSound(submitActionSound);
+                                  handleSend();
+                                }}
                                 bg="white"
                                 color="gray.900"
                                 icon={<FiSend />}
