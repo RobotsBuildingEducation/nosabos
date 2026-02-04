@@ -659,7 +659,7 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
               "**word** = part1 + part2 + part3",
               "- part1: meaning",
               "- part2: meaning",
-              "→ \"English translation\"",
+              '→ "English translation"',
               "",
               "If the answer below includes a target-language example sentence, use it.",
               `Otherwise, create ONE short ${targetLangName} sentence related to the question.`,
@@ -669,9 +669,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
               finalText,
             ].join("\n");
 
-            const fallbackResp = await simplemodel.generateContent(
-              fallbackPrompt,
-            );
+            const fallbackResp =
+              await simplemodel.generateContent(fallbackPrompt);
             const fallbackText =
               (typeof fallbackResp?.response?.text === "function"
                 ? fallbackResp.response.text()
@@ -1314,6 +1313,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           w="100%"
           borderColor="gray.600"
           _hover={{ bg: "gray.800" }}
+          marginBottom={6}
+          padding={8}
         >
           {appLanguage === "es" ? "Nuevo chat" : "New chat"}
         </Button>
@@ -1522,7 +1523,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   background: "#0b1220",
                                 },
                                 "&::-webkit-scrollbar-thumb": {
-                                  background: "linear-gradient(180deg, #60a5fa, #2563eb)",
+                                  background:
+                                    "linear-gradient(180deg, #60a5fa, #2563eb)",
                                   borderRadius: "8px",
                                   border: "2px solid #0b1220",
                                 },
@@ -1745,7 +1747,8 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                                   background: "#0b1220",
                                 },
                                 "&::-webkit-scrollbar-thumb": {
-                                  background: "linear-gradient(180deg, #60a5fa, #2563eb)",
+                                  background:
+                                    "linear-gradient(180deg, #60a5fa, #2563eb)",
                                   borderRadius: "8px",
                                   border: "2px solid #0b1220",
                                 },
