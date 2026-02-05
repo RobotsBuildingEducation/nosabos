@@ -3,18 +3,7 @@ import { Box, Grid, Text, VStack, HStack, IconButton } from "@chakra-ui/react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@chakra-ui/icons";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
-
-const WEEKDAYS_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const WEEKDAYS_ES = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-
-const MONTHS_EN = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
-];
-const MONTHS_ES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-];
+import { translations } from "../utils/translation";
 
 // Gradient for completed days
 const COMPLETED_GRADIENT = "linear-gradient(135deg, #14b8a6 0%, #06b6d4 50%, #0ea5e9 100%)";
@@ -70,8 +59,9 @@ export default function GoalCalendar({
   const displayYear = year ?? today.getFullYear();
   const displayMonth = month ?? today.getMonth();
 
-  const weekdays = lang === "es" ? WEEKDAYS_ES : WEEKDAYS_EN;
-  const months = lang === "es" ? MONTHS_ES : MONTHS_EN;
+  const ui = translations[lang] || translations.en;
+  const weekdays = ui.calendar_weekdays || translations.en.calendar_weekdays;
+  const months = ui.calendar_months || translations.en.calendar_months;
 
   // Parse startDate if provided
   const goalStartDate = useMemo(() => {
@@ -179,7 +169,7 @@ export default function GoalCalendar({
             colorScheme={colors.navButtonScheme}
             color={colors.headerText}
             onClick={handlePrevMonth}
-            aria-label={lang === "es" ? "Mes anterior" : "Previous month"}
+            aria-label={ui.calendar_prev_month || "Previous month"}
           />
         ) : (
           <Box w="32px" />
@@ -201,7 +191,7 @@ export default function GoalCalendar({
             colorScheme={colors.navButtonScheme}
             color={colors.headerText}
             onClick={handleNextMonth}
-            aria-label={lang === "es" ? "Mes siguiente" : "Next month"}
+            aria-label={ui.calendar_next_month || "Next month"}
           />
         ) : (
           <Box w="32px" />
@@ -284,13 +274,13 @@ export default function GoalCalendar({
         <HStack spacing={1}>
           <Box w="12px" h="12px" borderRadius="sm" bg={COMPLETED_GRADIENT_LEGEND} />
           <Text fontSize="xs" color={colors.legendText}>
-            {completedLabel || (lang === "es" ? "Completado" : "Completed")}
+            {completedLabel || ui.daily_goal_calendar_completed || "Completed"}
           </Text>
         </HStack>
         <HStack spacing={1}>
           <Box w="12px" h="12px" borderRadius="sm" bg={colors.legendIncompleteBg} />
           <Text fontSize="xs" color={colors.legendText}>
-            {incompleteLabel || (lang === "es" ? "Pendiente" : "Incomplete")}
+            {incompleteLabel || ui.daily_goal_calendar_incomplete || "Incomplete"}
           </Text>
         </HStack>
         <HStack spacing={1}>
@@ -303,7 +293,7 @@ export default function GoalCalendar({
             borderColor={colors.todayBorder}
           />
           <Text fontSize="xs" color={colors.legendText}>
-            {lang === "es" ? "Hoy" : "Today"}
+            {ui.calendar_today || "Today"}
           </Text>
         </HStack>
       </HStack>
