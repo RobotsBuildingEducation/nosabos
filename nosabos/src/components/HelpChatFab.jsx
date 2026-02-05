@@ -1437,7 +1437,13 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                     >
                       {appLanguage === "es" ? "Guardar" : "Save chat"}
                     </Button>
-                    <ModalCloseButton position="static" />
+                    <ModalCloseButton
+                      position="static"
+                      size="md"
+                      border="1px solid white"
+                      padding={2}
+                      borderRadius="50%"
+                    />
                   </HStack>
                 </HStack>
 
@@ -1510,15 +1516,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             />
                             <Textarea
                               ref={inputRef}
-                              placeholder={
-                                realtimeStatus === "connected"
-                                  ? appLanguage === "es"
-                                    ? "Chat de voz activo…"
-                                    : "Voice chat active…"
-                                  : appLanguage === "es"
-                                    ? "Pregunta lo que quieras…"
-                                    : "Ask anything…"
-                              }
                               value={input}
                               onChange={(e) => setInput(e.target.value)}
                               onKeyDown={(e) => {
@@ -1748,15 +1745,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
                             />
                             <Textarea
                               ref={inputRef}
-                              placeholder={
-                                realtimeStatus === "connected"
-                                  ? appLanguage === "es"
-                                    ? "Chat de voz activo…"
-                                    : "Voice chat active…"
-                                  : appLanguage === "es"
-                                    ? "Pregunta lo que quieras…"
-                                    : "Ask anything…"
-                              }
                               value={input}
                               onChange={(e) => setInput(e.target.value)}
                               onKeyDown={(e) => {
@@ -1855,7 +1843,6 @@ DO NOT SKIP THE MORPHEME BREAKDOWN.
           >
             <DrawerOverlay />
             <DrawerContent bg="gray.900" color="gray.100" maxW="280px">
-              <DrawerCloseButton />
               <DrawerHeader
                 borderBottomWidth="1px"
                 borderColor="gray.800"
