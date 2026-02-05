@@ -146,14 +146,14 @@ export default function Onboarding({
       },
       {
         value: "nah",
-        label: `${ui.onboarding_practice_nah} (${supportLang === "es" ? "alfa" : "alpha"})`,
+        label: `${ui.onboarding_practice_nah} (${ui.onboarding_alpha || "alpha"})`,
         beta: false,
         alpha: true,
         flag: mexicanFlag(),
       },
       {
         value: "yua",
-        label: `${ui.onboarding_practice_yua} (${supportLang === "es" ? "alfa" : "alpha"})`,
+        label: `${ui.onboarding_practice_yua} (${ui.onboarding_alpha || "alpha"})`,
         beta: false,
         alpha: true,
         flag: mexicanFlag(),
@@ -269,16 +269,10 @@ export default function Onboarding({
     ui.onboarding_persona_default_example || "patient, encouraging, playful",
   );
 
-  const VAD_LABEL =
-    ui.ra_vad_label ||
-    (supportLang === "es" ? "Pausa entre turnos" : "Pause between replies");
-  const VAD_HINT =
-    ui.onboarding_vad_hint ||
-    (supportLang === "es"
-      ? "Más corta = más sensible; más larga = te deja terminar de hablar. 1.2 segundos es lo recomendado para un habla natural."
-      : "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.");
+  const VAD_LABEL = ui.ra_vad_label || "Pause between replies";
+  const VAD_HINT = ui.onboarding_vad_hint || "Shorter = more responsive; longer = gives you time to finish speaking. 1.2 seconds is recommended for natural speech.";
   const pauseSeconds = (pauseMs / 1000).toFixed(1);
-  const secondsLabel = supportLang === "es" ? "segundos" : "seconds";
+  const secondsLabel = ui.onboarding_seconds || "seconds";
   const supportOption =
     supportLang === "es"
       ? { flag: mexicanFlag(), label: ui.onboarding_support_es }

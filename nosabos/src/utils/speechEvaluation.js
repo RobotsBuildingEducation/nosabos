@@ -513,34 +513,39 @@ export async function computeAudioMetricsFromBlob(blob) {
   }
 }
 
-const SPEECH_REASON_MESSAGES = {
-  en: {
-    "speech-quality": "Speak a bit louder and keep a steady pace.",
-    "not-target-lang": (targetLabel) => `Try speaking in ${targetLabel}.`,
-    "low-char-sim": "Match the wording more closely.",
-    "low-word-f1": "Include the key content words.",
-    "low-confidence": "Speak clearly and reduce background noise.",
-  },
-  es: {
-    "speech-quality": "Habla un poco más fuerte y mantén un ritmo constante.",
-    "not-target-lang": (targetLabel) => `Intenta hablar en ${targetLabel}.`,
-    "low-char-sim": "Acércate más al texto original.",
-    "low-word-f1": "Incluye las palabras clave del contenido.",
-    "low-confidence": "Pronuncia con claridad y reduce el ruido de fondo.",
-  },
+// Mapping from speech reason codes to translation keys
+const SPEECH_REASON_KEYS = {
+  "speech-quality": "speech_quality",
+  "not-target-lang": "speech_not_target_lang",
+  "low-char-sim": "speech_low_char_sim",
+  "low-word-f1": "speech_low_word_f1",
+  "low-confidence": "speech_low_confidence",
 };
 
-export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel } = {}) {
-  const lang = uiLang === "es" ? "es" : "en";
-  const msgs = SPEECH_REASON_MESSAGES[lang];
+export function speechReasonTips(reasons = [], { uiLang = "en", targetLabel, translations: tx } = {}) {
+  // Allow callers to pass in translations; fall back to inline defaults for
+  // environments where importing the full translations bundle would cause a
+  // circular dependency.
+  const resolve = (key, fallbackEn) => {
+    if (tx && tx[uiLang] && tx[uiLang][key]) return tx[uiLang][key];
+    if (tx && tx.en && tx.en[key]) return tx.en[key];
+    return fallbackEn;
+  };
+
   const tips = [];
   reasons.forEach((reason) => {
-    const msg = msgs[reason];
-    if (typeof msg === "function") tips.push(msg(targetLabel || (lang === "es" ? "el idioma objetivo" : "the target language")));
-    else if (msg) tips.push(msg);
+    const key = SPEECH_REASON_KEYS[reason];
+    if (!key) return;
+    let msg = resolve(key, key);
+    // Handle placeholder replacement for {targetLabel}
+    if (reason === "not-target-lang") {
+      const label = targetLabel || resolve("speech_target_language", "the target language");
+      msg = msg.replace("{targetLabel}", label);
+    }
+    tips.push(msg);
   });
   if (!tips.length) {
-    tips.push(lang === "es" ? "Vuelve a intentarlo hablando con claridad." : "Try again, speaking clearly.");
+    tips.push(resolve("speech_try_again_generic", "Try again, speaking clearly."));
   }
   return tips;
 }
