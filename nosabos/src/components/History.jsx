@@ -33,6 +33,8 @@ import {
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
+import { useTTSWordHighlighting } from "../hooks/useTTSWordHighlighting";
+import HighlightedText from "./HighlightedText";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -633,7 +635,7 @@ async function computeAdaptiveXp({
 }
 
 /* ---------------------------
-   TTS (no highlighting)
+   TTS (with word highlighting)
 --------------------------- */
 const BCP47 = {
   es: { tts: "es-ES" },
@@ -823,6 +825,9 @@ export default function History({
   // Refs for audio
   const currentAudioRef = useRef(null);
 
+  // TTS transcript state - updated in real-time as words are spoken
+  const [spokenTranscript, setSpokenTranscript] = useState("");
+
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
 
@@ -861,6 +866,14 @@ export default function History({
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
+
+  // TTS word highlighting - paces through words based on estimated timing
+  const { currentWordIndex, reset: resetHighlighting } = useTTSWordHighlighting({
+    text: viewLecture?.target || "",
+    spokenTranscript,
+    isPlaying: isReadingTarget && !isSynthesizingTarget,
+    langCode: targetLang,
+  });
 
   // Reset reading when switching lecture or when draft toggles
   useEffect(() => {
@@ -1236,7 +1249,9 @@ export default function History({
         currentAudioRef.current = null;
       }
     } catch {}
+    setSpokenTranscript("");
     setIsReadingTarget(false);
+    resetHighlighting();
   };
 
   async function speak({ text, langTag, setReading, setSynthesizing, onDone }) {
@@ -1244,6 +1259,7 @@ export default function History({
     if (!text) return;
     setReading(true);
     setSynthesizing?.(true);
+    setSpokenTranscript("");
 
     try {
       const player = await getTTSPlayer({
@@ -1251,6 +1267,10 @@ export default function History({
         langTag: langTag || TTS_LANG_TAG.es,
         voice: getRandomVoice(),
         responseFormat: LOW_LATENCY_TTS_FORMAT,
+        onTranscript: (transcript) => {
+          // Update transcript as words are spoken - this drives the highlighting
+          setSpokenTranscript(transcript);
+        },
       });
 
       currentAudioRef.current = player.audio;
@@ -1258,8 +1278,10 @@ export default function History({
       const cleanup = () => {
         setReading(false);
         currentAudioRef.current = null;
+        setSpokenTranscript("");
         player.cleanup?.();
         player.finalize?.catch?.(() => {});
+        resetHighlighting();
         onDone?.();
       };
 
@@ -1273,6 +1295,8 @@ export default function History({
     } catch {
       setSynthesizing?.(false);
       setReading(false);
+      setSpokenTranscript("");
+      resetHighlighting();
       onDone?.();
     }
   }
@@ -1439,9 +1463,12 @@ export default function History({
                   ) : null}
                 </Box>
 
-                <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {viewLecture.target || ""}
-                </Text>
+                <HighlightedText
+                  text={viewLecture.target || ""}
+                  currentWordIndex={currentWordIndex}
+                  isPlaying={isReadingTarget && !isSynthesizingTarget}
+                  highlightColor="rgba(56, 178, 172, 0.5)"
+                />
 
                 {showTranslations && viewLecture.support ? (
                   <>
