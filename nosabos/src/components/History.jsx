@@ -833,6 +833,7 @@ export default function History({
 
   // Refs for audio
   const currentAudioRef = useRef(null);
+  const speechSequenceRef = useRef(0);
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -1243,6 +1244,7 @@ export default function History({
   }
 
   const stopSpeech = () => {
+    speechSequenceRef.current += 1;
     try {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
     } catch {}
@@ -1254,6 +1256,7 @@ export default function History({
       }
     } catch {}
     setIsReadingTarget(false);
+    setIsSynthesizingTarget(false);
     setActiveSentenceIndex(null);
     setShadowPromptIndex(null);
   };
@@ -1296,30 +1299,70 @@ export default function History({
     }
   }
 
-  const readTarget = async () =>
-    speak({
-      text: viewLecture?.target,
-      langTag: (BCP47[targetLang] || BCP47.es).tts,
-      onDone: () => {},
-      setReading: setIsReadingTarget,
-      setSynthesizing: setIsSynthesizingTarget,
-    });
+  const playSentence = async ({ text, langTag, onDone }) => {
+    if (!text) return;
+    setIsSynthesizingTarget(true);
 
-  const handleSentenceSpeak = (sentence, index) => {
-    if (!sentence) return;
-    setShadowPromptIndex(null);
-    speak({
-      text: sentence,
-      langTag: (BCP47[targetLang] || BCP47.es).tts,
-      setReading: setIsReadingTarget,
-      setSynthesizing: setIsSynthesizingTarget,
-      onDone: () => {
-        setActiveSentenceIndex(null);
-        setShadowPromptIndex(index);
-      },
-    });
-    setActiveSentenceIndex(index);
+    try {
+      const player = await getTTSPlayer({
+        text,
+        langTag: langTag || TTS_LANG_TAG.es,
+        voice: getRandomVoice(),
+        responseFormat: LOW_LATENCY_TTS_FORMAT,
+      });
+
+      currentAudioRef.current = player.audio;
+
+      const cleanup = () => {
+        currentAudioRef.current = null;
+        player.cleanup?.();
+        player.finalize?.catch?.(() => {});
+        onDone?.();
+      };
+
+      player.audio.onended = cleanup;
+      player.audio.onerror = cleanup;
+
+      await player.ready;
+      setIsSynthesizingTarget(false);
+      await player.audio.play();
+      return;
+    } catch {
+      setIsSynthesizingTarget(false);
+      onDone?.();
+    }
   };
+
+  const readTarget = async () =>
+    (async () => {
+      if (!viewLecture?.target) return;
+      stopSpeech();
+      const sentences = targetSentences.length
+        ? targetSentences
+        : [viewLecture?.target];
+      const sequenceId = speechSequenceRef.current + 1;
+      speechSequenceRef.current = sequenceId;
+      setIsReadingTarget(true);
+      setShadowPromptIndex(null);
+
+      for (let i = 0; i < sentences.length; i += 1) {
+        if (speechSequenceRef.current !== sequenceId) return;
+        setActiveSentenceIndex(i);
+        setShadowPromptIndex(null);
+        await playSentence({
+          text: sentences[i],
+          langTag: (BCP47[targetLang] || BCP47.es).tts,
+          onDone: () => {},
+        });
+        if (speechSequenceRef.current !== sequenceId) return;
+        setActiveSentenceIndex(null);
+        setShadowPromptIndex(i);
+        await new Promise((resolve) => setTimeout(resolve, 3000));
+      }
+
+      setShadowPromptIndex(null);
+      setIsReadingTarget(false);
+    })();
 
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
@@ -1477,27 +1520,27 @@ export default function History({
                 <VStack align="stretch" spacing={2}>
                   {targetSentences.length ? (
                     targetSentences.map((sentence, index) => (
-                      <Button
+                      <Box
                         key={`${sentence}-${index}`}
-                        onClick={() => handleSentenceSpeak(sentence, index)}
-                        variant="ghost"
-                        justifyContent="flex-start"
-                        whiteSpace="normal"
-                        textAlign="left"
-                        fontWeight="500"
-                        py={2}
+                        rounded="md"
                         px={3}
+                        py={2}
                         bg={
                           activeSentenceIndex === index
                             ? "teal.700"
                             : "transparent"
                         }
-                        _hover={{ bg: "gray.700" }}
-                        _active={{ bg: "teal.600" }}
-                        isDisabled={draftLecture || isGenerating}
+                        border="1px solid"
+                        borderColor={
+                          activeSentenceIndex === index
+                            ? "teal.500"
+                            : "transparent"
+                        }
                       >
-                        {sentence}
-                      </Button>
+                        <Text fontSize={{ base: "md", md: "md" }}>
+                          {sentence}
+                        </Text>
+                      </Box>
                     ))
                   ) : (
                     <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
