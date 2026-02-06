@@ -41,6 +41,15 @@ const renderSpeakerIcon = (loading) =>
     <PiSpeakerHighDuotone style={{ marginLeft: "12px" }} />
   );
 
+const splitIntoSentences = (text) => {
+  if (!text) return [];
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  const matches = normalized.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
+  if (!matches) return [normalized];
+  return matches.map((sentence) => sentence.trim()).filter(Boolean);
+};
+
 /* ---------------------------
    Minimal i18n helper
 --------------------------- */
@@ -819,6 +828,8 @@ export default function History({
   const [isReadingTarget, setIsReadingTarget] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState(null);
+  const [shadowPromptIndex, setShadowPromptIndex] = useState(null);
 
   // Refs for audio
   const currentAudioRef = useRef(null);
@@ -861,10 +872,16 @@ export default function History({
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
+  const targetSentences = useMemo(
+    () => splitIntoSentences(viewLecture?.target),
+    [viewLecture?.target]
+  );
 
   // Reset reading when switching lecture or when draft toggles
   useEffect(() => {
     stopSpeech();
+    setActiveSentenceIndex(null);
+    setShadowPromptIndex(null);
   }, [activeId, draftLecture]); // eslint-disable-line
 
   // quick duplicate detector against the most recent saved lecture (same title+target within 15s)
@@ -1237,6 +1254,8 @@ export default function History({
       }
     } catch {}
     setIsReadingTarget(false);
+    setActiveSentenceIndex(null);
+    setShadowPromptIndex(null);
   };
 
   async function speak({ text, langTag, setReading, setSynthesizing, onDone }) {
@@ -1285,6 +1304,22 @@ export default function History({
       setReading: setIsReadingTarget,
       setSynthesizing: setIsSynthesizingTarget,
     });
+
+  const handleSentenceSpeak = (sentence, index) => {
+    if (!sentence) return;
+    setShadowPromptIndex(null);
+    speak({
+      text: sentence,
+      langTag: (BCP47[targetLang] || BCP47.es).tts,
+      setReading: setIsReadingTarget,
+      setSynthesizing: setIsSynthesizingTarget,
+      onDone: () => {
+        setActiveSentenceIndex(null);
+        setShadowPromptIndex(index);
+      },
+    });
+    setActiveSentenceIndex(index);
+  };
 
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
@@ -1439,9 +1474,59 @@ export default function History({
                   ) : null}
                 </Box>
 
-                <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {viewLecture.target || ""}
-                </Text>
+                <VStack align="stretch" spacing={2}>
+                  {targetSentences.length ? (
+                    targetSentences.map((sentence, index) => (
+                      <Button
+                        key={`${sentence}-${index}`}
+                        onClick={() => handleSentenceSpeak(sentence, index)}
+                        variant="ghost"
+                        justifyContent="flex-start"
+                        whiteSpace="normal"
+                        textAlign="left"
+                        fontWeight="500"
+                        py={2}
+                        px={3}
+                        bg={
+                          activeSentenceIndex === index
+                            ? "teal.700"
+                            : "transparent"
+                        }
+                        _hover={{ bg: "gray.700" }}
+                        _active={{ bg: "teal.600" }}
+                        isDisabled={draftLecture || isGenerating}
+                      >
+                        {sentence}
+                      </Button>
+                    ))
+                  ) : (
+                    <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
+                      {viewLecture.target || ""}
+                    </Text>
+                  )}
+                  {shadowPromptIndex !== null &&
+                  targetSentences[shadowPromptIndex] ? (
+                    <Box
+                      mt={1}
+                      rounded="md"
+                      border="1px solid"
+                      borderColor="teal.500"
+                      bg="gray.900"
+                      px={3}
+                      py={2}
+                    >
+                      <Text fontSize="sm" fontWeight="600" color="teal.200">
+                        Shadow mode
+                      </Text>
+                      <Text fontSize="sm" mt={1}>
+                        Repeat the sentence aloud:
+                      </Text>
+                      <Text fontSize="sm" mt={1} fontStyle="italic">
+                        “{targetSentences[shadowPromptIndex]}”
+                      </Text>
+                    </Box>
+                  ) : null}
+                </VStack>
 
                 {showTranslations && viewLecture.support ? (
                   <>
