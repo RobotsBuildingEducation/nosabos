@@ -41,15 +41,6 @@ const renderSpeakerIcon = (loading) =>
     <PiSpeakerHighDuotone style={{ marginLeft: "12px" }} />
   );
 
-const splitIntoSentences = (text) => {
-  if (!text) return [];
-  const normalized = text.replace(/\s+/g, " ").trim();
-  if (!normalized) return [];
-  const matches = normalized.match(/[^.!?]+[.!?]+|[^.!?]+$/g);
-  if (!matches) return [normalized];
-  return matches.map((sentence) => sentence.trim()).filter(Boolean);
-};
-
 const splitIntoSentenceSegments = (text) => {
   if (!text) return [];
   const normalized = text.replace(/\s+/g, " ").trim();
@@ -1339,13 +1330,7 @@ export default function History({
         onDone?.();
       };
 
-      player.audio.onended = cleanup;
-      player.audio.onerror = cleanup;
-
-      await player.ready;
-      setIsSynthesizingTarget(false);
-      await player.audio.play();
-      return await new Promise((resolve) => {
+      const finished = new Promise((resolve) => {
         const finalize = () => {
           cleanup();
           resolve();
@@ -1353,6 +1338,12 @@ export default function History({
         player.audio.onended = finalize;
         player.audio.onerror = finalize;
       });
+
+      await player.ready;
+      setIsSynthesizingTarget(false);
+      await player.audio.play();
+      await finished;
+      return;
     } catch {
       setIsSynthesizingTarget(false);
       onDone?.();
