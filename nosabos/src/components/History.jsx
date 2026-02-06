@@ -13,7 +13,7 @@ import {
   Center,
   Stack,
 } from "@chakra-ui/react";
-import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { PiSpeakerHighDuotone, PiLightningDuotone } from "react-icons/pi";
 import { doc, onSnapshot } from "firebase/firestore";
 import { MdMenuBook } from "react-icons/md";
 import useUserStore from "../hooks/useUserStore";
@@ -1360,6 +1360,27 @@ export default function History({
     sentencePlaybackRef.current = false;
   };
 
+  const readTargetFull = async () =>
+    speak({
+      text: viewLecture?.target,
+      langTag: (BCP47[targetLang] || BCP47.es).tts,
+      onDone: () => {},
+      setReading: setIsReadingTarget,
+      setSynthesizing: setIsSynthesizingTarget,
+    });
+
+  const readSingleSentence = async (sentence) => {
+    if (!sentence || isReadingTarget) return;
+    stopSpeech();
+    speak({
+      text: sentence,
+      langTag: (BCP47[targetLang] || BCP47.es).tts,
+      onDone: () => {},
+      setReading: setIsReadingTarget,
+      setSynthesizing: setIsSynthesizingTarget,
+    });
+  };
+
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
       ? ` — ${activeLecture.xpReason}`
@@ -1468,27 +1489,14 @@ export default function History({
               </VStack>
             ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
-                <HStack align="center" gap={2}>
-                  <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="700">
-                    <Button
-                      onClick={readTarget}
-                      leftIcon={renderSpeakerIcon(isSynthesizingTarget)}
-                      size="sm"
-                      fontSize="lg"
-                      variant="ghost"
-                      isDisabled={
-                        !viewLecture?.target || draftLecture || isGenerating
-                      }
-                      mr={2}
-                    />
-                    {viewLecture.title}
-                    {draftLecture ? (
-                      <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
-                        ({t("reading_generating") || "generating…"})
-                      </Text>
-                    ) : null}
-                  </Text>
-                </HStack>
+                <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="700">
+                  {viewLecture.title}
+                  {draftLecture ? (
+                    <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
+                      ({t("reading_generating") || "generating…"})
+                    </Text>
+                  ) : null}
+                </Text>
 
                 <Box
                   display="flex"
@@ -1513,6 +1521,52 @@ export default function History({
                   ) : null}
                 </Box>
 
+                {/* TTS controls */}
+                <HStack spacing={4} justify="center">
+                  <VStack spacing={0.5}>
+                    <IconButton
+                      icon={
+                        isSynthesizingTarget && sentencePlaybackRef.current ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          <PiSpeakerHighDuotone size="20px" />
+                        )
+                      }
+                      onClick={readTarget}
+                      aria-label="Read with highlighting"
+                      size="sm"
+                      variant="ghost"
+                      isDisabled={
+                        !viewLecture?.target || draftLecture || isGenerating
+                      }
+                    />
+                    <Text fontSize="xs" opacity={0.6}>
+                      Read
+                    </Text>
+                  </VStack>
+                  <VStack spacing={0.5}>
+                    <IconButton
+                      icon={
+                        isSynthesizingTarget && !sentencePlaybackRef.current ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          <PiLightningDuotone size="20px" />
+                        )
+                      }
+                      onClick={readTargetFull}
+                      aria-label="Speed read"
+                      size="sm"
+                      variant="ghost"
+                      isDisabled={
+                        !viewLecture?.target || draftLecture || isGenerating
+                      }
+                    />
+                    <Text fontSize="xs" opacity={0.6}>
+                      Speed
+                    </Text>
+                  </VStack>
+                </HStack>
+
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
                   {splitIntoSentences(viewLecture.target || "").map(
                     (sentence, i) => (
@@ -1527,6 +1581,9 @@ export default function History({
                         borderRadius="sm"
                         px={activeSentenceIndex === i ? "2px" : 0}
                         transition="background 0.2s"
+                        cursor="pointer"
+                        _hover={{ bg: activeSentenceIndex === i ? "rgba(56, 178, 172, 0.2)" : "rgba(128, 128, 128, 0.1)" }}
+                        onClick={() => readSingleSentence(sentence)}
                       >
                         {sentence}{" "}
                       </Text>
