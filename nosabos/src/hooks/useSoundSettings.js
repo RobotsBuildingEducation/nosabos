@@ -97,7 +97,9 @@ const useSoundSettings = create((set, get) => ({
     const state = get();
     if (!state.isInitialized) {
       await state.initAudio();
+      return;
     }
+    await soundManager.resume();
   },
 
   /**
