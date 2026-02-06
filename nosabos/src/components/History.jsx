@@ -633,8 +633,23 @@ async function computeAdaptiveXp({
 }
 
 /* ---------------------------
-   TTS (no highlighting)
+   TTS helpers
 --------------------------- */
+
+/**
+ * Split text into sentences by splitting on sentence-ending punctuation
+ * followed by whitespace. Keeps the punctuation attached to each sentence.
+ */
+function splitIntoSentences(text) {
+  if (!text) return [];
+  // Match runs of text ending with sentence-ending punctuation
+  const result = text.match(/[^.!?。！？]*[.!?。！？]+/g);
+  if (!result) return text.trim() ? [text.trim()] : [];
+  const joined = result.join("");
+  const remainder = text.slice(joined.length).trim();
+  if (remainder) result.push(remainder);
+  return result.map((s) => s.trim()).filter(Boolean);
+}
 const BCP47 = {
   es: { tts: "es-ES" },
   en: { tts: "en-US" },
@@ -819,6 +834,10 @@ export default function History({
   const [isReadingTarget, setIsReadingTarget] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
+
+  // Sentence-level TTS highlighting
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState(-1);
+  const sentencePlaybackRef = useRef(false);
 
   // Refs for audio
   const currentAudioRef = useRef(null);
@@ -1226,6 +1245,8 @@ export default function History({
   }
 
   const stopSpeech = () => {
+    sentencePlaybackRef.current = false;
+    setActiveSentenceIndex(-1);
     try {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
     } catch {}
@@ -1277,14 +1298,67 @@ export default function History({
     }
   }
 
-  const readTarget = async () =>
-    speak({
-      text: viewLecture?.target,
-      langTag: (BCP47[targetLang] || BCP47.es).tts,
-      onDone: () => {},
-      setReading: setIsReadingTarget,
-      setSynthesizing: setIsSynthesizingTarget,
-    });
+  const readTarget = async () => {
+    const text = viewLecture?.target;
+    if (!text) return;
+
+    const sentences = splitIntoSentences(text);
+    if (!sentences.length) return;
+
+    stopSpeech();
+    sentencePlaybackRef.current = true;
+    setIsReadingTarget(true);
+
+    const langTag = (BCP47[targetLang] || BCP47.es).tts;
+    const voice = getRandomVoice();
+
+    for (let i = 0; i < sentences.length; i++) {
+      if (!sentencePlaybackRef.current) break;
+      setActiveSentenceIndex(i);
+
+      try {
+        setIsSynthesizingTarget(true);
+        const player = await getTTSPlayer({
+          text: sentences[i],
+          langTag: langTag || TTS_LANG_TAG.es,
+          voice,
+          responseFormat: LOW_LATENCY_TTS_FORMAT,
+        });
+
+        if (!sentencePlaybackRef.current) {
+          player.cleanup?.();
+          break;
+        }
+
+        currentAudioRef.current = player.audio;
+
+        await new Promise((resolve) => {
+          const done = () => {
+            currentAudioRef.current = null;
+            player.cleanup?.();
+            player.finalize?.catch?.(() => {});
+            resolve();
+          };
+          player.audio.onended = done;
+          player.audio.onerror = done;
+
+          player.ready
+            .then(() => {
+              setIsSynthesizingTarget(false);
+              player.audio.play().catch(done);
+            })
+            .catch(done);
+        });
+      } catch {
+        // continue to next sentence on error
+      }
+    }
+
+    setIsSynthesizingTarget(false);
+    setIsReadingTarget(false);
+    setActiveSentenceIndex(-1);
+    sentencePlaybackRef.current = false;
+  };
 
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
@@ -1440,7 +1514,24 @@ export default function History({
                 </Box>
 
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {viewLecture.target || ""}
+                  {splitIntoSentences(viewLecture.target || "").map(
+                    (sentence, i) => (
+                      <Text
+                        as="span"
+                        key={i}
+                        bg={
+                          activeSentenceIndex === i
+                            ? "rgba(56, 178, 172, 0.2)"
+                            : "transparent"
+                        }
+                        borderRadius="sm"
+                        px={activeSentenceIndex === i ? "2px" : 0}
+                        transition="background 0.2s"
+                      >
+                        {sentence}{" "}
+                      </Text>
+                    )
+                  )}
                 </Text>
 
                 {showTranslations && viewLecture.support ? (
