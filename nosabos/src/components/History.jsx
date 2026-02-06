@@ -50,6 +50,18 @@ const splitIntoSentences = (text) => {
   return matches.map((sentence) => sentence.trim()).filter(Boolean);
 };
 
+const splitIntoSentenceSegments = (text) => {
+  if (!text) return [];
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (!normalized) return [];
+  const matches =
+    normalized.match(/[^.!?]+[.!?]+(?:\s+|$)|[^.!?]+$/g) || [];
+  return matches
+    .map((segment) => segment.trim())
+    .filter(Boolean)
+    .map((segment) => ({ display: segment, speech: segment }));
+};
+
 /* ---------------------------
    Minimal i18n helper
 --------------------------- */
@@ -873,9 +885,13 @@ export default function History({
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
   const viewLecture = draftLecture || activeLecture;
-  const targetSentences = useMemo(
-    () => splitIntoSentences(viewLecture?.target),
+  const targetSentenceSegments = useMemo(
+    () => splitIntoSentenceSegments(viewLecture?.target),
     [viewLecture?.target]
+  );
+  const targetSentences = useMemo(
+    () => targetSentenceSegments.map((segment) => segment.speech),
+    [targetSentenceSegments]
   );
 
   // Reset reading when switching lecture or when draft toggles
@@ -1313,7 +1329,10 @@ export default function History({
 
       currentAudioRef.current = player.audio;
 
+      let resolved = false;
       const cleanup = () => {
+        if (resolved) return;
+        resolved = true;
         currentAudioRef.current = null;
         player.cleanup?.();
         player.finalize?.catch?.(() => {});
@@ -1326,7 +1345,14 @@ export default function History({
       await player.ready;
       setIsSynthesizingTarget(false);
       await player.audio.play();
-      return;
+      return await new Promise((resolve) => {
+        const finalize = () => {
+          cleanup();
+          resolve();
+        };
+        player.audio.onended = finalize;
+        player.audio.onerror = finalize;
+      });
     } catch {
       setIsSynthesizingTarget(false);
       onDone?.();
@@ -1518,35 +1544,33 @@ export default function History({
                 </Box>
 
                 <VStack align="stretch" spacing={2}>
-                  {targetSentences.length ? (
-                    targetSentences.map((sentence, index) => (
-                      <Box
-                        key={`${sentence}-${index}`}
-                        rounded="md"
-                        px={3}
-                        py={2}
-                        bg={
-                          activeSentenceIndex === index
-                            ? "teal.700"
-                            : "transparent"
-                        }
-                        border="1px solid"
-                        borderColor={
-                          activeSentenceIndex === index
-                            ? "teal.500"
-                            : "transparent"
-                        }
-                      >
-                        <Text fontSize={{ base: "md", md: "md" }}>
-                          {sentence}
-                        </Text>
-                      </Box>
-                    ))
-                  ) : (
-                    <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                      {viewLecture.target || ""}
-                    </Text>
-                  )}
+                  <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
+                    {targetSentenceSegments.length
+                      ? targetSentenceSegments.map((segment, index) => (
+                          <Text
+                            as="span"
+                            key={`${segment.display}-${index}`}
+                            px={1}
+                            rounded="sm"
+                            bg={
+                              activeSentenceIndex === index
+                                ? "teal.700"
+                                : "transparent"
+                            }
+                            color={
+                              activeSentenceIndex === index
+                                ? "white"
+                                : "inherit"
+                            }
+                          >
+                            {segment.display}
+                            {index < targetSentenceSegments.length - 1
+                              ? " "
+                              : ""}
+                          </Text>
+                        ))
+                      : viewLecture.target || ""}
+                  </Text>
                   {shadowPromptIndex !== null &&
                   targetSentences[shadowPromptIndex] ? (
                     <Box
