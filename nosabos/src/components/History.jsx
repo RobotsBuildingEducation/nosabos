@@ -9,6 +9,7 @@ import {
   Box,
   Badge,
   Button,
+  Flex,
   HStack,
   VStack,
   Text,
@@ -20,10 +21,12 @@ import {
   Input,
   Radio,
   RadioGroup,
+  SlideFade,
 } from "@chakra-ui/react";
 import { PiSpeakerHighDuotone, PiLightningDuotone } from "react-icons/pi";
 import { doc, onSnapshot } from "firebase/firestore";
 import { MdMenuBook } from "react-icons/md";
+import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
@@ -41,6 +44,8 @@ import {
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
+import deliciousSound from "../assets/delicious.mp3";
+import clickSound from "../assets/click.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -858,6 +863,8 @@ export default function History({
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [reviewCorrect, setReviewCorrect] = useState(null);
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+  const [explanationText, setExplanationText] = useState("");
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -1468,12 +1475,38 @@ export default function History({
     setReviewSubmitted(true);
     const userNorm = reviewAnswer.trim().toLowerCase();
     const correctNorm = reviewQuestion.answer.trim().toLowerCase();
-    setReviewCorrect(userNorm === correctNorm);
+    const isCorrect = userNorm === correctNorm;
+    setReviewCorrect(isCorrect);
+    playSound(isCorrect ? deliciousSound : clickSound);
+  }
+
+  async function explainReviewAnswer() {
+    if (!reviewQuestion || isLoadingExplanation || explanationText) return;
+    setIsLoadingExplanation(true);
+    try {
+      const prompt = [
+        `The student was asked this question about a ${LANG_NAME(targetLang)} text:`,
+        `Question: ${reviewQuestion.question}`,
+        `Correct answer: ${reviewQuestion.answer}`,
+        `Student's answer: ${reviewAnswer}`,
+        "",
+        `Explain briefly in ${LANG_NAME(supportLang)} why the correct answer is "${reviewQuestion.answer}".`,
+        `Keep it to 2-3 sentences.`,
+      ].join("\n");
+      const raw = await callResponses({ model: MODEL, input: prompt });
+      setExplanationText(raw || "Could not generate explanation.");
+    } catch {
+      setExplanationText("Could not generate explanation.");
+    } finally {
+      setIsLoadingExplanation(false);
+    }
   }
 
   // Reset review question when lecture changes
   useEffect(() => {
     setReviewQuestion(null);
+    setExplanationText("");
+    setIsLoadingExplanation(false);
     setReviewAnswer("");
     setReviewSubmitted(false);
     setReviewCorrect(null);
@@ -1603,29 +1636,6 @@ export default function History({
                   ) : null}
                 </Text>
 
-                <Box
-                  display="flex"
-                  justifyContent={"center"}
-                  spacing={4}
-                  mt={"-24px"}
-                >
-                  {!draftLecture && activeLecture ? (
-                    <Button
-                      mt={4}
-                      colorScheme="teal"
-                      onClick={finishReadingAndNext}
-                      isLoading={isFinishing}
-                      isDisabled={isGenerating}
-                      p={4}
-                      w="fit-content"
-                    >
-                      {activeLecture.awarded
-                        ? t("reading_btn_next") || "Next lecture"
-                        : t("reading_btn_finish") || "Finished reading"}
-                    </Button>
-                  ) : null}
-                </Box>
-
                 {/* TTS controls */}
                 <HStack spacing={4} justify="center">
                   <VStack spacing={0.5}>
@@ -1713,39 +1723,35 @@ export default function History({
                           Review
                         </Text>
 
+                        <Text fontSize="sm" lineHeight="1.6">
+                          {reviewQuestion.question}
+                        </Text>
+
                         {reviewQuestion.type === "fill" ? (
-                          <>
-                            <Text fontSize="sm" lineHeight="1.6">
-                              {reviewQuestion.question}
-                            </Text>
-                            <HStack>
-                              <Input
+                          <HStack maxW="400px">
+                            <Input
+                              size="sm"
+                              placeholder="Fill in the blank..."
+                              value={reviewAnswer}
+                              onChange={(e) => setReviewAnswer(e.target.value)}
+                              isDisabled={reviewSubmitted}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && checkReviewAnswer()
+                              }
+                            />
+                            {!reviewSubmitted && (
+                              <Button
                                 size="sm"
-                                placeholder="Fill in the blank..."
-                                value={reviewAnswer}
-                                onChange={(e) => setReviewAnswer(e.target.value)}
-                                isDisabled={reviewSubmitted}
-                                onKeyDown={(e) =>
-                                  e.key === "Enter" && checkReviewAnswer()
-                                }
-                              />
-                              {!reviewSubmitted && (
-                                <Button
-                                  size="sm"
-                                  colorScheme="teal"
-                                  onClick={checkReviewAnswer}
-                                  isDisabled={!reviewAnswer.trim()}
-                                >
-                                  Check
-                                </Button>
-                              )}
-                            </HStack>
-                          </>
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isDisabled={!reviewAnswer.trim()}
+                              >
+                                Check
+                              </Button>
+                            )}
+                          </HStack>
                         ) : reviewQuestion.type === "mc" ? (
                           <>
-                            <Text fontSize="sm" lineHeight="1.6">
-                              {reviewQuestion.question}
-                            </Text>
                             <RadioGroup
                               value={reviewAnswer}
                               onChange={(val) => {
@@ -1778,58 +1784,153 @@ export default function History({
                             )}
                           </>
                         ) : (
-                          <>
-                            <Text fontSize="sm" lineHeight="1.6">
-                              {reviewQuestion.question}
-                            </Text>
-                            <HStack>
-                              <Input
+                          <HStack maxW="400px">
+                            <Input
+                              size="sm"
+                              placeholder="Your answer..."
+                              value={reviewAnswer}
+                              onChange={(e) => setReviewAnswer(e.target.value)}
+                              isDisabled={reviewSubmitted}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && checkReviewAnswer()
+                              }
+                            />
+                            {!reviewSubmitted && (
+                              <Button
                                 size="sm"
-                                placeholder="Your answer..."
-                                value={reviewAnswer}
-                                onChange={(e) => setReviewAnswer(e.target.value)}
-                                isDisabled={reviewSubmitted}
-                                onKeyDown={(e) =>
-                                  e.key === "Enter" && checkReviewAnswer()
-                                }
-                              />
-                              {!reviewSubmitted && (
-                                <Button
-                                  size="sm"
-                                  colorScheme="teal"
-                                  onClick={checkReviewAnswer}
-                                  isDisabled={!reviewAnswer.trim()}
-                                >
-                                  Check
-                                </Button>
-                              )}
-                            </HStack>
-                          </>
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isDisabled={!reviewAnswer.trim()}
+                              >
+                                Check
+                              </Button>
+                            )}
+                          </HStack>
                         )}
 
                         {reviewSubmitted && (
-                          <Box
-                            p={3}
-                            borderRadius="md"
-                            bg={
-                              reviewCorrect
-                                ? "rgba(72, 187, 120, 0.12)"
-                                : "rgba(245, 101, 101, 0.12)"
-                            }
-                          >
-                            <Text
-                              fontSize="sm"
-                              fontWeight="600"
-                              color={reviewCorrect ? "green.400" : "red.400"}
-                            >
-                              {reviewCorrect ? "Correct!" : "Not quite."}
-                            </Text>
-                            {!reviewCorrect && (
-                              <Text fontSize="sm" mt={1} opacity={0.9}>
-                                Answer: {reviewQuestion.answer}
-                              </Text>
-                            )}
-                          </Box>
+                          <SlideFade in={true} offsetY="10px">
+                            <VStack spacing={3} align="stretch">
+                              <VStack
+                                spacing={3}
+                                align="stretch"
+                                p={4}
+                                borderRadius="xl"
+                                bg={
+                                  reviewCorrect
+                                    ? "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
+                                    : "linear-gradient(90deg, rgba(245,101,101,0.16), rgba(229,62,62,0.08))"
+                                }
+                                borderWidth="1px"
+                                borderColor={
+                                  reviewCorrect ? "green.400" : "red.300"
+                                }
+                                boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+                              >
+                                <HStack spacing={3} align="center">
+                                  <Flex
+                                    w="44px"
+                                    h="44px"
+                                    rounded="full"
+                                    align="center"
+                                    justify="center"
+                                    bg={
+                                      reviewCorrect ? "green.500" : "red.500"
+                                    }
+                                    color="white"
+                                    fontWeight="bold"
+                                    fontSize="lg"
+                                    boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                                    flexShrink={0}
+                                  >
+                                    {reviewCorrect ? "✓" : "✖"}
+                                  </Flex>
+                                  <Box flex="1">
+                                    <Text fontWeight="semibold">
+                                      {reviewCorrect
+                                        ? "Correct!"
+                                        : "Not quite."}
+                                    </Text>
+                                    <Text
+                                      fontSize="sm"
+                                      color="whiteAlpha.800"
+                                    >
+                                      {reviewCorrect
+                                        ? "Great work! Keep going."
+                                        : `Answer: ${reviewQuestion.answer}`}
+                                    </Text>
+                                  </Box>
+                                </HStack>
+
+                                {!reviewCorrect && (
+                                  <Button
+                                    leftIcon={
+                                      isLoadingExplanation ? (
+                                        <Spinner size="sm" />
+                                      ) : (
+                                        <FiHelpCircle />
+                                      )
+                                    }
+                                    colorScheme="pink"
+                                    onClick={explainReviewAnswer}
+                                    isDisabled={
+                                      isLoadingExplanation || !!explanationText
+                                    }
+                                    width="full"
+                                    py={6}
+                                    size="lg"
+                                  >
+                                    Explain the answer
+                                  </Button>
+                                )}
+
+                                {reviewCorrect && activeLecture && (
+                                  <Button
+                                    rightIcon={<FiArrowRight />}
+                                    colorScheme="cyan"
+                                    variant="solid"
+                                    onClick={finishReadingAndNext}
+                                    isLoading={isFinishing}
+                                    isDisabled={isGenerating}
+                                    shadow="md"
+                                    width="full"
+                                    py={6}
+                                    size="lg"
+                                  >
+                                    {activeLecture.awarded
+                                      ? t("reading_btn_next") || "Next lecture"
+                                      : t("reading_btn_finish") ||
+                                        "Finished reading"}
+                                  </Button>
+                                )}
+                              </VStack>
+
+                              {!reviewCorrect && explanationText && (
+                                <Box
+                                  p={4}
+                                  borderRadius="lg"
+                                  bg="rgba(246, 92, 174, 0.1)"
+                                  borderWidth="1px"
+                                  borderColor="pink.400"
+                                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+                                >
+                                  <HStack spacing={2} mb={2}>
+                                    <FiHelpCircle color="var(--chakra-colors-pink-400)" />
+                                    <Text fontWeight="semibold" color="pink.300">
+                                      Explanation
+                                    </Text>
+                                  </HStack>
+                                  <Text
+                                    fontSize="sm"
+                                    color="whiteAlpha.900"
+                                    lineHeight="1.6"
+                                  >
+                                    {explanationText}
+                                  </Text>
+                                </Box>
+                              )}
+                            </VStack>
+                          </SlideFade>
                         )}
                       </VStack>
                     ) : (
