@@ -238,18 +238,19 @@ function LinkCard({
       borderColor="rgba(0, 255, 255, 0.4)"
       bg="rgba(7, 16, 29, 0.65)"
       borderRadius="lg"
-      px={{ base: 5, md: 8 }}
-      py={{ base: 6, md: 8 }}
+      px={{ base: 4, md: 6 }}
+      py={{ base: 4, md: 5 }}
       boxShadow="0 0 20px rgba(0, 255, 255, 0.15)"
     >
       <Stack
-        direction={{ base: "column", md: "row" }}
-        spacing={{ base: 6, md: 10 }}
+        direction="row"
+        spacing={{ base: 4, md: 6 }}
         align="center"
-        textAlign={{ base: "center", md: "left" }}
+        textAlign="left"
       >
         <Box
-          w={{ base: "100%", md: "220px" }}
+          w={{ base: "140px", md: "160px" }}
+          minW={{ base: "140px", md: "160px" }}
           display="flex"
           justifyContent="center"
           alignItems="center"
@@ -257,7 +258,7 @@ function LinkCard({
         >
           {visual}
         </Box>
-        <VStack spacing={3} align={{ base: "center", md: "flex-start" }}>
+        <VStack spacing={3} align="flex-start">
           <Heading
             size="md"
             fontFamily="monospace"
@@ -268,8 +269,8 @@ function LinkCard({
           </Heading>
           <Text
             color="gray.400"
-            fontSize="lg"
-            maxW="420px"
+            fontSize={{ base: "sm", md: "md" }}
+            maxW="520px"
             fontFamily="monospace"
           >
             {description}
@@ -288,10 +289,10 @@ function LinkCard({
             borderColor="#00ffff"
             color="#00ffff"
             fontFamily="monospace"
-            size="md"
-            px={10}
-            py={7}
-            minH="56px"
+            size="sm"
+            px={6}
+            py={4}
+            minH="44px"
           >
             {launchAppText || "Launch app"}
           </Button>
@@ -507,7 +508,17 @@ export default function LinksPage() {
       description: translations.noSabosDescription,
       href: "https://nosabos.app",
       analyticsName: "nosabos_app",
-      visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
+      visual: (
+        <Box
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <RobotBuddyPro state="idle" palette="ocean" maxW={110} />
+        </Box>
+      ),
       launchAppText: translations.launchApp,
     },
     {
@@ -517,7 +528,15 @@ export default function LinksPage() {
       analyticsName: "robots_building_education",
       onLaunch: onRbeOpen,
       visual: (
-        <Box display="flex" justifyContent="center" alignItems="center">
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
+          transform="scale(0.75)"
+          transformOrigin="center"
+        >
           <CloudCanvas />
         </Box>
       ),
@@ -528,7 +547,17 @@ export default function LinksPage() {
       description: translations.roadmapCashDescription,
       href: "https://roadmap.cash",
       analyticsName: "roadmap_cash",
-      visual: <AnimatedLogo showWordmark={false} size={200} />,
+      visual: (
+        <Box
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <AnimatedLogo showWordmark={false} size={110} />
+        </Box>
+      ),
       launchAppText: translations.launchApp,
     },
     {
@@ -537,12 +566,20 @@ export default function LinksPage() {
       href: "https://patreon.com/NotesAndOtherStuff",
       analyticsName: "patreon",
       visual: (
-        <RoleCanvas
-          role={roleCycle[roleIndex]}
-          width={200}
-          height={200}
-          transparent={true}
-        />
+        <Box
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <RoleCanvas
+            role={roleCycle[roleIndex]}
+            width={90}
+            height={90}
+            transparent={true}
+          />
+        </Box>
       ),
       launchAppText: translations.subscribe,
     },
