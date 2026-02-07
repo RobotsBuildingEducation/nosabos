@@ -505,7 +505,6 @@ export default function RepeatWhatYouHear({
             <Button
               variant="ghost"
               onClick={onSkip}
-              isDisabled={loading || isSubmitting}
               px={{ base: 6, md: 10 }}
               py={{ base: 3, md: 4 }}
             >

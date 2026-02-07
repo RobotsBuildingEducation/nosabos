@@ -551,7 +551,6 @@ export default function TranslateSentence({
             <Button
               variant="ghost"
               onClick={onSkip}
-              isDisabled={loading || isSubmitting}
               px={{ base: 6, md: 10 }}
               py={{ base: 3, md: 4 }}
             >

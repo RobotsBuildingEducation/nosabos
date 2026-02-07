@@ -4744,7 +4744,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
-                  isDisabled={loadingQFill || loadingGFill}
                   px={{ base: 6, md: 10 }}
                   py={{ base: 3, md: 4 }}
                 >
@@ -5014,7 +5013,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
-                  isDisabled={loadingQMC || loadingGMC}
                   px={{ base: 6, md: 10 }}
                   py={{ base: 3, md: 4 }}
                 >
@@ -5293,7 +5291,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
-                  isDisabled={loadingQMA || loadingGMA}
                   px={{ base: 6, md: 10 }}
                   py={{ base: 3, md: 4 }}
                 >
@@ -5425,7 +5422,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
-                  isDisabled={loadingQSpeak || isSpeakRecording}
                   px={{ base: 6, md: 10 }}
                   py={{ base: 3, md: 4 }}
                 >
@@ -5786,7 +5782,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 <Button
                   variant="ghost"
                   onClick={handleSkip}
-                  isDisabled={loadingMG || loadingMJ}
                   px={{ base: 6, md: 10 }}
                   py={{ base: 3, md: 4 }}
                 >
