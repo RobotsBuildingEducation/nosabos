@@ -510,13 +510,13 @@ export default function LinksPage() {
       analyticsName: "nosabos_app",
       visual: (
         <Box
-          w={{ base: "120px", md: "140px" }}
-          h={{ base: "120px", md: "140px" }}
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
           display="flex"
           alignItems="center"
           justifyContent="center"
         >
-          <RobotBuddyPro state="idle" palette="ocean" maxW={120} />
+          <RobotBuddyPro state="idle" palette="ocean" maxW={100} />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -532,9 +532,9 @@ export default function LinksPage() {
           display="flex"
           justifyContent="center"
           alignItems="center"
-          w={{ base: "120px", md: "140px" }}
-          h={{ base: "120px", md: "140px" }}
-          transform="scale(0.85)"
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
+          transform="scale(0.75)"
           transformOrigin="center"
         >
           <CloudCanvas />
@@ -549,13 +549,13 @@ export default function LinksPage() {
       analyticsName: "roadmap_cash",
       visual: (
         <Box
-          w={{ base: "120px", md: "140px" }}
-          h={{ base: "120px", md: "140px" }}
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
           display="flex"
           alignItems="center"
           justifyContent="center"
         >
-          <AnimatedLogo showWordmark={false} size={120} />
+          <AnimatedLogo showWordmark={false} size={100} />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -567,16 +567,16 @@ export default function LinksPage() {
       analyticsName: "patreon",
       visual: (
         <Box
-          w={{ base: "120px", md: "140px" }}
-          h={{ base: "120px", md: "140px" }}
+          w={{ base: "110px", md: "120px" }}
+          h={{ base: "110px", md: "120px" }}
           display="flex"
           alignItems="center"
           justifyContent="center"
         >
           <RoleCanvas
             role={roleCycle[roleIndex]}
-            width={100}
-            height={100}
+            width={90}
+            height={90}
             transparent={true}
           />
         </Box>

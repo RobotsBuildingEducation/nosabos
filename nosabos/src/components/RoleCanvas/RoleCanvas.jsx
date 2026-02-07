@@ -93,7 +93,7 @@ export function RoleCanvas({
     const particles = Array.from({ length: particleCount }, () => ({
       phi: Math.acos(2 * Math.random() - 1),
       theta: Math.random() * Math.PI * 2,
-      size: Math.random() * 2 + 1,
+      size: Math.random() * 1.1 + 0.6,
       phase: Math.random() * Math.PI * 2,
     }));
 
@@ -224,7 +224,7 @@ export function RoleCanvas({
         const p0 = particles[0];
         const xPos = cx + noise2D(p0.phase + 70, time * 0.0005) * (width / 2);
         const yPos = cy + noise2D(p0.phase + 80, time * 0.0005) * (height / 2);
-        const rPos = p0.size + 20;
+        const rPos = p0.size + 12;
         ctx.beginPath();
         ctx.arc(xPos, yPos, rPos, 0, Math.PI * 2);
         ctx.fillStyle = particleColor;
@@ -380,7 +380,7 @@ export function RoleCanvas({
           const xC = cx + rad * Math.cos(angle);
           const yC = cy + rad * Math.sin(angle);
           ctx.beginPath();
-          ctx.arc(xC, yC, 2, 0, Math.PI * 2);
+          ctx.arc(xC, yC, 1.2, 0, Math.PI * 2);
           ctx.fillStyle = particleColor;
           ctx.fill();
         }
@@ -414,8 +414,8 @@ export function RoleCanvas({
     <canvas
       ref={canvasRef}
       style={{
-        width: `${150}px`,
-        height: `${150}px`,
+        width: `${width}px`,
+        height: `${height}px`,
         display: "block",
         margin: "0 auto",
         backgroundColor: transparent ? "transparent" : bgColor,
