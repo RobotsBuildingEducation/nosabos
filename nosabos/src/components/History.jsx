@@ -1,6 +1,11 @@
 // components/History.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Box,
   Badge,
   Button,
@@ -12,6 +17,9 @@ import {
   IconButton,
   Center,
   Stack,
+  Input,
+  Radio,
+  RadioGroup,
 } from "@chakra-ui/react";
 import { PiSpeakerHighDuotone, PiLightningDuotone } from "react-icons/pi";
 import { doc, onSnapshot } from "firebase/firestore";
@@ -842,6 +850,15 @@ export default function History({
   // Refs for audio
   const currentAudioRef = useRef(null);
 
+  // Review question state
+  // reviewQuestion shape: { type: "text"|"fill"|"mc", question: string,
+  //   answer: string, blank?: string, options?: string[] }
+  const [reviewQuestion, setReviewQuestion] = useState(null);
+  const [reviewAnswer, setReviewAnswer] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewCorrect, setReviewCorrect] = useState(null);
+  const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
 
@@ -1381,6 +1398,93 @@ export default function History({
     });
   };
 
+  // Generate a review question for the current lecture
+  async function generateReviewQuestion() {
+    const text = viewLecture?.target;
+    if (!text || isGeneratingQuestion) return;
+
+    setIsGeneratingQuestion(true);
+    setReviewQuestion(null);
+    setReviewAnswer("");
+    setReviewSubmitted(false);
+    setReviewCorrect(null);
+
+    const questionTypes = ["text", "fill", "mc"];
+    const type = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+
+    let instruction = "";
+    if (type === "text") {
+      instruction = [
+        `Based on this ${LANG_NAME(targetLang)} text, create one short comprehension question in ${LANG_NAME(supportLang)}.`,
+        `Return ONLY valid JSON: {"question":"<the question>","answer":"<short correct answer>"}`,
+        "",
+        text,
+      ].join("\n");
+    } else if (type === "fill") {
+      instruction = [
+        `Based on this ${LANG_NAME(targetLang)} text, create a fill-in-the-blank exercise.`,
+        `Pick one key word from the text. Show the original sentence with that word replaced by "___".`,
+        `Return ONLY valid JSON: {"sentence":"<sentence with ___>","answer":"<the missing word>"}`,
+        "",
+        text,
+      ].join("\n");
+    } else {
+      instruction = [
+        `Based on this ${LANG_NAME(targetLang)} text, create one multiple-choice comprehension question in ${LANG_NAME(supportLang)}.`,
+        `Provide 4 options where exactly one is correct.`,
+        `Return ONLY valid JSON: {"question":"<the question>","options":["A","B","C","D"],"answer":"<the correct option text>"}`,
+        "",
+        text,
+      ].join("\n");
+    }
+
+    try {
+      const raw = await callResponses({ model: MODEL, input: instruction });
+      const parsed = safeParseJSON(raw);
+      if (parsed) {
+        if (type === "text") {
+          setReviewQuestion({ type, question: parsed.question, answer: parsed.answer });
+        } else if (type === "fill") {
+          setReviewQuestion({ type, question: parsed.sentence, answer: parsed.answer });
+        } else {
+          setReviewQuestion({
+            type,
+            question: parsed.question,
+            options: parsed.options,
+            answer: parsed.answer,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to generate review question", e);
+    } finally {
+      setIsGeneratingQuestion(false);
+    }
+  }
+
+  function checkReviewAnswer() {
+    if (!reviewQuestion || reviewSubmitted) return;
+    setReviewSubmitted(true);
+    const userNorm = reviewAnswer.trim().toLowerCase();
+    const correctNorm = reviewQuestion.answer.trim().toLowerCase();
+    setReviewCorrect(userNorm === correctNorm);
+  }
+
+  // Reset review question when lecture changes
+  useEffect(() => {
+    setReviewQuestion(null);
+    setReviewAnswer("");
+    setReviewSubmitted(false);
+    setReviewCorrect(null);
+  }, [activeId]);
+
+  // Auto-generate review question when a lecture is ready
+  useEffect(() => {
+    if (activeLecture?.target && !draftLecture && !isGenerating && !reviewQuestion && !isGeneratingQuestion) {
+      generateReviewQuestion();
+    }
+  }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
+
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
       ? ` — ${activeLecture.xpReason}`
@@ -1541,7 +1645,7 @@ export default function History({
                       }
                     />
                     <Text fontSize="xs" opacity={0.6}>
-                      Read
+                      Read sentences
                     </Text>
                   </VStack>
                   <VStack spacing={0.5}>
@@ -1554,7 +1658,7 @@ export default function History({
                         )
                       }
                       onClick={readTargetFull}
-                      aria-label="Speed read"
+                      aria-label="Read all"
                       size="sm"
                       variant="ghost"
                       isDisabled={
@@ -1562,7 +1666,7 @@ export default function History({
                       }
                     />
                     <Text fontSize="xs" opacity={0.6}>
-                      Speed
+                      Read all
                     </Text>
                   </VStack>
                 </HStack>
@@ -1591,37 +1695,203 @@ export default function History({
                   )}
                 </Text>
 
-                {showTranslations && viewLecture.support ? (
-                  <>
-                    <Divider opacity={0.2} />
-                    <Text fontWeight="600" fontSize="sm" opacity={0.9}>
-                      {supportDisplay}
-                    </Text>
-                    <Text
-                      fontSize={{ base: "sm", md: "sm" }}
-                      opacity={0.95}
-                      lineHeight="1.8"
-                    >
-                      {viewLecture.support}
-                    </Text>
-                  </>
+                {/* Review question */}
+                {!draftLecture && !isGenerating ? (
+                  <Box>
+                    <Divider opacity={0.2} mb={3} />
+                    {isGeneratingQuestion ? (
+                      <HStack justify="center" py={4}>
+                        <Spinner size="sm" color="teal.400" />
+                        <Text fontSize="sm" opacity={0.7}>
+                          Generating question...
+                        </Text>
+                      </HStack>
+                    ) : reviewQuestion ? (
+                      <VStack align="stretch" spacing={3}>
+                        <Text fontWeight="600" fontSize="sm">
+                          Review
+                        </Text>
+
+                        {reviewQuestion.type === "fill" ? (
+                          <>
+                            <Text fontSize="sm" lineHeight="1.6">
+                              {reviewQuestion.question}
+                            </Text>
+                            <HStack>
+                              <Input
+                                size="sm"
+                                placeholder="Fill in the blank..."
+                                value={reviewAnswer}
+                                onChange={(e) => setReviewAnswer(e.target.value)}
+                                isDisabled={reviewSubmitted}
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && checkReviewAnswer()
+                                }
+                              />
+                              {!reviewSubmitted && (
+                                <Button
+                                  size="sm"
+                                  colorScheme="teal"
+                                  onClick={checkReviewAnswer}
+                                  isDisabled={!reviewAnswer.trim()}
+                                >
+                                  Check
+                                </Button>
+                              )}
+                            </HStack>
+                          </>
+                        ) : reviewQuestion.type === "mc" ? (
+                          <>
+                            <Text fontSize="sm" lineHeight="1.6">
+                              {reviewQuestion.question}
+                            </Text>
+                            <RadioGroup
+                              value={reviewAnswer}
+                              onChange={(val) => {
+                                if (!reviewSubmitted) setReviewAnswer(val);
+                              }}
+                            >
+                              <VStack align="stretch" spacing={2}>
+                                {reviewQuestion.options.map((opt, i) => (
+                                  <Radio
+                                    key={i}
+                                    value={opt}
+                                    size="sm"
+                                    isDisabled={reviewSubmitted}
+                                  >
+                                    <Text fontSize="sm">{opt}</Text>
+                                  </Radio>
+                                ))}
+                              </VStack>
+                            </RadioGroup>
+                            {!reviewSubmitted && (
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isDisabled={!reviewAnswer}
+                                w="fit-content"
+                              >
+                                Check
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <Text fontSize="sm" lineHeight="1.6">
+                              {reviewQuestion.question}
+                            </Text>
+                            <HStack>
+                              <Input
+                                size="sm"
+                                placeholder="Your answer..."
+                                value={reviewAnswer}
+                                onChange={(e) => setReviewAnswer(e.target.value)}
+                                isDisabled={reviewSubmitted}
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && checkReviewAnswer()
+                                }
+                              />
+                              {!reviewSubmitted && (
+                                <Button
+                                  size="sm"
+                                  colorScheme="teal"
+                                  onClick={checkReviewAnswer}
+                                  isDisabled={!reviewAnswer.trim()}
+                                >
+                                  Check
+                                </Button>
+                              )}
+                            </HStack>
+                          </>
+                        )}
+
+                        {reviewSubmitted && (
+                          <Box
+                            p={3}
+                            borderRadius="md"
+                            bg={
+                              reviewCorrect
+                                ? "rgba(72, 187, 120, 0.12)"
+                                : "rgba(245, 101, 101, 0.12)"
+                            }
+                          >
+                            <Text
+                              fontSize="sm"
+                              fontWeight="600"
+                              color={reviewCorrect ? "green.400" : "red.400"}
+                            >
+                              {reviewCorrect ? "Correct!" : "Not quite."}
+                            </Text>
+                            {!reviewCorrect && (
+                              <Text fontSize="sm" mt={1} opacity={0.9}>
+                                Answer: {reviewQuestion.answer}
+                              </Text>
+                            )}
+                          </Box>
+                        )}
+                      </VStack>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={generateReviewQuestion}
+                      >
+                        Generate review question
+                      </Button>
+                    )}
+                  </Box>
                 ) : null}
 
-                {Array.isArray(viewLecture.takeaways) &&
-                viewLecture.takeaways.length ? (
-                  <>
-                    <Divider opacity={0.2} />
-                    <Text fontWeight="600" fontSize="sm" opacity={0.9}>
-                      {t("reading_takeaways_heading")}
-                    </Text>
-                    <VStack align="stretch" spacing={1.5}>
-                      {viewLecture.takeaways.map((tkw, i) => (
-                        <Text key={i} fontSize="sm">
-                          • {tkw}
+                {/* Translation & takeaways in accordion */}
+                {showTranslations && viewLecture.support ? (
+                  <Accordion allowToggle>
+                    <AccordionItem border="none">
+                      <AccordionButton px={0} py={2}>
+                        <Text
+                          flex="1"
+                          textAlign="left"
+                          fontWeight="600"
+                          fontSize="sm"
+                          opacity={0.9}
+                        >
+                          {supportDisplay}
                         </Text>
-                      ))}
-                    </VStack>
-                  </>
+                        <AccordionIcon />
+                      </AccordionButton>
+                      <AccordionPanel px={0} pb={3}>
+                        <Text
+                          fontSize={{ base: "sm", md: "sm" }}
+                          opacity={0.95}
+                          lineHeight="1.8"
+                        >
+                          {viewLecture.support}
+                        </Text>
+
+                        {Array.isArray(viewLecture.takeaways) &&
+                        viewLecture.takeaways.length ? (
+                          <>
+                            <Divider opacity={0.2} my={3} />
+                            <Text
+                              fontWeight="600"
+                              fontSize="sm"
+                              opacity={0.9}
+                              mb={1.5}
+                            >
+                              {t("reading_takeaways_heading")}
+                            </Text>
+                            <VStack align="stretch" spacing={1.5}>
+                              {viewLecture.takeaways.map((tkw, i) => (
+                                <Text key={i} fontSize="sm">
+                                  • {tkw}
+                                </Text>
+                              ))}
+                            </VStack>
+                          </>
+                        ) : null}
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
                 ) : null}
               </VStack>
             ) : (
