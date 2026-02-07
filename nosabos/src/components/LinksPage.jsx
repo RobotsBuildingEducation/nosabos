@@ -245,7 +245,7 @@ function LinkCard({
       <Stack
         direction="row"
         spacing={{ base: 4, md: 6 }}
-        align="flex-start"
+        align="center"
         textAlign="left"
       >
         <Box
@@ -289,10 +289,10 @@ function LinkCard({
             borderColor="#00ffff"
             color="#00ffff"
             fontFamily="monospace"
-            size="md"
-            px={10}
-            py={7}
-            minH="56px"
+            size="sm"
+            px={6}
+            py={4}
+            minH="44px"
           >
             {launchAppText || "Launch app"}
           </Button>
@@ -516,7 +516,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <RobotBuddyPro state="idle" palette="ocean" maxW={100} />
+          <RobotBuddyPro state="idle" palette="ocean" maxW={110} />
         </Box>
       ),
       launchAppText: translations.launchApp,
@@ -555,7 +555,7 @@ export default function LinksPage() {
           alignItems="center"
           justifyContent="center"
         >
-          <AnimatedLogo showWordmark={false} size={100} />
+          <AnimatedLogo showWordmark={false} size={110} />
         </Box>
       ),
       launchAppText: translations.launchApp,
