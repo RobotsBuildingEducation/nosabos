@@ -69,6 +69,7 @@ export const SKILL_TREE_PRE_A1 = [
             },
           },
           realtime: {
+            topic: "tutorial",
             scenario: "Say hello",
             prompt: "Practice saying hello in a live chat",
             successCriteria: "The learner says hello.",
