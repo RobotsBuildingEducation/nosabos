@@ -863,6 +863,7 @@ export default function History({
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [reviewCorrect, setReviewCorrect] = useState(null);
   const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+  const [isCheckingAnswer, setIsCheckingAnswer] = useState(false);
   const [explanationText, setExplanationText] = useState("");
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
 
@@ -1470,14 +1471,47 @@ export default function History({
     }
   }
 
-  function checkReviewAnswer() {
-    if (!reviewQuestion) return;
-    const userNorm = reviewAnswer.trim().toLowerCase();
-    const correctNorm = reviewQuestion.answer.trim().toLowerCase();
-    const isCorrect = userNorm === correctNorm;
-    setReviewCorrect(isCorrect);
-    setReviewSubmitted(isCorrect); // only lock on correct
-    playSound(isCorrect ? deliciousSound : clickSound);
+  async function checkReviewAnswer() {
+    if (!reviewQuestion || isCheckingAnswer) return;
+
+    // Multiple choice: exact match
+    if (reviewQuestion.type === "mc") {
+      const isCorrect = reviewAnswer === reviewQuestion.answer;
+      setReviewCorrect(isCorrect);
+      setReviewSubmitted(isCorrect);
+      playSound(isCorrect ? deliciousSound : clickSound);
+      return;
+    }
+
+    // Text / fill-in-the-blank: AI evaluation
+    setIsCheckingAnswer(true);
+    try {
+      const prompt = [
+        `A student answered a comprehension question. Decide if their answer is correct or close enough.`,
+        `Question: ${reviewQuestion.question}`,
+        `Expected answer: ${reviewQuestion.answer}`,
+        `Student's answer: ${reviewAnswer}`,
+        "",
+        `Reply with ONLY valid JSON: {"correct":true} or {"correct":false}`,
+        `Be lenient — accept synonyms, minor spelling differences, and answers that convey the same meaning.`,
+      ].join("\n");
+      const raw = await callResponses({ model: MODEL, input: prompt });
+      const parsed = safeParseJSON(raw);
+      const isCorrect = parsed?.correct === true;
+      setReviewCorrect(isCorrect);
+      setReviewSubmitted(isCorrect);
+      playSound(isCorrect ? deliciousSound : clickSound);
+    } catch {
+      // Fallback to exact match on error
+      const isCorrect =
+        reviewAnswer.trim().toLowerCase() ===
+        reviewQuestion.answer.trim().toLowerCase();
+      setReviewCorrect(isCorrect);
+      setReviewSubmitted(isCorrect);
+      playSound(isCorrect ? deliciousSound : clickSound);
+    } finally {
+      setIsCheckingAnswer(false);
+    }
   }
 
   async function explainReviewAnswer() {
@@ -1737,7 +1771,7 @@ export default function History({
                                 setReviewAnswer(e.target.value);
                                 if (reviewCorrect === false) setReviewCorrect(null);
                               }}
-                              isDisabled={reviewSubmitted}
+                              isDisabled={reviewSubmitted || isCheckingAnswer}
                               onKeyDown={(e) =>
                                 e.key === "Enter" && checkReviewAnswer()
                               }
@@ -1747,6 +1781,7 @@ export default function History({
                                 size="sm"
                                 colorScheme="teal"
                                 onClick={checkReviewAnswer}
+                                isLoading={isCheckingAnswer}
                                 isDisabled={!reviewAnswer.trim()}
                               >
                                 Check
@@ -1799,7 +1834,7 @@ export default function History({
                                 setReviewAnswer(e.target.value);
                                 if (reviewCorrect === false) setReviewCorrect(null);
                               }}
-                              isDisabled={reviewSubmitted}
+                              isDisabled={reviewSubmitted || isCheckingAnswer}
                               onKeyDown={(e) =>
                                 e.key === "Enter" && checkReviewAnswer()
                               }
@@ -1809,6 +1844,7 @@ export default function History({
                                 size="sm"
                                 colorScheme="teal"
                                 onClick={checkReviewAnswer}
+                                isLoading={isCheckingAnswer}
                                 isDisabled={!reviewAnswer.trim()}
                               >
                                 Check
