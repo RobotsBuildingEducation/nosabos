@@ -19,8 +19,6 @@ import {
   Center,
   Stack,
   Input,
-  Radio,
-  RadioGroup,
   SlideFade,
 } from "@chakra-ui/react";
 import { PiSpeakerHighDuotone, PiLightningDuotone } from "react-icons/pi";
@@ -46,6 +44,7 @@ import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
+import selectSound from "../assets/select.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -1473,6 +1472,7 @@ export default function History({
 
   async function checkReviewAnswer() {
     if (!reviewQuestion || isCheckingAnswer) return;
+    playSound(submitActionSound);
 
     // Multiple choice: exact match
     if (reviewQuestion.type === "mc") {
@@ -1790,28 +1790,77 @@ export default function History({
                           </HStack>
                         ) : reviewQuestion.type === "mc" ? (
                           <>
-                            <RadioGroup
-                              value={reviewAnswer}
-                              onChange={(val) => {
-                                if (!reviewSubmitted) {
-                                  setReviewAnswer(val);
-                                  if (reviewCorrect === false) setReviewCorrect(null);
-                                }
-                              }}
-                            >
-                              <VStack align="stretch" spacing={2}>
-                                {reviewQuestion.options.map((opt, i) => (
-                                  <Radio
-                                    key={i}
-                                    value={opt}
-                                    size="sm"
-                                    isDisabled={reviewSubmitted}
-                                  >
+                            <VStack align="stretch" spacing={2}>
+                              {reviewQuestion.options.map((opt, i) => (
+                                <Box
+                                  key={i}
+                                  as="button"
+                                  disabled={reviewSubmitted}
+                                  onClick={() => {
+                                    if (reviewSubmitted) return;
+                                    playSound(selectSound);
+                                    setReviewAnswer(opt);
+                                    if (reviewCorrect === false)
+                                      setReviewCorrect(null);
+                                  }}
+                                  p={3}
+                                  borderRadius="lg"
+                                  borderWidth="1px"
+                                  borderColor={
+                                    reviewAnswer === opt
+                                      ? "teal.400"
+                                      : "whiteAlpha.200"
+                                  }
+                                  bg={
+                                    reviewAnswer === opt
+                                      ? "rgba(56, 178, 172, 0.12)"
+                                      : "transparent"
+                                  }
+                                  _hover={
+                                    !reviewSubmitted
+                                      ? { bg: "rgba(255,255,255,0.06)" }
+                                      : {}
+                                  }
+                                  cursor={
+                                    reviewSubmitted
+                                      ? "default"
+                                      : "pointer"
+                                  }
+                                  transition="all 0.15s"
+                                  textAlign="left"
+                                  opacity={reviewSubmitted ? 0.6 : 1}
+                                >
+                                  <HStack spacing={3}>
+                                    <Flex
+                                      w="28px"
+                                      h="28px"
+                                      rounded="full"
+                                      align="center"
+                                      justify="center"
+                                      borderWidth="2px"
+                                      borderColor={
+                                        reviewAnswer === opt
+                                          ? "teal.400"
+                                          : "whiteAlpha.300"
+                                      }
+                                      bg={
+                                        reviewAnswer === opt
+                                          ? "teal.400"
+                                          : "transparent"
+                                      }
+                                      color="white"
+                                      fontSize="xs"
+                                      fontWeight="bold"
+                                      flexShrink={0}
+                                      transition="all 0.15s"
+                                    >
+                                      {String.fromCharCode(65 + i)}
+                                    </Flex>
                                     <Text fontSize="sm">{opt}</Text>
-                                  </Radio>
-                                ))}
-                              </VStack>
-                            </RadioGroup>
+                                  </HStack>
+                                </Box>
+                              ))}
+                            </VStack>
                             {!reviewSubmitted && (
                               <Button
                                 size="sm"
@@ -1994,19 +2043,29 @@ export default function History({
                 {showTranslations && viewLecture.support ? (
                   <Accordion allowToggle>
                     <AccordionItem border="none">
-                      <AccordionButton px={0} py={2}>
-                        <Text
-                          flex="1"
-                          textAlign="left"
-                          fontWeight="600"
-                          fontSize="sm"
-                          opacity={0.9}
+                      <Box display="flex" justifyContent="center">
+                        <AccordionButton
+                          px={4}
+                          py={2}
+                          borderRadius="lg"
+                          borderWidth="1px"
+                          borderColor="whiteAlpha.200"
+                          bg="whiteAlpha.50"
+                          _hover={{ bg: "whiteAlpha.100" }}
+                          w="fit-content"
                         >
-                          {supportDisplay}
-                        </Text>
-                        <AccordionIcon />
-                      </AccordionButton>
-                      <AccordionPanel px={0} pb={3}>
+                          <Text
+                            fontWeight="600"
+                            fontSize="sm"
+                            opacity={0.9}
+                            mr={2}
+                          >
+                            {supportDisplay}
+                          </Text>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </Box>
+                      <AccordionPanel px={0} pb={3} pt={3}>
                         <Text
                           fontSize={{ base: "sm", md: "sm" }}
                           opacity={0.95}
