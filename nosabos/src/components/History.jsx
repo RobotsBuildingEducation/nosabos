@@ -1471,12 +1471,12 @@ export default function History({
   }
 
   function checkReviewAnswer() {
-    if (!reviewQuestion || reviewSubmitted) return;
-    setReviewSubmitted(true);
+    if (!reviewQuestion) return;
     const userNorm = reviewAnswer.trim().toLowerCase();
     const correctNorm = reviewQuestion.answer.trim().toLowerCase();
     const isCorrect = userNorm === correctNorm;
     setReviewCorrect(isCorrect);
+    setReviewSubmitted(isCorrect); // only lock on correct
     playSound(isCorrect ? deliciousSound : clickSound);
   }
 
@@ -1733,7 +1733,10 @@ export default function History({
                               size="sm"
                               placeholder="Fill in the blank..."
                               value={reviewAnswer}
-                              onChange={(e) => setReviewAnswer(e.target.value)}
+                              onChange={(e) => {
+                                setReviewAnswer(e.target.value);
+                                if (reviewCorrect === false) setReviewCorrect(null);
+                              }}
                               isDisabled={reviewSubmitted}
                               onKeyDown={(e) =>
                                 e.key === "Enter" && checkReviewAnswer()
@@ -1755,7 +1758,10 @@ export default function History({
                             <RadioGroup
                               value={reviewAnswer}
                               onChange={(val) => {
-                                if (!reviewSubmitted) setReviewAnswer(val);
+                                if (!reviewSubmitted) {
+                                  setReviewAnswer(val);
+                                  if (reviewCorrect === false) setReviewCorrect(null);
+                                }
                               }}
                             >
                               <VStack align="stretch" spacing={2}>
@@ -1789,7 +1795,10 @@ export default function History({
                               size="sm"
                               placeholder="Your answer..."
                               value={reviewAnswer}
-                              onChange={(e) => setReviewAnswer(e.target.value)}
+                              onChange={(e) => {
+                                setReviewAnswer(e.target.value);
+                                if (reviewCorrect === false) setReviewCorrect(null);
+                              }}
                               isDisabled={reviewSubmitted}
                               onKeyDown={(e) =>
                                 e.key === "Enter" && checkReviewAnswer()
@@ -1808,7 +1817,7 @@ export default function History({
                           </HStack>
                         )}
 
-                        {reviewSubmitted && (
+                        {reviewCorrect !== null && (
                           <SlideFade in={true} offsetY="10px">
                             <VStack spacing={3} align="stretch">
                               <VStack
