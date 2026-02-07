@@ -839,8 +839,12 @@ export default function RealTimeTest({
 
           // 🎯 goal
           const goal = await ensureCurrentGoalSeed(currentNpub, data);
-          setCurrentGoal(goal);
-          goalRef.current = goal;
+          if (goal) {
+            setCurrentGoal(goal);
+            goalRef.current = goal;
+            setGoalCompleted(false);
+            goalXpAwardedRef.current = false;
+          }
           scheduleSessionUpdate();
         }
       } catch (e) {
@@ -1638,13 +1642,10 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
   async function ensureCurrentGoalSeed(npub, userData) {
     if (lessonContent?.topic === "tutorial") {
       const tutorialGoal = buildTutorialGoal();
-      setCurrentGoal(tutorialGoal);
-      goalRef.current = tutorialGoal;
-      setGoalCompleted(false);
-      goalXpAwardedRef.current = false;
-      return;
+      return tutorialGoal;
     }
     generateGoalVariation();
+    return null;
   }
 
   function goalUiLangCode() {
