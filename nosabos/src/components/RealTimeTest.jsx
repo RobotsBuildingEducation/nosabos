@@ -1264,23 +1264,23 @@ export default function RealTimeTest({
      🎯 Goal helpers
   --------------------------- */
   function buildTutorialGoal() {
-    const scenario = lessonContent?.scenario || "Say hello";
-    const scenarioEs =
-      lessonContent?.scenario_es ||
-      (scenario === "Say hello" ? "Di hola" : scenario);
+    const goalLang =
+      supportLangRef.current || supportLang || (uiLang === "es" ? "es" : "en");
+    const scenario =
+      goalLang === "es" ? "Di hola" : "Say hello";
     const successCriteria =
-      lessonContent?.successCriteria || "The learner says hello.";
-    const successCriteriaEs =
-      lessonContent?.successCriteria_es || "El estudiante dice hola.";
+      goalLang === "es"
+        ? "El estudiante dice hola."
+        : "The learner says hello.";
     return {
       id: `goal_tutorial_${Date.now()}`,
-      title_en: scenario,
-      title_es: scenarioEs,
-      rubric_en: successCriteria,
-      rubric_es: successCriteriaEs,
+      title_en: "Say hello",
+      title_es: "Di hola",
+      rubric_en: "The learner says hello.",
+      rubric_es: "El estudiante dice hola.",
       lessonScenario: scenario,
       successCriteria,
-      successCriteria_es: successCriteriaEs,
+      successCriteria_es: "El estudiante dice hola.",
       roleplayPrompt:
         "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
       goalIndex: (currentGoal?.goalIndex || 0) + 1,
