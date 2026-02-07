@@ -1416,22 +1416,23 @@ export default function History({
     if (type === "text") {
       instruction = [
         `Based on this ${LANG_NAME(targetLang)} text, create one short comprehension question in ${LANG_NAME(supportLang)}.`,
+        `The question should be brief (one sentence). Do NOT repeat or quote the passage.`,
         `Return ONLY valid JSON: {"question":"<the question>","answer":"<short correct answer>"}`,
         "",
         text,
       ].join("\n");
     } else if (type === "fill") {
       instruction = [
-        `Based on this ${LANG_NAME(targetLang)} text, create a fill-in-the-blank exercise.`,
-        `Pick one key word from the text. Show the original sentence with that word replaced by "___".`,
-        `Return ONLY valid JSON: {"sentence":"<sentence with ___>","answer":"<the missing word>"}`,
+        `Based on this ${LANG_NAME(targetLang)} text, create a short fill-in-the-blank question in ${LANG_NAME(supportLang)}.`,
+        `Write a brief original question (not a sentence from the passage) with one key word replaced by "___".`,
+        `Return ONLY valid JSON: {"sentence":"<short question with ___>","answer":"<the missing word>"}`,
         "",
         text,
       ].join("\n");
     } else {
       instruction = [
-        `Based on this ${LANG_NAME(targetLang)} text, create one multiple-choice comprehension question in ${LANG_NAME(supportLang)}.`,
-        `Provide 4 options where exactly one is correct.`,
+        `Based on this ${LANG_NAME(targetLang)} text, create one short multiple-choice comprehension question in ${LANG_NAME(supportLang)}.`,
+        `The question should be brief (one sentence). Do NOT repeat or quote the passage. Provide 4 short options where exactly one is correct.`,
         `Return ONLY valid JSON: {"question":"<the question>","options":["A","B","C","D"],"answer":"<the correct option text>"}`,
         "",
         text,
