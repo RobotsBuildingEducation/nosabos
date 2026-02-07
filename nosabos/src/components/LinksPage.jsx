@@ -238,26 +238,27 @@ function LinkCard({
       borderColor="rgba(0, 255, 255, 0.4)"
       bg="rgba(7, 16, 29, 0.65)"
       borderRadius="lg"
-      px={{ base: 5, md: 8 }}
-      py={{ base: 6, md: 8 }}
+      px={{ base: 4, md: 6 }}
+      py={{ base: 4, md: 5 }}
       boxShadow="0 0 20px rgba(0, 255, 255, 0.15)"
     >
       <Stack
-        direction={{ base: "column", md: "row" }}
-        spacing={{ base: 6, md: 10 }}
-        align="center"
-        textAlign={{ base: "center", md: "left" }}
+        direction="row"
+        spacing={{ base: 4, md: 6 }}
+        align="flex-start"
+        textAlign="left"
       >
         <Box
-          w={{ base: "100%", md: "220px" }}
+          w={{ base: "120px", md: "160px" }}
+          minW={{ base: "120px", md: "160px" }}
           display="flex"
-          justifyContent="center"
+          justifyContent="flex-start"
           alignItems="center"
           animation={`${drift} 6s ease-in-out infinite`}
         >
           {visual}
         </Box>
-        <VStack spacing={3} align={{ base: "center", md: "flex-start" }}>
+        <VStack spacing={3} align="flex-start">
           <Heading
             size="md"
             fontFamily="monospace"
@@ -268,8 +269,8 @@ function LinkCard({
           </Heading>
           <Text
             color="gray.400"
-            fontSize="lg"
-            maxW="420px"
+            fontSize={{ base: "sm", md: "md" }}
+            maxW="520px"
             fontFamily="monospace"
           >
             {description}
@@ -507,7 +508,7 @@ export default function LinksPage() {
       description: translations.noSabosDescription,
       href: "https://nosabos.app",
       analyticsName: "nosabos_app",
-      visual: <RobotBuddyPro state="idle" palette="ocean" maxW={280} />,
+      visual: <RobotBuddyPro state="idle" palette="ocean" maxW={150} />,
       launchAppText: translations.launchApp,
     },
     {
@@ -517,7 +518,13 @@ export default function LinksPage() {
       analyticsName: "robots_building_education",
       onLaunch: onRbeOpen,
       visual: (
-        <Box display="flex" justifyContent="center" alignItems="center">
+        <Box
+          display="flex"
+          justifyContent="flex-start"
+          alignItems="center"
+          w={{ base: "120px", md: "160px" }}
+          h={{ base: "120px", md: "160px" }}
+        >
           <CloudCanvas />
         </Box>
       ),
@@ -528,7 +535,7 @@ export default function LinksPage() {
       description: translations.roadmapCashDescription,
       href: "https://roadmap.cash",
       analyticsName: "roadmap_cash",
-      visual: <AnimatedLogo showWordmark={false} size={200} />,
+      visual: <AnimatedLogo showWordmark={false} size={120} />,
       launchAppText: translations.launchApp,
     },
     {
@@ -539,8 +546,8 @@ export default function LinksPage() {
       visual: (
         <RoleCanvas
           role={roleCycle[roleIndex]}
-          width={200}
-          height={200}
+          width={120}
+          height={120}
           transparent={true}
         />
       ),
