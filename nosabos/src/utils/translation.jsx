@@ -237,6 +237,7 @@ export const translations = {
     app_lang_en: "EN",
     app_lang_es: "ES",
     app_install_title: "Install as app",
+    app_install_button: "Install app",
     app_install_step1: "Open the browser menu.",
     app_install_step2: "Choose 'Share' or 'Install'.",
     app_install_step3: "Add to Home Screen.",
@@ -791,6 +792,7 @@ export const translations = {
     app_switch_note:
       "Si la cuenta no existe, la crearemos en tu colección de usuarios.",
     app_install_title: "Instalar App",
+    app_install_button: "Instalar app",
     app_install_step1:
       "1. Abre esta página en tu navegador con el botón de Más Opciones",
     app_install_step2: "2. Presiona el botón de Compartir",
