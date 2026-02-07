@@ -64,7 +64,7 @@ function useT(uiLang = "en") {
     const raw = (dict[key] ?? enDict[key] ?? key) + "";
     if (!params) return raw;
     return raw.replace(/{(\w+)}/g, (_, k) =>
-      k in params ? String(params[k]) : `{${k}}`
+      k in params ? String(params[k]) : `{${k}}`,
     );
   };
 }
@@ -98,7 +98,7 @@ async function callResponses({ model, input }) {
       (Array.isArray(payload?.output) &&
         payload.output
           .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
+            (it?.content || []).map((seg) => seg?.text || "").join(""),
           )
           .join(" ")
           .trim()) ||
@@ -145,7 +145,7 @@ async function normalizeLectureTexts({
   if (shouldTranslateSupport) {
     const prompt = [
       `Translate the following text from ${LANG_NAME(
-        targetLang
+        targetLang,
       )} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
       "Return only the translation in that language without labels, speaker names, or commentary.",
       "",
@@ -188,7 +188,7 @@ const LANG_NAME = (code) =>
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
-  }[code] || code);
+  })[code] || code;
 
 const LANGUAGE_LABELS = {
   en: ["English", "Inglés"],
@@ -278,7 +278,7 @@ function stripLineLabel(text, langCode) {
       `^(?:${tokens
         .map((token) => escapeRegExp(token))
         .join("|")})\\s*[:\\-–—]\\s*`,
-      "i"
+      "i",
     );
     output = output.replace(pattern, "").trim();
   }
@@ -628,7 +628,7 @@ async function computeAdaptiveXp({
   const looksRepeated = previousTitles?.some((t) =>
     String(t || "")
       .toLowerCase()
-      .includes(String(title || "").toLowerCase())
+      .includes(String(title || "").toLowerCase()),
   );
   score += looksRepeated ? -1 : 1;
   // Streak bonus
@@ -637,8 +637,8 @@ async function computeAdaptiveXp({
   score += ["C1", "C2"].includes(cefrLevel)
     ? 1
     : ["B1", "B2"].includes(cefrLevel)
-    ? 0.5
-    : 0;
+      ? 0.5
+      : 0;
 
   const xp = Math.max(MIN, Math.min(MAX, score));
   return { xp, reason: "Heuristic fallback scoring." };
@@ -799,7 +799,7 @@ export default function History({
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
     () => JSON.stringify(lessonContent || null),
-    [lessonContent]
+    [lessonContent],
   );
   const lastLessonContentKeyRef = useRef(null);
 
@@ -830,7 +830,7 @@ export default function History({
       pl: t("language_pl"),
       ga: t("language_ga"),
       yua: t("language_yua"),
-    }[code] || code);
+    })[code] || code;
 
   const targetDisplay = localizedLangName(targetLang);
   const supportDisplay = localizedLangName(supportLang);
@@ -899,7 +899,7 @@ export default function History({
 
   const activeLecture = useMemo(
     () => lectures.find((l) => l.id === activeId) || null,
-    [lectures, activeId]
+    [lectures, activeId],
   );
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
@@ -1192,11 +1192,11 @@ export default function History({
       // Build final lecture strings
       const draftTarget = sanitizeLectureBlock(
         targetParts.join(" "),
-        targetLang
+        targetLang,
       );
       const draftSupport = sanitizeLectureBlock(
         supportParts.join(" "),
-        supportLang
+        supportLang,
       );
       const finalTakeaways = takeaways.slice(0, 3);
 
@@ -1417,7 +1417,8 @@ export default function History({
     setReviewCorrect(null);
 
     const questionTypes = ["text", "fill", "mc"];
-    const type = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+    const type =
+      questionTypes[Math.floor(Math.random() * questionTypes.length)];
 
     let instruction = "";
     if (type === "text") {
@@ -1451,9 +1452,17 @@ export default function History({
       const parsed = safeParseJSON(raw);
       if (parsed) {
         if (type === "text") {
-          setReviewQuestion({ type, question: parsed.question, answer: parsed.answer });
+          setReviewQuestion({
+            type,
+            question: parsed.question,
+            answer: parsed.answer,
+          });
         } else if (type === "fill") {
-          setReviewQuestion({ type, question: parsed.sentence, answer: parsed.answer });
+          setReviewQuestion({
+            type,
+            question: parsed.sentence,
+            answer: parsed.answer,
+          });
         } else {
           setReviewQuestion({
             type,
@@ -1548,7 +1557,13 @@ export default function History({
 
   // Auto-generate review question when a lecture is ready
   useEffect(() => {
-    if (activeLecture?.target && !draftLecture && !isGenerating && !reviewQuestion && !isGeneratingQuestion) {
+    if (
+      activeLecture?.target &&
+      !draftLecture &&
+      !isGenerating &&
+      !reviewQuestion &&
+      !isGeneratingQuestion
+    ) {
       generateReviewQuestion();
     }
   }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
@@ -1571,8 +1586,8 @@ export default function History({
         }
         setLectures((prev) =>
           prev.map((lec) =>
-            lec.id === activeLecture.id ? { ...lec, awarded: true } : lec
-          )
+            lec.id === activeLecture.id ? { ...lec, awarded: true } : lec,
+          ),
         );
       }
       // Move to the next module
@@ -1731,12 +1746,17 @@ export default function History({
                         px={activeSentenceIndex === i ? "2px" : 0}
                         transition="background 0.2s"
                         cursor="pointer"
-                        _hover={{ bg: activeSentenceIndex === i ? "rgba(56, 178, 172, 0.2)" : "rgba(128, 128, 128, 0.1)" }}
+                        _hover={{
+                          bg:
+                            activeSentenceIndex === i
+                              ? "rgba(56, 178, 172, 0.2)"
+                              : "rgba(128, 128, 128, 0.1)",
+                        }}
                         onClick={() => readSingleSentence(sentence)}
                       >
                         {sentence}{" "}
                       </Text>
-                    )
+                    ),
                   )}
                 </Text>
 
@@ -1769,7 +1789,8 @@ export default function History({
                               value={reviewAnswer}
                               onChange={(e) => {
                                 setReviewAnswer(e.target.value);
-                                if (reviewCorrect === false) setReviewCorrect(null);
+                                if (reviewCorrect === false)
+                                  setReviewCorrect(null);
                               }}
                               isDisabled={reviewSubmitted || isCheckingAnswer}
                               onKeyDown={(e) =>
@@ -1822,9 +1843,7 @@ export default function History({
                                       : {}
                                   }
                                   cursor={
-                                    reviewSubmitted
-                                      ? "default"
-                                      : "pointer"
+                                    reviewSubmitted ? "default" : "pointer"
                                   }
                                   transition="all 0.15s"
                                   textAlign="left"
@@ -1881,7 +1900,8 @@ export default function History({
                               value={reviewAnswer}
                               onChange={(e) => {
                                 setReviewAnswer(e.target.value);
-                                if (reviewCorrect === false) setReviewCorrect(null);
+                                if (reviewCorrect === false)
+                                  setReviewCorrect(null);
                               }}
                               isDisabled={reviewSubmitted || isCheckingAnswer}
                               onKeyDown={(e) =>
@@ -1928,9 +1948,7 @@ export default function History({
                                     rounded="full"
                                     align="center"
                                     justify="center"
-                                    bg={
-                                      reviewCorrect ? "green.500" : "red.500"
-                                    }
+                                    bg={reviewCorrect ? "green.500" : "red.500"}
                                     color="white"
                                     fontWeight="bold"
                                     fontSize="lg"
@@ -1945,10 +1963,7 @@ export default function History({
                                         ? "Correct!"
                                         : "Not quite."}
                                     </Text>
-                                    <Text
-                                      fontSize="sm"
-                                      color="whiteAlpha.800"
-                                    >
+                                    <Text fontSize="sm" color="whiteAlpha.800">
                                       {reviewCorrect
                                         ? "Great work! Keep going."
                                         : `Answer: ${reviewQuestion.answer}`}
@@ -2010,7 +2025,10 @@ export default function History({
                                 >
                                   <HStack spacing={2} mb={2}>
                                     <FiHelpCircle color="var(--chakra-colors-pink-400)" />
-                                    <Text fontWeight="semibold" color="pink.300">
+                                    <Text
+                                      fontWeight="semibold"
+                                      color="pink.300"
+                                    >
                                       Explanation
                                     </Text>
                                   </HStack>
@@ -2081,12 +2099,7 @@ export default function History({
                 {Array.isArray(viewLecture.takeaways) &&
                 viewLecture.takeaways.length ? (
                   <>
-                    <Text
-                      fontWeight="600"
-                      fontSize="sm"
-                      opacity={0.9}
-                      mb={1.5}
-                    >
+                    <Text fontWeight="600" fontSize="sm" opacity={0.9} mb={1.5}>
                       {t("reading_takeaways_heading")}
                     </Text>
                     <VStack align="stretch" spacing={1.5}>
