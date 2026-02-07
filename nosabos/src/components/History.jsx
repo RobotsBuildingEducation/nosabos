@@ -419,7 +419,7 @@ TUTORIAL MODE - ABSOLUTE BEGINNER CONTENT:
 - Focus ONLY on the greeting "hello" and its equivalents
 - Use extremely simple vocabulary (hello, hi, good morning, goodbye)
 - Keep sentences very short (3-5 words maximum)
-- Length should be only 50-80 words total
+- Length should be only 20-40 words total
 - Make it feel welcoming and encouraging`
     : "";
 
@@ -441,11 +441,11 @@ CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
 
 Content requirements:
-- Length: ≈180–260 words
-- Make it relevant and practical for language learners
-- Include cultural context and common vocabulary related to ${topicText}
-- Use examples and situations that learners might encounter
-- Keep it engaging, clear, and accessible
+${isTutorial ? "- Length: 20–40 words total" : "- Length: ≈180–260 words"}
+${isTutorial ? "- 2–4 very short sentences (3–5 words each)" : "- Make it relevant and practical for language learners"}
+${isTutorial ? "- Use ONLY greetings; no other topics" : "- Include cultural context and common vocabulary related to " + topicText}
+${isTutorial ? "- Keep it welcoming and ultra-simple" : "- Use examples and situations that learners might encounter"}
+${isTutorial ? "" : "- Keep it engaging, clear, and accessible"}
 
 Include:
 - A concise title (<= 60 chars) in ${TARGET}
@@ -495,7 +495,7 @@ TUTORIAL MODE - ABSOLUTE BEGINNER CONTENT:
 - Focus ONLY on the greeting "hello" and its equivalents
 - Use extremely simple vocabulary (hello, hi, good morning, goodbye)
 - Keep sentences very short (3-5 words maximum)
-- Length should be only 50-80 words total`
+- Length should be only 20-40 words total`
     : "";
 
   return `
@@ -518,10 +518,10 @@ CRITICAL LANGUAGE REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
 IMPORTANT: Ignore any language references in the topic description. Your output language is determined ONLY by the target language (${TARGET}) and support language (${SUPPORT}) specified above.
 
 Content requirements:
-- Length: ≈180–260 words, suitable for a ${cefrLevel} learner
-- Difficulty: ${diff}
-- Include cultural context and practical vocabulary for language learners
-- Use examples and situations that learners might encounter
+${isTutorial ? "- Length: 20–40 words total" : "- Length: ≈180–260 words, suitable for a " + cefrLevel + " learner"}
+${isTutorial ? "- 2–4 very short sentences (3–5 words each)" : "- Difficulty: " + diff}
+${isTutorial ? "- Use ONLY greetings; no other topics" : "- Include cultural context and practical vocabulary for language learners"}
+${isTutorial ? "- Keep it ultra-simple and welcoming" : "- Use examples and situations that learners might encounter"}
 
 Include:
 - A concise title (<= 60 chars) related to ${topicText} in ${TARGET}

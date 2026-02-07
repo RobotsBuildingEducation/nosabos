@@ -35,7 +35,7 @@ export const SKILL_TREE_A1 = [
         content: {
           vocabulary: {
             topic: "tutorial",
-            focusPoints: ["hello", "greetings"],
+            focusPoints: ["hello", "hi", "good morning", "greetings"],
             tutorialDescription: {
               en: "Learn new words through interactive questions. Practice saying 'hello'.",
               es: "Aprende nuevas palabras mediante preguntas interactivas. Practica decir 'hola'.",
@@ -43,50 +43,50 @@ export const SKILL_TREE_A1 = [
           },
           grammar: {
             topic: "tutorial",
-            focusPoints: ["hello patterns"],
+            focusPoints: ["hello patterns", "simple greetings"],
             tutorialDescription: {
               en: "Master grammar rules through exercises. Practice greeting patterns.",
               es: "Domina las reglas gramaticales mediante ejercicios. Practica patrones de saludo.",
             },
           },
-        },
-        reading: {
-          topic: "tutorial",
-          prompt: "Read a simple greeting",
-          tutorialDescription: {
-            en: "Improve your reading skills by following along with passages. Read a simple hello.",
-            es: "Mejora tus habilidades de lectura siguiendo los textos. Lee un saludo simple.",
+          reading: {
+            topic: "tutorial",
+            prompt: "Read a simple hello greeting",
+            tutorialDescription: {
+              en: "Improve your reading skills with a simple hello passage.",
+              es: "Mejora tus habilidades de lectura con un texto simple de saludo.",
+            },
           },
-        },
-        stories: {
-          topic: "tutorial",
-          prompt: "Practice saying hello in a story",
-          tutorialDescription: {
-            en: "Practice with interactive stories by reading and speaking sentence by sentence. Say hello.",
-            es: "Practica con historias interactivas leyendo y hablando oración por oración. Di hola.",
+          stories: {
+            topic: "tutorial",
+            prompt: "Practice saying hello in a story",
+            tutorialDescription: {
+              en: "Practice with interactive stories that say hello.",
+              es: "Practica con historias interactivas que dicen hola.",
+            },
           },
-        },
-        realtime: {
-          scenario: "Say hello",
-          prompt: "Practice saying hello in a live chat",
-          successCriteria: "The learner says hello to you.",
-          successCriteria_es: 'El estudiante te dice "hola".',
-          successCriteria_pt: 'O aluno diz "olá" para você.',
-          successCriteria_fr: 'L\'apprenant te dit "bonjour".',
-          successCriteria_it: 'L\'apprendente ti dice "ciao".',
-          successCriteria_nl: 'De leerling zegt "hallo" tegen je.',
-          successCriteria_nah: 'The learner says "niltze" to you.',
-          successCriteria_ja:
-            'The learner says "こんにちは" (konnichiwa) to you.',
-          successCriteria_ru: 'The learner says "привет" (privet) to you.',
-          successCriteria_de: 'The learner says "hallo" to you.',
-          successCriteria_el: 'The learner says "γεια σου" to you.',
-          successCriteria_pl: 'The learner says "cześć" to you.',
-          successCriteria_ga: 'The learner says "Dia duit" to you.',
-          successCriteria_yua: 'The learner says "ma\'alob k\'iin" to you.',
-          tutorialDescription: {
-            en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
-            es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
+          realtime: {
+            scenario: "Say hello",
+            prompt: "Practice saying hello in a live chat",
+            successCriteria: "The learner says hello to you.",
+            successCriteria_es: 'El estudiante te dice "hola".',
+            successCriteria_pt: 'O aluno diz "olá" para você.',
+            successCriteria_fr: 'L\'apprenant te dit "bonjour".',
+            successCriteria_it: 'L\'apprendente ti dice "ciao".',
+            successCriteria_nl: 'De leerling zegt "hallo" tegen je.',
+            successCriteria_nah: 'The learner says "niltze" to you.',
+            successCriteria_ja:
+              'The learner says "こんにちは" (konnichiwa) to you.',
+            successCriteria_ru: 'The learner says "привет" (privet) to you.',
+            successCriteria_de: 'The learner says "hallo" to you.',
+            successCriteria_el: 'The learner says "γεια σου" to you.',
+            successCriteria_pl: 'The learner says "cześć" to you.',
+            successCriteria_ga: 'The learner says "Dia duit" to you.',
+            successCriteria_yua: 'The learner says "ma\'alob k\'iin" to you.',
+            tutorialDescription: {
+              en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
+              es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
+            },
           },
         },
       },

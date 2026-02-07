@@ -298,7 +298,7 @@ function buildFillVocabStreamPrompt({
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The word being tested MUST be "hello" or "hola" (greeting words). Use extremely simple vocabulary like: hello, hi, good morning, good afternoon, goodbye. Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Use ONLY greetings. The word being tested MUST be a greeting like "hello", "hola", "hi", "good morning", "good afternoon", or "goodbye". The full sentence MUST be a greeting-only line (no colors, animals, objects, or extra topics). Keep everything at absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
       ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
@@ -356,7 +356,7 @@ function buildMCVocabStreamPrompt({
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting word like "hello", "hola", "hi", "buenos días", etc. Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting like "hello", "hola", "hi", "buenos días", "good morning", or "goodbye". Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
       ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
@@ -414,7 +414,7 @@ function buildMAVocabStreamPrompt({
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answers MUST be greeting words like "hello", "hola", "hi", "buenos días", "good morning", etc. Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. All correct answers MUST be greeting words like "hello", "hola", "hi", "buenos días", "good morning", "goodbye". Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
       ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
@@ -479,7 +479,7 @@ function buildSpeakVocabStreamPrompt({
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking practice about basic greetings only. The word/phrase MUST be "hello", "hola", "hi", or a simple greeting. Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking practice about basic greetings only. The word/phrase MUST be a greeting like "hello", "hola", "hi", "good morning", or "goodbye". Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
     ? lessonContent.words
       ? `- STRICT REQUIREMENT: The word/phrase being practiced MUST be from this exact list: ${JSON.stringify(
@@ -745,7 +745,7 @@ function buildVocabTranslateStreamPrompt({
     ? `Example: "El gato es negro" -> "The cat is black"`
     : `Example: "The cat is black" -> "El gato es negro"`;
   const topicDirective = isTutorial
-    ? `- TUTORIAL MODE: Create a VERY SIMPLE sentence using basic vocabulary only. ${exampleSentence}. Use only common words. Keep everything at absolute beginner level.`
+    ? `- TUTORIAL MODE: Create a VERY SIMPLE greeting-only sentence. It MUST include a basic greeting like "hello", "hi", "good morning", "good afternoon", "good evening", "goodbye", or "bye". Use ONLY greetings (no colors, animals, objects, or unrelated nouns). Keep it 2–4 words and absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
     ? [
         lessonContent.words

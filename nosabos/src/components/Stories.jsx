@@ -675,7 +675,7 @@ export default function StoryMode({
       // Special handling for tutorial mode - use very simple "hello" content only
       const isTutorial = lessonContent?.topic === "tutorial";
       const lessonTopic = isTutorial
-        ? "TUTORIAL: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning'. The story should have only 2-3 very short sentences (3-5 words each). This is for absolute beginners learning to say hello."
+        ? "TUTORIAL: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. The story must be 2-3 very short sentences (2-5 words each) with NO extra topics."
         : lessonContent?.topic ||
           lessonContent?.scenario ||
           "general conversation";
@@ -721,81 +721,110 @@ export default function StoryMode({
     } catch (error) {
       // Bilingual fallback (ES/EN) that respects target/support languages
       setStoryType("paragraph"); // Fallback is always a paragraph story
-      const fallback = {
-        storyType: "paragraph",
-        fullStory: {
-          tgt:
-            targetLang === "en"
-              ? "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
-              : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-          sup:
-            supportLang === "es"
-              ? "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-              : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
-        },
-        sentences:
-          targetLang === "en"
-            ? [
-                {
-                  tgt: "Once upon a time, there was a small town called San Miguel.",
-                  sup:
-                    supportLang === "es"
-                      ? "Había una vez un pequeño pueblo llamado San Miguel."
-                      : "Once upon a time, there was a small town called San Miguel.",
-                },
-                {
-                  tgt: "The town had a lovely square where kids played every day.",
-                  sup:
-                    supportLang === "es"
-                      ? "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
-                      : "The town had a lovely square where kids played every day.",
-                },
-                {
-                  tgt: "In the square, an old fountain always had fresh water.",
-                  sup:
-                    supportLang === "es"
-                      ? "En la plaza, una fuente antigua siempre tenía agua fresca."
-                      : "In the square, an old fountain always had fresh water.",
-                },
-                {
-                  tgt: "Adults sat around it to talk and rest after work.",
-                  sup:
-                    supportLang === "es"
-                      ? "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
-                      : "Adults sat around it to talk and rest after work.",
-                },
-              ]
-            : [
-                {
-                  tgt: "Había una vez un pequeño pueblo en México llamado San Miguel.",
-                  sup:
-                    supportLang === "es"
-                      ? "Había una vez un pequeño pueblo en México llamado San Miguel."
-                      : "Once upon a time, there was a small town in Mexico called San Miguel.",
-                },
-                {
-                  tgt: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
-                  sup:
-                    supportLang === "es"
-                      ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
-                      : "The town had a very beautiful square where the children played every day.",
-                },
-                {
-                  tgt: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
-                  sup:
-                    supportLang === "es"
-                      ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
-                      : "In the square, there was an old fountain that always had fresh water.",
-                },
-                {
-                  tgt: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
-                  sup:
-                    supportLang === "es"
-                      ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
-                      : "The adults sat around the fountain to talk and rest after work.",
-                },
-              ],
-      };
+      const fallback = isTutorial
+        ? {
+            storyType: "paragraph",
+            fullStory: {
+              tgt: targetLang === "en" ? "Hello. Hi. Goodbye." : "Hola. Hola. Adiós.",
+              sup:
+                supportLang === "es"
+                  ? "Hola. Hola. Adiós."
+                  : "Hello. Hi. Goodbye.",
+            },
+            sentences:
+              targetLang === "en"
+                ? [
+                    { tgt: "Hello.", sup: supportLang === "es" ? "Hola." : "Hello." },
+                    { tgt: "Hi.", sup: supportLang === "es" ? "Hola." : "Hi." },
+                    {
+                      tgt: "Goodbye.",
+                      sup: supportLang === "es" ? "Adiós." : "Goodbye.",
+                    },
+                  ]
+                : [
+                    { tgt: "Hola.", sup: supportLang === "es" ? "Hola." : "Hello." },
+                    { tgt: "Hola.", sup: supportLang === "es" ? "Hola." : "Hi." },
+                    {
+                      tgt: "Adiós.",
+                      sup: supportLang === "es" ? "Adiós." : "Goodbye.",
+                    },
+                  ],
+          }
+        : {
+            storyType: "paragraph",
+            fullStory: {
+              tgt:
+                targetLang === "en"
+                  ? "Once upon a time, there was a small town called San Miguel. The town had a lovely square where kids played every day. In the square, an old fountain always had fresh water. Adults sat around it to talk and rest after work."
+                  : "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+              sup:
+                supportLang === "es"
+                  ? "Había una vez un pequeño pueblo en México llamado San Miguel. El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días. En la plaza, había una fuente antigua que siempre tenía agua fresca. Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
+                  : "Once upon a time, there was a small town in Mexico called San Miguel. The town had a very beautiful square where the children played every day. In the square, there was an old fountain that always had fresh water. The adults sat around the fountain to talk and rest after work.",
+            },
+            sentences:
+              targetLang === "en"
+                ? [
+                    {
+                      tgt: "Once upon a time, there was a small town called San Miguel.",
+                      sup:
+                        supportLang === "es"
+                          ? "Había una vez un pequeño pueblo llamado San Miguel."
+                          : "Once upon a time, there was a small town called San Miguel.",
+                    },
+                    {
+                      tgt: "The town had a lovely square where kids played every day.",
+                      sup:
+                        supportLang === "es"
+                          ? "El pueblo tenía una plaza bonita donde los niños jugaban a diario."
+                          : "The town had a lovely square where kids played every day.",
+                    },
+                    {
+                      tgt: "In the square, an old fountain always had fresh water.",
+                      sup:
+                        supportLang === "es"
+                          ? "En la plaza, una fuente antigua siempre tenía agua fresca."
+                          : "In the square, an old fountain always had fresh water.",
+                    },
+                    {
+                      tgt: "Adults sat around it to talk and rest after work.",
+                      sup:
+                        supportLang === "es"
+                          ? "Los adultos se sentaban alrededor para hablar y descansar después del trabajo."
+                          : "Adults sat around it to talk and rest after work.",
+                    },
+                  ]
+                : [
+                    {
+                      tgt: "Había una vez un pequeño pueblo en México llamado San Miguel.",
+                      sup:
+                        supportLang === "es"
+                          ? "Había una vez un pequeño pueblo en México llamado San Miguel."
+                          : "Once upon a time, there was a small town in Mexico called San Miguel.",
+                    },
+                    {
+                      tgt: "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días.",
+                      sup:
+                        supportLang === "es"
+                          ? "El pueblo tenía una plaza muy bonita donde los niños jugaban todos los días."
+                          : "The town had a very beautiful square where the children played every day.",
+                    },
+                    {
+                      tgt: "En la plaza, había una fuente antigua que siempre tenía agua fresca.",
+                      sup:
+                        supportLang === "es"
+                          ? "En la plaza, había una fuente antigua que siempre tenía agua fresca."
+                          : "In the square, there was an old fountain that always had fresh water.",
+                    },
+                    {
+                      tgt: "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo.",
+                      sup:
+                        supportLang === "es"
+                          ? "Los adultos se sentaban alrededor de la fuente para hablar y descansar después del trabajo."
+                          : "The adults sat around the fountain to talk and rest after work.",
+                    },
+                  ],
+          };
       setStoryData(fallback);
       storyCacheRef.current = fallback;
       toast({
@@ -857,7 +886,7 @@ export default function StoryMode({
       // NDJSON protocol. We instruct the model to strictly emit one compact JSON object per line.
       // Special handling for tutorial mode - use very simple "hello" content only
       const scenarioDirective = isTutorial
-        ? `TUTORIAL MODE - ABSOLUTE BEGINNER: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. Each sentence should be 3-5 words maximum. This is for absolute beginners learning their first greeting.`
+        ? `TUTORIAL MODE - ABSOLUTE BEGINNER: Create an extremely simple story about saying hello. Use ONLY basic greetings like 'hello', 'hi', 'good morning', 'goodbye'. Each sentence should be 2-5 words maximum. The story MUST be only 2-3 lines/sentences.`
         : lessonContent?.scenario || lessonContent?.topic
         ? lessonContent.scenario
           ? `STRICT REQUIREMENT: The scenario MUST be about: ${lessonContent.scenario}. Do NOT create stories about other topics. This is lesson-specific content and you MUST NOT diverge.`
@@ -877,8 +906,12 @@ export default function StoryMode({
           "",
           "Constraints:",
           "- Create a dialogue between 2-3 characters with distinct names.",
-          "- 8 to 10 lines of dialogue total.",
-          "- Each line should be 8–15 words, natural conversational speech.",
+          isTutorial
+            ? "- 2 to 3 lines of dialogue total."
+            : "- 8 to 10 lines of dialogue total.",
+          isTutorial
+            ? "- Each line should be 2–5 words, greetings only."
+            : "- Each line should be 8–15 words, natural conversational speech.",
           "- Use simple, culturally-relevant names for the characters.",
           "- The dialogue should be engaging and natural, like a real conversation.",
           "- NO headings, NO commentary, NO code fences.",
@@ -901,8 +934,10 @@ export default function StoryMode({
           scenarioDirective,
           "",
           "Constraints:",
-          "- 8 to 10 sentences total.",
-          "- Simple, culturally-relevant, 8–15 words per sentence.",
+          isTutorial ? "- 2 to 3 sentences total." : "- 8 to 10 sentences total.",
+          isTutorial
+            ? "- Simple greetings only, 2–5 words per sentence."
+            : "- Simple, culturally-relevant, 8–15 words per sentence.",
           "- Create an engaging narrative that helps the learner practice the language.",
           "- NO headings, NO commentary, NO code fences.",
           "",

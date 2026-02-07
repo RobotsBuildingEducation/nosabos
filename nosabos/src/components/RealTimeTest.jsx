@@ -839,8 +839,12 @@ export default function RealTimeTest({
 
           // 🎯 goal
           const goal = await ensureCurrentGoalSeed(currentNpub, data);
-          setCurrentGoal(goal);
-          goalRef.current = goal;
+          if (goal) {
+            setCurrentGoal(goal);
+            goalRef.current = goal;
+            setGoalCompleted(false);
+            goalXpAwardedRef.current = false;
+          }
           scheduleSessionUpdate();
         }
       } catch (e) {
@@ -1263,6 +1267,33 @@ export default function RealTimeTest({
   /* ---------------------------
      🎯 Goal helpers
   --------------------------- */
+  function buildTutorialGoal() {
+    const goalLang =
+      supportLangRef.current || supportLang || (uiLang === "es" ? "es" : "en");
+    const scenario =
+      goalLang === "es" ? "Di hola" : "Say hello";
+    const successCriteria =
+      goalLang === "es"
+        ? "El estudiante dice hola."
+        : "The learner says hello.";
+    return {
+      id: `goal_tutorial_${Date.now()}`,
+      title_en: "Say hello",
+      title_es: "Di hola",
+      rubric_en: "The learner says hello.",
+      rubric_es: "El estudiante dice hola.",
+      lessonScenario: scenario,
+      successCriteria,
+      successCriteria_es: "El estudiante dice hola.",
+      roleplayPrompt:
+        "Keep the conversation to simple greetings only (hello/hi/good morning/goodbye). Respond with 1-4 words.",
+      goalIndex: (currentGoal?.goalIndex || 0) + 1,
+      attempts: 0,
+      status: "active",
+      createdAt: isoNow(),
+      updatedAt: isoNow(),
+    };
+  }
 
   /**
    * Auto-generate a contextual prompt using AI based on lesson context
@@ -1476,6 +1507,14 @@ Return ONLY valid JSON in this exact format (no markdown, no explanation):
   async function generateGoalVariation() {
     // Prevent multiple simultaneous calls
     if (goalStreamingRef.current || isGeneratingGoal) return;
+    if (lessonContent?.topic === "tutorial") {
+      const tutorialGoal = buildTutorialGoal();
+      setCurrentGoal(tutorialGoal);
+      goalRef.current = tutorialGoal;
+      setGoalCompleted(false);
+      goalXpAwardedRef.current = false;
+      return;
+    }
 
     setIsGeneratingGoal(true);
     setStreamingGoalText("");
@@ -1601,7 +1640,12 @@ Respond with ONLY the goal text in ${goalLangName}. No quotes, no JSON, no expla
     };
   }
   async function ensureCurrentGoalSeed(npub, userData) {
+    if (lessonContent?.topic === "tutorial") {
+      const tutorialGoal = buildTutorialGoal();
+      return tutorialGoal;
+    }
     generateGoalVariation();
+    return null;
   }
 
   function goalUiLangCode() {
@@ -1955,6 +1999,7 @@ Return ONLY JSON:
     const activeGoal = goalTitleForTarget(goal);
     const roleplayPrompt = goal?.roleplayPrompt || "";
     const successCriteria = goal?.successCriteria || "";
+    const isTutorial = lessonContent?.topic === "tutorial";
 
     let strict;
     if (tLang === "nah") {
@@ -2005,6 +2050,9 @@ Return ONLY JSON:
     const pronLine = pronOn
       ? "Pronunciation mode: after answering, give a micro pronunciation cue (≤6 words), then repeat the corrected sentence once, slowly, and invite the user to repeat."
       : "";
+    const tutorialLine = isTutorial
+      ? "Tutorial mode: ONLY use simple greetings (hello/hi/good morning/goodbye). Keep replies 1–4 words. Do not introduce other topics."
+      : "";
 
     // Build comprehensive goal guidance for the AI tutor
     let goalGuidance = "";
@@ -2029,6 +2077,7 @@ Return ONLY JSON:
       levelHint,
       focusLine,
       pronLine,
+      tutorialLine,
       goalGuidance,
     ]
       .filter(Boolean)

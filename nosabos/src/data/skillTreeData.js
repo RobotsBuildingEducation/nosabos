@@ -62,34 +62,34 @@ const baseLearningPath = {
           content: {
             vocabulary: {
               topic: "tutorial",
-              focusPoints: ["basic words", "greetings"],
+              focusPoints: ["hello", "hi", "good morning", "greetings"],
               tutorialDescription: {
-                en: "Learn new words with interactive questions.",
-                es: "Aprende nuevas palabras mediante preguntas interactivas.",
+                en: "Learn new words with interactive questions. Practice saying hello.",
+                es: "Aprende nuevas palabras mediante preguntas interactivas. Practica decir hola.",
               },
             },
             grammar: {
               topic: "tutorial",
-              focusPoints: ["basic patterns"],
+              focusPoints: ["hello patterns", "simple greetings"],
               tutorialDescription: {
-                en: "Master grammar rules through exercises.",
-                es: "Domina las reglas gramaticales mediante ejercicios.",
+                en: "Master grammar rules through exercises. Practice greeting patterns.",
+                es: "Domina las reglas gramaticales mediante ejercicios. Practica patrones de saludo.",
               },
             },
             reading: {
               topic: "tutorial",
-              prompt: "Introduction to reading comprehension",
+              prompt: "Read a simple hello greeting",
               tutorialDescription: {
-                en: "Improve your reading skills by following along with passages.",
-                es: "Mejora tus habilidades de lectura siguiendo los textos.",
+                en: "Improve your reading skills with a simple hello passage.",
+                es: "Mejora tus habilidades de lectura con un texto simple de saludo.",
               },
             },
             stories: {
               topic: "tutorial",
-              prompt: "Introduction to interactive stories",
+              prompt: "Practice saying hello in a story",
               tutorialDescription: {
-                en: "Practice with interactive stories and roleplay by reading and speaking sentence by sentence.",
-                es: "Practica con historias interactivas y juegos de rol leyendo y hablando oración por oración.",
+                en: "Practice with interactive stories that say hello.",
+                es: "Practica con historias interactivas que dicen hola.",
               },
             },
             realtime: {
@@ -104,8 +104,8 @@ const baseLearningPath = {
               successCriteria_nah: 'The learner says "niltze" to you.',
               successCriteria_ja: 'The learner says "こんにちは" (konnichiwa) to you.',
               tutorialDescription: {
-                en: "Practice speaking with realtime conversations and goal oriented chats.",
-                es: "Practica la expresión oral con conversaciones en tiempo real y chats orientados a objetivos.",
+                en: "Practice speaking with realtime conversations. Say hello to complete this activity.",
+                es: "Practica la expresión oral con conversaciones en tiempo real. Di hola para completar esta actividad.",
               },
             },
           },
