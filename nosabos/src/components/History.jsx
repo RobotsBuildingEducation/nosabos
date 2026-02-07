@@ -1,5 +1,11 @@
 // components/History.jsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Accordion,
   AccordionButton,
@@ -1839,7 +1845,7 @@ export default function History({
                               <Stack
                                 direction="row"
                                 spacing={2}
-                                justify="flex-end"
+                                justify="flex-start"
                               >
                                 <Button
                                   size="sm"
@@ -1980,7 +1986,7 @@ export default function History({
                               <Stack
                                 direction="row"
                                 spacing={2}
-                                justify="flex-end"
+                                justify="flex-start"
                               >
                                 <Button
                                   size="sm"
