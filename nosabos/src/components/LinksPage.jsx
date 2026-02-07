@@ -249,10 +249,10 @@ function LinkCard({
         textAlign="left"
       >
         <Box
-          w={{ base: "120px", md: "160px" }}
-          minW={{ base: "120px", md: "160px" }}
+          w={{ base: "140px", md: "160px" }}
+          minW={{ base: "140px", md: "160px" }}
           display="flex"
-          justifyContent="flex-start"
+          justifyContent="center"
           alignItems="center"
           animation={`${drift} 6s ease-in-out infinite`}
         >
@@ -508,7 +508,17 @@ export default function LinksPage() {
       description: translations.noSabosDescription,
       href: "https://nosabos.app",
       analyticsName: "nosabos_app",
-      visual: <RobotBuddyPro state="idle" palette="ocean" maxW={150} />,
+      visual: (
+        <Box
+          w={{ base: "120px", md: "140px" }}
+          h={{ base: "120px", md: "140px" }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <RobotBuddyPro state="idle" palette="ocean" maxW={120} />
+        </Box>
+      ),
       launchAppText: translations.launchApp,
     },
     {
@@ -520,10 +530,10 @@ export default function LinksPage() {
       visual: (
         <Box
           display="flex"
-          justifyContent="flex-start"
+          justifyContent="center"
           alignItems="center"
-          w={{ base: "120px", md: "160px" }}
-          h={{ base: "120px", md: "160px" }}
+          w={{ base: "120px", md: "140px" }}
+          h={{ base: "120px", md: "140px" }}
         >
           <CloudCanvas />
         </Box>
@@ -535,7 +545,17 @@ export default function LinksPage() {
       description: translations.roadmapCashDescription,
       href: "https://roadmap.cash",
       analyticsName: "roadmap_cash",
-      visual: <AnimatedLogo showWordmark={false} size={120} />,
+      visual: (
+        <Box
+          w={{ base: "120px", md: "140px" }}
+          h={{ base: "120px", md: "140px" }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <AnimatedLogo showWordmark={false} size={120} />
+        </Box>
+      ),
       launchAppText: translations.launchApp,
     },
     {
@@ -544,12 +564,20 @@ export default function LinksPage() {
       href: "https://patreon.com/NotesAndOtherStuff",
       analyticsName: "patreon",
       visual: (
-        <RoleCanvas
-          role={roleCycle[roleIndex]}
-          width={120}
-          height={120}
-          transparent={true}
-        />
+        <Box
+          w={{ base: "120px", md: "140px" }}
+          h={{ base: "120px", md: "140px" }}
+          display="flex"
+          alignItems="center"
+          justifyContent="center"
+        >
+          <RoleCanvas
+            role={roleCycle[roleIndex]}
+            width={120}
+            height={120}
+            transparent={true}
+          />
+        </Box>
       ),
       launchAppText: translations.subscribe,
     },
