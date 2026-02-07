@@ -1,9 +1,15 @@
 // components/History.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Accordion,
+  AccordionButton,
+  AccordionIcon,
+  AccordionItem,
+  AccordionPanel,
   Box,
   Badge,
   Button,
+  Flex,
   HStack,
   VStack,
   Text,
@@ -12,10 +18,13 @@ import {
   IconButton,
   Center,
   Stack,
+  Input,
+  SlideFade,
 } from "@chakra-ui/react";
-import { PiSpeakerHighDuotone } from "react-icons/pi";
+import { PiSpeakerHighDuotone, PiLightningDuotone } from "react-icons/pi";
 import { doc, onSnapshot } from "firebase/firestore";
 import { MdMenuBook } from "react-icons/md";
+import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
 import translations from "../utils/translation";
@@ -33,6 +42,9 @@ import {
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import nextButtonSound from "../assets/nextbutton.mp3";
+import deliciousSound from "../assets/delicious.mp3";
+import clickSound from "../assets/click.mp3";
+import selectSound from "../assets/select.mp3";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -52,7 +64,7 @@ function useT(uiLang = "en") {
     const raw = (dict[key] ?? enDict[key] ?? key) + "";
     if (!params) return raw;
     return raw.replace(/{(\w+)}/g, (_, k) =>
-      k in params ? String(params[k]) : `{${k}}`
+      k in params ? String(params[k]) : `{${k}}`,
     );
   };
 }
@@ -86,7 +98,7 @@ async function callResponses({ model, input }) {
       (Array.isArray(payload?.output) &&
         payload.output
           .map((it) =>
-            (it?.content || []).map((seg) => seg?.text || "").join("")
+            (it?.content || []).map((seg) => seg?.text || "").join(""),
           )
           .join(" ")
           .trim()) ||
@@ -133,7 +145,7 @@ async function normalizeLectureTexts({
   if (shouldTranslateSupport) {
     const prompt = [
       `Translate the following text from ${LANG_NAME(
-        targetLang
+        targetLang,
       )} (${targetLang}) into ${LANG_NAME(supportLang)} (${supportLang}).`,
       "Return only the translation in that language without labels, speaker names, or commentary.",
       "",
@@ -176,7 +188,7 @@ const LANG_NAME = (code) =>
     pl: "Polish",
     ga: "Irish",
     yua: "Yucatec Maya",
-  }[code] || code);
+  })[code] || code;
 
 const LANGUAGE_LABELS = {
   en: ["English", "Inglés"],
@@ -266,7 +278,7 @@ function stripLineLabel(text, langCode) {
       `^(?:${tokens
         .map((token) => escapeRegExp(token))
         .join("|")})\\s*[:\\-–—]\\s*`,
-      "i"
+      "i",
     );
     output = output.replace(pattern, "").trim();
   }
@@ -616,7 +628,7 @@ async function computeAdaptiveXp({
   const looksRepeated = previousTitles?.some((t) =>
     String(t || "")
       .toLowerCase()
-      .includes(String(title || "").toLowerCase())
+      .includes(String(title || "").toLowerCase()),
   );
   score += looksRepeated ? -1 : 1;
   // Streak bonus
@@ -625,16 +637,31 @@ async function computeAdaptiveXp({
   score += ["C1", "C2"].includes(cefrLevel)
     ? 1
     : ["B1", "B2"].includes(cefrLevel)
-    ? 0.5
-    : 0;
+      ? 0.5
+      : 0;
 
   const xp = Math.max(MIN, Math.min(MAX, score));
   return { xp, reason: "Heuristic fallback scoring." };
 }
 
 /* ---------------------------
-   TTS (no highlighting)
+   TTS helpers
 --------------------------- */
+
+/**
+ * Split text into sentences by splitting on sentence-ending punctuation
+ * followed by whitespace. Keeps the punctuation attached to each sentence.
+ */
+function splitIntoSentences(text) {
+  if (!text) return [];
+  // Match runs of text ending with sentence-ending punctuation
+  const result = text.match(/[^.!?。！？]*[.!?。！？]+/g);
+  if (!result) return text.trim() ? [text.trim()] : [];
+  const joined = result.join("");
+  const remainder = text.slice(joined.length).trim();
+  if (remainder) result.push(remainder);
+  return result.map((s) => s.trim()).filter(Boolean);
+}
 const BCP47 = {
   es: { tts: "es-ES" },
   en: { tts: "en-US" },
@@ -772,7 +799,7 @@ export default function History({
   // Track lesson content changes to auto-trigger generation
   const lessonContentKey = useMemo(
     () => JSON.stringify(lessonContent || null),
-    [lessonContent]
+    [lessonContent],
   );
   const lastLessonContentKeyRef = useRef(null);
 
@@ -803,7 +830,7 @@ export default function History({
       pl: t("language_pl"),
       ga: t("language_ga"),
       yua: t("language_yua"),
-    }[code] || code);
+    })[code] || code;
 
   const targetDisplay = localizedLangName(targetLang);
   const supportDisplay = localizedLangName(supportLang);
@@ -820,8 +847,24 @@ export default function History({
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
   const [isFinishing, setIsFinishing] = useState(false);
 
+  // Sentence-level TTS highlighting
+  const [activeSentenceIndex, setActiveSentenceIndex] = useState(-1);
+  const sentencePlaybackRef = useRef(false);
+
   // Refs for audio
   const currentAudioRef = useRef(null);
+
+  // Review question state
+  // reviewQuestion shape: { type: "text"|"fill"|"mc", question: string,
+  //   answer: string, blank?: string, options?: string[] }
+  const [reviewQuestion, setReviewQuestion] = useState(null);
+  const [reviewAnswer, setReviewAnswer] = useState("");
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
+  const [reviewCorrect, setReviewCorrect] = useState(null);
+  const [isGeneratingQuestion, setIsGeneratingQuestion] = useState(false);
+  const [isCheckingAnswer, setIsCheckingAnswer] = useState(false);
+  const [explanationText, setExplanationText] = useState("");
+  const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -856,7 +899,7 @@ export default function History({
 
   const activeLecture = useMemo(
     () => lectures.find((l) => l.id === activeId) || null,
-    [lectures, activeId]
+    [lectures, activeId],
   );
 
   // Which lecture to show in the main pane (draft while streaming, else saved)
@@ -1149,11 +1192,11 @@ export default function History({
       // Build final lecture strings
       const draftTarget = sanitizeLectureBlock(
         targetParts.join(" "),
-        targetLang
+        targetLang,
       );
       const draftSupport = sanitizeLectureBlock(
         supportParts.join(" "),
-        supportLang
+        supportLang,
       );
       const finalTakeaways = takeaways.slice(0, 3);
 
@@ -1226,6 +1269,8 @@ export default function History({
   }
 
   const stopSpeech = () => {
+    sentencePlaybackRef.current = false;
+    setActiveSentenceIndex(-1);
     try {
       if ("speechSynthesis" in window) speechSynthesis.cancel();
     } catch {}
@@ -1277,7 +1322,69 @@ export default function History({
     }
   }
 
-  const readTarget = async () =>
+  const readTarget = async () => {
+    const text = viewLecture?.target;
+    if (!text) return;
+
+    const sentences = splitIntoSentences(text);
+    if (!sentences.length) return;
+
+    stopSpeech();
+    sentencePlaybackRef.current = true;
+    setIsReadingTarget(true);
+
+    const langTag = (BCP47[targetLang] || BCP47.es).tts;
+    const voice = getRandomVoice();
+
+    for (let i = 0; i < sentences.length; i++) {
+      if (!sentencePlaybackRef.current) break;
+      setActiveSentenceIndex(i);
+
+      try {
+        setIsSynthesizingTarget(true);
+        const player = await getTTSPlayer({
+          text: sentences[i],
+          langTag: langTag || TTS_LANG_TAG.es,
+          voice,
+          responseFormat: LOW_LATENCY_TTS_FORMAT,
+        });
+
+        if (!sentencePlaybackRef.current) {
+          player.cleanup?.();
+          break;
+        }
+
+        currentAudioRef.current = player.audio;
+
+        await new Promise((resolve) => {
+          const done = () => {
+            currentAudioRef.current = null;
+            player.cleanup?.();
+            player.finalize?.catch?.(() => {});
+            resolve();
+          };
+          player.audio.onended = done;
+          player.audio.onerror = done;
+
+          player.ready
+            .then(() => {
+              setIsSynthesizingTarget(false);
+              player.audio.play().catch(done);
+            })
+            .catch(done);
+        });
+      } catch {
+        // continue to next sentence on error
+      }
+    }
+
+    setIsSynthesizingTarget(false);
+    setIsReadingTarget(false);
+    setActiveSentenceIndex(-1);
+    sentencePlaybackRef.current = false;
+  };
+
+  const readTargetFull = async () =>
     speak({
       text: viewLecture?.target,
       langTag: (BCP47[targetLang] || BCP47.es).tts,
@@ -1285,6 +1392,181 @@ export default function History({
       setReading: setIsReadingTarget,
       setSynthesizing: setIsSynthesizingTarget,
     });
+
+  const readSingleSentence = async (sentence) => {
+    if (!sentence || isReadingTarget) return;
+    stopSpeech();
+    speak({
+      text: sentence,
+      langTag: (BCP47[targetLang] || BCP47.es).tts,
+      onDone: () => {},
+      setReading: setIsReadingTarget,
+      setSynthesizing: setIsSynthesizingTarget,
+    });
+  };
+
+  // Generate a review question for the current lecture
+  async function generateReviewQuestion() {
+    const text = viewLecture?.target;
+    if (!text || isGeneratingQuestion) return;
+
+    setIsGeneratingQuestion(true);
+    setReviewQuestion(null);
+    setReviewAnswer("");
+    setReviewSubmitted(false);
+    setReviewCorrect(null);
+
+    const questionTypes = ["text", "fill", "mc"];
+    const type =
+      questionTypes[Math.floor(Math.random() * questionTypes.length)];
+
+    let instruction = "";
+    if (type === "text") {
+      instruction = [
+        `Based on this ${LANG_NAME(targetLang)} text, create one short comprehension question in ${LANG_NAME(supportLang)}.`,
+        `The question should be brief (one sentence). Do NOT repeat or quote the passage.`,
+        `Return ONLY valid JSON: {"question":"<the question>","answer":"<short correct answer>"}`,
+        "",
+        text,
+      ].join("\n");
+    } else if (type === "fill") {
+      instruction = [
+        `Based on this ${LANG_NAME(targetLang)} text, create a short fill-in-the-blank question in ${LANG_NAME(supportLang)}.`,
+        `Write a brief original question (not a sentence from the passage) with one key word replaced by "___".`,
+        `Return ONLY valid JSON: {"sentence":"<short question with ___>","answer":"<the missing word>"}`,
+        "",
+        text,
+      ].join("\n");
+    } else {
+      instruction = [
+        `Based on this ${LANG_NAME(targetLang)} text, create one short multiple-choice comprehension question in ${LANG_NAME(supportLang)}.`,
+        `The question should be brief (one sentence). Do NOT repeat or quote the passage. Provide 4 short options where exactly one is correct.`,
+        `Return ONLY valid JSON: {"question":"<the question>","options":["A","B","C","D"],"answer":"<the correct option text>"}`,
+        "",
+        text,
+      ].join("\n");
+    }
+
+    try {
+      const raw = await callResponses({ model: MODEL, input: instruction });
+      const parsed = safeParseJSON(raw);
+      if (parsed) {
+        if (type === "text") {
+          setReviewQuestion({
+            type,
+            question: parsed.question,
+            answer: parsed.answer,
+          });
+        } else if (type === "fill") {
+          setReviewQuestion({
+            type,
+            question: parsed.sentence,
+            answer: parsed.answer,
+          });
+        } else {
+          setReviewQuestion({
+            type,
+            question: parsed.question,
+            options: parsed.options,
+            answer: parsed.answer,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to generate review question", e);
+    } finally {
+      setIsGeneratingQuestion(false);
+    }
+  }
+
+  async function checkReviewAnswer() {
+    if (!reviewQuestion || isCheckingAnswer) return;
+    playSound(submitActionSound);
+
+    // Multiple choice: exact match
+    if (reviewQuestion.type === "mc") {
+      const isCorrect = reviewAnswer === reviewQuestion.answer;
+      setReviewCorrect(isCorrect);
+      setReviewSubmitted(isCorrect);
+      playSound(isCorrect ? deliciousSound : clickSound);
+      return;
+    }
+
+    // Text / fill-in-the-blank: AI evaluation
+    setIsCheckingAnswer(true);
+    try {
+      const prompt = [
+        `A student answered a comprehension question. Decide if their answer is correct or close enough.`,
+        `Question: ${reviewQuestion.question}`,
+        `Expected answer: ${reviewQuestion.answer}`,
+        `Student's answer: ${reviewAnswer}`,
+        "",
+        `Reply with ONLY valid JSON: {"correct":true} or {"correct":false}`,
+        `Be lenient — accept synonyms, minor spelling differences, and answers that convey the same meaning.`,
+      ].join("\n");
+      const raw = await callResponses({ model: MODEL, input: prompt });
+      const parsed = safeParseJSON(raw);
+      const isCorrect = parsed?.correct === true;
+      setReviewCorrect(isCorrect);
+      setReviewSubmitted(isCorrect);
+      playSound(isCorrect ? deliciousSound : clickSound);
+    } catch {
+      // Fallback to exact match on error
+      const isCorrect =
+        reviewAnswer.trim().toLowerCase() ===
+        reviewQuestion.answer.trim().toLowerCase();
+      setReviewCorrect(isCorrect);
+      setReviewSubmitted(isCorrect);
+      playSound(isCorrect ? deliciousSound : clickSound);
+    } finally {
+      setIsCheckingAnswer(false);
+    }
+  }
+
+  async function explainReviewAnswer() {
+    if (!reviewQuestion || isLoadingExplanation || explanationText) return;
+    setIsLoadingExplanation(true);
+    try {
+      const prompt = [
+        `The student was asked this question about a ${LANG_NAME(targetLang)} text:`,
+        `Question: ${reviewQuestion.question}`,
+        `Correct answer: ${reviewQuestion.answer}`,
+        `Student's answer: ${reviewAnswer}`,
+        "",
+        `Explain briefly in ${LANG_NAME(supportLang)} why the correct answer is "${reviewQuestion.answer}".`,
+        `Keep it to 2-3 sentences.`,
+      ].join("\n");
+      const raw = await callResponses({ model: MODEL, input: prompt });
+      setExplanationText(raw || "Could not generate explanation.");
+    } catch {
+      setExplanationText("Could not generate explanation.");
+    } finally {
+      setIsLoadingExplanation(false);
+    }
+  }
+
+  // Reset review question when lecture changes
+  useEffect(() => {
+    setReviewQuestion(null);
+    setExplanationText("");
+    setIsLoadingExplanation(false);
+    setReviewAnswer("");
+    setReviewSubmitted(false);
+    setReviewCorrect(null);
+  }, [activeId]);
+
+  // Auto-generate review question when a lecture is ready
+  useEffect(() => {
+    if (
+      activeLecture?.target &&
+      !draftLecture &&
+      !isGenerating &&
+      !reviewQuestion &&
+      !isGeneratingQuestion
+    ) {
+      generateReviewQuestion();
+    }
+  }, [activeLecture?.id, draftLecture, isGenerating]); // eslint-disable-line
 
   const xpReasonText =
     activeLecture?.xpReason && typeof activeLecture.xpReason === "string"
@@ -1304,8 +1586,8 @@ export default function History({
         }
         setLectures((prev) =>
           prev.map((lec) =>
-            lec.id === activeLecture.id ? { ...lec, awarded: true } : lec
-          )
+            lec.id === activeLecture.id ? { ...lec, awarded: true } : lec,
+          ),
         );
       }
       // Move to the next module
@@ -1394,76 +1676,430 @@ export default function History({
               </VStack>
             ) : viewLecture ? (
               <VStack align="stretch" spacing={4}>
-                <HStack align="center" gap={2}>
-                  <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="700">
-                    <Button
+                <Text fontSize={{ base: "lg", md: "xl" }} fontWeight="700">
+                  {viewLecture.title}
+                  {draftLecture ? (
+                    <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
+                      ({t("reading_generating") || "generating…"})
+                    </Text>
+                  ) : null}
+                </Text>
+
+                {/* TTS controls */}
+                <HStack spacing={4} justify="center">
+                  <VStack spacing={0.5}>
+                    <IconButton
+                      icon={
+                        isSynthesizingTarget && sentencePlaybackRef.current ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          <PiSpeakerHighDuotone size="20px" />
+                        )
+                      }
                       onClick={readTarget}
-                      leftIcon={renderSpeakerIcon(isSynthesizingTarget)}
+                      aria-label="Read with highlighting"
                       size="sm"
-                      fontSize="lg"
                       variant="ghost"
                       isDisabled={
                         !viewLecture?.target || draftLecture || isGenerating
                       }
-                      mr={2}
                     />
-                    {viewLecture.title}
-                    {draftLecture ? (
-                      <Text as="span" ml={2} fontSize="sm" opacity={0.7}>
-                        ({t("reading_generating") || "generating…"})
-                      </Text>
-                    ) : null}
-                  </Text>
+                    <Text fontSize="xs" opacity={0.6}>
+                      Read sentences
+                    </Text>
+                  </VStack>
+                  <VStack spacing={0.5}>
+                    <IconButton
+                      icon={
+                        isSynthesizingTarget && !sentencePlaybackRef.current ? (
+                          <Spinner size="sm" />
+                        ) : (
+                          <PiLightningDuotone size="20px" />
+                        )
+                      }
+                      onClick={readTargetFull}
+                      aria-label="Read all"
+                      size="sm"
+                      variant="ghost"
+                      isDisabled={
+                        !viewLecture?.target || draftLecture || isGenerating
+                      }
+                    />
+                    <Text fontSize="xs" opacity={0.6}>
+                      Read all
+                    </Text>
+                  </VStack>
                 </HStack>
 
-                <Box
-                  display="flex"
-                  justifyContent={"center"}
-                  spacing={4}
-                  mt={"-24px"}
-                >
-                  {!draftLecture && activeLecture ? (
-                    <Button
-                      mt={4}
-                      colorScheme="teal"
-                      onClick={finishReadingAndNext}
-                      isLoading={isFinishing}
-                      isDisabled={isGenerating}
-                      p={4}
-                      w="fit-content"
-                    >
-                      {activeLecture.awarded
-                        ? t("reading_btn_next") || "Next lecture"
-                        : t("reading_btn_finish") || "Finished reading"}
-                    </Button>
-                  ) : null}
-                </Box>
-
                 <Text fontSize={{ base: "md", md: "md" }} lineHeight="1.8">
-                  {viewLecture.target || ""}
+                  {splitIntoSentences(viewLecture.target || "").map(
+                    (sentence, i) => (
+                      <Text
+                        as="span"
+                        key={i}
+                        bg={
+                          activeSentenceIndex === i
+                            ? "rgba(56, 178, 172, 0.2)"
+                            : "transparent"
+                        }
+                        borderRadius="sm"
+                        px={activeSentenceIndex === i ? "2px" : 0}
+                        transition="background 0.2s"
+                        cursor="pointer"
+                        _hover={{
+                          bg:
+                            activeSentenceIndex === i
+                              ? "rgba(56, 178, 172, 0.2)"
+                              : "rgba(128, 128, 128, 0.1)",
+                        }}
+                        onClick={() => readSingleSentence(sentence)}
+                      >
+                        {sentence}{" "}
+                      </Text>
+                    ),
+                  )}
                 </Text>
 
+                {/* Review question */}
+                {!draftLecture && !isGenerating ? (
+                  <Box>
+                    <Divider opacity={0.2} mb={3} />
+                    {isGeneratingQuestion ? (
+                      <HStack justify="center" py={4}>
+                        <Spinner size="sm" color="teal.400" />
+                        <Text fontSize="sm" opacity={0.7}>
+                          Generating question...
+                        </Text>
+                      </HStack>
+                    ) : reviewQuestion ? (
+                      <VStack align="stretch" spacing={3}>
+                        <Text fontWeight="600" fontSize="sm">
+                          Review
+                        </Text>
+
+                        <Text fontSize="sm" lineHeight="1.6">
+                          {reviewQuestion.question}
+                        </Text>
+
+                        {reviewQuestion.type === "fill" ? (
+                          <HStack maxW="400px">
+                            <Input
+                              size="sm"
+                              placeholder="Fill in the blank..."
+                              value={reviewAnswer}
+                              onChange={(e) => {
+                                setReviewAnswer(e.target.value);
+                                if (reviewCorrect === false)
+                                  setReviewCorrect(null);
+                              }}
+                              isDisabled={reviewSubmitted || isCheckingAnswer}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && checkReviewAnswer()
+                              }
+                            />
+                            {!reviewSubmitted && (
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isLoading={isCheckingAnswer}
+                                isDisabled={!reviewAnswer.trim()}
+                              >
+                                Check
+                              </Button>
+                            )}
+                          </HStack>
+                        ) : reviewQuestion.type === "mc" ? (
+                          <>
+                            <VStack align="stretch" spacing={2}>
+                              {reviewQuestion.options.map((opt, i) => (
+                                <Box
+                                  key={i}
+                                  as="button"
+                                  disabled={reviewSubmitted}
+                                  onClick={() => {
+                                    if (reviewSubmitted) return;
+                                    playSound(selectSound);
+                                    setReviewAnswer(opt);
+                                    if (reviewCorrect === false)
+                                      setReviewCorrect(null);
+                                  }}
+                                  p={3}
+                                  borderRadius="lg"
+                                  borderWidth="1px"
+                                  borderColor={
+                                    reviewAnswer === opt
+                                      ? "teal.400"
+                                      : "whiteAlpha.200"
+                                  }
+                                  bg={
+                                    reviewAnswer === opt
+                                      ? "rgba(56, 178, 172, 0.12)"
+                                      : "transparent"
+                                  }
+                                  _hover={
+                                    !reviewSubmitted
+                                      ? { bg: "rgba(255,255,255,0.06)" }
+                                      : {}
+                                  }
+                                  cursor={
+                                    reviewSubmitted ? "default" : "pointer"
+                                  }
+                                  transition="all 0.15s"
+                                  textAlign="left"
+                                  opacity={reviewSubmitted ? 0.6 : 1}
+                                >
+                                  <HStack spacing={3}>
+                                    <Flex
+                                      w="28px"
+                                      h="28px"
+                                      rounded="full"
+                                      align="center"
+                                      justify="center"
+                                      borderWidth="2px"
+                                      borderColor={
+                                        reviewAnswer === opt
+                                          ? "teal.400"
+                                          : "whiteAlpha.300"
+                                      }
+                                      bg={
+                                        reviewAnswer === opt
+                                          ? "teal.400"
+                                          : "transparent"
+                                      }
+                                      color="white"
+                                      fontSize="xs"
+                                      fontWeight="bold"
+                                      flexShrink={0}
+                                      transition="all 0.15s"
+                                    >
+                                      {String.fromCharCode(65 + i)}
+                                    </Flex>
+                                    <Text fontSize="sm">{opt}</Text>
+                                  </HStack>
+                                </Box>
+                              ))}
+                            </VStack>
+                            {!reviewSubmitted && (
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isDisabled={!reviewAnswer}
+                                w="fit-content"
+                              >
+                                Check
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <HStack maxW="400px">
+                            <Input
+                              size="sm"
+                              placeholder="Your answer..."
+                              value={reviewAnswer}
+                              onChange={(e) => {
+                                setReviewAnswer(e.target.value);
+                                if (reviewCorrect === false)
+                                  setReviewCorrect(null);
+                              }}
+                              isDisabled={reviewSubmitted || isCheckingAnswer}
+                              onKeyDown={(e) =>
+                                e.key === "Enter" && checkReviewAnswer()
+                              }
+                            />
+                            {!reviewSubmitted && (
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isLoading={isCheckingAnswer}
+                                isDisabled={!reviewAnswer.trim()}
+                              >
+                                Check
+                              </Button>
+                            )}
+                          </HStack>
+                        )}
+
+                        {reviewCorrect !== null && (
+                          <SlideFade in={true} offsetY="10px">
+                            <VStack spacing={3} align="stretch">
+                              <VStack
+                                spacing={3}
+                                align="stretch"
+                                p={4}
+                                borderRadius="xl"
+                                bg={
+                                  reviewCorrect
+                                    ? "linear-gradient(90deg, rgba(72,187,120,0.16), rgba(56,161,105,0.08))"
+                                    : "linear-gradient(90deg, rgba(245,101,101,0.16), rgba(229,62,62,0.08))"
+                                }
+                                borderWidth="1px"
+                                borderColor={
+                                  reviewCorrect ? "green.400" : "red.300"
+                                }
+                                boxShadow="0 12px 30px rgba(0, 0, 0, 0.3)"
+                              >
+                                <HStack spacing={3} align="center">
+                                  <Flex
+                                    w="44px"
+                                    h="44px"
+                                    rounded="full"
+                                    align="center"
+                                    justify="center"
+                                    bg={reviewCorrect ? "green.500" : "red.500"}
+                                    color="white"
+                                    fontWeight="bold"
+                                    fontSize="lg"
+                                    boxShadow="0 10px 24px rgba(0,0,0,0.22)"
+                                    flexShrink={0}
+                                  >
+                                    {reviewCorrect ? "✓" : "✖"}
+                                  </Flex>
+                                  <Box flex="1">
+                                    <Text fontWeight="semibold">
+                                      {reviewCorrect
+                                        ? "Correct!"
+                                        : "Not quite."}
+                                    </Text>
+                                    <Text fontSize="sm" color="whiteAlpha.800">
+                                      {reviewCorrect
+                                        ? "Great work! Keep going."
+                                        : `Answer: ${reviewQuestion.answer}`}
+                                    </Text>
+                                  </Box>
+                                </HStack>
+
+                                {!reviewCorrect && (
+                                  <Button
+                                    leftIcon={
+                                      isLoadingExplanation ? (
+                                        <Spinner size="sm" />
+                                      ) : (
+                                        <FiHelpCircle />
+                                      )
+                                    }
+                                    colorScheme="pink"
+                                    onClick={explainReviewAnswer}
+                                    isDisabled={
+                                      isLoadingExplanation || !!explanationText
+                                    }
+                                    width="full"
+                                    py={6}
+                                    size="lg"
+                                  >
+                                    Explain the answer
+                                  </Button>
+                                )}
+
+                                {reviewCorrect && activeLecture && (
+                                  <Button
+                                    rightIcon={<FiArrowRight />}
+                                    colorScheme="cyan"
+                                    variant="solid"
+                                    onClick={finishReadingAndNext}
+                                    isLoading={isFinishing}
+                                    isDisabled={isGenerating}
+                                    shadow="md"
+                                    width="full"
+                                    py={6}
+                                    size="lg"
+                                  >
+                                    {activeLecture.awarded
+                                      ? t("reading_btn_next") || "Next lecture"
+                                      : t("reading_btn_finish") ||
+                                        "Finished reading"}
+                                  </Button>
+                                )}
+                              </VStack>
+
+                              {!reviewCorrect && explanationText && (
+                                <Box
+                                  p={4}
+                                  borderRadius="lg"
+                                  bg="rgba(246, 92, 174, 0.1)"
+                                  borderWidth="1px"
+                                  borderColor="pink.400"
+                                  boxShadow="0 4px 12px rgba(0, 0, 0, 0.2)"
+                                >
+                                  <HStack spacing={2} mb={2}>
+                                    <FiHelpCircle color="var(--chakra-colors-pink-400)" />
+                                    <Text
+                                      fontWeight="semibold"
+                                      color="pink.300"
+                                    >
+                                      Explanation
+                                    </Text>
+                                  </HStack>
+                                  <Text
+                                    fontSize="sm"
+                                    color="whiteAlpha.900"
+                                    lineHeight="1.6"
+                                  >
+                                    {explanationText}
+                                  </Text>
+                                </Box>
+                              )}
+                            </VStack>
+                          </SlideFade>
+                        )}
+                      </VStack>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={generateReviewQuestion}
+                      >
+                        Generate review question
+                      </Button>
+                    )}
+                  </Box>
+                ) : null}
+
+                {/* Translation & takeaways in accordion */}
                 {showTranslations && viewLecture.support ? (
-                  <>
-                    <Divider opacity={0.2} />
-                    <Text fontWeight="600" fontSize="sm" opacity={0.9}>
-                      {supportDisplay}
-                    </Text>
-                    <Text
-                      fontSize={{ base: "sm", md: "sm" }}
-                      opacity={0.95}
-                      lineHeight="1.8"
-                    >
-                      {viewLecture.support}
-                    </Text>
-                  </>
+                  <Accordion allowToggle>
+                    <AccordionItem border="none">
+                      <Box display="flex" justifyContent="center">
+                        <AccordionButton
+                          px={4}
+                          py={2}
+                          borderRadius="lg"
+                          borderWidth="1px"
+                          borderColor="whiteAlpha.200"
+                          bg="whiteAlpha.50"
+                          _hover={{ bg: "whiteAlpha.100" }}
+                          w="fit-content"
+                        >
+                          <Text
+                            fontWeight="600"
+                            fontSize="sm"
+                            opacity={0.9}
+                            mr={2}
+                          >
+                            Translate
+                          </Text>
+                          <AccordionIcon />
+                        </AccordionButton>
+                      </Box>
+                      <AccordionPanel px={0} pb={3} pt={3}>
+                        <Text
+                          fontSize={{ base: "sm", md: "sm" }}
+                          opacity={0.95}
+                          lineHeight="1.8"
+                        >
+                          {viewLecture.support}
+                        </Text>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  </Accordion>
                 ) : null}
 
                 {Array.isArray(viewLecture.takeaways) &&
                 viewLecture.takeaways.length ? (
                   <>
-                    <Divider opacity={0.2} />
-                    <Text fontWeight="600" fontSize="sm" opacity={0.9}>
+                    <Text fontWeight="600" fontSize="sm" opacity={0.9} mb={1.5}>
                       {t("reading_takeaways_heading")}
                     </Text>
                     <VStack align="stretch" spacing={1.5}>
