@@ -1,5 +1,11 @@
 // components/History.jsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Accordion,
   AccordionButton,
@@ -23,10 +29,11 @@ import {
 } from "@chakra-ui/react";
 import { PiSpeakerHighDuotone, PiLightningDuotone } from "react-icons/pi";
 import { doc, onSnapshot } from "firebase/firestore";
-import { MdMenuBook } from "react-icons/md";
+import { MdKeyboard, MdMenuBook } from "react-icons/md";
 import { FiArrowRight, FiHelpCircle } from "react-icons/fi";
 import useUserStore from "../hooks/useUserStore";
 import { WaveBar } from "./WaveBar";
+import VirtualKeyboard from "./VirtualKeyboard";
 import translations from "../utils/translation";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
@@ -865,6 +872,19 @@ export default function History({
   const [isCheckingAnswer, setIsCheckingAnswer] = useState(false);
   const [explanationText, setExplanationText] = useState("");
   const [isLoadingExplanation, setIsLoadingExplanation] = useState(false);
+  const [showReviewKeyboard, setShowReviewKeyboard] = useState(false);
+
+  const showReviewKeyboardButton = ["ja", "ru", "el", "pl", "ga"].includes(
+    targetLang,
+  );
+
+  const handleReviewKeyboardInput = useCallback((key) => {
+    if (key === "BACKSPACE") {
+      setReviewAnswer((prev) => prev.slice(0, -1));
+    } else {
+      setReviewAnswer((prev) => prev + key);
+    }
+  }, []);
 
   // streaming draft lecture (local only while generating)
   const [draftLecture, setDraftLecture] = useState(null); // {title,target,support,takeaways[]}
@@ -1553,6 +1573,7 @@ export default function History({
     setReviewAnswer("");
     setReviewSubmitted(false);
     setReviewCorrect(null);
+    setShowReviewKeyboard(false);
   }, [activeId]);
 
   // Auto-generate review question when a lecture is ready
@@ -1705,7 +1726,7 @@ export default function History({
                       }
                     />
                     <Text fontSize="xs" opacity={0.6}>
-                      Read sentences
+                      {t("history_read_sentences")}
                     </Text>
                   </VStack>
                   <VStack spacing={0.5}>
@@ -1726,7 +1747,7 @@ export default function History({
                       }
                     />
                     <Text fontSize="xs" opacity={0.6}>
-                      Read all
+                      {t("history_read_all")}
                     </Text>
                   </VStack>
                 </HStack>
@@ -1768,13 +1789,13 @@ export default function History({
                       <HStack justify="center" py={4}>
                         <Spinner size="sm" color="teal.400" />
                         <Text fontSize="sm" opacity={0.7}>
-                          Generating question...
+                          {t("history_generating_question")}
                         </Text>
                       </HStack>
                     ) : reviewQuestion ? (
                       <VStack align="stretch" spacing={3}>
                         <Text fontWeight="600" fontSize="sm">
-                          Review
+                          {t("history_review_heading")}
                         </Text>
 
                         <Text fontSize="sm" lineHeight="1.6">
@@ -1782,33 +1803,65 @@ export default function History({
                         </Text>
 
                         {reviewQuestion.type === "fill" ? (
-                          <HStack maxW="400px">
-                            <Input
-                              size="sm"
-                              placeholder="Fill in the blank..."
-                              value={reviewAnswer}
-                              onChange={(e) => {
-                                setReviewAnswer(e.target.value);
-                                if (reviewCorrect === false)
-                                  setReviewCorrect(null);
-                              }}
-                              isDisabled={reviewSubmitted || isCheckingAnswer}
-                              onKeyDown={(e) =>
-                                e.key === "Enter" && checkReviewAnswer()
-                              }
-                            />
-                            {!reviewSubmitted && (
-                              <Button
+                          <>
+                            <HStack maxW="400px">
+                              <Input
                                 size="sm"
-                                colorScheme="teal"
-                                onClick={checkReviewAnswer}
-                                isLoading={isCheckingAnswer}
-                                isDisabled={!reviewAnswer.trim()}
-                              >
-                                Check
-                              </Button>
+                                placeholder={t(
+                                  "history_fill_blank_placeholder",
+                                )}
+                                value={reviewAnswer}
+                                onChange={(e) => {
+                                  setReviewAnswer(e.target.value);
+                                  if (reviewCorrect === false)
+                                    setReviewCorrect(null);
+                                }}
+                                isDisabled={reviewSubmitted || isCheckingAnswer}
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && checkReviewAnswer()
+                                }
+                              />
+                              {!reviewSubmitted && (
+                                <Button
+                                  size="sm"
+                                  colorScheme="teal"
+                                  onClick={checkReviewAnswer}
+                                  isLoading={isCheckingAnswer}
+                                  isDisabled={!reviewAnswer.trim()}
+                                >
+                                  {t("history_check_answer")}
+                                </Button>
+                              )}
+                            </HStack>
+                            {showReviewKeyboard && showReviewKeyboardButton && (
+                              <VirtualKeyboard
+                                lang={targetLang}
+                                onKeyPress={handleReviewKeyboardInput}
+                                onClose={() => setShowReviewKeyboard(false)}
+                                userLanguage={userLanguage}
+                              />
                             )}
-                          </HStack>
+                            {showReviewKeyboardButton && (
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                justify="flex-start"
+                              >
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  leftIcon={<MdKeyboard />}
+                                  onClick={() =>
+                                    setShowReviewKeyboard((prev) => !prev)
+                                  }
+                                >
+                                  {showReviewKeyboard
+                                    ? t("history_keyboard_close")
+                                    : t("history_keyboard_open")}
+                                </Button>
+                              </Stack>
+                            )}
+                          </>
                         ) : reviewQuestion.type === "mc" ? (
                           <>
                             <VStack align="stretch" spacing={2}>
@@ -1888,38 +1941,68 @@ export default function History({
                                 isDisabled={!reviewAnswer}
                                 w="fit-content"
                               >
-                                Check
+                                {t("history_check_answer")}
                               </Button>
                             )}
                           </>
                         ) : (
-                          <HStack maxW="400px">
-                            <Input
-                              size="sm"
-                              placeholder="Your answer..."
-                              value={reviewAnswer}
-                              onChange={(e) => {
-                                setReviewAnswer(e.target.value);
-                                if (reviewCorrect === false)
-                                  setReviewCorrect(null);
-                              }}
-                              isDisabled={reviewSubmitted || isCheckingAnswer}
-                              onKeyDown={(e) =>
-                                e.key === "Enter" && checkReviewAnswer()
-                              }
-                            />
-                            {!reviewSubmitted && (
-                              <Button
+                          <>
+                            <HStack maxW="400px">
+                              <Input
                                 size="sm"
-                                colorScheme="teal"
-                                onClick={checkReviewAnswer}
-                                isLoading={isCheckingAnswer}
-                                isDisabled={!reviewAnswer.trim()}
-                              >
-                                Check
-                              </Button>
+                                placeholder={t("history_answer_placeholder")}
+                                value={reviewAnswer}
+                                onChange={(e) => {
+                                  setReviewAnswer(e.target.value);
+                                  if (reviewCorrect === false)
+                                    setReviewCorrect(null);
+                                }}
+                                isDisabled={reviewSubmitted || isCheckingAnswer}
+                                onKeyDown={(e) =>
+                                  e.key === "Enter" && checkReviewAnswer()
+                                }
+                              />
+                              {!reviewSubmitted && (
+                                <Button
+                                  size="sm"
+                                  colorScheme="teal"
+                                  onClick={checkReviewAnswer}
+                                  isLoading={isCheckingAnswer}
+                                  isDisabled={!reviewAnswer.trim()}
+                                >
+                                  {t("history_check_answer")}
+                                </Button>
+                              )}
+                            </HStack>
+                            {showReviewKeyboard && showReviewKeyboardButton && (
+                              <VirtualKeyboard
+                                lang={targetLang}
+                                onKeyPress={handleReviewKeyboardInput}
+                                onClose={() => setShowReviewKeyboard(false)}
+                                userLanguage={userLanguage}
+                              />
                             )}
-                          </HStack>
+                            {showReviewKeyboardButton && (
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                justify="flex-start"
+                              >
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  leftIcon={<MdKeyboard />}
+                                  onClick={() =>
+                                    setShowReviewKeyboard((prev) => !prev)
+                                  }
+                                >
+                                  {showReviewKeyboard
+                                    ? t("history_keyboard_close")
+                                    : t("history_keyboard_open")}
+                                </Button>
+                              </Stack>
+                            )}
+                          </>
                         )}
 
                         {reviewCorrect !== null && (
@@ -1960,13 +2043,15 @@ export default function History({
                                   <Box flex="1">
                                     <Text fontWeight="semibold">
                                       {reviewCorrect
-                                        ? "Correct!"
-                                        : "Not quite."}
+                                        ? t("history_correct")
+                                        : t("history_not_quite")}
                                     </Text>
                                     <Text fontSize="sm" color="whiteAlpha.800">
                                       {reviewCorrect
-                                        ? "Great work! Keep going."
-                                        : `Answer: ${reviewQuestion.answer}`}
+                                        ? t("history_keep_going")
+                                        : t("history_answer_label", {
+                                            answer: reviewQuestion.answer,
+                                          })}
                                     </Text>
                                   </Box>
                                 </HStack>
@@ -1989,7 +2074,7 @@ export default function History({
                                     py={6}
                                     size="lg"
                                   >
-                                    Explain the answer
+                                    {t("history_explain_answer")}
                                   </Button>
                                 )}
 
@@ -2029,7 +2114,7 @@ export default function History({
                                       fontWeight="semibold"
                                       color="pink.300"
                                     >
-                                      Explanation
+                                      {t("history_explanation_heading")}
                                     </Text>
                                   </HStack>
                                   <Text
@@ -2051,7 +2136,7 @@ export default function History({
                         variant="outline"
                         onClick={generateReviewQuestion}
                       >
-                        Generate review question
+                        {t("history_generate_review")}
                       </Button>
                     )}
                   </Box>
@@ -2078,7 +2163,7 @@ export default function History({
                             opacity={0.9}
                             mr={2}
                           >
-                            Translate
+                            {t("history_translate")}
                           </Text>
                           <AccordionIcon />
                         </AccordionButton>
