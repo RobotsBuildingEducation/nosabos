@@ -767,6 +767,7 @@ export default function History({
   lesson = null,
   lessonContent = null,
   onSkip = null,
+  lessonStartXp = null,
 }) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
@@ -778,6 +779,28 @@ export default function History({
 
   const { xp, levelNumber, progressPct, progress, npub, isLoading } =
     useSharedProgress();
+
+  // Lesson progress (mirrors Vocabulary / GrammarBook pattern)
+  const lessonXpGoal = lesson?.xpReward || 0;
+  const lessonXpEarned =
+    lessonStartXp == null ? 0 : Math.max(0, xp - lessonStartXp);
+  const lessonProgressPct =
+    lessonXpGoal > 0 ? Math.min(100, (lessonXpEarned / lessonXpGoal) * 100) : 0;
+  const lessonProgress =
+    lesson &&
+    !lesson.isTutorial &&
+    lessonStartXp != null &&
+    lessonXpGoal > 0
+      ? {
+          pct: lessonProgressPct,
+          earned: Math.min(lessonXpEarned, lessonXpGoal),
+          total: lessonXpGoal,
+          label:
+            userLanguage === "es"
+              ? "Progreso de la lección"
+              : "Lesson progress",
+        }
+      : null;
 
   const targetLang = [
     "en",
@@ -2096,6 +2119,40 @@ export default function History({
                                       : t("reading_btn_finish") ||
                                         "Finished reading"}
                                   </Button>
+                                )}
+
+                                {reviewCorrect && lessonProgress && lessonProgress.total > 0 && (
+                                  <VStack align="center" spacing={2} mt={2} px={1} width="full">
+                                    <HStack
+                                      justify="center"
+                                      align="center"
+                                      spacing={3}
+                                      fontSize="xs"
+                                    >
+                                      <Text
+                                        color="whiteAlpha.800"
+                                        fontWeight="semibold"
+                                        textAlign="center"
+                                      >
+                                        {lessonProgress.label}
+                                      </Text>
+                                      <Text
+                                        color="whiteAlpha.800"
+                                        fontWeight="semibold"
+                                        textAlign="center"
+                                      >
+                                        {Math.round(lessonProgress.pct)}%
+                                      </Text>
+                                    </HStack>
+                                    <Box width="60%" mx="auto">
+                                      <WaveBar
+                                        value={lessonProgress.pct}
+                                        height={20}
+                                        start="#4aa8ff"
+                                        end="#75f8ffff"
+                                      />
+                                    </Box>
+                                  </VStack>
                                 )}
                               </VStack>
 
