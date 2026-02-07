@@ -93,6 +93,7 @@ const baseLearningPath = {
               },
             },
             realtime: {
+              topic: "tutorial",
               scenario: "Say hello",
               prompt: "Practice saying hello in a live chat",
               successCriteria: "The learner says hello.",
