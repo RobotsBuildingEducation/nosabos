@@ -270,6 +270,39 @@ const resolveSupportLang = (supportLang, appUILang) =>
     : "en";
 
 /* ---------------------------
+   Anti-repetition helper
+--------------------------- */
+/**
+ * Builds extra prompt lines to prevent repetitive questions within a lesson.
+ * - Tells the LLM which focusPoints to rotate through
+ * - Lists recently correct words to avoid re-testing
+ * - Encourages varied sentence structures
+ */
+function buildVarietyLines(lessonContent, recentGood) {
+  const lines = [];
+  if (lessonContent?.focusPoints?.length) {
+    lines.push(
+      `- Rotate through ALL of these vocabulary words across questions: ${JSON.stringify(
+        lessonContent.focusPoints
+      )}. Pick a DIFFERENT word each time — do not fixate on one or two words.`
+    );
+  }
+  if (recentGood?.length > 0) {
+    lines.push(
+      `- AVOID these recently tested words/answers: ${JSON.stringify(
+        recentGood.slice(-5)
+      )}. Choose a different word from the topic.`
+    );
+  }
+  if (lessonContent?.topic) {
+    lines.push(
+      `- VARIETY: Use diverse sentence patterns. Do NOT repeatedly use "This is my..." / "Esta es mi..." or similar formulaic patterns. Instead vary with questions ("Who is...?"), descriptions ("My ___ is tall"), actions ("___ cooks dinner"), possessives, and other natural contexts.`
+    );
+  }
+  return lines.length > 0 ? "\n" + lines.join("\n") : "";
+}
+
+/* ---------------------------
    Prompts — STREAM-FIRST (NDJSON phases)
 --------------------------- */
 /* FILL phases:
@@ -297,14 +330,15 @@ function buildFillVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
+  const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Use ONLY greetings. The word being tested MUST be a greeting like "hello", "hola", "hi", "good morning", "good afternoon", or "goodbye". The full sentence MUST be a greeting-only line (no colors, animals, objects, or extra topics). Keep everything at absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
+    ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The word being tested in the blank MUST be from this exact list: ${JSON.stringify(
           lessonContent.words
         )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
     : `- Consider learner recent corrects: ${JSON.stringify(
         recentGood.slice(-3)
       )}`;
@@ -355,14 +389,15 @@ function buildMCVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
+  const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. The correct answer MUST be a simple greeting like "hello", "hola", "hi", "buenos días", "good morning", or "goodbye". Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
+    ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The correct answer MUST be one of these exact words: ${JSON.stringify(
           lessonContent.words
         )}. The question must test one of these specific words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
     : `- Consider learner recent corrects: ${JSON.stringify(
         recentGood.slice(-3)
       )}`;
@@ -413,14 +448,15 @@ function buildMAVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
+  const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE question about basic greetings only. All correct answers MUST be greeting words like "hello", "hola", "hi", "buenos días", "good morning", "goodbye". Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
+    ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The correct answers MUST come from this exact list: ${JSON.stringify(
           lessonContent.words
         )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
     : `- Consider learner recent corrects: ${JSON.stringify(
         recentGood.slice(-3)
       )}`;
@@ -478,14 +514,15 @@ function buildSpeakVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
+  const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE speaking practice about basic greetings only. The word/phrase MUST be a greeting like "hello", "hola", "hi", "good morning", or "goodbye". Do NOT use any other nouns/topics.`
     : lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
+    ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The word/phrase being practiced MUST be from this exact list: ${JSON.stringify(
           lessonContent.words
         )}. Do NOT use any other words. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- STRICT REQUIREMENT: The vocabulary MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
     : `- Consider learner recent successes: ${JSON.stringify(
         recentGood.slice(-3)
       )}`;
@@ -539,14 +576,15 @@ function buildMatchVocabStreamPrompt({
   // If lesson content is provided, use specific vocabulary/topic
   // Special handling for tutorial mode - use very simple "hello" content only
   const isTutorial = lessonContent?.topic === "tutorial";
+  const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const topicDirective = isTutorial
     ? `- TUTORIAL MODE: Create a VERY SIMPLE matching exercise about basic greetings only. The left column MUST contain ONLY greeting words like "hello", "hola", "hi", "buenos días", "good morning", "goodbye", etc. Keep everything at absolute beginner level.`
     : lessonContent?.words || lessonContent?.topic
-    ? lessonContent.words
+    ? (lessonContent.words
       ? `- STRICT REQUIREMENT: The left column MUST contain ONLY words from this list: ${JSON.stringify(
           lessonContent.words
         )}. Do NOT use any other words. Select 3-6 words from this list ONLY. This is lesson-specific content and you MUST NOT diverge.`
-      : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`
+      : `- STRICT REQUIREMENT: All words MUST be directly related to: ${lessonContent.topic}. Do NOT use unrelated vocabulary. This is lesson-specific content.`) + varietyLines
     : `- Consider learner recent corrects: ${JSON.stringify(
         recentGood.slice(-3)
       )}`;
@@ -741,6 +779,7 @@ function buildVocabTranslateStreamPrompt({
 
   // Special handling for tutorial mode
   const isTutorial = lessonContent?.topic === "tutorial";
+  const varietyLines = buildVarietyLines(lessonContent, recentGood);
   const exampleSentence = isTargetToSupport
     ? `Example: "El gato es negro" -> "The cat is black"`
     : `Example: "The cat is black" -> "El gato es negro"`;
@@ -758,7 +797,7 @@ function buildVocabTranslateStreamPrompt({
           : null,
       ]
         .filter(Boolean)
-        .join("\n")
+        .join("\n") + varietyLines
     : `- Consider learner recent corrects: ${JSON.stringify(
         recentGood.slice(-3)
       )}`;
