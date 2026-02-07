@@ -2060,7 +2060,7 @@ export default function History({
                             opacity={0.9}
                             mr={2}
                           >
-                            {supportDisplay}
+                            Translate
                           </Text>
                           <AccordionIcon />
                         </AccordionButton>
@@ -2073,31 +2073,30 @@ export default function History({
                         >
                           {viewLecture.support}
                         </Text>
-
-                        {Array.isArray(viewLecture.takeaways) &&
-                        viewLecture.takeaways.length ? (
-                          <>
-                            <Divider opacity={0.2} my={3} />
-                            <Text
-                              fontWeight="600"
-                              fontSize="sm"
-                              opacity={0.9}
-                              mb={1.5}
-                            >
-                              {t("reading_takeaways_heading")}
-                            </Text>
-                            <VStack align="stretch" spacing={1.5}>
-                              {viewLecture.takeaways.map((tkw, i) => (
-                                <Text key={i} fontSize="sm">
-                                  • {tkw}
-                                </Text>
-                              ))}
-                            </VStack>
-                          </>
-                        ) : null}
                       </AccordionPanel>
                     </AccordionItem>
                   </Accordion>
+                ) : null}
+
+                {Array.isArray(viewLecture.takeaways) &&
+                viewLecture.takeaways.length ? (
+                  <>
+                    <Text
+                      fontWeight="600"
+                      fontSize="sm"
+                      opacity={0.9}
+                      mb={1.5}
+                    >
+                      {t("reading_takeaways_heading")}
+                    </Text>
+                    <VStack align="stretch" spacing={1.5}>
+                      {viewLecture.takeaways.map((tkw, i) => (
+                        <Text key={i} fontSize="sm">
+                          • {tkw}
+                        </Text>
+                      ))}
+                    </VStack>
+                  </>
                 ) : null}
               </VStack>
             ) : (
