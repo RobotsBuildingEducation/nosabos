@@ -534,6 +534,8 @@ export default function LinksPage() {
           alignItems="center"
           w={{ base: "120px", md: "140px" }}
           h={{ base: "120px", md: "140px" }}
+          transform="scale(0.85)"
+          transformOrigin="center"
         >
           <CloudCanvas />
         </Box>
@@ -573,8 +575,8 @@ export default function LinksPage() {
         >
           <RoleCanvas
             role={roleCycle[roleIndex]}
-            width={120}
-            height={120}
+            width={100}
+            height={100}
             transparent={true}
           />
         </Box>
