@@ -1705,7 +1705,7 @@ export default function History({
                       }
                     />
                     <Text fontSize="xs" opacity={0.6}>
-                      Read sentences
+                      {t("history_read_sentences")}
                     </Text>
                   </VStack>
                   <VStack spacing={0.5}>
@@ -1726,7 +1726,7 @@ export default function History({
                       }
                     />
                     <Text fontSize="xs" opacity={0.6}>
-                      Read all
+                      {t("history_read_all")}
                     </Text>
                   </VStack>
                 </HStack>
@@ -1768,13 +1768,13 @@ export default function History({
                       <HStack justify="center" py={4}>
                         <Spinner size="sm" color="teal.400" />
                         <Text fontSize="sm" opacity={0.7}>
-                          Generating question...
+                          {t("history_generating_question")}
                         </Text>
                       </HStack>
                     ) : reviewQuestion ? (
                       <VStack align="stretch" spacing={3}>
                         <Text fontWeight="600" fontSize="sm">
-                          Review
+                          {t("history_review_heading")}
                         </Text>
 
                         <Text fontSize="sm" lineHeight="1.6">
@@ -1785,7 +1785,7 @@ export default function History({
                           <HStack maxW="400px">
                             <Input
                               size="sm"
-                              placeholder="Fill in the blank..."
+                              placeholder={t("history_fill_blank_placeholder")}
                               value={reviewAnswer}
                               onChange={(e) => {
                                 setReviewAnswer(e.target.value);
@@ -1798,16 +1798,16 @@ export default function History({
                               }
                             />
                             {!reviewSubmitted && (
-                              <Button
-                                size="sm"
-                                colorScheme="teal"
-                                onClick={checkReviewAnswer}
-                                isLoading={isCheckingAnswer}
-                                isDisabled={!reviewAnswer.trim()}
-                              >
-                                Check
-                              </Button>
-                            )}
+                                <Button
+                                  size="sm"
+                                  colorScheme="teal"
+                                  onClick={checkReviewAnswer}
+                                  isLoading={isCheckingAnswer}
+                                  isDisabled={!reviewAnswer.trim()}
+                                >
+                                  {t("history_check_answer")}
+                                </Button>
+                              )}
                           </HStack>
                         ) : reviewQuestion.type === "mc" ? (
                           <>
@@ -1888,7 +1888,7 @@ export default function History({
                                 isDisabled={!reviewAnswer}
                                 w="fit-content"
                               >
-                                Check
+                                {t("history_check_answer")}
                               </Button>
                             )}
                           </>
@@ -1896,7 +1896,7 @@ export default function History({
                           <HStack maxW="400px">
                             <Input
                               size="sm"
-                              placeholder="Your answer..."
+                              placeholder={t("history_answer_placeholder")}
                               value={reviewAnswer}
                               onChange={(e) => {
                                 setReviewAnswer(e.target.value);
@@ -1909,16 +1909,16 @@ export default function History({
                               }
                             />
                             {!reviewSubmitted && (
-                              <Button
-                                size="sm"
-                                colorScheme="teal"
-                                onClick={checkReviewAnswer}
-                                isLoading={isCheckingAnswer}
-                                isDisabled={!reviewAnswer.trim()}
-                              >
-                                Check
-                              </Button>
-                            )}
+                                <Button
+                                  size="sm"
+                                  colorScheme="teal"
+                                  onClick={checkReviewAnswer}
+                                  isLoading={isCheckingAnswer}
+                                  isDisabled={!reviewAnswer.trim()}
+                                >
+                                  {t("history_check_answer")}
+                                </Button>
+                              )}
                           </HStack>
                         )}
 
@@ -1960,13 +1960,15 @@ export default function History({
                                   <Box flex="1">
                                     <Text fontWeight="semibold">
                                       {reviewCorrect
-                                        ? "Correct!"
-                                        : "Not quite."}
+                                        ? t("history_correct")
+                                        : t("history_not_quite")}
                                     </Text>
                                     <Text fontSize="sm" color="whiteAlpha.800">
                                       {reviewCorrect
-                                        ? "Great work! Keep going."
-                                        : `Answer: ${reviewQuestion.answer}`}
+                                        ? t("history_keep_going")
+                                        : t("history_answer_label", {
+                                            answer: reviewQuestion.answer,
+                                          })}
                                     </Text>
                                   </Box>
                                 </HStack>
@@ -1989,7 +1991,7 @@ export default function History({
                                     py={6}
                                     size="lg"
                                   >
-                                    Explain the answer
+                                    {t("history_explain_answer")}
                                   </Button>
                                 )}
 
@@ -2029,7 +2031,7 @@ export default function History({
                                       fontWeight="semibold"
                                       color="pink.300"
                                     >
-                                      Explanation
+                                      {t("history_explanation_heading")}
                                     </Text>
                                   </HStack>
                                   <Text
@@ -2051,7 +2053,7 @@ export default function History({
                         variant="outline"
                         onClick={generateReviewQuestion}
                       >
-                        Generate review question
+                        {t("history_generate_review")}
                       </Button>
                     )}
                   </Box>
@@ -2078,7 +2080,7 @@ export default function History({
                             opacity={0.9}
                             mr={2}
                           >
-                            Translate
+                            {t("history_translate")}
                           </Text>
                           <AccordionIcon />
                         </AccordionButton>
