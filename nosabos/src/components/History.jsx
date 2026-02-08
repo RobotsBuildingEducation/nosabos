@@ -1539,17 +1539,21 @@ export default function History({
       setIsCheckingAnswer(true);
       try {
         const prompt = [
-          `A language-learning student answered a comprehension question about the passage below.`,
-          `Decide if their answer is valid.`,
+          `You are grading a language-learning student's answer to a reading comprehension question.`,
+          `Your job is to decide whether the student's answer is VALID — not whether it matches one specific expected answer.`,
           "",
           `Passage: ${viewLecture?.target || ""}`,
           `Question: ${reviewQuestion.question}`,
-          `One possible answer: ${reviewQuestion.answer}`,
           `Student's answer: ${reviewAnswer}`,
           "",
-          `IMPORTANT: Be very generous. Accept ANY answer that is a reasonable response to the question based on the passage.`,
-          `Accept synonyms, rephrasings, partial answers, answers in either language, minor spelling/grammar errors, and different but valid interpretations.`,
-          `Only mark incorrect if the answer is clearly wrong, unrelated, or nonsensical.`,
+          `GRADING RULES (follow strictly):`,
+          `- The student's answer is CORRECT if it is ANY truthful, reasonable answer to the question based on the passage.`,
+          `- There may be MULTIPLE valid answers. Do NOT expect one specific answer.`,
+          `- For example, if the question asks "Who lives in the house?" and the passage mentions a father, mother, and brother, then ANY of those is correct.`,
+          `- Accept answers in the target language OR the support language.`,
+          `- Accept partial answers, synonyms, rephrasings, and minor spelling or grammar mistakes.`,
+          `- Only mark INCORRECT if the answer is factually wrong according to the passage, completely unrelated, or nonsensical.`,
+          `- When in doubt, mark CORRECT.`,
           `Reply with ONLY valid JSON: {"correct":true} or {"correct":false}`,
         ].join("\n");
         const raw = await callResponses({ model: MODEL, input: prompt });
