@@ -5133,7 +5133,6 @@ function BottomActionBar({
         // zIndex={80}
         displacementScale={0.3}
         className="bottombar-glass"
-        border="1px solid red"
       >
         <Box
           py={3}
