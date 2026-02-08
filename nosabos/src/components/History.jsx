@@ -875,8 +875,6 @@ export default function History({
   // Reading state
   const [isReadingTarget, setIsReadingTarget] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
-  const [isFinishing, setIsFinishing] = useState(false);
-
   // Sentence-level TTS highlighting
   const [activeSentenceIndex, setActiveSentenceIndex] = useState(-1);
   const sentencePlaybackRef = useRef(false);
@@ -1526,43 +1524,52 @@ export default function History({
     if (!reviewQuestion || isCheckingAnswer) return;
     playSound(submitActionSound);
 
+    let isCorrect = false;
+
     // Multiple choice: exact match
     if (reviewQuestion.type === "mc") {
-      const isCorrect = reviewAnswer === reviewQuestion.answer;
-      setReviewCorrect(isCorrect);
-      setReviewSubmitted(isCorrect);
-      playSound(isCorrect ? deliciousSound : clickSound);
-      return;
+      isCorrect = reviewAnswer === reviewQuestion.answer;
+    } else {
+      // Text / fill-in-the-blank: AI evaluation
+      setIsCheckingAnswer(true);
+      try {
+        const prompt = [
+          `A student answered a comprehension question. Decide if their answer is correct or close enough.`,
+          `Question: ${reviewQuestion.question}`,
+          `Expected answer: ${reviewQuestion.answer}`,
+          `Student's answer: ${reviewAnswer}`,
+          "",
+          `Reply with ONLY valid JSON: {"correct":true} or {"correct":false}`,
+          `Be lenient — accept synonyms, minor spelling differences, and answers that convey the same meaning.`,
+        ].join("\n");
+        const raw = await callResponses({ model: MODEL, input: prompt });
+        const parsed = safeParseJSON(raw);
+        isCorrect = parsed?.correct === true;
+      } catch {
+        // Fallback to exact match on error
+        isCorrect =
+          reviewAnswer.trim().toLowerCase() ===
+          reviewQuestion.answer.trim().toLowerCase();
+      } finally {
+        setIsCheckingAnswer(false);
+      }
     }
 
-    // Text / fill-in-the-blank: AI evaluation
-    setIsCheckingAnswer(true);
-    try {
-      const prompt = [
-        `A student answered a comprehension question. Decide if their answer is correct or close enough.`,
-        `Question: ${reviewQuestion.question}`,
-        `Expected answer: ${reviewQuestion.answer}`,
-        `Student's answer: ${reviewAnswer}`,
-        "",
-        `Reply with ONLY valid JSON: {"correct":true} or {"correct":false}`,
-        `Be lenient — accept synonyms, minor spelling differences, and answers that convey the same meaning.`,
-      ].join("\n");
-      const raw = await callResponses({ model: MODEL, input: prompt });
-      const parsed = safeParseJSON(raw);
-      const isCorrect = parsed?.correct === true;
-      setReviewCorrect(isCorrect);
-      setReviewSubmitted(isCorrect);
-      playSound(isCorrect ? deliciousSound : clickSound);
-    } catch {
-      // Fallback to exact match on error
-      const isCorrect =
-        reviewAnswer.trim().toLowerCase() ===
-        reviewQuestion.answer.trim().toLowerCase();
-      setReviewCorrect(isCorrect);
-      setReviewSubmitted(isCorrect);
-      playSound(isCorrect ? deliciousSound : clickSound);
-    } finally {
-      setIsCheckingAnswer(false);
+    setReviewCorrect(isCorrect);
+    setReviewSubmitted(isCorrect);
+    playSound(isCorrect ? deliciousSound : clickSound);
+
+    // Award XP immediately on correct answer
+    if (isCorrect && activeLecture && !activeLecture.awarded) {
+      const amt = Number(activeLecture?.xpAward || 0);
+      if (amt > 0) {
+        await awardXp(npub, amt, targetLang).catch(() => {});
+      }
+      setLectures((prev) =>
+        prev.map((lec) =>
+          lec.id === activeLecture.id ? { ...lec, awarded: true } : lec,
+        ),
+      );
     }
   }
 
@@ -1618,30 +1625,12 @@ export default function History({
       : "";
 
   // Award XP for current lecture and move to next module
-  async function finishReadingAndNext() {
-    if (!npub || !activeLecture || isGenerating || isFinishing) return;
+  function finishReadingAndNext() {
+    if (!activeLecture || isGenerating) return;
     playSound(submitActionSound);
-    setIsFinishing(true);
-    try {
-      if (!activeLecture.awarded) {
-        const amt = Number(activeLecture?.xpAward || 0);
-        if (amt > 0) {
-          await awardXp(npub, amt, targetLang).catch(() => {});
-        }
-        setLectures((prev) =>
-          prev.map((lec) =>
-            lec.id === activeLecture.id ? { ...lec, awarded: true } : lec,
-          ),
-        );
-      }
-      // Move to the next module
-      if (onSkip) {
-        onSkip();
-      }
-    } catch (e) {
-      console.error("finishReadingAndNext error", e);
-    } finally {
-      setIsFinishing(false);
+    // XP is already awarded on correct answer; just move to next module
+    if (onSkip) {
+      onSkip();
     }
   }
 
@@ -2107,7 +2096,6 @@ export default function History({
                                     colorScheme="cyan"
                                     variant="solid"
                                     onClick={finishReadingAndNext}
-                                    isLoading={isFinishing}
                                     isDisabled={isGenerating}
                                     shadow="md"
                                     width="full"
