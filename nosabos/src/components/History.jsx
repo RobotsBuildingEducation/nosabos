@@ -1466,6 +1466,7 @@ export default function History({
       instruction = [
         `Based on this ${LANG_NAME(targetLang)} text, create one short comprehension question in ${LANG_NAME(supportLang)}.`,
         `The question should be brief (one sentence). Do NOT repeat or quote the passage.`,
+        `The answer should be a short phrase that any reasonable reader could derive from the text. Accept multiple valid phrasings.`,
         `Return ONLY valid JSON: {"question":"<the question>","answer":"<short correct answer>"}`,
         "",
         text,
@@ -1473,8 +1474,9 @@ export default function History({
     } else if (type === "fill") {
       instruction = [
         `Based on this ${LANG_NAME(targetLang)} text, create a short fill-in-the-blank question in ${LANG_NAME(supportLang)}.`,
-        `Write a brief original question (not a sentence from the passage) with one key word replaced by "___".`,
-        `Return ONLY valid JSON: {"sentence":"<short question with ___>","answer":"<the missing word>"}`,
+        `Write a brief original question (not a sentence from the passage) with a key phrase replaced by "___".`,
+        `The missing answer should be something clearly derivable from the text — use meaningful words or short phrases, not obscure single words.`,
+        `Return ONLY valid JSON: {"sentence":"<short question with ___>","answer":"<the missing word or phrase>"}`,
         "",
         text,
       ].join("\n");
@@ -1534,13 +1536,18 @@ export default function History({
       setIsCheckingAnswer(true);
       try {
         const prompt = [
-          `A student answered a comprehension question. Decide if their answer is correct or close enough.`,
+          `A language-learning student answered a comprehension question about the passage below.`,
+          `Decide if their answer is valid.`,
+          "",
+          `Passage: ${viewLecture?.target || ""}`,
           `Question: ${reviewQuestion.question}`,
-          `Expected answer: ${reviewQuestion.answer}`,
+          `One possible answer: ${reviewQuestion.answer}`,
           `Student's answer: ${reviewAnswer}`,
           "",
+          `IMPORTANT: Be very generous. Accept ANY answer that is a reasonable response to the question based on the passage.`,
+          `Accept synonyms, rephrasings, partial answers, answers in either language, minor spelling/grammar errors, and different but valid interpretations.`,
+          `Only mark incorrect if the answer is clearly wrong, unrelated, or nonsensical.`,
           `Reply with ONLY valid JSON: {"correct":true} or {"correct":false}`,
-          `Be lenient — accept synonyms, minor spelling differences, and answers that convey the same meaning.`,
         ].join("\n");
         const raw = await callResponses({ model: MODEL, input: prompt });
         const parsed = safeParseJSON(raw);
