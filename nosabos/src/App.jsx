@@ -144,7 +144,7 @@ import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
-import { LiquidGlass } from "@liquidglass/react";
+import GlassContainer from "./components/GlassContainer";
 import {
   FaBitcoin,
   FaCalendarAlt,
@@ -869,7 +869,7 @@ function TopBar({
         w="100%"
         borderBottom="1px solid #000026ff"
       >
-        <LiquidGlass
+        <GlassContainer
           borderRadius={0}
           blur={0.5}
           contrast={1.2}
@@ -960,7 +960,7 @@ function TopBar({
               )}
             </HStack>
           </HStack>
-        </LiquidGlass>
+        </GlassContainer>
       </Box>
 
       {/* ---- Settings Drawer ---- */}
@@ -5129,7 +5129,7 @@ function BottomActionBar({
         borderRadius="2xl"
         overflow="hidden" // <- THIS is the key
       >
-        <LiquidGlass
+        <GlassContainer
           borderRadius={"50%"}
           blur={0.9}
           contrast={1.2}
@@ -5139,6 +5139,7 @@ function BottomActionBar({
           displacementScale={0.3}
           className="bottombar-glass"
           elasticity={0.9}
+          fallbackBlur="16px"
         >
           <Box
             py={3}
@@ -5304,7 +5305,7 @@ function BottomActionBar({
               </Menu>
             </Flex>
           </Box>
-        </LiquidGlass>
+        </GlassContainer>
       </Box>
     </Box>
   );
