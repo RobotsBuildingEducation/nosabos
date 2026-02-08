@@ -5130,7 +5130,7 @@ function BottomActionBar({
         contrast={1.2}
         brightness={1.05}
         saturation={1.1}
-        // zIndex={80}
+        zIndex={80}
         displacementScale={0.3}
         className="bottombar-glass"
       >
