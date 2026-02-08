@@ -51,6 +51,7 @@ import {
   MenuItem,
   MenuItemOption,
   MenuOptionGroup,
+  Portal,
   Badge,
   Tooltip,
   useDisclosure,
@@ -143,6 +144,7 @@ import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
+import { LiquidGlass } from "@liquidglass/react";
 import {
   FaBitcoin,
   FaCalendarAlt,
@@ -859,96 +861,107 @@ function TopBar({
   return (
     <>
       {/* ---- Header (responsive) ---- */}
-      <HStack
+      <Box
         as="header"
-        w="100%"
-        px={{ base: 2, md: 3 }}
-        py={2}
-        // bg="gray.900"
-        color="gray.100"
-        borderBottom="1px solid #000026ff"
         position="sticky"
         top={0}
         zIndex={100}
-        wrap="wrap"
-        spacing={{ base: 2, md: 3 }}
-        backdropFilter="blur(4px)"
+        w="100%"
+        borderBottom="1px solid #000026ff"
       >
-        {/* LEFT: Daily Goal Button + WaveBar */}
-        <HStack
-          spacing={{ base: 2, md: 3 }}
-          minW={0}
-          flex="1 1 auto"
-          align="center"
+        <LiquidGlass
+          borderRadius={0}
+          blur={0.5}
+          contrast={1.2}
+          brightness={1.05}
+          saturation={1.1}
+          zIndex={100}
         >
-          <IconButton
-            size="sm"
-            variant="outline"
-            colorScheme="teal"
-            icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
-            onClick={() => {
-              playSound(selectSound);
-              onOpenDailyGoalModal?.();
-            }}
-            borderColor="teal.600"
+          <HStack
+            w="100%"
             px={{ base: 2, md: 3 }}
-          />
-          <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
-            <WaveBar value={dailyPct} />
-          </Box>
-        </HStack>
-
-        <Spacer display={{ base: "none", md: "block" }} />
-
-        {/* RIGHT: controls */}
-        <HStack
-          spacing={{ base: 1, md: 2 }}
-          flexShrink={0}
-          ml="auto"
-          align="center"
-        >
-          {timerRemainingSeconds !== null && (
-            <Badge
-              colorScheme={isTimerRunning ? "teal" : "purple"}
-              variant="subtle"
-              px={3}
-              py={1.5}
-              borderRadius="md"
-              display="flex"
-              alignItems="center"
-              gap={2}
-            >
-              <Text fontFamily="mono" fontWeight="bold" fontSize="2xs">
-                {formatTimer(timerRemainingSeconds)}
-              </Text>
-            </Badge>
-          )}
-          <Button
-            colorScheme="teal"
-            variant={isTimerRunning ? "solid" : "outline"}
-            size="sm"
-            onClick={() => {
-              playSound(selectSound);
-              onOpenTimerModal?.();
-            }}
+            py={2}
+            color="gray.100"
+            wrap="wrap"
+            spacing={{ base: 2, md: 3 }}
           >
-            <FiClock />
-          </Button>
-          {timerRemainingSeconds !== null && (
-            <Button
-              colorScheme="teal"
-              variant={timerPaused ? "outline" : "ghost"}
-              size="sm"
-              onClick={() => {
-                playSound(selectSound);
-                onTogglePauseTimer?.();
-              }}
+            {/* LEFT: Daily Goal Button + WaveBar */}
+            <HStack
+              spacing={{ base: 2, md: 3 }}
+              minW={0}
+              flex="1 1 auto"
+              align="center"
             >
-              {timerPaused ? <FiPlay /> : <FiPause />}
-            </Button>
-          )}
-        </HStack>
-      </HStack>
+              <IconButton
+                size="sm"
+                variant="outline"
+                colorScheme="teal"
+                icon={dailyDone ? <FaCalendarCheck /> : <FaCalendarAlt />}
+                onClick={() => {
+                  playSound(selectSound);
+                  onOpenDailyGoalModal?.();
+                }}
+                borderColor="teal.600"
+                px={{ base: 2, md: 3 }}
+              />
+              <Box w={{ base: "100px", sm: "130px", md: "160px" }}>
+                <WaveBar value={dailyPct} />
+              </Box>
+            </HStack>
+
+            <Spacer display={{ base: "none", md: "block" }} />
+
+            {/* RIGHT: controls */}
+            <HStack
+              spacing={{ base: 1, md: 2 }}
+              flexShrink={0}
+              ml="auto"
+              align="center"
+            >
+              {timerRemainingSeconds !== null && (
+                <Badge
+                  colorScheme={isTimerRunning ? "teal" : "purple"}
+                  variant="subtle"
+                  px={3}
+                  py={1.5}
+                  borderRadius="md"
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
+                >
+                  <Text fontFamily="mono" fontWeight="bold" fontSize="2xs">
+                    {formatTimer(timerRemainingSeconds)}
+                  </Text>
+                </Badge>
+              )}
+              <Button
+                colorScheme="teal"
+                variant={isTimerRunning ? "solid" : "outline"}
+                size="sm"
+                onClick={() => {
+                  playSound(selectSound);
+                  onOpenTimerModal?.();
+                }}
+              >
+                <FiClock />
+              </Button>
+              {timerRemainingSeconds !== null && (
+                <Button
+                  colorScheme="teal"
+                  variant={timerPaused ? "outline" : "ghost"}
+                  size="sm"
+                  onClick={() => {
+                    playSound(selectSound);
+                    onTogglePauseTimer?.();
+                  }}
+                >
+                  {timerPaused ? <FiPlay /> : <FiPause />}
+                </Button>
+              )}
+            </HStack>
+          </HStack>
+        </LiquidGlass>
+      </Box>
 
       {/* ---- Settings Drawer ---- */}
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
@@ -5105,169 +5118,195 @@ function BottomActionBar({
       left={0}
       right={0}
       zIndex={80}
-      bg="rgba(6, 10, 24, 0.2)"
-      backdropFilter="blur(2px)"
-      py={3}
-      px={{ base: 3, md: 6 }}
       width="100%"
       maxW="480px"
       margin="0 auto"
-      borderRadius="24"
-      borderBottomLeftRadius={"0"}
-      borderBottomRightRadius={"0"}
-      paddingBottom={6}
-      paddingTop={4}
+      mb={3}
+      boxShadow={{ base: "0 0 24px #010d48", md: "0 0 12px #010d48" }}
+      paddingLeft={2}
+      paddingRight={2}
     >
-      <Flex
-        as="nav"
-        maxW="560px"
-        mx="auto"
-        w="100%"
-        align="center"
-        justify={{ base: "space-between", md: "space-between" }}
-        flexWrap={{ base: "wrap", md: "wrap" }}
-        overflow="visible"
+      <Box
+        borderRadius="2xl"
+        overflow="hidden" // <- THIS is the key
       >
-        <IconButton
-          icon={<PiUsersBold size={18} />}
-          onClick={() => handleActionClick(onOpenTeams)}
-          aria-label={teamsLabel}
-          rounded="xl"
-          flexShrink={0}
-          borderWidth={hasPendingTeamInvite ? "2px" : "0px"}
-          borderColor={hasPendingTeamInvite ? "purple.400" : "gray.700"}
-          boxShadow={
-            hasPendingTeamInvite
-              ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
-              : "0 4px 0 #313a4b"
-          }
-          colorScheme="gray"
-          bg="gray.800"
-        />
-
-        <IconButton
-          icon={<SettingsIcon boxSize={4} />}
-          color="gray.100"
-          onClick={() => handleActionClick(onOpenSettings)}
-          aria-label={settingsLabel}
-          rounded="xl"
-          flexShrink={0}
-          colorScheme="gray"
-          bg="gray.800"
-          boxShadow="0 4px 0 #313a4b"
-        />
-
-        <IconButton
-          icon={<RiBookmarkLine size={18} />}
-          aria-label={notesLabel}
-          onClick={() => handleActionClick(onOpenNotes)}
-          isLoading={notesIsLoading}
-          colorScheme="gray"
-          bg="gray.800"
-          boxShadow="0 4px 0 #313a4b"
-          color="white"
-          // size="lg"
-          zIndex={50}
-          rounded="xl"
-          transition="all 0.3s ease"
-          animation={notesAnimation}
-          sx={{
-            "@keyframes notesPulse": {
-              "0%": {
-                boxShadow:
-                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
-              },
-              "50%": {
-                boxShadow:
-                  "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)",
-              },
-              "100%": {
-                boxShadow:
-                  "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
-              },
-            },
-            "@keyframes notesDone": {
-              "0%": {
-                boxShadow:
-                  "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
-              },
-              "100%": { boxShadow: "none", borderColor: "gray.600" },
-            },
-          }}
-        />
-
-        <IconButton
-          icon={<FaBitcoin size={18} />}
-          onClick={() => handleActionClick(onOpenIdentity)}
-          aria-label={identityLabel}
-          isLoading={isIdentitySaving}
-          rounded="xl"
-          flexShrink={0}
-          bg="#f08e19"
-          boxShadow="0px 4px 0px #834800ff"
-        />
-
-        <IconButton
-          icon={<MdOutlineSupportAgent size={18} />}
-          onClick={() => handleActionClick(onOpenHelpChat)}
-          aria-label={helpChatLabel}
-          isDisabled={!onOpenHelpChat}
-          rounded="xl"
-          bg="white"
-          color="blue"
-          boxShadow="0 4px 0 blue"
-          zIndex={50}
-          flexShrink={0}
-        />
-
-        {/* Path Mode Menu */}
-        <Menu>
-          <MenuButton
-            as={IconButton}
-            icon={<CurrentModeIcon size={18} />}
-            aria-label={modeMenuLabel}
-            rounded="xl"
-            flexShrink={0}
-            onClick={() => playSound?.(modeSwitcherSound)}
-            // bg="rgba(0, 98, 189, 0.6)"
-            colorScheme="teal"
-            // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
-            color="white"
-          />
-          <MenuList
-            bg="gray.800"
-            borderColor="whiteAlpha.200"
-            boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
-            minW="180px"
+        <LiquidGlass
+          borderRadius={"50%"}
+          blur={0.9}
+          contrast={1.2}
+          brightness={1.05}
+          saturation={1.1}
+          zIndex={80}
+          displacementScale={0.3}
+          className="bottombar-glass"
+          elasticity={0.9}
+        >
+          <Box
+            py={3}
+            px={{ base: 3, md: 6 }}
+            width="100%"
+            paddingBottom={6}
+            paddingTop={4}
+            borderRadius="50%"
           >
-            {PATH_MODES.map((mode) => {
-              const ModeIcon = mode.icon;
-              const isSelected = pathMode === mode.id;
-              return (
-                <MenuItem
-                  key={mode.id}
-                  onClick={() => {
-                    playSound?.(modeSwitcherSound);
-                    // If clicking path when already in path mode, just scroll
-                    if (mode.id === "path" && isSelected) {
-                      onScrollToLatest?.();
-                    } else {
-                      onPathModeChange?.(mode.id);
-                    }
-                  }}
-                  bg={isSelected ? "whiteAlpha.100" : "transparent"}
-                  _hover={{ bg: "whiteAlpha.200" }}
+            <Flex
+              as="nav"
+              maxW="560px"
+              mx="auto"
+              w="100%"
+              align="center"
+              justify={{ base: "space-between", md: "space-between" }}
+              flexWrap={{ base: "wrap", md: "wrap" }}
+              overflow="visible"
+              borderRadius="50%"
+            >
+              <IconButton
+                icon={<PiUsersBold size={18} />}
+                onClick={() => handleActionClick(onOpenTeams)}
+                aria-label={teamsLabel}
+                rounded="xl"
+                flexShrink={0}
+                borderWidth={hasPendingTeamInvite ? "2px" : "0px"}
+                borderColor={hasPendingTeamInvite ? "purple.400" : "gray.700"}
+                boxShadow={
+                  hasPendingTeamInvite
+                    ? "0 0 0 2px rgba(168,85,247,0.35), 0 0 14px rgba(168,85,247,0.65)"
+                    : "0 4px 0 #313a4b"
+                }
+                colorScheme="gray"
+                bg="gray.800"
+              />
+
+              <IconButton
+                icon={<SettingsIcon boxSize={4} />}
+                color="gray.100"
+                onClick={() => handleActionClick(onOpenSettings)}
+                aria-label={settingsLabel}
+                rounded="xl"
+                flexShrink={0}
+                colorScheme="gray"
+                bg="gray.800"
+                boxShadow="0 4px 0 #313a4b"
+              />
+
+              <IconButton
+                icon={<RiBookmarkLine size={18} />}
+                aria-label={notesLabel}
+                onClick={() => handleActionClick(onOpenNotes)}
+                isLoading={notesIsLoading}
+                colorScheme="gray"
+                bg="gray.800"
+                boxShadow="0 4px 0 #313a4b"
+                color="white"
+                // size="lg"
+                zIndex={50}
+                rounded="xl"
+                transition="all 0.3s ease"
+                animation={notesAnimation}
+                sx={{
+                  "@keyframes notesPulse": {
+                    "0%": {
+                      boxShadow:
+                        "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+                    },
+                    "50%": {
+                      boxShadow:
+                        "0 0 0 3px rgba(34,211,238,0.5), 0 0 20px rgba(34,211,238,0.7)",
+                    },
+                    "100%": {
+                      boxShadow:
+                        "0 0 0 2px rgba(34,211,238,0.35), 0 0 8px rgba(34,211,238,0.4)",
+                    },
+                  },
+                  "@keyframes notesDone": {
+                    "0%": {
+                      boxShadow:
+                        "0 0 0 3px rgba(74,222,128,0.6), 0 0 20px rgba(74,222,128,0.8)",
+                    },
+                    "100%": { boxShadow: "none", borderColor: "gray.600" },
+                  },
+                }}
+              />
+
+              <IconButton
+                icon={<FaBitcoin size={18} />}
+                onClick={() => handleActionClick(onOpenIdentity)}
+                aria-label={identityLabel}
+                isLoading={isIdentitySaving}
+                rounded="xl"
+                flexShrink={0}
+                bg="#f08e19"
+                boxShadow="0px 4px 0px #834800ff"
+              />
+
+              <IconButton
+                icon={<MdOutlineSupportAgent size={18} />}
+                onClick={() => handleActionClick(onOpenHelpChat)}
+                aria-label={helpChatLabel}
+                isDisabled={!onOpenHelpChat}
+                rounded="xl"
+                bg="white"
+                color="blue"
+                boxShadow="0 4px 0 blue"
+                zIndex={50}
+                flexShrink={0}
+              />
+
+              {/* Path Mode Menu */}
+              <Menu placement="top-end">
+                <MenuButton
+                  as={IconButton}
+                  icon={<CurrentModeIcon size={18} />}
+                  aria-label={modeMenuLabel}
+                  rounded="xl"
+                  flexShrink={0}
+                  onClick={() => playSound?.(modeSwitcherSound)}
+                  // bg="rgba(0, 98, 189, 0.6)"
+                  colorScheme="teal"
+                  // boxShadow="0 4px 0 rgba(0, 151, 189, 0.6)"
                   color="white"
-                  icon={<ModeIcon size={18} />}
-                  fontWeight={isSelected ? "bold" : "normal"}
-                >
-                  {mode.label}
-                </MenuItem>
-              );
-            })}
-          </MenuList>
-        </Menu>
-      </Flex>
+                />
+                <Portal>
+                  <MenuList
+                    bg="gray.800"
+                    borderColor="whiteAlpha.200"
+                    boxShadow="0 8px 32px rgba(0, 0, 0, 0.4)"
+                    minW="180px"
+                    zIndex="popover"
+                    mb={4}
+                  >
+                    {PATH_MODES.map((mode) => {
+                      const ModeIcon = mode.icon;
+                      const isSelected = pathMode === mode.id;
+                      return (
+                        <MenuItem
+                          key={mode.id}
+                          onClick={() => {
+                            playSound?.(modeSwitcherSound);
+                            // If clicking path when already in path mode, just scroll
+                            if (mode.id === "path" && isSelected) {
+                              onScrollToLatest?.();
+                            } else {
+                              onPathModeChange?.(mode.id);
+                            }
+                          }}
+                          bg={isSelected ? "whiteAlpha.100" : "transparent"}
+                          _hover={{ bg: "whiteAlpha.200" }}
+                          color="white"
+                          icon={<ModeIcon size={18} />}
+                          fontWeight={isSelected ? "bold" : "normal"}
+                        >
+                          {mode.label}
+                        </MenuItem>
+                      );
+                    })}
+                  </MenuList>
+                </Portal>
+              </Menu>
+            </Flex>
+          </Box>
+        </LiquidGlass>
+      </Box>
     </Box>
   );
 }
