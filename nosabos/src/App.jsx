@@ -143,6 +143,7 @@ import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
+import { LiquidGlass } from "@liquidglass/react";
 import {
   FaBitcoin,
   FaCalendarAlt,
@@ -859,20 +860,29 @@ function TopBar({
   return (
     <>
       {/* ---- Header (responsive) ---- */}
-      <HStack
+      <Box
         as="header"
-        w="100%"
-        px={{ base: 2, md: 3 }}
-        py={2}
-        // bg="gray.900"
-        color="gray.100"
-        borderBottom="1px solid #000026ff"
         position="sticky"
         top={0}
         zIndex={100}
+        w="100%"
+        borderBottom="1px solid #000026ff"
+      >
+        <LiquidGlass
+          borderRadius={0}
+          blur={0.5}
+          contrast={1.2}
+          brightness={1.05}
+          saturation={1.1}
+          zIndex={100}
+        >
+      <HStack
+        w="100%"
+        px={{ base: 2, md: 3 }}
+        py={2}
+        color="gray.100"
         wrap="wrap"
         spacing={{ base: 2, md: 3 }}
-        backdropFilter="blur(4px)"
       >
         {/* LEFT: Daily Goal Button + WaveBar */}
         <HStack
@@ -949,6 +959,8 @@ function TopBar({
           )}
         </HStack>
       </HStack>
+        </LiquidGlass>
+      </Box>
 
       {/* ---- Settings Drawer ---- */}
       <Drawer isOpen={settingsOpen} placement="bottom" onClose={closeSettings}>
@@ -5105,19 +5117,26 @@ function BottomActionBar({
       left={0}
       right={0}
       zIndex={80}
-      bg="rgba(6, 10, 24, 0.2)"
-      backdropFilter="blur(2px)"
-      py={3}
-      px={{ base: 3, md: 6 }}
       width="100%"
       maxW="480px"
       margin="0 auto"
-      borderRadius="24"
-      borderBottomLeftRadius={"0"}
-      borderBottomRightRadius={"0"}
-      paddingBottom={6}
-      paddingTop={4}
     >
+      <LiquidGlass
+        borderRadius={24}
+        blur={0.5}
+        contrast={1.2}
+        brightness={1.05}
+        saturation={1.1}
+        zIndex={80}
+        className="bottombar-glass"
+      >
+        <Box
+          py={3}
+          px={{ base: 3, md: 6 }}
+          width="100%"
+          paddingBottom={6}
+          paddingTop={4}
+        >
       <Flex
         as="nav"
         maxW="560px"
@@ -5268,6 +5287,8 @@ function BottomActionBar({
           </MenuList>
         </Menu>
       </Flex>
+        </Box>
+      </LiquidGlass>
     </Box>
   );
 }
