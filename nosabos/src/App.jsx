@@ -5120,14 +5120,18 @@ function BottomActionBar({
       width="100%"
       maxW="480px"
       margin="0 auto"
+      mb={3}
+      borderRadius="24"
+      boxShadow="0 0 24px black"
     >
       <LiquidGlass
         borderRadius={24}
-        blur={0.5}
+        blur={0.9}
         contrast={1.2}
         brightness={1.05}
         saturation={1.1}
         zIndex={80}
+        displacementScale={0.3}
         className="bottombar-glass"
       >
         <Box
