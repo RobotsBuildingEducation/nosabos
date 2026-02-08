@@ -5122,7 +5122,6 @@ function BottomActionBar({
       maxW="480px"
       margin="0 auto"
       mb={3}
-      boxShadow={{ base: "0 0 24px #010d48", md: "0 0 12px #010d48" }}
       paddingLeft={2}
       paddingRight={2}
     >
