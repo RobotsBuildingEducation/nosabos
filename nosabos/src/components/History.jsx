@@ -52,6 +52,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import selectSound from "../assets/select.mp3";
+import RandomCharacter from "./RandomCharacter";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -767,6 +768,7 @@ export default function History({
   lesson = null,
   lessonContent = null,
   onSkip = null,
+  lessonStartXp = null,
 }) {
   const t = useT(userLanguage);
   const user = useUserStore((s) => s.user);
@@ -778,6 +780,25 @@ export default function History({
 
   const { xp, levelNumber, progressPct, progress, npub, isLoading } =
     useSharedProgress();
+
+  // Lesson progress (mirrors Vocabulary / GrammarBook pattern)
+  const lessonXpGoal = lesson?.xpReward || 0;
+  const lessonXpEarned =
+    lessonStartXp == null ? 0 : Math.max(0, xp - lessonStartXp);
+  const lessonProgressPct =
+    lessonXpGoal > 0 ? Math.min(100, (lessonXpEarned / lessonXpGoal) * 100) : 0;
+  const lessonProgress =
+    lesson && !lesson.isTutorial && lessonStartXp != null && lessonXpGoal > 0
+      ? {
+          pct: lessonProgressPct,
+          earned: Math.min(lessonXpEarned, lessonXpGoal),
+          total: lessonXpGoal,
+          label:
+            userLanguage === "es"
+              ? "Progreso de la lección"
+              : "Lesson progress",
+        }
+      : null;
 
   const targetLang = [
     "en",
@@ -852,8 +873,6 @@ export default function History({
   // Reading state
   const [isReadingTarget, setIsReadingTarget] = useState(false);
   const [isSynthesizingTarget, setIsSynthesizingTarget] = useState(false);
-  const [isFinishing, setIsFinishing] = useState(false);
-
   // Sentence-level TTS highlighting
   const [activeSentenceIndex, setActiveSentenceIndex] = useState(-1);
   const sentencePlaybackRef = useRef(false);
@@ -1445,6 +1464,7 @@ export default function History({
       instruction = [
         `Based on this ${LANG_NAME(targetLang)} text, create one short comprehension question in ${LANG_NAME(supportLang)}.`,
         `The question should be brief (one sentence). Do NOT repeat or quote the passage.`,
+        `The answer should be a short phrase that any reasonable reader could derive from the text. Accept multiple valid phrasings.`,
         `Return ONLY valid JSON: {"question":"<the question>","answer":"<short correct answer>"}`,
         "",
         text,
@@ -1452,15 +1472,19 @@ export default function History({
     } else if (type === "fill") {
       instruction = [
         `Based on this ${LANG_NAME(targetLang)} text, create a short fill-in-the-blank question in ${LANG_NAME(supportLang)}.`,
-        `Write a brief original question (not a sentence from the passage) with one key word replaced by "___".`,
-        `Return ONLY valid JSON: {"sentence":"<short question with ___>","answer":"<the missing word>"}`,
+        `Write a brief original question (not a sentence from the passage) with a key phrase replaced by "___".`,
+        `The missing answer should be something clearly derivable from the text — use meaningful words or short phrases, not obscure single words.`,
+        `Return ONLY valid JSON: {"sentence":"<short question with ___>","answer":"<the missing word or phrase>"}`,
         "",
         text,
       ].join("\n");
     } else {
       instruction = [
         `Based on this ${LANG_NAME(targetLang)} text, create one short multiple-choice comprehension question in ${LANG_NAME(supportLang)}.`,
-        `The question should be brief (one sentence). Do NOT repeat or quote the passage. Provide 4 short options where exactly one is correct.`,
+        `The question should test genuine understanding — ask about meaning, inference, or context rather than surface-level facts that are obvious from the question itself.`,
+        `AVOID questions where the answer is already contained in the question (e.g. "What relationship is the speaker's brother?" with "Brother" as an option).`,
+        `Instead, ask things like "What can you infer about...?", "Why does the speaker mention...?", "What is the main idea?", or "What does ___ refer to in context?"`,
+        `Make the wrong options plausible but clearly distinguishable. Do NOT repeat or quote the passage. Keep the question to one sentence.`,
         `Return ONLY valid JSON: {"question":"<the question>","options":["A","B","C","D"],"answer":"<the correct option text>"}`,
         "",
         text,
@@ -1503,43 +1527,61 @@ export default function History({
     if (!reviewQuestion || isCheckingAnswer) return;
     playSound(submitActionSound);
 
+    let isCorrect = false;
+
     // Multiple choice: exact match
     if (reviewQuestion.type === "mc") {
-      const isCorrect = reviewAnswer === reviewQuestion.answer;
-      setReviewCorrect(isCorrect);
-      setReviewSubmitted(isCorrect);
-      playSound(isCorrect ? deliciousSound : clickSound);
-      return;
+      isCorrect = reviewAnswer === reviewQuestion.answer;
+    } else {
+      // Text / fill-in-the-blank: AI evaluation
+      setIsCheckingAnswer(true);
+      try {
+        const prompt = [
+          `You are grading a language-learning student's answer to a reading comprehension question.`,
+          `Your job is to decide whether the student's answer is VALID — not whether it matches one specific expected answer.`,
+          "",
+          `Passage: ${viewLecture?.target || ""}`,
+          `Question: ${reviewQuestion.question}`,
+          `Student's answer: ${reviewAnswer}`,
+          "",
+          `GRADING RULES (follow strictly):`,
+          `- The student's answer is CORRECT if it is ANY truthful, reasonable answer to the question based on the passage.`,
+          `- There may be MULTIPLE valid answers. Do NOT expect one specific answer.`,
+          `- For example, if the question asks "Who lives in the house?" and the passage mentions a father, mother, and brother, then ANY of those is correct.`,
+          `- Accept answers in the target language OR the support language.`,
+          `- Accept partial answers, synonyms, rephrasings, and minor spelling or grammar mistakes.`,
+          `- Only mark INCORRECT if the answer is factually wrong according to the passage, completely unrelated, or nonsensical.`,
+          `- When in doubt, mark CORRECT.`,
+          `Reply with ONLY valid JSON: {"correct":true} or {"correct":false}`,
+        ].join("\n");
+        const raw = await callResponses({ model: MODEL, input: prompt });
+        const parsed = safeParseJSON(raw);
+        isCorrect = parsed?.correct === true;
+      } catch {
+        // Fallback to exact match on error
+        isCorrect =
+          reviewAnswer.trim().toLowerCase() ===
+          reviewQuestion.answer.trim().toLowerCase();
+      } finally {
+        setIsCheckingAnswer(false);
+      }
     }
 
-    // Text / fill-in-the-blank: AI evaluation
-    setIsCheckingAnswer(true);
-    try {
-      const prompt = [
-        `A student answered a comprehension question. Decide if their answer is correct or close enough.`,
-        `Question: ${reviewQuestion.question}`,
-        `Expected answer: ${reviewQuestion.answer}`,
-        `Student's answer: ${reviewAnswer}`,
-        "",
-        `Reply with ONLY valid JSON: {"correct":true} or {"correct":false}`,
-        `Be lenient — accept synonyms, minor spelling differences, and answers that convey the same meaning.`,
-      ].join("\n");
-      const raw = await callResponses({ model: MODEL, input: prompt });
-      const parsed = safeParseJSON(raw);
-      const isCorrect = parsed?.correct === true;
-      setReviewCorrect(isCorrect);
-      setReviewSubmitted(isCorrect);
-      playSound(isCorrect ? deliciousSound : clickSound);
-    } catch {
-      // Fallback to exact match on error
-      const isCorrect =
-        reviewAnswer.trim().toLowerCase() ===
-        reviewQuestion.answer.trim().toLowerCase();
-      setReviewCorrect(isCorrect);
-      setReviewSubmitted(isCorrect);
-      playSound(isCorrect ? deliciousSound : clickSound);
-    } finally {
-      setIsCheckingAnswer(false);
+    setReviewCorrect(isCorrect);
+    setReviewSubmitted(isCorrect);
+    playSound(isCorrect ? deliciousSound : clickSound);
+
+    // Award XP immediately on correct answer
+    if (isCorrect && activeLecture && !activeLecture.awarded) {
+      const amt = Number(activeLecture?.xpAward || 0);
+      if (amt > 0) {
+        await awardXp(npub, amt, targetLang).catch(() => {});
+      }
+      setLectures((prev) =>
+        prev.map((lec) =>
+          lec.id === activeLecture.id ? { ...lec, awarded: true } : lec,
+        ),
+      );
     }
   }
 
@@ -1595,30 +1637,12 @@ export default function History({
       : "";
 
   // Award XP for current lecture and move to next module
-  async function finishReadingAndNext() {
-    if (!npub || !activeLecture || isGenerating || isFinishing) return;
+  function finishReadingAndNext() {
+    if (!activeLecture || isGenerating) return;
     playSound(submitActionSound);
-    setIsFinishing(true);
-    try {
-      if (!activeLecture.awarded) {
-        const amt = Number(activeLecture?.xpAward || 0);
-        if (amt > 0) {
-          await awardXp(npub, amt, targetLang).catch(() => {});
-        }
-        setLectures((prev) =>
-          prev.map((lec) =>
-            lec.id === activeLecture.id ? { ...lec, awarded: true } : lec,
-          ),
-        );
-      }
-      // Move to the next module
-      if (onSkip) {
-        onSkip();
-      }
-    } catch (e) {
-      console.error("finishReadingAndNext error", e);
-    } finally {
-      setIsFinishing(false);
+    // XP is already awarded on correct answer; just move to next module
+    if (onSkip) {
+      onSkip();
     }
   }
 
@@ -1813,25 +1837,23 @@ export default function History({
                                 value={reviewAnswer}
                                 onChange={(e) => {
                                   setReviewAnswer(e.target.value);
-                                  if (reviewCorrect === false)
+                                  if (reviewCorrect !== null)
                                     setReviewCorrect(null);
                                 }}
-                                isDisabled={reviewSubmitted || isCheckingAnswer}
+                                isDisabled={isCheckingAnswer}
                                 onKeyDown={(e) =>
                                   e.key === "Enter" && checkReviewAnswer()
                                 }
                               />
-                              {!reviewSubmitted && (
-                                <Button
-                                  size="sm"
-                                  colorScheme="teal"
-                                  onClick={checkReviewAnswer}
-                                  isLoading={isCheckingAnswer}
-                                  isDisabled={!reviewAnswer.trim()}
-                                >
-                                  {t("history_check_answer")}
-                                </Button>
-                              )}
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isLoading={isCheckingAnswer}
+                                isDisabled={!reviewAnswer.trim()}
+                              >
+                                {t("history_check_answer")}
+                              </Button>
                             </HStack>
                             {showReviewKeyboard && showReviewKeyboardButton && (
                               <VirtualKeyboard
@@ -1869,12 +1891,10 @@ export default function History({
                                 <Box
                                   key={i}
                                   as="button"
-                                  disabled={reviewSubmitted}
                                   onClick={() => {
-                                    if (reviewSubmitted) return;
                                     playSound(selectSound);
                                     setReviewAnswer(opt);
-                                    if (reviewCorrect === false)
+                                    if (reviewCorrect !== null)
                                       setReviewCorrect(null);
                                   }}
                                   p={3}
@@ -1890,17 +1910,10 @@ export default function History({
                                       ? "rgba(56, 178, 172, 0.12)"
                                       : "transparent"
                                   }
-                                  _hover={
-                                    !reviewSubmitted
-                                      ? { bg: "rgba(255,255,255,0.06)" }
-                                      : {}
-                                  }
-                                  cursor={
-                                    reviewSubmitted ? "default" : "pointer"
-                                  }
+                                  _hover={{ bg: "rgba(255,255,255,0.06)" }}
+                                  cursor="pointer"
                                   transition="all 0.15s"
                                   textAlign="left"
-                                  opacity={reviewSubmitted ? 0.6 : 1}
                                 >
                                   <HStack spacing={3}>
                                     <Flex
@@ -1933,17 +1946,15 @@ export default function History({
                                 </Box>
                               ))}
                             </VStack>
-                            {!reviewSubmitted && (
-                              <Button
-                                size="sm"
-                                colorScheme="teal"
-                                onClick={checkReviewAnswer}
-                                isDisabled={!reviewAnswer}
-                                w="fit-content"
-                              >
-                                {t("history_check_answer")}
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              colorScheme="teal"
+                              onClick={checkReviewAnswer}
+                              isDisabled={!reviewAnswer}
+                              w="fit-content"
+                            >
+                              {t("history_check_answer")}
+                            </Button>
                           </>
                         ) : (
                           <>
@@ -1954,25 +1965,23 @@ export default function History({
                                 value={reviewAnswer}
                                 onChange={(e) => {
                                   setReviewAnswer(e.target.value);
-                                  if (reviewCorrect === false)
+                                  if (reviewCorrect !== null)
                                     setReviewCorrect(null);
                                 }}
-                                isDisabled={reviewSubmitted || isCheckingAnswer}
+                                isDisabled={isCheckingAnswer}
                                 onKeyDown={(e) =>
                                   e.key === "Enter" && checkReviewAnswer()
                                 }
                               />
-                              {!reviewSubmitted && (
-                                <Button
-                                  size="sm"
-                                  colorScheme="teal"
-                                  onClick={checkReviewAnswer}
-                                  isLoading={isCheckingAnswer}
-                                  isDisabled={!reviewAnswer.trim()}
-                                >
-                                  {t("history_check_answer")}
-                                </Button>
-                              )}
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isLoading={isCheckingAnswer}
+                                isDisabled={!reviewAnswer.trim()}
+                              >
+                                {t("history_check_answer")}
+                              </Button>
                             </HStack>
                             {showReviewKeyboard && showReviewKeyboardButton && (
                               <VirtualKeyboard
@@ -2046,13 +2055,6 @@ export default function History({
                                         ? t("history_correct")
                                         : t("history_not_quite")}
                                     </Text>
-                                    <Text fontSize="sm" color="whiteAlpha.800">
-                                      {reviewCorrect
-                                        ? t("history_keep_going")
-                                        : t("history_answer_label", {
-                                            answer: reviewQuestion.answer,
-                                          })}
-                                    </Text>
                                   </Box>
                                 </HStack>
 
@@ -2079,26 +2081,75 @@ export default function History({
                                 )}
 
                                 {reviewCorrect && activeLecture && (
-                                  <Button
-                                    rightIcon={<FiArrowRight />}
-                                    colorScheme="cyan"
-                                    variant="solid"
-                                    onClick={finishReadingAndNext}
-                                    isLoading={isFinishing}
-                                    isDisabled={isGenerating}
-                                    shadow="md"
-                                    width="full"
-                                    py={6}
-                                    size="lg"
+                                  <Box
+                                    width="100%"
+                                    display="flex"
+                                    justifyContent={"center"}
                                   >
-                                    {activeLecture.awarded
-                                      ? t("reading_btn_next") || "Next lecture"
-                                      : t("reading_btn_finish") ||
-                                        "Finished reading"}
-                                  </Button>
+                                    <Button
+                                      rightIcon={<FiArrowRight />}
+                                      colorScheme="cyan"
+                                      variant="solid"
+                                      onClick={finishReadingAndNext}
+                                      isDisabled={isGenerating}
+                                      shadow="md"
+                                      width="full"
+                                      py={6}
+                                      size="lg"
+                                      maxWidth="250px"
+                                    >
+                                      {activeLecture.awarded
+                                        ? t("reading_btn_next") ||
+                                          "Next lecture"
+                                        : t("reading_btn_finish") ||
+                                          "Finished reading"}
+                                    </Button>
+                                  </Box>
                                 )}
-                              </VStack>
 
+                                {reviewCorrect &&
+                                  lessonProgress &&
+                                  lessonProgress.total > 0 && (
+                                    <VStack
+                                      align="center"
+                                      spacing={2}
+                                      mt={2}
+                                      px={1}
+                                      width="full"
+                                    >
+                                      <HStack
+                                        justify="center"
+                                        align="center"
+                                        spacing={3}
+                                        fontSize="xs"
+                                      >
+                                        <Text
+                                          color="whiteAlpha.800"
+                                          fontWeight="semibold"
+                                          textAlign="center"
+                                        >
+                                          {lessonProgress.label}
+                                        </Text>
+                                        <Text
+                                          color="whiteAlpha.800"
+                                          fontWeight="semibold"
+                                          textAlign="center"
+                                        >
+                                          {Math.round(lessonProgress.pct)}%
+                                        </Text>
+                                      </HStack>
+                                      <Box width="60%" mx="auto">
+                                        <WaveBar
+                                          value={lessonProgress.pct}
+                                          height={20}
+                                          start="#4aa8ff"
+                                          end="#75f8ffff"
+                                        />
+                                      </Box>
+                                    </VStack>
+                                  )}
+                              </VStack>
+                              <RandomCharacter />
                               {!reviewCorrect && explanationText && (
                                 <Box
                                   p={4}

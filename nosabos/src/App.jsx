@@ -4502,6 +4502,7 @@ export default function App() {
                           lesson={activeLesson}
                           lessonContent={activeLesson?.content?.reading}
                           onSkip={switchToRandomLessonMode}
+                          lessonStartXp={lessonStartXp}
                         />
                       </TabPanel>
                     );
