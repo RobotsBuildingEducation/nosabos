@@ -1483,7 +1483,10 @@ export default function History({
     } else {
       instruction = [
         `Based on this ${LANG_NAME(targetLang)} text, create one short multiple-choice comprehension question in ${LANG_NAME(supportLang)}.`,
-        `The question should be brief (one sentence). Do NOT repeat or quote the passage. Provide 4 short options where exactly one is correct.`,
+        `The question should test genuine understanding — ask about meaning, inference, or context rather than surface-level facts that are obvious from the question itself.`,
+        `AVOID questions where the answer is already contained in the question (e.g. "What relationship is the speaker's brother?" with "Brother" as an option).`,
+        `Instead, ask things like "What can you infer about...?", "Why does the speaker mention...?", "What is the main idea?", or "What does ___ refer to in context?"`,
+        `Make the wrong options plausible but clearly distinguishable. Do NOT repeat or quote the passage. Keep the question to one sentence.`,
         `Return ONLY valid JSON: {"question":"<the question>","options":["A","B","C","D"],"answer":"<the correct option text>"}`,
         "",
         text,
@@ -1832,25 +1835,23 @@ export default function History({
                                 value={reviewAnswer}
                                 onChange={(e) => {
                                   setReviewAnswer(e.target.value);
-                                  if (reviewCorrect === false)
+                                  if (reviewCorrect !== null)
                                     setReviewCorrect(null);
                                 }}
-                                isDisabled={reviewSubmitted || isCheckingAnswer}
+                                isDisabled={isCheckingAnswer}
                                 onKeyDown={(e) =>
                                   e.key === "Enter" && checkReviewAnswer()
                                 }
                               />
-                              {!reviewSubmitted && (
-                                <Button
-                                  size="sm"
-                                  colorScheme="teal"
-                                  onClick={checkReviewAnswer}
-                                  isLoading={isCheckingAnswer}
-                                  isDisabled={!reviewAnswer.trim()}
-                                >
-                                  {t("history_check_answer")}
-                                </Button>
-                              )}
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isLoading={isCheckingAnswer}
+                                isDisabled={!reviewAnswer.trim()}
+                              >
+                                {t("history_check_answer")}
+                              </Button>
                             </HStack>
                             {showReviewKeyboard && showReviewKeyboardButton && (
                               <VirtualKeyboard
@@ -1888,12 +1889,10 @@ export default function History({
                                 <Box
                                   key={i}
                                   as="button"
-                                  disabled={reviewSubmitted}
                                   onClick={() => {
-                                    if (reviewSubmitted) return;
                                     playSound(selectSound);
                                     setReviewAnswer(opt);
-                                    if (reviewCorrect === false)
+                                    if (reviewCorrect !== null)
                                       setReviewCorrect(null);
                                   }}
                                   p={3}
@@ -1909,17 +1908,10 @@ export default function History({
                                       ? "rgba(56, 178, 172, 0.12)"
                                       : "transparent"
                                   }
-                                  _hover={
-                                    !reviewSubmitted
-                                      ? { bg: "rgba(255,255,255,0.06)" }
-                                      : {}
-                                  }
-                                  cursor={
-                                    reviewSubmitted ? "default" : "pointer"
-                                  }
+                                  _hover={{ bg: "rgba(255,255,255,0.06)" }}
+                                  cursor="pointer"
                                   transition="all 0.15s"
                                   textAlign="left"
-                                  opacity={reviewSubmitted ? 0.6 : 1}
                                 >
                                   <HStack spacing={3}>
                                     <Flex
@@ -1952,17 +1944,15 @@ export default function History({
                                 </Box>
                               ))}
                             </VStack>
-                            {!reviewSubmitted && (
-                              <Button
-                                size="sm"
-                                colorScheme="teal"
-                                onClick={checkReviewAnswer}
-                                isDisabled={!reviewAnswer}
-                                w="fit-content"
-                              >
-                                {t("history_check_answer")}
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              colorScheme="teal"
+                              onClick={checkReviewAnswer}
+                              isDisabled={!reviewAnswer}
+                              w="fit-content"
+                            >
+                              {t("history_check_answer")}
+                            </Button>
                           </>
                         ) : (
                           <>
@@ -1973,25 +1963,23 @@ export default function History({
                                 value={reviewAnswer}
                                 onChange={(e) => {
                                   setReviewAnswer(e.target.value);
-                                  if (reviewCorrect === false)
+                                  if (reviewCorrect !== null)
                                     setReviewCorrect(null);
                                 }}
-                                isDisabled={reviewSubmitted || isCheckingAnswer}
+                                isDisabled={isCheckingAnswer}
                                 onKeyDown={(e) =>
                                   e.key === "Enter" && checkReviewAnswer()
                                 }
                               />
-                              {!reviewSubmitted && (
-                                <Button
-                                  size="sm"
-                                  colorScheme="teal"
-                                  onClick={checkReviewAnswer}
-                                  isLoading={isCheckingAnswer}
-                                  isDisabled={!reviewAnswer.trim()}
-                                >
-                                  {t("history_check_answer")}
-                                </Button>
-                              )}
+                              <Button
+                                size="sm"
+                                colorScheme="teal"
+                                onClick={checkReviewAnswer}
+                                isLoading={isCheckingAnswer}
+                                isDisabled={!reviewAnswer.trim()}
+                              >
+                                {t("history_check_answer")}
+                              </Button>
                             </HStack>
                             {showReviewKeyboard && showReviewKeyboardButton && (
                               <VirtualKeyboard
