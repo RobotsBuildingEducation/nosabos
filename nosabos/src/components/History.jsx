@@ -52,6 +52,7 @@ import nextButtonSound from "../assets/nextbutton.mp3";
 import deliciousSound from "../assets/delicious.mp3";
 import clickSound from "../assets/click.mp3";
 import selectSound from "../assets/select.mp3";
+import RandomCharacter from "./RandomCharacter";
 
 const renderSpeakerIcon = (loading) =>
   loading ? (
@@ -787,10 +788,7 @@ export default function History({
   const lessonProgressPct =
     lessonXpGoal > 0 ? Math.min(100, (lessonXpEarned / lessonXpGoal) * 100) : 0;
   const lessonProgress =
-    lesson &&
-    !lesson.isTutorial &&
-    lessonStartXp != null &&
-    lessonXpGoal > 0
+    lesson && !lesson.isTutorial && lessonStartXp != null && lessonXpGoal > 0
       ? {
           pct: lessonProgressPct,
           earned: Math.min(lessonXpEarned, lessonXpGoal),
@@ -2057,13 +2055,6 @@ export default function History({
                                         ? t("history_correct")
                                         : t("history_not_quite")}
                                     </Text>
-                                    <Text fontSize="sm" color="whiteAlpha.800">
-                                      {reviewCorrect
-                                        ? t("history_keep_going")
-                                        : t("history_answer_label", {
-                                            answer: reviewQuestion.answer,
-                                          })}
-                                    </Text>
                                   </Box>
                                 </HStack>
 
@@ -2090,59 +2081,75 @@ export default function History({
                                 )}
 
                                 {reviewCorrect && activeLecture && (
-                                  <Button
-                                    rightIcon={<FiArrowRight />}
-                                    colorScheme="cyan"
-                                    variant="solid"
-                                    onClick={finishReadingAndNext}
-                                    isDisabled={isGenerating}
-                                    shadow="md"
-                                    width="full"
-                                    py={6}
-                                    size="lg"
+                                  <Box
+                                    width="100%"
+                                    display="flex"
+                                    justifyContent={"center"}
                                   >
-                                    {activeLecture.awarded
-                                      ? t("reading_btn_next") || "Next lecture"
-                                      : t("reading_btn_finish") ||
-                                        "Finished reading"}
-                                  </Button>
-                                )}
-
-                                {reviewCorrect && lessonProgress && lessonProgress.total > 0 && (
-                                  <VStack align="center" spacing={2} mt={2} px={1} width="full">
-                                    <HStack
-                                      justify="center"
-                                      align="center"
-                                      spacing={3}
-                                      fontSize="xs"
+                                    <Button
+                                      rightIcon={<FiArrowRight />}
+                                      colorScheme="cyan"
+                                      variant="solid"
+                                      onClick={finishReadingAndNext}
+                                      isDisabled={isGenerating}
+                                      shadow="md"
+                                      width="full"
+                                      py={6}
+                                      size="lg"
+                                      maxWidth="250px"
                                     >
-                                      <Text
-                                        color="whiteAlpha.800"
-                                        fontWeight="semibold"
-                                        textAlign="center"
-                                      >
-                                        {lessonProgress.label}
-                                      </Text>
-                                      <Text
-                                        color="whiteAlpha.800"
-                                        fontWeight="semibold"
-                                        textAlign="center"
-                                      >
-                                        {Math.round(lessonProgress.pct)}%
-                                      </Text>
-                                    </HStack>
-                                    <Box width="60%" mx="auto">
-                                      <WaveBar
-                                        value={lessonProgress.pct}
-                                        height={20}
-                                        start="#4aa8ff"
-                                        end="#75f8ffff"
-                                      />
-                                    </Box>
-                                  </VStack>
+                                      {activeLecture.awarded
+                                        ? t("reading_btn_next") ||
+                                          "Next lecture"
+                                        : t("reading_btn_finish") ||
+                                          "Finished reading"}
+                                    </Button>
+                                  </Box>
                                 )}
-                              </VStack>
 
+                                {reviewCorrect &&
+                                  lessonProgress &&
+                                  lessonProgress.total > 0 && (
+                                    <VStack
+                                      align="center"
+                                      spacing={2}
+                                      mt={2}
+                                      px={1}
+                                      width="full"
+                                    >
+                                      <HStack
+                                        justify="center"
+                                        align="center"
+                                        spacing={3}
+                                        fontSize="xs"
+                                      >
+                                        <Text
+                                          color="whiteAlpha.800"
+                                          fontWeight="semibold"
+                                          textAlign="center"
+                                        >
+                                          {lessonProgress.label}
+                                        </Text>
+                                        <Text
+                                          color="whiteAlpha.800"
+                                          fontWeight="semibold"
+                                          textAlign="center"
+                                        >
+                                          {Math.round(lessonProgress.pct)}%
+                                        </Text>
+                                      </HStack>
+                                      <Box width="60%" mx="auto">
+                                        <WaveBar
+                                          value={lessonProgress.pct}
+                                          height={20}
+                                          start="#4aa8ff"
+                                          end="#75f8ffff"
+                                        />
+                                      </Box>
+                                    </VStack>
+                                  )}
+                              </VStack>
+                              <RandomCharacter />
                               {!reviewCorrect && explanationText && (
                                 <Box
                                   p={4}
