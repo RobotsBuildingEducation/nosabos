@@ -5126,13 +5126,13 @@ function BottomActionBar({
       paddingRight={2}
     >
       <Box
-        borderRadius="2xl"
-        overflow="hidden" // <- THIS is the key
+        borderRadius="24px"
+        overflow="hidden"
       >
         <GlassContainer
-          borderRadius={"50%"}
-          blur={0.9}
-          contrast={1.2}
+          borderRadius="24px"
+          blur={0.5}
+          contrast={1.1}
           brightness={1.05}
           saturation={1.1}
           zIndex={80}
@@ -5140,6 +5140,7 @@ function BottomActionBar({
           className="bottombar-glass"
           elasticity={0.9}
           fallbackBlur="16px"
+          fallbackBg="rgba(11, 18, 32, 0.35)"
         >
           <Box
             py={3}
@@ -5147,7 +5148,7 @@ function BottomActionBar({
             width="100%"
             paddingBottom={6}
             paddingTop={4}
-            borderRadius="50%"
+            borderRadius="24px"
           >
             <Flex
               as="nav"
@@ -5158,7 +5159,7 @@ function BottomActionBar({
               justify={{ base: "space-between", md: "space-between" }}
               flexWrap={{ base: "wrap", md: "wrap" }}
               overflow="visible"
-              borderRadius="50%"
+              borderRadius="24px"
             >
               <IconButton
                 icon={<PiUsersBold size={18} />}
