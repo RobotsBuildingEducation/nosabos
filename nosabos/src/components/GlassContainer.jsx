@@ -46,11 +46,11 @@ export default function GlassContainer({
 }) {
   const fallbackStyle = useMemo(
     () => ({
-      backdropFilter: `blur(${fallbackBlur}) saturate(${saturation * 100}%) contrast(${contrast * 100}%) brightness(${brightness * 100}%)`,
-      WebkitBackdropFilter: `blur(${fallbackBlur}) saturate(${saturation * 100}%) contrast(${contrast * 100}%) brightness(${brightness * 100}%)`,
+      backdropFilter: `blur(${fallbackBlur})`,
+      WebkitBackdropFilter: `blur(${fallbackBlur})`,
       background: fallbackBg,
     }),
-    [fallbackBlur, saturation, contrast, brightness, fallbackBg]
+    [fallbackBlur, fallbackBg]
   );
 
   if (supportsLiquidGlass) {

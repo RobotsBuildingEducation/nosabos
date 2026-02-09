@@ -5139,8 +5139,8 @@ function BottomActionBar({
           displacementScale={0.3}
           className="bottombar-glass"
           elasticity={0.9}
-          fallbackBlur="16px"
-          fallbackBg="rgba(11, 18, 32, 0.35)"
+          fallbackBlur="8px"
+          fallbackBg="rgba(11, 18, 32, 0.15)"
         >
           <Box
             py={3}
