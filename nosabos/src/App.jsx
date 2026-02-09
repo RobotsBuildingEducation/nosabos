@@ -5125,10 +5125,7 @@ function BottomActionBar({
       paddingLeft={2}
       paddingRight={2}
     >
-      <Box
-        borderRadius="24px"
-        overflow="hidden"
-      >
+      <Box borderRadius="24px" overflow="hidden">
         <GlassContainer
           borderRadius="24px"
           blur={0.5}
@@ -5136,11 +5133,11 @@ function BottomActionBar({
           brightness={1.05}
           saturation={1.1}
           zIndex={80}
-          displacementScale={0.3}
+          displacementScale={0.2}
           className="bottombar-glass"
           elasticity={0.9}
-          fallbackBlur="8px"
-          fallbackBg="rgba(11, 18, 32, 0.15)"
+          fallbackBlur="2px"
+          fallbackBg="rgba(11, 18, 32, 0.05)"
         >
           <Box
             py={3}

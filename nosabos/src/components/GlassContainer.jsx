@@ -16,7 +16,9 @@ function detectChromiumDesktop() {
   // Must have Chrome in UA but NOT be iOS (CriOS) or Android mobile
   const isChromium = /Chrome\//.test(ua) && !/Edg\//.test(ua) === false;
   const hasChrome = /Chrome\//.test(ua);
-  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const isIOS =
+    /iPad|iPhone|iPod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   const isAndroid = /Android/.test(ua);
   const isMobile = /Mobi|Android/.test(ua) || isIOS;
   // Firefox doesn't support SVG filters in backdrop-filter either
@@ -40,7 +42,7 @@ export default function GlassContainer({
   zIndex,
   displacementScale,
   elasticity,
-  fallbackBlur = "12px",
+  fallbackBlur = "0px",
   fallbackBg = "rgba(11, 18, 32, 0.65)",
   ...rest
 }) {
@@ -50,7 +52,7 @@ export default function GlassContainer({
       WebkitBackdropFilter: `blur(${fallbackBlur})`,
       background: fallbackBg,
     }),
-    [fallbackBlur, fallbackBg]
+    [fallbackBlur, fallbackBg],
   );
 
   if (supportsLiquidGlass) {
@@ -75,7 +77,9 @@ export default function GlassContainer({
     <Box
       className={className}
       zIndex={zIndex}
-      borderRadius={typeof borderRadius === "number" ? `${borderRadius}px` : borderRadius}
+      borderRadius={
+        typeof borderRadius === "number" ? `${borderRadius}px` : borderRadius
+      }
       sx={fallbackStyle}
       {...rest}
     >
