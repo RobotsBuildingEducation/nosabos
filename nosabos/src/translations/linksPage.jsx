@@ -86,12 +86,14 @@ export const linksPageTranslations = {
 
     // Link cards
     noSabosTitle: "No Sabos",
-    noSabosDescription: "Your personal language tutor.",
-    rbeTitle: "Robots Building Education",
-    rbeDescription: "Your personal coding tutor.",
+    noSabosDescription:
+      "Your personal language tutor. Learn and explore new languages using intelligent tools to help you practice.",
+    rbeTitle: "Robots Building Education (free)",
+    rbeDescription:
+      "Your personal coding tutor. 100% free. Learn the foundations of software engineering in ~100 questions so you can start to leverage AI coding tools to build your ideas.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Access premium engineering, financial and startup content.",
+      "Subscription content to unlock content for software engineering, financial markets, personal support and full access to the language learning app.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
@@ -102,8 +104,9 @@ export const linksPageTranslations = {
     close: "Close",
 
     // RoadmapCash Modal
-    roadmapCashTitle: "Roadmap.Cash (beta)",
-    roadmapCashDescription: "Your free personal financial planner.",
+    roadmapCashTitle: "Roadmap.Cash (free)",
+    roadmapCashDescription:
+      "A small and free personal financial planning tool. Early stage development.",
     roadmapCashModalTitle: "Roadmap.Cash",
     roadmapCashModalDescription:
       "You'll use your secret key to switch in to your account in the menu. If you entered through social media, you only have to do this once.",
@@ -179,8 +182,9 @@ export const linksPageTranslations = {
     invoiceCopied: "Lightning invoice copied to clipboard.",
   },
   es: {
-    roadmapCashTitle: "Roadmap.Cash",
-    roadmapCashDescription: "Tu planificador financiero personal gratuito",
+    roadmapCashTitle: "Roadmap.Cash (gratis)",
+    roadmapCashDescription:
+      "Una herramienta pequeña y gratuita de planificación financiera personal. En fase temprana de desarrollo.",
     roadmapCashModalTitle: "Roadmap.Cash",
     roadmapCashModalDescription:
       "Usarás tu clave secreta para acceder a tu cuenta desde el menú. Si entraste a través de redes sociales, solo tendrás que hacerlo una vez.",
@@ -274,12 +278,14 @@ export const linksPageTranslations = {
 
     // Link cards
     noSabosTitle: "No Sabos",
-    noSabosDescription: "Tu tutor personal de idiomas.",
-    rbeTitle: "Robots Building Education",
-    rbeDescription: "Tu tutor personal de programacion.",
+    noSabosDescription:
+      "Tu tutor personal de idiomas. Aprende y explora nuevos idiomas usando herramientas inteligentes que te ayudan a practicar.",
+    rbeTitle: "Robots Building Education (gratis)",
+    rbeDescription:
+      "Tu tutor personal de programación. 100% gratis. Aprende los fundamentos de la ingeniería de software en ~100 preguntas para que puedas empezar a aprovechar herramientas de programación con IA y construir tus ideas.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Accede a contenido premium de ingenieria, finanzas y startups.",
+      "Contenido por suscripción para desbloquear contenido de ingeniería de software, mercados financieros, apoyo personal y acceso completo a la app de aprendizaje de idiomas.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",

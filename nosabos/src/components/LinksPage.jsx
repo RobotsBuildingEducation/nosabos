@@ -234,19 +234,19 @@ function LinkCard({
   return (
     <Box
       w="100%"
-      border="1px solid"
-      borderColor="rgba(0, 255, 255, 0.4)"
+      // border="1px solid"
+      // borderColor="rgba(0, 255, 255, 0.4)"
       bg="rgba(7, 16, 29, 0.65)"
-      borderRadius="lg"
+      borderRadius="36px"
       px={{ base: 4, md: 6 }}
       py={{ base: 4, md: 5 }}
-      boxShadow="0 0 20px rgba(0, 255, 255, 0.15)"
+      boxShadow="0 0 10px rgba(0, 255, 255, 0.15)"
     >
       <Stack
-        direction="row"
+        direction="column"
         spacing={{ base: 4, md: 6 }}
         align="center"
-        textAlign="left"
+        textAlign="center"
       >
         <Box
           w={{ base: "140px", md: "160px" }}
@@ -258,20 +258,22 @@ function LinkCard({
         >
           {visual}
         </Box>
-        <VStack spacing={3} align="flex-start">
+        <VStack spacing={3} align="center">
           <Heading
             size="md"
             fontFamily="monospace"
             letterSpacing="wider"
             color="white"
+            textAlign={"center"}
           >
             {title}
           </Heading>
           <Text
             color="gray.400"
-            fontSize={{ base: "sm", md: "md" }}
+            fontSize={{ base: "xs", md: "md" }}
             maxW="520px"
             fontFamily="monospace"
+            textAlign={"left"}
           >
             {description}
           </Text>
@@ -868,7 +870,7 @@ export default function LinksPage() {
         position="relative"
         zIndex={1}
         mt={2}
-        pb={{ base: 10, md: 14 }}
+        pb={{ base: 16, md: 16 }}
       >
         <VStack spacing={6} textAlign="center">
           {/* Profile Picture or Random Character */}
