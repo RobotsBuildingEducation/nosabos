@@ -144,7 +144,7 @@ import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
 import useAppUpdate from "./hooks/useAppUpdate";
-import { LiquidGlass } from "@liquidglass/react";
+import GlassContainer from "./components/GlassContainer";
 import {
   FaBitcoin,
   FaCalendarAlt,
@@ -869,7 +869,7 @@ function TopBar({
         w="100%"
         borderBottom="1px solid #000026ff"
       >
-        <LiquidGlass
+        <GlassContainer
           borderRadius={0}
           blur={0.5}
           contrast={1.2}
@@ -960,7 +960,7 @@ function TopBar({
               )}
             </HStack>
           </HStack>
-        </LiquidGlass>
+        </GlassContainer>
       </Box>
 
       {/* ---- Settings Drawer ---- */}
@@ -5125,20 +5125,19 @@ function BottomActionBar({
       paddingLeft={2}
       paddingRight={2}
     >
-      <Box
-        borderRadius="2xl"
-        overflow="hidden" // <- THIS is the key
-      >
-        <LiquidGlass
-          borderRadius={"50%"}
-          blur={0.9}
-          contrast={1.2}
+      <Box borderRadius="24px" overflow="hidden">
+        <GlassContainer
+          borderRadius="24px"
+          blur={0.5}
+          contrast={1.1}
           brightness={1.05}
           saturation={1.1}
           zIndex={80}
-          displacementScale={0.3}
+          displacementScale={0.2}
           className="bottombar-glass"
           elasticity={0.9}
+          fallbackBlur="2px"
+          fallbackBg="rgba(11, 18, 32, 0.05)"
         >
           <Box
             py={3}
@@ -5146,7 +5145,7 @@ function BottomActionBar({
             width="100%"
             paddingBottom={6}
             paddingTop={4}
-            borderRadius="50%"
+            borderRadius="24px"
           >
             <Flex
               as="nav"
@@ -5157,7 +5156,7 @@ function BottomActionBar({
               justify={{ base: "space-between", md: "space-between" }}
               flexWrap={{ base: "wrap", md: "wrap" }}
               overflow="visible"
-              borderRadius="50%"
+              borderRadius="24px"
             >
               <IconButton
                 icon={<PiUsersBold size={18} />}
@@ -5304,7 +5303,7 @@ function BottomActionBar({
               </Menu>
             </Flex>
           </Box>
-        </LiquidGlass>
+        </GlassContainer>
       </Box>
     </Box>
   );
