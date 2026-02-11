@@ -1841,10 +1841,13 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     setQuestionTTsLang(targetLang);
   }, [targetLang]);
 
+  const matchOnlyTesting = true; // TEMPORARY: force match-only for UI testing, remove after done
   const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
-  const types = repeatOnlyQuestions
-    ? ["repeat"]
-    : ["fill", "mc", "ma", "speak", "match", "translate", "repeat"];
+  const types = matchOnlyTesting
+    ? ["match"]
+    : repeatOnlyQuestions
+      ? ["repeat"]
+      : ["fill", "mc", "ma", "speak", "match", "translate", "repeat"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -5597,66 +5600,243 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
         {/* ---- MATCH UI (Drag & Drop) ---- */}
         {mode === "match" && (mLeft.length > 0 || loadingMG) ? (
           <>
-            <HStack justify="space-between" align="center" mb={4}>
-              <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
-                {userLanguage === "es"
-                  ? "Empareja las palabras"
-                  : "Match the words"}
-              </Text>
-              <IconButton
-                aria-label={
-                  userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
-                }
-                icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
-                size="sm"
-                fontSize="lg"
-                rounded="xl"
-                bg="white"
-                color="blue"
-                boxShadow="0 4px 0 blue"
-                onClick={sendMatchHelp}
-                isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
+            <Box
+              bg="rgba(255,255,255,0.03)"
+              border="1px solid rgba(255,255,255,0.08)"
+              rounded="2xl"
+              p={{ base: 4, md: 6 }}
+              position="relative"
+              overflow="hidden"
+            >
+              {/* Accent bar */}
+              <Box
+                position="absolute"
+                top={0}
+                left={0}
+                right={0}
+                h="3px"
+                bgGradient="linear(to-r, purple.400, blue.400)"
               />
-            </HStack>
-            <DragDropContext onDragEnd={onDragEnd}>
-              <VStack align="stretch" spacing={3}>
-                {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
-                  (lhs, i) => (
-                    <HStack key={i} align="stretch" spacing={3}>
-                      <HStack minW="180px" spacing={1}>
-                        <IconButton
-                          aria-label={
-                            userLanguage === "es"
-                              ? "Escuchar palabra"
-                              : "Listen to word"
-                          }
-                          icon={renderSpeakerIcon(matchWordSynthesizing === i)}
-                          size="xs"
-                          fontSize="md"
-                          variant="ghost"
-                          onClick={() => handlePlayMatchWordTTS(lhs, i)}
-                          isDisabled={!lhs || lhs === "…"}
-                        />
-                        <Text>{lhs}</Text>
-                      </HStack>
-                      <Droppable
-                        droppableId={`slot-${i}`}
-                        direction="horizontal"
+
+              {/* Header */}
+              <HStack justify="space-between" align="center" mb={2}>
+                <Text fontSize="xl" fontWeight="bold" color="white" mb={0}>
+                  {userLanguage === "es"
+                    ? "Empareja las palabras"
+                    : "Match the words"}
+                </Text>
+                <IconButton
+                  aria-label={
+                    userLanguage === "es" ? "Pedir ayuda" : "Ask the assistant"
+                  }
+                  icon={isLoadingAssistantSupport ? <Spinner size="xs" /> : <MdOutlineSupportAgent />}
+                  size="sm"
+                  fontSize="lg"
+                  rounded="xl"
+                  bg="white"
+                  color="blue"
+                  boxShadow="0 4px 0 blue"
+                  onClick={sendMatchHelp}
+                  isDisabled={isLoadingAssistantSupport || !!assistantSupportText}
+                />
+              </HStack>
+
+              {/* Stem instruction */}
+              {mStem ? (
+                <Text fontSize="sm" color="whiteAlpha.700" mb={3}>
+                  {mStem}
+                </Text>
+              ) : null}
+
+              {/* Hint */}
+              {mHint ? (
+                <Badge
+                  bg="rgba(128,90,213,0.2)"
+                  color="purple.200"
+                  px={3}
+                  py={1}
+                  rounded="md"
+                  fontSize="xs"
+                  fontWeight="medium"
+                  mb={4}
+                >
+                  {userLanguage === "es" ? "Pista" : "Hint"}: {mHint}
+                </Badge>
+              ) : null}
+
+              <DragDropContext onDragEnd={onDragEnd}>
+                <VStack align="stretch" spacing={3}>
+                  {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
+                    (lhs, i) => (
+                      <HStack
+                        key={i}
+                        align="center"
+                        spacing={3}
+                        bg="rgba(255,255,255,0.025)"
+                        rounded="xl"
+                        px={3}
+                        py={2}
+                        border="1px solid rgba(255,255,255,0.05)"
                       >
-                        {(provided) => (
-                          <HStack
-                            ref={provided.innerRef}
-                            {...provided.droppableProps}
-                            minH="42px"
-                            px={2}
-                            border="1px dashed rgba(255,255,255,0.22)"
-                            rounded="md"
-                            w="100%"
-                          >
-                            {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
+                        {/* Left word */}
+                        <HStack minW={{ base: "120px", md: "180px" }} spacing={1} flexShrink={0}>
+                          <IconButton
+                            aria-label={
+                              userLanguage === "es"
+                                ? "Escuchar palabra"
+                                : "Listen to word"
+                            }
+                            icon={renderSpeakerIcon(matchWordSynthesizing === i)}
+                            size="xs"
+                            fontSize="md"
+                            variant="ghost"
+                            color="purple.200"
+                            onClick={() => handlePlayMatchWordTTS(lhs, i)}
+                            isDisabled={!lhs || lhs === "…"}
+                          />
+                          <Text fontWeight="semibold" color="white">{lhs}</Text>
+                        </HStack>
+
+                        {/* Arrow */}
+                        <Text color="whiteAlpha.400" fontSize="lg" flexShrink={0}>→</Text>
+
+                        {/* Drop slot */}
+                        <Droppable
+                          droppableId={`slot-${i}`}
+                          direction="horizontal"
+                        >
+                          {(provided) => (
+                            <HStack
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              minH="42px"
+                              px={3}
+                              border={
+                                mSlots[i] !== null && mRight[mSlots[i]] != null
+                                  ? "1px solid rgba(128,90,213,0.4)"
+                                  : "1px dashed rgba(255,255,255,0.15)"
+                              }
+                              bg={
+                                mSlots[i] !== null && mRight[mSlots[i]] != null
+                                  ? "rgba(128,90,213,0.1)"
+                                  : "rgba(255,255,255,0.02)"
+                              }
+                              rounded="lg"
+                              w="100%"
+                              transition="all 0.2s ease"
+                            >
+                              {mSlots[i] !== null && mRight[mSlots[i]] != null ? (
+                                <Draggable
+                                  draggableId={`r-${mSlots[i]}`}
+                                  index={0}
+                                >
+                                  {(dragProvided) => (
+                                    <Box
+                                      ref={dragProvided.innerRef}
+                                      {...dragProvided.draggableProps}
+                                      {...dragProvided.dragHandleProps}
+                                      onClick={() => {
+                                        playSound(selectSound);
+                                        handleMatchAutoMove(
+                                          mSlots[i],
+                                          `slot-${i}`
+                                        );
+                                      }}
+                                      onKeyDown={(event) => {
+                                        if (
+                                          event.key === "Enter" ||
+                                          event.key === " "
+                                        ) {
+                                          event.preventDefault();
+                                          playSound(selectSound);
+                                          handleMatchAutoMove(
+                                            mSlots[i],
+                                            `slot-${i}`
+                                          );
+                                        }
+                                      }}
+                                      role="button"
+                                      tabIndex={0}
+                                      style={{
+                                        cursor: "pointer",
+                                        transition:
+                                          "transform 0.18s ease, box-shadow 0.18s ease",
+                                        ...(dragProvided.draggableProps.style ||
+                                          {}),
+                                      }}
+                                      _hover={{
+                                        transform: "translateY(-2px)",
+                                        boxShadow: "0 4px 12px rgba(128,90,213,0.3)",
+                                      }}
+                                      _focusVisible={{
+                                        boxShadow:
+                                          "0 0 0 2px rgba(128,90,213,0.5)",
+                                        transform: "translateY(-2px)",
+                                      }}
+                                      px={3}
+                                      py={1.5}
+                                      rounded="lg"
+                                      bg="rgba(128,90,213,0.15)"
+                                      border="1px solid rgba(128,90,213,0.35)"
+                                      color="white"
+                                      fontSize="sm"
+                                    >
+                                      {mRight[mSlots[i]]}
+                                    </Box>
+                                  )}
+                                </Draggable>
+                              ) : (
+                                <Text opacity={0.4} fontSize="sm" fontStyle="italic">
+                                  {t("vocab_dnd_drop_here")}
+                                </Text>
+                              )}
+                              {provided.placeholder}
+                            </HStack>
+                          )}
+                        </Droppable>
+                      </HStack>
+                    )
+                  )}
+                </VStack>
+
+                {/* Bank */}
+                <Box
+                  mt={5}
+                  bg="rgba(255,255,255,0.025)"
+                  border="1px solid rgba(255,255,255,0.08)"
+                  rounded="xl"
+                  p={3}
+                >
+                  <Text
+                    fontSize="xs"
+                    fontWeight="semibold"
+                    color="whiteAlpha.500"
+                    mb={2}
+                    textTransform="uppercase"
+                    letterSpacing="wider"
+                  >
+                    {t("vocab_dnd_bank")}
+                  </Text>
+                  <Droppable droppableId="bank" direction="horizontal">
+                    {(provided) => (
+                      <HStack
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        spacing={2}
+                        flexWrap="wrap"
+                        minH="44px"
+                        p={2}
+                        border="1px dashed rgba(255,255,255,0.1)"
+                        rounded="lg"
+                        bg="rgba(255,255,255,0.015)"
+                      >
+                        {(mBank.length ? mBank : loadingMG ? [0, 1, 2] : []).map(
+                          (ri, index) =>
+                            mRight[ri] != null ? (
                               <Draggable
-                                draggableId={`r-${mSlots[i]}`}
-                                index={0}
+                                key={`r-${ri}`}
+                                draggableId={`r-${ri}`}
+                                index={index}
                               >
                                 {(dragProvided) => (
                                   <Box
@@ -5665,10 +5845,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                     {...dragProvided.dragHandleProps}
                                     onClick={() => {
                                       playSound(selectSound);
-                                      handleMatchAutoMove(
-                                        mSlots[i],
-                                        `slot-${i}`
-                                      );
+                                      handleMatchAutoMove(ri, "bank");
                                     }}
                                     onKeyDown={(event) => {
                                       if (
@@ -5677,10 +5854,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                       ) {
                                         event.preventDefault();
                                         playSound(selectSound);
-                                        handleMatchAutoMove(
-                                          mSlots[i],
-                                          `slot-${i}`
-                                        );
+                                        handleMatchAutoMove(ri, "bank");
                                       }
                                     }}
                                     role="button"
@@ -5692,122 +5866,47 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                                       ...(dragProvided.draggableProps.style ||
                                         {}),
                                     }}
-                                    _hover={{ transform: "translateY(-2px)" }}
+                                    _hover={{
+                                      transform: "translateY(-2px)",
+                                      boxShadow: "0 4px 12px rgba(128,90,213,0.25)",
+                                    }}
                                     _focusVisible={{
                                       boxShadow:
-                                        "0 0 0 2px rgba(255,255,255,0.35)",
+                                        "0 0 0 2px rgba(128,90,213,0.5)",
                                       transform: "translateY(-2px)",
                                     }}
                                     px={3}
                                     py={1.5}
-                                    rounded="md"
-                                    border="1px solid rgba(255,255,255,0.24)"
+                                    rounded="lg"
+                                    bg="rgba(128,90,213,0.12)"
+                                    border="1px solid rgba(128,90,213,0.3)"
+                                    color="white"
+                                    fontSize="sm"
                                   >
-                                    {mRight[mSlots[i]]}
+                                    {mRight[ri]}
                                   </Box>
                                 )}
                               </Draggable>
                             ) : (
-                              <Text opacity={0.6} fontSize="sm">
-                                {t("vocab_dnd_drop_here")}
-                              </Text>
-                            )}
-                            {provided.placeholder}
-                          </HStack>
+                              <Box
+                                key={`placeholder-${index}`}
+                                px={3}
+                                py={1.5}
+                                rounded="lg"
+                                border="1px dashed rgba(255,255,255,0.12)"
+                                opacity={0.4}
+                              >
+                                …
+                              </Box>
+                            )
                         )}
-                      </Droppable>
-                    </HStack>
-                  )
-                )}
-              </VStack>
-
-              {/* Bank */}
-              <Box mt={3}>
-                <Text fontSize="sm" mb={1}>
-                  {t("vocab_dnd_bank")}
-                </Text>
-                <Droppable droppableId="bank" direction="horizontal">
-                  {(provided) => (
-                    <HStack
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      spacing={2}
-                      flexWrap="wrap"
-                      minH="44px"
-                      p={2}
-                      border="1px dashed rgba(255,255,255,0.22)"
-                      rounded="md"
-                    >
-                      {(mBank.length ? mBank : loadingMG ? [0, 1, 2] : []).map(
-                        (ri, index) =>
-                          mRight[ri] != null ? (
-                            <Draggable
-                              key={`r-${ri}`}
-                              draggableId={`r-${ri}`}
-                              index={index}
-                            >
-                              {(dragProvided) => (
-                                <Box
-                                  ref={dragProvided.innerRef}
-                                  {...dragProvided.draggableProps}
-                                  {...dragProvided.dragHandleProps}
-                                  onClick={() => {
-                                    playSound(selectSound);
-                                    handleMatchAutoMove(ri, "bank");
-                                  }}
-                                  onKeyDown={(event) => {
-                                    if (
-                                      event.key === "Enter" ||
-                                      event.key === " "
-                                    ) {
-                                      event.preventDefault();
-                                      playSound(selectSound);
-                                      handleMatchAutoMove(ri, "bank");
-                                    }
-                                  }}
-                                  role="button"
-                                  tabIndex={0}
-                                  style={{
-                                    cursor: "pointer",
-                                    transition:
-                                      "transform 0.18s ease, box-shadow 0.18s ease",
-                                    ...(dragProvided.draggableProps.style ||
-                                      {}),
-                                  }}
-                                  _hover={{ transform: "translateY(-2px)" }}
-                                  _focusVisible={{
-                                    boxShadow:
-                                      "0 0 0 2px rgba(255,255,255,0.35)",
-                                    transform: "translateY(-2px)",
-                                  }}
-                                  px={3}
-                                  py={1.5}
-                                  rounded="md"
-                                  border="1px solid rgba(255,255,255,0.24)"
-                                >
-                                  {mRight[ri]}
-                                </Box>
-                              )}
-                            </Draggable>
-                          ) : (
-                            <Box
-                              key={`placeholder-${index}`}
-                              px={3}
-                              py={1.5}
-                              rounded="md"
-                              border="1px solid rgba(255,255,255,0.24)"
-                              opacity={0.5}
-                            >
-                              …
-                            </Box>
-                          )
-                      )}
-                      {provided.placeholder}
-                    </HStack>
-                  )}
-                </Droppable>
-              </Box>
-            </DragDropContext>
+                        {provided.placeholder}
+                      </HStack>
+                    )}
+                  </Droppable>
+                </Box>
+              </DragDropContext>
+            </Box>
 
             <AssistantSupportBox />
 
