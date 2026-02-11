@@ -66,6 +66,14 @@ class SoundManager {
     }
   }
 
+  async resume() {
+    if (!this.initialized) return;
+    if (Tone.context.state !== "running") {
+      await Tone.start();
+      console.log("[SoundManager] Audio resumed");
+    }
+  }
+
   isReady() {
     return this.initialized;
   }

@@ -1591,19 +1591,16 @@ export default function App() {
 
   // Warm up audio on first user interaction to eliminate mobile audio delay
   useEffect(() => {
-    const handleFirstInteraction = () => {
+    const handleInteraction = () => {
       warmupAudio();
-      // Remove listeners after first interaction
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      document.removeEventListener("click", handleFirstInteraction);
     };
-    document.addEventListener("touchstart", handleFirstInteraction, {
-      once: true,
-    });
-    document.addEventListener("click", handleFirstInteraction, { once: true });
+    document.addEventListener("pointerdown", handleInteraction);
+    document.addEventListener("touchstart", handleInteraction);
+    document.addEventListener("click", handleInteraction);
     return () => {
-      document.removeEventListener("touchstart", handleFirstInteraction);
-      document.removeEventListener("click", handleFirstInteraction);
+      document.removeEventListener("pointerdown", handleInteraction);
+      document.removeEventListener("touchstart", handleInteraction);
+      document.removeEventListener("click", handleInteraction);
     };
   }, [warmupAudio]);
 
