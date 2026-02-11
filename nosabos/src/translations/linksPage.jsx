@@ -93,7 +93,7 @@ export const linksPageTranslations = {
       "Your personal coding tutor. 100% free. Learn the foundations of software engineering in ~100 questions so you can start to leverage AI coding tools to build your ideas.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Subscribe for $1 to unlock content for tech, markets and full access to the language learning app.",
+      "Subscribe for $1 (and an additional 50% off for annual subscriptions!) to unlock content for tech, markets and full access to the language learning app.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
@@ -285,7 +285,7 @@ export const linksPageTranslations = {
       "Tu tutor personal de programación. 100% gratis. Aprende los fundamentos de la ingeniería de software en ~100 preguntas para que puedas empezar a aprovechar herramientas de programación con IA y construir tus ideas.",
     patreonTitle: "Patreon",
     patreonDescription:
-      "Suscríbete por $1 para desbloquear contenido de tecnología, mercados y acceso completo a la app de aprendizaje de idiomas.",
+      "Suscríbete por $1 (y, si pagas anual, 50% de descuento adicional!) para desbloquear contenido de tecnología, mercados y acceso completo a la app de aprendizaje de idiomas.",
 
     // RBE Modal
     rbeModalTitle: "Robots Building Education",
