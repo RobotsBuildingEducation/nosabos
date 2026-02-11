@@ -5641,29 +5641,6 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                 />
               </HStack>
 
-              {/* Stem instruction */}
-              {mStem ? (
-                <Text fontSize="sm" color="whiteAlpha.700" mb={3}>
-                  {mStem}
-                </Text>
-              ) : null}
-
-              {/* Hint */}
-              {mHint ? (
-                <Badge
-                  bg="rgba(128,90,213,0.2)"
-                  color="purple.200"
-                  px={3}
-                  py={1}
-                  rounded="md"
-                  fontSize="xs"
-                  fontWeight="medium"
-                  mb={4}
-                >
-                  {userLanguage === "es" ? "Pista" : "Hint"}: {mHint}
-                </Badge>
-              ) : null}
-
               <DragDropContext onDragEnd={onDragEnd}>
                 <VStack align="stretch" spacing={3}>
                   {(mLeft.length ? mLeft : loadingMG ? ["…", "…", "…"] : []).map(
