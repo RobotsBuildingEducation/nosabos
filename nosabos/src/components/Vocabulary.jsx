@@ -5667,7 +5667,7 @@ Create ONE ${LANG_NAME(targetLang)} vocabulary matching set. Return JSON ONLY:
                             size="xs"
                             fontSize="md"
                             variant="ghost"
-                            color="purple.200"
+                            color="cyan.300"
                             onClick={() => handlePlayMatchWordTTS(lhs, i)}
                             isDisabled={!lhs || lhs === "…"}
                           />
