@@ -1841,13 +1841,10 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
     setQuestionTTsLang(targetLang);
   }, [targetLang]);
 
-  const matchOnlyTesting = true; // TEMPORARY: force match-only for UI testing, remove after done
   const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
-  const types = matchOnlyTesting
-    ? ["match"]
-    : repeatOnlyQuestions
-      ? ["repeat"]
-      : ["fill", "mc", "ma", "speak", "match", "translate", "repeat"];
+  const types = repeatOnlyQuestions
+    ? ["repeat"]
+    : ["fill", "mc", "ma", "speak", "match", "translate", "repeat"];
   const typeDeckRef = useRef([]);
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");

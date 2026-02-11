@@ -1659,7 +1659,6 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   const [questionTTsLang, setQuestionTTsLang] = useState(targetLang);
 
   const generatorDeckRef = useRef([]);
-  const matchOnlyTesting = true; // TEMPORARY: force match-only for UI testing, remove after done
   const repeatOnlyQuestions = false; // Temporary UI testing toggle (false = full UI mix)
   const generateRandomRef = useRef(() => {});
   const mcKeyRef = useRef("");
@@ -1672,11 +1671,9 @@ Mantenlo conciso, de apoyo y enfocado en el aprendizaje. Escribe toda tu respues
   /* ---------- RANDOM GENERATOR (default on mount & for Next unless user locks a type) ---------- */
   function drawGenerator() {
     if (!generatorDeckRef.current.length) {
-      const order = matchOnlyTesting
-        ? [generateMatch]
-        : repeatOnlyQuestions
-          ? [generateRepeatTranslate]
-          : [
+      const order = repeatOnlyQuestions
+        ? [generateRepeatTranslate]
+        : [
               generateFill,
               generateMC,
               generateMA,
