@@ -6,6 +6,7 @@ import {
   Drawer,
   DrawerBody,
   DrawerContent,
+  DrawerFooter,
   DrawerOverlay,
   HStack,
   Progress,
@@ -63,6 +64,93 @@ const CEFR_LEVEL_INFO = {
   },
   C1: { name: { en: "Advanced", es: "Avanzado" }, color: "#EF4444" },
   C2: { name: { en: "Mastery", es: "Maestría" }, color: "#EC4899" },
+};
+
+const CEFR_LEVEL_OFFERINGS = {
+  "Pre-A1": {
+    en: [
+      "Ultra-guided lessons with basic words and phrases.",
+      "Very short prompts with lots of repetition.",
+      "Focus on confidence and comprehension foundations.",
+    ],
+    es: [
+      "Lecciones guiadas con palabras y frases básicas.",
+      "Ejercicios muy cortos con mucha repetición.",
+      "Enfoque en confianza y comprensión inicial.",
+    ],
+  },
+  A1: {
+    en: [
+      "Beginner modules for greetings, personal info, and daily basics.",
+      "Simple conversation drills with frequent support.",
+      "Core vocabulary and sentence patterns.",
+    ],
+    es: [
+      "Módulos iniciales de saludos, información personal y rutina.",
+      "Prácticas simples de conversación con apoyo frecuente.",
+      "Vocabulario esencial y estructuras básicas.",
+    ],
+  },
+  A2: {
+    en: [
+      "Everyday scenario lessons (shopping, plans, routines).",
+      "Longer responses and clearer tense control.",
+      "Expanded practical vocabulary for real interactions.",
+    ],
+    es: [
+      "Lecciones de situaciones cotidianas (compras, planes, rutina).",
+      "Respuestas más largas y mejor manejo de tiempos verbales.",
+      "Vocabulario práctico ampliado para interacciones reales.",
+    ],
+  },
+  B1: {
+    en: [
+      "Intermediate discussions with opinions and explanations.",
+      "Practice narrating past/future events with detail.",
+      "More nuanced grammar and connector usage.",
+    ],
+    es: [
+      "Conversaciones intermedias con opiniones y explicaciones.",
+      "Práctica narrando eventos pasados/futuros con detalle.",
+      "Gramática más matizada y mejor uso de conectores.",
+    ],
+  },
+  B2: {
+    en: [
+      "Upper-intermediate speaking with argumentation and precision.",
+      "Complex listening/reading contexts and abstract themes.",
+      "Greater focus on natural fluency and style control.",
+    ],
+    es: [
+      "Producción oral de nivel intermedio alto con argumentación.",
+      "Contextos complejos de escucha/lectura y temas abstractos.",
+      "Mayor enfoque en fluidez natural y control de estilo.",
+    ],
+  },
+  C1: {
+    en: [
+      "Advanced scenarios requiring precision and flexibility.",
+      "Idiomatic and professional language usage.",
+      "High-level tasks around tone, nuance, and persuasion.",
+    ],
+    es: [
+      "Escenarios avanzados que requieren precisión y flexibilidad.",
+      "Uso idiomático y profesional del idioma.",
+      "Tareas de alto nivel sobre tono, matiz y persuasión.",
+    ],
+  },
+  C2: {
+    en: [
+      "Mastery-level tasks with subtle meaning control.",
+      "Near-native speed, complexity, and adaptability.",
+      "Focus on refinement, register, and expressive range.",
+    ],
+    es: [
+      "Tareas de maestría con control de matices complejos.",
+      "Velocidad, complejidad y adaptabilidad casi nativas.",
+      "Enfoque en refinamiento, registro y amplitud expresiva.",
+    ],
+  },
 };
 
 const ASSESSMENT_CRITERIA = [
@@ -240,6 +328,8 @@ export default function ProficiencyTest() {
   const [assessedLevel, setAssessedLevel] = useState(null);
   const [assessmentSummary, setAssessmentSummary] = useState("");
   const [assessmentScores, setAssessmentScores] = useState(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [assessmentError, setAssessmentError] = useState(false);
   const assessmentDoneRef = useRef(false);
 
   // Progress bar
@@ -418,7 +508,7 @@ export default function ProficiencyTest() {
         pushMessage({
           id: uid(),
           role: "user",
-          lang: "en",
+          lang: targetLang,
           textFinal: text,
           textStream: "",
           done: true,
@@ -520,6 +610,8 @@ export default function ProficiencyTest() {
   }, [userMessageCount]);
 
   async function runAssessment() {
+    setIsEvaluating(true);
+    setAssessmentError(false);
     // Collect the full conversation for analysis
     const sorted = [...messagesRef.current].sort(
       (a, b) => (a.ts || 0) - (b.ts || 0)
@@ -620,6 +712,7 @@ ${transcript}`;
       }
     } catch (e) {
       console.error("Assessment failed:", e);
+      setAssessmentError(true);
       setAssessedLevel("A1");
       setAssessmentSummary(
         isEs
@@ -628,6 +721,7 @@ ${transcript}`;
       );
     }
 
+    setIsEvaluating(false);
     playSound(completeSound);
     setShowResult(true);
   }
@@ -675,6 +769,64 @@ ${transcript}`;
 
     navigate("/");
   }, [currentNpub, assessedLevel, navigate, patchUser, user?.progress]);
+
+  const handleTryAgain = useCallback(() => {
+    stop();
+    setShowResult(false);
+    setMessages([]);
+    setErr("");
+    setUiState("idle");
+    setMood("neutral");
+    assessmentDoneRef.current = false;
+    setIsEvaluating(false);
+    setAssessmentError(false);
+    setAssessedLevel(null);
+    setAssessmentSummary("");
+    setAssessmentScores(null);
+    respToMsg.current.clear();
+    streamBuffersRef.current = new Map();
+    guardrailItemIdsRef.current = [];
+    pendingGuardrailTextRef.current = "";
+  }, []);
+
+  const scoreInsight = useMemo(() => {
+    if (!assessmentScores) return null;
+    const weighted = {
+      pronunciation: 1,
+      grammar: 1.25,
+      vocabulary: 1.1,
+      fluency: 1.25,
+      confidence: 0.9,
+      comprehension: 1.5,
+    };
+
+    let totalWeight = 0;
+    let weightedScore = 0;
+    const considered = [];
+
+    for (const criterion of ASSESSMENT_CRITERIA) {
+      const raw = assessmentScores[criterion.key];
+      const score =
+        typeof raw?.score === "number"
+          ? raw.score
+          : typeof raw === "number"
+          ? raw
+          : null;
+      if (score === null) continue;
+      const clamped = Math.max(1, Math.min(10, score));
+      const weight = weighted[criterion.key] || 1;
+      weightedScore += clamped * weight;
+      totalWeight += weight;
+      considered.push(criterion.key);
+    }
+
+    if (!totalWeight) return null;
+    return {
+      finalScore: (weightedScore / totalWeight).toFixed(1),
+      considered,
+      totalWeight: totalWeight.toFixed(2),
+    };
+  }, [assessmentScores]);
 
   /* ---- Connect / Disconnect ---- */
   async function start() {
@@ -985,6 +1137,30 @@ ${transcript}`;
 
         {/* Timeline — newest first */}
         <VStack align="stretch" spacing={3} px={4} mt={3}>
+          {isEvaluating && (
+            <Box
+              bg="gray.800"
+              border="1px solid"
+              borderColor="gray.700"
+              rounded="2xl"
+              p={4}
+            >
+              <HStack spacing={3} align="center">
+                <RobotBuddyPro state="thinking" mood="thinking" maxW={60} />
+                <VStack align="start" spacing={0}>
+                  <Text fontWeight="semibold">
+                    {isEs ? "Evaluando" : "Evaluating"}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.75}>
+                    {isEs
+                      ? "Analizando tu conversación para determinar tu nivel..."
+                      : "Analyzing your conversation to determine your level..."}
+                  </Text>
+                </VStack>
+                <Spinner ml="auto" size="sm" color="cyan.300" />
+              </HStack>
+            </Box>
+          )}
           {timeline.map((m) => {
             const isUser = m.role === "user";
             if (isUser) {
@@ -1224,7 +1400,60 @@ ${transcript}`;
                 </>
               )}
 
+              {(scoreInsight || assessmentScores) && (
+                <Box
+                  bg="gray.800"
+                  p={4}
+                  rounded="xl"
+                  border="1px solid"
+                  borderColor="gray.700"
+                >
+                  <Text fontWeight="semibold" fontSize="md" mb={2}>
+                    {isEs
+                      ? "Cómo se calculó tu resultado"
+                      : "How your result was calculated"}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.8} lineHeight="1.6">
+                    {isEs
+                      ? "El evaluador revisó tus respuestas en 6 criterios: pronunciación, gramática, vocabulario, fluidez, confianza y comprensión. Cada criterio incluye evidencia textual de tu conversación para justificar la nota."
+                      : "The assessor reviewed your responses across 6 criteria: pronunciation, grammar, vocabulary, fluency, confidence, and comprehension. Each criterion includes textual evidence from your conversation to justify the score."}
+                  </Text>
+                  {scoreInsight && (
+                    <Text fontSize="sm" mt={3} opacity={0.9}>
+                      {isEs
+                        ? `Puntaje compuesto (ponderado): ${scoreInsight.finalScore}/10. Se consideraron: ${scoreInsight.considered.join(", ")} (peso total ${scoreInsight.totalWeight}).`
+                        : `Weighted composite score: ${scoreInsight.finalScore}/10. Considered: ${scoreInsight.considered.join(", ")} (total weight ${scoreInsight.totalWeight}).`}
+                    </Text>
+                  )}
+                </Box>
+              )}
+
               <Divider borderColor="gray.700" />
+
+              {assessedLevel && (
+                <Box
+                  bg="gray.800"
+                  p={4}
+                  rounded="xl"
+                  border="1px solid"
+                  borderColor="gray.700"
+                >
+                  <Text fontWeight="semibold" fontSize="md" mb={2}>
+                    {isEs
+                      ? `Qué te ofrece el nivel ${assessedLevel}`
+                      : `What level ${assessedLevel} will offer`}
+                  </Text>
+                  <VStack align="start" spacing={2}>
+                    {(CEFR_LEVEL_OFFERINGS[assessedLevel]?.[isEs ? "es" : "en"] || []).map(
+                      (item) => (
+                        <Text key={item} fontSize="sm" opacity={0.85}>
+                          • {item}
+                        </Text>
+                      )
+                    )}
+                  </VStack>
+                </Box>
+              )}
 
               {/* Unlocked levels */}
               {assessedLevel && assessedLevel !== "Pre-A1" && (
@@ -1263,20 +1492,49 @@ ${transcript}`;
                 </Box>
               )}
 
-              {/* Return to app button */}
+              {assessmentError && (
+                <Text fontSize="sm" color="yellow.300" textAlign="center">
+                  {isEs
+                    ? "Hubo un problema al evaluar automáticamente. Puedes intentar de nuevo."
+                    : "There was a problem with automatic evaluation. You can try again."}
+                </Text>
+              )}
+            </VStack>
+          </DrawerBody>
+          <DrawerFooter
+            borderTop="1px solid"
+            borderColor="gray.700"
+            bg="gray.900"
+            position="sticky"
+            bottom={0}
+            zIndex={2}
+            px={{ base: 4, md: 6 }}
+            py={4}
+          >
+            <HStack w="100%" spacing={3}>
               <Button
-                w="100%"
+                flex={1}
+                size="lg"
+                variant="outline"
+                colorScheme="whiteAlpha"
+                onClick={handleTryAgain}
+                rounded="xl"
+              >
+                {isEs ? "Intentar de nuevo" : "Try again"}
+              </Button>
+              <Button
+                flex={1}
                 size="lg"
                 colorScheme="cyan"
                 onClick={handleReturnToApp}
                 fontWeight="bold"
                 rounded="xl"
-                py={6}
+                isDisabled={!assessedLevel}
               >
                 {isEs ? "Volver a la aplicación" : "Return to app"}
               </Button>
-            </VStack>
-          </DrawerBody>
+            </HStack>
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
     </>
