@@ -900,8 +900,6 @@ ${transcript}`;
       dc.onopen = () => {
         const voiceName = getRandomVoice();
         const instructions = buildProficiencyInstructions();
-        const sttLang =
-          targetLang === "es" ? "es" : targetLang === "en" ? "en" : undefined;
 
         dc.send(
           JSON.stringify({
@@ -916,9 +914,11 @@ ${transcript}`;
                 threshold: 0.35,
                 prefix_padding_ms: 120,
               },
-              input_audio_transcription: sttLang
-                ? { model: "whisper-1", language: sttLang }
-                : { model: "whisper-1" },
+              input_audio_transcription: {
+                model: "whisper-1",
+                prompt:
+                  "Transcribe exactly what the speaker says in the original spoken language. Do not translate.",
+              },
               output_audio_format: "pcm16",
             },
           })
