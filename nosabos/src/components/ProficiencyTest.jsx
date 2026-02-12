@@ -3,16 +3,17 @@ import {
   Box,
   Button,
   Center,
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerOverlay,
   HStack,
+  Progress,
   Text,
   VStack,
   Badge,
   Spinner,
-  IconButton,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalBody,
+  Divider,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
@@ -63,6 +64,22 @@ const CEFR_LEVEL_INFO = {
   C1: { name: { en: "Advanced", es: "Avanzado" }, color: "#EF4444" },
   C2: { name: { en: "Mastery", es: "Maestría" }, color: "#EC4899" },
 };
+
+const ASSESSMENT_CRITERIA = [
+  { key: "pronunciation", en: "Pronunciation", es: "Pronunciación" },
+  { key: "grammar", en: "Grammar", es: "Gramática" },
+  { key: "vocabulary", en: "Vocabulary", es: "Vocabulario" },
+  { key: "fluency", en: "Fluency", es: "Fluidez" },
+  { key: "confidence", en: "Confidence", es: "Confianza" },
+  { key: "comprehension", en: "Comprehension", es: "Comprensión" },
+];
+
+function scoreColor(score) {
+  if (score >= 8) return "green";
+  if (score >= 6) return "teal";
+  if (score >= 4) return "yellow";
+  return "red";
+}
 
 /* ---- helpers ---- */
 const uid = () =>
@@ -217,10 +234,14 @@ export default function ProficiencyTest() {
     [messages]
   );
 
-  // Result modal
+  // Active response tracking (prevents duplicate messages)
+  const activeResponseMidRef = useRef(null);
+
+  // Result drawer
   const [showResult, setShowResult] = useState(false);
   const [assessedLevel, setAssessedLevel] = useState(null);
   const [assessmentSummary, setAssessmentSummary] = useState("");
+  const [assessmentScores, setAssessmentScores] = useState(null);
   const assessmentDoneRef = useRef(false);
 
   // Progress bar
@@ -348,8 +369,30 @@ export default function ProficiencyTest() {
 
     if (t === "response.created") {
       isIdleRef.current = false;
+
+      // If there's already an active (unfinished) assistant message,
+      // map this new response to it instead of creating a duplicate.
+      if (activeResponseMidRef.current) {
+        const stillActive = messagesRef.current.find(
+          (m) => m.id === activeResponseMidRef.current && !m.done
+        );
+        if (stillActive) {
+          respToMsg.current.set(rid, stillActive.id);
+          // Reset text since the new response replaces the previous one
+          updateMessage(stillActive.id, (prev) => ({
+            ...prev,
+            textFinal: "",
+            textStream: "",
+          }));
+          setUiState("speaking");
+          setMood("happy");
+          return;
+        }
+      }
+
       const mid = uid();
       respToMsg.current.set(rid, mid);
+      activeResponseMidRef.current = mid;
       setUiState("speaking");
       setMood("happy");
       return;
@@ -400,17 +443,30 @@ export default function ProficiencyTest() {
     if (t === "response.audio_transcript.done") {
       const mid = respToMsg.current.get(rid);
       if (mid) {
+        const finalText = typeof data?.text === "string" ? data.text : "";
         updateMessage(mid, (prev) => ({
           ...prev,
-          textFinal: (prev.textFinal || "") + (prev.textStream || ""),
+          textFinal: finalText
+            ? finalText
+            : ((prev.textFinal || "") + (prev.textStream || "")).trim(),
           textStream: "",
-          done: true,
         }));
       }
       return;
     }
 
-    if (t === "response.done") {
+    if (t === "response.done" || t === "response.completed" || t === "response.canceled") {
+      const mid = respToMsg.current.get(rid);
+      if (mid) {
+        updateMessage(mid, (prev) => ({
+          ...prev,
+          textFinal: prev.textFinal || (prev.textStream || "").trim(),
+          textStream: "",
+          done: true,
+        }));
+        respToMsg.current.delete(rid);
+      }
+      activeResponseMidRef.current = null;
       isIdleRef.current = true;
       setUiState("idle");
       setMood("neutral");
@@ -463,17 +519,19 @@ export default function ProficiencyTest() {
 
     const prompt = `You are a CEFR language proficiency assessor. Analyze this ${langName} conversation between a learner and an AI tutor.
 
-Based on the learner's responses, assess their CEFR level. Consider:
-- Vocabulary range and accuracy
-- Grammar complexity and correctness
-- Ability to handle different topics
-- Confidence and fluency indicators
-- Pronunciation awareness (based on transcription accuracy)
+Based on the learner's responses, assess their overall CEFR level and provide individual scores (1-10) for each criterion:
+- pronunciation: clarity and accuracy of speech (based on transcription accuracy)
+- grammar: complexity and correctness of grammatical structures
+- vocabulary: range and appropriateness of word choice
+- fluency: natural flow and ability to maintain conversation
+- confidence: willingness to attempt complex expressions
+- comprehension: ability to understand and respond appropriately
 
 Return ONLY valid JSON in this exact format:
-{"level":"A1","summary":"Brief 2-3 sentence explanation of why this level was assigned, noting strengths and areas for growth."}
+{"level":"A1","summary":"Brief 2-3 sentence overall explanation.","scores":{"pronunciation":{"score":7,"note":"Brief note"},"grammar":{"score":6,"note":"Brief note"},"vocabulary":{"score":5,"note":"Brief note"},"fluency":{"score":7,"note":"Brief note"},"confidence":{"score":8,"note":"Brief note"},"comprehension":{"score":6,"note":"Brief note"}}}
 
 Valid levels: Pre-A1, A1, A2, B1, B2, C1, C2
+Each score must be an integer from 1 to 10.
 
 Conversation transcript:
 ${transcript}`;
@@ -513,13 +571,20 @@ ${transcript}`;
       if (parsed?.level && CEFR_LEVELS.includes(parsed.level)) {
         setAssessedLevel(parsed.level);
         setAssessmentSummary(parsed.summary || "");
+        if (parsed.scores && typeof parsed.scores === "object") {
+          setAssessmentScores(parsed.scores);
+        }
       } else {
-        // Fallback
-        setAssessedLevel("A1");
+        // Try to extract level from text
+        const levelMatch = resultText?.match?.(
+          /\b(Pre-A1|A1|A2|B1|B2|C1|C2)\b/
+        );
+        setAssessedLevel(levelMatch?.[1] || "A1");
         setAssessmentSummary(
-          isEs
-            ? "No pudimos determinar tu nivel exacto. Te colocamos en A1."
-            : "We couldn't determine your exact level. Placing you at A1."
+          parsed?.summary ||
+            (isEs
+              ? "Evaluación completada. Revisa tus resultados abajo."
+              : "Assessment complete. Review your results below.")
         );
       }
     } catch (e) {
@@ -592,6 +657,8 @@ ${transcript}`;
     setShowResult(false);
     setAssessedLevel(null);
     setAssessmentSummary("");
+    setAssessmentScores(null);
+    activeResponseMidRef.current = null;
     setStatus("connecting");
     setUiState("idle");
 
@@ -758,9 +825,19 @@ ${transcript}`;
     };
   }, []);
 
-  /* ---- Timeline ---- */
+  /* ---- Timeline (deduplicated) ---- */
   const timeline = useMemo(() => {
-    return [...messages].sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
+    const sorted = [...messages].sort((a, b) => (b?.ts || 0) - (a?.ts || 0));
+    // Deduplicate assistant messages with identical text
+    const seenAssistantText = new Set();
+    return sorted.filter((m) => {
+      if (m.role !== "assistant") return true;
+      const text = ((m.textFinal || "") + (m.textStream || "")).trim();
+      if (!text) return false;
+      if (seenAssistantText.has(text)) return false;
+      seenAssistantText.add(text);
+      return true;
+    });
   }, [messages]);
 
   /* ---- Render ---- */
@@ -961,27 +1038,29 @@ ${transcript}`;
         <audio ref={audioRef} />
       </Box>
 
-      {/* ---- Result Modal ---- */}
-      <Modal
+      {/* ---- Result Drawer ---- */}
+      <Drawer
         isOpen={showResult}
+        placement="bottom"
         onClose={() => {}}
-        isCentered
-        size="lg"
         closeOnOverlayClick={false}
         closeOnEsc={false}
       >
-        <ModalOverlay bg="blackAlpha.700" backdropFilter="blur(6px)" />
-        <ModalContent
+        <DrawerOverlay bg="blackAlpha.700" backdropFilter="blur(6px)" />
+        <DrawerContent
           bg="gray.900"
           color="gray.100"
-          border="1px solid"
-          borderColor="gray.700"
-          rounded="2xl"
-          shadow="xl"
-          overflow="hidden"
-          maxW={{ base: "90%", sm: "md" }}
+          borderTopRadius="24px"
+          maxH="92vh"
+          display="flex"
+          flexDirection="column"
+          sx={{
+            "@supports (height: 100dvh)": {
+              maxHeight: "92dvh",
+            },
+          }}
         >
-          {/* Result header gradient */}
+          {/* Gradient header with level badge */}
           <Box
             bgGradient={
               levelInfo
@@ -989,28 +1068,30 @@ ${transcript}`;
                 : "linear(to-r, cyan.500, purple.500)"
             }
             px={6}
-            py={8}
+            py={6}
+            borderTopRadius="24px"
+            flexShrink={0}
           >
-            <VStack spacing={4} align="center">
-              <Box bg="whiteAlpha.200" p={4} rounded="full">
-                <Box as={LuBadgeCheck} fontSize="40px" color="white" />
+            <VStack spacing={3} align="center">
+              <Box bg="whiteAlpha.200" p={3} rounded="full">
+                <Box as={LuBadgeCheck} fontSize="36px" color="white" />
               </Box>
               <Text
-                fontSize="2xl"
+                fontSize="xl"
                 fontWeight="bold"
                 color="white"
                 textAlign="center"
               >
-                {isEs ? "¡Evaluación Completa!" : "Assessment Complete!"}
+                {isEs ? "Evaluación Completa" : "Assessment Complete"}
               </Text>
               {assessedLevel && (
                 <Badge
                   colorScheme="whiteAlpha"
                   bg="whiteAlpha.300"
                   color="white"
-                  fontSize="xl"
-                  px={6}
-                  py={2}
+                  fontSize="lg"
+                  px={5}
+                  py={1.5}
                   rounded="full"
                   fontWeight="bold"
                 >
@@ -1021,8 +1102,9 @@ ${transcript}`;
             </VStack>
           </Box>
 
-          <ModalBody px={6} py={6}>
+          <DrawerBody px={{ base: 4, md: 6 }} py={5} overflowY="auto">
             <VStack spacing={5} align="stretch">
+              {/* Summary */}
               {assessmentSummary && (
                 <Text
                   fontSize="md"
@@ -1034,6 +1116,81 @@ ${transcript}`;
                 </Text>
               )}
 
+              {/* Individual criterion scores */}
+              {assessmentScores && (
+                <>
+                  <Divider borderColor="gray.700" />
+                  <Box>
+                    <Text fontWeight="semibold" fontSize="md" mb={4}>
+                      {isEs ? "Desglose de Puntuación" : "Score Breakdown"}
+                    </Text>
+                    <VStack spacing={4} align="stretch">
+                      {ASSESSMENT_CRITERIA.map((criterion) => {
+                        const data = assessmentScores[criterion.key];
+                        const score =
+                          typeof data?.score === "number"
+                            ? Math.max(1, Math.min(10, data.score))
+                            : typeof data === "number"
+                            ? Math.max(1, Math.min(10, data))
+                            : null;
+                        const note =
+                          typeof data?.note === "string" ? data.note : "";
+
+                        return (
+                          <Box
+                            key={criterion.key}
+                            bg="gray.800"
+                            p={3}
+                            rounded="xl"
+                            border="1px solid"
+                            borderColor="gray.700"
+                          >
+                            <HStack justify="space-between" mb={2}>
+                              <Text fontSize="sm" fontWeight="medium">
+                                {criterion[isEs ? "es" : "en"]}
+                              </Text>
+                              {score !== null && (
+                                <Badge
+                                  colorScheme={scoreColor(score)}
+                                  variant="subtle"
+                                  fontSize="sm"
+                                  px={2}
+                                  rounded="md"
+                                >
+                                  {score}/10
+                                </Badge>
+                              )}
+                            </HStack>
+                            {score !== null && (
+                              <Progress
+                                value={score * 10}
+                                size="sm"
+                                rounded="full"
+                                colorScheme={scoreColor(score)}
+                                bg="gray.700"
+                              />
+                            )}
+                            {note && (
+                              <Text
+                                fontSize="xs"
+                                opacity={0.7}
+                                mt={2}
+                                lineHeight="1.5"
+                              >
+                                {note}
+                              </Text>
+                            )}
+                          </Box>
+                        );
+                      })}
+                    </VStack>
+                  </Box>
+                </>
+              )}
+
+              <Divider borderColor="gray.700" />
+
+              {/* Unlocked levels */}
               {assessedLevel && assessedLevel !== "Pre-A1" && (
                 <Box
                   bg="gray.800"
@@ -1070,6 +1227,7 @@ ${transcript}`;
                 </Box>
               )}
 
+              {/* Return to app button */}
               <Button
                 w="100%"
                 size="lg"
@@ -1082,9 +1240,9 @@ ${transcript}`;
                 {isEs ? "Volver a la aplicación" : "Return to app"}
               </Button>
             </VStack>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+          </DrawerBody>
+        </DrawerContent>
+      </Drawer>
     </>
   );
 }
