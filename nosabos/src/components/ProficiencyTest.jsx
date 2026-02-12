@@ -74,6 +74,82 @@ const ASSESSMENT_CRITERIA = [
   { key: "comprehension", en: "Comprehension", es: "Comprensión" },
 ];
 
+const EXCHANGE_DIFFICULTY_STEPS = [
+  {
+    levelHint: "Pre-A1 / A1",
+    en: "Greeting + basic personal information",
+    es: "Saludo + información personal básica",
+  },
+  {
+    levelHint: "A1 / A2",
+    en: "Daily routines, preferences, likes/dislikes",
+    es: "Rutinas diarias, preferencias, gustos",
+  },
+  {
+    levelHint: "A2 / B1",
+    en: "Past/future events and short opinions",
+    es: "Eventos pasados/futuros y opiniones breves",
+  },
+  {
+    levelHint: "B1 / B2",
+    en: "Abstract ideas and hypotheticals",
+    es: "Ideas abstractas e hipótesis",
+  },
+  {
+    levelHint: "C1 / C2",
+    en: "Nuanced, complex discussion",
+    es: "Discusión matizada y compleja",
+  },
+];
+
+const LEVEL_OFFERINGS = {
+  "Pre-A1": {
+    en: "Focus on recognition, first words, and confidence building.",
+    es: "Enfoque en reconocimiento, primeras palabras y construcción de confianza.",
+  },
+  A1: {
+    en: "Unlocks essential everyday communication and survival phrases.",
+    es: "Desbloquea comunicación cotidiana esencial y frases de supervivencia.",
+  },
+  A2: {
+    en: "Adds practical conversation for routines, travel, and social topics.",
+    es: "Añade conversación práctica para rutinas, viajes y temas sociales.",
+  },
+  B1: {
+    en: "Moves into independent communication and connected speech.",
+    es: "Avanza hacia comunicación independiente y discurso más conectado.",
+  },
+  B2: {
+    en: "Introduces argumentation, detailed explanations, and richer grammar.",
+    es: "Introduce argumentación, explicaciones detalladas y gramática más rica.",
+  },
+  C1: {
+    en: "Targets precise expression, nuanced meaning, and advanced control.",
+    es: "Apunta a expresión precisa, matices y control avanzado.",
+  },
+  C2: {
+    en: "Delivers near-native challenges with sophisticated language use.",
+    es: "Ofrece retos casi nativos con uso sofisticado del idioma.",
+  },
+};
+
+
+
+function getScoreBandLabel(score, isEs) {
+  if (score >= 8) return isEs ? "Fortaleza" : "Strength";
+  if (score >= 6) return isEs ? "Competente" : "Competent";
+  if (score >= 4) return isEs ? "En desarrollo" : "Developing";
+  return isEs ? "Área prioritaria" : "Priority area";
+}
+
+function mapAverageScoreToBand(avg) {
+  if (avg >= 8.5) return "C1-C2";
+  if (avg >= 7) return "B2";
+  if (avg >= 5.5) return "B1";
+  if (avg >= 4) return "A2";
+  if (avg >= 2.5) return "A1";
+  return "Pre-A1";
+}
 function scoreColor(score) {
   if (score >= 8) return "green";
   if (score >= 6) return "teal";
@@ -879,6 +955,44 @@ ${transcript}`;
   /* ---- Render ---- */
   const levelInfo = assessedLevel ? CEFR_LEVEL_INFO[assessedLevel] : null;
 
+  const normalizedScores = useMemo(() => {
+    if (!assessmentScores) return [];
+    return ASSESSMENT_CRITERIA.map((criterion) => {
+      const raw = assessmentScores[criterion.key];
+      const score =
+        typeof raw?.score === "number"
+          ? Math.max(1, Math.min(10, raw.score))
+          : typeof raw === "number"
+          ? Math.max(1, Math.min(10, raw))
+          : null;
+      const note = typeof raw?.note === "string" ? raw.note : "";
+      return {
+        ...criterion,
+        score,
+        note,
+      };
+    }).filter((item) => item.score !== null);
+  }, [assessmentScores]);
+
+  const aggregateInsight = useMemo(() => {
+    if (!normalizedScores.length) return null;
+    const total = normalizedScores.reduce((sum, item) => sum + item.score, 0);
+    const average = total / normalizedScores.length;
+    const sorted = [...normalizedScores].sort((a, b) => b.score - a.score);
+    const strongest = sorted.slice(0, 2);
+    const growth = [...sorted].reverse().slice(0, 2);
+    return {
+      average,
+      weightedBand: mapAverageScoreToBand(average),
+      strongest,
+      growth,
+    };
+  }, [normalizedScores]);
+
+  const unlockedLevels = assessedLevel
+    ? CEFR_LEVELS.slice(0, CEFR_LEVELS.indexOf(assessedLevel) + 1)
+    : [];
+
   return (
     <>
       <Box
@@ -1140,11 +1254,10 @@ ${transcript}`;
 
           <DrawerBody px={{ base: 4, md: 6 }} py={5} overflowY="auto">
             <VStack spacing={5} align="stretch">
-              {/* Summary */}
               {assessmentSummary && (
                 <Text
                   fontSize="md"
-                  opacity={0.9}
+                  opacity={0.95}
                   textAlign="center"
                   lineHeight="1.7"
                 >
@@ -1152,110 +1265,136 @@ ${transcript}`;
                 </Text>
               )}
 
-              {/* Individual criterion scores */}
-              {assessmentScores && (
+              <Box bg="gray.800" p={4} rounded="xl" border="1px solid" borderColor="gray.700">
+                <Text fontWeight="semibold" fontSize="md" mb={3}>
+                  {isEs ? "Cómo calculamos tu resultado" : "How we calculated your result"}
+                </Text>
+                <VStack align="stretch" spacing={2.5}>
+                  {EXCHANGE_DIFFICULTY_STEPS.map((step, idx) => (
+                    <HStack key={step.levelHint + idx} align="flex-start" spacing={3}>
+                      <Badge colorScheme={idx < Math.min(userMessageCount, MAX_EXCHANGES) ? "cyan" : "gray"} variant="subtle" mt={0.5}>
+                        {isEs ? `Intercambio ${idx + 1}` : `Exchange ${idx + 1}`}
+                      </Badge>
+                      <Box>
+                        <Text fontSize="sm" fontWeight="medium">
+                          {step[isEs ? "es" : "en"]}
+                        </Text>
+                        <Text fontSize="xs" opacity={0.7}>
+                          {isEs ? "Rango CEFR evaluado" : "CEFR range tested"}: {step.levelHint}
+                        </Text>
+                      </Box>
+                    </HStack>
+                  ))}
+                </VStack>
+              </Box>
+
+              {aggregateInsight && (
+                <Box bg="gray.800" p={4} rounded="xl" border="1px solid" borderColor="gray.700">
+                  <Text fontWeight="semibold" fontSize="md" mb={3}>
+                    {isEs ? "Resumen de decisión" : "Decision summary"}
+                  </Text>
+                  <HStack spacing={2} flexWrap="wrap" mb={3}>
+                    <Badge colorScheme="purple" variant="subtle" fontSize="sm">
+                      {isEs ? "Promedio" : "Average"}: {aggregateInsight.average.toFixed(1)}/10
+                    </Badge>
+                    <Badge colorScheme="orange" variant="subtle" fontSize="sm">
+                      {isEs ? "Banda por puntaje" : "Score band"}: {aggregateInsight.weightedBand}
+                    </Badge>
+                    {assessedLevel && (
+                      <Badge colorScheme="green" variant="subtle" fontSize="sm">
+                        {isEs ? "Nivel final" : "Final level"}: {assessedLevel}
+                      </Badge>
+                    )}
+                  </HStack>
+                  <Text fontSize="xs" opacity={0.75} lineHeight="1.6">
+                    {isEs
+                      ? "La evaluación combina desempeño por criterio + dificultad progresiva de los intercambios para decidir el nivel final."
+                      : "The assessment combines criterion scores + progressive exchange difficulty to decide your final placement."}
+                  </Text>
+                </Box>
+              )}
+
+              {!!normalizedScores.length && (
                 <>
                   <Divider borderColor="gray.700" />
                   <Box>
                     <Text fontWeight="semibold" fontSize="md" mb={4}>
-                      {isEs ? "Desglose de Puntuación" : "Score Breakdown"}
+                      {isEs ? "Qué se calificó (detalle por criterio)" : "What was graded (criterion detail)"}
                     </Text>
                     <VStack spacing={4} align="stretch">
-                      {ASSESSMENT_CRITERIA.map((criterion) => {
-                        const data = assessmentScores[criterion.key];
-                        const score =
-                          typeof data?.score === "number"
-                            ? Math.max(1, Math.min(10, data.score))
-                            : typeof data === "number"
-                            ? Math.max(1, Math.min(10, data))
-                            : null;
-                        const note =
-                          typeof data?.note === "string" ? data.note : "";
-
-                        return (
-                          <Box
-                            key={criterion.key}
-                            bg="gray.800"
-                            p={3}
-                            rounded="xl"
-                            border="1px solid"
-                            borderColor="gray.700"
-                          >
-                            <HStack justify="space-between" mb={2}>
-                              <Text fontSize="sm" fontWeight="medium">
-                                {criterion[isEs ? "es" : "en"]}
-                              </Text>
-                              {score !== null && (
-                                <Badge
-                                  colorScheme={scoreColor(score)}
-                                  variant="subtle"
-                                  fontSize="sm"
-                                  px={2}
-                                  rounded="md"
-                                >
-                                  {score}/10
-                                </Badge>
-                              )}
+                      {normalizedScores.map((criterion) => (
+                        <Box
+                          key={criterion.key}
+                          bg="gray.800"
+                          p={3}
+                          rounded="xl"
+                          border="1px solid"
+                          borderColor="gray.700"
+                        >
+                          <HStack justify="space-between" mb={2}>
+                            <Text fontSize="sm" fontWeight="medium">
+                              {criterion[isEs ? "es" : "en"]}
+                            </Text>
+                            <HStack spacing={2}>
+                              <Badge colorScheme={scoreColor(criterion.score)} variant="subtle" fontSize="sm" px={2} rounded="md">
+                                {criterion.score}/10
+                              </Badge>
+                              <Badge colorScheme="whiteAlpha" variant="subtle" fontSize="xs">
+                                {getScoreBandLabel(criterion.score, isEs)}
+                              </Badge>
                             </HStack>
-                            {score !== null && (
-                              <Progress
-                                value={score * 10}
-                                size="sm"
-                                rounded="full"
-                                colorScheme={scoreColor(score)}
-                                bg="gray.700"
-                              />
-                            )}
-                            {note && (
-                              <Text
-                                fontSize="xs"
-                                opacity={0.7}
-                                mt={2}
-                                lineHeight="1.5"
-                              >
-                                {note}
-                              </Text>
-                            )}
-                          </Box>
-                        );
-                      })}
+                          </HStack>
+                          <Progress
+                            value={criterion.score * 10}
+                            size="sm"
+                            rounded="full"
+                            colorScheme={scoreColor(criterion.score)}
+                            bg="gray.700"
+                          />
+                          {criterion.note && (
+                            <Text fontSize="xs" opacity={0.8} mt={2} lineHeight="1.5">
+                              {criterion.note}
+                            </Text>
+                          )}
+                        </Box>
+                      ))}
                     </VStack>
                   </Box>
                 </>
               )}
 
+              {aggregateInsight && (
+                <Box bg="gray.800" p={4} rounded="xl" border="1px solid" borderColor="gray.700">
+                  <Text fontWeight="semibold" fontSize="sm" mb={2}>
+                    {isEs ? "Fortalezas y enfoque recomendado" : "Strengths and recommended focus"}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.85}>
+                    {isEs ? "Fortalezas" : "Strengths"}: {aggregateInsight.strongest.map((item) => item[isEs ? "es" : "en"]).join(", ")}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.85} mt={1}>
+                    {isEs ? "Áreas de mejora" : "Growth areas"}: {aggregateInsight.growth.map((item) => item[isEs ? "es" : "en"]).join(", ")}
+                  </Text>
+                </Box>
+              )}
+
               <Divider borderColor="gray.700" />
 
-              {/* Unlocked levels */}
-              {assessedLevel && assessedLevel !== "Pre-A1" && (
-                <Box
-                  bg="gray.800"
-                  p={4}
-                  rounded="xl"
-                  border="1px solid"
-                  borderColor="gray.700"
-                >
-                  <Text fontSize="sm" opacity={0.8} textAlign="center">
-                    {isEs
-                      ? `Se desbloquearán todos los niveles hasta ${assessedLevel} en la aplicación.`
-                      : `All levels up to ${assessedLevel} will be unlocked in the app.`}
+              {assessedLevel && (
+                <Box bg="gray.800" p={4} rounded="xl" border="1px solid" borderColor="gray.700">
+                  <Text fontSize="sm" fontWeight="semibold" mb={2}>
+                    {isEs ? `Qué te ofrece el nivel ${assessedLevel}` : `What level ${assessedLevel} offers you`}
                   </Text>
-                  <HStack
-                    mt={3}
-                    justify="center"
-                    spacing={2}
-                    flexWrap="wrap"
-                  >
-                    {CEFR_LEVELS.slice(
-                      0,
-                      CEFR_LEVELS.indexOf(assessedLevel) + 1
-                    ).map((lvl) => (
-                      <Badge
-                        key={lvl}
-                        colorScheme="green"
-                        variant="subtle"
-                        fontSize="xs"
-                      >
+                  <Text fontSize="sm" opacity={0.85}>
+                    {LEVEL_OFFERINGS[assessedLevel]?.[isEs ? "es" : "en"]}
+                  </Text>
+                  <Text fontSize="xs" opacity={0.7} mt={3}>
+                    {isEs
+                      ? "También desbloqueamos todo el contenido de niveles previos para asegurar una base sólida."
+                      : "We also unlock all prior levels so you can reinforce fundamentals while advancing."}
+                  </Text>
+                  <HStack mt={3} justify="center" spacing={2} flexWrap="wrap">
+                    {unlockedLevels.map((lvl) => (
+                      <Badge key={lvl} colorScheme="green" variant="subtle" fontSize="xs">
                         {lvl}
                       </Badge>
                     ))}
@@ -1263,7 +1402,6 @@ ${transcript}`;
                 </Box>
               )}
 
-              {/* Return to app button */}
               <Button
                 w="100%"
                 size="lg"
