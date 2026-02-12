@@ -45,7 +45,7 @@ const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
 const TRANSLATE_MODEL =
   import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
 
-const MAX_EXCHANGES = 14;
+const MAX_EXCHANGES = 5;
 
 const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -218,8 +218,9 @@ export default function ProficiencyTest() {
   }, [messages]);
 
   const respToMsg = useRef(new Map());
+  const streamBuffersRef = useRef(new Map());
+  const streamFlushTimerRef = useRef(null);
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
-  const translateTimers = useRef(new Map());
 
   // Idle gating
   const isIdleRef = useRef(true);
@@ -234,9 +235,6 @@ export default function ProficiencyTest() {
     [messages]
   );
 
-  // Active response tracking (prevents duplicate messages)
-  const activeResponseMidRef = useRef(null);
-
   // Result drawer
   const [showResult, setShowResult] = useState(false);
   const [assessedLevel, setAssessedLevel] = useState(null);
@@ -248,10 +246,29 @@ export default function ProficiencyTest() {
   const progressPct = Math.min(100, (userMessageCount / MAX_EXCHANGES) * 100);
 
   function pushMessage(m) {
-    setMessages((p) => [...p, m]);
+    setMessages((p) => {
+      if (p.some((existing) => existing.id === m.id)) return p;
+      return [...p, m];
+    });
   }
   function updateMessage(id, updater) {
     setMessages((p) => p.map((m) => (m.id === id ? updater(m) : m)));
+  }
+
+  function scheduleStreamFlush() {
+    if (streamFlushTimerRef.current) return;
+    streamFlushTimerRef.current = setTimeout(() => {
+      const buffers = streamBuffersRef.current;
+      buffers.forEach((buf, mid) => {
+        if (!buf) return;
+        updateMessage(mid, (m) => ({
+          ...m,
+          textStream: (m.textStream || "") + buf,
+        }));
+      });
+      streamBuffersRef.current = new Map();
+      streamFlushTimerRef.current = null;
+    }, 50);
   }
 
   function ensureMessageForResponse(rid) {
@@ -317,11 +334,11 @@ export default function ProficiencyTest() {
       "Your task is to have a natural conversation that progressively tests the user's language ability.",
       "Start with very simple topics (greetings, basic questions) and gradually increase complexity.",
       `CONVERSATION FLOW across ${MAX_EXCHANGES} exchanges:`,
-      "Exchanges 1-3: Basic greetings, simple questions (name, where from, how are you). Pre-A1/A1 level.",
-      "Exchanges 4-6: Daily routines, likes/dislikes, simple descriptions. A1/A2 level.",
-      "Exchanges 7-9: Past events, future plans, opinions on simple topics. A2/B1 level.",
-      "Exchanges 10-12: Abstract topics, hypothetical situations, nuanced opinions. B1/B2 level.",
-      "Exchanges 13-14: Complex discussion, idioms, sophisticated expression. C1/C2 level.",
+      "Exchange 1: Basic greeting, simple question (name, how are you). Pre-A1/A1 level.",
+      "Exchange 2: Daily routines, likes/dislikes. A1/A2 level.",
+      "Exchange 3: Past events or future plans, opinions. A2/B1 level.",
+      "Exchange 4: Abstract topics, hypothetical situations. B1/B2 level.",
+      "Exchange 5: Complex discussion, nuanced expression. C1/C2 level.",
       "Keep your replies brief (≤20 words). Ask ONE question per turn to prompt the user.",
       "Adapt based on their responses — if they struggle, stay at that level longer.",
       "Be encouraging but accurate in your assessment.",
@@ -367,32 +384,12 @@ export default function ProficiencyTest() {
       return;
     }
 
+    // --- Ported from RealTimeTest / Conversations (proven pattern) ---
+
     if (t === "response.created") {
       isIdleRef.current = false;
-
-      // If there's already an active (unfinished) assistant message,
-      // map this new response to it instead of creating a duplicate.
-      if (activeResponseMidRef.current) {
-        const stillActive = messagesRef.current.find(
-          (m) => m.id === activeResponseMidRef.current && !m.done
-        );
-        if (stillActive) {
-          respToMsg.current.set(rid, stillActive.id);
-          // Reset text since the new response replaces the previous one
-          updateMessage(stillActive.id, (prev) => ({
-            ...prev,
-            textFinal: "",
-            textStream: "",
-          }));
-          setUiState("speaking");
-          setMood("happy");
-          return;
-        }
-      }
-
       const mid = uid();
       respToMsg.current.set(rid, mid);
-      activeResponseMidRef.current = mid;
       setUiState("speaking");
       setMood("happy");
       return;
@@ -431,43 +428,62 @@ export default function ProficiencyTest() {
       return;
     }
 
-    if (t === "response.audio_transcript.delta" && data?.delta) {
+    if (
+      (t === "response.audio_transcript.delta" ||
+        t === "response.output_text.delta" ||
+        t === "response.text.delta") &&
+      typeof data?.delta === "string"
+    ) {
       const mid = ensureMessageForResponse(rid);
-      updateMessage(mid, (prev) => ({
-        ...prev,
-        textStream: (prev.textStream || "") + data.delta,
+      const prev = streamBuffersRef.current.get(mid) || "";
+      streamBuffersRef.current.set(mid, prev + data.delta);
+      scheduleStreamFlush();
+      return;
+    }
+
+    if (
+      (t === "response.audio_transcript.done" ||
+        t === "response.output_text.done" ||
+        t === "response.text.done") &&
+      typeof data?.text === "string"
+    ) {
+      const mid = ensureMessageForResponse(rid);
+      const buf = streamBuffersRef.current.get(mid) || "";
+      if (buf) {
+        streamBuffersRef.current.set(mid, "");
+        updateMessage(mid, (m) => ({
+          ...m,
+          textStream: (m.textStream || "") + buf,
+        }));
+      }
+      updateMessage(mid, (m) => ({
+        ...m,
+        textFinal: ((m.textFinal || "").trim() + " " + data.text).trim(),
+        textStream: "",
       }));
       return;
     }
 
-    if (t === "response.audio_transcript.done") {
-      const mid = respToMsg.current.get(rid);
+    if (
+      t === "response.completed" ||
+      t === "response.done" ||
+      t === "response.canceled"
+    ) {
+      isIdleRef.current = true;
+      const mid = rid && respToMsg.current.get(rid);
       if (mid) {
-        const finalText = typeof data?.text === "string" ? data.text : "";
-        updateMessage(mid, (prev) => ({
-          ...prev,
-          textFinal: finalText
-            ? finalText
-            : ((prev.textFinal || "") + (prev.textStream || "")).trim(),
-          textStream: "",
-        }));
-      }
-      return;
-    }
-
-    if (t === "response.done" || t === "response.completed" || t === "response.canceled") {
-      const mid = respToMsg.current.get(rid);
-      if (mid) {
-        updateMessage(mid, (prev) => ({
-          ...prev,
-          textFinal: prev.textFinal || (prev.textStream || "").trim(),
-          textStream: "",
-          done: true,
-        }));
+        const buf = streamBuffersRef.current.get(mid) || "";
+        if (buf) {
+          streamBuffersRef.current.set(mid, "");
+          updateMessage(mid, (m) => ({
+            ...m,
+            textStream: "",
+            textFinal: ((m.textFinal || "") + " " + buf).trim(),
+          }));
+        }
+        updateMessage(mid, (m) => ({ ...m, done: true }));
         respToMsg.current.delete(rid);
       }
-      activeResponseMidRef.current = null;
-      isIdleRef.current = true;
       setUiState("idle");
       setMood("neutral");
       return;
@@ -483,6 +499,13 @@ export default function ProficiencyTest() {
       setUiState("thinking");
       setMood("thinking");
       return;
+    }
+
+    if (t === "error" && data?.error?.message) {
+      const msg = data.error.message || "";
+      if (/Cancellation failed/i.test(msg) || /no active response/i.test(msg))
+        return;
+      setErr((p) => p || msg);
     }
   }
 
@@ -517,21 +540,29 @@ export default function ProficiencyTest() {
       yua: "Yucatec Maya", en: "English",
     }[targetLang] || "the target language";
 
-    const prompt = `You are a CEFR language proficiency assessor. Analyze this ${langName} conversation between a learner and an AI tutor.
+    const prompt = `You are a CEFR language proficiency assessor. You just conducted a ${langName} placement test conversation with a learner.
 
-Based on the learner's responses, assess their overall CEFR level and provide individual scores (1-10) for each criterion:
-- pronunciation: clarity and accuracy of speech (based on transcription accuracy)
-- grammar: complexity and correctness of grammatical structures
-- vocabulary: range and appropriateness of word choice
-- fluency: natural flow and ability to maintain conversation
-- confidence: willingness to attempt complex expressions
-- comprehension: ability to understand and respond appropriately
+Analyze the learner's responses throughout the conversation below. For EACH of the 6 criteria, you MUST provide:
+- A specific score from 1 to 10
+- A detailed 1-2 sentence note explaining WHY you gave that score, citing specific words, phrases, or moments from their speech
 
-Return ONLY valid JSON in this exact format:
-{"level":"A1","summary":"Brief 2-3 sentence overall explanation.","scores":{"pronunciation":{"score":7,"note":"Brief note"},"grammar":{"score":6,"note":"Brief note"},"vocabulary":{"score":5,"note":"Brief note"},"fluency":{"score":7,"note":"Brief note"},"confidence":{"score":8,"note":"Brief note"},"comprehension":{"score":6,"note":"Brief note"}}}
+CRITERIA TO EVALUATE:
+1. pronunciation — How clearly and accurately they pronounced words. Reference specific words they struggled with or pronounced well based on the transcription.
+2. grammar — Complexity and correctness of grammatical structures used. Note specific errors (e.g., wrong conjugation, missing articles) or impressive structures (e.g., subjunctive, compound tenses).
+3. vocabulary — Range and appropriateness of word choices. Note if they used only basic words or demonstrated advanced/varied vocabulary.
+4. fluency — How naturally the conversation flowed. Note if responses were choppy/minimal or if they formed complete, flowing sentences.
+5. confidence — Willingness to attempt complex expressions vs. playing it safe with simple responses. Note specific moments where they took risks or held back.
+6. comprehension — How well they understood questions and responded appropriately. Note if they missed context, asked for clarification, or answered off-topic.
+
+Based on the combined scores, determine the overall CEFR level placement.
+
+IMPORTANT: You MUST return ONLY valid JSON with NO markdown formatting, NO backticks, NO explanation outside the JSON.
+
+Required JSON format:
+{"level":"B1","summary":"2-3 sentence overall assessment referencing what the learner did well and what they need to work on.","scores":{"pronunciation":{"score":7,"note":"Specific observation with examples from the conversation"},"grammar":{"score":6,"note":"Specific observation with examples from the conversation"},"vocabulary":{"score":5,"note":"Specific observation with examples from the conversation"},"fluency":{"score":7,"note":"Specific observation with examples from the conversation"},"confidence":{"score":8,"note":"Specific observation with examples from the conversation"},"comprehension":{"score":6,"note":"Specific observation with examples from the conversation"}}}
 
 Valid levels: Pre-A1, A1, A2, B1, B2, C1, C2
-Each score must be an integer from 1 to 10.
+Scores must be integers from 1 to 10.
 
 Conversation transcript:
 ${transcript}`;
@@ -658,7 +689,11 @@ ${transcript}`;
     setAssessedLevel(null);
     setAssessmentSummary("");
     setAssessmentScores(null);
-    activeResponseMidRef.current = null;
+    streamBuffersRef.current = new Map();
+    if (streamFlushTimerRef.current) {
+      clearTimeout(streamFlushTimerRef.current);
+      streamFlushTimerRef.current = null;
+    }
     setStatus("connecting");
     setUiState("idle");
 
@@ -820,6 +855,7 @@ ${transcript}`;
   useEffect(() => {
     return () => {
       aliveRef.current = false;
+      if (streamFlushTimerRef.current) clearTimeout(streamFlushTimerRef.current);
       try { localRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
       try { pcRef.current?.close(); } catch {}
     };
