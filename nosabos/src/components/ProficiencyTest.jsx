@@ -197,6 +197,89 @@ function safeParseJson(text) {
   return null;
 }
 
+
+function normalizeCefrLevel(level) {
+  if (!level) return null;
+  if (level === "A0") return "Pre-A1";
+  return level;
+}
+
+function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
+  const normalized = normalizeCefrLevel(modelLevel) || "Pre-A1";
+  const levelRank = {
+    "Pre-A1": 0,
+    A1: 1,
+    A2: 2,
+    B1: 3,
+    B2: 4,
+    C1: 5,
+    C2: 6,
+  };
+
+  const scoreFor = (key) => {
+    const raw = modelScores?.[key];
+    const val = typeof raw?.score === "number" ? raw.score : raw;
+    if (typeof val !== "number") return null;
+    return Math.max(1, Math.min(10, val));
+  };
+
+  const grammar = scoreFor("grammar");
+  const vocabulary = scoreFor("vocabulary");
+  const fluency = scoreFor("fluency");
+  const comprehension = scoreFor("comprehension");
+  const pronunciation = scoreFor("pronunciation");
+
+  const scored = [grammar, vocabulary, fluency, comprehension, pronunciation].filter(
+    (n) => typeof n === "number"
+  );
+  const avg = scored.length
+    ? scored.reduce((a, b) => a + b, 0) / scored.length
+    : null;
+
+  const combined = (userTexts || []).join(" ").toLowerCase();
+  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|what|que|qué|idk)/g;
+  const fallbackMatches = combined.match(fallbackPattern) || [];
+  const fallbackDensity = userTexts?.length
+    ? fallbackMatches.length / userTexts.length
+    : 0;
+
+  const tokenCounts = (userTexts || []).map((t) =>
+    t
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length
+  );
+  const avgTokens = tokenCounts.length
+    ? tokenCounts.reduce((a, b) => a + b, 0) / tokenCounts.length
+    : 0;
+
+  let cap = normalized;
+
+  // Hard floor for mostly non-comprehension / inability responses
+  if (fallbackDensity >= 0.5 || (avgTokens > 0 && avgTokens <= 2.4)) {
+    cap = "Pre-A1";
+  }
+
+  // Strict score gating so weak samples cannot jump to A2+
+  if (
+    (grammar !== null && grammar <= 2) ||
+    (comprehension !== null && comprehension <= 2)
+  ) {
+    cap = "Pre-A1";
+  } else if (avg !== null && avg < 4.5) {
+    cap = "A1";
+  } else if (
+    (grammar !== null && grammar < 5) ||
+    (vocabulary !== null && vocabulary < 5) ||
+    (fluency !== null && fluency < 5) ||
+    (comprehension !== null && comprehension < 5)
+  ) {
+    cap = "A1";
+  }
+
+  return levelRank[cap] < levelRank[normalized] ? cap : normalized;
+}
+
 /* ---- Bubble components ---- */
 function UserBubble({ label, text }) {
   if (!text) return null;
@@ -648,12 +731,19 @@ CRITERIA TO EVALUATE:
 
 Based on the combined scores, determine the overall CEFR level placement.
 
+STRICTNESS RULES (IMPORTANT):
+- Be conservative. Under-place rather than over-place when evidence is weak or inconsistent.
+- If the learner frequently says they don't understand, cannot answer, or gives fragmentary replies, place at A0/Pre-A1.
+- A2 requires consistent simple sentence production with basic grammar control and clear comprehension across most turns.
+- Do NOT award A2+ for isolated words, memorized chunks, or mostly clarification/failure responses.
+- If evidence is mixed, choose the lower level.
+
 IMPORTANT: You MUST return ONLY valid JSON with NO markdown formatting, NO backticks, NO explanation outside the JSON.
 
 Required JSON format:
 {"level":"B1","summary":"2-3 sentence overall assessment referencing what the learner did well and what they need to work on.","scores":{"pronunciation":{"score":7,"note":"Specific observation with examples from the conversation"},"grammar":{"score":6,"note":"Specific observation with examples from the conversation"},"vocabulary":{"score":5,"note":"Specific observation with examples from the conversation"},"fluency":{"score":7,"note":"Specific observation with examples from the conversation"},"confidence":{"score":8,"note":"Specific observation with examples from the conversation"},"comprehension":{"score":6,"note":"Specific observation with examples from the conversation"}}}
 
-Valid levels: Pre-A1, A1, A2, B1, B2, C1, C2
+Valid levels: A0, Pre-A1, A1, A2, B1, B2, C1, C2
 Scores must be integers from 1 to 10.
 
 Conversation transcript:
@@ -691,8 +781,21 @@ ${transcript}`;
       }
 
       const parsed = safeParseJson(resultText);
-      if (parsed?.level && CEFR_LEVELS.includes(parsed.level)) {
-        setAssessedLevel(parsed.level);
+      const userTexts = sorted
+        .filter((m) => m.role === "user")
+        .map((m) => (m.textFinal || m.textStream || "").trim())
+        .filter(Boolean);
+
+      if (parsed?.level) {
+        const modelLevel = normalizeCefrLevel(parsed.level);
+        const strictLevel = getStrictPlacementFromEvidence(
+          userTexts,
+          parsed.scores,
+          modelLevel
+        );
+        setAssessedLevel(
+          CEFR_LEVELS.includes(strictLevel) ? strictLevel : "Pre-A1"
+        );
         setAssessmentSummary(parsed.summary || "");
         if (parsed.scores && typeof parsed.scores === "object") {
           setAssessmentScores(parsed.scores);
@@ -700,9 +803,16 @@ ${transcript}`;
       } else {
         // Try to extract level from text
         const levelMatch = resultText?.match?.(
-          /\b(Pre-A1|A1|A2|B1|B2|C1|C2)\b/
+          /\b(A0|Pre-A1|A1|A2|B1|B2|C1|C2)\b/
         );
-        setAssessedLevel(levelMatch?.[1] || "A1");
+        const fallbackLevel = getStrictPlacementFromEvidence(
+          userTexts,
+          parsed?.scores,
+          normalizeCefrLevel(levelMatch?.[1] || "A1")
+        );
+        setAssessedLevel(
+          CEFR_LEVELS.includes(fallbackLevel) ? fallbackLevel : "Pre-A1"
+        );
         setAssessmentSummary(
           parsed?.summary ||
             (isEs
@@ -713,11 +823,11 @@ ${transcript}`;
     } catch (e) {
       console.error("Assessment failed:", e);
       setAssessmentError(true);
-      setAssessedLevel("A1");
+      setAssessedLevel("Pre-A1");
       setAssessmentSummary(
         isEs
-          ? "Error en la evaluación. Te colocamos en A1."
-          : "Assessment error. Placing you at A1."
+          ? "Error en la evaluación. Te colocamos en Pre-A1/A0 por seguridad."
+          : "Assessment error. Conservatively placing you at Pre-A1/A0."
       );
     }
 
