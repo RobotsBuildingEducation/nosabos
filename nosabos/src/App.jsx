@@ -101,7 +101,7 @@ import { FiClock, FiPause, FiPlay, FiTarget } from "react-icons/fi";
 import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { database, simplemodel } from "./firebaseResources/firebaseResources";
 
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 
 import useUserStore from "./hooks/useUserStore";
 import { useDecentralizedIdentity } from "./hooks/useDecentralizedIdentity";
@@ -140,6 +140,7 @@ import {
 import { awardXp } from "./utils/utils";
 import { RiArrowLeftLine } from "react-icons/ri";
 import SessionTimerModal from "./components/SessionTimerModal";
+import ProficiencyTestModal from "./components/ProficiencyTestModal";
 import TutorialStepper from "./components/TutorialStepper";
 import TutorialActionBarPopovers from "./components/TutorialActionBarPopovers";
 import AnimatedBackground from "./components/AnimatedBackground";
@@ -1340,6 +1341,7 @@ export default function App() {
   const initRef = useRef(false);
   const updateToastShownRef = useRef(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const isMobile = useBreakpointValue({ base: true, md: false });
   const helpChatDisclosure = useDisclosure();
   const helpChatRef = useRef(null);
@@ -2064,6 +2066,9 @@ export default function App() {
   const dailyGoalModalJustOpenedRef = useRef(false);
   const [shouldShowTimerAfterGoal, setShouldShowTimerAfterGoal] =
     useState(false);
+  const [shouldShowProficiencyAfterTimer, setShouldShowProficiencyAfterTimer] =
+    useState(false);
+  const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
 
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
@@ -2143,7 +2148,11 @@ export default function App() {
     setTimerPaused(false);
     setTimeUpOpen(false);
     setTimerModalOpen(false);
-  }, [handleResetTimer, timerMinutes]);
+    if (shouldShowProficiencyAfterTimer) {
+      setShouldShowProficiencyAfterTimer(false);
+      setProficiencyTestOpen(true);
+    }
+  }, [handleResetTimer, timerMinutes, shouldShowProficiencyAfterTimer]);
 
   const handleCloseTimeUp = useCallback(() => {
     setTimeUpOpen(false);
@@ -2626,6 +2635,7 @@ export default function App() {
       // Prompt for daily goal right after onboarding
       setDailyGoalOpen(true);
       setShouldShowTimerAfterGoal(true);
+      setShouldShowProficiencyAfterTimer(true);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
     }
@@ -3236,6 +3246,23 @@ export default function App() {
     }
   }, [shouldShowTimerAfterGoal]);
 
+  const handleTimerModalClose = useCallback(() => {
+    setTimerModalOpen(false);
+    if (shouldShowProficiencyAfterTimer) {
+      setShouldShowProficiencyAfterTimer(false);
+      setProficiencyTestOpen(true);
+    }
+  }, [shouldShowProficiencyAfterTimer]);
+
+  const handleProficiencySkip = useCallback(() => {
+    setProficiencyTestOpen(false);
+  }, []);
+
+  const handleProficiencyTakeTest = useCallback(() => {
+    setProficiencyTestOpen(false);
+    navigate("/proficiency");
+  }, [navigate]);
+
   const pickRandomFeature = useCallback(() => {
     const pool = RANDOM_POOL;
     if (!pool.length) return null;
@@ -3831,14 +3858,21 @@ export default function App() {
   // Determine current unlocked lesson level (highest level user can access in lesson mode)
   const currentLessonLevel = useMemo(() => {
     // Find the highest level that's unlocked for lessons
-    // A level is unlocked if the previous level is complete
+    // A level is unlocked if the previous level is complete OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
+
+    // If user has a proficiency placement, unlock up to that level
+    const placement = user?.proficiencyPlacement;
+    const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
       const nextLevel = CEFR_LEVELS[i + 1];
 
-      if (lessonLevelCompletionStatus[currentLevel]?.isComplete) {
+      if (
+        lessonLevelCompletionStatus[currentLevel]?.isComplete ||
+        i < placementIndex
+      ) {
         unlockedLevel = nextLevel;
       } else {
         break; // Stop at first incomplete level
@@ -3846,19 +3880,25 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [lessonLevelCompletionStatus]);
+  }, [lessonLevelCompletionStatus, user?.proficiencyPlacement]);
 
   // Determine current unlocked flashcard level (highest level user can access in flashcard mode)
   const currentFlashcardLevel = useMemo(() => {
     // Find the highest level that's unlocked for flashcards
-    // A level is unlocked if the previous level is complete
+    // A level is unlocked if the previous level is complete OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
+
+    const placement = user?.proficiencyPlacement;
+    const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
       const nextLevel = CEFR_LEVELS[i + 1];
 
-      if (flashcardLevelCompletionStatus[currentLevel]?.isComplete) {
+      if (
+        flashcardLevelCompletionStatus[currentLevel]?.isComplete ||
+        i < placementIndex
+      ) {
         unlockedLevel = nextLevel;
       } else {
         break; // Stop at first incomplete level
@@ -3866,19 +3906,25 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [flashcardLevelCompletionStatus]);
+  }, [flashcardLevelCompletionStatus, user?.proficiencyPlacement]);
 
   // Legacy: Combined current level (for backwards compatibility)
   const currentCEFRLevel = useMemo(() => {
     // Find the highest level that's unlocked in both modes
-    // A level is unlocked if the previous level is complete in BOTH modes
+    // A level is unlocked if the previous level is complete in BOTH modes OR user has proficiency placement
     let unlockedLevel = "Pre-A1"; // Pre-A1 is always unlocked
+
+    const placement = user?.proficiencyPlacement;
+    const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
 
     for (let i = 0; i < CEFR_LEVELS.length - 1; i++) {
       const currentLevel = CEFR_LEVELS[i];
       const nextLevel = CEFR_LEVELS[i + 1];
 
-      if (levelCompletionStatus[currentLevel]?.isComplete) {
+      if (
+        levelCompletionStatus[currentLevel]?.isComplete ||
+        i < placementIndex
+      ) {
         unlockedLevel = nextLevel;
       } else {
         break; // Stop at first incomplete level
@@ -3886,7 +3932,7 @@ export default function App() {
     }
 
     return unlockedLevel;
-  }, [levelCompletionStatus]);
+  }, [levelCompletionStatus, user?.proficiencyPlacement]);
 
   // State for which CEFR level is currently being viewed (separate for each mode)
   // Initialize with default, will be synced from user document when loaded
@@ -3898,6 +3944,9 @@ export default function App() {
   useEffect(() => {
     if (!user || hasInitializedLevels) return;
 
+    const placement = user?.proficiencyPlacement;
+    const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
+
     // Initialize from user document if available, but validate they're unlocked
     if (
       user.activeLessonLevel &&
@@ -3907,10 +3956,18 @@ export default function App() {
       const savedLevelIndex = CEFR_LEVELS.indexOf(user.activeLessonLevel);
       let isUnlocked = user.activeLessonLevel === "Pre-A1";
 
+      // Proficiency placement unlocks levels up to the placed level
+      if (!isUnlocked && savedLevelIndex <= placementIndex) {
+        isUnlocked = true;
+      }
+
       if (!isUnlocked) {
         isUnlocked = true;
         for (let i = 0; i < savedLevelIndex; i++) {
-          if (!lessonLevelCompletionStatus[CEFR_LEVELS[i]]?.isComplete) {
+          if (
+            !lessonLevelCompletionStatus[CEFR_LEVELS[i]]?.isComplete &&
+            i >= placementIndex
+          ) {
             isUnlocked = false;
             break;
           }
@@ -3933,10 +3990,17 @@ export default function App() {
       const savedLevelIndex = CEFR_LEVELS.indexOf(user.activeFlashcardLevel);
       let isUnlocked = user.activeFlashcardLevel === "Pre-A1";
 
+      if (!isUnlocked && savedLevelIndex <= placementIndex) {
+        isUnlocked = true;
+      }
+
       if (!isUnlocked) {
         isUnlocked = true;
         for (let i = 0; i < savedLevelIndex; i++) {
-          if (!flashcardLevelCompletionStatus[CEFR_LEVELS[i]]?.isComplete) {
+          if (
+            !flashcardLevelCompletionStatus[CEFR_LEVELS[i]]?.isComplete &&
+            i >= placementIndex
+          ) {
             isUnlocked = false;
             break;
           }
@@ -4604,13 +4668,20 @@ export default function App() {
 
       <SessionTimerModal
         isOpen={timerModalOpen}
-        onClose={() => setTimerModalOpen(false)}
+        onClose={handleTimerModalClose}
         minutes={timerMinutes}
         onMinutesChange={setTimerMinutes}
         onStart={handleStartTimer}
         isRunning={isTimerRunning}
         helper={timerHelper}
         t={t}
+      />
+
+      <ProficiencyTestModal
+        isOpen={proficiencyTestOpen}
+        onClose={handleProficiencySkip}
+        onTakeTest={handleProficiencyTakeTest}
+        lang={appLanguage}
       />
 
       <Modal
