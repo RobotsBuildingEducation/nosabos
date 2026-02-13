@@ -1,55 +1,141 @@
 import { create } from "zustand";
 
-// Spanish-speaking timezone identifiers
-const spanishTimezones = [
-  // Spain
-  "Europe/Madrid",
-  "Atlantic/Canary",
-  // Mexico
-  "America/Mexico_City",
-  "America/Tijuana",
-  "America/Monterrey",
-  "America/Merida",
-  "America/Cancun",
-  "America/Chihuahua",
-  "America/Mazatlan",
-  "America/Hermosillo",
-  // Central America
-  "America/Guatemala",
-  "America/El_Salvador",
-  "America/Tegucigalpa",
-  "America/Managua",
-  "America/Costa_Rica",
-  "America/Panama",
-  // South America
-  "America/Bogota",
-  "America/Lima",
-  "America/Guayaquil",
-  "America/Caracas",
-  "America/La_Paz",
-  "America/Santiago",
-  "America/Buenos_Aires",
-  "America/Argentina/Buenos_Aires",
-  "America/Argentina/Cordoba",
-  "America/Argentina/Mendoza",
-  "America/Montevideo",
-  "America/Asuncion",
-  // Caribbean
-  "America/Havana",
-  "America/Santo_Domingo",
-  "America/Puerto_Rico",
-];
+// All supported UI/support language codes.
+// When translations are added for a new language, add its code here.
+const SUPPORTED_LANGUAGES = new Set([
+  "en", "es", "pt", "fr", "it", "nl", "de",
+  "ja", "ru", "el", "pl", "ga", "nah", "yua",
+]);
 
-// Detect language based on timezone
-const detectLanguageFromTimezone = () => {
+// Timezone → language mapping for auto-detection.
+// Only languages with clear geographic timezone associations are listed.
+const TIMEZONE_LANG_MAP = {
+  // Spanish-speaking
+  "Europe/Madrid": "es",
+  "Atlantic/Canary": "es",
+  "America/Mexico_City": "es",
+  "America/Tijuana": "es",
+  "America/Monterrey": "es",
+  "America/Merida": "es",
+  "America/Cancun": "es",
+  "America/Chihuahua": "es",
+  "America/Mazatlan": "es",
+  "America/Hermosillo": "es",
+  "America/Guatemala": "es",
+  "America/El_Salvador": "es",
+  "America/Tegucigalpa": "es",
+  "America/Managua": "es",
+  "America/Costa_Rica": "es",
+  "America/Panama": "es",
+  "America/Bogota": "es",
+  "America/Lima": "es",
+  "America/Guayaquil": "es",
+  "America/Caracas": "es",
+  "America/La_Paz": "es",
+  "America/Santiago": "es",
+  "America/Buenos_Aires": "es",
+  "America/Argentina/Buenos_Aires": "es",
+  "America/Argentina/Cordoba": "es",
+  "America/Argentina/Mendoza": "es",
+  "America/Montevideo": "es",
+  "America/Asuncion": "es",
+  "America/Havana": "es",
+  "America/Santo_Domingo": "es",
+  "America/Puerto_Rico": "es",
+  // Portuguese-speaking
+  "America/Sao_Paulo": "pt",
+  "America/Fortaleza": "pt",
+  "America/Recife": "pt",
+  "America/Belem": "pt",
+  "America/Manaus": "pt",
+  "America/Cuiaba": "pt",
+  "America/Porto_Velho": "pt",
+  "America/Boa_Vista": "pt",
+  "America/Campo_Grande": "pt",
+  "America/Bahia": "pt",
+  "America/Araguaina": "pt",
+  "America/Maceio": "pt",
+  "America/Noronha": "pt",
+  "Europe/Lisbon": "pt",
+  "Atlantic/Azores": "pt",
+  "Atlantic/Madeira": "pt",
+  // French-speaking
+  "Europe/Paris": "fr",
+  "America/Guadeloupe": "fr",
+  "America/Martinique": "fr",
+  "America/Cayenne": "fr",
+  "Indian/Reunion": "fr",
+  "Pacific/Noumea": "fr",
+  "Pacific/Tahiti": "fr",
+  // Italian-speaking
+  "Europe/Rome": "it",
+  // German-speaking
+  "Europe/Berlin": "de",
+  "Europe/Vienna": "de",
+  "Europe/Zurich": "de",
+  // Dutch-speaking
+  "Europe/Amsterdam": "nl",
+  "America/Curacao": "nl",
+  // Greek-speaking
+  "Europe/Athens": "el",
+  // Polish-speaking
+  "Europe/Warsaw": "pl",
+  // Russian-speaking
+  "Europe/Moscow": "ru",
+  "Europe/Kaliningrad": "ru",
+  "Europe/Samara": "ru",
+  "Asia/Yekaterinburg": "ru",
+  "Asia/Novosibirsk": "ru",
+  "Asia/Krasnoyarsk": "ru",
+  "Asia/Irkutsk": "ru",
+  "Asia/Yakutsk": "ru",
+  "Asia/Vladivostok": "ru",
+  "Asia/Magadan": "ru",
+  "Asia/Kamchatka": "ru",
+  // Japanese-speaking
+  "Asia/Tokyo": "ja",
+  // Irish-speaking (Ireland defaults to English; Irish is opt-in)
+  "Europe/Dublin": "en",
+};
+
+// Browser language prefix → app language code
+const BROWSER_LANG_MAP = {
+  es: "es",
+  pt: "pt",
+  fr: "fr",
+  it: "it",
+  de: "de",
+  nl: "nl",
+  el: "el",
+  pl: "pl",
+  ru: "ru",
+  ja: "ja",
+  ga: "ga",
+};
+
+// Detect language based on timezone, then browser language, then default to English
+const detectLanguageFromEnvironment = () => {
   try {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (spanishTimezones.includes(timezone)) {
-      return "es";
+    const tzLang = TIMEZONE_LANG_MAP[timezone];
+    if (tzLang && SUPPORTED_LANGUAGES.has(tzLang)) {
+      return tzLang;
     }
   } catch (e) {
     console.warn("Could not detect timezone:", e);
   }
+
+  // Fallback: browser language
+  try {
+    const browserLang = (navigator.language || "").split("-")[0].toLowerCase();
+    const mapped = BROWSER_LANG_MAP[browserLang];
+    if (mapped && SUPPORTED_LANGUAGES.has(mapped)) {
+      return mapped;
+    }
+  } catch (e) {
+    console.warn("Could not detect browser language:", e);
+  }
+
   return "en";
 };
 
@@ -57,7 +143,7 @@ const detectLanguageFromTimezone = () => {
 const getStoredLanguage = () => {
   try {
     const stored = localStorage.getItem("appLanguage");
-    if (stored === "es" || stored === "en") {
+    if (stored && SUPPORTED_LANGUAGES.has(stored)) {
       return stored;
     }
   } catch {}
@@ -67,7 +153,7 @@ const getStoredLanguage = () => {
 // Write language to localStorage (synchronous, immediate)
 const setStoredLanguage = (lang) => {
   try {
-    if (lang === "es" || lang === "en") {
+    if (lang && SUPPORTED_LANGUAGES.has(lang)) {
       localStorage.setItem("appLanguage", lang);
     }
   } catch {}
@@ -87,8 +173,8 @@ const useLanguage = create((set, get) => ({
         set({ language: stored });
         return stored;
       }
-      // Otherwise detect from timezone
-      const detectedLang = detectLanguageFromTimezone();
+      // Otherwise detect from environment
+      const detectedLang = detectLanguageFromEnvironment();
       setStoredLanguage(detectedLang); // Write immediately
       set({ language: detectedLang });
       return detectedLang;
@@ -102,7 +188,7 @@ const useLanguage = create((set, get) => ({
     set({ language: lang });
   },
 
-  // Toggle between English and Spanish
+  // Toggle between English and Spanish (legacy helper, kept for backwards compatibility)
   toggleLanguage: () => {
     const currentLang = get().language || "en";
     const newLang = currentLang === "en" ? "es" : "en";
@@ -117,4 +203,5 @@ const useLanguage = create((set, get) => ({
   },
 }));
 
+export { SUPPORTED_LANGUAGES };
 export default useLanguage;

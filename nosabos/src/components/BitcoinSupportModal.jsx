@@ -27,19 +27,10 @@ export default function BitcoinSupportModal({
   const lang = userLanguage === "es" ? "es" : "en";
   const ui = useMemo(() => translations[lang] || translations.en, [lang]);
 
-  const title =
-    ui.bitcoin_modal_title ||
-    (lang === "es" ? "Apoya con Bitcoin" : "Support with Bitcoin");
-  const description =
-    ui.onboarding_bitcoin_optional_desc ||
-    (lang === "es"
-      ? "Si quieres apoyar a una comunidad, elige una identidad y recarga tu billetera. Puedes omitir este paso."
-      : "If you'd like to support a community, choose an identity and top up your wallet. You can skip this for now.");
-  const skipLabel =
-    ui.bitcoin_modal_skip ||
-    (lang === "es" ? "Omitir por ahora" : "Skip for now");
-  const closeLabel =
-    ui.bitcoin_modal_close || (lang === "es" ? "Cerrar" : "Close");
+  const title = ui.bitcoin_modal_title || "Support with Bitcoin";
+  const description = ui.onboarding_bitcoin_optional_desc || "If you'd like to support a community, choose an identity and top up your wallet. You can skip this for now.";
+  const skipLabel = ui.bitcoin_modal_skip || "Skip for now";
+  const closeLabel = ui.bitcoin_modal_close || "Close";
 
   return (
     <Modal

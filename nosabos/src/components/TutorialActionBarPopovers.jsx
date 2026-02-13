@@ -23,6 +23,7 @@ import { FaBitcoin, FaKey } from "react-icons/fa";
 import useSoundSettings from "../hooks/useSoundSettings";
 import selectSound from "../assets/select.mp3";
 import submitActionSound from "../assets/submitaction.mp3";
+import { translations } from "../utils/translation";
 
 // Pulse animation for the popover
 const pulseKeyframes = keyframes`
@@ -32,75 +33,55 @@ const pulseKeyframes = keyframes`
 `;
 
 // Button explanations configuration - ordered left to right as they appear on skill tree
+// Labels/descriptions now reference translation keys
 const BUTTON_EXPLANATIONS = [
   {
     id: "back",
     icon: ArrowBackIcon,
-    label: { en: "Back Button", es: "Botón Atrás" },
-    description: {
-      en: "Returns you to the skill tree to choose another lesson",
-      es: "Te regresa al árbol de habilidades para elegir otra lección",
-    },
+    labelKey: "tutorial_btn_back_label",
+    descKey: "tutorial_btn_back_desc",
     position: 0,
   },
   {
     id: "teams",
     icon: PiUsersBold,
-    label: { en: "Teams", es: "Equipos" },
-    description: {
-      en: "Join or create study groups to learn together with friends",
-      es: "Únete o crea grupos de estudio para aprender junto con amigos",
-    },
+    labelKey: "tutorial_btn_teams_label",
+    descKey: "tutorial_btn_teams_desc",
     position: 1,
   },
   {
     id: "settings",
     icon: SettingsIcon,
-    label: { en: "Settings", es: "Configuración" },
-    description: {
-      en: "Customize your learning experience, voice, and preferences",
-      es: "Personaliza tu experiencia de aprendizaje, voz y preferencias",
-    },
+    labelKey: "tutorial_btn_settings_label",
+    descKey: "tutorial_btn_settings_desc",
     position: 2,
   },
   {
     id: "notes",
     icon: RiBookmarkLine,
-    label: { en: "Notes", es: "Notas" },
-    description: {
-      en: "View your study notes. Notes can be created when you attempt or complete exercises and flashcards.",
-      es: "Ve tus notas de estudio. Las notas se pueden crear cuando intentas o completas ejercicios y tarjetas de memoria.",
-    },
+    labelKey: "tutorial_btn_notes_label",
+    descKey: "tutorial_btn_notes_desc",
     position: 3,
   },
   {
     id: "identity",
     icon: FaBitcoin,
-    label: { en: "Account Key", es: "Llave de cuenta" },
-    description: {
-      en: "Access your account info to install the app and access your password",
-      es: "Accede a la información de tu cuenta para instalar la app y acceder a tu contraseña",
-    },
+    labelKey: "tutorial_btn_identity_label",
+    descKey: "tutorial_btn_identity_desc",
     position: 4,
   },
   {
     id: "help",
     icon: MdOutlineSupportAgent,
-    label: { en: "Assistant", es: "Asistente" },
-    description: {
-      en: "Get instant help and answers from our learning assistant",
-      es: "Obtén ayuda instantánea y respuestas de nuestro asistente de aprendizaje IA",
-    },
+    labelKey: "tutorial_btn_help_label",
+    descKey: "tutorial_btn_help_desc",
     position: 5,
   },
   {
     id: "mode",
     icon: PiPath,
-    label: { en: "Learning Mode", es: "Modo de Aprendizaje" },
-    description: {
-      en: "Switch between learning path, practice cards, and free conversation modes. The icon changes based on your current mode.",
-      es: "Cambia entre la ruta de aprendizaje, tarjetas de práctica y modos de conversación libre. El icono cambia según tu modo actual.",
-    },
+    labelKey: "tutorial_btn_mode_label",
+    descKey: "tutorial_btn_mode_desc",
     position: 6,
   },
 ];
@@ -119,6 +100,7 @@ export default function TutorialActionBarPopovers({
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const playSound = useSoundSettings((s) => s.playSound);
+  const ui = translations[lang] || translations.en;
 
   useEffect(() => {
     if (!isActive) {
@@ -201,7 +183,7 @@ export default function TutorialActionBarPopovers({
                 )}
               </Box>
               <Text fontSize="lg" fontWeight="bold" color="white">
-                {currentButton.label[lang]}
+                {ui[currentButton.labelKey] || translations.en[currentButton.labelKey]}
               </Text>
             </HStack>
 
@@ -212,7 +194,7 @@ export default function TutorialActionBarPopovers({
               textAlign="center"
               lineHeight="1.5"
             >
-              {currentButton.description[lang]}
+              {ui[currentButton.descKey] || translations.en[currentButton.descKey]}
             </Text>
 
             {/* Progress dots */}
@@ -235,7 +217,7 @@ export default function TutorialActionBarPopovers({
                 icon={<ChevronLeftIcon boxSize={5} />}
                 onClick={handlePrevious}
                 isDisabled={isFirstStep}
-                aria-label={lang === "es" ? "Anterior" : "Previous"}
+                aria-label={ui.tutorial_previous || "Previous"}
                 size="sm"
                 color="white"
                 colorScheme="purple"
@@ -258,13 +240,13 @@ export default function TutorialActionBarPopovers({
                   onClick={handleFinish}
                   px={4}
                 >
-                  {lang === "es" ? "Listo" : "Done"}
+                  {ui.tutorial_done || "Done"}
                 </Button>
               ) : (
                 <IconButton
                   icon={<ChevronRightIcon boxSize={5} />}
                   onClick={handleNext}
-                  aria-label={lang === "es" ? "Siguiente" : "Next"}
+                  aria-label={ui.tutorial_next || "Next"}
                   size="sm"
                   color="white"
                   colorScheme="purple"

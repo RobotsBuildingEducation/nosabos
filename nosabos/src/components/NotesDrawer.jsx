@@ -41,11 +41,11 @@ const CEFR_COLORS = {
   C2: "#A855F7",
 };
 
-// Module type labels
-const MODULE_LABELS = {
-  flashcard: { en: "Flashcard", es: "Tarjeta" },
-  vocabulary: { en: "Vocabulary", es: "Vocabulario" },
-  grammar: { en: "Grammar", es: "Gramática" },
+// Module type translation keys
+const MODULE_KEYS = {
+  flashcard: "notes_flashcard",
+  vocabulary: "notes_vocabulary",
+  grammar: "notes_grammar",
 };
 
 export default function NotesDrawer({
@@ -61,21 +61,18 @@ export default function NotesDrawer({
   const pcRef = useRef(null);
 
   const lang = appLanguage === "es" ? "es" : "en";
+  const ui = translations[lang] || translations.en;
 
   // Filter notes by current target language
   const filteredNotes = useMemo(() => {
     return notes.filter((note) => note.targetLang === targetLang);
   }, [notes, targetLang]);
 
-  const drawerTitle = lang === "es" ? "Mis Notas" : "My Notes";
-  const emptyMessage =
-    lang === "es"
-      ? "Aún no tienes notas. Completa tarjetas, vocabulario o gramática para crear notas automáticamente."
-      : "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
-  const clearAllLabel = lang === "es" ? "Borrar todo" : "Clear all";
-  const summaryLabel = lang === "es" ? "Resumen" : "Summary";
-  const lessonLabel = lang === "es" ? "Lección" : "Lesson";
-  const noNotesLabel = lang === "es" ? "Sin notas" : "No notes";
+  const drawerTitle = ui.notes_drawer_title || "My Notes";
+  const emptyMessage = ui.notes_empty || "No notes yet. Complete flashcards, vocabulary or grammar to automatically create notes.";
+  const clearAllLabel = ui.notes_clear_all || "Clear all";
+  const lessonLabel = ui.notes_lesson || "Lesson";
+  const noNotesLabel = ui.notes_no_notes || "No notes";
 
   const stopAudio = () => {
     if (audioRef.current) {
@@ -145,9 +142,11 @@ export default function NotesDrawer({
     return groups;
   }, [filteredNotes]);
 
+  const locale = lang === "es" ? "es-ES" : "en-US";
+
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString(lang === "es" ? "es-ES" : "en-US", {
+    return date.toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -155,7 +154,7 @@ export default function NotesDrawer({
 
   const formatDate = (timestamp) => {
     const date = new Date(timestamp);
-    return date.toLocaleDateString(lang === "es" ? "es-ES" : "en-US", {
+    return date.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
     });
@@ -167,10 +166,10 @@ export default function NotesDrawer({
         ? note.lessonTitle[lang] || note.lessonTitle.en || "Note"
         : note.lessonTitle || "Note";
 
-    const moduleLabel =
-      MODULE_LABELS[note.moduleType]?.[lang] ||
-      MODULE_LABELS[note.moduleType]?.en ||
-      note.moduleType;
+    const moduleKey = MODULE_KEYS[note.moduleType];
+    const moduleLabel = moduleKey
+      ? ui[moduleKey] || translations.en[moduleKey] || note.moduleType
+      : note.moduleType;
 
     return (
       <AccordionItem
@@ -251,7 +250,7 @@ export default function NotesDrawer({
                     <RiVolumeUpLine size={16} />
                   )
                 }
-                aria-label={lang === "es" ? "Escuchar" : "Listen"}
+                aria-label={ui.notes_listen || "Listen"}
                 size="sm"
                 variant="ghost"
                 colorScheme="blue"
@@ -263,7 +262,7 @@ export default function NotesDrawer({
               />
               <IconButton
                 icon={<RiDeleteBinLine size={16} />}
-                aria-label={lang === "es" ? "Eliminar nota" : "Delete note"}
+                aria-label={ui.notes_delete_note || "Delete note"}
                 size="sm"
                 variant="ghost"
                 colorScheme="red"
@@ -358,12 +357,8 @@ export default function NotesDrawer({
                               {hasNotes
                                 ? `${levelNotes.length} ${
                                     levelNotes.length === 1
-                                      ? lang === "es"
-                                        ? "nota"
-                                        : "note"
-                                      : lang === "es"
-                                      ? "notas"
-                                      : "notes"
+                                      ? ui.notes_note_singular || "note"
+                                      : ui.notes_note_plural || "notes"
                                   }`
                                 : noNotesLabel}
                             </Text>
