@@ -6,6 +6,7 @@ import {
   Drawer,
   DrawerBody,
   DrawerContent,
+  DrawerFooter,
   DrawerOverlay,
   HStack,
   Progress,
@@ -65,6 +66,93 @@ const CEFR_LEVEL_INFO = {
   C2: { name: { en: "Mastery", es: "Maestría" }, color: "#EC4899" },
 };
 
+const CEFR_LEVEL_OFFERINGS = {
+  "Pre-A1": {
+    en: [
+      "Ultra-guided lessons with basic words and phrases.",
+      "Very short prompts with lots of repetition.",
+      "Focus on confidence and comprehension foundations.",
+    ],
+    es: [
+      "Lecciones guiadas con palabras y frases básicas.",
+      "Ejercicios muy cortos con mucha repetición.",
+      "Enfoque en confianza y comprensión inicial.",
+    ],
+  },
+  A1: {
+    en: [
+      "Beginner modules for greetings, personal info, and daily basics.",
+      "Simple conversation drills with frequent support.",
+      "Core vocabulary and sentence patterns.",
+    ],
+    es: [
+      "Módulos iniciales de saludos, información personal y rutina.",
+      "Prácticas simples de conversación con apoyo frecuente.",
+      "Vocabulario esencial y estructuras básicas.",
+    ],
+  },
+  A2: {
+    en: [
+      "Everyday scenario lessons (shopping, plans, routines).",
+      "Longer responses and clearer tense control.",
+      "Expanded practical vocabulary for real interactions.",
+    ],
+    es: [
+      "Lecciones de situaciones cotidianas (compras, planes, rutina).",
+      "Respuestas más largas y mejor manejo de tiempos verbales.",
+      "Vocabulario práctico ampliado para interacciones reales.",
+    ],
+  },
+  B1: {
+    en: [
+      "Intermediate discussions with opinions and explanations.",
+      "Practice narrating past/future events with detail.",
+      "More nuanced grammar and connector usage.",
+    ],
+    es: [
+      "Conversaciones intermedias con opiniones y explicaciones.",
+      "Práctica narrando eventos pasados/futuros con detalle.",
+      "Gramática más matizada y mejor uso de conectores.",
+    ],
+  },
+  B2: {
+    en: [
+      "Upper-intermediate speaking with argumentation and precision.",
+      "Complex listening/reading contexts and abstract themes.",
+      "Greater focus on natural fluency and style control.",
+    ],
+    es: [
+      "Producción oral de nivel intermedio alto con argumentación.",
+      "Contextos complejos de escucha/lectura y temas abstractos.",
+      "Mayor enfoque en fluidez natural y control de estilo.",
+    ],
+  },
+  C1: {
+    en: [
+      "Advanced scenarios requiring precision and flexibility.",
+      "Idiomatic and professional language usage.",
+      "High-level tasks around tone, nuance, and persuasion.",
+    ],
+    es: [
+      "Escenarios avanzados que requieren precisión y flexibilidad.",
+      "Uso idiomático y profesional del idioma.",
+      "Tareas de alto nivel sobre tono, matiz y persuasión.",
+    ],
+  },
+  C2: {
+    en: [
+      "Mastery-level tasks with subtle meaning control.",
+      "Near-native speed, complexity, and adaptability.",
+      "Focus on refinement, register, and expressive range.",
+    ],
+    es: [
+      "Tareas de maestría con control de matices complejos.",
+      "Velocidad, complejidad y adaptabilidad casi nativas.",
+      "Enfoque en refinamiento, registro y amplitud expresiva.",
+    ],
+  },
+};
+
 const ASSESSMENT_CRITERIA = [
   { key: "pronunciation", en: "Pronunciation", es: "Pronunciación" },
   { key: "grammar", en: "Grammar", es: "Gramática" },
@@ -107,6 +195,89 @@ function safeParseJson(text) {
     } catch {}
   }
   return null;
+}
+
+
+function normalizeCefrLevel(level) {
+  if (!level) return null;
+  if (level === "A0") return "Pre-A1";
+  return level;
+}
+
+function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
+  const normalized = normalizeCefrLevel(modelLevel) || "Pre-A1";
+  const levelRank = {
+    "Pre-A1": 0,
+    A1: 1,
+    A2: 2,
+    B1: 3,
+    B2: 4,
+    C1: 5,
+    C2: 6,
+  };
+
+  const scoreFor = (key) => {
+    const raw = modelScores?.[key];
+    const val = typeof raw?.score === "number" ? raw.score : raw;
+    if (typeof val !== "number") return null;
+    return Math.max(1, Math.min(10, val));
+  };
+
+  const grammar = scoreFor("grammar");
+  const vocabulary = scoreFor("vocabulary");
+  const fluency = scoreFor("fluency");
+  const comprehension = scoreFor("comprehension");
+  const pronunciation = scoreFor("pronunciation");
+
+  const scored = [grammar, vocabulary, fluency, comprehension, pronunciation].filter(
+    (n) => typeof n === "number"
+  );
+  const avg = scored.length
+    ? scored.reduce((a, b) => a + b, 0) / scored.length
+    : null;
+
+  const combined = (userTexts || []).join(" ").toLowerCase();
+  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|what|que|qué|idk)/g;
+  const fallbackMatches = combined.match(fallbackPattern) || [];
+  const fallbackDensity = userTexts?.length
+    ? fallbackMatches.length / userTexts.length
+    : 0;
+
+  const tokenCounts = (userTexts || []).map((t) =>
+    t
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean).length
+  );
+  const avgTokens = tokenCounts.length
+    ? tokenCounts.reduce((a, b) => a + b, 0) / tokenCounts.length
+    : 0;
+
+  let cap = normalized;
+
+  // Hard floor for mostly non-comprehension / inability responses
+  if (fallbackDensity >= 0.5 || (avgTokens > 0 && avgTokens <= 2.4)) {
+    cap = "Pre-A1";
+  }
+
+  // Strict score gating so weak samples cannot jump to A2+
+  if (
+    (grammar !== null && grammar <= 2) ||
+    (comprehension !== null && comprehension <= 2)
+  ) {
+    cap = "Pre-A1";
+  } else if (avg !== null && avg < 4.5) {
+    cap = "A1";
+  } else if (
+    (grammar !== null && grammar < 5) ||
+    (vocabulary !== null && vocabulary < 5) ||
+    (fluency !== null && fluency < 5) ||
+    (comprehension !== null && comprehension < 5)
+  ) {
+    cap = "A1";
+  }
+
+  return levelRank[cap] < levelRank[normalized] ? cap : normalized;
 }
 
 /* ---- Bubble components ---- */
@@ -240,6 +411,8 @@ export default function ProficiencyTest() {
   const [assessedLevel, setAssessedLevel] = useState(null);
   const [assessmentSummary, setAssessmentSummary] = useState("");
   const [assessmentScores, setAssessmentScores] = useState(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [assessmentError, setAssessmentError] = useState(false);
   const assessmentDoneRef = useRef(false);
 
   // Progress bar
@@ -418,7 +591,7 @@ export default function ProficiencyTest() {
         pushMessage({
           id: uid(),
           role: "user",
-          lang: "en",
+          lang: targetLang,
           textFinal: text,
           textStream: "",
           done: true,
@@ -520,6 +693,8 @@ export default function ProficiencyTest() {
   }, [userMessageCount]);
 
   async function runAssessment() {
+    setIsEvaluating(true);
+    setAssessmentError(false);
     // Collect the full conversation for analysis
     const sorted = [...messagesRef.current].sort(
       (a, b) => (a.ts || 0) - (b.ts || 0)
@@ -556,12 +731,19 @@ CRITERIA TO EVALUATE:
 
 Based on the combined scores, determine the overall CEFR level placement.
 
+STRICTNESS RULES (IMPORTANT):
+- Be conservative. Under-place rather than over-place when evidence is weak or inconsistent.
+- If the learner frequently says they don't understand, cannot answer, or gives fragmentary replies, place at A0/Pre-A1.
+- A2 requires consistent simple sentence production with basic grammar control and clear comprehension across most turns.
+- Do NOT award A2+ for isolated words, memorized chunks, or mostly clarification/failure responses.
+- If evidence is mixed, choose the lower level.
+
 IMPORTANT: You MUST return ONLY valid JSON with NO markdown formatting, NO backticks, NO explanation outside the JSON.
 
 Required JSON format:
 {"level":"B1","summary":"2-3 sentence overall assessment referencing what the learner did well and what they need to work on.","scores":{"pronunciation":{"score":7,"note":"Specific observation with examples from the conversation"},"grammar":{"score":6,"note":"Specific observation with examples from the conversation"},"vocabulary":{"score":5,"note":"Specific observation with examples from the conversation"},"fluency":{"score":7,"note":"Specific observation with examples from the conversation"},"confidence":{"score":8,"note":"Specific observation with examples from the conversation"},"comprehension":{"score":6,"note":"Specific observation with examples from the conversation"}}}
 
-Valid levels: Pre-A1, A1, A2, B1, B2, C1, C2
+Valid levels: A0, Pre-A1, A1, A2, B1, B2, C1, C2
 Scores must be integers from 1 to 10.
 
 Conversation transcript:
@@ -599,8 +781,21 @@ ${transcript}`;
       }
 
       const parsed = safeParseJson(resultText);
-      if (parsed?.level && CEFR_LEVELS.includes(parsed.level)) {
-        setAssessedLevel(parsed.level);
+      const userTexts = sorted
+        .filter((m) => m.role === "user")
+        .map((m) => (m.textFinal || m.textStream || "").trim())
+        .filter(Boolean);
+
+      if (parsed?.level) {
+        const modelLevel = normalizeCefrLevel(parsed.level);
+        const strictLevel = getStrictPlacementFromEvidence(
+          userTexts,
+          parsed.scores,
+          modelLevel
+        );
+        setAssessedLevel(
+          CEFR_LEVELS.includes(strictLevel) ? strictLevel : "Pre-A1"
+        );
         setAssessmentSummary(parsed.summary || "");
         if (parsed.scores && typeof parsed.scores === "object") {
           setAssessmentScores(parsed.scores);
@@ -608,9 +803,16 @@ ${transcript}`;
       } else {
         // Try to extract level from text
         const levelMatch = resultText?.match?.(
-          /\b(Pre-A1|A1|A2|B1|B2|C1|C2)\b/
+          /\b(A0|Pre-A1|A1|A2|B1|B2|C1|C2)\b/
         );
-        setAssessedLevel(levelMatch?.[1] || "A1");
+        const fallbackLevel = getStrictPlacementFromEvidence(
+          userTexts,
+          parsed?.scores,
+          normalizeCefrLevel(levelMatch?.[1] || "A1")
+        );
+        setAssessedLevel(
+          CEFR_LEVELS.includes(fallbackLevel) ? fallbackLevel : "Pre-A1"
+        );
         setAssessmentSummary(
           parsed?.summary ||
             (isEs
@@ -620,14 +822,16 @@ ${transcript}`;
       }
     } catch (e) {
       console.error("Assessment failed:", e);
-      setAssessedLevel("A1");
+      setAssessmentError(true);
+      setAssessedLevel("Pre-A1");
       setAssessmentSummary(
         isEs
-          ? "Error en la evaluación. Te colocamos en A1."
-          : "Assessment error. Placing you at A1."
+          ? "Error en la evaluación. Te colocamos en Pre-A1/A0 por seguridad."
+          : "Assessment error. Conservatively placing you at Pre-A1/A0."
       );
     }
 
+    setIsEvaluating(false);
     playSound(completeSound);
     setShowResult(true);
   }
@@ -675,6 +879,64 @@ ${transcript}`;
 
     navigate("/");
   }, [currentNpub, assessedLevel, navigate, patchUser, user?.progress]);
+
+  const handleTryAgain = useCallback(() => {
+    stop();
+    setShowResult(false);
+    setMessages([]);
+    setErr("");
+    setUiState("idle");
+    setMood("neutral");
+    assessmentDoneRef.current = false;
+    setIsEvaluating(false);
+    setAssessmentError(false);
+    setAssessedLevel(null);
+    setAssessmentSummary("");
+    setAssessmentScores(null);
+    respToMsg.current.clear();
+    streamBuffersRef.current = new Map();
+    guardrailItemIdsRef.current = [];
+    pendingGuardrailTextRef.current = "";
+  }, []);
+
+  const scoreInsight = useMemo(() => {
+    if (!assessmentScores) return null;
+    const weighted = {
+      pronunciation: 1,
+      grammar: 1.25,
+      vocabulary: 1.1,
+      fluency: 1.25,
+      confidence: 0.9,
+      comprehension: 1.5,
+    };
+
+    let totalWeight = 0;
+    let weightedScore = 0;
+    const considered = [];
+
+    for (const criterion of ASSESSMENT_CRITERIA) {
+      const raw = assessmentScores[criterion.key];
+      const score =
+        typeof raw?.score === "number"
+          ? raw.score
+          : typeof raw === "number"
+          ? raw
+          : null;
+      if (score === null) continue;
+      const clamped = Math.max(1, Math.min(10, score));
+      const weight = weighted[criterion.key] || 1;
+      weightedScore += clamped * weight;
+      totalWeight += weight;
+      considered.push(criterion.key);
+    }
+
+    if (!totalWeight) return null;
+    return {
+      finalScore: (weightedScore / totalWeight).toFixed(1),
+      considered,
+      totalWeight: totalWeight.toFixed(2),
+    };
+  }, [assessmentScores]);
 
   /* ---- Connect / Disconnect ---- */
   async function start() {
@@ -748,8 +1010,6 @@ ${transcript}`;
       dc.onopen = () => {
         const voiceName = getRandomVoice();
         const instructions = buildProficiencyInstructions();
-        const sttLang =
-          targetLang === "es" ? "es" : targetLang === "en" ? "en" : undefined;
 
         dc.send(
           JSON.stringify({
@@ -764,9 +1024,11 @@ ${transcript}`;
                 threshold: 0.35,
                 prefix_padding_ms: 120,
               },
-              input_audio_transcription: sttLang
-                ? { model: "whisper-1", language: sttLang }
-                : { model: "whisper-1" },
+              input_audio_transcription: {
+                model: "whisper-1",
+                prompt:
+                  "Transcribe exactly what the speaker says in the original spoken language. Do not translate.",
+              },
               output_audio_format: "pcm16",
             },
           })
@@ -985,6 +1247,30 @@ ${transcript}`;
 
         {/* Timeline — newest first */}
         <VStack align="stretch" spacing={3} px={4} mt={3}>
+          {isEvaluating && (
+            <Box
+              bg="gray.800"
+              border="1px solid"
+              borderColor="gray.700"
+              rounded="2xl"
+              p={4}
+            >
+              <HStack spacing={3} align="center">
+                <RobotBuddyPro state="thinking" mood="thinking" maxW={60} />
+                <VStack align="start" spacing={0}>
+                  <Text fontWeight="semibold">
+                    {isEs ? "Evaluando" : "Evaluating"}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.75}>
+                    {isEs
+                      ? "Analizando tu conversación para determinar tu nivel..."
+                      : "Analyzing your conversation to determine your level..."}
+                  </Text>
+                </VStack>
+                <Spinner ml="auto" size="sm" color="cyan.300" />
+              </HStack>
+            </Box>
+          )}
           {timeline.map((m) => {
             const isUser = m.role === "user";
             if (isUser) {
@@ -1224,7 +1510,60 @@ ${transcript}`;
                 </>
               )}
 
+              {(scoreInsight || assessmentScores) && (
+                <Box
+                  bg="gray.800"
+                  p={4}
+                  rounded="xl"
+                  border="1px solid"
+                  borderColor="gray.700"
+                >
+                  <Text fontWeight="semibold" fontSize="md" mb={2}>
+                    {isEs
+                      ? "Cómo se calculó tu resultado"
+                      : "How your result was calculated"}
+                  </Text>
+                  <Text fontSize="sm" opacity={0.8} lineHeight="1.6">
+                    {isEs
+                      ? "El evaluador revisó tus respuestas en 6 criterios: pronunciación, gramática, vocabulario, fluidez, confianza y comprensión. Cada criterio incluye evidencia textual de tu conversación para justificar la nota."
+                      : "The assessor reviewed your responses across 6 criteria: pronunciation, grammar, vocabulary, fluency, confidence, and comprehension. Each criterion includes textual evidence from your conversation to justify the score."}
+                  </Text>
+                  {scoreInsight && (
+                    <Text fontSize="sm" mt={3} opacity={0.9}>
+                      {isEs
+                        ? `Puntaje compuesto (ponderado): ${scoreInsight.finalScore}/10. Se consideraron: ${scoreInsight.considered.join(", ")} (peso total ${scoreInsight.totalWeight}).`
+                        : `Weighted composite score: ${scoreInsight.finalScore}/10. Considered: ${scoreInsight.considered.join(", ")} (total weight ${scoreInsight.totalWeight}).`}
+                    </Text>
+                  )}
+                </Box>
+              )}
+
               <Divider borderColor="gray.700" />
+
+              {assessedLevel && (
+                <Box
+                  bg="gray.800"
+                  p={4}
+                  rounded="xl"
+                  border="1px solid"
+                  borderColor="gray.700"
+                >
+                  <Text fontWeight="semibold" fontSize="md" mb={2}>
+                    {isEs
+                      ? `Qué te ofrece el nivel ${assessedLevel}`
+                      : `What level ${assessedLevel} will offer`}
+                  </Text>
+                  <VStack align="start" spacing={2}>
+                    {(CEFR_LEVEL_OFFERINGS[assessedLevel]?.[isEs ? "es" : "en"] || []).map(
+                      (item) => (
+                        <Text key={item} fontSize="sm" opacity={0.85}>
+                          • {item}
+                        </Text>
+                      )
+                    )}
+                  </VStack>
+                </Box>
+              )}
 
               {/* Unlocked levels */}
               {assessedLevel && assessedLevel !== "Pre-A1" && (
@@ -1263,20 +1602,49 @@ ${transcript}`;
                 </Box>
               )}
 
-              {/* Return to app button */}
+              {assessmentError && (
+                <Text fontSize="sm" color="yellow.300" textAlign="center">
+                  {isEs
+                    ? "Hubo un problema al evaluar automáticamente. Puedes intentar de nuevo."
+                    : "There was a problem with automatic evaluation. You can try again."}
+                </Text>
+              )}
+            </VStack>
+          </DrawerBody>
+          <DrawerFooter
+            borderTop="1px solid"
+            borderColor="gray.700"
+            bg="gray.900"
+            position="sticky"
+            bottom={0}
+            zIndex={2}
+            px={{ base: 4, md: 6 }}
+            py={4}
+          >
+            <HStack w="100%" spacing={3}>
               <Button
-                w="100%"
+                flex={1}
+                size="lg"
+                variant="outline"
+                colorScheme="whiteAlpha"
+                onClick={handleTryAgain}
+                rounded="xl"
+              >
+                {isEs ? "Intentar de nuevo" : "Try again"}
+              </Button>
+              <Button
+                flex={1}
                 size="lg"
                 colorScheme="cyan"
                 onClick={handleReturnToApp}
                 fontWeight="bold"
                 rounded="xl"
-                py={6}
+                isDisabled={!assessedLevel}
               >
                 {isEs ? "Volver a la aplicación" : "Return to app"}
               </Button>
-            </VStack>
-          </DrawerBody>
+            </HStack>
+          </DrawerFooter>
         </DrawerContent>
       </Drawer>
     </>
