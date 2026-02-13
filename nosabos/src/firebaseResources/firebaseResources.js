@@ -44,4 +44,12 @@ const simplemodel = getGenerativeModel(vertexAI, {
   },
 });
 
-export { database, vertexAI, messaging, Schema, analytics, simplemodel };
+const gradingModel = getGenerativeModel(vertexAI, {
+  model: "gemini-3-flash-preview",
+  generationConfig: {
+    thinkingConfig: { thinkingBudget: 1024 },
+    responseMimeType: "application/json",
+  },
+});
+
+export { database, vertexAI, messaging, Schema, analytics, simplemodel, gradingModel };
