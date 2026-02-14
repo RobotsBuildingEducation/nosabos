@@ -42,7 +42,7 @@ const REALTIME_URL = `${
   REALTIME_MODEL
 )}`;
 
-const MAX_EXCHANGES = 5;
+const MAX_EXCHANGES = 10;
 
 const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -665,10 +665,15 @@ export default function ProficiencyTest() {
       "Start with very simple topics (greetings, basic questions) and gradually increase complexity.",
       `CONVERSATION FLOW across ${MAX_EXCHANGES} exchanges:`,
       "Exchange 1: Basic greeting, simple question (name, how are you). Pre-A1/A1 level.",
-      "Exchange 2: Daily routines, likes/dislikes. A1/A2 level.",
-      "Exchange 3: Past events or future plans, opinions. A2/B1 level.",
-      "Exchange 4: Abstract topics, hypothetical situations. B1/B2 level.",
-      "Exchange 5: Complex discussion, nuanced expression. C1/C2 level.",
+      "Exchange 2: Personal details and daily routines. Pre-A1/A1 level.",
+      "Exchange 3: Likes/dislikes and simple preferences. A1/A2 level.",
+      "Exchange 4: Short description of recent activity. A1/A2 level.",
+      "Exchange 5: Past events or future plans, brief opinions. A2/B1 level.",
+      "Exchange 6: Reasons, comparisons, and basic connectors. A2/B1 level.",
+      "Exchange 7: Abstract topics and hypothetical situations. B1/B2 level.",
+      "Exchange 8: Defend an opinion with supporting details. B1/B2 level.",
+      "Exchange 9: Complex discussion with nuance and precision. C1 level.",
+      "Exchange 10: Flexible, high-level expression with subtle meaning. C1/C2 level.",
       "Keep your replies brief (≤20 words). Ask ONE question per turn to prompt the user.",
       "Adapt based on their responses — if they struggle, stay at that level longer.",
       "Be encouraging but accurate in your assessment.",
