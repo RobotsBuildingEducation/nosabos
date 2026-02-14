@@ -2103,9 +2103,14 @@ export default function App() {
   useEffect(() => {
     if (proficiencyCheckDoneRef.current) return;
     if (isLoadingApp || !user) return;
-    if (Object.prototype.hasOwnProperty.call(user, "proficiencyPlacement")) {
-      return;
-    }
+
+    const placementDecision = user?.proficiencyPlacement;
+    const hasProficiencyDecision =
+      placementDecision !== undefined &&
+      placementDecision !== null &&
+      String(placementDecision).trim() !== "";
+    if (hasProficiencyDecision) return;
+
     if (dailyGoalOpen || timerModalOpen) return;
 
     proficiencyCheckDoneRef.current = true;
