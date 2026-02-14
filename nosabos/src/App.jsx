@@ -4234,12 +4234,22 @@ export default function App() {
       // Check if this level is unlocked in lesson mode
       let isUnlocked = newLevel === "Pre-A1";
 
+      // Proficiency placement unlocks levels up to the placed level
+      const placement = user?.proficiencyPlacement;
+      const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
+      if (!isUnlocked && newLevelIndex <= placementIndex) {
+        isUnlocked = true;
+      }
+
       if (!isUnlocked) {
         // Check all levels before this one are complete in lesson mode
         isUnlocked = true;
         for (let i = 0; i < newLevelIndex; i++) {
           const prevLevel = CEFR_LEVELS[i];
-          if (!lessonLevelCompletionStatus[prevLevel]?.isComplete) {
+          if (
+            !lessonLevelCompletionStatus[prevLevel]?.isComplete &&
+            i >= placementIndex
+          ) {
             isUnlocked = false;
             break;
           }
@@ -4255,7 +4265,7 @@ export default function App() {
         );
       }
     },
-    [lessonLevelCompletionStatus],
+    [lessonLevelCompletionStatus, user?.proficiencyPlacement],
   );
 
   // Handler for flashcard level navigation with lock checking
@@ -4266,12 +4276,22 @@ export default function App() {
       // Check if this level is unlocked in flashcard mode
       let isUnlocked = newLevel === "Pre-A1";
 
+      // Proficiency placement unlocks levels up to the placed level
+      const placement = user?.proficiencyPlacement;
+      const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
+      if (!isUnlocked && newLevelIndex <= placementIndex) {
+        isUnlocked = true;
+      }
+
       if (!isUnlocked) {
         // Check all levels before this one are complete in flashcard mode
         isUnlocked = true;
         for (let i = 0; i < newLevelIndex; i++) {
           const prevLevel = CEFR_LEVELS[i];
-          if (!flashcardLevelCompletionStatus[prevLevel]?.isComplete) {
+          if (
+            !flashcardLevelCompletionStatus[prevLevel]?.isComplete &&
+            i >= placementIndex
+          ) {
             isUnlocked = false;
             break;
           }
@@ -4287,7 +4307,7 @@ export default function App() {
         );
       }
     },
-    [flashcardLevelCompletionStatus],
+    [flashcardLevelCompletionStatus, user?.proficiencyPlacement],
   );
 
   // Legacy: Combined handler for level navigation
