@@ -234,7 +234,7 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
     : null;
 
   const combined = (userTexts || []).join(" ").toLowerCase();
-  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|what|que|qué|idk|huh|um+|uh+|hmm+|lol|haha|ok|okay|yes|no|si|sí)/g;
+  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|idk|huh|um+|uh+|hmm+|lol|haha)/g;
   const fallbackMatches = combined.match(fallbackPattern) || [];
   const fallbackDensity = userTexts?.length
     ? fallbackMatches.length / userTexts.length
@@ -251,13 +251,8 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
     : 0;
   const totalTokens = tokenCounts.reduce((a, b) => a + b, 0);
 
-  // Check for nonsense / gibberish: very short total output
-  const noSubstance = totalTokens < 8 || avgTokens <= 2;
-
-  // Check for wrong-language or random text: count unique real words
-  const allWords = combined.split(/\s+/).filter(Boolean);
-  const uniqueWords = new Set(allWords);
-  const uniqueRatio = allWords.length > 0 ? uniqueWords.size / allWords.length : 0;
+  // Check for nonsense / gibberish: extremely short total output
+  const noSubstance = totalTokens < 6 || avgTokens < 2;
 
   let cap = normalized;
 
@@ -267,60 +262,55 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
   }
 
   // HARD FLOOR: mostly filler / non-comprehension responses
-  if (fallbackDensity >= 0.4) {
+  if (fallbackDensity >= 0.75) {
     return "Pre-A1";
   }
 
-  // HARD FLOOR: very short average responses (≤3 words) with low scores
-  if (avgTokens <= 3 && avg !== null && avg < 5) {
+  // Very limited production tends to be Pre-A1/A1 depending on score signal
+  if (avgTokens <= 2.5 && avg !== null && avg < 4) {
     return "Pre-A1";
   }
 
-  // Strict score gating: any critical skill ≤ 2 → Pre-A1
+  // Core skill floor: very low critical skills should not exceed A1
   if (
     (grammar !== null && grammar <= 2) ||
     (comprehension !== null && comprehension <= 2) ||
     (vocabulary !== null && vocabulary <= 2)
   ) {
-    cap = "Pre-A1";
-  }
-  // Average below 3.5 → Pre-A1
-  else if (avg !== null && avg < 3.5) {
-    cap = "Pre-A1";
-  }
-  // Average below 5 → A1 max
-  else if (avg !== null && avg < 5) {
     cap = "A1";
   }
-  // Any core skill below 5 → A1 max
-  else if (
-    (grammar !== null && grammar < 5) ||
-    (vocabulary !== null && vocabulary < 5) ||
-    (fluency !== null && fluency < 5) ||
-    (comprehension !== null && comprehension < 5)
-  ) {
+  // CEFR-oriented score banding from rubric evidence
+  else if (avg !== null && avg < 3.2) {
+    cap = "Pre-A1";
+  }
+  else if (avg !== null && avg < 4.4) {
     cap = "A1";
   }
-  // A2 requires: avg ≥ 5, all core skills ≥ 5, avg tokens ≥ 4
-  else if (avg !== null && avg < 6) {
+  else if (avg !== null && avg < 5.6) {
     cap = "A2";
   }
-  // B1 requires: avg ≥ 6, substantial responses
-  else if (avg !== null && avg < 7) {
-    if (avgTokens < 5) cap = "A2";
+  else if (avg !== null && avg < 6.8) {
+    if (avgTokens < 4) cap = "A2";
     else cap = "B1";
   }
-  // B2+ requires: avg ≥ 7, complex output
   else if (avg !== null && avg < 8) {
     if (avgTokens < 6) cap = "B1";
     else cap = "B2";
   }
-  // C1 requires: avg ≥ 8
-  else if (avg !== null && avg < 9) {
-    cap = "C1";
+  else if (avg !== null && avg < 8.8) {
+    cap = avgTokens >= 8 ? "C1" : "B2";
+  } else {
+    cap =
+      avgTokens >= 10 &&
+      (grammar ?? 0) >= 8 &&
+      (vocabulary ?? 0) >= 8 &&
+      (fluency ?? 0) >= 8 &&
+      (comprehension ?? 0) >= 8
+        ? "C2"
+        : "C1";
   }
 
-  // Additional guard: short responses can't exceed A2 regardless of scores
+  // Additional guard: short responses should not exceed B1 regardless of scores
   if (avgTokens < 4 && levelRank[cap] > levelRank["A2"]) {
     cap = "A2";
   }
