@@ -1609,50 +1609,50 @@ Return ONLY valid JSON:
             },
           }}
         >
-          {/* Gradient header with level badge */}
-          <Box
-            bgGradient={
-              levelInfo
-                ? `linear(to-r, ${levelInfo.color}, purple.500)`
-                : "linear(to-r, cyan.500, purple.500)"
-            }
-            px={6}
-            py={6}
-            borderTopRadius="24px"
-            flexShrink={0}
-          >
-            <VStack spacing={3} align="center">
-              <Box bg="whiteAlpha.200" p={3} rounded="full">
-                <Box as={LuBadgeCheck} fontSize="36px" color="white" />
-              </Box>
-              <Text
-                fontSize="xl"
-                fontWeight="bold"
-                color="white"
-                textAlign="center"
-              >
-                {isEs ? "Evaluación Completa" : "Assessment Complete"}
-              </Text>
-              {assessedLevel && (
-                <Badge
-                  colorScheme="whiteAlpha"
-                  bg="whiteAlpha.300"
-                  color="white"
-                  fontSize="lg"
-                  px={5}
-                  py={1.5}
-                  rounded="full"
-                  fontWeight="bold"
-                >
-                  {assessedLevel} —{" "}
-                  {levelInfo?.name?.[isEs ? "es" : "en"] || assessedLevel}
-                </Badge>
-              )}
-            </VStack>
-          </Box>
-
-          <DrawerBody px={{ base: 4, md: 6 }} py={5} overflowY="auto">
+          <DrawerBody px={{ base: 4, md: 6 }} py={0} overflowY="auto">
             <VStack spacing={5} align="stretch">
+              {/* Gradient header with level badge */}
+              <Box
+                bgGradient={
+                  levelInfo
+                    ? `linear(to-r, ${levelInfo.color}, purple.500)`
+                    : "linear(to-r, cyan.500, purple.500)"
+                }
+                px={6}
+                py={6}
+                mx={-4}
+                mt={0}
+                borderTopRadius="24px"
+              >
+                <VStack spacing={3} align="center">
+                  <Box bg="whiteAlpha.200" p={3} rounded="full">
+                    <Box as={LuBadgeCheck} fontSize="36px" color="white" />
+                  </Box>
+                  <Text
+                    fontSize="xl"
+                    fontWeight="bold"
+                    color="white"
+                    textAlign="center"
+                  >
+                    {isEs ? "Evaluación Completa" : "Assessment Complete"}
+                  </Text>
+                  {assessedLevel && (
+                    <Badge
+                      colorScheme="whiteAlpha"
+                      bg="whiteAlpha.300"
+                      color="white"
+                      fontSize="lg"
+                      px={5}
+                      py={1.5}
+                      rounded="full"
+                      fontWeight="bold"
+                    >
+                      {assessedLevel} —{" "}
+                      {levelInfo?.name?.[isEs ? "es" : "en"] || assessedLevel}
+                    </Badge>
+                  )}
+                </VStack>
+              </Box>
               {/* Summary */}
               {assessmentSummary && (
                 <Text
