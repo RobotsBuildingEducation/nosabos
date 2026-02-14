@@ -2096,13 +2096,16 @@ export default function App() {
   const isTimerRunning =
     timerActive && !timerPaused && timerRemainingSeconds !== null;
 
-  // Show proficiency modal for any user without proficiencyPlacement.
+  // Show proficiency modal for returning users only when the decision flag
+  // does not exist yet in their user document.
   // New users get it through the onboarding chain instead (daily goal →
-  // timer → proficiency), so this only fires for returning sessions.
+  // timer → proficiency).
   useEffect(() => {
     if (proficiencyCheckDoneRef.current) return;
     if (isLoadingApp || !user) return;
-    if (user?.proficiencyPlacement) return;
+    if (Object.prototype.hasOwnProperty.call(user, "proficiencyPlacement")) {
+      return;
+    }
     if (dailyGoalOpen || timerModalOpen) return;
 
     proficiencyCheckDoneRef.current = true;
