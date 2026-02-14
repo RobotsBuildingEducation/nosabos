@@ -2096,19 +2096,64 @@ export default function App() {
   const isTimerRunning =
     timerActive && !timerPaused && timerRemainingSeconds !== null;
 
-  // Show proficiency modal for any user without proficiencyPlacement.
-  // New users get it through the onboarding chain instead (daily goal →
-  // timer → proficiency), so this only fires for returning sessions.
+  // Show proficiency modal for returning users only when the user document
+  // does NOT contain a proficiency decision flag yet.
   useEffect(() => {
     if (proficiencyCheckDoneRef.current) return;
-    if (isLoadingApp || !user) return;
-    if (user?.proficiencyPlacement) return;
+    if (isLoadingApp || !user || !activeNpub) return;
+    if (needsOnboarding) return;
     if (dailyGoalOpen || timerModalOpen) return;
 
-    proficiencyCheckDoneRef.current = true;
-    const t = setTimeout(() => setProficiencyTestOpen(true), 800);
-    return () => clearTimeout(t);
-  }, [isLoadingApp, user, dailyGoalOpen, timerModalOpen]);
+    let cancelled = false;
+    let timeoutId;
+
+    const checkProficiencyDecision = async () => {
+      try {
+        const snap = await getDoc(doc(database, "users", activeNpub));
+        const data = snap.exists() ? snap.data() || {} : {};
+        const hasDecision = Object.prototype.hasOwnProperty.call(
+          data,
+          "proficiencyPlacement",
+        );
+
+        proficiencyCheckDoneRef.current = true;
+
+        if (!hasDecision && !cancelled) {
+          timeoutId = setTimeout(() => {
+            if (!cancelled) setProficiencyTestOpen(true);
+          }, 800);
+        }
+      } catch (error) {
+        console.warn("Failed to check proficiency decision flag:", error);
+
+        const fallbackHasDecision = Object.prototype.hasOwnProperty.call(
+          user || {},
+          "proficiencyPlacement",
+        );
+        proficiencyCheckDoneRef.current = true;
+
+        if (!fallbackHasDecision && !cancelled) {
+          timeoutId = setTimeout(() => {
+            if (!cancelled) setProficiencyTestOpen(true);
+          }, 800);
+        }
+      }
+    };
+
+    checkProficiencyDecision();
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [
+    isLoadingApp,
+    user,
+    activeNpub,
+    needsOnboarding,
+    dailyGoalOpen,
+    timerModalOpen,
+  ]);
 
   const formatTimer = useCallback((seconds) => {
     const safe = Math.max(0, Math.floor(Number(seconds) || 0));
