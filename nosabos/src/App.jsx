@@ -4230,34 +4230,10 @@ export default function App() {
   const handleLessonLevelChange = useCallback(
     (newLevel) => {
       const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+      const maxUnlockedIndex = CEFR_LEVELS.indexOf(currentLessonLevel);
 
-      // Check if this level is unlocked in lesson mode
-      let isUnlocked = newLevel === "Pre-A1";
-
-      // Proficiency placement unlocks levels up to the placed level
-      const placement = user?.proficiencyPlacement;
-      const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
-      if (!isUnlocked && newLevelIndex <= placementIndex) {
-        isUnlocked = true;
-      }
-
-      if (!isUnlocked) {
-        // Check all levels before this one are complete in lesson mode
-        isUnlocked = true;
-        for (let i = 0; i < newLevelIndex; i++) {
-          const prevLevel = CEFR_LEVELS[i];
-          if (
-            !lessonLevelCompletionStatus[prevLevel]?.isComplete &&
-            i >= placementIndex
-          ) {
-            isUnlocked = false;
-            break;
-          }
-        }
-      }
-
-      // Only navigate if unlocked
-      if (isUnlocked) {
+      // Allow navigation to any level at or below the highest unlocked level
+      if (newLevelIndex <= maxUnlockedIndex) {
         setActiveLessonLevel(newLevel);
       } else {
         console.log(
@@ -4265,41 +4241,17 @@ export default function App() {
         );
       }
     },
-    [lessonLevelCompletionStatus, user?.proficiencyPlacement],
+    [currentLessonLevel],
   );
 
   // Handler for flashcard level navigation with lock checking
   const handleFlashcardLevelChange = useCallback(
     (newLevel) => {
       const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+      const maxUnlockedIndex = CEFR_LEVELS.indexOf(currentFlashcardLevel);
 
-      // Check if this level is unlocked in flashcard mode
-      let isUnlocked = newLevel === "Pre-A1";
-
-      // Proficiency placement unlocks levels up to the placed level
-      const placement = user?.proficiencyPlacement;
-      const placementIndex = placement ? CEFR_LEVELS.indexOf(placement) : -1;
-      if (!isUnlocked && newLevelIndex <= placementIndex) {
-        isUnlocked = true;
-      }
-
-      if (!isUnlocked) {
-        // Check all levels before this one are complete in flashcard mode
-        isUnlocked = true;
-        for (let i = 0; i < newLevelIndex; i++) {
-          const prevLevel = CEFR_LEVELS[i];
-          if (
-            !flashcardLevelCompletionStatus[prevLevel]?.isComplete &&
-            i >= placementIndex
-          ) {
-            isUnlocked = false;
-            break;
-          }
-        }
-      }
-
-      // Only navigate if unlocked
-      if (isUnlocked) {
+      // Allow navigation to any level at or below the highest unlocked level
+      if (newLevelIndex <= maxUnlockedIndex) {
         setActiveFlashcardLevel(newLevel);
       } else {
         console.log(
@@ -4307,31 +4259,17 @@ export default function App() {
         );
       }
     },
-    [flashcardLevelCompletionStatus, user?.proficiencyPlacement],
+    [currentFlashcardLevel],
   );
 
   // Legacy: Combined handler for level navigation
   const handleLevelChange = useCallback(
     (newLevel) => {
       const newLevelIndex = CEFR_LEVELS.indexOf(newLevel);
+      const maxUnlockedIndex = CEFR_LEVELS.indexOf(currentCEFRLevel);
 
-      // Check if this level is unlocked
-      let isUnlocked = newLevel === "Pre-A1";
-
-      if (!isUnlocked) {
-        // Check all levels before this one are complete
-        isUnlocked = true;
-        for (let i = 0; i < newLevelIndex; i++) {
-          const prevLevel = CEFR_LEVELS[i];
-          if (!levelCompletionStatus[prevLevel]?.isComplete) {
-            isUnlocked = false;
-            break;
-          }
-        }
-      }
-
-      // Only navigate if unlocked
-      if (isUnlocked) {
+      // Allow navigation to any level at or below the highest unlocked level
+      if (newLevelIndex <= maxUnlockedIndex) {
         setActiveCEFRLevel(newLevel);
       } else {
         console.log(
@@ -4339,7 +4277,7 @@ export default function App() {
         );
       }
     },
-    [levelCompletionStatus],
+    [currentCEFRLevel],
   );
 
   // Load only the active levels (include both lesson and flashcard levels for mode switching)
