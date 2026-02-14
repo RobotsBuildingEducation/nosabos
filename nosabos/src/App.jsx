@@ -392,7 +392,13 @@ async function ensureOnboardingField(db, id, data) {
     };
 
     if (shouldSetDefaults && !hasCompleted) {
-      onboardingPayload.completed = false;
+      // Old accounts with real usage (XP or progress) already finished
+      // onboarding before the flag existed — mark them as complete.
+      const hasUsage =
+        Number(data?.xp) > 0 ||
+        Number(data?.progress?.totalXp) > 0 ||
+        !!data?.progress?.targetLang;
+      onboardingPayload.completed = hasUsage ? true : false;
     }
 
     if (shouldSetStep) {
