@@ -2096,19 +2096,19 @@ export default function App() {
   const isTimerRunning =
     timerActive && !timerPaused && timerRemainingSeconds !== null;
 
-  // Show proficiency modal for any account that completed onboarding
-  // but has no proficiencyPlacement flag (new or old accounts alike).
+  // Show proficiency modal for any user without proficiencyPlacement.
+  // New users get it through the onboarding chain instead (daily goal →
+  // timer → proficiency), so this only fires for returning sessions.
   useEffect(() => {
     if (proficiencyCheckDoneRef.current) return;
     if (isLoadingApp || !user) return;
-    if (needsOnboarding) return;
     if (user?.proficiencyPlacement) return;
     if (dailyGoalOpen || timerModalOpen) return;
 
     proficiencyCheckDoneRef.current = true;
     const t = setTimeout(() => setProficiencyTestOpen(true), 800);
     return () => clearTimeout(t);
-  }, [isLoadingApp, user, needsOnboarding, dailyGoalOpen, timerModalOpen]);
+  }, [isLoadingApp, user, dailyGoalOpen, timerModalOpen]);
 
   const formatTimer = useCallback((seconds) => {
     const safe = Math.max(0, Math.floor(Number(seconds) || 0));
