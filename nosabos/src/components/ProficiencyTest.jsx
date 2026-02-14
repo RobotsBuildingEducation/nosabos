@@ -328,6 +328,68 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
   return levelRank[cap] < levelRank[normalized] ? cap : normalized;
 }
 
+function summarizeSpeechEvidence(turns = []) {
+  const sortedTurns = [...turns].sort((a, b) => (a.startTs || 0) - (b.startTs || 0));
+  const finishedTurns = sortedTurns.filter((t) => typeof t.durationMs === "number" && t.durationMs > 0);
+  const transcriptTurns = sortedTurns.filter((t) => typeof t.transcript === "string" && t.transcript.trim());
+
+  const totalSpeechMs = finishedTurns.reduce((sum, turn) => sum + turn.durationMs, 0);
+  const avgTurnMs = finishedTurns.length ? totalSpeechMs / finishedTurns.length : 0;
+  const totalWords = transcriptTurns.reduce((sum, turn) => {
+    const words = turn.transcript.trim().split(/\s+/).filter(Boolean).length;
+    return sum + words;
+  }, 0);
+
+  const estimatedWpm = totalSpeechMs > 0 ? Math.round((totalWords / (totalSpeechMs / 60000)) * 10) / 10 : null;
+  const confidences = transcriptTurns
+    .map((t) => (typeof t.transcriptConfidence === "number" ? t.transcriptConfidence : null))
+    .filter((n) => typeof n === "number");
+  const avgTranscriptConfidence = confidences.length
+    ? Math.round((confidences.reduce((a, b) => a + b, 0) / confidences.length) * 1000) / 1000
+    : null;
+
+  const pauses = [];
+  for (let i = 1; i < finishedTurns.length; i += 1) {
+    const prevEnd = finishedTurns[i - 1]?.endTs;
+    const start = finishedTurns[i]?.startTs;
+    if (typeof prevEnd === "number" && typeof start === "number" && start >= prevEnd) pauses.push(start - prevEnd);
+  }
+
+  const avgPauseMs = pauses.length ? Math.round(pauses.reduce((a, b) => a + b, 0) / pauses.length) : null;
+  const rmsValues = finishedTurns
+    .map((t) => (typeof t.rmsAvg === "number" ? t.rmsAvg : null))
+    .filter((n) => typeof n === "number");
+  const avgRms = rmsValues.length
+    ? Math.round((rmsValues.reduce((a, b) => a + b, 0) / rmsValues.length) * 10000) / 10000
+    : null;
+
+  return {
+    hasAudioEvidence: finishedTurns.length > 0,
+    turnCount: sortedTurns.length,
+    finishedTurnCount: finishedTurns.length,
+    transcriptTurnCount: transcriptTurns.length,
+    totalSpeechMs: Math.round(totalSpeechMs),
+    avgTurnMs: Math.round(avgTurnMs),
+    totalWords,
+    estimatedWpm,
+    avgPauseMs,
+    avgTranscriptConfidence,
+    avgRms,
+    turns: sortedTurns.map((turn) => ({
+      id: turn.id,
+      durationMs: typeof turn.durationMs === "number" ? Math.round(turn.durationMs) : null,
+      transcript: turn.transcript || "",
+      wordCount: turn.wordCount || 0,
+      transcriptConfidence:
+        typeof turn.transcriptConfidence === "number"
+          ? Math.round(turn.transcriptConfidence * 1000) / 1000
+          : null,
+      rmsAvg: typeof turn.rmsAvg === "number" ? Math.round(turn.rmsAvg * 10000) / 10000 : null,
+      rmsPeak: typeof turn.rmsPeak === "number" ? Math.round(turn.rmsPeak * 10000) / 10000 : null,
+    })),
+  };
+}
+
 /* ---- Bubble components ---- */
 function UserBubble({ label, text }) {
   if (!text) return null;
@@ -440,6 +502,9 @@ export default function ProficiencyTest() {
   const streamBuffersRef = useRef(new Map());
   const streamFlushTimerRef = useRef(null);
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
+  const speechTurnsRef = useRef([]);
+  const currentSpeechTurnRef = useRef(null);
+  const speechSampleTimerRef = useRef(null);
 
   // Idle gating
   const isIdleRef = useRef(true);
@@ -511,6 +576,50 @@ export default function ProficiencyTest() {
       });
     }
     return mid;
+  }
+
+  function stopSpeechSampling() {
+    if (speechSampleTimerRef.current) {
+      clearInterval(speechSampleTimerRef.current);
+      speechSampleTimerRef.current = null;
+    }
+  }
+
+  function sampleSpeechRms() {
+    const analyser = analyserRef.current;
+    const buf = floatBufRef.current;
+    const turn = currentSpeechTurnRef.current;
+    if (!analyser || !buf || !turn) return;
+
+    analyser.getFloatTimeDomainData(buf);
+    let sumSquares = 0;
+    let peak = 0;
+    for (let i = 0; i < buf.length; i += 1) {
+      const v = buf[i];
+      sumSquares += v * v;
+      const abs = Math.abs(v);
+      if (abs > peak) peak = abs;
+    }
+    const rms = Math.sqrt(sumSquares / buf.length);
+    turn.rmsSamples = (turn.rmsSamples || 0) + 1;
+    turn.rmsTotal = (turn.rmsTotal || 0) + rms;
+    turn.rmsPeak = Math.max(turn.rmsPeak || 0, peak);
+  }
+
+  function startSpeechSampling() {
+    stopSpeechSampling();
+    speechSampleTimerRef.current = setInterval(sampleSpeechRms, 120);
+  }
+
+  function extractTranscriptConfidence(payload) {
+    const candidates = [
+      payload?.confidence,
+      payload?.transcript_confidence,
+      payload?.transcription?.confidence,
+      payload?.item?.transcription?.confidence,
+    ];
+    const value = candidates.find((n) => typeof n === "number");
+    return typeof value === "number" ? value : null;
   }
 
   /* ---- Build proficiency assessment instructions ---- */
@@ -623,6 +732,27 @@ export default function ProficiencyTest() {
     ) {
       const text = (data.transcript || "").trim();
       if (text) {
+        const confidence = extractTranscriptConfidence(data);
+        let turn = currentSpeechTurnRef.current;
+        if (!turn) {
+          turn = {
+            id: uid(),
+            startTs: Date.now(),
+            endTs: Date.now(),
+            durationMs: 0,
+            rmsSamples: 0,
+            rmsTotal: 0,
+            rmsPeak: 0,
+            transcript: "",
+            wordCount: 0,
+          };
+          speechTurnsRef.current.push(turn);
+        }
+        turn.transcript = text;
+        turn.wordCount = text.split(/\s+/).filter(Boolean).length;
+        if (typeof confidence === "number") turn.transcriptConfidence = confidence;
+        if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
+
         const now = Date.now();
         if (
           text === lastTranscriptRef.current.text &&
@@ -711,12 +841,35 @@ export default function ProficiencyTest() {
     }
 
     if (t === "input_audio_buffer.speech_started") {
+      const turn = {
+        id: uid(),
+        startTs: Date.now(),
+        endTs: null,
+        durationMs: null,
+        rmsSamples: 0,
+        rmsTotal: 0,
+        rmsPeak: 0,
+        transcript: "",
+        wordCount: 0,
+      };
+      speechTurnsRef.current.push(turn);
+      currentSpeechTurnRef.current = turn;
+      startSpeechSampling();
       setUiState("listening");
       setMood("listening");
       return;
     }
 
     if (t === "input_audio_buffer.speech_stopped") {
+      const now = Date.now();
+      const turn = currentSpeechTurnRef.current;
+      if (turn) {
+        turn.endTs = now;
+        turn.durationMs = Math.max(0, now - (turn.startTs || now));
+        if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
+      }
+      currentSpeechTurnRef.current = null;
+      stopSpeechSampling();
       setUiState("thinking");
       setMood("thinking");
       return;
@@ -755,6 +908,7 @@ export default function ProficiencyTest() {
       })
       .filter((line) => line.includes(": ") && line.split(": ")[1].trim())
       .join("\n");
+    const speechEvidence = summarizeSpeechEvidence(speechTurnsRef.current || []);
 
     const langName = {
       es: "Spanish", pt: "Portuguese", fr: "French", it: "Italian",
@@ -767,6 +921,9 @@ export default function ProficiencyTest() {
 
 CONVERSATION TO EVALUATE:
 ${transcript}
+
+AUDIO EVIDENCE (TURN-LEVEL METADATA):
+${JSON.stringify(speechEvidence, null, 2)}
 
 SCORING RULES — BE HARSH AND ACCURATE:
 - Score 1-2: No meaningful ${langName} produced. Gibberish, wrong language, single words, or nonsense.
@@ -784,6 +941,9 @@ CRITICAL ANTI-INFLATION RULES:
 - A score of 7+ requires EVIDENCE of multiple tenses or complex structures.
 - Do NOT give credit for the AI's responses — only evaluate what the USER said.
 - Do NOT inflate scores to be nice. Accurate placement helps the learner.
+- Grammar/vocabulary/comprehension should be scored mainly from transcript content.
+- Pronunciation/fluency/confidence MUST use AUDIO EVIDENCE whenever available.
+- If hasAudioEvidence is false, set pronunciation note exactly to "Insufficient audio evidence." and keep pronunciation score conservative (1-2).
 
 LEVEL PLACEMENT GUIDE:
 - Pre-A1: Cannot communicate in ${langName}. Wrong language, gibberish, or only isolated words.
@@ -832,6 +992,21 @@ Return ONLY valid JSON:
         );
         setAssessmentSummary(parsed.summary || "");
         if (parsed.scores && typeof parsed.scores === "object") {
+          if (!speechEvidence?.hasAudioEvidence && parsed?.scores?.pronunciation) {
+            const currentScore =
+              typeof parsed.scores.pronunciation === "number"
+                ? parsed.scores.pronunciation
+                : typeof parsed?.scores?.pronunciation?.score === "number"
+                ? parsed.scores.pronunciation.score
+                : 1;
+            parsed.scores.pronunciation = {
+              ...(typeof parsed.scores.pronunciation === "object"
+                ? parsed.scores.pronunciation
+                : {}),
+              score: Math.min(2, Math.max(1, currentScore)),
+              note: "Insufficient audio evidence.",
+            };
+          }
           setAssessmentScores(parsed.scores);
         }
       } else {
@@ -927,6 +1102,9 @@ Return ONLY valid JSON:
     setAssessedLevel(null);
     setAssessmentSummary("");
     setAssessmentScores(null);
+    speechTurnsRef.current = [];
+    currentSpeechTurnRef.current = null;
+    stopSpeechSampling();
     respToMsg.current.clear();
     streamBuffersRef.current = new Map();
     guardrailItemIdsRef.current = [];
@@ -985,6 +1163,9 @@ Return ONLY valid JSON:
     setAssessedLevel(null);
     setAssessmentSummary("");
     setAssessmentScores(null);
+    speechTurnsRef.current = [];
+    currentSpeechTurnRef.current = null;
+    stopSpeechSampling();
     streamBuffersRef.current = new Map();
     if (streamFlushTimerRef.current) {
       clearTimeout(streamFlushTimerRef.current);
@@ -1005,26 +1186,6 @@ Return ONLY valid JSON:
       }
       pc.ontrack = (e) => {
         e.streams[0].getTracks().forEach((t) => remote.addTrack(t));
-        if (!audioGraphReadyRef.current) {
-          try {
-            const Ctx = window.AudioContext || window.webkitAudioContext;
-            const ctx = new Ctx();
-            const srcNode = ctx.createMediaStreamSource(remote);
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 2048;
-            analyser.smoothingTimeConstant = 0.15;
-            const dest = ctx.createMediaStreamDestination();
-            srcNode.connect(analyser);
-            srcNode.connect(dest);
-            audioCtxRef.current = ctx;
-            analyserRef.current = analyser;
-            floatBufRef.current = new Float32Array(analyser.fftSize);
-            captureOutRef.current = dest.stream;
-            audioGraphReadyRef.current = true;
-          } catch (e) {
-            console.warn("AudioContext init failed:", e?.message || e);
-          }
-        }
       };
       pc.addTransceiver("audio", { direction: "recvonly" });
 
@@ -1037,6 +1198,24 @@ Return ONLY valid JSON:
       });
       localRef.current = local;
       local.getTracks().forEach((track) => pc.addTrack(track, local));
+
+      if (!audioGraphReadyRef.current) {
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          const ctx = new Ctx();
+          const srcNode = ctx.createMediaStreamSource(local);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 2048;
+          analyser.smoothingTimeConstant = 0.2;
+          srcNode.connect(analyser);
+          audioCtxRef.current = ctx;
+          analyserRef.current = analyser;
+          floatBufRef.current = new Float32Array(analyser.fftSize);
+          audioGraphReadyRef.current = true;
+        } catch (e) {
+          console.warn("Mic AudioContext init failed:", e?.message || e);
+        }
+      }
 
       const dc = pc.createDataChannel("oai-events");
       dcRef.current = dc;
@@ -1142,6 +1321,15 @@ Return ONLY valid JSON:
     pcRef.current = null;
     dcRef.current = null;
     localRef.current = null;
+    try {
+      audioCtxRef.current?.close();
+    } catch {}
+    audioCtxRef.current = null;
+    analyserRef.current = null;
+    floatBufRef.current = null;
+    captureOutRef.current = null;
+    currentSpeechTurnRef.current = null;
+    stopSpeechSampling();
     audioGraphReadyRef.current = false;
     setStatus("disconnected");
     setUiState("idle");
@@ -1152,6 +1340,8 @@ Return ONLY valid JSON:
     return () => {
       aliveRef.current = false;
       if (streamFlushTimerRef.current) clearTimeout(streamFlushTimerRef.current);
+      stopSpeechSampling();
+      try { audioCtxRef.current?.close(); } catch {}
       try { localRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
       try { pcRef.current?.close(); } catch {}
     };
