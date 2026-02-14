@@ -15,8 +15,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
-import { FaStop, FaCheckCircle, FaDice } from "react-icons/fa";
-import { FiSettings } from "react-icons/fi";
+import { FaStop } from "react-icons/fa";
 import { RiVolumeUpLine } from "react-icons/ri";
 import ConversationSettingsDrawer from "./ConversationSettingsDrawer";
 
@@ -29,9 +28,7 @@ import {
 import { logEvent } from "firebase/analytics";
 
 import useUserStore from "../hooks/useUserStore";
-import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
-import { WaveBar } from "./WaveBar";
 import { awardXp } from "../utils/utils";
 import { getLanguageXp } from "../utils/progressTracking";
 import { DEFAULT_TTS_VOICE } from "../utils/tts";
@@ -835,8 +832,21 @@ Respond with ONLY the topic text in ${responseLang}. No quotes, no JSON, no expl
   const xpLevelNumber = Math.floor(xp / 100) + 1;
   const progressPct = xp % 100;
 
-  // Timeline sorted by timestamp (newest-first for display)
-  const timeline = [...messages].sort((a, b) => b.ts - a.ts);
+  // Timeline: sort chronologically then enforce strict user/assistant alternation
+  const timeline = (() => {
+    const sorted = [...messages].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+    const paired = [];
+    let ui = 0;
+    let ai = 0;
+    const users = sorted.filter((m) => m.role === "user");
+    const assistants = sorted.filter((m) => m.role === "assistant");
+    while (ui < users.length || ai < assistants.length) {
+      if (ui < users.length) paired.push(users[ui++]);
+      if (ai < assistants.length) paired.push(assistants[ai++]);
+    }
+    // Reverse for display: newest first
+    return paired.reverse();
+  })();
 
   // Language name helper
   const languageNameFor = (code) => {
@@ -1949,154 +1959,19 @@ Do not return the whole sentence as a single chunk.`;
   return (
     <>
       <Box minH="100vh" color="gray.100" position="relative" pb="120px">
-        {/* Header area with centered Robot and Goal UI */}
-        <Box px={4} mt={0} display="flex" justifyContent="center">
-          <Box
-            bg="gray.800"
-            p={2}
-            rounded="2xl"
-            border="1px solid rgba(255,255,255,0.06)"
-            width="100%"
-            maxWidth="400px"
-          >
-            <VStack spacing={3} align="center" width="100%">
-              {/* Robot and Settings Row */}
-              <HStack width="100%" justify="space-between" align="center">
-                {/* RobotBuddyPro on the left */}
-                <Box
-                  width="75px"
-                  opacity={0.95}
-                  flexShrink={0}
-                  mt="-12px"
-                  ml={"-22px"}
-                >
-                  <RobotBuddyPro
-                    state={uiState}
-                    loudness={uiState === "listening" ? volume : 0}
-                    mood={mood}
-                    variant="abstract"
-                    maxW={75}
-                  />
-                </Box>
-
-                {/* Conversation Settings Button */}
-                <Button
-                  leftIcon={<FiSettings />}
-                  size="xs"
-                  variant="ghost"
-                  colorScheme="gray"
-                  onClick={handleSettingsOpen}
-                  opacity={0.7}
-                  _hover={{ opacity: 1 }}
-                  fontWeight="medium"
-                >
-                  {uiLang === "es" ? "Configuración" : "Conversation settings"}
-                </Button>
-              </HStack>
-
-              {/* Goal Text with Checkmark or Loader */}
-              <VStack spacing={2} align="center" width="100%">
-                <HStack
-                  spacing={2}
-                  align="center"
-                  width="100%"
-                  justify="center"
-                >
-                  {isGeneratingGoal ? (
-                    <>
-                      <Spinner
-                        size="sm"
-                        color="white"
-                        thickness="2px"
-                        speed="0.8s"
-                      />
-                      <Text
-                        fontSize="sm"
-                        fontWeight="medium"
-                        textAlign="center"
-                        color="white"
-                        flex="1"
-                      >
-                        {streamingText ||
-                          (uiLang === "es"
-                            ? "Generando nuevo tema..."
-                            : "Generating new topic...")}
-                      </Text>
-                    </>
-                  ) : (
-                    <>
-                      <IconButton
-                        icon={<FaDice />}
-                        size="xs"
-                        variant="ghost"
-                        colorScheme="purple"
-                        aria-label={
-                          uiLang === "es" ? "Nuevo tema" : "New topic"
-                        }
-                        onClick={handleShuffleTopic}
-                        opacity={0.7}
-                        _hover={{ opacity: 1 }}
-                        isDisabled={status === "connected"}
-                      />
-                      <Text
-                        fontSize="sm"
-                        fontWeight="medium"
-                        textAlign="center"
-                        opacity={currentGoal.completed ? 0.6 : 1}
-                        textDecoration={
-                          currentGoal.completed ? "line-through" : "none"
-                        }
-                        flex="1"
-                      >
-                        {currentGoal.text[uiLang] || currentGoal.text.en}
-                      </Text>
-                      {currentGoal.completed && (
-                        <Box
-                          as={FaCheckCircle}
-                          color="green.400"
-                          boxSize="18px"
-                        />
-                      )}
-                    </>
-                  )}
-                </HStack>
-
-                {/* Goal Feedback */}
-                {goalFeedback && !isGeneratingGoal && (
-                  <Text
-                    fontSize="xs"
-                    textAlign="center"
-                    px={3}
-                    py={1.5}
-                    borderRadius="md"
-                    bg={currentGoal.completed ? "green.900" : "orange.900"}
-                    color={currentGoal.completed ? "green.200" : "orange.200"}
-                    border="1px solid"
-                    borderColor={
-                      currentGoal.completed ? "green.600" : "orange.600"
-                    }
-                    maxW="90%"
-                  >
-                    {goalFeedback}
-                  </Text>
-                )}
-              </VStack>
-
-              {/* XP Progress Bar */}
-              <Box w="100%">
-                <HStack justifyContent="space-between" mb={1}>
-                  <Badge colorScheme="cyan" variant="subtle" fontSize="10px">
-                    {uiLang === "es" ? "Nivel" : "Level"} {xpLevelNumber}
-                  </Badge>
-                  <Badge colorScheme="teal" variant="subtle" fontSize="10px">
-                    {ui.ra_label_xp} {xp}
-                  </Badge>
-                </HStack>
-                <WaveBar value={progressPct} />
-              </Box>
-            </VStack>
-          </Box>
-        </Box>
+        {/* Plain text title */}
+        <Text
+          fontSize={["md", "lg"]}
+          fontWeight="bold"
+          noOfLines={1}
+          px={4}
+          pt={3}
+          pb={1}
+          textAlign="center"
+          color="gray.100"
+        >
+          {ui.ra_title.replace("{language}", languageNameFor(targetLang))}
+        </Text>
 
         {/* Timeline — newest first */}
         <VStack align="stretch" spacing={3} px={4} mt={3}>
