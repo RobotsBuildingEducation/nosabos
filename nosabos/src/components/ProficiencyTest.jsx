@@ -28,7 +28,7 @@ import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
 import { translations } from "../utils/translation";
 import { WaveBar } from "./WaveBar";
-import { DEFAULT_TTS_VOICE, getRandomVoice } from "../utils/tts";
+import { DEFAULT_TTS_VOICE, getRandomVoice, TTS_LANG_TAG } from "../utils/tts";
 import useSoundSettings from "../hooks/useSoundSettings";
 import submitActionSound from "../assets/submitaction.mp3";
 import completeSound from "../assets/complete.mp3";
@@ -42,7 +42,7 @@ const REALTIME_URL = `${
   REALTIME_MODEL
 )}`;
 
-const MAX_EXCHANGES = 5;
+const MAX_EXCHANGES = 10;
 
 const CEFR_LEVELS = ["Pre-A1", "A1", "A2", "B1", "B2", "C1", "C2"];
 
@@ -234,7 +234,7 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
     : null;
 
   const combined = (userTexts || []).join(" ").toLowerCase();
-  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|what|que|qué|idk|huh|um+|uh+|hmm+|lol|haha|ok|okay|yes|no|si|sí)/g;
+  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|idk|huh|um+|uh+|hmm+|lol|haha)/g;
   const fallbackMatches = combined.match(fallbackPattern) || [];
   const fallbackDensity = userTexts?.length
     ? fallbackMatches.length / userTexts.length
@@ -251,13 +251,8 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
     : 0;
   const totalTokens = tokenCounts.reduce((a, b) => a + b, 0);
 
-  // Check for nonsense / gibberish: very short total output
-  const noSubstance = totalTokens < 8 || avgTokens <= 2;
-
-  // Check for wrong-language or random text: count unique real words
-  const allWords = combined.split(/\s+/).filter(Boolean);
-  const uniqueWords = new Set(allWords);
-  const uniqueRatio = allWords.length > 0 ? uniqueWords.size / allWords.length : 0;
+  // Check for nonsense / gibberish: extremely short total output
+  const noSubstance = totalTokens < 6 || avgTokens < 2;
 
   let cap = normalized;
 
@@ -267,65 +262,122 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
   }
 
   // HARD FLOOR: mostly filler / non-comprehension responses
-  if (fallbackDensity >= 0.4) {
+  if (fallbackDensity >= 0.75) {
     return "Pre-A1";
   }
 
-  // HARD FLOOR: very short average responses (≤3 words) with low scores
-  if (avgTokens <= 3 && avg !== null && avg < 5) {
+  // Very limited production tends to be Pre-A1/A1 depending on score signal
+  if (avgTokens <= 2.5 && avg !== null && avg < 4) {
     return "Pre-A1";
   }
 
-  // Strict score gating: any critical skill ≤ 2 → Pre-A1
+  // Core skill floor: very low critical skills should not exceed A1
   if (
     (grammar !== null && grammar <= 2) ||
     (comprehension !== null && comprehension <= 2) ||
     (vocabulary !== null && vocabulary <= 2)
   ) {
-    cap = "Pre-A1";
-  }
-  // Average below 3.5 → Pre-A1
-  else if (avg !== null && avg < 3.5) {
-    cap = "Pre-A1";
-  }
-  // Average below 5 → A1 max
-  else if (avg !== null && avg < 5) {
     cap = "A1";
   }
-  // Any core skill below 5 → A1 max
-  else if (
-    (grammar !== null && grammar < 5) ||
-    (vocabulary !== null && vocabulary < 5) ||
-    (fluency !== null && fluency < 5) ||
-    (comprehension !== null && comprehension < 5)
-  ) {
+  // CEFR-oriented score banding from rubric evidence
+  else if (avg !== null && avg < 3.2) {
+    cap = "Pre-A1";
+  }
+  else if (avg !== null && avg < 4.4) {
     cap = "A1";
   }
-  // A2 requires: avg ≥ 5, all core skills ≥ 5, avg tokens ≥ 4
-  else if (avg !== null && avg < 6) {
+  else if (avg !== null && avg < 5.6) {
     cap = "A2";
   }
-  // B1 requires: avg ≥ 6, substantial responses
-  else if (avg !== null && avg < 7) {
-    if (avgTokens < 5) cap = "A2";
+  else if (avg !== null && avg < 6.8) {
+    if (avgTokens < 4) cap = "A2";
     else cap = "B1";
   }
-  // B2+ requires: avg ≥ 7, complex output
   else if (avg !== null && avg < 8) {
     if (avgTokens < 6) cap = "B1";
     else cap = "B2";
   }
-  // C1 requires: avg ≥ 8
-  else if (avg !== null && avg < 9) {
-    cap = "C1";
+  else if (avg !== null && avg < 8.8) {
+    cap = avgTokens >= 8 ? "C1" : "B2";
+  } else {
+    cap =
+      avgTokens >= 10 &&
+      (grammar ?? 0) >= 8 &&
+      (vocabulary ?? 0) >= 8 &&
+      (fluency ?? 0) >= 8 &&
+      (comprehension ?? 0) >= 8
+        ? "C2"
+        : "C1";
   }
 
-  // Additional guard: short responses can't exceed A2 regardless of scores
+  // Additional guard: short responses should not exceed B1 regardless of scores
   if (avgTokens < 4 && levelRank[cap] > levelRank["A2"]) {
     cap = "A2";
   }
 
   return levelRank[cap] < levelRank[normalized] ? cap : normalized;
+}
+
+function summarizeSpeechEvidence(turns = []) {
+  const sortedTurns = [...turns].sort((a, b) => (a.startTs || 0) - (b.startTs || 0));
+  const finishedTurns = sortedTurns.filter((t) => typeof t.durationMs === "number" && t.durationMs > 0);
+  const transcriptTurns = sortedTurns.filter((t) => typeof t.transcript === "string" && t.transcript.trim());
+
+  const totalSpeechMs = finishedTurns.reduce((sum, turn) => sum + turn.durationMs, 0);
+  const avgTurnMs = finishedTurns.length ? totalSpeechMs / finishedTurns.length : 0;
+  const totalWords = transcriptTurns.reduce((sum, turn) => {
+    const words = turn.transcript.trim().split(/\s+/).filter(Boolean).length;
+    return sum + words;
+  }, 0);
+
+  const estimatedWpm = totalSpeechMs > 0 ? Math.round((totalWords / (totalSpeechMs / 60000)) * 10) / 10 : null;
+  const confidences = transcriptTurns
+    .map((t) => (typeof t.transcriptConfidence === "number" ? t.transcriptConfidence : null))
+    .filter((n) => typeof n === "number");
+  const avgTranscriptConfidence = confidences.length
+    ? Math.round((confidences.reduce((a, b) => a + b, 0) / confidences.length) * 1000) / 1000
+    : null;
+
+  const pauses = [];
+  for (let i = 1; i < finishedTurns.length; i += 1) {
+    const prevEnd = finishedTurns[i - 1]?.endTs;
+    const start = finishedTurns[i]?.startTs;
+    if (typeof prevEnd === "number" && typeof start === "number" && start >= prevEnd) pauses.push(start - prevEnd);
+  }
+
+  const avgPauseMs = pauses.length ? Math.round(pauses.reduce((a, b) => a + b, 0) / pauses.length) : null;
+  const rmsValues = finishedTurns
+    .map((t) => (typeof t.rmsAvg === "number" ? t.rmsAvg : null))
+    .filter((n) => typeof n === "number");
+  const avgRms = rmsValues.length
+    ? Math.round((rmsValues.reduce((a, b) => a + b, 0) / rmsValues.length) * 10000) / 10000
+    : null;
+
+  return {
+    hasAudioEvidence: finishedTurns.length > 0,
+    turnCount: sortedTurns.length,
+    finishedTurnCount: finishedTurns.length,
+    transcriptTurnCount: transcriptTurns.length,
+    totalSpeechMs: Math.round(totalSpeechMs),
+    avgTurnMs: Math.round(avgTurnMs),
+    totalWords,
+    estimatedWpm,
+    avgPauseMs,
+    avgTranscriptConfidence,
+    avgRms,
+    turns: sortedTurns.map((turn) => ({
+      id: turn.id,
+      durationMs: typeof turn.durationMs === "number" ? Math.round(turn.durationMs) : null,
+      transcript: turn.transcript || "",
+      wordCount: turn.wordCount || 0,
+      transcriptConfidence:
+        typeof turn.transcriptConfidence === "number"
+          ? Math.round(turn.transcriptConfidence * 1000) / 1000
+          : null,
+      rmsAvg: typeof turn.rmsAvg === "number" ? Math.round(turn.rmsAvg * 10000) / 10000 : null,
+      rmsPeak: typeof turn.rmsPeak === "number" ? Math.round(turn.rmsPeak * 10000) / 10000 : null,
+    })),
+  };
 }
 
 /* ---- Bubble components ---- */
@@ -405,6 +457,8 @@ export default function ProficiencyTest() {
 
   // Derive settings from user
   const targetLang = user?.progress?.targetLang || "es";
+  const targetLangTag = TTS_LANG_TAG[targetLang] || TTS_LANG_TAG.es;
+  const targetLanguageCode = (targetLangTag || "es-MX").split("-")[0];
   const supportLang = user?.progress?.supportLang || "en";
   const voicePersona = user?.progress?.voicePersona || "";
   const pauseMs = user?.progress?.pauseMs || 800;
@@ -440,6 +494,9 @@ export default function ProficiencyTest() {
   const streamBuffersRef = useRef(new Map());
   const streamFlushTimerRef = useRef(null);
   const lastTranscriptRef = useRef({ text: "", ts: 0 });
+  const speechTurnsRef = useRef([]);
+  const currentSpeechTurnRef = useRef(null);
+  const speechSampleTimerRef = useRef(null);
 
   // Idle gating
   const isIdleRef = useRef(true);
@@ -513,6 +570,50 @@ export default function ProficiencyTest() {
     return mid;
   }
 
+  function stopSpeechSampling() {
+    if (speechSampleTimerRef.current) {
+      clearInterval(speechSampleTimerRef.current);
+      speechSampleTimerRef.current = null;
+    }
+  }
+
+  function sampleSpeechRms() {
+    const analyser = analyserRef.current;
+    const buf = floatBufRef.current;
+    const turn = currentSpeechTurnRef.current;
+    if (!analyser || !buf || !turn) return;
+
+    analyser.getFloatTimeDomainData(buf);
+    let sumSquares = 0;
+    let peak = 0;
+    for (let i = 0; i < buf.length; i += 1) {
+      const v = buf[i];
+      sumSquares += v * v;
+      const abs = Math.abs(v);
+      if (abs > peak) peak = abs;
+    }
+    const rms = Math.sqrt(sumSquares / buf.length);
+    turn.rmsSamples = (turn.rmsSamples || 0) + 1;
+    turn.rmsTotal = (turn.rmsTotal || 0) + rms;
+    turn.rmsPeak = Math.max(turn.rmsPeak || 0, peak);
+  }
+
+  function startSpeechSampling() {
+    stopSpeechSampling();
+    speechSampleTimerRef.current = setInterval(sampleSpeechRms, 120);
+  }
+
+  function extractTranscriptConfidence(payload) {
+    const candidates = [
+      payload?.confidence,
+      payload?.transcript_confidence,
+      payload?.transcription?.confidence,
+      payload?.item?.transcription?.confidence,
+    ];
+    const value = candidates.find((n) => typeof n === "number");
+    return typeof value === "number" ? value : null;
+  }
+
   /* ---- Build proficiency assessment instructions ---- */
   function buildProficiencyInstructions() {
     const langName = {
@@ -552,14 +653,20 @@ export default function ProficiencyTest() {
     return [
       `You are a ${langName} proficiency assessor conducting a placement test.`,
       strict,
+      `When speaking, use natural ${langName} pronunciation for locale ${targetLangTag}.`,
       "Your task is to have a natural conversation that progressively tests the user's language ability.",
       "Start with very simple topics (greetings, basic questions) and gradually increase complexity.",
       `CONVERSATION FLOW across ${MAX_EXCHANGES} exchanges:`,
       "Exchange 1: Basic greeting, simple question (name, how are you). Pre-A1/A1 level.",
-      "Exchange 2: Daily routines, likes/dislikes. A1/A2 level.",
-      "Exchange 3: Past events or future plans, opinions. A2/B1 level.",
-      "Exchange 4: Abstract topics, hypothetical situations. B1/B2 level.",
-      "Exchange 5: Complex discussion, nuanced expression. C1/C2 level.",
+      "Exchange 2: Personal details and daily routines. Pre-A1/A1 level.",
+      "Exchange 3: Likes/dislikes and simple preferences. A1/A2 level.",
+      "Exchange 4: Short description of recent activity. A1/A2 level.",
+      "Exchange 5: Past events or future plans, brief opinions. A2/B1 level.",
+      "Exchange 6: Reasons, comparisons, and basic connectors. A2/B1 level.",
+      "Exchange 7: Abstract topics and hypothetical situations. B1/B2 level.",
+      "Exchange 8: Defend an opinion with supporting details. B1/B2 level.",
+      "Exchange 9: Complex discussion with nuance and precision. C1 level.",
+      "Exchange 10: Flexible, high-level expression with subtle meaning. C1/C2 level.",
       "Keep your replies brief (≤20 words). Ask ONE question per turn to prompt the user.",
       "Adapt based on their responses — if they struggle, stay at that level longer.",
       "Be encouraging but accurate in your assessment.",
@@ -623,6 +730,27 @@ export default function ProficiencyTest() {
     ) {
       const text = (data.transcript || "").trim();
       if (text) {
+        const confidence = extractTranscriptConfidence(data);
+        let turn = currentSpeechTurnRef.current;
+        if (!turn) {
+          turn = {
+            id: uid(),
+            startTs: Date.now(),
+            endTs: Date.now(),
+            durationMs: 0,
+            rmsSamples: 0,
+            rmsTotal: 0,
+            rmsPeak: 0,
+            transcript: "",
+            wordCount: 0,
+          };
+          speechTurnsRef.current.push(turn);
+        }
+        turn.transcript = text;
+        turn.wordCount = text.split(/\s+/).filter(Boolean).length;
+        if (typeof confidence === "number") turn.transcriptConfidence = confidence;
+        if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
+
         const now = Date.now();
         if (
           text === lastTranscriptRef.current.text &&
@@ -711,12 +839,35 @@ export default function ProficiencyTest() {
     }
 
     if (t === "input_audio_buffer.speech_started") {
+      const turn = {
+        id: uid(),
+        startTs: Date.now(),
+        endTs: null,
+        durationMs: null,
+        rmsSamples: 0,
+        rmsTotal: 0,
+        rmsPeak: 0,
+        transcript: "",
+        wordCount: 0,
+      };
+      speechTurnsRef.current.push(turn);
+      currentSpeechTurnRef.current = turn;
+      startSpeechSampling();
       setUiState("listening");
       setMood("listening");
       return;
     }
 
     if (t === "input_audio_buffer.speech_stopped") {
+      const now = Date.now();
+      const turn = currentSpeechTurnRef.current;
+      if (turn) {
+        turn.endTs = now;
+        turn.durationMs = Math.max(0, now - (turn.startTs || now));
+        if (turn.rmsSamples > 0) turn.rmsAvg = turn.rmsTotal / turn.rmsSamples;
+      }
+      currentSpeechTurnRef.current = null;
+      stopSpeechSampling();
       setUiState("thinking");
       setMood("thinking");
       return;
@@ -755,6 +906,7 @@ export default function ProficiencyTest() {
       })
       .filter((line) => line.includes(": ") && line.split(": ")[1].trim())
       .join("\n");
+    const speechEvidence = summarizeSpeechEvidence(speechTurnsRef.current || []);
 
     const langName = {
       es: "Spanish", pt: "Portuguese", fr: "French", it: "Italian",
@@ -767,6 +919,9 @@ export default function ProficiencyTest() {
 
 CONVERSATION TO EVALUATE:
 ${transcript}
+
+AUDIO EVIDENCE (TURN-LEVEL METADATA):
+${JSON.stringify(speechEvidence, null, 2)}
 
 SCORING RULES — BE HARSH AND ACCURATE:
 - Score 1-2: No meaningful ${langName} produced. Gibberish, wrong language, single words, or nonsense.
@@ -784,6 +939,9 @@ CRITICAL ANTI-INFLATION RULES:
 - A score of 7+ requires EVIDENCE of multiple tenses or complex structures.
 - Do NOT give credit for the AI's responses — only evaluate what the USER said.
 - Do NOT inflate scores to be nice. Accurate placement helps the learner.
+- Grammar/vocabulary/comprehension should be scored mainly from transcript content.
+- Pronunciation/fluency/confidence MUST use AUDIO EVIDENCE whenever available.
+- If hasAudioEvidence is false, set pronunciation note exactly to "Insufficient audio evidence." and keep pronunciation score conservative (1-2).
 
 LEVEL PLACEMENT GUIDE:
 - Pre-A1: Cannot communicate in ${langName}. Wrong language, gibberish, or only isolated words.
@@ -832,6 +990,21 @@ Return ONLY valid JSON:
         );
         setAssessmentSummary(parsed.summary || "");
         if (parsed.scores && typeof parsed.scores === "object") {
+          if (!speechEvidence?.hasAudioEvidence && parsed?.scores?.pronunciation) {
+            const currentScore =
+              typeof parsed.scores.pronunciation === "number"
+                ? parsed.scores.pronunciation
+                : typeof parsed?.scores?.pronunciation?.score === "number"
+                ? parsed.scores.pronunciation.score
+                : 1;
+            parsed.scores.pronunciation = {
+              ...(typeof parsed.scores.pronunciation === "object"
+                ? parsed.scores.pronunciation
+                : {}),
+              score: Math.min(2, Math.max(1, currentScore)),
+              note: "Insufficient audio evidence.",
+            };
+          }
           setAssessmentScores(parsed.scores);
         }
       } else {
@@ -927,6 +1100,9 @@ Return ONLY valid JSON:
     setAssessedLevel(null);
     setAssessmentSummary("");
     setAssessmentScores(null);
+    speechTurnsRef.current = [];
+    currentSpeechTurnRef.current = null;
+    stopSpeechSampling();
     respToMsg.current.clear();
     streamBuffersRef.current = new Map();
     guardrailItemIdsRef.current = [];
@@ -985,6 +1161,9 @@ Return ONLY valid JSON:
     setAssessedLevel(null);
     setAssessmentSummary("");
     setAssessmentScores(null);
+    speechTurnsRef.current = [];
+    currentSpeechTurnRef.current = null;
+    stopSpeechSampling();
     streamBuffersRef.current = new Map();
     if (streamFlushTimerRef.current) {
       clearTimeout(streamFlushTimerRef.current);
@@ -1005,26 +1184,6 @@ Return ONLY valid JSON:
       }
       pc.ontrack = (e) => {
         e.streams[0].getTracks().forEach((t) => remote.addTrack(t));
-        if (!audioGraphReadyRef.current) {
-          try {
-            const Ctx = window.AudioContext || window.webkitAudioContext;
-            const ctx = new Ctx();
-            const srcNode = ctx.createMediaStreamSource(remote);
-            const analyser = ctx.createAnalyser();
-            analyser.fftSize = 2048;
-            analyser.smoothingTimeConstant = 0.15;
-            const dest = ctx.createMediaStreamDestination();
-            srcNode.connect(analyser);
-            srcNode.connect(dest);
-            audioCtxRef.current = ctx;
-            analyserRef.current = analyser;
-            floatBufRef.current = new Float32Array(analyser.fftSize);
-            captureOutRef.current = dest.stream;
-            audioGraphReadyRef.current = true;
-          } catch (e) {
-            console.warn("AudioContext init failed:", e?.message || e);
-          }
-        }
       };
       pc.addTransceiver("audio", { direction: "recvonly" });
 
@@ -1037,6 +1196,24 @@ Return ONLY valid JSON:
       });
       localRef.current = local;
       local.getTracks().forEach((track) => pc.addTrack(track, local));
+
+      if (!audioGraphReadyRef.current) {
+        try {
+          const Ctx = window.AudioContext || window.webkitAudioContext;
+          const ctx = new Ctx();
+          const srcNode = ctx.createMediaStreamSource(local);
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 2048;
+          analyser.smoothingTimeConstant = 0.2;
+          srcNode.connect(analyser);
+          audioCtxRef.current = ctx;
+          analyserRef.current = analyser;
+          floatBufRef.current = new Float32Array(analyser.fftSize);
+          audioGraphReadyRef.current = true;
+        } catch (e) {
+          console.warn("Mic AudioContext init failed:", e?.message || e);
+        }
+      }
 
       const dc = pc.createDataChannel("oai-events");
       dcRef.current = dc;
@@ -1060,6 +1237,7 @@ Return ONLY valid JSON:
               },
               input_audio_transcription: {
                 model: "whisper-1",
+                language: targetLanguageCode,
                 prompt:
                   "Transcribe exactly what the speaker says in the original spoken language. Do not translate.",
               },
@@ -1142,6 +1320,15 @@ Return ONLY valid JSON:
     pcRef.current = null;
     dcRef.current = null;
     localRef.current = null;
+    try {
+      audioCtxRef.current?.close();
+    } catch {}
+    audioCtxRef.current = null;
+    analyserRef.current = null;
+    floatBufRef.current = null;
+    captureOutRef.current = null;
+    currentSpeechTurnRef.current = null;
+    stopSpeechSampling();
     audioGraphReadyRef.current = false;
     setStatus("disconnected");
     setUiState("idle");
@@ -1152,6 +1339,8 @@ Return ONLY valid JSON:
     return () => {
       aliveRef.current = false;
       if (streamFlushTimerRef.current) clearTimeout(streamFlushTimerRef.current);
+      stopSpeechSampling();
+      try { audioCtxRef.current?.close(); } catch {}
       try { localRef.current?.getTracks().forEach((t) => t.stop()); } catch {}
       try { pcRef.current?.close(); } catch {}
     };
