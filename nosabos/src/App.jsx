@@ -392,13 +392,10 @@ async function ensureOnboardingField(db, id, data) {
     };
 
     if (shouldSetDefaults && !hasCompleted) {
-      // Old accounts with real usage (XP or progress) already finished
-      // onboarding before the flag existed — mark them as complete.
-      const hasUsage =
-        Number(data?.xp) > 0 ||
-        Number(data?.progress?.totalXp) > 0 ||
-        !!data?.progress?.targetLang;
-      onboardingPayload.completed = hasUsage ? true : false;
+      // New accounts are always created with onboarding.completed = false,
+      // so if we reach here the doc predates the onboarding system — it's
+      // an old account that already completed onboarding. Mark it true.
+      onboardingPayload.completed = true;
     }
 
     if (shouldSetStep) {
