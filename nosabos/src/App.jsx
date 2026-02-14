@@ -392,7 +392,10 @@ async function ensureOnboardingField(db, id, data) {
     };
 
     if (shouldSetDefaults && !hasCompleted) {
-      onboardingPayload.completed = false;
+      // New accounts are always created with onboarding.completed = false,
+      // so if we reach here the doc predates the onboarding system — it's
+      // an old account that already completed onboarding. Mark it true.
+      onboardingPayload.completed = true;
     }
 
     if (shouldSetStep) {
@@ -2069,6 +2072,7 @@ export default function App() {
   const [shouldShowProficiencyAfterTimer, setShouldShowProficiencyAfterTimer] =
     useState(false);
   const [proficiencyTestOpen, setProficiencyTestOpen] = useState(false);
+  const proficiencyCheckDoneRef = useRef(false);
 
   // Play daily goal sound when daily goal celebration modal opens
   useEffect(() => {
@@ -2091,6 +2095,20 @@ export default function App() {
   const timerRemainingRef = useRef(null);
   const isTimerRunning =
     timerActive && !timerPaused && timerRemainingSeconds !== null;
+
+  // Show proficiency modal for any user without proficiencyPlacement.
+  // New users get it through the onboarding chain instead (daily goal →
+  // timer → proficiency), so this only fires for returning sessions.
+  useEffect(() => {
+    if (proficiencyCheckDoneRef.current) return;
+    if (isLoadingApp || !user) return;
+    if (user?.proficiencyPlacement) return;
+    if (dailyGoalOpen || timerModalOpen) return;
+
+    proficiencyCheckDoneRef.current = true;
+    const t = setTimeout(() => setProficiencyTestOpen(true), 800);
+    return () => clearTimeout(t);
+  }, [isLoadingApp, user, dailyGoalOpen, timerModalOpen]);
 
   const formatTimer = useCallback((seconds) => {
     const safe = Math.max(0, Math.floor(Number(seconds) || 0));
@@ -3254,9 +3272,25 @@ export default function App() {
     }
   }, [shouldShowProficiencyAfterTimer]);
 
-  const handleProficiencySkip = useCallback(() => {
+  const handleProficiencySkip = useCallback(async () => {
     setProficiencyTestOpen(false);
-  }, []);
+    // Persist skip so the modal doesn't reappear every session.
+    // "skipped" is a sentinel — treated as falsy by the placement check
+    // but truthy enough to prevent the modal from re-opening.
+    const id = resolveNpub();
+    if (id) {
+      try {
+        await setDoc(
+          doc(database, "users", id),
+          { proficiencyPlacement: "skipped", updatedAt: new Date().toISOString() },
+          { merge: true },
+        );
+        patchUser?.({ proficiencyPlacement: "skipped" });
+      } catch (e) {
+        console.warn("Failed to persist proficiency skip:", e);
+      }
+    }
+  }, [resolveNpub, patchUser]);
 
   const handleProficiencyTakeTest = useCallback(() => {
     setProficiencyTestOpen(false);

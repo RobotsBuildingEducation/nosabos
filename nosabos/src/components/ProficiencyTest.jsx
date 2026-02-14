@@ -9,20 +9,20 @@ import {
   DrawerFooter,
   DrawerOverlay,
   HStack,
-  Progress,
   Text,
   VStack,
   Badge,
   Spinner,
   Divider,
+  Grid,
+  GridItem,
 } from "@chakra-ui/react";
 import { PiMicrophoneStageDuotone } from "react-icons/pi";
 import { FaStop } from "react-icons/fa";
-import { RiVolumeUpLine } from "react-icons/ri";
 import { LuBadgeCheck } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
-import { doc, setDoc, getDoc } from "firebase/firestore";
-import { database } from "../firebaseResources/firebaseResources";
+import { doc, setDoc } from "firebase/firestore";
+import { database, gradingModel } from "../firebaseResources/firebaseResources";
 
 import useUserStore from "../hooks/useUserStore";
 import RobotBuddyPro from "./RobotBuddyPro";
@@ -41,10 +41,6 @@ const REALTIME_URL = `${
 }?model=gpt-realtime-mini/exchangeRealtimeSDP?model=${encodeURIComponent(
   REALTIME_MODEL
 )}`;
-
-const RESPONSES_URL = `${import.meta.env.VITE_RESPONSES_URL}/proxyResponses`;
-const TRANSLATE_MODEL =
-  import.meta.env.VITE_OPENAI_TRANSLATE_MODEL || "gpt-5-nano";
 
 const MAX_EXCHANGES = 5;
 
@@ -228,8 +224,9 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
   const fluency = scoreFor("fluency");
   const comprehension = scoreFor("comprehension");
   const pronunciation = scoreFor("pronunciation");
+  const confidence = scoreFor("confidence");
 
-  const scored = [grammar, vocabulary, fluency, comprehension, pronunciation].filter(
+  const scored = [grammar, vocabulary, fluency, comprehension, pronunciation, confidence].filter(
     (n) => typeof n === "number"
   );
   const avg = scored.length
@@ -237,7 +234,7 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
     : null;
 
   const combined = (userTexts || []).join(" ").toLowerCase();
-  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|what|que|qué|idk)/g;
+  const fallbackPattern = /(no se|no sé|no entiendo|i don't know|i dont know|what|que|qué|idk|huh|um+|uh+|hmm+|lol|haha|ok|okay|yes|no|si|sí)/g;
   const fallbackMatches = combined.match(fallbackPattern) || [];
   const fallbackDensity = userTexts?.length
     ? fallbackMatches.length / userTexts.length
@@ -252,29 +249,80 @@ function getStrictPlacementFromEvidence(userTexts, modelScores, modelLevel) {
   const avgTokens = tokenCounts.length
     ? tokenCounts.reduce((a, b) => a + b, 0) / tokenCounts.length
     : 0;
+  const totalTokens = tokenCounts.reduce((a, b) => a + b, 0);
+
+  // Check for nonsense / gibberish: very short total output
+  const noSubstance = totalTokens < 8 || avgTokens <= 2;
+
+  // Check for wrong-language or random text: count unique real words
+  const allWords = combined.split(/\s+/).filter(Boolean);
+  const uniqueWords = new Set(allWords);
+  const uniqueRatio = allWords.length > 0 ? uniqueWords.size / allWords.length : 0;
 
   let cap = normalized;
 
-  // Hard floor for mostly non-comprehension / inability responses
-  if (fallbackDensity >= 0.5 || (avgTokens > 0 && avgTokens <= 2.4)) {
-    cap = "Pre-A1";
+  // HARD FLOOR: no meaningful output at all
+  if (noSubstance || !userTexts?.length || totalTokens === 0) {
+    return "Pre-A1";
   }
 
-  // Strict score gating so weak samples cannot jump to A2+
+  // HARD FLOOR: mostly filler / non-comprehension responses
+  if (fallbackDensity >= 0.4) {
+    return "Pre-A1";
+  }
+
+  // HARD FLOOR: very short average responses (≤3 words) with low scores
+  if (avgTokens <= 3 && avg !== null && avg < 5) {
+    return "Pre-A1";
+  }
+
+  // Strict score gating: any critical skill ≤ 2 → Pre-A1
   if (
     (grammar !== null && grammar <= 2) ||
-    (comprehension !== null && comprehension <= 2)
+    (comprehension !== null && comprehension <= 2) ||
+    (vocabulary !== null && vocabulary <= 2)
   ) {
     cap = "Pre-A1";
-  } else if (avg !== null && avg < 4.5) {
+  }
+  // Average below 3.5 → Pre-A1
+  else if (avg !== null && avg < 3.5) {
+    cap = "Pre-A1";
+  }
+  // Average below 5 → A1 max
+  else if (avg !== null && avg < 5) {
     cap = "A1";
-  } else if (
+  }
+  // Any core skill below 5 → A1 max
+  else if (
     (grammar !== null && grammar < 5) ||
     (vocabulary !== null && vocabulary < 5) ||
     (fluency !== null && fluency < 5) ||
     (comprehension !== null && comprehension < 5)
   ) {
     cap = "A1";
+  }
+  // A2 requires: avg ≥ 5, all core skills ≥ 5, avg tokens ≥ 4
+  else if (avg !== null && avg < 6) {
+    cap = "A2";
+  }
+  // B1 requires: avg ≥ 6, substantial responses
+  else if (avg !== null && avg < 7) {
+    if (avgTokens < 5) cap = "A2";
+    else cap = "B1";
+  }
+  // B2+ requires: avg ≥ 7, complex output
+  else if (avg !== null && avg < 8) {
+    if (avgTokens < 6) cap = "B1";
+    else cap = "B2";
+  }
+  // C1 requires: avg ≥ 8
+  else if (avg !== null && avg < 9) {
+    cap = "C1";
+  }
+
+  // Additional guard: short responses can't exceed A2 regardless of scores
+  if (avgTokens < 4 && levelRank[cap] > levelRank["A2"]) {
+    cap = "A2";
   }
 
   return levelRank[cap] < levelRank[normalized] ? cap : normalized;
@@ -715,68 +763,54 @@ export default function ProficiencyTest() {
       yua: "Yucatec Maya", en: "English",
     }[targetLang] || "the target language";
 
-    const prompt = `You are a CEFR language proficiency assessor. You just conducted a ${langName} placement test conversation with a learner.
+    const prompt = `You are an EXTREMELY STRICT CEFR language proficiency assessor for ${langName}. Your job is to accurately place learners — most test-takers are beginners and should score low.
 
-Analyze the learner's responses throughout the conversation below. For EACH of the 6 criteria, you MUST provide:
-- A specific score from 1 to 10
-- A detailed 1-2 sentence note explaining WHY you gave that score, citing specific words, phrases, or moments from their speech
+CONVERSATION TO EVALUATE:
+${transcript}
 
-CRITERIA TO EVALUATE:
-1. pronunciation — How clearly and accurately they pronounced words. Reference specific words they struggled with or pronounced well based on the transcription.
-2. grammar — Complexity and correctness of grammatical structures used. Note specific errors (e.g., wrong conjugation, missing articles) or impressive structures (e.g., subjunctive, compound tenses).
-3. vocabulary — Range and appropriateness of word choices. Note if they used only basic words or demonstrated advanced/varied vocabulary.
-4. fluency — How naturally the conversation flowed. Note if responses were choppy/minimal or if they formed complete, flowing sentences.
-5. confidence — Willingness to attempt complex expressions vs. playing it safe with simple responses. Note specific moments where they took risks or held back.
-6. comprehension — How well they understood questions and responded appropriately. Note if they missed context, asked for clarification, or answered off-topic.
+SCORING RULES — BE HARSH AND ACCURATE:
+- Score 1-2: No meaningful ${langName} produced. Gibberish, wrong language, single words, or nonsense.
+- Score 3-4: Isolated words or memorized phrases only. No sentence construction. Major errors throughout.
+- Score 5-6: Can form basic sentences with frequent errors. Limited vocabulary. Simple present tense only.
+- Score 7-8: Good sentence variety, multiple tenses, few errors, varied vocabulary, natural flow.
+- Score 9-10: Near-native fluency, complex grammar, idiomatic expressions, nuanced vocabulary.
 
-Based on the combined scores, determine the overall CEFR level placement.
+CRITICAL ANTI-INFLATION RULES:
+- If the user wrote in the WRONG LANGUAGE (not ${langName}), ALL scores must be 1-2.
+- If responses are gibberish, random words, or make no sense, ALL scores must be 1.
+- If responses are mostly single words ("si", "no", "ok", "hola"), scores must be 1-3.
+- If the user could not form a single complete sentence in ${langName}, cap all scores at 3.
+- A score of 5+ requires EVIDENCE of actual sentence construction in ${langName}.
+- A score of 7+ requires EVIDENCE of multiple tenses or complex structures.
+- Do NOT give credit for the AI's responses — only evaluate what the USER said.
+- Do NOT inflate scores to be nice. Accurate placement helps the learner.
 
-STRICTNESS RULES (IMPORTANT):
-- Be conservative. Under-place rather than over-place when evidence is weak or inconsistent.
-- If the learner frequently says they don't understand, cannot answer, or gives fragmentary replies, place at A0/Pre-A1.
-- A2 requires consistent simple sentence production with basic grammar control and clear comprehension across most turns.
-- Do NOT award A2+ for isolated words, memorized chunks, or mostly clarification/failure responses.
-- If evidence is mixed, choose the lower level.
+LEVEL PLACEMENT GUIDE:
+- Pre-A1: Cannot communicate in ${langName}. Wrong language, gibberish, or only isolated words.
+- A1: Can say basic greetings and simple phrases. Very limited grammar.
+- A2: Can form simple sentences about familiar topics. Basic grammar control.
+- B1: Can discuss past/future, give opinions, use connectors. Consistent grammar.
+- B2: Can argue, discuss abstract topics, self-correct. Varied grammar and vocabulary.
+- C1/C2: Near-native precision, idioms, register control, complex argumentation.
 
-IMPORTANT: You MUST return ONLY valid JSON with NO markdown formatting, NO backticks, NO explanation outside the JSON.
-
-Required JSON format:
-{"level":"B1","summary":"2-3 sentence overall assessment referencing what the learner did well and what they need to work on.","scores":{"pronunciation":{"score":7,"note":"Specific observation with examples from the conversation"},"grammar":{"score":6,"note":"Specific observation with examples from the conversation"},"vocabulary":{"score":5,"note":"Specific observation with examples from the conversation"},"fluency":{"score":7,"note":"Specific observation with examples from the conversation"},"confidence":{"score":8,"note":"Specific observation with examples from the conversation"},"comprehension":{"score":6,"note":"Specific observation with examples from the conversation"}}}
-
-Valid levels: A0, Pre-A1, A1, A2, B1, B2, C1, C2
-Scores must be integers from 1 to 10.
-
-Conversation transcript:
-${transcript}`;
+Return ONLY valid JSON:
+{"level":"Pre-A1","summary":"2-3 sentence assessment.","scores":{"pronunciation":{"score":1,"note":"reason"},"grammar":{"score":1,"note":"reason"},"vocabulary":{"score":1,"note":"reason"},"fluency":{"score":1,"note":"reason"},"confidence":{"score":1,"note":"reason"},"comprehension":{"score":1,"note":"reason"}}}`;
 
     try {
-      const r = await fetch(RESPONSES_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          model: TRANSLATE_MODEL,
-          text: { format: { type: "text" } },
-          input: prompt,
-        }),
+      const resp = await gradingModel.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
       });
 
-      const ct = r.headers.get("content-type") || "";
-      const payload = ct.includes("application/json")
-        ? await r.json()
-        : await r.text();
-
+      const result = resp.response;
       let resultText = "";
-      if (typeof payload === "string") {
-        resultText = payload;
-      } else if (payload?.output) {
-        const textParts = payload.output.filter((o) => o.type === "message");
-        for (const msg of textParts) {
-          for (const c of msg.content || []) {
-            if (c.text) resultText += c.text;
-          }
+      if (typeof result?.text === "function") {
+        resultText = result.text();
+      } else if (typeof result?.text === "string") {
+        resultText = result.text;
+      } else {
+        const cand = result?.candidates?.[0];
+        if (cand?.content?.parts?.length) {
+          resultText = cand.content.parts.map((p) => p.text || "").join("");
         }
       }
 
@@ -1438,15 +1472,15 @@ ${transcript}`;
                 </Text>
               )}
 
-              {/* Individual criterion scores */}
+              {/* Individual criterion scores — compact grid */}
               {assessmentScores && (
                 <>
                   <Divider borderColor="gray.700" />
                   <Box>
-                    <Text fontWeight="semibold" fontSize="md" mb={4}>
-                      {isEs ? "Desglose de Puntuación" : "Score Breakdown"}
+                    <Text fontWeight="semibold" fontSize="sm" mb={3} opacity={0.7} letterSpacing="0.05em" textTransform="uppercase">
+                      {isEs ? "Desglose" : "Breakdown"}
                     </Text>
-                    <VStack spacing={4} align="stretch">
+                    <Grid templateColumns="repeat(2, 1fr)" gap={2}>
                       {ASSESSMENT_CRITERIA.map((criterion) => {
                         const data = assessmentScores[criterion.key];
                         const score =
@@ -1457,148 +1491,103 @@ ${transcript}`;
                             : null;
                         const note =
                           typeof data?.note === "string" ? data.note : "";
+                        const color = scoreColor(score);
+                        const colorMap = {
+                          green: "#48BB78",
+                          teal: "#38B2AC",
+                          yellow: "#ECC94B",
+                          red: "#FC8181",
+                        };
+                        const accent = colorMap[color] || "#A0AEC0";
 
                         return (
-                          <Box
-                            key={criterion.key}
-                            bg="gray.800"
-                            p={3}
-                            rounded="xl"
-                            border="1px solid"
-                            borderColor="gray.700"
-                          >
-                            <HStack justify="space-between" mb={2}>
-                              <Text fontSize="sm" fontWeight="medium">
-                                {criterion[isEs ? "es" : "en"]}
-                              </Text>
-                              {score !== null && (
-                                <Badge
-                                  colorScheme={scoreColor(score)}
-                                  variant="subtle"
-                                  fontSize="sm"
-                                  px={2}
-                                  rounded="md"
-                                >
-                                  {score}/10
-                                </Badge>
+                          <GridItem key={criterion.key}>
+                            <Box
+                              bg="gray.800"
+                              px={3}
+                              py={2.5}
+                              rounded="lg"
+                              borderLeft="3px solid"
+                              borderColor={accent}
+                              h="100%"
+                            >
+                              <HStack justify="space-between" align="center" mb={1}>
+                                <Text fontSize="xs" fontWeight="semibold" opacity={0.85}>
+                                  {criterion[isEs ? "es" : "en"]}
+                                </Text>
+                                {score !== null && (
+                                  <Text fontSize="lg" fontWeight="bold" color={accent} lineHeight="1">
+                                    {score}
+                                  </Text>
+                                )}
+                              </HStack>
+                              {note && (
+                                <Text fontSize="2xs" opacity={0.55} lineHeight="1.4" noOfLines={3}>
+                                  {note}
+                                </Text>
                               )}
-                            </HStack>
-                            {score !== null && (
-                              <Progress
-                                value={score * 10}
-                                size="sm"
-                                rounded="full"
-                                colorScheme={scoreColor(score)}
-                                bg="gray.700"
-                              />
-                            )}
-                            {note && (
-                              <Text
-                                fontSize="xs"
-                                opacity={0.7}
-                                mt={2}
-                                lineHeight="1.5"
-                              >
-                                {note}
-                              </Text>
-                            )}
-                          </Box>
+                            </Box>
+                          </GridItem>
                         );
                       })}
-                    </VStack>
+                    </Grid>
                   </Box>
                 </>
               )}
 
-              {(scoreInsight || assessmentScores) && (
-                <Box
+              {scoreInsight && (
+                <HStack
                   bg="gray.800"
-                  p={4}
-                  rounded="xl"
-                  border="1px solid"
-                  borderColor="gray.700"
+                  px={4}
+                  py={3}
+                  rounded="lg"
+                  justify="space-between"
+                  align="center"
                 >
-                  <Text fontWeight="semibold" fontSize="md" mb={2}>
-                    {isEs
-                      ? "Cómo se calculó tu resultado"
-                      : "How your result was calculated"}
+                  <Text fontSize="xs" opacity={0.6}>
+                    {isEs ? "Puntaje compuesto" : "Composite score"}
                   </Text>
-                  <Text fontSize="sm" opacity={0.8} lineHeight="1.6">
-                    {isEs
-                      ? "El evaluador revisó tus respuestas en 6 criterios: pronunciación, gramática, vocabulario, fluidez, confianza y comprensión. Cada criterio incluye evidencia textual de tu conversación para justificar la nota."
-                      : "The assessor reviewed your responses across 6 criteria: pronunciation, grammar, vocabulary, fluency, confidence, and comprehension. Each criterion includes textual evidence from your conversation to justify the score."}
+                  <Text fontSize="md" fontWeight="bold" color="cyan.300">
+                    {scoreInsight.finalScore}/10
                   </Text>
-                  {scoreInsight && (
-                    <Text fontSize="sm" mt={3} opacity={0.9}>
-                      {isEs
-                        ? `Puntaje compuesto (ponderado): ${scoreInsight.finalScore}/10. Se consideraron: ${scoreInsight.considered.join(", ")} (peso total ${scoreInsight.totalWeight}).`
-                        : `Weighted composite score: ${scoreInsight.finalScore}/10. Considered: ${scoreInsight.considered.join(", ")} (total weight ${scoreInsight.totalWeight}).`}
-                    </Text>
-                  )}
-                </Box>
+                </HStack>
               )}
 
               <Divider borderColor="gray.700" />
 
               {assessedLevel && (
-                <Box
-                  bg="gray.800"
-                  p={4}
-                  rounded="xl"
-                  border="1px solid"
-                  borderColor="gray.700"
-                >
-                  <Text fontWeight="semibold" fontSize="md" mb={2}>
-                    {isEs
-                      ? `Qué te ofrece el nivel ${assessedLevel}`
-                      : `What level ${assessedLevel} will offer`}
+                <Box bg="gray.800" px={4} py={3} rounded="lg">
+                  <Text fontSize="xs" fontWeight="semibold" opacity={0.5} mb={2} textTransform="uppercase" letterSpacing="0.05em">
+                    {isEs ? `Nivel ${assessedLevel}` : `Level ${assessedLevel}`}
                   </Text>
-                  <VStack align="start" spacing={2}>
+                  <VStack align="start" spacing={1}>
                     {(CEFR_LEVEL_OFFERINGS[assessedLevel]?.[isEs ? "es" : "en"] || []).map(
                       (item) => (
-                        <Text key={item} fontSize="sm" opacity={0.85}>
-                          • {item}
+                        <Text key={item} fontSize="xs" opacity={0.7}>
+                          {item}
                         </Text>
                       )
                     )}
                   </VStack>
-                </Box>
-              )}
-
-              {/* Unlocked levels */}
-              {assessedLevel && assessedLevel !== "Pre-A1" && (
-                <Box
-                  bg="gray.800"
-                  p={4}
-                  rounded="xl"
-                  border="1px solid"
-                  borderColor="gray.700"
-                >
-                  <Text fontSize="sm" opacity={0.8} textAlign="center">
-                    {isEs
-                      ? `Se desbloquearán todos los niveles hasta ${assessedLevel} en la aplicación.`
-                      : `All levels up to ${assessedLevel} will be unlocked in the app.`}
-                  </Text>
-                  <HStack
-                    mt={3}
-                    justify="center"
-                    spacing={2}
-                    flexWrap="wrap"
-                  >
-                    {CEFR_LEVELS.slice(
-                      0,
-                      CEFR_LEVELS.indexOf(assessedLevel) + 1
-                    ).map((lvl) => (
-                      <Badge
-                        key={lvl}
-                        colorScheme="green"
-                        variant="subtle"
-                        fontSize="xs"
-                      >
-                        {lvl}
-                      </Badge>
-                    ))}
-                  </HStack>
+                  {assessedLevel !== "Pre-A1" && (
+                    <HStack mt={3} spacing={1.5} flexWrap="wrap">
+                      {CEFR_LEVELS.slice(
+                        0,
+                        CEFR_LEVELS.indexOf(assessedLevel) + 1
+                      ).map((lvl) => (
+                        <Badge
+                          key={lvl}
+                          colorScheme="green"
+                          variant="subtle"
+                          fontSize="2xs"
+                          px={1.5}
+                          py={0.5}
+                        >
+                          {lvl}
+                        </Badge>
+                      ))}
+                    </HStack>
+                  )}
                 </Box>
               )}
 
